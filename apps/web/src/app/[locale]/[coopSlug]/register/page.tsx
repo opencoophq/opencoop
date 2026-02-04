@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency } from '@opencoop/shared';
+import { DatePicker } from '@/components/ui/date-picker';
 import { UserPlus } from 'lucide-react';
 
 interface CoopPublicInfo {
@@ -523,7 +524,11 @@ export default function RegisterSharesPage() {
             </div>
             <div className="space-y-2">
               <Label>{t('shareholder.fields.birthDate')} *</Label>
-              <Input type="date" {...form.register('birthDate')} />
+              <DatePicker
+                value={form.watch('birthDate')}
+                onChange={(value) => form.setValue('birthDate', value || '')}
+                placeholder={t('shareholder.fields.birthDate')}
+              />
             </div>
           </>
         )}

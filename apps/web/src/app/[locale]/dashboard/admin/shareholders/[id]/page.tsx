@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAdmin } from '@/contexts/admin-context';
+import { DatePicker } from '@/components/ui/date-picker';
 import { ChevronLeft, Save } from 'lucide-react';
 
 interface Share {
@@ -314,7 +315,10 @@ export default function ShareholderDetailPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t('shareholder.fields.birthDate')}</Label>
-                    <Input type="date" {...form.register('birthDate')} />
+                    <DatePicker
+                      value={form.watch('birthDate')}
+                      onChange={(value) => form.setValue('birthDate', value || '')}
+                    />
                   </div>
                 </>
               )}
