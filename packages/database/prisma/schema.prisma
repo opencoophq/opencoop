@@ -217,6 +217,9 @@ model Shareholder {
   // For minors/gifts/family registrations - links to parent/guardian account
   registeredByUserId String?
 
+  // Minor email reminder tracking (for reminding parents to set email before 18)
+  emailReminderSentAt DateTime?
+
   // Relations
   coop            Coop               @relation(fields: [coopId], references: [id], onDelete: Cascade)
   user            User?              @relation("UserShareholder", fields: [userId], references: [id], onDelete: SetNull)
