@@ -530,6 +530,8 @@
       "viewAdmins": "Manage Admins",
       "coopName": "Name",
       "slug": "Slug",
+      "ogmPrefix": "OGM Prefix",
+      "ogmPrefixHelp": "Unique 3-digit code for structured payment communications (e.g. 001)",
       "status": "Status",
       "active": "Active",
       "inactive": "Inactive",

@@ -530,6 +530,8 @@
       "viewAdmins": "Beheerders beheren",
       "coopName": "Naam",
       "slug": "Slug",
+      "ogmPrefix": "OGM-prefix",
+      "ogmPrefixHelp": "Unieke 3-cijferige code voor gestructureerde mededelingen (bv. 001)",
       "status": "Status",
       "active": "Actief",
       "inactive": "Inactief",
