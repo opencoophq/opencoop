@@ -6,10 +6,12 @@ import {
   Body,
   Param,
   Query,
+  Res,
   UseGuards,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -362,6 +364,18 @@ export class AdminController {
     @Body('paymentReference') paymentReference?: string,
   ) {
     return this.dividendsService.markAsPaid(id, paymentReference);
+  }
+
+  @Get('dividends/:id/export')
+  @ApiOperation({ summary: 'Export dividend payouts as CSV for bank transfer' })
+  async exportDividends(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const csv = await this.dividendsService.exportToCsv(id);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="dividend-payouts-${id}.csv"`);
+    res.send(csv);
   }
 
   // ==================== DOCUMENTS ====================

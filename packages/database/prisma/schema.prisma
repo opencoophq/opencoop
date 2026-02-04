@@ -455,14 +455,16 @@ model BankTransaction {
 model DividendPeriod {
   id        String               @id @default(cuid())
   coopId    String
+  name      String?              // e.g., "Q4 2024"
   year      Int
   status    DividendPeriodStatus @default(DRAFT)
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
 
-  dividendRate       Decimal  @db.Decimal(5, 4) // e.g., 0.0300 = 3%
-  withholdingTaxRate Decimal  @default(0.30) @db.Decimal(5, 4) // Belgian: 30%
-  exDividendDate     DateTime // Shares owned before this date qualify
+  dividendRate       Decimal   @db.Decimal(5, 4) // e.g., 0.0300 = 3%
+  withholdingTaxRate Decimal   @default(0.30) @db.Decimal(5, 4) // Belgian: 30%
+  exDividendDate     DateTime  // Shares owned before this date qualify
+  paymentDate        DateTime? // When dividends will be paid
 
   coop    Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
   payouts DividendPayout[]
