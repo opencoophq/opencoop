@@ -1,14 +1,16 @@
 'use client';
 
 import * as React from 'react';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import { nl, enGB, enUS, de, fr } from 'date-fns/locale';
-import { DayPicker } from 'react-day-picker';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { DayPicker, getDefaultClassNames } from 'react-day-picker';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useLocale, LocaleCode } from '@/contexts/locale-context';
+
+import 'react-day-picker/style.css';
 
 // Map locale codes to date-fns locales
 const localeMap: Record<LocaleCode, Locale> = {
@@ -50,6 +52,7 @@ export function DatePicker({
 
   const dateLocale = localeMap[locale] || nl;
   const dateFormat = dateFormatMap[locale] || 'dd/MM/yyyy';
+  const defaultClassNames = getDefaultClassNames();
 
   // Parse ISO string to Date
   const selectedDate = React.useMemo(() => {
@@ -101,35 +104,34 @@ export function DatePicker({
           onSelect={handleSelect}
           locale={dateLocale}
           showOutsideDays
-          className="p-3"
           classNames={{
-            months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
-            month: 'space-y-4',
-            caption: 'flex justify-center pt-1 relative items-center',
-            caption_label: 'text-sm font-medium',
-            nav: 'space-x-1 flex items-center',
-            nav_button: cn(
-              'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input'
-            ),
-            nav_button_previous: 'absolute left-1',
-            nav_button_next: 'absolute right-1',
-            table: 'w-full border-collapse space-y-1',
-            head_row: 'flex justify-between',
-            head_cell: 'text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-center',
-            row: 'flex w-full mt-2 justify-between',
-            cell: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
-            day: cn(
-              'h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-md hover:bg-accent hover:text-accent-foreground inline-flex items-center justify-center'
-            ),
-            day_range_end: 'day-range-end',
-            day_selected:
-              'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-            day_today: 'bg-accent text-accent-foreground',
-            day_outside:
-              'day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30',
-            day_disabled: 'text-muted-foreground opacity-50',
-            day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground',
-            day_hidden: 'invisible',
+            root: `${defaultClassNames.root} p-3`,
+            months: `${defaultClassNames.months}`,
+            month: `${defaultClassNames.month}`,
+            month_caption: `${defaultClassNames.month_caption} flex justify-center pt-1 relative items-center`,
+            caption_label: `${defaultClassNames.caption_label} text-sm font-medium`,
+            nav: `${defaultClassNames.nav} space-x-1 flex items-center`,
+            button_previous: `${defaultClassNames.button_previous} h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input absolute left-1`,
+            button_next: `${defaultClassNames.button_next} h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input absolute right-1`,
+            month_grid: `${defaultClassNames.month_grid} w-full border-collapse`,
+            weekdays: `${defaultClassNames.weekdays}`,
+            weekday: `${defaultClassNames.weekday} text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]`,
+            week: `${defaultClassNames.week}`,
+            day: `${defaultClassNames.day} h-9 w-9 text-center text-sm p-0 relative`,
+            day_button: `${defaultClassNames.day_button} h-9 w-9 p-0 font-normal rounded-md hover:bg-accent hover:text-accent-foreground inline-flex items-center justify-center`,
+            selected: `${defaultClassNames.selected} bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground`,
+            today: `${defaultClassNames.today} bg-accent text-accent-foreground`,
+            outside: `${defaultClassNames.outside} text-muted-foreground opacity-50`,
+            disabled: `${defaultClassNames.disabled} text-muted-foreground opacity-50`,
+            hidden: `${defaultClassNames.hidden} invisible`,
+          }}
+          components={{
+            Chevron: ({ orientation }) => {
+              if (orientation === 'left') {
+                return <ChevronLeft className="h-4 w-4" />;
+              }
+              return <ChevronRight className="h-4 w-4" />;
+            },
           }}
         />
       </PopoverContent>
