@@ -307,14 +307,24 @@ model ShareClass {
   @@map("share_classes")
 }
 
+enum ProjectType {
+  SOLAR
+  WIND
+}
+
 model Project {
-  id          String   @id @default(cuid())
-  coopId      String
-  name        String
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String       @id @default(cuid())
+  coopId             String
+  name               String
+  description        String?
+  type               ProjectType  @default(SOLAR)
+  capacityKw         Decimal?     @db.Decimal(10, 2) // Power capacity in kW
+  estimatedAnnualMwh Decimal?     @db.Decimal(10, 2) // Estimated annual production in MWh
+  startDate          DateTime?
+  endDate            DateTime?    // Optional end date
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   coop   Coop    @relation(fields: [coopId], references: [id], onDelete: Cascade)
   shares Share[]

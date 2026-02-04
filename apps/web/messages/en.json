@@ -404,15 +404,16 @@
       "editProject": "Edit Project",
       "projectName": "Project Name",
       "description": "Description",
-      "targetAmount": "Target Amount",
-      "currentAmount": "Current Amount",
+      "type": "Type",
+      "solar": "Solar",
+      "wind": "Wind",
+      "capacityKw": "Capacity (kW)",
+      "estimatedMwh": "Est. Annual (MWh)",
       "startDate": "Start Date",
       "endDate": "End Date",
       "status": "Status",
       "active": "Active",
-      "completed": "Completed",
-      "cancelled": "Cancelled",
-      "progress": "Progress"
+      "inactive": "Inactive"
     },
     "bank": {
       "title": "Bank Import",

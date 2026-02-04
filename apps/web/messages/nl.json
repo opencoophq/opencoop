@@ -404,15 +404,16 @@
       "editProject": "Project bewerken",
       "projectName": "Projectnaam",
       "description": "Beschrijving",
-      "targetAmount": "Doelbedrag",
-      "currentAmount": "Huidig bedrag",
+      "type": "Type",
+      "solar": "Zonne-energie",
+      "wind": "Windenergie",
+      "capacityKw": "Vermogen (kW)",
+      "estimatedMwh": "Geschat jaarlijks (MWh)",
       "startDate": "Startdatum",
       "endDate": "Einddatum",
       "status": "Status",
       "active": "Actief",
-      "completed": "Voltooid",
-      "cancelled": "Geannuleerd",
-      "progress": "Voortgang"
+      "inactive": "Inactief"
     },
     "bank": {
       "title": "Bank import",
