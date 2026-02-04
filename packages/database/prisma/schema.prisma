@@ -1,0 +1,513 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  SYSTEM_ADMIN
+  COOP_ADMIN
+  SHAREHOLDER
+}
+
+enum ShareholderType {
+  INDIVIDUAL
+  COMPANY
+  MINOR
+}
+
+enum ShareholderStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+}
+
+enum ShareStatus {
+  PENDING
+  ACTIVE
+  SOLD
+  TRANSFERRED
+}
+
+enum TransactionType {
+  PURCHASE
+  SALE
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  COMPLETED
+  REJECTED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  MOLLIE
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  MATCHED
+  CONFIRMED
+  FAILED
+}
+
+enum BankTransactionMatchStatus {
+  UNMATCHED
+  AUTO_MATCHED
+  MANUAL_MATCHED
+}
+
+enum DividendPeriodStatus {
+  DRAFT
+  CALCULATED
+  PAID
+}
+
+enum EmailStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+enum DocumentType {
+  SHARE_CERTIFICATE
+  PURCHASE_STATEMENT
+  DIVIDEND_STATEMENT
+  TRANSACTION_REPORT
+}
+
+// ============================================================================
+// MULTI-TENANCY: COOPS
+// ============================================================================
+
+model Coop {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Branding
+  logoUrl        String?
+  primaryColor   String  @default("#1e40af")
+  secondaryColor String  @default("#3b82f6")
+
+  // Settings
+  requiresApproval Boolean @default(true)
+  ogmPrefix        String  @unique // Unique prefix for OGM codes (e.g., "001")
+
+  // Email configuration (encrypted in production)
+  emailProvider    String? // "smtp" | "graph"
+  smtpHost         String?
+  smtpPort         Int?
+  smtpUser         String?
+  smtpPass         String?
+  smtpFrom         String?
+  graphClientId    String?
+  graphClientSecret String?
+  graphTenantId    String?
+  graphFromEmail   String?
+
+  // Bank details for shareholders
+  bankName    String?
+  bankIban    String?
+  bankBic     String?
+
+  // Legal
+  termsUrl    String?  // URL to terms and conditions page
+
+  // Relations
+  admins           CoopAdmin[]
+  shareholders     Shareholder[]
+  shareClasses     ShareClass[]
+  projects         Project[]
+  shares           Share[]
+  transactions     Transaction[]
+  payments         Payment[]
+  bankImports      BankImport[]
+  bankTransactions BankTransaction[]
+  dividendPeriods  DividendPeriod[]
+  emailLogs        EmailLog[]
+
+  @@map("coops")
+}
+
+// ============================================================================
+// USERS & AUTH
+// ============================================================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String
+  emailVerified     DateTime?
+  emailVerifyToken  String?
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+  role              UserRole  @default(SHAREHOLDER)
+  preferredLanguage String    @default("nl")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  coopAdminOf           CoopAdmin[]
+  shareholders          Shareholder[]         @relation("UserShareholder")
+  registeredShareholders Shareholder[]        @relation("RegisteredBy")
+  processedTransactions Transaction[]
+  importedBankFiles     BankImport[]
+
+  @@map("users")
+}
+
+model CoopAdmin {
+  id        String   @id @default(cuid())
+  userId    String
+  coopId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coop Coop @relation(fields: [coopId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, coopId])
+  @@map("coop_admins")
+}
+
+// ============================================================================
+// SHAREHOLDERS
+// ============================================================================
+
+model Shareholder {
+  id        String            @id @default(cuid())
+  coopId    String
+  userId    String?           // Nullable for imported/gift shareholders without account
+  type      ShareholderType
+  status    ShareholderStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  // Personal info (for INDIVIDUAL and MINOR)
+  firstName   String?
+  lastName    String?
+  nationalId  String?  // Belgian national registry number (rijksregisternummer)
+  birthDate   DateTime?
+
+  // Company info (for COMPANY)
+  companyName String?
+  companyId   String?  // Belgian company number (KBO/BCE ondernemingsnummer)
+  vatNumber   String?
+  legalForm   String?
+
+  // Contact info (all types)
+  email   String?  // Optional for MINOR type (child uses parent's contact)
+  phone   String?
+  address Json?    // { street, number, box, postalCode, city, country }
+
+  // For minors/gifts/family registrations - links to parent/guardian account
+  registeredByUserId String?
+
+  // Relations
+  coop            Coop               @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  user            User?              @relation("UserShareholder", fields: [userId], references: [id], onDelete: SetNull)
+  registeredBy    User?              @relation("RegisteredBy", fields: [registeredByUserId], references: [id], onDelete: SetNull)
+  beneficialOwners BeneficialOwner[]
+  shares          Share[]
+  transactions    Transaction[]      @relation("ShareholderTransactions")
+  transfersIn     Transaction[]      @relation("TransferIn")
+  transfersOut    Transaction[]      @relation("TransferOut")
+  dividendPayouts DividendPayout[]
+  documents       ShareholderDocument[]
+  upgradeToken    MinorUpgradeToken?
+
+  // Unique email per coop (null emails allowed for minors - PostgreSQL allows multiple nulls)
+  @@unique([coopId, email])
+  @@map("shareholders")
+}
+
+model BeneficialOwner {
+  id                 String @id @default(cuid())
+  shareholderId      String
+  firstName          String
+  lastName           String
+  nationalId         String?
+  ownershipPercentage Decimal @db.Decimal(5, 2)
+
+  shareholder Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+
+  @@map("beneficial_owners")
+}
+
+model ShareholderDocument {
+  id            String       @id @default(cuid())
+  shareholderId String
+  type          DocumentType
+  filePath      String
+  generatedAt   DateTime     @default(now())
+
+  shareholder Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+
+  @@map("shareholder_documents")
+}
+
+// Token for minor shareholders to upgrade to adult accounts when they turn 18
+model MinorUpgradeToken {
+  id            String   @id @default(cuid())
+  token         String   @unique
+  shareholderId String   @unique  // One active token per shareholder
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+  usedAt        DateTime?
+
+  // Email notification tracking
+  parentNotifiedAt DateTime?
+  reminderSentAt   DateTime?
+
+  shareholder Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+
+  @@map("minor_upgrade_tokens")
+}
+
+// ============================================================================
+// SHARES
+// ============================================================================
+
+model ShareClass {
+  id        String   @id @default(cuid())
+  coopId    String
+  name      String
+  code      String   // e.g., "A", "B"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pricePerShare        Decimal  @db.Decimal(10, 2)
+  minShares            Int      @default(1)
+  maxShares            Int?     // null = unlimited
+  hasVotingRights      Boolean  @default(true)
+  dividendRateOverride Decimal? @db.Decimal(5, 4) // e.g., 0.0350 = 3.5%
+  isActive             Boolean  @default(true)
+
+  coop   Coop    @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shares Share[]
+
+  @@unique([coopId, code])
+  @@map("share_classes")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  coopId      String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  coop   Coop    @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shares Share[]
+
+  @@unique([coopId, name])
+  @@map("projects")
+}
+
+model Share {
+  id                    String      @id @default(cuid())
+  coopId                String
+  shareholderId         String
+  shareClassId          String
+  projectId             String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  quantity              Int
+  purchasePricePerShare Decimal     @db.Decimal(10, 2)
+  purchaseDate          DateTime
+  status                ShareStatus @default(PENDING)
+  certificateNumber     String?
+
+  coop        Coop         @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shareholder Shareholder  @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+  shareClass  ShareClass   @relation(fields: [shareClassId], references: [id], onDelete: Restrict)
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  transactions Transaction[]
+
+  @@map("shares")
+}
+
+// ============================================================================
+// TRANSACTIONS
+// ============================================================================
+
+model Transaction {
+  id        String            @id @default(cuid())
+  coopId    String
+  type      TransactionType
+  status    TransactionStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  shareholderId     String
+  shareId           String?
+  quantity          Int
+  pricePerShare     Decimal  @db.Decimal(10, 2)
+  totalAmount       Decimal  @db.Decimal(12, 2)
+
+  // For transfers
+  fromShareholderId String?
+  toShareholderId   String?
+
+  // Processing
+  processedByUserId String?
+  processedAt       DateTime?
+  rejectionReason   String?
+
+  coop            Coop         @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shareholder     Shareholder  @relation("ShareholderTransactions", fields: [shareholderId], references: [id], onDelete: Cascade)
+  share           Share?       @relation(fields: [shareId], references: [id], onDelete: SetNull)
+  fromShareholder Shareholder? @relation("TransferOut", fields: [fromShareholderId], references: [id], onDelete: SetNull)
+  toShareholder   Shareholder? @relation("TransferIn", fields: [toShareholderId], references: [id], onDelete: SetNull)
+  processedBy     User?        @relation(fields: [processedByUserId], references: [id], onDelete: SetNull)
+  payment         Payment?
+
+  @@map("transactions")
+}
+
+// ============================================================================
+// PAYMENTS
+// ============================================================================
+
+model Payment {
+  id            String        @id @default(cuid())
+  coopId        String
+  transactionId String        @unique
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  amount            Decimal @db.Decimal(12, 2)
+  currency          String  @default("EUR")
+  ogmCode           String? @unique // Belgian structured communication
+  externalReference String? // Mollie/Stripe payment ID
+
+  coop        Coop        @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  matchedBankTransaction BankTransaction?
+
+  @@map("payments")
+}
+
+model BankImport {
+  id           String   @id @default(cuid())
+  coopId       String
+  fileName     String
+  importedAt   DateTime @default(now())
+  importedById String
+
+  rowCount      Int @default(0)
+  matchedCount  Int @default(0)
+  unmatchedCount Int @default(0)
+
+  coop         Coop              @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  importedBy   User              @relation(fields: [importedById], references: [id], onDelete: Restrict)
+  transactions BankTransaction[]
+
+  @@map("bank_imports")
+}
+
+model BankTransaction {
+  id           String                     @id @default(cuid())
+  coopId       String
+  bankImportId String
+  date         DateTime
+  amount       Decimal                    @db.Decimal(12, 2)
+  counterparty String?
+  ogmCode      String?
+  referenceText String?
+  matchStatus  BankTransactionMatchStatus @default(UNMATCHED)
+
+  matchedPaymentId String? @unique
+
+  coop          Coop        @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  bankImport    BankImport  @relation(fields: [bankImportId], references: [id], onDelete: Cascade)
+  matchedPayment Payment?   @relation(fields: [matchedPaymentId], references: [id], onDelete: SetNull)
+
+  @@map("bank_transactions")
+}
+
+// ============================================================================
+// DIVIDENDS
+// ============================================================================
+
+model DividendPeriod {
+  id        String               @id @default(cuid())
+  coopId    String
+  year      Int
+  status    DividendPeriodStatus @default(DRAFT)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  dividendRate       Decimal  @db.Decimal(5, 4) // e.g., 0.0300 = 3%
+  withholdingTaxRate Decimal  @default(0.30) @db.Decimal(5, 4) // Belgian: 30%
+  exDividendDate     DateTime // Shares owned before this date qualify
+
+  coop    Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  payouts DividendPayout[]
+
+  @@unique([coopId, year])
+  @@map("dividend_periods")
+}
+
+model DividendPayout {
+  id               String   @id @default(cuid())
+  dividendPeriodId String
+  shareholderId    String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  grossAmount       Decimal @db.Decimal(12, 2)
+  withholdingTax    Decimal @db.Decimal(12, 2)
+  netAmount         Decimal @db.Decimal(12, 2)
+  calculationDetails Json?   // Breakdown by share class
+
+  paidAt           DateTime?
+  paymentReference String?
+
+  statementDocumentId String?
+
+  dividendPeriod DividendPeriod @relation(fields: [dividendPeriodId], references: [id], onDelete: Cascade)
+  shareholder    Shareholder    @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+
+  @@unique([dividendPeriodId, shareholderId])
+  @@map("dividend_payouts")
+}
+
+// ============================================================================
+// EMAIL & DOCUMENTS
+// ============================================================================
+
+model EmailLog {
+  id             String      @id @default(cuid())
+  coopId         String
+  recipientEmail String
+  subject        String
+  templateKey    String
+  status         EmailStatus @default(QUEUED)
+  createdAt      DateTime    @default(now())
+  sentAt         DateTime?
+  errorMessage   String?
+
+  coop Coop @relation(fields: [coopId], references: [id], onDelete: Cascade)
+
+  @@map("email_logs")
+}
