@@ -150,6 +150,28 @@ Test files use `*.spec.ts` naming convention.
 - **OGM codes**: Structured communication for payment matching (+++XXX/XXXX/XXXXX+++)
 - **Withholding tax**: 30% on dividends (roerende voorheffing)
 - **IBAN/BIC**: Belgian bank account validation
+- **KBO/BCE**: Company registration number (ondernemingsnummer) stored in `companyId`
+
+## Localization System
+
+The app has two separate localization concepts:
+
+1. **UI Language** (`preferredLanguage`): Controls which translation file is used (nl, en, fr, de)
+2. **Formatting Locale** (`locale`): Controls date/number formatting (nl-BE, en-US, etc.)
+
+### Key Files
+- `apps/web/src/contexts/locale-context.tsx` - Locale provider with `useLocale()` hook
+- `apps/web/src/app/[locale]/dashboard/settings/page.tsx` - User settings page
+
+### Date Formatting
+Use `toLocaleDateString()` with the user's locale from `useLocale()`:
+```typescript
+const { locale } = useLocale();
+const formatted = new Date(dateString).toLocaleDateString(locale);
+```
+
+### Known Limitation
+HTML5 `<input type="date">` ignores JavaScript locale settings and displays dates according to the browser's OS locale. To properly respect user locale preferences for date inputs, use a custom date picker component instead of native `<input type="date">`.
 
 ## Common Tasks
 
