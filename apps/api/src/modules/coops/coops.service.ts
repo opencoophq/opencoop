@@ -9,7 +9,7 @@ export class CoopsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.coop.findMany({
+    const coops = await this.prisma.coop.findMany({
       select: {
         id: true,
         slug: true,
@@ -21,11 +21,38 @@ export class CoopsService {
         _count: {
           select: {
             shareholders: true,
-            shares: true,
+          },
+        },
+        shares: {
+          where: { status: 'ACTIVE' },
+          select: {
+            quantity: true,
+            shareClass: {
+              select: { pricePerShare: true },
+            },
           },
         },
       },
       orderBy: { name: 'asc' },
+    });
+
+    return coops.map((coop) => {
+      const totalCapital = coop.shares.reduce((sum, share) => {
+        const price = share.shareClass?.pricePerShare?.toNumber() || 0;
+        return sum + share.quantity * price;
+      }, 0);
+
+      return {
+        id: coop.id,
+        slug: coop.slug,
+        name: coop.name,
+        logoUrl: coop.logoUrl,
+        primaryColor: coop.primaryColor,
+        secondaryColor: coop.secondaryColor,
+        createdAt: coop.createdAt,
+        shareholdersCount: coop._count.shareholders,
+        totalCapital,
+      };
     });
   }
 

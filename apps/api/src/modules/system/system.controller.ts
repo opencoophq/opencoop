@@ -89,26 +89,34 @@ export class SystemController {
   @Get('stats')
   @ApiOperation({ summary: 'Get system statistics' })
   async getStats() {
-    const [coopCount, userCount, shareholderCount, activeShareCount] = await Promise.all([
+    const [totalCoops, totalUsers, totalShareholders] = await Promise.all([
       this.prisma.coop.count(),
       this.prisma.user.count(),
       this.prisma.shareholder.count({ where: { status: 'ACTIVE' } }),
-      this.prisma.share.count({ where: { status: 'ACTIVE' } }),
     ]);
 
-    const totalShareValue = await this.prisma.share.aggregate({
+    // Calculate total capital across all coops
+    const shares = await this.prisma.share.findMany({
       where: { status: 'ACTIVE' },
-      _sum: {
+      select: {
         quantity: true,
+        shareClass: {
+          select: { pricePerShare: true },
+        },
       },
     });
 
+    const totalCapital = shares.reduce((sum, share) => {
+      const price = share.shareClass?.pricePerShare?.toNumber() || 0;
+      return sum + share.quantity * price;
+    }, 0);
+
     return {
-      coopCount,
-      userCount,
-      shareholderCount,
-      activeShareCount,
-      totalShares: totalShareValue._sum.quantity || 0,
+      totalCoops,
+      activeCoops: totalCoops, // All coops are active for now
+      totalUsers,
+      totalShareholders,
+      totalCapital,
     };
   }
 
