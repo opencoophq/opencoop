@@ -425,6 +425,7 @@ export class AuthService {
 
   async requestMagicLink(requestMagicLinkDto: RequestMagicLinkDto) {
     const email = requestMagicLinkDto.email.toLowerCase();
+    const coopSlug = requestMagicLinkDto.coopSlug;
     const successMessage = { message: 'If an account exists, a login link has been sent' };
 
     // Find user by email
@@ -472,9 +473,11 @@ export class AuthService {
       },
     });
 
-    // Build magic link URL
+    // Build magic link URL with coop branding if coopSlug is provided
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
-    const magicLinkUrl = `${baseUrl}/magic-link?token=${token}`;
+    const magicLinkUrl = coopSlug
+      ? `${baseUrl}/${coopSlug}/magic-link?token=${token}`
+      : `${baseUrl}/magic-link?token=${token}`;
 
     // Get coopId for email (use first shareholder's coop or a default)
     const coopId = user.shareholders[0]?.coopId;

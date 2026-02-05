@@ -78,7 +78,16 @@
     "magicLinkUsed": "This login link has already been used.",
     "magicLinkInvalid": "Invalid login link.",
     "magicLinkTryAgain": "Try requesting a new login link.",
-    "backToLogin": "Back to login"
+    "backToLogin": "Back to login",
+    "welcomeBack": "Welcome back",
+    "enterYourEmail": "Enter your email to continue",
+    "continue": "Continue",
+    "howToLogin": "How would you like to log in?",
+    "sendLoginLink": "Send me a login link",
+    "sendLoginLinkDesc": "Quick and secure - no password needed",
+    "usePassword": "Use password",
+    "usePasswordDesc": "Log in with your account password",
+    "changeEmail": "change"
   },
   "navigation": {
     "dashboard": "Dashboard",

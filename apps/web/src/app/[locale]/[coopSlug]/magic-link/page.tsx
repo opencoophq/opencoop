@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams, notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -19,40 +19,53 @@ interface CoopPublicInfo {
   secondaryColor: string;
 }
 
-export default function MagicLinkPage() {
+export default function CoopMagicLinkPage() {
   const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
   const token = searchParams.get('token');
-  const coopSlug = searchParams.get('coop');
+  const coopSlug = params.coopSlug as string;
 
   const [state, setState] = useState<VerifyState>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [coop, setCoop] = useState<CoopPublicInfo | null>(null);
+  const [coopLoading, setCoopLoading] = useState(true);
+  const [notFoundError, setNotFoundError] = useState(false);
 
-  // Fetch coop branding if coopSlug is provided
+  // Fetch coop branding
   useEffect(() => {
-    if (!coopSlug) return;
-
     const fetchCoop = async () => {
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/public-info`
         );
 
-        if (response.ok) {
-          const data = await response.json();
-          setCoop(data);
+        if (response.status === 404) {
+          setNotFoundError(true);
+          return;
         }
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch coop');
+        }
+
+        const data = await response.json();
+        setCoop(data);
       } catch {
-        // Ignore errors, just use default branding
+        setNotFoundError(true);
+      } finally {
+        setCoopLoading(false);
       }
     };
 
     fetchCoop();
   }, [coopSlug]);
 
+  // Verify token
   useEffect(() => {
+    if (coopLoading) return;
+
     if (!token) {
       setState('error');
       setErrorMessage(t('auth.magicLinkInvalid'));
@@ -98,7 +111,19 @@ export default function MagicLinkPage() {
     };
 
     verifyToken();
-  }, [token, router, t]);
+  }, [token, router, t, coopLoading]);
+
+  if (notFoundError) {
+    notFound();
+  }
+
+  if (coopLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const loginUrl = coop ? `/${coop.slug}/login` : '/login';
 

@@ -78,7 +78,16 @@
     "magicLinkUsed": "Deze login link is al gebruikt.",
     "magicLinkInvalid": "Ongeldige login link.",
     "magicLinkTryAgain": "Probeer een nieuwe login link aan te vragen.",
-    "backToLogin": "Terug naar inloggen"
+    "backToLogin": "Terug naar inloggen",
+    "welcomeBack": "Welkom terug",
+    "enterYourEmail": "Voer je e-mailadres in om door te gaan",
+    "continue": "Doorgaan",
+    "howToLogin": "Hoe wil je inloggen?",
+    "sendLoginLink": "Stuur mij een login link",
+    "sendLoginLinkDesc": "Snel en veilig - geen wachtwoord nodig",
+    "usePassword": "Gebruik wachtwoord",
+    "usePasswordDesc": "Log in met je accountwachtwoord",
+    "changeEmail": "wijzigen"
   },
   "navigation": {
     "dashboard": "Dashboard",
