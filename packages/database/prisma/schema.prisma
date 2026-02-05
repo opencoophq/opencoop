@@ -167,8 +167,25 @@ model User {
   registeredShareholders Shareholder[]        @relation("RegisteredBy")
   processedTransactions Transaction[]
   importedBankFiles     BankImport[]
+  magicLinkTokens       MagicLinkToken[]
 
   @@map("users")
+}
+
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  email     String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+  @@map("magic_link_tokens")
 }
 
 model CoopAdmin {

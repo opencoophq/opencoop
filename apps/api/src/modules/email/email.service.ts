@@ -126,6 +126,16 @@ export class EmailService {
     });
   }
 
+  async sendMagicLink(coopId: string, to: string, magicLinkUrl: string) {
+    return this.send({
+      coopId,
+      to,
+      subject: 'Your Login Link',
+      templateKey: 'magic-link',
+      templateData: { magicLinkUrl },
+    });
+  }
+
   async sendMinorUpgradeNotification(
     coopId: string,
     to: string,

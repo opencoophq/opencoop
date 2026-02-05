@@ -66,7 +66,19 @@
     "invalidCredentials": "Ongeldige inloggegevens",
     "emailNotVerified": "E-mail niet geverifieerd",
     "verifyEmail": "Verifieer uw e-mail",
-    "resendVerification": "Verificatie e-mail opnieuw verzenden"
+    "resendVerification": "Verificatie e-mail opnieuw verzenden",
+    "magicLinkLogin": "Login link",
+    "passwordLogin": "Wachtwoord",
+    "sendMagicLink": "Verstuur login link",
+    "sendAnotherLink": "Nieuwe link versturen",
+    "magicLinkSent": "We hebben een login link gestuurd naar {email}. Check je inbox.",
+    "magicLinkVerifying": "Login link verifiëren...",
+    "magicLinkSuccess": "Succesvol ingelogd! Je wordt doorgestuurd...",
+    "magicLinkExpired": "Deze login link is verlopen.",
+    "magicLinkUsed": "Deze login link is al gebruikt.",
+    "magicLinkInvalid": "Ongeldige login link.",
+    "magicLinkTryAgain": "Probeer een nieuwe login link aan te vragen.",
+    "backToLogin": "Terug naar inloggen"
   },
   "navigation": {
     "dashboard": "Dashboard",
