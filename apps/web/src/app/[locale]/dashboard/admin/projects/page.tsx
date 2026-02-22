@@ -65,7 +65,7 @@ type ProjectForm = z.infer<typeof projectSchema>;
 
 export default function ProjectsPage() {
   const t = useTranslations();
-  const { selectedAdminCoop, loading: adminLoading } = useAdmin();
+  const { selectedCoop } = useAdmin();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
@@ -90,13 +90,13 @@ export default function ProjectsPage() {
   });
 
   const fetchProjects = useCallback(async () => {
-    if (!selectedAdminCoop) return;
+    if (!selectedCoop) return;
 
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop.id}/projects`,
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/projects`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -113,7 +113,7 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedAdminCoop]);
+  }, [selectedCoop]);
 
   useEffect(() => {
     fetchProjects();
@@ -150,7 +150,7 @@ export default function ProjectsPage() {
   };
 
   const onSubmit = async (data: ProjectForm) => {
-    if (!selectedAdminCoop) return;
+    if (!selectedCoop) return;
 
     setSaving(true);
     setError(null);
@@ -158,8 +158,8 @@ export default function ProjectsPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const url = editingProject
-        ? `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop.id}/projects/${editingProject.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop.id}/projects`;
+        ? `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/projects/${editingProject.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/projects`;
 
       const response = await fetch(url, {
         method: editingProject ? 'PUT' : 'POST',
@@ -199,7 +199,7 @@ export default function ProjectsPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop?.id}/projects/${project.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop?.id}/projects/${project.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -235,7 +235,7 @@ export default function ProjectsPage() {
     );
   };
 
-  if (adminLoading) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse h-8 w-48 bg-muted rounded" />
@@ -244,7 +244,7 @@ export default function ProjectsPage() {
     );
   }
 
-  if (!selectedAdminCoop) {
+  if (!selectedCoop) {
     return (
       <div className="p-6">
         <p className="text-muted-foreground">{t('admin.selectCoop')}</p>

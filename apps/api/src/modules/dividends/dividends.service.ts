@@ -175,9 +175,32 @@ export class DividendsService {
     });
 
     // Calculate dividends for each shareholder
-    const payouts = [];
+    const payouts: Array<{
+      dividendPeriodId: string;
+      shareholderId: string;
+      grossAmount: number;
+      withholdingTax: number;
+      netAmount: number;
+      calculationDetails: Array<{
+        shareClassId: string;
+        shareClassName: string;
+        quantity: number;
+        pricePerShare: number;
+        totalValue: number;
+        dividendRate: number;
+        dividendAmount: number;
+      }>;
+    }> = [];
     for (const [shareholderId, shares] of shareholderShares) {
-      const calculationDetails = [];
+      const calculationDetails: Array<{
+        shareClassId: string;
+        shareClassName: string;
+        quantity: number;
+        pricePerShare: number;
+        totalValue: number;
+        dividendRate: number;
+        dividendAmount: number;
+      }> = [];
       let totalGross = 0;
 
       for (const share of shares) {

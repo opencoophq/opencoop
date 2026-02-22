@@ -1,0 +1,100 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useLocale } from '@/contexts/locale-context';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { api } from '@/lib/api';
+import { Download } from 'lucide-react';
+
+interface DocumentData {
+  id: string;
+  type: string;
+  filePath: string;
+  generatedAt: string;
+}
+
+export default function DocumentsPage() {
+  const t = useTranslations();
+  const { locale } = useLocale();
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const profile = await api<{ shareholders: Array<{ id: string; documents: DocumentData[] }> }>('/auth/me');
+        if (profile.shareholders?.[0]?.documents) {
+          setDocuments(profile.shareholders[0].documents);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const typeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      SHARE_CERTIFICATE: t('common.certificate'),
+      PURCHASE_STATEMENT: t('transactions.types.PURCHASE'),
+      DIVIDEND_STATEMENT: t('dividends.statement'),
+      TRANSACTION_REPORT: t('transactions.title'),
+    };
+    return labels[type] || type;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-6">{t('common.documents')}</h1>
+      <Card>
+        <CardContent className="pt-6">
+          {documents.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('common.type')}</TableHead>
+                  <TableHead>{t('common.date')}</TableHead>
+                  <TableHead className="text-right">{t('common.actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {documents.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell>
+                      <Badge variant="outline">{typeLabel(doc.type)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(doc.generatedAt).toLocaleDateString(locale)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm">
+                        <Download className="h-4 w-4 mr-1" />
+                        {t('common.download')}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
