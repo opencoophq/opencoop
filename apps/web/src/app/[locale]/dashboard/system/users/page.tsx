@@ -74,7 +74,7 @@ export default function SystemUsersPage() {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.email}</TableCell>
                     <TableCell>
-                      <Badge variant={roleVariant(user.role)}>{user.role}</Badge>
+                      <Badge variant={roleVariant(user.role)}>{t(`system.users.roles.${user.role}`)}</Badge>
                     </TableCell>
                     <TableCell>
                       {user.coopAdminOf.map((ca) => ca.coop.name).join(', ') || '-'}
@@ -87,9 +87,9 @@ export default function SystemUsersPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="SHAREHOLDER">SHAREHOLDER</SelectItem>
-                          <SelectItem value="COOP_ADMIN">COOP_ADMIN</SelectItem>
-                          <SelectItem value="SYSTEM_ADMIN">SYSTEM_ADMIN</SelectItem>
+                          <SelectItem value="SHAREHOLDER">{t('system.users.roles.SHAREHOLDER')}</SelectItem>
+                          <SelectItem value="COOP_ADMIN">{t('system.users.roles.COOP_ADMIN')}</SelectItem>
+                          <SelectItem value="SYSTEM_ADMIN">{t('system.users.roles.SYSTEM_ADMIN')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>

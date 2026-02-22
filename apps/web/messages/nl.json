@@ -657,8 +657,8 @@
       "adminOf": "Beheerder van",
       "roles": {
         "SHAREHOLDER": "Aandeelhouder",
-        "COOP_ADMIN": "Coöperatiebeheerder",
-        "SYSTEM_ADMIN": "Systeembeheerder"
+        "COOP_ADMIN": "Beheerder",
+        "SYSTEM_ADMIN": "Platformbeheerder"
       }
     },
     "shareholders": {
