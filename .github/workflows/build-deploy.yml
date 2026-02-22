@@ -15,7 +15,6 @@ env:
 
 jobs:
   build:
-    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,6 +87,7 @@ jobs:
             docker compose up -d
 
   deploy-prod:
+    needs: build
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment: prod
