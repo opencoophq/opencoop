@@ -855,6 +855,14 @@
       "subtitle": "Neem contact op en we zetten uw coöperatie binnen 24 uur op.",
       "primary": "Neem contact op",
       "secondary": "Bekijk op GitHub"
+    },
+    "waitlist": {
+      "title": "Schrijf je in op de wachtlijst",
+      "subtitle": "We lanceren binnenkort. Laat je e-mailadres achter en we laten je weten wanneer je coöperatie live kan gaan.",
+      "email": "E-mailadres",
+      "submit": "Inschrijven",
+      "success": "Je staat op de lijst! We nemen snel contact op.",
+      "error": "Er is iets misgegaan. Probeer het opnieuw."
     }
   },
   "onboarding": {

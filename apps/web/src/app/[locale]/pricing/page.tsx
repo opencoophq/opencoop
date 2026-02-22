@@ -4,6 +4,15 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { MarketingNav } from '@/components/marketing/marketing-nav';
 import { MarketingFooter } from '@/components/marketing/marketing-footer';
 import { FadeIn } from '@/components/marketing/fade-in';
@@ -17,10 +26,13 @@ import {
   Server,
   Shield,
   Database,
+  Loader2,
 } from 'lucide-react';
 import { useState } from 'react';
 
 const GITHUB_URL = 'https://github.com/opencoophq/opencoop';
+
+const isWaitlistMode = process.env.NEXT_PUBLIC_LAUNCH_MODE === 'waitlist';
 
 const STARTER_FEATURES = [
   'starterLimit',
@@ -53,6 +65,44 @@ export default function PricingPage() {
   const t = useTranslations('pricing');
   const [yearly, setYearly] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
+
+  // Waitlist state
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitlistPlan, setWaitlistPlan] = useState<string | null>(null);
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistSubmitting, setWaitlistSubmitting] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  const [waitlistError, setWaitlistError] = useState(false);
+
+  function openWaitlistDialog(plan: string) {
+    setWaitlistPlan(plan);
+    setWaitlistEmail('');
+    setWaitlistSuccess(false);
+    setWaitlistError(false);
+    setWaitlistOpen(true);
+  }
+
+  async function submitWaitlist(e: React.FormEvent) {
+    e.preventDefault();
+    setWaitlistSubmitting(true);
+    setWaitlistError(false);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/auth/waitlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: waitlistEmail, plan: waitlistPlan }),
+      });
+
+      if (!res.ok) throw new Error();
+      setWaitlistSuccess(true);
+    } catch {
+      setWaitlistError(true);
+    } finally {
+      setWaitlistSubmitting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -137,12 +187,24 @@ export default function PricingPage() {
                 </p>
               </div>
 
-              <Link href={`/onboarding?plan=starter&billing=${yearly ? 'yearly' : 'monthly'}`}>
-                <Button size="lg" variant="outline" className="w-full text-base h-12 mb-8">
+              {isWaitlistMode ? (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full text-base h-12 mb-8"
+                  onClick={() => openWaitlistDialog('starter')}
+                >
                   {t('starter.cta')}
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
-              </Link>
+              ) : (
+                <Link href={`/onboarding?plan=starter&billing=${yearly ? 'yearly' : 'monthly'}`}>
+                  <Button size="lg" variant="outline" className="w-full text-base h-12 mb-8">
+                    {t('starter.cta')}
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              )}
 
               <ul className="space-y-3 flex-1">
                 {STARTER_FEATURES.map((key) => (
@@ -181,12 +243,23 @@ export default function PricingPage() {
                 </p>
               </div>
 
-              <Link href={`/onboarding?plan=growth&billing=${yearly ? 'yearly' : 'monthly'}`}>
-                <Button size="lg" className="w-full text-base h-12 mb-8">
+              {isWaitlistMode ? (
+                <Button
+                  size="lg"
+                  className="w-full text-base h-12 mb-8"
+                  onClick={() => openWaitlistDialog('growth')}
+                >
                   {t('growth.cta')}
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
-              </Link>
+              ) : (
+                <Link href={`/onboarding?plan=growth&billing=${yearly ? 'yearly' : 'monthly'}`}>
+                  <Button size="lg" className="w-full text-base h-12 mb-8">
+                    {t('growth.cta')}
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              )}
 
               <ul className="space-y-3 flex-1">
                 {GROWTH_FEATURES.map((key) => (
@@ -297,12 +370,23 @@ export default function PricingPage() {
             {t('cta.subtitle')}
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/onboarding?plan=starter&billing=yearly">
-              <Button size="lg" className="w-full sm:w-auto text-base px-8 h-12">
+            {isWaitlistMode ? (
+              <Button
+                size="lg"
+                className="w-full sm:w-auto text-base px-8 h-12"
+                onClick={() => openWaitlistDialog('starter')}
+              >
                 <ArrowRight className="w-4 h-4" />
                 {t('cta.primary')}
               </Button>
-            </Link>
+            ) : (
+              <Link href="/onboarding?plan=starter&billing=yearly">
+                <Button size="lg" className="w-full sm:w-auto text-base px-8 h-12">
+                  <ArrowRight className="w-4 h-4" />
+                  {t('cta.primary')}
+                </Button>
+              </Link>
+            )}
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
               <Button
                 size="lg"
@@ -318,6 +402,56 @@ export default function PricingPage() {
       </section>
 
       <MarketingFooter />
+
+      {/* Waitlist dialog */}
+      <Dialog open={waitlistOpen} onOpenChange={setWaitlistOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('waitlist.title')}</DialogTitle>
+            <DialogDescription>{t('waitlist.subtitle')}</DialogDescription>
+          </DialogHeader>
+
+          {waitlistSuccess ? (
+            <div className="py-4">
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                <Check className="w-5 h-5" />
+                <p className="font-medium">{t('waitlist.success')}</p>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={submitWaitlist} className="space-y-4">
+              {waitlistPlan && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="capitalize">
+                    {waitlistPlan}
+                  </Badge>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="waitlist-email">{t('waitlist.email')}</Label>
+                <Input
+                  id="waitlist-email"
+                  type="email"
+                  required
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                  placeholder="your@email.com"
+                />
+              </div>
+
+              {waitlistError && (
+                <p className="text-sm text-destructive">{t('waitlist.error')}</p>
+              )}
+
+              <Button type="submit" className="w-full" disabled={waitlistSubmitting}>
+                {waitlistSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {t('waitlist.submit')}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -855,6 +855,14 @@
       "subtitle": "Get in touch and we'll set up your cooperative within 24 hours.",
       "primary": "Contact us",
       "secondary": "View on GitHub"
+    },
+    "waitlist": {
+      "title": "Join the waitlist",
+      "subtitle": "We're launching soon. Leave your email and we'll notify you when your cooperative can go live.",
+      "email": "Email address",
+      "submit": "Join waitlist",
+      "success": "You're on the list! We'll be in touch soon.",
+      "error": "Something went wrong. Please try again."
     }
   },
   "onboarding": {

@@ -10,6 +10,7 @@ import { ValidateUpgradeTokenDto, UpgradeToAdultDto } from './dto/upgrade-to-adu
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { WaitlistDto } from './dto/waitlist.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -145,5 +146,13 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid, expired, or already used token' })
   async verifyMagicLink(@Body() verifyMagicLinkDto: VerifyMagicLinkDto) {
     return this.authService.verifyMagicLink(verifyMagicLinkDto);
+  }
+
+  @Public()
+  @Post('waitlist')
+  @ApiOperation({ summary: 'Join the waitlist with email' })
+  @ApiResponse({ status: 201, description: 'Successfully joined the waitlist' })
+  async joinWaitlist(@Body() waitlistDto: WaitlistDto) {
+    return this.authService.joinWaitlist(waitlistDto);
   }
 }

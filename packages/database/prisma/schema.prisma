@@ -544,3 +544,16 @@ model EmailLog {
 
   @@map("email_logs")
 }
+
+// ============================================================================
+// WAITLIST
+// ============================================================================
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  plan      String?
+  createdAt DateTime @default(now())
+
+  @@map("waitlist_entries")
+}

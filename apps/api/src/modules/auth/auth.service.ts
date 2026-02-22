@@ -13,6 +13,7 @@ import { OnboardingDto } from './dto/onboarding.dto';
 import { UpgradeToAdultDto } from './dto/upgrade-to-adult.dto';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
+import { WaitlistDto } from './dto/waitlist.dto';
 import { randomBytes } from 'crypto';
 
 @Injectable()
@@ -674,5 +675,22 @@ export class AuthService {
         emailVerified: !!user.emailVerified,
       },
     };
+  }
+
+  // ============================================================================
+  // WAITLIST
+  // ============================================================================
+
+  async joinWaitlist(waitlistDto: WaitlistDto) {
+    await this.prisma.waitlistEntry.upsert({
+      where: { email: waitlistDto.email.toLowerCase() },
+      create: {
+        email: waitlistDto.email.toLowerCase(),
+        plan: waitlistDto.plan,
+      },
+      update: {},
+    });
+
+    return { message: 'Successfully joined the waitlist' };
   }
 }
