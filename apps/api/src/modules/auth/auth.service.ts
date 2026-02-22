@@ -15,6 +15,7 @@ import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { WaitlistDto } from './dto/waitlist.dto';
 import { randomBytes } from 'crypto';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AuthService {
@@ -691,6 +692,56 @@ export class AuthService {
       update: {},
     });
 
+    // Send confirmation email (don't block or fail the signup)
+    this.sendWaitlistConfirmationEmail(waitlistDto.email.toLowerCase()).catch((err) => {
+      console.error('Failed to send waitlist confirmation email:', err.message);
+    });
+
     return { message: 'Successfully joined the waitlist' };
+  }
+
+  private async sendWaitlistConfirmationEmail(email: string) {
+    const host = process.env.SMTP_HOST;
+    if (!host) return;
+
+    const port = parseInt(process.env.SMTP_PORT || '587', 10);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const from = process.env.SMTP_FROM || 'OpenCoop <noreply@opencoop.be>';
+
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: user && pass ? { user, pass } : undefined,
+    });
+
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: 'Bedankt voor je interesse in OpenCoop',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+            h1 { color: #1e40af; font-size: 24px; }
+            .footer { color: #666; font-size: 12px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 16px; }
+          </style>
+        </head>
+        <body>
+          <h1>Bedankt voor je interesse!</h1>
+          <p>We hebben je registratie goed ontvangen.</p>
+          <p>OpenCoop is momenteel in voorbereiding. We nemen binnenkort contact met je op zodra het platform beschikbaar is.</p>
+          <p>Met vriendelijke groeten,<br>Het OpenCoop team</p>
+          <div class="footer">
+            <p>Je ontvangt deze e-mail omdat je je hebt ingeschreven op de wachtlijst van <a href="https://opencoop.be">opencoop.be</a>.</p>
+          </div>
+        </body>
+        </html>
+      `,
+    });
   }
 }
