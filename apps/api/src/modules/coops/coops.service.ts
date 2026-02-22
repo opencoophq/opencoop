@@ -145,7 +145,7 @@ export class CoopsService {
     });
   }
 
-  private async generateUniqueOgmPrefix(): Promise<string> {
+  async generateUniqueOgmPrefix(): Promise<string> {
     // Find the highest existing prefix and increment
     const coops = await this.prisma.coop.findMany({
       select: { ogmPrefix: true },

@@ -678,12 +678,13 @@
   "landing": {
     "nav": {
       "login": "Inloggen",
-      "register": "Aan de slag"
+      "register": "Aan de slag",
+      "pricing": "Prijzen"
     },
     "hero": {
       "title": "Aandeelhoudersbeheer voor Belgische coöperaties",
       "subtitle": "Het open-source platform waarmee coöperaties hun aandeelhouders, aandelen, dividenden en documenten beheren — alles op één plek.",
-      "cta": "Gratis starten",
+      "cta": "Aan de slag",
       "secondaryCta": "Bekijk op GitHub",
       "openSourceBadge": "Open source — AGPL-3.0"
     },
@@ -732,19 +733,31 @@
       }
     },
     "openSource": {
-      "title": "Open source, zelf te hosten, van u",
-      "subtitle": "OpenCoop is vrije software. Draai het op uw eigen infrastructuur met volledige controle over uw data.",
-      "license": "AGPL-3.0 Licentie",
-      "licenseDescription": "Vrij te gebruiken, wijzigen en distribueren",
-      "selfHosted": "Zelf te hosten",
-      "selfHostedDescription": "Deploy met Docker op elke server",
-      "dataOwnership": "Volledige data-eigendom",
-      "dataOwnershipDescription": "Uw data blijft op uw infrastructuur"
+      "title": "Kies hoe u OpenCoop gebruikt",
+      "subtitle": "Gebruik ons beheerd platform en focus op uw coöperatie, of host het zelf voor volledige controle.",
+      "saas": {
+        "label": "Beheerd platform",
+        "title": "OpenCoop Cloud",
+        "description": "Wij zorgen voor hosting, updates en back-ups. U focust op uw coöperatie.",
+        "feature1": "Klaar binnen 24 uur",
+        "feature2": "Automatische updates & back-ups",
+        "feature3": "E-mailsupport inbegrepen",
+        "cta": "Bekijk prijzen"
+      },
+      "selfHostedCard": {
+        "label": "Zelf hosten",
+        "title": "OpenCoop Community",
+        "description": "Deploy op uw eigen infrastructuur met Docker. Volledige broncode onder AGPL-3.0.",
+        "feature1": "Gratis & open source",
+        "feature2": "Volledige data-eigendom",
+        "feature3": "U beheert hosting & updates",
+        "cta": "Bekijk op GitHub"
+      }
     },
     "cta": {
       "title": "Klaar om uw coöperatie te moderniseren?",
       "subtitle": "Sluit u aan bij de coöperaties die OpenCoop al gebruiken om hun aandeelhouders te beheren.",
-      "primary": "Maak uw coöperatie aan",
+      "primary": "Aan de slag",
       "secondary": "Bekijk broncode op GitHub"
     },
     "footer": {
@@ -773,5 +786,125 @@
     "whatHappens1": "Je beheert voortaan je eigen aandelen",
     "whatHappens2": "Je aandelen verdwijnen uit het account van je ouder",
     "whatHappens3": "Je ontvangt alle communicatie rechtstreeks"
+  },
+  "pricing": {
+    "hero": {
+      "badge": "Eenvoudige, transparante prijzen",
+      "title": "Eerlijke prijzen voor elke coöperatie",
+      "subtitle": "Geen installatiekosten, geen verborgen kosten. Alles wat u nodig heeft om uw aandeelhouders te beheren — voor een fractie van wat traditionele aanbieders vragen."
+    },
+    "billing": {
+      "monthly": "Maandelijks",
+      "yearly": "Jaarlijks",
+      "save": "Bespaar 15%",
+      "perMonth": "/maand",
+      "perYear": "/jaar",
+      "billedMonthly": "Maandelijks gefactureerd",
+      "billedYearly": "Jaarlijks gefactureerd"
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "Voor coöperaties die net beginnen",
+      "priceMonthly": "49",
+      "priceYearly": "499",
+      "cta": "Aan de slag"
+    },
+    "growth": {
+      "name": "Growth",
+      "badge": "Populairst",
+      "description": "Voor groeiende coöperaties met meer aandeelhouders",
+      "priceMonthly": "79",
+      "priceYearly": "799",
+      "cta": "Aan de slag"
+    },
+    "features": {
+      "shareholders": "Aandeelhoudersbeheer",
+      "shareClasses": "Aandelenklassen & transacties",
+      "dividends": "Dividenduitkering",
+      "banking": "Bank import & OGM-matching",
+      "documents": "PDF-documentgeneratie",
+      "branding": "Eigen huisstijl",
+      "multiTenant": "Multi-tenant ondersteuning",
+      "emailNotifications": "E-mailnotificaties",
+      "starterLimit": "Tot 500 aandeelhouders",
+      "unlimitedShareholders": "Onbeperkt aandeelhouders",
+      "prioritySupport": "Prioriteits e-mailsupport"
+    },
+    "selfHosted": {
+      "title": "Liever zelf hosten?",
+      "description": "OpenCoop is open source onder de AGPL-3.0 licentie. Deploy het op uw eigen infrastructuur met Docker en behoud volledige controle over uw data.",
+      "free": "Altijd gratis",
+      "dataOwnership": "Volledige data-eigendom",
+      "community": "Community support",
+      "cta": "Bekijk op GitHub",
+      "paidSupport": "Hulp nodig? Betaalde ondersteuning beschikbaar per uur."
+    },
+    "faq": {
+      "title": "Veelgestelde vragen",
+      "q1": "Wat gebeurt er als ik meer dan 500 aandeelhouders heb?",
+      "a1": "U kunt op elk moment upgraden naar het Growth-plan. Uw gegevens en instellingen blijven behouden — geen migratie nodig.",
+      "q2": "Kan ik wisselen tussen maandelijkse en jaarlijkse facturatie?",
+      "a2": "Ja, u kunt op elk moment wisselen. Bij overstap naar jaarlijkse facturatie ontvangt u een pro-rata tegoed voor uw huidige facturatieperiode.",
+      "q3": "Wat is inbegrepen bij prioriteitssupport?",
+      "a3": "Prioriteitssupport omvat snellere reactietijden via e-mail en hulp bij configuratie, data-imports en algemene platformvragen.",
+      "q4": "Kan ik migreren van self-hosted naar het SaaS-platform?",
+      "a4": "Ja. Neem contact met ons op en we helpen u met de migratie van uw self-hosted installatie naar het beheerde platform."
+    },
+    "cta": {
+      "title": "Klaar om te starten?",
+      "subtitle": "Neem contact op en we zetten uw coöperatie binnen 24 uur op.",
+      "primary": "Neem contact op",
+      "secondary": "Bekijk op GitHub"
+    }
+  },
+  "onboarding": {
+    "title": "Start uw coöperatie",
+    "steps": {
+      "account": "Account",
+      "cooperative": "Coöperatie",
+      "done": "Klaar"
+    },
+    "account": {
+      "title": "Maak uw account aan",
+      "subtitle": "Vul uw e-mailadres in en kies een wachtwoord.",
+      "email": "E-mailadres",
+      "password": "Wachtwoord",
+      "confirmPassword": "Bevestig wachtwoord"
+    },
+    "cooperative": {
+      "title": "Stel uw coöperatie in",
+      "subtitle": "Kies een naam en URL voor uw coöperatie.",
+      "name": "Naam coöperatie",
+      "slug": "URL",
+      "slugPrefix": "opencoop.be/",
+      "plan": "Plan",
+      "billing": "Facturatie"
+    },
+    "done": {
+      "title": "Alles klaar!",
+      "subtitle": "Uw coöperatie is aangemaakt. Ons team zal deze binnenkort beoordelen en activeren.",
+      "goToDashboard": "Ga naar dashboard"
+    },
+    "billing": {
+      "monthly": "Maandelijks",
+      "yearly": "Jaarlijks"
+    },
+    "validation": {
+      "emailRequired": "E-mailadres is verplicht",
+      "emailInvalid": "Vul een geldig e-mailadres in",
+      "passwordMin": "Wachtwoord moet minimaal 8 tekens bevatten",
+      "passwordMismatch": "Wachtwoorden komen niet overeen",
+      "nameRequired": "Naam van de coöperatie is verplicht",
+      "nameMin": "Naam moet minimaal 2 tekens bevatten",
+      "slugRequired": "URL is verplicht",
+      "slugMin": "URL moet minimaal 3 tekens bevatten",
+      "slugFormat": "Alleen kleine letters, cijfers en streepjes"
+    },
+    "errors": {
+      "emailTaken": "Dit e-mailadres is al geregistreerd",
+      "slugTaken": "Deze URL is al in gebruik",
+      "generic": "Er is iets misgegaan. Probeer het opnieuw."
+    },
+    "pendingActivation": "Uw coöperatie wordt beoordeeld. We activeren deze binnenkort."
   }
 }

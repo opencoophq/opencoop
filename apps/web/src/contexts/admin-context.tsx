@@ -6,6 +6,7 @@ interface AdminCoop {
   id: string;
   name: string;
   slug: string;
+  active?: boolean;
 }
 
 interface AdminContextValue {
