@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +61,7 @@ const FAQ_KEYS = ['q1', 'q2', 'q3', 'q4'] as const;
 
 export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
   const t = useTranslations('pricing');
+  const locale = useLocale();
   const [yearly, setYearly] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
@@ -90,7 +91,7 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
       const res = await fetch(`${apiUrl}/auth/waitlist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: waitlistEmail, plan: waitlistPlan }),
+        body: JSON.stringify({ email: waitlistEmail, plan: waitlistPlan, locale }),
       });
 
       if (!res.ok) throw new Error();

@@ -1,0 +1,918 @@
+{
+  "common": {
+    "loading": "Wird geladen...",
+    "error": "Ein Fehler ist aufgetreten",
+    "success": "Erfolgreich",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "export": "Exportieren",
+    "import": "Importieren",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "submit": "Absenden",
+    "confirm": "Bestätigen",
+    "yes": "Ja",
+    "no": "Nein",
+    "or": "oder",
+    "selectDate": "Datum auswählen",
+    "and": "und",
+    "total": "Gesamt",
+    "actions": "Aktionen",
+    "status": "Status",
+    "date": "Datum",
+    "amount": "Betrag",
+    "quantity": "Anzahl",
+    "price": "Preis",
+    "name": "Name",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "address": "Adresse",
+    "street": "Straße",
+    "houseNumber": "Nr.",
+    "postalCode": "Postleitzahl",
+    "city": "Stadt",
+    "country": "Land",
+    "description": "Beschreibung",
+    "details": "Details",
+    "download": "Herunterladen",
+    "upload": "Hochladen",
+    "required": "Pflichtfeld",
+    "optional": "Optional",
+    "noResults": "Keine Ergebnisse gefunden",
+    "showMore": "Mehr anzeigen",
+    "showLess": "Weniger anzeigen",
+    "overview": "Übersicht",
+    "documents": "Dokumente",
+    "settings": "Einstellungen",
+    "myAccount": "Mein Konto",
+    "type": "Typ",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "all": "Alle",
+    "showing": "Anzeige",
+    "of": "von",
+    "verified": "Verifiziert",
+    "certificate": "Zertifikat",
+    "savedSuccessfully": "Erfolgreich gespeichert",
+    "language": "Sprache"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "register": "Registrieren",
+    "forgotPassword": "Passwort vergessen?",
+    "resetPassword": "Passwort zurücksetzen",
+    "emailPlaceholder": "ihre@email.de",
+    "passwordPlaceholder": "Ihr Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "rememberMe": "Angemeldet bleiben",
+    "loginSuccess": "Erfolgreich angemeldet",
+    "loginError": "Anmeldung fehlgeschlagen",
+    "registerSuccess": "Registrierung erfolgreich",
+    "passwordResetSent": "E-Mail zum Zurücksetzen des Passworts gesendet",
+    "passwordResetSuccess": "Passwort erfolgreich geändert",
+    "invalidCredentials": "Ungültige Anmeldedaten",
+    "emailNotVerified": "E-Mail nicht verifiziert",
+    "verifyEmail": "Bestätigen Sie Ihre E-Mail",
+    "resendVerification": "Bestätigungsmail erneut senden",
+    "magicLinkLogin": "E-Mail-Link",
+    "passwordLogin": "Passwort",
+    "sendMagicLink": "Anmeldelink senden",
+    "sendAnotherLink": "Weiteren Link senden",
+    "magicLinkSent": "Wir haben einen Anmeldelink an {email} gesendet. Prüfen Sie Ihren Posteingang.",
+    "magicLinkVerifying": "Anmeldelink wird überprüft...",
+    "magicLinkSuccess": "Erfolgreich angemeldet! Sie werden weitergeleitet...",
+    "magicLinkExpired": "Dieser Anmeldelink ist abgelaufen.",
+    "magicLinkUsed": "Dieser Anmeldelink wurde bereits verwendet.",
+    "magicLinkInvalid": "Ungültiger Anmeldelink.",
+    "magicLinkTryAgain": "Fordern Sie einen neuen Anmeldelink an.",
+    "backToLogin": "Zurück zur Anmeldung",
+    "welcomeBack": "Willkommen zurück",
+    "enterYourEmail": "Geben Sie Ihre E-Mail-Adresse ein, um fortzufahren",
+    "continue": "Weiter",
+    "howToLogin": "Wie möchten Sie sich anmelden?",
+    "sendLoginLink": "Anmeldelink zusenden",
+    "sendLoginLinkDesc": "Schnell und sicher — kein Passwort erforderlich",
+    "usePassword": "Passwort verwenden",
+    "usePasswordDesc": "Mit Ihrem Kontopasswort anmelden",
+    "changeEmail": "ändern",
+    "changePassword": "Passwort ändern",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort",
+    "passwordMinLength": "Das Passwort muss mindestens 8 Zeichen lang sein",
+    "passwordMismatch": "Passwörter stimmen nicht überein"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "shares": "Anteile",
+    "transactions": "Transaktionen",
+    "dividends": "Dividenden",
+    "documents": "Dokumente",
+    "settings": "Einstellungen",
+    "shareholders": "Anteilseigner",
+    "shareClasses": "Anteilsklassen",
+    "projects": "Projekte",
+    "payments": "Zahlungen",
+    "bankImport": "Bankimport",
+    "branding": "Branding",
+    "coops": "Genossenschaften",
+    "users": "Benutzer",
+    "systemAdmin": "Systemverwaltung",
+    "coopAdmin": "Genossenschaftsverwaltung"
+  },
+  "shareholder": {
+    "title": "Anteilseigner",
+    "type": {
+      "individual": "Einzelperson",
+      "company": "Unternehmen",
+      "minor": "Minderjährig"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
+    },
+    "fields": {
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "nationalId": "Personalausweisnummer",
+      "birthDate": "Geburtsdatum",
+      "companyName": "Firmenname",
+      "companyId": "Unternehmensnummer (KBO)",
+      "vatNumber": "USt-IdNr.",
+      "legalForm": "Rechtsform"
+    },
+    "beneficialOwners": "Wirtschaftlich Berechtigte",
+    "addBeneficialOwner": "Wirtschaftlich Berechtigten hinzufügen",
+    "ownershipPercentage": "Beteiligungsquote",
+    "types": {
+      "INDIVIDUAL": "Einzelperson",
+      "COMPANY": "Unternehmen",
+      "MINOR": "Minderjährig"
+    },
+    "statuses": {
+      "PENDING": "Ausstehend",
+      "ACTIVE": "Aktiv",
+      "INACTIVE": "Inaktiv"
+    }
+  },
+  "shares": {
+    "title": "Anteile",
+    "shareClass": "Anteilsklasse",
+    "project": "Projekt",
+    "quantity": "Anzahl",
+    "pricePerShare": "Preis pro Anteil",
+    "totalValue": "Gesamtwert",
+    "purchaseDate": "Kaufdatum",
+    "certificateNumber": "Zertifikatsnummer",
+    "status": {
+      "pending": "Ausstehend",
+      "active": "Aktiv",
+      "sold": "Verkauft",
+      "transferred": "Übertragen"
+    },
+    "purchase": "Kauf",
+    "sell": "Verkauf",
+    "transfer": "Übertragung",
+    "minShares": "Mindestanteile",
+    "maxShares": "Höchstanteile",
+    "votingRights": "Stimmrechte",
+    "dividendRate": "Dividendensatz",
+    "buyMore": "Anteile kaufen",
+    "buyMoreDescription": "Weitere Anteile erwerben",
+    "sellShares": "Anteile verkaufen",
+    "sellBack": "Verkaufen",
+    "sellSharesTitle": "Anteile verkaufen",
+    "selectSharesToSell": "Zu verkaufende Anteile auswählen",
+    "availableToSell": "Zum Verkauf verfügbar",
+    "notAvailableToSell": "Nicht zum Verkauf verfügbar",
+    "whyNotAvailable": "Warum kann ich diese nicht verkaufen?",
+    "reasonPending": "Für diese Anteile steht die Zahlungsbestätigung noch aus",
+    "reasonMinHoldingPeriod": "Die Mindesthaltedauer von {months} Monaten ist noch nicht erreicht",
+    "reasonAlreadySelling": "Für diese Anteile liegt bereits ein Verkaufsantrag vor",
+    "quantityToSell": "Zu verkaufende Anzahl",
+    "maxQuantity": "Maximum: {max}",
+    "sellPrice": "Verkaufspreis",
+    "sellPriceNote": "Anteile werden zum ursprünglichen Kaufpreis zurückgekauft",
+    "totalRefund": "Gesamtrückerstattung",
+    "confirmSell": "Verkauf bestätigen",
+    "sellRequestSubmitted": "Ihr Verkaufsantrag wurde eingereicht",
+    "sellRequestPending": "Die Genossenschaft wird Ihren Antrag prüfen",
+    "noSharesToSell": "Keine Anteile zum Verkauf verfügbar",
+    "owner": "Eigentümer",
+    "forSelf": "Persönlich",
+    "forMinor": "Für {name}",
+    "forCompany": "{name}",
+    "managedShares": "Sie verwalten auch Anteile für andere",
+    "ownShares": "Ihre persönlichen Anteile",
+    "childShares": "Anteile für Ihre Kinder",
+    "companyShares": "Unternehmensanteile",
+    "myShares": "Meine Anteile",
+    "totalShares": "Anteile gesamt"
+  },
+  "transactions": {
+    "title": "Transaktionen",
+    "purchase": "Kauf",
+    "sale": "Verkauf",
+    "transferIn": "Eingehende Übertragung",
+    "transferOut": "Ausgehende Übertragung",
+    "noTransactions": "Noch keine Transaktionen",
+    "type": {
+      "purchase": "Kauf",
+      "sale": "Verkauf",
+      "transferIn": "Eingehende Übertragung",
+      "transferOut": "Ausgehende Übertragung"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "approved": "Genehmigt",
+      "completed": "Abgeschlossen",
+      "rejected": "Abgelehnt"
+    },
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "rejectionReason": "Ablehnungsgrund",
+    "processedBy": "Bearbeitet von",
+    "processedAt": "Bearbeitet am",
+    "pending": "Ausstehend",
+    "rejectReason": "Ablehnungsgrund",
+    "types": {
+      "PURCHASE": "Kauf",
+      "SALE": "Verkauf",
+      "TRANSFER_IN": "Eingehende Übertragung",
+      "TRANSFER_OUT": "Ausgehende Übertragung"
+    },
+    "statuses": {
+      "PENDING": "Ausstehend",
+      "APPROVED": "Genehmigt",
+      "COMPLETED": "Abgeschlossen",
+      "REJECTED": "Abgelehnt"
+    }
+  },
+  "payments": {
+    "title": "Zahlungen",
+    "method": {
+      "bankTransfer": "Banküberweisung",
+      "mollie": "Online-Zahlung (Mollie)",
+      "stripe": "Online-Zahlung (Stripe)"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "matched": "Zugeordnet",
+      "confirmed": "Bestätigt",
+      "failed": "Fehlgeschlagen"
+    },
+    "ogmCode": "Strukturierte Mitteilung",
+    "bankDetails": "Bankverbindung",
+    "iban": "IBAN",
+    "bic": "BIC",
+    "beneficiary": "Begünstigter",
+    "paymentInstructions": "Zahlungsanweisungen",
+    "pending": "Ausstehend"
+  },
+  "dividends": {
+    "title": "Dividenden",
+    "period": "Zeitraum",
+    "year": "Jahr",
+    "dividendRate": "Dividendensatz",
+    "rate": "Satz",
+    "withholdingTax": "Quellensteuer",
+    "exDividendDate": "Ex-Dividende-Datum",
+    "noDividends": "Noch keine Dividendenausschüttungen",
+    "paid": "Bezahlt",
+    "pending": "Ausstehend",
+    "paidOn": "Bezahlt am",
+    "status": {
+      "draft": "Entwurf",
+      "calculated": "Berechnet",
+      "paid": "Bezahlt"
+    },
+    "calculate": "Berechnen",
+    "markAsPaid": "Als bezahlt markieren",
+    "grossAmount": "Bruttobetrag",
+    "taxAmount": "Steuerbetrag",
+    "netAmount": "Nettobetrag",
+    "payout": "Auszahlung",
+    "statement": "Dividendenabrechnung",
+    "useDefault": "Standard verwenden"
+  },
+  "documents": {
+    "title": "Dokumente",
+    "certificate": "Anteilszertifikat",
+    "purchaseStatement": "Kaufbestätigung",
+    "dividendStatement": "Dividendenabrechnung",
+    "noDocuments": "Noch keine Dokumente",
+    "generatedOn": "Erstellt am"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "preferences": "Einstellungen",
+    "preferencesDescription": "Verwalten Sie Ihre Kontoeinstellungen",
+    "language": "Sprache",
+    "saved": "Einstellungen erfolgreich gespeichert",
+    "locale": "Datumsformat",
+    "localeDescription": "Wählen Sie, wie Daten und Zahlen angezeigt werden",
+    "changePassword": "Passwort ändern",
+    "changePasswordDescription": "Aktualisieren Sie Ihr Kontopasswort",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "passwordChanged": "Passwort erfolgreich geändert"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "shares": "Anteile",
+    "transactions": "Transaktionen",
+    "dividends": "Dividenden",
+    "documents": "Dokumente",
+    "settings": "Einstellungen"
+  },
+  "registration": {
+    "title": "Anteilsregistrierung",
+    "beneficiaryType": {
+      "title": "Für wen möchten Sie Anteile erwerben?",
+      "self": "Für mich selbst",
+      "selfDescription": "Ich registriere Anteile auf meinen eigenen Namen",
+      "family": "Für ein Familienmitglied",
+      "familyDescription": "Ich registriere Anteile für eine andere Person",
+      "company": "Für mein Unternehmen",
+      "companyDescription": "Ich registriere Anteile im Namen meines Unternehmens",
+      "gift": "Als Geschenk",
+      "giftDescription": "Ich erwerbe Anteile als Geschenk für jemanden"
+    },
+    "steps": {
+      "beneficiary": "Begünstigter",
+      "details": "Details",
+      "shares": "Anteile",
+      "payment": "Zahlung",
+      "confirm": "Bestätigung"
+    },
+    "selectShareClass": "Anteilsklasse auswählen",
+    "selectProject": "Projekt auswählen (optional)",
+    "enterQuantity": "Anzahl eingeben",
+    "reviewOrder": "Bestellung überprüfen",
+    "choosePaymentMethod": "Zahlungsmethode wählen",
+    "createAccount": "Konto erstellen",
+    "existingAccount": "Ich habe bereits ein Konto",
+    "termsAndConditions": "Allgemeine Geschäftsbedingungen",
+    "acceptTerms": "Ich akzeptiere die Allgemeinen Geschäftsbedingungen",
+    "acceptTermsPrefix": "Ich akzeptiere die",
+    "orderSummary": "Zusammenfassung",
+    "completeRegistration": "Registrierung abschließen",
+    "registrationComplete": "Registrierung abgeschlossen",
+    "awaitingPayment": "Zahlung ausstehend",
+    "awaitingApproval": "Genehmigung ausstehend",
+    "existingShareholderTitle": "Weitere Anteile kaufen",
+    "existingShareholderDescription": "Ihre Daten wurden aus Ihrem bestehenden Anteilseignerprofil übernommen.",
+    "updateDetails": "Daten aktualisieren",
+    "buyingFor": "Anteile kaufen für",
+    "registerNewPerson": "Andere Person registrieren",
+    "registerNewPersonDescription": "Neuen Anteilseigner registrieren"
+  },
+  "home": {
+    "title": "OpenCoop",
+    "subtitle": "Anteilseignerverwaltung für Genossenschaften",
+    "selectCoop": "Wählen Sie Ihre Genossenschaft",
+    "orLogin": "Oder melden Sie sich bei Ihrem Konto an"
+  },
+  "admin": {
+    "title": "Genossenschaftsverwaltung",
+    "selectCoop": "Genossenschaft zur Verwaltung auswählen",
+    "totalCapital": "Gesamtkapital",
+    "nav": {
+      "overview": "Übersicht",
+      "shareholders": "Anteilseigner",
+      "transactions": "Transaktionen",
+      "shareClasses": "Anteilsklassen",
+      "projects": "Projekte",
+      "bank": "Bankimport",
+      "bankMatching": "Bankabgleich",
+      "dividends": "Dividenden",
+      "settings": "Einstellungen",
+      "branding": "Branding"
+    },
+    "overview": {
+      "title": "Genossenschaftsübersicht",
+      "totalShareholders": "Anteilseigner gesamt",
+      "activeShareholders": "Aktive Anteilseigner",
+      "totalShares": "Anteile gesamt",
+      "totalCapital": "Gesamtkapital",
+      "pendingTransactions": "Ausstehende Transaktionen",
+      "pendingPayments": "Ausstehende Zahlungen",
+      "recentActivity": "Letzte Aktivitäten",
+      "quickActions": "Schnellaktionen",
+      "viewAllShareholders": "Alle Anteilseigner anzeigen",
+      "viewPendingTransactions": "Ausstehende Transaktionen anzeigen",
+      "manageDividends": "Dividenden verwalten"
+    },
+    "shareholders": {
+      "title": "Anteilseigner",
+      "searchPlaceholder": "Nach Name, E-Mail suchen...",
+      "filterByType": "Nach Typ filtern",
+      "filterByStatus": "Nach Status filtern",
+      "allTypes": "Alle Typen",
+      "allStatuses": "Alle Status",
+      "addShareholder": "Anteilseigner hinzufügen",
+      "viewDetails": "Details anzeigen",
+      "editDetails": "Details bearbeiten",
+      "totalShares": "Anteile gesamt",
+      "joinDate": "Beitrittsdatum",
+      "lastActivity": "Letzte Aktivität",
+      "total": "Anteilseigner gesamt",
+      "active": "Aktive Anteilseigner",
+      "shareholder": "Anteilseigner",
+      "add": "Anteilseigner hinzufügen"
+    },
+    "shareholderDetail": {
+      "title": "Anteilseignerdetails",
+      "personalInfo": "Persönliche Informationen",
+      "contactInfo": "Kontaktinformationen",
+      "shareholdings": "Anteilsbesitz",
+      "transactionHistory": "Transaktionsverlauf",
+      "documents": "Dokumente",
+      "notes": "Notizen",
+      "saveChanges": "Änderungen speichern",
+      "deleteWarning": "Hierdurch werden dieser Anteilseigner und alle zugehörigen Daten dauerhaft gelöscht."
+    },
+    "transactions": {
+      "title": "Transaktionswarteschlange",
+      "pendingApprovals": "Ausstehende Genehmigungen",
+      "allTransactions": "Alle Transaktionen",
+      "filterByType": "Nach Typ filtern",
+      "filterByStatus": "Nach Status filtern",
+      "approveSelected": "Ausgewählte genehmigen",
+      "rejectSelected": "Ausgewählte ablehnen",
+      "transactionDetails": "Transaktionsdetails",
+      "shareholderInfo": "Anteilseignerinformationen",
+      "paymentInfo": "Zahlungsinformationen",
+      "confirmApproval": "Genehmigung bestätigen",
+      "confirmRejection": "Ablehnung bestätigen",
+      "rejectionReasonPlaceholder": "Ablehnungsgrund eingeben..."
+    },
+    "shareClasses": {
+      "title": "Anteilsklassen",
+      "addClass": "Anteilsklasse hinzufügen",
+      "editClass": "Anteilsklasse bearbeiten",
+      "className": "Klassenname",
+      "code": "Code",
+      "pricePerShare": "Preis pro Anteil",
+      "minShares": "Mindestanteile",
+      "maxShares": "Höchstanteile",
+      "votingRights": "Stimmrechte",
+      "dividendEligible": "Dividendenberechtigt",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "totalIssued": "Insgesamt ausgegeben",
+      "deleteWarning": "Eine Anteilsklasse mit bestehenden Anteilen kann nicht gelöscht werden.",
+      "hasIssuedSharesWarning": "Diese Anteilsklasse hat ausgegebene Anteile. Nur der Aktivstatus kann geändert werden.",
+      "add": "Anteilsklasse hinzufügen",
+      "edit": "Anteilsklasse bearbeiten"
+    },
+    "projects": {
+      "title": "Projekte",
+      "addProject": "Projekt hinzufügen",
+      "editProject": "Projekt bearbeiten",
+      "projectName": "Projektname",
+      "description": "Beschreibung",
+      "type": "Typ",
+      "solar": "Solar",
+      "wind": "Wind",
+      "capacityKw": "Leistung (kW)",
+      "estimatedMwh": "Geschätzt jährlich (MWh)",
+      "startDate": "Startdatum",
+      "endDate": "Enddatum",
+      "status": "Status",
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
+    },
+    "bank": {
+      "title": "Bankimport",
+      "uploadCsv": "CSV hochladen",
+      "dragDrop": "CSV-Datei hierher ziehen oder klicken zum Auswählen",
+      "supportedFormats": "Unterstützte Formate: CODA, MT940, CSV",
+      "importHistory": "Importverlauf",
+      "fileName": "Dateiname",
+      "importDate": "Importdatum",
+      "transactionsImported": "Importierte Transaktionen",
+      "matched": "Zugeordnet",
+      "unmatched": "Nicht zugeordnet",
+      "processing": "Import wird verarbeitet...",
+      "importSuccess": "Import erfolgreich abgeschlossen",
+      "importError": "Import fehlgeschlagen"
+    },
+    "bankMatching": {
+      "title": "Bankabgleich",
+      "unmatchedTransactions": "Nicht zugeordnete Transaktionen",
+      "matchedTransactions": "Zugeordnete Transaktionen",
+      "transactionDate": "Transaktionsdatum",
+      "amount": "Betrag",
+      "reference": "Referenz",
+      "counterparty": "Gegenpartei",
+      "suggestedMatches": "Vorgeschlagene Zuordnungen",
+      "manualMatch": "Manuelle Zuordnung",
+      "confirmMatch": "Zuordnung bestätigen",
+      "ignoreTransaction": "Transaktion ignorieren",
+      "searchShareholder": "Anteilseigner suchen..."
+    },
+    "bankImport": {
+      "title": "Bankimport",
+      "upload": "CSV hochladen",
+      "counterparty": "Gegenpartei",
+      "matchedTo": "Zugeordnet zu",
+      "match": "Zuordnen"
+    },
+    "dividends": {
+      "title": "Dividendenverwaltung",
+      "addPeriod": "Dividendenzeitraum hinzufügen",
+      "editPeriod": "Zeitraum bearbeiten",
+      "periodName": "Zeitraumbezeichnung",
+      "year": "Jahr",
+      "exDividendDate": "Ex-Dividende-Datum",
+      "paymentDate": "Zahlungsdatum",
+      "dividendRate": "Dividendensatz",
+      "totalGross": "Brutto gesamt",
+      "totalTax": "Steuer gesamt",
+      "totalNet": "Netto gesamt",
+      "status": "Status",
+      "draft": "Entwurf",
+      "calculated": "Berechnet",
+      "paid": "Bezahlt",
+      "calculate": "Dividenden berechnen",
+      "markAsPaid": "Als bezahlt markieren",
+      "viewDetails": "Details anzeigen",
+      "recalculate": "Neu berechnen"
+    },
+    "dividendDetail": {
+      "title": "Details zum Dividendenzeitraum",
+      "summary": "Zusammenfassung",
+      "payouts": "Einzelne Auszahlungen",
+      "shareholderName": "Anteilseigner",
+      "shares": "Anteile",
+      "grossAmount": "Brutto",
+      "taxAmount": "Steuer",
+      "netAmount": "Netto",
+      "exportPayouts": "Auszahlungen exportieren",
+      "confirmMarkPaid": "Möchten Sie diesen Dividendenzeitraum wirklich als bezahlt markieren?"
+    },
+    "settings": {
+      "title": "Genossenschaftseinstellungen",
+      "general": "Allgemeine Einstellungen",
+      "coopName": "Name der Genossenschaft",
+      "slug": "URL-Kürzel",
+      "description": "Beschreibung",
+      "bankDetails": "Bankverbindung",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "bankName": "Bankname",
+      "registrationSettings": "Registrierungseinstellungen",
+      "allowRegistration": "Neue Registrierungen zulassen",
+      "requireApproval": "Administratorgenehmigung für neue Anteilseigner erforderlich",
+      "minHoldingPeriod": "Mindesthaltedauer (Monate)",
+      "saved": "Einstellungen erfolgreich gespeichert",
+      "error": "Einstellungen konnten nicht gespeichert werden",
+      "languageDescription": "Wählen Sie die Sprache für die Verwaltungsoberfläche",
+      "uiLanguage": "Oberflächensprache",
+      "formattingLocale": "Formatierungsregion",
+      "requiresApproval": "Genehmigung erforderlich",
+      "termsUrl": "URL der AGB",
+      "email": "E-Mail-Einstellungen"
+    },
+    "branding": {
+      "title": "Branding-Einstellungen",
+      "description": "Passen Sie das Erscheinungsbild Ihrer Genossenschaft an",
+      "logoUrl": "Logo-URL",
+      "logoUrlDescription": "URL zum Logo Ihrer Genossenschaft",
+      "primaryColor": "Primärfarbe",
+      "primaryColorDescription": "Hauptmarkenfarbe (Hex-Format)",
+      "secondaryColor": "Sekundärfarbe",
+      "secondaryColorDescription": "Sekundäre Markenfarbe (Hex-Format)",
+      "termsUrl": "URL der Allgemeinen Geschäftsbedingungen",
+      "termsUrlDescription": "Link zur Seite mit den Allgemeinen Geschäftsbedingungen Ihrer Genossenschaft",
+      "saved": "Branding-Einstellungen erfolgreich gespeichert",
+      "error": "Branding-Einstellungen konnten nicht gespeichert werden",
+      "preview": "Vorschau"
+    }
+  },
+  "system": {
+    "title": "Systemverwaltung",
+    "nav": {
+      "overview": "Übersicht",
+      "coops": "Genossenschaften",
+      "users": "Benutzer"
+    },
+    "overview": {
+      "title": "Systemübersicht",
+      "totalCoops": "Genossenschaften gesamt",
+      "totalUsers": "Benutzer gesamt",
+      "totalShareholders": "Anteilseigner gesamt",
+      "totalCapital": "Gesamtkapital",
+      "activeCoops": "Aktive Genossenschaften",
+      "recentActivity": "Letzte Systemaktivitäten"
+    },
+    "coops": {
+      "title": "Genossenschaften",
+      "addCoop": "Genossenschaft hinzufügen",
+      "editCoop": "Genossenschaft bearbeiten",
+      "viewAdmins": "Administratoren verwalten",
+      "coopName": "Name",
+      "slug": "Kürzel",
+      "ogmPrefix": "OGM-Präfix",
+      "ogmPrefixHelp": "Eindeutiger 3-stelliger Code für strukturierte Zahlungsmitteilungen (z. B. 001)",
+      "status": "Status",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "shareholders": "Anteilseigner",
+      "totalCapital": "Gesamtkapital",
+      "createdAt": "Erstellt",
+      "actions": "Aktionen",
+      "total": "Genossenschaften gesamt"
+    },
+    "coopAdmins": {
+      "title": "Genossenschaftsadministratoren",
+      "currentAdmins": "Aktuelle Administratoren",
+      "addAdmin": "Administrator hinzufügen",
+      "removeAdmin": "Administrator entfernen",
+      "searchUsers": "Benutzer suchen...",
+      "noAdmins": "Keine Administratoren zugewiesen",
+      "confirmRemove": "Möchten Sie diesen Administrator wirklich entfernen?"
+    },
+    "users": {
+      "title": "Benutzer",
+      "searchPlaceholder": "Nach Name, E-Mail suchen...",
+      "filterByRole": "Nach Rolle filtern",
+      "allRoles": "Alle Rollen",
+      "userName": "Name",
+      "email": "E-Mail",
+      "role": "Rolle",
+      "createdAt": "Erstellt",
+      "lastLogin": "Letzte Anmeldung",
+      "changeRole": "Rolle ändern",
+      "total": "Benutzer gesamt",
+      "adminOf": "Administrator von",
+      "roles": {
+        "SHAREHOLDER": "Anteilseigner",
+        "COOP_ADMIN": "Administrator",
+        "SYSTEM_ADMIN": "Plattformadministrator"
+      }
+    },
+    "shareholders": {
+      "total": "Anteilseigner gesamt"
+    }
+  },
+  "errors": {
+    "generic": "Etwas ist schiefgelaufen",
+    "notFound": "Seite nicht gefunden",
+    "unauthorized": "Nicht autorisiert",
+    "forbidden": "Zugriff verweigert",
+    "validation": "Validierungsfehler",
+    "networkError": "Netzwerkfehler",
+    "serverError": "Serverfehler",
+    "sessionExpired": "Sitzung abgelaufen"
+  },
+  "landing": {
+    "nav": {
+      "login": "Anmelden",
+      "register": "Jetzt starten",
+      "pricing": "Preise"
+    },
+    "hero": {
+      "title": "Anteilseignerverwaltung für belgische Genossenschaften",
+      "subtitle": "Die Open-Source-Plattform, die Genossenschaften bei der Verwaltung von Anteilseignern, Anteilen, Dividenden und Dokumenten unterstützt — alles an einem Ort.",
+      "cta": "Jetzt starten",
+      "secondaryCta": "Auf GitHub ansehen",
+      "openSourceBadge": "Open Source — AGPL-3.0"
+    },
+    "features": {
+      "title": "Alles, was Ihre Genossenschaft braucht",
+      "subtitle": "Von der Anteilseignerregistrierung bis zur Dividendenausschüttung — OpenCoop deckt den gesamten Lebenszyklus ab.",
+      "shareholders": {
+        "title": "Anteilseignerverwaltung",
+        "description": "Registrieren Sie Einzelpersonen, Unternehmen und Minderjährige. Verfolgen Sie Status, Kontaktdaten und wirtschaftlich Berechtigte."
+      },
+      "shares": {
+        "title": "Anteilsklassen & Transaktionen",
+        "description": "Konfigurieren Sie mehrere Anteilsklassen mit Preisgestaltung, Limits und Stimmrechten. Verarbeiten Sie Käufe, Verkäufe und Übertragungen."
+      },
+      "dividends": {
+        "title": "Dividendenausschüttung",
+        "description": "Berechnen Sie Dividenden mit automatischer belgischer Quellensteuer (roerende voorheffing). Erstellen Sie Abrechnungen pro Anteilseigner."
+      },
+      "banking": {
+        "title": "Bankimport & OGM-Abgleich",
+        "description": "Importieren Sie Kontoauszüge und ordnen Sie Zahlungen automatisch anhand belgischer strukturierter Mitteilungscodes (OGM) zu."
+      },
+      "documents": {
+        "title": "Dokumentenerstellung",
+        "description": "Erstellen Sie Anteilszertifikate, Kaufbestätigungen und Dividendenabrechnungen als gebrandete PDF-Dokumente."
+      },
+      "multiTenant": {
+        "title": "Mandantenfähig & White Label",
+        "description": "Betreiben Sie mehrere Genossenschaften auf einer einzigen Instanz. Jede Genossenschaft erhält eigenes Branding, eine eigene URL und eigene Einstellungen."
+      }
+    },
+    "howItWorks": {
+      "title": "In wenigen Minuten einsatzbereit",
+      "subtitle": "Drei einfache Schritte zur Digitalisierung Ihrer Genossenschaft.",
+      "step1": {
+        "title": "Genossenschaft erstellen",
+        "description": "Richten Sie Ihre Genossenschaft mit Anteilsklassen, Bankverbindung und Branding ein."
+      },
+      "step2": {
+        "title": "Anteilseigner einladen",
+        "description": "Anteilseigner registrieren sich online und erwerben Anteile per Banküberweisung."
+      },
+      "step3": {
+        "title": "Verwalten & wachsen",
+        "description": "Verfolgen Sie Transaktionen, gleichen Sie Zahlungen ab, schütten Sie Dividenden aus und erstellen Sie Dokumente."
+      }
+    },
+    "openSource": {
+      "title": "Wählen Sie, wie Sie OpenCoop betreiben",
+      "subtitle": "Nutzen Sie unsere verwaltete Plattform und konzentrieren Sie sich auf Ihre Genossenschaft, oder hosten Sie selbst für volle Kontrolle.",
+      "saas": {
+        "label": "Verwaltete Plattform",
+        "title": "OpenCoop Cloud",
+        "description": "Wir kümmern uns um Hosting, Updates und Backups. Sie konzentrieren sich auf Ihre Genossenschaft.",
+        "feature1": "In 24 Stunden einsatzbereit",
+        "feature2": "Automatische Updates & Backups",
+        "feature3": "E-Mail-Support inklusive",
+        "cta": "Preise ansehen"
+      },
+      "selfHostedCard": {
+        "label": "Selbst gehostet",
+        "title": "OpenCoop Community",
+        "description": "Stellen Sie es auf Ihrer eigenen Infrastruktur mit Docker bereit. Voller Quellcodezugriff unter AGPL-3.0.",
+        "feature1": "Kostenlos & Open Source",
+        "feature2": "Volle Datenhoheit",
+        "feature3": "Sie verwalten Hosting & Updates",
+        "cta": "Auf GitHub ansehen"
+      }
+    },
+    "cta": {
+      "title": "Bereit, Ihre Genossenschaft zu modernisieren?",
+      "subtitle": "Schließen Sie sich den Genossenschaften an, die OpenCoop bereits zur Verwaltung ihrer Anteilseigner nutzen.",
+      "primary": "Jetzt starten",
+      "secondary": "Quellcode auf GitHub ansehen"
+    },
+    "footer": {
+      "copyright": "OpenCoop",
+      "license": "Lizenziert unter AGPL-3.0",
+      "language": "Sprache"
+    }
+  },
+  "upgrade": {
+    "title": "Konto erstellen",
+    "welcome": "Willkommen, {name}!",
+    "createAccountFor": "Erstellen Sie ein Konto, um Ihre Anteile zu verwalten bei",
+    "emailHint": "Dies wird Ihre Anmelde-E-Mail-Adresse und die Adresse für Mitteilungen sein",
+    "choosePassword": "Passwort wählen",
+    "createAccount": "Konto erstellen",
+    "noToken": "Kein Upgrade-Token angegeben. Bitte verwenden Sie den Link aus Ihrer E-Mail.",
+    "invalidToken": "Dieser Link ist ungültig oder abgelaufen.",
+    "tokenErrorTitle": "Ungültiger Link",
+    "contactParent": "Bitte wenden Sie sich an Ihren Elternteil oder Erziehungsberechtigten für einen neuen Link.",
+    "validationError": "Der Link konnte nicht überprüft werden. Bitte versuchen Sie es erneut.",
+    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "successTitle": "Konto erstellt!",
+    "successDescription": "Ihr Konto wurde erfolgreich erstellt. Sie können jetzt Ihre eigenen Anteile verwalten.",
+    "redirecting": "Sie werden zu Ihrem Dashboard weitergeleitet...",
+    "whatHappensTitle": "Was passiert als Nächstes?",
+    "whatHappens1": "Sie verwalten Ihre Anteile von nun an selbst",
+    "whatHappens2": "Ihre Anteile werden nicht mehr im Konto Ihres Elternteils angezeigt",
+    "whatHappens3": "Sie erhalten alle Mitteilungen direkt"
+  },
+  "pricing": {
+    "hero": {
+      "badge": "Einfache, transparente Preisgestaltung",
+      "title": "Faire Preise für jede Genossenschaft",
+      "subtitle": "Keine Einrichtungsgebühren, keine versteckten Kosten. Alles, was Sie zur Verwaltung Ihrer Anteilseigner brauchen — zu einem Bruchteil dessen, was herkömmliche Anbieter verlangen."
+    },
+    "billing": {
+      "monthly": "Monatlich",
+      "yearly": "Jährlich",
+      "save": "15 % sparen",
+      "perMonth": "/Monat",
+      "perYear": "/Jahr",
+      "billedMonthly": "Monatliche Abrechnung",
+      "billedYearly": "Jährliche Abrechnung"
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "Für Genossenschaften am Anfang",
+      "priceMonthly": "49",
+      "priceYearly": "499",
+      "cta": "Jetzt starten"
+    },
+    "growth": {
+      "name": "Growth",
+      "badge": "Am beliebtesten",
+      "description": "Für wachsende Genossenschaften mit mehr Anteilseignern",
+      "priceMonthly": "79",
+      "priceYearly": "799",
+      "cta": "Jetzt starten"
+    },
+    "features": {
+      "shareholders": "Anteilseignerverwaltung",
+      "shareClasses": "Anteilsklassen & Transaktionen",
+      "dividends": "Dividendenausschüttung",
+      "banking": "Bankimport & OGM-Abgleich",
+      "documents": "PDF-Dokumentenerstellung",
+      "branding": "Eigenes Branding",
+      "multiTenant": "Mandantenfähigkeit",
+      "emailNotifications": "E-Mail-Benachrichtigungen",
+      "starterLimit": "Bis zu 500 Anteilseigner",
+      "unlimitedShareholders": "Unbegrenzte Anteilseigner",
+      "prioritySupport": "Vorrangiger E-Mail-Support"
+    },
+    "selfHosted": {
+      "title": "Lieber selbst hosten?",
+      "description": "OpenCoop ist Open Source unter der AGPL-3.0-Lizenz. Stellen Sie es auf Ihrer eigenen Infrastruktur mit Docker bereit und behalten Sie die volle Kontrolle über Ihre Daten.",
+      "free": "Für immer kostenlos",
+      "dataOwnership": "Volle Datenhoheit",
+      "community": "Community-Support",
+      "cta": "Auf GitHub ansehen",
+      "paidSupport": "Brauchen Sie Hilfe? Bezahlter Support ist zum Stundensatz verfügbar."
+    },
+    "faq": {
+      "title": "Häufig gestellte Fragen",
+      "q1": "Was passiert, wenn ich 500 Anteilseigner überschreite?",
+      "a1": "Sie können jederzeit auf den Growth-Plan upgraden. Ihre Daten und Einstellungen bleiben erhalten — keine Migration erforderlich.",
+      "q2": "Kann ich zwischen monatlicher und jährlicher Abrechnung wechseln?",
+      "a2": "Ja, Sie können jederzeit wechseln. Beim Wechsel zur jährlichen Abrechnung erhalten Sie eine anteilige Gutschrift für Ihren aktuellen Abrechnungszeitraum.",
+      "q3": "Was ist im vorrangigen Support enthalten?",
+      "a3": "Vorrangiger Support umfasst schnellere Antwortzeiten per E-Mail sowie Hilfe bei Konfiguration, Datenimporten und allgemeinen Plattformfragen.",
+      "q4": "Kann ich von selbst gehostet zur SaaS-Plattform migrieren?",
+      "a4": "Ja. Kontaktieren Sie uns und wir helfen Ihnen bei der Migration Ihrer Daten von Ihrer selbst gehosteten Instanz zur verwalteten Plattform."
+    },
+    "cta": {
+      "title": "Bereit loszulegen?",
+      "subtitle": "Nehmen Sie Kontakt auf und wir richten Ihre Genossenschaft innerhalb von 24 Stunden ein.",
+      "primary": "Kontaktieren Sie uns",
+      "secondary": "Auf GitHub ansehen"
+    },
+    "waitlist": {
+      "title": "Auf die Warteliste setzen",
+      "subtitle": "Wir starten bald. Hinterlassen Sie Ihre E-Mail-Adresse und wir benachrichtigen Sie, sobald Ihre Genossenschaft starten kann.",
+      "email": "E-Mail-Adresse",
+      "submit": "Auf die Warteliste",
+      "success": "Sie stehen auf der Liste! Wir melden uns in Kürze.",
+      "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+    }
+  },
+  "onboarding": {
+    "title": "Starten Sie Ihre Genossenschaft",
+    "steps": {
+      "account": "Konto",
+      "cooperative": "Genossenschaft",
+      "done": "Fertig"
+    },
+    "account": {
+      "title": "Konto erstellen",
+      "subtitle": "Geben Sie Ihre E-Mail-Adresse ein und wählen Sie ein Passwort.",
+      "email": "E-Mail-Adresse",
+      "password": "Passwort",
+      "confirmPassword": "Passwort bestätigen"
+    },
+    "cooperative": {
+      "title": "Genossenschaft einrichten",
+      "subtitle": "Wählen Sie einen Namen und eine URL für Ihre Genossenschaft.",
+      "name": "Name der Genossenschaft",
+      "slug": "URL",
+      "slugPrefix": "opencoop.be/",
+      "plan": "Plan",
+      "billing": "Abrechnung"
+    },
+    "done": {
+      "title": "Alles bereit!",
+      "subtitle": "Ihre Genossenschaft wurde erstellt. Unser Team wird sie in Kürze prüfen und aktivieren.",
+      "goToDashboard": "Zum Dashboard"
+    },
+    "billing": {
+      "monthly": "Monatlich",
+      "yearly": "Jährlich"
+    },
+    "validation": {
+      "emailRequired": "E-Mail ist erforderlich",
+      "emailInvalid": "Geben Sie eine gültige E-Mail-Adresse ein",
+      "passwordMin": "Das Passwort muss mindestens 8 Zeichen lang sein",
+      "passwordMismatch": "Passwörter stimmen nicht überein",
+      "nameRequired": "Der Name der Genossenschaft ist erforderlich",
+      "nameMin": "Der Name muss mindestens 2 Zeichen lang sein",
+      "slugRequired": "URL ist erforderlich",
+      "slugMin": "URL muss mindestens 3 Zeichen lang sein",
+      "slugFormat": "Nur Kleinbuchstaben, Zahlen und Bindestriche"
+    },
+    "errors": {
+      "emailTaken": "Diese E-Mail-Adresse ist bereits registriert",
+      "slugTaken": "Diese URL ist bereits vergeben",
+      "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+    },
+    "pendingActivation": "Ihre Genossenschaft wird geprüft. Wir aktivieren sie in Kürze."
+  }
+}

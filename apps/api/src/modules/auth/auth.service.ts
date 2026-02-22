@@ -693,14 +693,64 @@ export class AuthService {
     });
 
     // Send confirmation email (don't block or fail the signup)
-    this.sendWaitlistConfirmationEmail(waitlistDto.email.toLowerCase()).catch((err) => {
+    this.sendWaitlistConfirmationEmail(waitlistDto.email.toLowerCase(), waitlistDto.locale).catch((err) => {
       console.error('Failed to send waitlist confirmation email:', err.message);
     });
 
     return { message: 'Successfully joined the waitlist' };
   }
 
-  private async sendWaitlistConfirmationEmail(email: string) {
+  private getWaitlistEmailContent(locale?: string): { subject: string; heading: string; body: string; closing: string; footer: string } {
+    switch (locale) {
+      case 'fr':
+        return {
+          subject: 'Merci pour votre intérêt pour OpenCoop',
+          heading: 'Merci pour votre intérêt !',
+          body: 'Nous avons bien reçu votre inscription.',
+          closing: 'OpenCoop est actuellement en préparation. Nous vous contacterons dès que la plateforme sera disponible.',
+          footer: 'Vous recevez cet e-mail car vous vous êtes inscrit(e) sur la liste d\'attente de <a href="https://opencoop.be">opencoop.be</a>.',
+        };
+      case 'de':
+        return {
+          subject: 'Vielen Dank für Ihr Interesse an OpenCoop',
+          heading: 'Vielen Dank für Ihr Interesse!',
+          body: 'Wir haben Ihre Anmeldung erhalten.',
+          closing: 'OpenCoop befindet sich derzeit in Vorbereitung. Wir werden Sie kontaktieren, sobald die Plattform verfügbar ist.',
+          footer: 'Sie erhalten diese E-Mail, weil Sie sich auf der Warteliste von <a href="https://opencoop.be">opencoop.be</a> eingetragen haben.',
+        };
+      case 'en':
+        return {
+          subject: 'Thank you for your interest in OpenCoop',
+          heading: 'Thank you for your interest!',
+          body: 'We have received your registration.',
+          closing: 'OpenCoop is currently being prepared. We will contact you as soon as the platform is available.',
+          footer: 'You are receiving this email because you signed up for the waitlist at <a href="https://opencoop.be">opencoop.be</a>.',
+        };
+      default: // nl
+        return {
+          subject: 'Bedankt voor je interesse in OpenCoop',
+          heading: 'Bedankt voor je interesse!',
+          body: 'We hebben je registratie goed ontvangen.',
+          closing: 'OpenCoop is momenteel in voorbereiding. We nemen binnenkort contact met je op zodra het platform beschikbaar is.',
+          footer: 'Je ontvangt deze e-mail omdat je je hebt ingeschreven op de wachtlijst van <a href="https://opencoop.be">opencoop.be</a>.',
+        };
+    }
+  }
+
+  private getWaitlistClosing(locale?: string): string {
+    switch (locale) {
+      case 'fr':
+        return 'Cordialement,<br>L\'équipe OpenCoop';
+      case 'de':
+        return 'Mit freundlichen Grüßen,<br>Das OpenCoop-Team';
+      case 'en':
+        return 'Kind regards,<br>The OpenCoop team';
+      default:
+        return 'Met vriendelijke groeten,<br>Het OpenCoop team';
+    }
+  }
+
+  private async sendWaitlistConfirmationEmail(email: string, locale?: string) {
     const host = process.env.SMTP_HOST;
     if (!host) return;
 
@@ -716,10 +766,13 @@ export class AuthService {
       auth: user && pass ? { user, pass } : undefined,
     });
 
+    const content = this.getWaitlistEmailContent(locale);
+    const sign = this.getWaitlistClosing(locale);
+
     await transporter.sendMail({
       from,
       to: email,
-      subject: 'Bedankt voor je interesse in OpenCoop',
+      subject: content.subject,
       html: `
         <!DOCTYPE html>
         <html>
@@ -732,12 +785,12 @@ export class AuthService {
           </style>
         </head>
         <body>
-          <h1>Bedankt voor je interesse!</h1>
-          <p>We hebben je registratie goed ontvangen.</p>
-          <p>OpenCoop is momenteel in voorbereiding. We nemen binnenkort contact met je op zodra het platform beschikbaar is.</p>
-          <p>Met vriendelijke groeten,<br>Het OpenCoop team</p>
+          <h1>${content.heading}</h1>
+          <p>${content.body}</p>
+          <p>${content.closing}</p>
+          <p>${sign}</p>
           <div class="footer">
-            <p>Je ontvangt deze e-mail omdat je je hebt ingeschreven op de wachtlijst van <a href="https://opencoop.be">opencoop.be</a>.</p>
+            <p>${content.footer}</p>
           </div>
         </body>
         </html>

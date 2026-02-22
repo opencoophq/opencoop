@@ -10,4 +10,9 @@ export class WaitlistDto {
   @IsOptional()
   @IsString()
   plan?: string;
+
+  @ApiProperty({ example: 'nl', required: false })
+  @IsOptional()
+  @IsString()
+  locale?: string;
 }

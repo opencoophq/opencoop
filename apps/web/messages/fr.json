@@ -1,0 +1,918 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "success": "Succès",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "import": "Importer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "submit": "Envoyer",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non",
+    "or": "ou",
+    "selectDate": "Sélectionner une date",
+    "and": "et",
+    "total": "Total",
+    "actions": "Actions",
+    "status": "Statut",
+    "date": "Date",
+    "amount": "Montant",
+    "quantity": "Quantité",
+    "price": "Prix",
+    "name": "Nom",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "street": "Rue",
+    "houseNumber": "N°",
+    "postalCode": "Code postal",
+    "city": "Ville",
+    "country": "Pays",
+    "description": "Description",
+    "details": "Détails",
+    "download": "Télécharger",
+    "upload": "Téléverser",
+    "required": "Obligatoire",
+    "optional": "Facultatif",
+    "noResults": "Aucun résultat trouvé",
+    "showMore": "Afficher plus",
+    "showLess": "Afficher moins",
+    "overview": "Aperçu",
+    "documents": "Documents",
+    "settings": "Paramètres",
+    "myAccount": "Mon compte",
+    "type": "Type",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "all": "Tous",
+    "showing": "Affichage de",
+    "of": "sur",
+    "verified": "Vérifié",
+    "certificate": "Certificat",
+    "savedSuccessfully": "Enregistré avec succès",
+    "language": "Langue"
+  },
+  "auth": {
+    "login": "Se connecter",
+    "logout": "Se déconnecter",
+    "register": "S'inscrire",
+    "forgotPassword": "Mot de passe oublié ?",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "emailPlaceholder": "votre@email.com",
+    "passwordPlaceholder": "Votre mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "rememberMe": "Se souvenir de moi",
+    "loginSuccess": "Connexion réussie",
+    "loginError": "Échec de la connexion",
+    "registerSuccess": "Inscription réussie",
+    "passwordResetSent": "E-mail de réinitialisation envoyé",
+    "passwordResetSuccess": "Mot de passe modifié avec succès",
+    "invalidCredentials": "Identifiants invalides",
+    "emailNotVerified": "E-mail non vérifié",
+    "verifyEmail": "Vérifiez votre e-mail",
+    "resendVerification": "Renvoyer l'e-mail de vérification",
+    "magicLinkLogin": "Lien par e-mail",
+    "passwordLogin": "Mot de passe",
+    "sendMagicLink": "Envoyer le lien de connexion",
+    "sendAnotherLink": "Envoyer un autre lien",
+    "magicLinkSent": "Nous avons envoyé un lien de connexion à {email}. Vérifiez votre boîte de réception.",
+    "magicLinkVerifying": "Vérification du lien de connexion...",
+    "magicLinkSuccess": "Connexion réussie ! Redirection en cours...",
+    "magicLinkExpired": "Ce lien de connexion a expiré.",
+    "magicLinkUsed": "Ce lien de connexion a déjà été utilisé.",
+    "magicLinkInvalid": "Lien de connexion invalide.",
+    "magicLinkTryAgain": "Essayez de demander un nouveau lien de connexion.",
+    "backToLogin": "Retour à la connexion",
+    "welcomeBack": "Bon retour",
+    "enterYourEmail": "Entrez votre e-mail pour continuer",
+    "continue": "Continuer",
+    "howToLogin": "Comment souhaitez-vous vous connecter ?",
+    "sendLoginLink": "M'envoyer un lien de connexion",
+    "sendLoginLinkDesc": "Rapide et sécurisé — pas de mot de passe nécessaire",
+    "usePassword": "Utiliser un mot de passe",
+    "usePasswordDesc": "Se connecter avec le mot de passe de votre compte",
+    "changeEmail": "modifier",
+    "changePassword": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères",
+    "passwordMismatch": "Les mots de passe ne correspondent pas"
+  },
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "shares": "Parts",
+    "transactions": "Transactions",
+    "dividends": "Dividendes",
+    "documents": "Documents",
+    "settings": "Paramètres",
+    "shareholders": "Coopérateurs",
+    "shareClasses": "Classes de parts",
+    "projects": "Projets",
+    "payments": "Paiements",
+    "bankImport": "Import bancaire",
+    "branding": "Image de marque",
+    "coops": "Coopératives",
+    "users": "Utilisateurs",
+    "systemAdmin": "Admin système",
+    "coopAdmin": "Admin coopérative"
+  },
+  "shareholder": {
+    "title": "Coopérateur",
+    "type": {
+      "individual": "Personne physique",
+      "company": "Société",
+      "minor": "Mineur"
+    },
+    "status": {
+      "pending": "En attente",
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "fields": {
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "nationalId": "Numéro national",
+      "birthDate": "Date de naissance",
+      "companyName": "Nom de la société",
+      "companyId": "Numéro d'entreprise (KBO)",
+      "vatNumber": "Numéro de TVA",
+      "legalForm": "Forme juridique"
+    },
+    "beneficialOwners": "Bénéficiaires effectifs",
+    "addBeneficialOwner": "Ajouter un bénéficiaire effectif",
+    "ownershipPercentage": "Pourcentage de détention",
+    "types": {
+      "INDIVIDUAL": "Personne physique",
+      "COMPANY": "Société",
+      "MINOR": "Mineur"
+    },
+    "statuses": {
+      "PENDING": "En attente",
+      "ACTIVE": "Actif",
+      "INACTIVE": "Inactif"
+    }
+  },
+  "shares": {
+    "title": "Parts",
+    "shareClass": "Classe de parts",
+    "project": "Projet",
+    "quantity": "Quantité",
+    "pricePerShare": "Prix par part",
+    "totalValue": "Valeur totale",
+    "purchaseDate": "Date d'achat",
+    "certificateNumber": "Numéro de certificat",
+    "status": {
+      "pending": "En attente",
+      "active": "Active",
+      "sold": "Vendue",
+      "transferred": "Transférée"
+    },
+    "purchase": "Achat",
+    "sell": "Vente",
+    "transfer": "Transfert",
+    "minShares": "Minimum de parts",
+    "maxShares": "Maximum de parts",
+    "votingRights": "Droits de vote",
+    "dividendRate": "Taux de dividende",
+    "buyMore": "Acheter des parts",
+    "buyMoreDescription": "Acheter des parts supplémentaires",
+    "sellShares": "Vendre des parts",
+    "sellBack": "Vendre",
+    "sellSharesTitle": "Vendre des parts",
+    "selectSharesToSell": "Sélectionnez les parts à vendre",
+    "availableToSell": "Disponibles à la vente",
+    "notAvailableToSell": "Non disponibles à la vente",
+    "whyNotAvailable": "Pourquoi ne puis-je pas vendre ces parts ?",
+    "reasonPending": "Ces parts sont toujours en attente de confirmation de paiement",
+    "reasonMinHoldingPeriod": "La période de détention minimale de {months} mois n'est pas encore atteinte",
+    "reasonAlreadySelling": "Une demande de vente est déjà en cours pour ces parts",
+    "quantityToSell": "Quantité à vendre",
+    "maxQuantity": "Maximum : {max}",
+    "sellPrice": "Prix de vente",
+    "sellPriceNote": "Les parts sont rachetées au prix d'achat initial",
+    "totalRefund": "Remboursement total",
+    "confirmSell": "Confirmer la vente",
+    "sellRequestSubmitted": "Votre demande de vente a été soumise",
+    "sellRequestPending": "La coopérative examinera votre demande",
+    "noSharesToSell": "Aucune part disponible à la vente",
+    "owner": "Propriétaire",
+    "forSelf": "Personnel",
+    "forMinor": "Pour {name}",
+    "forCompany": "{name}",
+    "managedShares": "Vous gérez également des parts pour d'autres personnes",
+    "ownShares": "Vos parts personnelles",
+    "childShares": "Parts pour vos enfants",
+    "companyShares": "Parts de la société",
+    "myShares": "Mes parts",
+    "totalShares": "Total des parts"
+  },
+  "transactions": {
+    "title": "Transactions",
+    "purchase": "Achat",
+    "sale": "Vente",
+    "transferIn": "Transfert entrant",
+    "transferOut": "Transfert sortant",
+    "noTransactions": "Aucune transaction pour le moment",
+    "type": {
+      "purchase": "Achat",
+      "sale": "Vente",
+      "transferIn": "Transfert entrant",
+      "transferOut": "Transfert sortant"
+    },
+    "status": {
+      "pending": "En attente",
+      "approved": "Approuvée",
+      "completed": "Terminée",
+      "rejected": "Rejetée"
+    },
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "rejectionReason": "Motif du rejet",
+    "processedBy": "Traitée par",
+    "processedAt": "Traitée le",
+    "pending": "En attente",
+    "rejectReason": "Motif du rejet",
+    "types": {
+      "PURCHASE": "Achat",
+      "SALE": "Vente",
+      "TRANSFER_IN": "Transfert entrant",
+      "TRANSFER_OUT": "Transfert sortant"
+    },
+    "statuses": {
+      "PENDING": "En attente",
+      "APPROVED": "Approuvée",
+      "COMPLETED": "Terminée",
+      "REJECTED": "Rejetée"
+    }
+  },
+  "payments": {
+    "title": "Paiements",
+    "method": {
+      "bankTransfer": "Virement bancaire",
+      "mollie": "Paiement en ligne (Mollie)",
+      "stripe": "Paiement en ligne (Stripe)"
+    },
+    "status": {
+      "pending": "En attente",
+      "matched": "Rapproché",
+      "confirmed": "Confirmé",
+      "failed": "Échoué"
+    },
+    "ogmCode": "Communication structurée",
+    "bankDetails": "Coordonnées bancaires",
+    "iban": "IBAN",
+    "bic": "BIC",
+    "beneficiary": "Bénéficiaire",
+    "paymentInstructions": "Instructions de paiement",
+    "pending": "En attente"
+  },
+  "dividends": {
+    "title": "Dividendes",
+    "period": "Période",
+    "year": "Année",
+    "dividendRate": "Taux de dividende",
+    "rate": "Taux",
+    "withholdingTax": "Précompte mobilier",
+    "exDividendDate": "Date ex-dividende",
+    "noDividends": "Aucun versement de dividende pour le moment",
+    "paid": "Payé",
+    "pending": "En attente",
+    "paidOn": "Payé le",
+    "status": {
+      "draft": "Brouillon",
+      "calculated": "Calculé",
+      "paid": "Payé"
+    },
+    "calculate": "Calculer",
+    "markAsPaid": "Marquer comme payé",
+    "grossAmount": "Montant brut",
+    "taxAmount": "Montant de l'impôt",
+    "netAmount": "Montant net",
+    "payout": "Versement",
+    "statement": "Relevé de dividende",
+    "useDefault": "Utiliser la valeur par défaut"
+  },
+  "documents": {
+    "title": "Documents",
+    "certificate": "Certificat de parts",
+    "purchaseStatement": "Attestation d'achat",
+    "dividendStatement": "Relevé de dividende",
+    "noDocuments": "Aucun document pour le moment",
+    "generatedOn": "Généré le"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "preferences": "Préférences",
+    "preferencesDescription": "Gérez les préférences de votre compte",
+    "language": "Langue",
+    "saved": "Paramètres enregistrés avec succès",
+    "locale": "Format de date",
+    "localeDescription": "Choisissez le format d'affichage des dates et des nombres",
+    "changePassword": "Changer le mot de passe",
+    "changePasswordDescription": "Modifiez le mot de passe de votre compte",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "passwordChanged": "Mot de passe modifié avec succès"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "shares": "Parts",
+    "transactions": "Transactions",
+    "dividends": "Dividendes",
+    "documents": "Documents",
+    "settings": "Paramètres"
+  },
+  "registration": {
+    "title": "Souscription de parts",
+    "beneficiaryType": {
+      "title": "Pour qui achetez-vous des parts ?",
+      "self": "Pour moi-même",
+      "selfDescription": "Je souscris des parts en mon nom propre",
+      "family": "Pour un membre de ma famille",
+      "familyDescription": "Je souscris des parts pour une autre personne",
+      "company": "Pour ma société",
+      "companyDescription": "Je souscris des parts au nom de ma société",
+      "gift": "En cadeau",
+      "giftDescription": "J'achète des parts en cadeau pour quelqu'un"
+    },
+    "steps": {
+      "beneficiary": "Bénéficiaire",
+      "details": "Détails",
+      "shares": "Parts",
+      "payment": "Paiement",
+      "confirm": "Confirmation"
+    },
+    "selectShareClass": "Sélectionner une classe de parts",
+    "selectProject": "Sélectionner un projet (facultatif)",
+    "enterQuantity": "Entrer la quantité",
+    "reviewOrder": "Vérifiez votre commande",
+    "choosePaymentMethod": "Choisir le mode de paiement",
+    "createAccount": "Créer un compte",
+    "existingAccount": "J'ai déjà un compte",
+    "termsAndConditions": "conditions générales",
+    "acceptTerms": "J'accepte les conditions générales",
+    "acceptTermsPrefix": "J'accepte les",
+    "orderSummary": "Récapitulatif",
+    "completeRegistration": "Finaliser l'inscription",
+    "registrationComplete": "Inscription terminée",
+    "awaitingPayment": "En attente de paiement",
+    "awaitingApproval": "En attente d'approbation",
+    "existingShareholderTitle": "Acheter des parts supplémentaires",
+    "existingShareholderDescription": "Vos informations ont été pré-remplies à partir de votre profil de coopérateur existant.",
+    "updateDetails": "Mettre à jour les informations",
+    "buyingFor": "Achat de parts pour",
+    "registerNewPerson": "Inscrire une autre personne",
+    "registerNewPersonDescription": "Inscrire un nouveau coopérateur"
+  },
+  "home": {
+    "title": "OpenCoop",
+    "subtitle": "Gestion des coopérateurs",
+    "selectCoop": "Sélectionnez votre coopérative",
+    "orLogin": "Ou connectez-vous à votre compte"
+  },
+  "admin": {
+    "title": "Administration de la coopérative",
+    "selectCoop": "Sélectionner la coopérative à gérer",
+    "totalCapital": "Capital total",
+    "nav": {
+      "overview": "Aperçu",
+      "shareholders": "Coopérateurs",
+      "transactions": "Transactions",
+      "shareClasses": "Classes de parts",
+      "projects": "Projets",
+      "bank": "Import bancaire",
+      "bankMatching": "Rapprochement bancaire",
+      "dividends": "Dividendes",
+      "settings": "Paramètres",
+      "branding": "Image de marque"
+    },
+    "overview": {
+      "title": "Aperçu de la coopérative",
+      "totalShareholders": "Total des coopérateurs",
+      "activeShareholders": "Coopérateurs actifs",
+      "totalShares": "Total des parts",
+      "totalCapital": "Capital total",
+      "pendingTransactions": "Transactions en attente",
+      "pendingPayments": "Paiements en attente",
+      "recentActivity": "Activité récente",
+      "quickActions": "Actions rapides",
+      "viewAllShareholders": "Voir tous les coopérateurs",
+      "viewPendingTransactions": "Voir les transactions en attente",
+      "manageDividends": "Gérer les dividendes"
+    },
+    "shareholders": {
+      "title": "Coopérateurs",
+      "searchPlaceholder": "Rechercher par nom, e-mail...",
+      "filterByType": "Filtrer par type",
+      "filterByStatus": "Filtrer par statut",
+      "allTypes": "Tous les types",
+      "allStatuses": "Tous les statuts",
+      "addShareholder": "Ajouter un coopérateur",
+      "viewDetails": "Voir les détails",
+      "editDetails": "Modifier les détails",
+      "totalShares": "Total des parts",
+      "joinDate": "Date d'adhésion",
+      "lastActivity": "Dernière activité",
+      "total": "Total des coopérateurs",
+      "active": "Coopérateurs actifs",
+      "shareholder": "Coopérateur",
+      "add": "Ajouter un coopérateur"
+    },
+    "shareholderDetail": {
+      "title": "Détails du coopérateur",
+      "personalInfo": "Informations personnelles",
+      "contactInfo": "Coordonnées",
+      "shareholdings": "Participations",
+      "transactionHistory": "Historique des transactions",
+      "documents": "Documents",
+      "notes": "Notes",
+      "saveChanges": "Enregistrer les modifications",
+      "deleteWarning": "Ceci supprimera définitivement ce coopérateur et toutes les données associées."
+    },
+    "transactions": {
+      "title": "File de transactions",
+      "pendingApprovals": "Approbations en attente",
+      "allTransactions": "Toutes les transactions",
+      "filterByType": "Filtrer par type",
+      "filterByStatus": "Filtrer par statut",
+      "approveSelected": "Approuver la sélection",
+      "rejectSelected": "Rejeter la sélection",
+      "transactionDetails": "Détails de la transaction",
+      "shareholderInfo": "Informations du coopérateur",
+      "paymentInfo": "Informations de paiement",
+      "confirmApproval": "Confirmer l'approbation",
+      "confirmRejection": "Confirmer le rejet",
+      "rejectionReasonPlaceholder": "Indiquez le motif du rejet..."
+    },
+    "shareClasses": {
+      "title": "Classes de parts",
+      "addClass": "Ajouter une classe de parts",
+      "editClass": "Modifier la classe de parts",
+      "className": "Nom de la classe",
+      "code": "Code",
+      "pricePerShare": "Prix par part",
+      "minShares": "Minimum de parts",
+      "maxShares": "Maximum de parts",
+      "votingRights": "Droits de vote",
+      "dividendEligible": "Éligible aux dividendes",
+      "active": "Active",
+      "inactive": "Inactive",
+      "totalIssued": "Total émis",
+      "deleteWarning": "Impossible de supprimer une classe de parts avec des parts existantes.",
+      "hasIssuedSharesWarning": "Cette classe de parts a des parts émises. Seul le statut actif peut être modifié.",
+      "add": "Ajouter une classe de parts",
+      "edit": "Modifier la classe de parts"
+    },
+    "projects": {
+      "title": "Projets",
+      "addProject": "Ajouter un projet",
+      "editProject": "Modifier le projet",
+      "projectName": "Nom du projet",
+      "description": "Description",
+      "type": "Type",
+      "solar": "Solaire",
+      "wind": "Éolien",
+      "capacityKw": "Capacité (kW)",
+      "estimatedMwh": "Est. annuelle (MWh)",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "status": "Statut",
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "bank": {
+      "title": "Import bancaire",
+      "uploadCsv": "Téléverser un CSV",
+      "dragDrop": "Glissez-déposez un fichier CSV ici, ou cliquez pour sélectionner",
+      "supportedFormats": "Formats supportés : CODA, MT940, CSV",
+      "importHistory": "Historique des imports",
+      "fileName": "Nom du fichier",
+      "importDate": "Date d'import",
+      "transactionsImported": "Transactions importées",
+      "matched": "Rapprochées",
+      "unmatched": "Non rapprochées",
+      "processing": "Import en cours...",
+      "importSuccess": "Import terminé avec succès",
+      "importError": "Échec de l'import"
+    },
+    "bankMatching": {
+      "title": "Rapprochement bancaire",
+      "unmatchedTransactions": "Transactions non rapprochées",
+      "matchedTransactions": "Transactions rapprochées",
+      "transactionDate": "Date de transaction",
+      "amount": "Montant",
+      "reference": "Référence",
+      "counterparty": "Contrepartie",
+      "suggestedMatches": "Correspondances suggérées",
+      "manualMatch": "Rapprochement manuel",
+      "confirmMatch": "Confirmer le rapprochement",
+      "ignoreTransaction": "Ignorer la transaction",
+      "searchShareholder": "Rechercher un coopérateur..."
+    },
+    "bankImport": {
+      "title": "Import bancaire",
+      "upload": "Téléverser un CSV",
+      "counterparty": "Contrepartie",
+      "matchedTo": "Rapproché avec",
+      "match": "Rapprocher"
+    },
+    "dividends": {
+      "title": "Gestion des dividendes",
+      "addPeriod": "Ajouter une période de dividende",
+      "editPeriod": "Modifier la période",
+      "periodName": "Nom de la période",
+      "year": "Année",
+      "exDividendDate": "Date ex-dividende",
+      "paymentDate": "Date de paiement",
+      "dividendRate": "Taux de dividende",
+      "totalGross": "Total brut",
+      "totalTax": "Total impôts",
+      "totalNet": "Total net",
+      "status": "Statut",
+      "draft": "Brouillon",
+      "calculated": "Calculé",
+      "paid": "Payé",
+      "calculate": "Calculer les dividendes",
+      "markAsPaid": "Marquer comme payé",
+      "viewDetails": "Voir les détails",
+      "recalculate": "Recalculer"
+    },
+    "dividendDetail": {
+      "title": "Détails de la période de dividende",
+      "summary": "Récapitulatif",
+      "payouts": "Versements individuels",
+      "shareholderName": "Coopérateur",
+      "shares": "Parts",
+      "grossAmount": "Brut",
+      "taxAmount": "Impôt",
+      "netAmount": "Net",
+      "exportPayouts": "Exporter les versements",
+      "confirmMarkPaid": "Êtes-vous sûr de vouloir marquer cette période de dividende comme payée ?"
+    },
+    "settings": {
+      "title": "Paramètres de la coopérative",
+      "general": "Paramètres généraux",
+      "coopName": "Nom de la coopérative",
+      "slug": "Slug URL",
+      "description": "Description",
+      "bankDetails": "Coordonnées bancaires",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "bankName": "Nom de la banque",
+      "registrationSettings": "Paramètres d'inscription",
+      "allowRegistration": "Autoriser les nouvelles inscriptions",
+      "requireApproval": "Exiger l'approbation d'un administrateur pour les nouveaux coopérateurs",
+      "minHoldingPeriod": "Période de détention minimale (mois)",
+      "saved": "Paramètres enregistrés avec succès",
+      "error": "Échec de l'enregistrement des paramètres",
+      "languageDescription": "Choisissez la langue de l'interface d'administration",
+      "uiLanguage": "Langue de l'interface",
+      "formattingLocale": "Paramètres régionaux de formatage",
+      "requiresApproval": "Approbation requise",
+      "termsUrl": "URL des conditions",
+      "email": "Paramètres e-mail"
+    },
+    "branding": {
+      "title": "Paramètres d'image de marque",
+      "description": "Personnalisez l'apparence de votre coopérative",
+      "logoUrl": "URL du logo",
+      "logoUrlDescription": "URL de l'image du logo de votre coopérative",
+      "primaryColor": "Couleur principale",
+      "primaryColorDescription": "Couleur de marque principale (format hexadécimal)",
+      "secondaryColor": "Couleur secondaire",
+      "secondaryColorDescription": "Couleur de marque secondaire (format hexadécimal)",
+      "termsUrl": "URL des conditions générales",
+      "termsUrlDescription": "Lien vers la page des conditions générales de votre coopérative",
+      "saved": "Paramètres d'image de marque enregistrés avec succès",
+      "error": "Échec de l'enregistrement des paramètres d'image de marque",
+      "preview": "Aperçu"
+    }
+  },
+  "system": {
+    "title": "Administration système",
+    "nav": {
+      "overview": "Aperçu",
+      "coops": "Coopératives",
+      "users": "Utilisateurs"
+    },
+    "overview": {
+      "title": "Aperçu du système",
+      "totalCoops": "Total des coopératives",
+      "totalUsers": "Total des utilisateurs",
+      "totalShareholders": "Total des coopérateurs",
+      "totalCapital": "Capital total",
+      "activeCoops": "Coopératives actives",
+      "recentActivity": "Activité récente du système"
+    },
+    "coops": {
+      "title": "Coopératives",
+      "addCoop": "Ajouter une coopérative",
+      "editCoop": "Modifier la coopérative",
+      "viewAdmins": "Gérer les administrateurs",
+      "coopName": "Nom",
+      "slug": "Slug",
+      "ogmPrefix": "Préfixe OGM",
+      "ogmPrefixHelp": "Code unique à 3 chiffres pour les communications structurées de paiement (ex. 001)",
+      "status": "Statut",
+      "active": "Active",
+      "inactive": "Inactive",
+      "shareholders": "Coopérateurs",
+      "totalCapital": "Capital total",
+      "createdAt": "Créée le",
+      "actions": "Actions",
+      "total": "Total des coopératives"
+    },
+    "coopAdmins": {
+      "title": "Administrateurs de la coopérative",
+      "currentAdmins": "Administrateurs actuels",
+      "addAdmin": "Ajouter un administrateur",
+      "removeAdmin": "Retirer l'administrateur",
+      "searchUsers": "Rechercher des utilisateurs...",
+      "noAdmins": "Aucun administrateur assigné",
+      "confirmRemove": "Êtes-vous sûr de vouloir retirer cet administrateur ?"
+    },
+    "users": {
+      "title": "Utilisateurs",
+      "searchPlaceholder": "Rechercher par nom, e-mail...",
+      "filterByRole": "Filtrer par rôle",
+      "allRoles": "Tous les rôles",
+      "userName": "Nom",
+      "email": "E-mail",
+      "role": "Rôle",
+      "createdAt": "Créé le",
+      "lastLogin": "Dernière connexion",
+      "changeRole": "Changer le rôle",
+      "total": "Total des utilisateurs",
+      "adminOf": "Administrateur de",
+      "roles": {
+        "SHAREHOLDER": "Coopérateur",
+        "COOP_ADMIN": "Administrateur",
+        "SYSTEM_ADMIN": "Admin plateforme"
+      }
+    },
+    "shareholders": {
+      "total": "Total des coopérateurs"
+    }
+  },
+  "errors": {
+    "generic": "Une erreur est survenue",
+    "notFound": "Page introuvable",
+    "unauthorized": "Non autorisé",
+    "forbidden": "Accès refusé",
+    "validation": "Erreur de validation",
+    "networkError": "Erreur réseau",
+    "serverError": "Erreur serveur",
+    "sessionExpired": "Session expirée"
+  },
+  "landing": {
+    "nav": {
+      "login": "Se connecter",
+      "register": "Commencer",
+      "pricing": "Tarifs"
+    },
+    "hero": {
+      "title": "Gestion des coopérateurs pour les coopératives belges",
+      "subtitle": "La plateforme open source qui aide les coopératives à gérer leurs coopérateurs, parts, dividendes et documents — tout en un seul endroit.",
+      "cta": "Commencer",
+      "secondaryCta": "Voir sur GitHub",
+      "openSourceBadge": "Open source — AGPL-3.0"
+    },
+    "features": {
+      "title": "Tout ce dont votre coopérative a besoin",
+      "subtitle": "De l'inscription des coopérateurs à la distribution des dividendes, OpenCoop gère le cycle complet.",
+      "shareholders": {
+        "title": "Gestion des coopérateurs",
+        "description": "Inscrivez des personnes physiques, des sociétés et des mineurs. Suivez les statuts, les coordonnées et les bénéficiaires effectifs."
+      },
+      "shares": {
+        "title": "Classes de parts et transactions",
+        "description": "Configurez plusieurs classes de parts avec prix, limites et droits de vote. Traitez les achats, ventes et transferts."
+      },
+      "dividends": {
+        "title": "Distribution des dividendes",
+        "description": "Calculez les dividendes avec le précompte mobilier belge automatique (roerende voorheffing). Générez des relevés par coopérateur."
+      },
+      "banking": {
+        "title": "Import bancaire et rapprochement OGM",
+        "description": "Importez les extraits bancaires et rapprochez automatiquement les paiements grâce aux communications structurées belges (OGM)."
+      },
+      "documents": {
+        "title": "Génération de documents",
+        "description": "Générez des certificats de parts, des attestations d'achat et des relevés de dividendes sous forme de documents PDF personnalisés."
+      },
+      "multiTenant": {
+        "title": "Multi-tenant et marque blanche",
+        "description": "Hébergez plusieurs coopératives sur une seule instance. Chaque coopérative dispose de sa propre image de marque, URL et paramètres."
+      }
+    },
+    "howItWorks": {
+      "title": "Opérationnel en quelques minutes",
+      "subtitle": "Trois étapes simples pour numériser votre coopérative.",
+      "step1": {
+        "title": "Créez votre coopérative",
+        "description": "Configurez votre coopérative avec les classes de parts, les coordonnées bancaires et l'image de marque."
+      },
+      "step2": {
+        "title": "Invitez les coopérateurs",
+        "description": "Les coopérateurs s'inscrivent en ligne et achètent des parts par virement bancaire."
+      },
+      "step3": {
+        "title": "Gérez et développez",
+        "description": "Suivez les transactions, rapprochez les paiements, distribuez les dividendes et générez les documents."
+      }
+    },
+    "openSource": {
+      "title": "Choisissez comment utiliser OpenCoop",
+      "subtitle": "Utilisez notre plateforme gérée et concentrez-vous sur votre coopérative, ou auto-hébergez pour un contrôle total.",
+      "saas": {
+        "label": "Plateforme gérée",
+        "title": "OpenCoop Cloud",
+        "description": "Nous nous occupons de l'hébergement, des mises à jour et des sauvegardes. Vous vous concentrez sur votre coopérative.",
+        "feature1": "Prêt en 24 heures",
+        "feature2": "Mises à jour et sauvegardes automatiques",
+        "feature3": "Support par e-mail inclus",
+        "cta": "Voir les tarifs"
+      },
+      "selfHostedCard": {
+        "label": "Auto-hébergé",
+        "title": "OpenCoop Community",
+        "description": "Déployez sur votre propre infrastructure avec Docker. Accès complet au code source sous licence AGPL-3.0.",
+        "feature1": "Gratuit et open source",
+        "feature2": "Propriété totale des données",
+        "feature3": "Vous gérez l'hébergement et les mises à jour",
+        "cta": "Voir sur GitHub"
+      }
+    },
+    "cta": {
+      "title": "Prêt à moderniser votre coopérative ?",
+      "subtitle": "Rejoignez les coopératives qui utilisent déjà OpenCoop pour gérer leurs coopérateurs.",
+      "primary": "Commencer",
+      "secondary": "Voir le code source sur GitHub"
+    },
+    "footer": {
+      "copyright": "OpenCoop",
+      "license": "Sous licence AGPL-3.0",
+      "language": "Langue"
+    }
+  },
+  "upgrade": {
+    "title": "Créez votre compte",
+    "welcome": "Bienvenue, {name} !",
+    "createAccountFor": "Créez un compte pour gérer vos parts chez",
+    "emailHint": "Ce sera votre e-mail de connexion et l'adresse à laquelle vous recevrez les communications",
+    "choosePassword": "Choisissez un mot de passe",
+    "createAccount": "Créer le compte",
+    "noToken": "Aucun jeton de mise à niveau fourni. Veuillez utiliser le lien reçu par e-mail.",
+    "invalidToken": "Ce lien est invalide ou a expiré.",
+    "tokenErrorTitle": "Lien invalide",
+    "contactParent": "Veuillez contacter votre parent ou tuteur pour obtenir un nouveau lien.",
+    "validationError": "Impossible de valider le lien. Veuillez réessayer.",
+    "error": "Une erreur est survenue. Veuillez réessayer.",
+    "successTitle": "Compte créé !",
+    "successDescription": "Votre compte a été créé avec succès. Vous pouvez maintenant gérer vos propres parts.",
+    "redirecting": "Redirection vers votre tableau de bord...",
+    "whatHappensTitle": "Que se passe-t-il ensuite ?",
+    "whatHappens1": "Vous gérerez vos propres parts à partir de maintenant",
+    "whatHappens2": "Vos parts n'apparaîtront plus dans le compte de votre parent",
+    "whatHappens3": "Vous recevrez toutes les communications directement"
+  },
+  "pricing": {
+    "hero": {
+      "badge": "Tarification simple et transparente",
+      "title": "Des tarifs justes pour chaque coopérative",
+      "subtitle": "Pas de frais d'installation, pas de coûts cachés. Tout ce dont vous avez besoin pour gérer vos coopérateurs — à une fraction du prix des fournisseurs traditionnels."
+    },
+    "billing": {
+      "monthly": "Mensuel",
+      "yearly": "Annuel",
+      "save": "Économisez 15 %",
+      "perMonth": "/mois",
+      "perYear": "/an",
+      "billedMonthly": "Facturé mensuellement",
+      "billedYearly": "Facturé annuellement"
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "Pour les coopératives qui débutent",
+      "priceMonthly": "49",
+      "priceYearly": "499",
+      "cta": "Commencer"
+    },
+    "growth": {
+      "name": "Growth",
+      "badge": "Le plus populaire",
+      "description": "Pour les coopératives en croissance avec davantage de coopérateurs",
+      "priceMonthly": "79",
+      "priceYearly": "799",
+      "cta": "Commencer"
+    },
+    "features": {
+      "shareholders": "Gestion des coopérateurs",
+      "shareClasses": "Classes de parts et transactions",
+      "dividends": "Distribution des dividendes",
+      "banking": "Import bancaire et rapprochement OGM",
+      "documents": "Génération de documents PDF",
+      "branding": "Image de marque personnalisée",
+      "multiTenant": "Support multi-tenant",
+      "emailNotifications": "Notifications par e-mail",
+      "starterLimit": "Jusqu'à 500 coopérateurs",
+      "unlimitedShareholders": "Coopérateurs illimités",
+      "prioritySupport": "Support prioritaire par e-mail"
+    },
+    "selfHosted": {
+      "title": "Vous préférez l'auto-hébergement ?",
+      "description": "OpenCoop est open source sous licence AGPL-3.0. Déployez-le sur votre propre infrastructure avec Docker et gardez le contrôle total de vos données.",
+      "free": "Gratuit pour toujours",
+      "dataOwnership": "Propriété totale des données",
+      "community": "Support communautaire",
+      "cta": "Voir sur GitHub",
+      "paidSupport": "Besoin d'aide ? Support payant disponible au tarif horaire."
+    },
+    "faq": {
+      "title": "Questions fréquemment posées",
+      "q1": "Que se passe-t-il si je dépasse 500 coopérateurs ?",
+      "a1": "Vous pouvez passer au plan Growth à tout moment. Vos données et paramètres sont conservés — aucune migration nécessaire.",
+      "q2": "Puis-je passer d'une facturation mensuelle à annuelle ?",
+      "a2": "Oui, vous pouvez changer à tout moment. Lors du passage à la facturation annuelle, vous recevrez un crédit au prorata pour votre période de facturation en cours.",
+      "q3": "Que comprend le support prioritaire ?",
+      "a3": "Le support prioritaire inclut des délais de réponse plus rapides par e-mail et une aide pour la configuration, l'importation de données et les questions générales sur la plateforme.",
+      "q4": "Puis-je migrer de l'auto-hébergement vers la plateforme SaaS ?",
+      "a4": "Oui. Contactez-nous et nous vous aiderons à migrer vos données depuis votre instance auto-hébergée vers la plateforme gérée."
+    },
+    "cta": {
+      "title": "Prêt à commencer ?",
+      "subtitle": "Contactez-nous et nous configurerons votre coopérative dans les 24 heures.",
+      "primary": "Nous contacter",
+      "secondary": "Voir sur GitHub"
+    },
+    "waitlist": {
+      "title": "Rejoindre la liste d'attente",
+      "subtitle": "Nous lançons bientôt. Laissez votre e-mail et nous vous avertirons lorsque votre coopérative pourra démarrer.",
+      "email": "Adresse e-mail",
+      "submit": "Rejoindre la liste d'attente",
+      "success": "Vous êtes inscrit ! Nous vous contacterons bientôt.",
+      "error": "Une erreur est survenue. Veuillez réessayer."
+    }
+  },
+  "onboarding": {
+    "title": "Créez votre coopérative",
+    "steps": {
+      "account": "Compte",
+      "cooperative": "Coopérative",
+      "done": "Terminé"
+    },
+    "account": {
+      "title": "Créez votre compte",
+      "subtitle": "Entrez votre e-mail et choisissez un mot de passe.",
+      "email": "Adresse e-mail",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe"
+    },
+    "cooperative": {
+      "title": "Configurez votre coopérative",
+      "subtitle": "Choisissez un nom et une URL pour votre coopérative.",
+      "name": "Nom de la coopérative",
+      "slug": "URL",
+      "slugPrefix": "opencoop.be/",
+      "plan": "Plan",
+      "billing": "Facturation"
+    },
+    "done": {
+      "title": "Tout est prêt !",
+      "subtitle": "Votre coopérative a été créée. Notre équipe l'examinera et l'activera sous peu.",
+      "goToDashboard": "Accéder au tableau de bord"
+    },
+    "billing": {
+      "monthly": "Mensuel",
+      "yearly": "Annuel"
+    },
+    "validation": {
+      "emailRequired": "L'e-mail est obligatoire",
+      "emailInvalid": "Entrez une adresse e-mail valide",
+      "passwordMin": "Le mot de passe doit contenir au moins 8 caractères",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "nameRequired": "Le nom de la coopérative est obligatoire",
+      "nameMin": "Le nom doit contenir au moins 2 caractères",
+      "slugRequired": "L'URL est obligatoire",
+      "slugMin": "L'URL doit contenir au moins 3 caractères",
+      "slugFormat": "Uniquement des lettres minuscules, des chiffres et des tirets"
+    },
+    "errors": {
+      "emailTaken": "Cet e-mail est déjà enregistré",
+      "slugTaken": "Cette URL est déjà utilisée",
+      "generic": "Une erreur est survenue. Veuillez réessayer."
+    },
+    "pendingActivation": "Votre coopérative est en cours d'examen. Nous l'activerons sous peu."
+  }
+}

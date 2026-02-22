@@ -5,6 +5,7 @@ import { Link, usePathname } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Building2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { LanguageSwitcher } from './language-switcher';
 
 function useScrolled(threshold = 10) {
   const [scrolled, setScrolled] = useState(false);
@@ -56,6 +57,7 @@ export function MarketingNav() {
           <Link href="/pricing">
             <Button size="sm">{t('nav.register')}</Button>
           </Link>
+          <LanguageSwitcher />
         </div>
       </div>
     </nav>
