@@ -46,7 +46,21 @@
     "optional": "Optional",
     "noResults": "No results found",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "overview": "Overview",
+    "documents": "Documents",
+    "settings": "Settings",
+    "myAccount": "My Account",
+    "type": "Type",
+    "active": "Active",
+    "inactive": "Inactive",
+    "all": "All",
+    "showing": "Showing",
+    "of": "of",
+    "verified": "Verified",
+    "certificate": "Certificate",
+    "savedSuccessfully": "Saved successfully",
+    "language": "Language"
   },
   "auth": {
     "login": "Log in",
@@ -87,7 +101,12 @@
     "sendLoginLinkDesc": "Quick and secure - no password needed",
     "usePassword": "Use password",
     "usePasswordDesc": "Log in with your account password",
-    "changeEmail": "change"
+    "changeEmail": "change",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "passwordMinLength": "Password must be at least 8 characters",
+    "passwordMismatch": "Passwords do not match"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -131,7 +150,17 @@
     },
     "beneficialOwners": "Beneficial Owners",
     "addBeneficialOwner": "Add Beneficial Owner",
-    "ownershipPercentage": "Ownership Percentage"
+    "ownershipPercentage": "Ownership Percentage",
+    "types": {
+      "INDIVIDUAL": "Individual",
+      "COMPANY": "Company",
+      "MINOR": "Minor"
+    },
+    "statuses": {
+      "PENDING": "Pending",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive"
+    }
   },
   "shares": {
     "title": "Shares",
@@ -183,7 +212,9 @@
     "managedShares": "You also manage shares for others",
     "ownShares": "Your personal shares",
     "childShares": "Shares for your children",
-    "companyShares": "Company shares"
+    "companyShares": "Company shares",
+    "myShares": "My Shares",
+    "totalShares": "Total Shares"
   },
   "transactions": {
     "title": "Transactions",
@@ -208,7 +239,21 @@
     "reject": "Reject",
     "rejectionReason": "Rejection Reason",
     "processedBy": "Processed By",
-    "processedAt": "Processed At"
+    "processedAt": "Processed At",
+    "pending": "Pending",
+    "rejectReason": "Rejection Reason",
+    "types": {
+      "PURCHASE": "Purchase",
+      "SALE": "Sale",
+      "TRANSFER_IN": "Transfer In",
+      "TRANSFER_OUT": "Transfer Out"
+    },
+    "statuses": {
+      "PENDING": "Pending",
+      "APPROVED": "Approved",
+      "COMPLETED": "Completed",
+      "REJECTED": "Rejected"
+    }
   },
   "payments": {
     "title": "Payments",
@@ -228,7 +273,8 @@
     "iban": "IBAN",
     "bic": "BIC",
     "beneficiary": "Beneficiary",
-    "paymentInstructions": "Payment Instructions"
+    "paymentInstructions": "Payment Instructions",
+    "pending": "Pending"
   },
   "dividends": {
     "title": "Dividends",
@@ -252,7 +298,9 @@
     "grossAmount": "Gross Amount",
     "taxAmount": "Tax Amount",
     "netAmount": "Net Amount",
-    "payout": "Payout"
+    "payout": "Payout",
+    "statement": "Dividend Statement",
+    "useDefault": "Use Default"
   },
   "documents": {
     "title": "Documents",
@@ -336,6 +384,7 @@
   "admin": {
     "title": "Coop Administration",
     "selectCoop": "Select cooperative to manage",
+    "totalCapital": "Total Capital",
     "nav": {
       "overview": "Overview",
       "shareholders": "Shareholders",
@@ -374,7 +423,11 @@
       "editDetails": "Edit Details",
       "totalShares": "Total Shares",
       "joinDate": "Join Date",
-      "lastActivity": "Last Activity"
+      "lastActivity": "Last Activity",
+      "total": "Total Shareholders",
+      "active": "Active Shareholders",
+      "shareholder": "Shareholder",
+      "add": "Add Shareholder"
     },
     "shareholderDetail": {
       "title": "Shareholder Details",
@@ -417,7 +470,9 @@
       "inactive": "Inactive",
       "totalIssued": "Total Issued",
       "deleteWarning": "Cannot delete a share class with existing shares.",
-      "hasIssuedSharesWarning": "This share class has issued shares. Only the active status can be changed."
+      "hasIssuedSharesWarning": "This share class has issued shares. Only the active status can be changed.",
+      "add": "Add Share Class",
+      "edit": "Edit Share Class"
     },
     "projects": {
       "title": "Projects",
@@ -464,6 +519,13 @@
       "confirmMatch": "Confirm Match",
       "ignoreTransaction": "Ignore Transaction",
       "searchShareholder": "Search shareholder..."
+    },
+    "bankImport": {
+      "title": "Bank Import",
+      "upload": "Upload CSV",
+      "counterparty": "Counterparty",
+      "matchedTo": "Matched To",
+      "match": "Match"
     },
     "dividends": {
       "title": "Dividend Management",
@@ -513,7 +575,13 @@
       "requireApproval": "Require admin approval for new shareholders",
       "minHoldingPeriod": "Minimum holding period (months)",
       "saved": "Settings saved successfully",
-      "error": "Failed to save settings"
+      "error": "Failed to save settings",
+      "languageDescription": "Choose the language for the admin interface",
+      "uiLanguage": "Interface Language",
+      "formattingLocale": "Formatting Locale",
+      "requiresApproval": "Require Approval",
+      "termsUrl": "Terms URL",
+      "email": "Email Settings"
     },
     "branding": {
       "title": "Branding Settings",
@@ -527,7 +595,8 @@
       "termsUrl": "Terms & Conditions URL",
       "termsUrlDescription": "Link to your cooperative's terms and conditions page",
       "saved": "Branding settings saved successfully",
-      "error": "Failed to save branding settings"
+      "error": "Failed to save branding settings",
+      "preview": "Preview"
     }
   },
   "system": {
@@ -561,7 +630,8 @@
       "shareholders": "Shareholders",
       "totalCapital": "Total Capital",
       "createdAt": "Created",
-      "actions": "Actions"
+      "actions": "Actions",
+      "total": "Total Cooperatives"
     },
     "coopAdmins": {
       "title": "Coop Administrators",
@@ -583,11 +653,16 @@
       "createdAt": "Created",
       "lastLogin": "Last Login",
       "changeRole": "Change Role",
+      "total": "Total Users",
+      "adminOf": "Admin of",
       "roles": {
         "SHAREHOLDER": "Shareholder",
         "COOP_ADMIN": "Coop Admin",
         "SYSTEM_ADMIN": "System Admin"
       }
+    },
+    "shareholders": {
+      "total": "Total Shareholders"
     }
   },
   "errors": {

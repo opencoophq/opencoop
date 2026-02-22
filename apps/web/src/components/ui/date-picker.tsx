@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { format } from 'date-fns';
+import { format, type Locale } from 'date-fns';
 import { nl, enGB, enUS, de, fr } from 'date-fns/locale';
 import { DayPicker, getDefaultClassNames } from 'react-day-picker';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';

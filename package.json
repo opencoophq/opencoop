@@ -1,0 +1,24 @@
+{
+  "name": "opencoop",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:generate": "pnpm --filter @opencoop/database exec prisma generate",
+    "db:push": "pnpm --filter @opencoop/database exec prisma db push",
+    "db:migrate": "pnpm --filter @opencoop/database exec prisma migrate dev",
+    "db:studio": "pnpm --filter @opencoop/database exec prisma studio",
+    "db:seed": "pnpm --filter @opencoop/database exec prisma db seed",
+    "clean": "turbo clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
