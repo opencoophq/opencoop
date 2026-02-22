@@ -675,6 +675,84 @@
     "serverError": "Serverfout",
     "sessionExpired": "Sessie verlopen"
   },
+  "landing": {
+    "nav": {
+      "login": "Inloggen",
+      "register": "Aan de slag"
+    },
+    "hero": {
+      "title": "Aandeelhoudersbeheer voor Belgische coöperaties",
+      "subtitle": "Het open-source platform waarmee coöperaties hun aandeelhouders, aandelen, dividenden en documenten beheren — alles op één plek.",
+      "cta": "Gratis starten",
+      "secondaryCta": "Bekijk op GitHub",
+      "openSourceBadge": "Open source — AGPL-3.0"
+    },
+    "features": {
+      "title": "Alles wat uw coöperatie nodig heeft",
+      "subtitle": "Van aandeelhoudersregistratie tot dividenduitkering: OpenCoop beheert de volledige levenscyclus.",
+      "shareholders": {
+        "title": "Aandeelhoudersbeheer",
+        "description": "Registreer particulieren, bedrijven en minderjarigen. Volg statussen, contactgegevens en uiteindelijke begunstigden op."
+      },
+      "shares": {
+        "title": "Aandelenklassen & Transacties",
+        "description": "Configureer meerdere aandelenklassen met prijzen, limieten en stemrechten. Verwerk aankopen, verkopen en overdrachten."
+      },
+      "dividends": {
+        "title": "Dividenduitkering",
+        "description": "Bereken dividenden met automatische Belgische roerende voorheffing. Genereer afschriften per aandeelhouder."
+      },
+      "banking": {
+        "title": "Bank import & OGM-matching",
+        "description": "Importeer bankafschriften en koppel betalingen automatisch via Belgische gestructureerde mededelingen (OGM)."
+      },
+      "documents": {
+        "title": "Documentgeneratie",
+        "description": "Genereer aandelencertificaten, aankoopbewijzen en dividendafschriften als PDF-documenten in uw huisstijl."
+      },
+      "multiTenant": {
+        "title": "Multi-tenant & White Label",
+        "description": "Host meerdere coöperaties op één installatie. Elke coöperatie krijgt eigen huisstijl, domein en instellingen."
+      }
+    },
+    "howItWorks": {
+      "title": "In enkele minuten operationeel",
+      "subtitle": "Drie eenvoudige stappen om uw coöperatie te digitaliseren.",
+      "step1": {
+        "title": "Maak uw coöperatie aan",
+        "description": "Stel uw coöperatie in met aandelenklassen, bankgegevens en huisstijl."
+      },
+      "step2": {
+        "title": "Nodig aandeelhouders uit",
+        "description": "Aandeelhouders registreren zich online en kopen aandelen via overschrijving."
+      },
+      "step3": {
+        "title": "Beheer & groei",
+        "description": "Volg transacties op, koppel betalingen, keer dividenden uit en genereer documenten."
+      }
+    },
+    "openSource": {
+      "title": "Open source, zelf te hosten, van u",
+      "subtitle": "OpenCoop is vrije software. Draai het op uw eigen infrastructuur met volledige controle over uw data.",
+      "license": "AGPL-3.0 Licentie",
+      "licenseDescription": "Vrij te gebruiken, wijzigen en distribueren",
+      "selfHosted": "Zelf te hosten",
+      "selfHostedDescription": "Deploy met Docker op elke server",
+      "dataOwnership": "Volledige data-eigendom",
+      "dataOwnershipDescription": "Uw data blijft op uw infrastructuur"
+    },
+    "cta": {
+      "title": "Klaar om uw coöperatie te moderniseren?",
+      "subtitle": "Sluit u aan bij de coöperaties die OpenCoop al gebruiken om hun aandeelhouders te beheren.",
+      "primary": "Maak uw coöperatie aan",
+      "secondary": "Bekijk broncode op GitHub"
+    },
+    "footer": {
+      "copyright": "OpenCoop",
+      "license": "Gelicentieerd onder AGPL-3.0",
+      "language": "Taal"
+    }
+  },
   "upgrade": {
     "title": "Account aanmaken",
     "welcome": "Welkom, {name}!",
