@@ -19,6 +19,7 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+RUN pnpm --filter @opencoop/shared build
 RUN pnpm --filter @opencoop/web build
 
 # Production
