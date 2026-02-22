@@ -713,7 +713,7 @@
       },
       "multiTenant": {
         "title": "Multi-tenant & White Label",
-        "description": "Host meerdere coöperaties op één installatie. Elke coöperatie krijgt eigen huisstijl, domein en instellingen."
+        "description": "Host meerdere coöperaties op één installatie. Elke coöperatie krijgt eigen huisstijl, eigen URL en instellingen."
       }
     },
     "howItWorks": {

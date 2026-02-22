@@ -33,7 +33,7 @@ services:
     image: ghcr.io/${GHCR_OWNER}/opencoop-migrate:${TAG}
     restart: "no"
     environment:
-      DATABASE_URL: postgresql://opencoop:${POSTGRES_PASSWORD}@postgres:5432/opencoop
+      DATABASE_URL: ${DATABASE_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,7 +45,7 @@ services:
     container_name: opencoop-${ENV_NAME}-api
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://opencoop:${POSTGRES_PASSWORD}@postgres:5432/opencoop
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: ${FRONTEND_URL}
