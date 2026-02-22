@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Put, Body, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -8,6 +8,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ValidateUpgradeTokenDto, UpgradeToAdultDto } from './dto/upgrade-to-adult.dto';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -68,6 +69,35 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User profile' })
   async getProfile(@CurrentUser() user: CurrentUserData) {
     return this.authService.getProfile(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update current user preferences' })
+  @ApiResponse({ status: 200, description: 'User preferences updated' })
+  async updateProfile(
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: { preferredLanguage?: string },
+  ) {
+    return this.authService.updateProfile(user.id, body);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change current user password' })
+  @ApiResponse({ status: 200, description: 'Password changed' })
+  @ApiResponse({ status: 400, description: 'Current password incorrect' })
+  async changePassword(
+    @CurrentUser() user: CurrentUserData,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(
+      user.id,
+      changePasswordDto.currentPassword,
+      changePasswordDto.newPassword,
+    );
   }
 
   @Public()

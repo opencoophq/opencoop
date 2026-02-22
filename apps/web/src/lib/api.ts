@@ -9,7 +9,7 @@ export async function api<T = unknown>(
   options: FetchOptions = {},
 ): Promise<T> {
   const token =
-    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
   const { body, headers: customHeaders, ...rest } = options;
 
@@ -30,7 +30,7 @@ export async function api<T = unknown>(
 
   if (response.status === 401) {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       window.location.href = '/login';
     }

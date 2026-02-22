@@ -27,13 +27,9 @@ export default function SharesPage() {
   useEffect(() => {
     async function loadShares() {
       try {
-        const profile = await api<{ shareholders: Array<{ id: string; coopId: string }> }>('/auth/me');
-        if (profile.shareholders?.[0]) {
-          const sh = profile.shareholders[0];
-          const data = await api<ShareData[]>(
-            `/admin/coops/${sh.coopId}/shareholders/${sh.id}`,
-          ).then((res: any) => res.shares || []);
-          setShares(data);
+        const profile = await api<{ shareholders: Array<{ shares: ShareData[] }> }>('/auth/me');
+        if (profile.shareholders?.[0]?.shares) {
+          setShares(profile.shareholders[0].shares);
         }
       } catch {
         // ignore

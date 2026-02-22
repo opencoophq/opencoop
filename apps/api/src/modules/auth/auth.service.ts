@@ -190,13 +190,7 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        preferredLanguage: true,
-        emailVerified: true,
-        createdAt: true,
+      include: {
         coopAdminOf: {
           include: {
             coop: {
@@ -217,6 +211,27 @@ export class AuthService {
                 slug: true,
               },
             },
+            shares: {
+              include: {
+                shareClass: true,
+                project: true,
+              },
+            },
+            transactions: {
+              orderBy: { createdAt: 'desc' },
+            },
+            dividendPayouts: {
+              include: {
+                dividendPeriod: {
+                  include: {
+                    coop: { select: { name: true } },
+                  },
+                },
+              },
+            },
+            documents: {
+              orderBy: { generatedAt: 'desc' },
+            },
           },
         },
       },
@@ -226,12 +241,39 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+    // Exclude sensitive fields
+    const { passwordHash, emailVerifyToken, passwordResetToken, passwordResetExpires, ...safeUser } = user;
+
     return {
-      ...user,
+      ...safeUser,
       emailVerified: !!user.emailVerified,
       adminCoops: user.coopAdminOf.map((ca) => ca.coop),
       shareholderCoops: user.shareholders.map((s) => s.coop),
     };
+  }
+
+  async updateProfile(userId: string, data: { preferredLanguage?: string }) {
+    return this.usersService.updatePreferences(userId, data);
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    return { message: 'Password changed successfully' };
   }
 
   // ============================================================================

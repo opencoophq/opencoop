@@ -34,7 +34,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT || 3001;
+  const port = process.env.API_PORT || process.env.PORT || 3001;
   await app.listen(port);
   console.log(`OpenCoop API running on port ${port}`);
   console.log(`Swagger docs: http://localhost:${port}/api/docs`);

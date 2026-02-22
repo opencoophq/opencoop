@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -220,6 +221,15 @@ export class AdminController {
     @Body() updateProjectDto: UpdateProjectDto,
   ) {
     return this.projectsService.update(id, coopId, updateProjectDto);
+  }
+
+  @Delete('projects/:id')
+  @ApiOperation({ summary: 'Delete a project' })
+  async deleteProject(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+  ) {
+    return this.projectsService.delete(id, coopId);
   }
 
   // ==================== TRANSACTIONS ====================

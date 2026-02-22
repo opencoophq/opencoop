@@ -27,13 +27,9 @@ export default function TransactionsPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const profile = await api<{ shareholders: Array<{ id: string; coopId: string }> }>('/auth/me');
-        if (profile.shareholders?.[0]) {
-          const sh = profile.shareholders[0];
-          const data = await api<{ transactions: TransactionData[] }>(
-            `/admin/coops/${sh.coopId}/shareholders/${sh.id}`,
-          );
-          setTransactions(data.transactions || []);
+        const profile = await api<{ shareholders: Array<{ transactions: TransactionData[] }> }>('/auth/me');
+        if (profile.shareholders?.[0]?.transactions) {
+          setTransactions(profile.shareholders[0].transactions);
         }
       } catch {
         // ignore
