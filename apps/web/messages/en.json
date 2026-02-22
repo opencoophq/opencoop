@@ -675,6 +675,84 @@
     "serverError": "Server error",
     "sessionExpired": "Session expired"
   },
+  "landing": {
+    "nav": {
+      "login": "Log in",
+      "register": "Get started"
+    },
+    "hero": {
+      "title": "Shareholder management for Belgian cooperatives",
+      "subtitle": "The open-source platform that helps cooperatives manage shareholders, shares, dividends, and documents — all in one place.",
+      "cta": "Get started free",
+      "secondaryCta": "View on GitHub",
+      "openSourceBadge": "Open source — AGPL-3.0"
+    },
+    "features": {
+      "title": "Everything your cooperative needs",
+      "subtitle": "From shareholder registration to dividend distribution, OpenCoop handles the complete lifecycle.",
+      "shareholders": {
+        "title": "Shareholder Management",
+        "description": "Register individuals, companies, and minors. Track statuses, contact details, and beneficial owners."
+      },
+      "shares": {
+        "title": "Share Classes & Transactions",
+        "description": "Configure multiple share classes with pricing, limits, and voting rights. Process purchases, sales, and transfers."
+      },
+      "dividends": {
+        "title": "Dividend Distribution",
+        "description": "Calculate dividends with automatic Belgian withholding tax (roerende voorheffing). Generate statements per shareholder."
+      },
+      "banking": {
+        "title": "Bank Import & OGM Matching",
+        "description": "Import bank statements and automatically match payments using Belgian structured communication codes (OGM)."
+      },
+      "documents": {
+        "title": "Document Generation",
+        "description": "Generate share certificates, purchase statements, and dividend statements as branded PDF documents."
+      },
+      "multiTenant": {
+        "title": "Multi-tenant & White Label",
+        "description": "Host multiple cooperatives on a single instance. Each coop gets custom branding, domain, and settings."
+      }
+    },
+    "howItWorks": {
+      "title": "Up and running in minutes",
+      "subtitle": "Three simple steps to digitize your cooperative.",
+      "step1": {
+        "title": "Create your cooperative",
+        "description": "Set up your coop with share classes, bank details, and branding."
+      },
+      "step2": {
+        "title": "Invite shareholders",
+        "description": "Shareholders register online and purchase shares via bank transfer."
+      },
+      "step3": {
+        "title": "Manage & grow",
+        "description": "Track transactions, match payments, distribute dividends, and generate documents."
+      }
+    },
+    "openSource": {
+      "title": "Open source, self-hostable, yours",
+      "subtitle": "OpenCoop is free software. Run it on your own infrastructure with full control over your data.",
+      "license": "AGPL-3.0 License",
+      "licenseDescription": "Free to use, modify, and distribute",
+      "selfHosted": "Self-hostable",
+      "selfHostedDescription": "Deploy with Docker on any server",
+      "dataOwnership": "Full data ownership",
+      "dataOwnershipDescription": "Your data stays on your infrastructure"
+    },
+    "cta": {
+      "title": "Ready to modernize your cooperative?",
+      "subtitle": "Join the cooperatives already using OpenCoop to manage their shareholders.",
+      "primary": "Create your cooperative",
+      "secondary": "View source on GitHub"
+    },
+    "footer": {
+      "copyright": "OpenCoop",
+      "license": "Licensed under AGPL-3.0",
+      "language": "Language"
+    }
+  },
   "upgrade": {
     "title": "Create Your Account",
     "welcome": "Welcome, {name}!",
