@@ -46,7 +46,21 @@
     "optional": "Optioneel",
     "noResults": "Geen resultaten gevonden",
     "showMore": "Meer tonen",
-    "showLess": "Minder tonen"
+    "showLess": "Minder tonen",
+    "overview": "Overzicht",
+    "documents": "Documenten",
+    "settings": "Instellingen",
+    "myAccount": "Mijn account",
+    "type": "Type",
+    "active": "Actief",
+    "inactive": "Inactief",
+    "all": "Alle",
+    "showing": "Toont",
+    "of": "van",
+    "verified": "Geverifieerd",
+    "certificate": "Certificaat",
+    "savedSuccessfully": "Succesvol opgeslagen",
+    "language": "Taal"
   },
   "auth": {
     "login": "Inloggen",
@@ -87,7 +101,12 @@
     "sendLoginLinkDesc": "Snel en veilig - geen wachtwoord nodig",
     "usePassword": "Gebruik wachtwoord",
     "usePasswordDesc": "Log in met je accountwachtwoord",
-    "changeEmail": "wijzigen"
+    "changeEmail": "wijzigen",
+    "changePassword": "Wachtwoord wijzigen",
+    "currentPassword": "Huidig wachtwoord",
+    "newPassword": "Nieuw wachtwoord",
+    "passwordMinLength": "Wachtwoord moet minimaal 8 tekens bevatten",
+    "passwordMismatch": "Wachtwoorden komen niet overeen"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -131,7 +150,17 @@
     },
     "beneficialOwners": "Uiteindelijke begunstigden",
     "addBeneficialOwner": "Begunstigde toevoegen",
-    "ownershipPercentage": "Eigendomspercentage"
+    "ownershipPercentage": "Eigendomspercentage",
+    "types": {
+      "INDIVIDUAL": "Particulier",
+      "COMPANY": "Bedrijf",
+      "MINOR": "Minderjarige"
+    },
+    "statuses": {
+      "PENDING": "In behandeling",
+      "ACTIVE": "Actief",
+      "INACTIVE": "Inactief"
+    }
   },
   "shares": {
     "title": "Aandelen",
@@ -183,7 +212,9 @@
     "managedShares": "U beheert ook aandelen voor anderen",
     "ownShares": "Uw persoonlijke aandelen",
     "childShares": "Aandelen voor uw kinderen",
-    "companyShares": "Bedrijfsaandelen"
+    "companyShares": "Bedrijfsaandelen",
+    "myShares": "Mijn aandelen",
+    "totalShares": "Totaal aandelen"
   },
   "transactions": {
     "title": "Transacties",
@@ -208,7 +239,21 @@
     "reject": "Afwijzen",
     "rejectionReason": "Reden van afwijzing",
     "processedBy": "Verwerkt door",
-    "processedAt": "Verwerkt op"
+    "processedAt": "Verwerkt op",
+    "pending": "In behandeling",
+    "rejectReason": "Reden van afwijzing",
+    "types": {
+      "PURCHASE": "Aankoop",
+      "SALE": "Verkoop",
+      "TRANSFER_IN": "Ontvangen overdracht",
+      "TRANSFER_OUT": "Uitgaande overdracht"
+    },
+    "statuses": {
+      "PENDING": "In behandeling",
+      "APPROVED": "Goedgekeurd",
+      "COMPLETED": "Voltooid",
+      "REJECTED": "Afgewezen"
+    }
   },
   "payments": {
     "title": "Betalingen",
@@ -228,7 +273,8 @@
     "iban": "IBAN",
     "bic": "BIC",
     "beneficiary": "Begunstigde",
-    "paymentInstructions": "Betalingsinstructies"
+    "paymentInstructions": "Betalingsinstructies",
+    "pending": "In behandeling"
   },
   "dividends": {
     "title": "Dividenden",
@@ -252,7 +298,9 @@
     "grossAmount": "Bruto bedrag",
     "taxAmount": "Belasting",
     "netAmount": "Netto bedrag",
-    "payout": "Uitbetaling"
+    "payout": "Uitbetaling",
+    "statement": "Dividendafschrift",
+    "useDefault": "Standaard gebruiken"
   },
   "documents": {
     "title": "Documenten",
@@ -336,6 +384,7 @@
   "admin": {
     "title": "Coöperatiebeheer",
     "selectCoop": "Selecteer coöperatie om te beheren",
+    "totalCapital": "Totaal kapitaal",
     "nav": {
       "overview": "Overzicht",
       "shareholders": "Aandeelhouders",
@@ -374,7 +423,11 @@
       "editDetails": "Details bewerken",
       "totalShares": "Totaal aandelen",
       "joinDate": "Lid sinds",
-      "lastActivity": "Laatste activiteit"
+      "lastActivity": "Laatste activiteit",
+      "total": "Totaal aandeelhouders",
+      "active": "Actieve aandeelhouders",
+      "shareholder": "Aandeelhouder",
+      "add": "Aandeelhouder toevoegen"
     },
     "shareholderDetail": {
       "title": "Aandeelhouder details",
@@ -417,7 +470,9 @@
       "inactive": "Inactief",
       "totalIssued": "Totaal uitgegeven",
       "deleteWarning": "Kan aandelenklasse met bestaande aandelen niet verwijderen.",
-      "hasIssuedSharesWarning": "Deze aandelenklasse heeft uitgegeven aandelen. Alleen de actieve status kan worden gewijzigd."
+      "hasIssuedSharesWarning": "Deze aandelenklasse heeft uitgegeven aandelen. Alleen de actieve status kan worden gewijzigd.",
+      "add": "Aandelenklasse toevoegen",
+      "edit": "Aandelenklasse bewerken"
     },
     "projects": {
       "title": "Projecten",
@@ -464,6 +519,13 @@
       "confirmMatch": "Match bevestigen",
       "ignoreTransaction": "Transactie negeren",
       "searchShareholder": "Zoek aandeelhouder..."
+    },
+    "bankImport": {
+      "title": "Bank import",
+      "upload": "CSV uploaden",
+      "counterparty": "Tegenpartij",
+      "matchedTo": "Gekoppeld aan",
+      "match": "Koppelen"
     },
     "dividends": {
       "title": "Dividendbeheer",
@@ -513,7 +575,13 @@
       "requireApproval": "Admin goedkeuring vereist voor nieuwe aandeelhouders",
       "minHoldingPeriod": "Minimale bezitsperiode (maanden)",
       "saved": "Instellingen opgeslagen",
-      "error": "Kon instellingen niet opslaan"
+      "error": "Kon instellingen niet opslaan",
+      "languageDescription": "Kies de taal voor de beheerinterface",
+      "uiLanguage": "Interfacetaal",
+      "formattingLocale": "Opmaaklocatie",
+      "requiresApproval": "Goedkeuring vereist",
+      "termsUrl": "URL algemene voorwaarden",
+      "email": "E-mailinstellingen"
     },
     "branding": {
       "title": "Huisstijl instellingen",
@@ -527,7 +595,8 @@
       "termsUrl": "URL algemene voorwaarden",
       "termsUrlDescription": "Link naar de algemene voorwaarden van uw coöperatie",
       "saved": "Huisstijl instellingen opgeslagen",
-      "error": "Kon huisstijl instellingen niet opslaan"
+      "error": "Kon huisstijl instellingen niet opslaan",
+      "preview": "Voorbeeld"
     }
   },
   "system": {
@@ -561,7 +630,8 @@
       "shareholders": "Aandeelhouders",
       "totalCapital": "Totaal kapitaal",
       "createdAt": "Aangemaakt",
-      "actions": "Acties"
+      "actions": "Acties",
+      "total": "Totaal coöperaties"
     },
     "coopAdmins": {
       "title": "Coöperatie beheerders",
@@ -583,11 +653,16 @@
       "createdAt": "Aangemaakt",
       "lastLogin": "Laatste login",
       "changeRole": "Rol wijzigen",
+      "total": "Totaal gebruikers",
+      "adminOf": "Beheerder van",
       "roles": {
         "SHAREHOLDER": "Aandeelhouder",
         "COOP_ADMIN": "Coöperatiebeheerder",
         "SYSTEM_ADMIN": "Systeembeheerder"
       }
+    },
+    "shareholders": {
+      "total": "Totaal aandeelhouders"
     }
   },
   "errors": {

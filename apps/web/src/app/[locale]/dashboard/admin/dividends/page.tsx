@@ -57,7 +57,7 @@ type DividendPeriodForm = z.infer<typeof dividendPeriodSchema>;
 
 export default function DividendsListPage() {
   const t = useTranslations();
-  const { selectedAdminCoop, loading: adminLoading } = useAdmin();
+  const { selectedCoop } = useAdmin();
   const [periods, setPeriods] = useState<DividendPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
@@ -78,13 +78,13 @@ export default function DividendsListPage() {
   });
 
   const fetchPeriods = useCallback(async () => {
-    if (!selectedAdminCoop) return;
+    if (!selectedCoop) return;
 
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop.id}/dividends`,
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -102,7 +102,7 @@ export default function DividendsListPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedAdminCoop]);
+  }, [selectedCoop]);
 
   useEffect(() => {
     fetchPeriods();
@@ -120,7 +120,7 @@ export default function DividendsListPage() {
   };
 
   const onSubmit = async (data: DividendPeriodForm) => {
-    if (!selectedAdminCoop) return;
+    if (!selectedCoop) return;
 
     setSaving(true);
     setError(null);
@@ -128,7 +128,7 @@ export default function DividendsListPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop.id}/dividends`,
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends`,
         {
           method: 'POST',
           headers: {
@@ -157,12 +157,12 @@ export default function DividendsListPage() {
   };
 
   const handleCalculate = async (period: DividendPeriod) => {
-    if (!selectedAdminCoop) return;
+    if (!selectedCoop) return;
 
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop.id}/dividends/${period.id}/calculate`,
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends/${period.id}/calculate`,
         {
           method: 'POST',
           headers: {
@@ -183,12 +183,12 @@ export default function DividendsListPage() {
   };
 
   const handleMarkPaid = async (period: DividendPeriod) => {
-    if (!selectedAdminCoop || !confirm(t('admin.dividendDetail.confirmMarkPaid'))) return;
+    if (!selectedCoop || !confirm(t('admin.dividendDetail.confirmMarkPaid'))) return;
 
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop.id}/dividends/${period.id}/mark-paid`,
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends/${period.id}/mark-paid`,
         {
           method: 'POST',
           headers: {
@@ -229,7 +229,7 @@ export default function DividendsListPage() {
     }
   };
 
-  if (adminLoading) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse h-8 w-48 bg-muted rounded" />
@@ -238,7 +238,7 @@ export default function DividendsListPage() {
     );
   }
 
-  if (!selectedAdminCoop) {
+  if (!selectedCoop) {
     return (
       <div className="p-6">
         <p className="text-muted-foreground">{t('admin.selectCoop')}</p>

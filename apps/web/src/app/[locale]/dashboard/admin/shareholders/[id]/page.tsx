@@ -102,7 +102,7 @@ export default function ShareholderDetailPage() {
   const t = useTranslations();
   const params = useParams();
   const shareholderId = params.id as string;
-  const { selectedAdminCoop, loading: adminLoading } = useAdmin();
+  const { selectedCoop } = useAdmin();
   const [shareholder, setShareholder] = useState<ShareholderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -117,7 +117,7 @@ export default function ShareholderDetailPage() {
   });
 
   useEffect(() => {
-    if (!selectedAdminCoop || !shareholderId) {
+    if (!selectedCoop || !shareholderId) {
       setLoading(false);
       return;
     }
@@ -127,7 +127,7 @@ export default function ShareholderDetailPage() {
       try {
         const token = localStorage.getItem('accessToken');
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop.id}/shareholders/${shareholderId}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -163,10 +163,10 @@ export default function ShareholderDetailPage() {
     };
 
     fetchShareholder();
-  }, [selectedAdminCoop, shareholderId, form, t]);
+  }, [selectedCoop, shareholderId, form, t]);
 
   const onSubmit = async (data: ShareholderForm) => {
-    if (!selectedAdminCoop || !shareholderId) return;
+    if (!selectedCoop || !shareholderId) return;
 
     setSaving(true);
     setError(null);
@@ -175,7 +175,7 @@ export default function ShareholderDetailPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedAdminCoop.id}/shareholders/${shareholderId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
         {
           method: 'PUT',
           headers: {
@@ -208,7 +208,7 @@ export default function ShareholderDetailPage() {
     return new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(amount);
   };
 
-  if (adminLoading || loading) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
@@ -219,7 +219,7 @@ export default function ShareholderDetailPage() {
     );
   }
 
-  if (!selectedAdminCoop) {
+  if (!selectedCoop) {
     return (
       <div className="p-6">
         <p className="text-muted-foreground">{t('admin.selectCoop')}</p>
