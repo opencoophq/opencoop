@@ -62,7 +62,7 @@ const FAQ_KEYS = ['q1', 'q2', 'q3', 'q4'] as const;
 export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
   const t = useTranslations('pricing');
   const locale = useLocale();
-  const [yearly, setYearly] = useState(true);
+  const [yearly, setYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   // Waitlist state
