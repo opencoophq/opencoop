@@ -124,6 +124,21 @@ API_URL=http://localhost:3001
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
+Optional:
+```
+LAUNCH_MODE=waitlist    # Set on prod to show waitlist dialog instead of onboarding links
+```
+
+## Feature Flags
+
+### `LAUNCH_MODE` (server-side, runtime)
+Controls whether the pricing page CTAs link to `/onboarding` or open a waitlist email collection dialog.
+
+- **Not set / `live`**: CTAs link to `/onboarding` (full signup flow)
+- **`waitlist`**: CTAs open a dialog that collects email + plan via `POST /auth/waitlist`
+
+**Important**: This is a server-side env var (not `NEXT_PUBLIC_*`) because acc and prod share the same Docker image. The pricing page uses a server/client component split (`page.tsx` reads the env at runtime, passes it as a prop to `pricing-page.tsx`).
+
 ## API Documentation
 
 Swagger UI available at: `http://localhost:3001/api/docs`
