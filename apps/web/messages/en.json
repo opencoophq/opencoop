@@ -657,8 +657,8 @@
       "adminOf": "Admin of",
       "roles": {
         "SHAREHOLDER": "Shareholder",
-        "COOP_ADMIN": "Coop Admin",
-        "SYSTEM_ADMIN": "System Admin"
+        "COOP_ADMIN": "Administrator",
+        "SYSTEM_ADMIN": "Platform Admin"
       }
     },
     "shareholders": {

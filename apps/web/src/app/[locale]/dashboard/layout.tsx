@@ -47,7 +47,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const userData = localStorage.getItem('user');
 
     if (!token || !userData) {
@@ -81,7 +81,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
     router.push('/login');
   };
@@ -209,7 +209,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <div className="flex items-center justify-between">
               <div className="text-sm truncate">
                 <p className="font-medium truncate">{user.email}</p>
-                <p className="text-gray-500 text-xs">{user.role}</p>
+                <p className="text-gray-500 text-xs">{t(`system.users.roles.${user.role}`)}</p>
               </div>
               <Button variant="ghost" size="icon" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
