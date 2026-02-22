@@ -20,7 +20,10 @@ import { SystemModule } from './modules/system/system.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../../.env'],
+    }),
     ScheduleModule.forRoot(),
     BullModule.forRoot({
       redis: {

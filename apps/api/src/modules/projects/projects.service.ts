@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -77,5 +77,20 @@ export class ProjectsService {
         ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
       },
     });
+  }
+
+  async delete(id: string, coopId: string) {
+    const project = await this.findById(id, coopId);
+
+    const sharesUsingProject = await this.prisma.share.count({
+      where: { projectId: project.id },
+    });
+
+    if (sharesUsingProject > 0) {
+      throw new BadRequestException('Cannot delete project with associated shares');
+    }
+
+    await this.prisma.project.delete({ where: { id } });
+    return { message: 'Project deleted' };
   }
 }
