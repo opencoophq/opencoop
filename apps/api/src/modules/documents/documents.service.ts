@@ -58,7 +58,7 @@ export class DocumentsService {
       locale: locale || 'nl',
     });
 
-    const buffer = await renderToBuffer(element);
+    const buffer = await renderToBuffer(element as any);
 
     // Save file
     const uploadDir = process.env.UPLOAD_DIR || './uploads';
