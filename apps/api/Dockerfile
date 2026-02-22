@@ -21,7 +21,8 @@ RUN pnpm --filter @opencoop/database exec prisma generate
 RUN pnpm --filter @opencoop/shared build
 RUN pnpm --filter @opencoop/pdf-templates build
 RUN pnpm --filter @opencoop/api build
-RUN rm -rf /app/deploy && pnpm --filter @opencoop/api deploy --prod /app/deploy
+RUN rm -rf /app/deploy && pnpm --filter @opencoop/api deploy --prod /app/deploy \
+    && cp -r /app/node_modules/.prisma /app/deploy/node_modules/.prisma
 
 # Production
 FROM node:20-alpine AS production
