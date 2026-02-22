@@ -1,0 +1,88 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: opencoop
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: opencoop
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opencoop"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/var/lib/redis/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: ghcr.io/${GHCR_OWNER}/opencoop-migrate:${TAG}
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://opencoop:${POSTGRES_PASSWORD}@postgres:5432/opencoop
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  api:
+    image: ghcr.io/${GHCR_OWNER}/opencoop-api:${TAG}
+    container_name: opencoop-${ENV_NAME}-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://opencoop:${POSTGRES_PASSWORD}@postgres:5432/opencoop
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - proxy
+
+  web:
+    image: ghcr.io/${GHCR_OWNER}/opencoop-web:${TAG}
+    container_name: opencoop-${ENV_NAME}-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: /api
+      API_URL: http://api:3001
+      NEXTAUTH_URL: ${FRONTEND_URL}
+      NEXTAUTH_SECRET: ${JWT_SECRET}
+    depends_on:
+      - api
+    networks:
+      - internal
+      - proxy
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  internal:
+  proxy:
+    external: true
