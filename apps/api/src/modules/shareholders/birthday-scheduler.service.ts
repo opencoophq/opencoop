@@ -99,7 +99,7 @@ export class BirthdaySchedulerService {
         firstName: minor.firstName || '',
         lastName: minor.lastName || '',
         coopName: minor.coop.name,
-        loginUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3002'}/login`,
+        loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3002'}/login`,
       },
     );
 
@@ -149,7 +149,7 @@ export class BirthdaySchedulerService {
     }
 
     // Send notification email to parent
-    const upgradeUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3002'}/upgrade-to-adult?token=${token}`;
+    const upgradeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3002'}/upgrade-to-adult?token=${token}`;
     await this.emailService.sendMinorUpgradeNotification(
       minor.coopId,
       parentEmail,
@@ -224,7 +224,7 @@ export class BirthdaySchedulerService {
             minorFirstName: minor.firstName || '',
             minorLastName: minor.lastName || '',
             coopName: minor.coop.name,
-            dashboardUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3002'}/dashboard`,
+            dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:3002'}/dashboard`,
             yearsUntil18: 2,
           },
         );
@@ -301,7 +301,7 @@ export class BirthdaySchedulerService {
             minorFirstName: minor.firstName || '',
             minorLastName: minor.lastName || '',
             coopName: minor.coop.name,
-            dashboardUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3002'}/dashboard`,
+            dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:3002'}/dashboard`,
             yearsUntil18: yearsUntil18 > 0 ? yearsUntil18 : 1,
           },
         );
@@ -357,7 +357,7 @@ export class BirthdaySchedulerService {
         if (!parentEmail) continue;
 
         const daysRemaining = Math.ceil((tokenRecord.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-        const upgradeUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3002'}/upgrade-to-adult?token=${tokenRecord.token}`;
+        const upgradeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3002'}/upgrade-to-adult?token=${tokenRecord.token}`;
 
         await this.emailService.sendMinorUpgradeReminder(
           tokenRecord.shareholder.coopId,
