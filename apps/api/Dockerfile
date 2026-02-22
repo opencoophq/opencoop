@@ -18,6 +18,8 @@ COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/packages ./packages
 COPY . .
 RUN pnpm --filter @opencoop/database exec prisma generate
+RUN pnpm --filter @opencoop/shared build
+RUN pnpm --filter @opencoop/pdf-templates build
 RUN pnpm --filter @opencoop/api build
 
 # Production
