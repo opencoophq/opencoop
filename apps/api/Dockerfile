@@ -21,15 +21,15 @@ RUN pnpm --filter @opencoop/database exec prisma generate
 RUN pnpm --filter @opencoop/shared build
 RUN pnpm --filter @opencoop/pdf-templates build
 RUN pnpm --filter @opencoop/api build
+RUN pnpm --filter @opencoop/api deploy --prod /app/deploy
 
 # Production
 FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
+COPY --from=build /app/deploy/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./dist
-COPY --from=build /app/apps/api/package.json ./
-COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages/database/prisma ./prisma
 
 EXPOSE 3001
