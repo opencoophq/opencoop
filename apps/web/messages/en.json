@@ -678,12 +678,13 @@
   "landing": {
     "nav": {
       "login": "Log in",
-      "register": "Get started"
+      "register": "Get started",
+      "pricing": "Pricing"
     },
     "hero": {
       "title": "Shareholder management for Belgian cooperatives",
       "subtitle": "The open-source platform that helps cooperatives manage shareholders, shares, dividends, and documents — all in one place.",
-      "cta": "Get started free",
+      "cta": "Get started",
       "secondaryCta": "View on GitHub",
       "openSourceBadge": "Open source — AGPL-3.0"
     },
@@ -732,19 +733,31 @@
       }
     },
     "openSource": {
-      "title": "Open source, self-hostable, yours",
-      "subtitle": "OpenCoop is free software. Run it on your own infrastructure with full control over your data.",
-      "license": "AGPL-3.0 License",
-      "licenseDescription": "Free to use, modify, and distribute",
-      "selfHosted": "Self-hostable",
-      "selfHostedDescription": "Deploy with Docker on any server",
-      "dataOwnership": "Full data ownership",
-      "dataOwnershipDescription": "Your data stays on your infrastructure"
+      "title": "Choose how you run OpenCoop",
+      "subtitle": "Use our managed platform and focus on your cooperative, or self-host for full control.",
+      "saas": {
+        "label": "Managed platform",
+        "title": "OpenCoop Cloud",
+        "description": "We handle hosting, updates, and backups. You focus on your cooperative.",
+        "feature1": "Ready in 24 hours",
+        "feature2": "Automatic updates & backups",
+        "feature3": "Email support included",
+        "cta": "View pricing"
+      },
+      "selfHostedCard": {
+        "label": "Self-hosted",
+        "title": "OpenCoop Community",
+        "description": "Deploy on your own infrastructure with Docker. Full source code access under AGPL-3.0.",
+        "feature1": "Free & open source",
+        "feature2": "Full data ownership",
+        "feature3": "You manage hosting & updates",
+        "cta": "View on GitHub"
+      }
     },
     "cta": {
       "title": "Ready to modernize your cooperative?",
       "subtitle": "Join the cooperatives already using OpenCoop to manage their shareholders.",
-      "primary": "Create your cooperative",
+      "primary": "Get started",
       "secondary": "View source on GitHub"
     },
     "footer": {
@@ -773,5 +786,125 @@
     "whatHappens1": "You'll manage your own shares from now on",
     "whatHappens2": "Your shares will no longer appear in your parent's account",
     "whatHappens3": "You'll receive all communications directly"
+  },
+  "pricing": {
+    "hero": {
+      "badge": "Simple, transparent pricing",
+      "title": "Fair pricing for every cooperative",
+      "subtitle": "No setup fees, no hidden costs. Everything you need to manage your shareholders — at a fraction of what legacy providers charge."
+    },
+    "billing": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "save": "Save 15%",
+      "perMonth": "/month",
+      "perYear": "/year",
+      "billedMonthly": "Billed monthly",
+      "billedYearly": "Billed yearly"
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "For cooperatives just getting started",
+      "priceMonthly": "49",
+      "priceYearly": "499",
+      "cta": "Get started"
+    },
+    "growth": {
+      "name": "Growth",
+      "badge": "Most popular",
+      "description": "For growing cooperatives with more shareholders",
+      "priceMonthly": "79",
+      "priceYearly": "799",
+      "cta": "Get started"
+    },
+    "features": {
+      "shareholders": "Shareholder management",
+      "shareClasses": "Share classes & transactions",
+      "dividends": "Dividend distribution",
+      "banking": "Bank import & OGM matching",
+      "documents": "PDF document generation",
+      "branding": "Custom branding",
+      "multiTenant": "Multi-tenant support",
+      "emailNotifications": "Email notifications",
+      "starterLimit": "Up to 500 shareholders",
+      "unlimitedShareholders": "Unlimited shareholders",
+      "prioritySupport": "Priority email support"
+    },
+    "selfHosted": {
+      "title": "Prefer to self-host?",
+      "description": "OpenCoop is open source under the AGPL-3.0 license. Deploy it on your own infrastructure with Docker and keep full control over your data.",
+      "free": "Free forever",
+      "dataOwnership": "Full data ownership",
+      "community": "Community support",
+      "cta": "View on GitHub",
+      "paidSupport": "Need help? Paid support available at hourly rate."
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "q1": "What happens if I exceed 500 shareholders?",
+      "a1": "You can upgrade to the Growth plan at any time. Your data and settings are preserved — no migration needed.",
+      "q2": "Can I switch between monthly and yearly billing?",
+      "a2": "Yes, you can switch at any time. When moving to yearly billing, you'll receive a prorated credit for your current billing period.",
+      "q3": "What's included in priority support?",
+      "a3": "Priority support includes faster response times via email and help with configuration, data imports, and general platform questions.",
+      "q4": "Can I migrate from self-hosted to the SaaS platform?",
+      "a4": "Yes. Contact us and we'll help you migrate your data from your self-hosted instance to the managed platform."
+    },
+    "cta": {
+      "title": "Ready to get started?",
+      "subtitle": "Get in touch and we'll set up your cooperative within 24 hours.",
+      "primary": "Contact us",
+      "secondary": "View on GitHub"
+    }
+  },
+  "onboarding": {
+    "title": "Start your cooperative",
+    "steps": {
+      "account": "Account",
+      "cooperative": "Cooperative",
+      "done": "Done"
+    },
+    "account": {
+      "title": "Create your account",
+      "subtitle": "Enter your email and choose a password.",
+      "email": "Email address",
+      "password": "Password",
+      "confirmPassword": "Confirm password"
+    },
+    "cooperative": {
+      "title": "Set up your cooperative",
+      "subtitle": "Choose a name and URL for your cooperative.",
+      "name": "Cooperative name",
+      "slug": "URL",
+      "slugPrefix": "opencoop.be/",
+      "plan": "Plan",
+      "billing": "Billing"
+    },
+    "done": {
+      "title": "You're all set!",
+      "subtitle": "Your cooperative has been created. Our team will review and activate it shortly.",
+      "goToDashboard": "Go to dashboard"
+    },
+    "billing": {
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Enter a valid email address",
+      "passwordMin": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match",
+      "nameRequired": "Cooperative name is required",
+      "nameMin": "Name must be at least 2 characters",
+      "slugRequired": "URL is required",
+      "slugMin": "URL must be at least 3 characters",
+      "slugFormat": "Only lowercase letters, numbers, and dashes"
+    },
+    "errors": {
+      "emailTaken": "This email is already registered",
+      "slugTaken": "This URL is already in use",
+      "generic": "Something went wrong. Please try again."
+    },
+    "pendingActivation": "Your cooperative is being reviewed. We'll activate it shortly."
   }
 }

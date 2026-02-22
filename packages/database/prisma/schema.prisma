@@ -105,6 +105,7 @@ model Coop {
   secondaryColor String  @default("#3b82f6")
 
   // Settings
+  active           Boolean @default(true)
   requiresApproval Boolean @default(true)
   ogmPrefix        String  @unique // Unique prefix for OGM codes (e.g., "001")
 

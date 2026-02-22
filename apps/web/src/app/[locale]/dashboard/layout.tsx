@@ -31,6 +31,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -229,6 +231,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="lg:pl-64 pt-14 lg:pt-0">
+        {selectedCoop && selectedCoop.active === false && (
+          <div className="px-6 pt-6">
+            <Alert className="border-yellow-300 bg-yellow-50 text-yellow-800">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription>{t('onboarding.pendingActivation')}</AlertDescription>
+            </Alert>
+          </div>
+        )}
         <div className="p-6">{children}</div>
       </main>
     </div>

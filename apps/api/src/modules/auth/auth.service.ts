@@ -4,10 +4,12 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
+import { CoopsService } from '../coops/coops.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { OnboardingDto } from './dto/onboarding.dto';
 import { UpgradeToAdultDto } from './dto/upgrade-to-adult.dto';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
@@ -20,6 +22,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private coopsService: CoopsService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -113,6 +116,81 @@ export class AuthService {
     };
   }
 
+  async onboard(onboardingDto: OnboardingDto) {
+    const email = onboardingDto.email.toLowerCase();
+
+    // Check email uniqueness
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser) {
+      throw new ConflictException('Email already registered');
+    }
+
+    // Check slug uniqueness
+    const existingCoop = await this.prisma.coop.findUnique({
+      where: { slug: onboardingDto.coopSlug },
+    });
+    if (existingCoop) {
+      throw new ConflictException('Slug already in use');
+    }
+
+    const passwordHash = await bcrypt.hash(onboardingDto.password, 12);
+    const ogmPrefix = await this.coopsService.generateUniqueOgmPrefix();
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          passwordHash,
+          role: 'COOP_ADMIN',
+          preferredLanguage: onboardingDto.preferredLanguage || 'nl',
+        },
+      });
+
+      const coop = await tx.coop.create({
+        data: {
+          name: onboardingDto.coopName,
+          slug: onboardingDto.coopSlug,
+          active: false,
+          ogmPrefix,
+        },
+      });
+
+      await tx.coopAdmin.create({
+        data: {
+          userId: user.id,
+          coopId: coop.id,
+        },
+      });
+
+      return { user, coop };
+    });
+
+    const payload = {
+      sub: result.user.id,
+      email: result.user.email,
+      role: result.user.role,
+      coopIds: [result.coop.id],
+    };
+
+    return {
+      accessToken: this.jwtService.sign(payload),
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        role: result.user.role,
+        preferredLanguage: result.user.preferredLanguage,
+        emailVerified: false,
+      },
+      coop: {
+        id: result.coop.id,
+        name: result.coop.name,
+        slug: result.coop.slug,
+      },
+    };
+  }
+
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: forgotPasswordDto.email.toLowerCase() },
@@ -198,6 +276,7 @@ export class AuthService {
                 id: true,
                 name: true,
                 slug: true,
+                active: true,
               },
             },
           },

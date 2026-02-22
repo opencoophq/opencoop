@@ -5,6 +5,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { OnboardingDto } from './dto/onboarding.dto';
 import { ValidateUpgradeTokenDto, UpgradeToAdultDto } from './dto/upgrade-to-adult.dto';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
@@ -25,6 +26,15 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email already registered' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Public()
+  @Post('onboarding')
+  @ApiOperation({ summary: 'Register user and create a new cooperative' })
+  @ApiResponse({ status: 201, description: 'User and cooperative created successfully' })
+  @ApiResponse({ status: 409, description: 'Email or slug already in use' })
+  async onboard(@Body() onboardingDto: OnboardingDto) {
+    return this.authService.onboard(onboardingDto);
   }
 
   @Public()
