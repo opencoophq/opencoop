@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies
 FROM base AS deps
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY apps/api/package.json apps/api/
 COPY packages/database/package.json packages/database/
 COPY packages/shared/package.json packages/shared/
@@ -21,16 +21,15 @@ RUN pnpm --filter @opencoop/database exec prisma generate
 RUN pnpm --filter @opencoop/shared build
 RUN pnpm --filter @opencoop/pdf-templates build
 RUN pnpm --filter @opencoop/api build
-RUN rm -rf /app/deploy && pnpm --filter @opencoop/api deploy --prod /app/deploy \
-    && cp -r /app/node_modules/.prisma /app/deploy/node_modules/.prisma
 
 # Production
 FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=build /app/deploy/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./dist
+COPY --from=build /app/apps/api/package.json ./
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages/database/prisma ./prisma
 
 EXPOSE 3001
