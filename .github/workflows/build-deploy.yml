@@ -3,11 +3,7 @@ name: Build & Deploy
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Image tag (git SHA) to deploy to production"
-        required: true
+    tags: ["v*"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,7 +15,7 @@ env:
 
 jobs:
   build:
-    if: github.event_name == 'push'
+    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -68,7 +64,7 @@ jobs:
 
   deploy-acc:
     needs: build
-    if: github.event_name == 'push'
+    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     environment: acc
     steps:
@@ -92,7 +88,7 @@ jobs:
             docker compose up -d
 
   deploy-prod:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment: prod
     steps:
@@ -111,6 +107,6 @@ jobs:
           key: ${{ secrets.FSN1_SSH_KEY }}
           script: |
             cd ~/opencoop/prod
-            sed -i 's/^TAG=.*/TAG=${{ inputs.tag }}/' .env
+            sed -i 's/^TAG=.*/TAG=${{ github.sha }}/' .env
             docker compose pull
             docker compose up -d
