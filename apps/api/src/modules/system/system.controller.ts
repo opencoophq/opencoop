@@ -129,6 +129,7 @@ export class SystemController {
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
         preferredLanguage: true,
         emailVerified: true,

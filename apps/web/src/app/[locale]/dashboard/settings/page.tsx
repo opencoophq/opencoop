@@ -31,6 +31,7 @@ export default function SettingsPage() {
   const t = useTranslations();
   const router = useRouter();
   const { locale: formattingLocale, setLocale: setFormattingLocale } = useLocale();
+  const [name, setName] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState('nl');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -42,9 +43,25 @@ export default function SettingsPage() {
     const userData = localStorage.getItem('user');
     if (userData) {
       const user = JSON.parse(userData);
+      setName(user.name || '');
       setPreferredLanguage(user.preferredLanguage || 'nl');
     }
   }, []);
+
+  const handleNameSave = async () => {
+    try {
+      await api('/auth/me', { method: 'PUT', body: { name: name || null } });
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        user.name = name || null;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      setMessage(t('common.savedSuccessfully'));
+    } catch {
+      setError(t('errors.generic'));
+    }
+  };
 
   const handleLanguageChange = async (language: string) => {
     setPreferredLanguage(language);
@@ -94,6 +111,25 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold mb-6">{t('common.settings')}</h1>
 
       <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settings.displayName')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>{t('settings.displayName')}</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('settings.displayNamePlaceholder')}
+                maxLength={100}
+                className="mt-1"
+              />
+            </div>
+            <Button onClick={handleNameSave}>{t('common.save')}</Button>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>{t('common.language')}</CardTitle>

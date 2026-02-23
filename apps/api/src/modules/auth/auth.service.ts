@@ -70,6 +70,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         role: user.role,
         preferredLanguage: user.preferredLanguage,
         emailVerified: !!user.emailVerified,
@@ -92,6 +93,7 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         email: registerDto.email.toLowerCase(),
+        name: registerDto.name,
         passwordHash,
         preferredLanguage: registerDto.preferredLanguage || 'nl',
         emailVerifyToken,
@@ -111,6 +113,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         role: user.role,
         preferredLanguage: user.preferredLanguage,
         emailVerified: false,
@@ -144,6 +147,7 @@ export class AuthService {
       const user = await tx.user.create({
         data: {
           email,
+          name: onboardingDto.name,
           passwordHash,
           role: 'COOP_ADMIN',
           preferredLanguage: onboardingDto.preferredLanguage || 'nl',
@@ -181,6 +185,7 @@ export class AuthService {
       user: {
         id: result.user.id,
         email: result.user.email,
+        name: result.user.name,
         role: result.user.role,
         preferredLanguage: result.user.preferredLanguage,
         emailVerified: false,
@@ -333,7 +338,7 @@ export class AuthService {
     };
   }
 
-  async updateProfile(userId: string, data: { preferredLanguage?: string }) {
+  async updateProfile(userId: string, data: { name?: string; preferredLanguage?: string }) {
     return this.usersService.updatePreferences(userId, data);
   }
 
@@ -500,6 +505,7 @@ export class AuthService {
       user: {
         id: result.id,
         email: result.email,
+        name: result.name,
         role: result.role,
         preferredLanguage: result.preferredLanguage,
         emailVerified: true,
@@ -671,6 +677,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         role: user.role,
         preferredLanguage: user.preferredLanguage,
         emailVerified: !!user.emailVerified,

@@ -45,7 +45,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const t = useTranslations();
   const { selectedCoop, adminCoops, setSelectedCoop, setAdminCoops } = useAdmin();
-  const [user, setUser] = useState<{ email: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ email: string; name?: string; role: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -210,8 +210,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <div className="p-3 border-t">
             <div className="flex items-center justify-between">
               <Link href="/dashboard/settings" className="text-sm truncate min-w-0 hover:opacity-80">
-                <p className="font-medium truncate">{user.email}</p>
-                <p className="text-gray-500 text-xs">{t(`system.users.roles.${user.role}`)}</p>
+                {user.name ? (
+                  <>
+                    <p className="font-medium truncate">{user.name}</p>
+                    <p className="text-gray-500 text-xs truncate">{user.email}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium truncate">{user.email}</p>
+                    <p className="text-gray-500 text-xs">{t(`system.users.roles.${user.role}`)}</p>
+                  </>
+                )}
               </Link>
               <Button variant="ghost" size="icon" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />

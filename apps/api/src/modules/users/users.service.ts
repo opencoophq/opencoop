@@ -11,6 +11,7 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
         preferredLanguage: true,
         emailVerified: true,
@@ -31,13 +32,14 @@ export class UsersService {
     });
   }
 
-  async updatePreferences(userId: string, data: { preferredLanguage?: string }) {
+  async updatePreferences(userId: string, data: { name?: string; preferredLanguage?: string }) {
     return this.prisma.user.update({
       where: { id: userId },
       data,
       select: {
         id: true,
         email: true,
+        name: true,
         role: true,
         preferredLanguage: true,
       },

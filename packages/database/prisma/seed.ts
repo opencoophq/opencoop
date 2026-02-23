@@ -28,6 +28,7 @@ async function main() {
     update: {},
     create: {
       email: 'wouter.hermans@opencoop.be',
+      name: 'Wouter Hermans',
       passwordHash,
       role: 'SYSTEM_ADMIN',
       preferredLanguage: 'nl',
@@ -41,6 +42,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@zonnecooperatie.be',
+      name: 'Demo Admin',
       passwordHash: demoPasswordHash,
       role: 'COOP_ADMIN',
       preferredLanguage: 'nl',
@@ -54,6 +56,7 @@ async function main() {
     update: {},
     create: {
       email: 'jan.peeters@email.be',
+      name: 'Jan Peeters',
       passwordHash: demoPasswordHash,
       role: 'SHAREHOLDER',
       preferredLanguage: 'nl',
@@ -67,6 +70,7 @@ async function main() {
     update: {},
     create: {
       email: 'els.devos@email.be',
+      name: 'Els De Vos',
       passwordHash: demoPasswordHash,
       role: 'SHAREHOLDER',
       preferredLanguage: 'nl',

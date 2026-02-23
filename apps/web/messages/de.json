@@ -323,7 +323,9 @@
     "currentPassword": "Aktuelles Passwort",
     "newPassword": "Neues Passwort",
     "confirmPassword": "Neues Passwort bestätigen",
-    "passwordChanged": "Passwort erfolgreich geändert"
+    "passwordChanged": "Passwort erfolgreich geändert",
+    "displayName": "Anzeigename",
+    "displayNamePlaceholder": "Ihr Name"
   },
   "nav": {
     "dashboard": "Dashboard",

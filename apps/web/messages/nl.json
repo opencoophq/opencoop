@@ -323,7 +323,9 @@
     "currentPassword": "Huidig wachtwoord",
     "newPassword": "Nieuw wachtwoord",
     "confirmPassword": "Bevestig nieuw wachtwoord",
-    "passwordChanged": "Wachtwoord succesvol gewijzigd"
+    "passwordChanged": "Wachtwoord succesvol gewijzigd",
+    "displayName": "Weergavenaam",
+    "displayNamePlaceholder": "Je naam"
   },
   "nav": {
     "dashboard": "Dashboard",
