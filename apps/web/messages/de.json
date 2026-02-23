@@ -824,32 +824,32 @@
       "billedMonthly": "Monatliche Abrechnung",
       "billedYearly": "Jährliche Abrechnung"
     },
-    "starter": {
-      "name": "Starter",
-      "description": "Für Genossenschaften am Anfang",
-      "priceMonthly": "49",
-      "priceYearly": "499",
+    "essentials": {
+      "name": "Essentials",
+      "description": "Für Genossenschaften, die von Tabellen wegkommen wollen",
+      "priceMonthly": "39",
+      "priceYearly": "399",
       "cta": "Jetzt starten"
     },
-    "growth": {
-      "name": "Growth",
+    "professional": {
+      "name": "Professional",
       "badge": "Am beliebtesten",
-      "description": "Für wachsende Genossenschaften mit mehr Anteilseignern",
-      "priceMonthly": "79",
-      "priceYearly": "799",
+      "description": "Für Genossenschaften mit aktiven Anteilsoperationen",
+      "priceMonthly": "89",
+      "priceYearly": "899",
       "cta": "Jetzt starten"
     },
     "features": {
       "shareholders": "Anteilseignerverwaltung",
-      "shareClasses": "Anteilsklassen & Transaktionen",
-      "dividends": "Dividendenausschüttung",
+      "unlimitedShareholders": "Unbegrenzte Anteilseigner",
+      "oneShareClass": "1 Anteilsklasse",
+      "unlimitedShareClasses": "Unbegrenzte Anteilsklassen",
+      "oneDividendRun": "1 Dividendenausschüttung pro Jahr",
+      "unlimitedDividends": "Unbegrenzte Dividendenausschüttungen",
       "banking": "Bankimport & OGM-Abgleich",
       "documents": "PDF-Dokumentenerstellung",
       "branding": "Eigenes Branding",
-      "multiTenant": "Mandantenfähigkeit",
       "emailNotifications": "E-Mail-Benachrichtigungen",
-      "starterLimit": "Bis zu 500 Anteilseigner",
-      "unlimitedShareholders": "Unbegrenzte Anteilseigner",
       "prioritySupport": "Vorrangiger E-Mail-Support"
     },
     "selfHosted": {
@@ -863,8 +863,8 @@
     },
     "faq": {
       "title": "Häufig gestellte Fragen",
-      "q1": "Was passiert, wenn ich 500 Anteilseigner überschreite?",
-      "a1": "Sie können jederzeit auf den Growth-Plan upgraden. Ihre Daten und Einstellungen bleiben erhalten — keine Migration erforderlich.",
+      "q1": "Was ist, wenn ich mehr Anteilsklassen oder Dividendenausschüttungen benötige?",
+      "a1": "Upgraden Sie jederzeit auf Professional. Ihre Daten und Einstellungen bleiben erhalten — keine Migration erforderlich.",
       "q2": "Kann ich zwischen monatlicher und jährlicher Abrechnung wechseln?",
       "a2": "Ja, Sie können jederzeit wechseln. Beim Wechsel zur jährlichen Abrechnung erhalten Sie eine anteilige Gutschrift für Ihren aktuellen Abrechnungszeitraum.",
       "q3": "Was ist im vorrangigen Support enthalten?",

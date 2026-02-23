@@ -824,32 +824,32 @@
       "billedMonthly": "Facturé mensuellement",
       "billedYearly": "Facturé annuellement"
     },
-    "starter": {
-      "name": "Starter",
-      "description": "Pour les coopératives qui débutent",
-      "priceMonthly": "49",
-      "priceYearly": "499",
+    "essentials": {
+      "name": "Essentials",
+      "description": "Pour les coopératives qui veulent quitter les tableurs",
+      "priceMonthly": "39",
+      "priceYearly": "399",
       "cta": "Commencer"
     },
-    "growth": {
-      "name": "Growth",
+    "professional": {
+      "name": "Professional",
       "badge": "Le plus populaire",
-      "description": "Pour les coopératives en croissance avec davantage de coopérateurs",
-      "priceMonthly": "79",
-      "priceYearly": "799",
+      "description": "Pour les coopératives avec des opérations de parts actives",
+      "priceMonthly": "89",
+      "priceYearly": "899",
       "cta": "Commencer"
     },
     "features": {
       "shareholders": "Gestion des coopérateurs",
-      "shareClasses": "Classes de parts et transactions",
-      "dividends": "Distribution des dividendes",
+      "unlimitedShareholders": "Coopérateurs illimités",
+      "oneShareClass": "1 classe de parts",
+      "unlimitedShareClasses": "Classes de parts illimitées",
+      "oneDividendRun": "1 distribution de dividendes par an",
+      "unlimitedDividends": "Distributions de dividendes illimitées",
       "banking": "Import bancaire et rapprochement OGM",
       "documents": "Génération de documents PDF",
       "branding": "Image de marque personnalisée",
-      "multiTenant": "Support multi-tenant",
       "emailNotifications": "Notifications par e-mail",
-      "starterLimit": "Jusqu'à 500 coopérateurs",
-      "unlimitedShareholders": "Coopérateurs illimités",
       "prioritySupport": "Support prioritaire par e-mail"
     },
     "selfHosted": {
@@ -863,8 +863,8 @@
     },
     "faq": {
       "title": "Questions fréquemment posées",
-      "q1": "Que se passe-t-il si je dépasse 500 coopérateurs ?",
-      "a1": "Vous pouvez passer au plan Growth à tout moment. Vos données et paramètres sont conservés — aucune migration nécessaire.",
+      "q1": "Que faire si j'ai besoin de plus de classes de parts ou de distributions de dividendes ?",
+      "a1": "Passez à Professional à tout moment. Vos données et paramètres sont conservés — aucune migration nécessaire.",
       "q2": "Puis-je passer d'une facturation mensuelle à annuelle ?",
       "a2": "Oui, vous pouvez changer à tout moment. Lors du passage à la facturation annuelle, vous recevrez un crédit au prorata pour votre période de facturation en cours.",
       "q3": "Que comprend le support prioritaire ?",

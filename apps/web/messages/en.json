@@ -824,32 +824,32 @@
       "billedMonthly": "Billed monthly",
       "billedYearly": "Billed yearly"
     },
-    "starter": {
-      "name": "Starter",
-      "description": "For cooperatives just getting started",
-      "priceMonthly": "49",
-      "priceYearly": "499",
+    "essentials": {
+      "name": "Essentials",
+      "description": "For cooperatives getting off spreadsheets",
+      "priceMonthly": "39",
+      "priceYearly": "399",
       "cta": "Get started"
     },
-    "growth": {
-      "name": "Growth",
+    "professional": {
+      "name": "Professional",
       "badge": "Most popular",
-      "description": "For growing cooperatives with more shareholders",
-      "priceMonthly": "79",
-      "priceYearly": "799",
+      "description": "For cooperatives with active share operations",
+      "priceMonthly": "89",
+      "priceYearly": "899",
       "cta": "Get started"
     },
     "features": {
       "shareholders": "Shareholder management",
-      "shareClasses": "Share classes & transactions",
-      "dividends": "Dividend distribution",
+      "unlimitedShareholders": "Unlimited shareholders",
+      "oneShareClass": "1 share class",
+      "unlimitedShareClasses": "Unlimited share classes",
+      "oneDividendRun": "1 dividend run per year",
+      "unlimitedDividends": "Unlimited dividend runs",
       "banking": "Bank import & OGM matching",
       "documents": "PDF document generation",
       "branding": "Custom branding",
-      "multiTenant": "Multi-tenant support",
       "emailNotifications": "Email notifications",
-      "starterLimit": "Up to 500 shareholders",
-      "unlimitedShareholders": "Unlimited shareholders",
       "prioritySupport": "Priority email support"
     },
     "selfHosted": {
@@ -863,8 +863,8 @@
     },
     "faq": {
       "title": "Frequently asked questions",
-      "q1": "What happens if I exceed 500 shareholders?",
-      "a1": "You can upgrade to the Growth plan at any time. Your data and settings are preserved — no migration needed.",
+      "q1": "What if I need more share classes or dividend runs?",
+      "a1": "Upgrade to Professional at any time. Your data and settings are preserved — no migration needed.",
       "q2": "Can I switch between monthly and yearly billing?",
       "a2": "Yes, you can switch at any time. When moving to yearly billing, you'll receive a prorated credit for your current billing period.",
       "q3": "What's included in priority support?",

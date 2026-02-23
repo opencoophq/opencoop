@@ -32,27 +32,23 @@ import { useState } from 'react';
 
 const GITHUB_URL = 'https://github.com/opencoophq/opencoop';
 
-const STARTER_FEATURES = [
-  'starterLimit',
+const ESSENTIALS_FEATURES = [
+  'unlimitedShareholders',
   'shareholders',
-  'shareClasses',
-  'dividends',
-  'banking',
+  'oneShareClass',
+  'oneDividendRun',
   'documents',
-  'branding',
-  'multiTenant',
   'emailNotifications',
 ] as const;
 
-const GROWTH_FEATURES = [
+const PROFESSIONAL_FEATURES = [
   'unlimitedShareholders',
   'shareholders',
-  'shareClasses',
-  'dividends',
+  'unlimitedShareClasses',
+  'unlimitedDividends',
   'banking',
   'documents',
   'branding',
-  'multiTenant',
   'emailNotifications',
   'prioritySupport',
 ] as const;
@@ -164,18 +160,18 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
       {/* Pricing cards */}
       <section className="max-w-5xl mx-auto px-6 pb-24">
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Starter */}
+          {/* Essentials */}
           <FadeIn>
             <div className="rounded-2xl border bg-card p-8 flex flex-col h-full">
               <div className="mb-6">
-                <h3 className="text-xl font-bold">{t('starter.name')}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{t('starter.description')}</p>
+                <h3 className="text-xl font-bold">{t('essentials.name')}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{t('essentials.description')}</p>
               </div>
 
               <div className="mb-8">
                 <div className="flex items-baseline gap-1">
                   <span className="text-5xl font-extrabold tracking-tight">
-                    &euro;{yearly ? t('starter.priceYearly') : t('starter.priceMonthly')}
+                    &euro;{yearly ? t('essentials.priceYearly') : t('essentials.priceMonthly')}
                   </span>
                   <span className="text-muted-foreground text-lg">
                     {yearly ? t('billing.perYear') : t('billing.perMonth')}
@@ -191,22 +187,22 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
                   size="lg"
                   variant="outline"
                   className="w-full text-base h-12 mb-8"
-                  onClick={() => openWaitlistDialog('starter')}
+                  onClick={() => openWaitlistDialog('essentials')}
                 >
-                  {t('starter.cta')}
+                  {t('essentials.cta')}
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
               ) : (
-                <Link href={`/onboarding?plan=starter&billing=${yearly ? 'yearly' : 'monthly'}`}>
+                <Link href={`/onboarding?plan=essentials&billing=${yearly ? 'yearly' : 'monthly'}`}>
                   <Button size="lg" variant="outline" className="w-full text-base h-12 mb-8">
-                    {t('starter.cta')}
+                    {t('essentials.cta')}
                     <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
               )}
 
               <ul className="space-y-3 flex-1">
-                {STARTER_FEATURES.map((key) => (
+                {ESSENTIALS_FEATURES.map((key) => (
                   <li key={key} className="flex items-start gap-3 text-sm">
                     <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                     <span>{t(`features.${key}`)}</span>
@@ -216,22 +212,22 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
             </div>
           </FadeIn>
 
-          {/* Growth */}
+          {/* Professional */}
           <FadeIn delay={100}>
             <div className="rounded-2xl border-2 border-primary bg-card p-8 flex flex-col h-full relative">
               <Badge className="absolute -top-3 left-8 bg-primary text-primary-foreground">
-                {t('growth.badge')}
+                {t('professional.badge')}
               </Badge>
 
               <div className="mb-6">
-                <h3 className="text-xl font-bold">{t('growth.name')}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{t('growth.description')}</p>
+                <h3 className="text-xl font-bold">{t('professional.name')}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{t('professional.description')}</p>
               </div>
 
               <div className="mb-8">
                 <div className="flex items-baseline gap-1">
                   <span className="text-5xl font-extrabold tracking-tight">
-                    &euro;{yearly ? t('growth.priceYearly') : t('growth.priceMonthly')}
+                    &euro;{yearly ? t('professional.priceYearly') : t('professional.priceMonthly')}
                   </span>
                   <span className="text-muted-foreground text-lg">
                     {yearly ? t('billing.perYear') : t('billing.perMonth')}
@@ -246,22 +242,22 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
                 <Button
                   size="lg"
                   className="w-full text-base h-12 mb-8"
-                  onClick={() => openWaitlistDialog('growth')}
+                  onClick={() => openWaitlistDialog('professional')}
                 >
-                  {t('growth.cta')}
+                  {t('professional.cta')}
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
               ) : (
-                <Link href={`/onboarding?plan=growth&billing=${yearly ? 'yearly' : 'monthly'}`}>
+                <Link href={`/onboarding?plan=professional&billing=${yearly ? 'yearly' : 'monthly'}`}>
                   <Button size="lg" className="w-full text-base h-12 mb-8">
-                    {t('growth.cta')}
+                    {t('professional.cta')}
                     <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
               )}
 
               <ul className="space-y-3 flex-1">
-                {GROWTH_FEATURES.map((key) => (
+                {PROFESSIONAL_FEATURES.map((key) => (
                   <li key={key} className="flex items-start gap-3 text-sm">
                     <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                     <span>{t(`features.${key}`)}</span>
@@ -373,13 +369,13 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
               <Button
                 size="lg"
                 className="w-full sm:w-auto text-base px-8 h-12"
-                onClick={() => openWaitlistDialog('starter')}
+                onClick={() => openWaitlistDialog('essentials')}
               >
                 <ArrowRight className="w-4 h-4" />
                 {t('cta.primary')}
               </Button>
             ) : (
-              <Link href="/onboarding?plan=starter&billing=yearly">
+              <Link href="/onboarding?plan=essentials&billing=yearly">
                 <Button size="lg" className="w-full sm:w-auto text-base px-8 h-12">
                   <ArrowRight className="w-4 h-4" />
                   {t('cta.primary')}
