@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsIn, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateCoopDto {
@@ -33,10 +33,15 @@ export class UpdateCoopDto {
   @IsString()
   termsUrl?: string;
 
-  @ApiProperty({ required: false, description: 'SMTP or Graph email provider' })
+  @ApiProperty({ required: false })
   @IsOptional()
-  @IsString()
-  emailProvider?: string;
+  @IsBoolean()
+  emailEnabled?: boolean;
+
+  @ApiProperty({ required: false, description: 'Email provider: null (platform), "smtp", or "graph"' })
+  @IsOptional()
+  @IsIn([null, 'smtp', 'graph'])
+  emailProvider?: string | null;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -61,4 +66,24 @@ export class UpdateCoopDto {
   @IsOptional()
   @IsString()
   smtpFrom?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  graphClientId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  graphClientSecret?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  graphTenantId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  graphFromEmail?: string;
 }

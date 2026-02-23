@@ -17,6 +17,7 @@ export class CoopsService {
         logoUrl: true,
         primaryColor: true,
         secondaryColor: true,
+        emailEnabled: true,
         createdAt: true,
         _count: {
           select: {
@@ -49,6 +50,7 @@ export class CoopsService {
         logoUrl: coop.logoUrl,
         primaryColor: coop.primaryColor,
         secondaryColor: coop.secondaryColor,
+        emailEnabled: coop.emailEnabled,
         createdAt: coop.createdAt,
         shareholdersCount: coop._count.shareholders,
         totalCapital,
@@ -124,6 +126,38 @@ export class CoopsService {
     return coop;
   }
 
+  async getSettings(id: string) {
+    const coop = await this.prisma.coop.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        requiresApproval: true,
+        bankName: true,
+        bankIban: true,
+        bankBic: true,
+        termsUrl: true,
+        emailEnabled: true,
+        emailProvider: true,
+        smtpHost: true,
+        smtpPort: true,
+        smtpUser: true,
+        smtpFrom: true,
+        graphClientId: true,
+        graphTenantId: true,
+        graphFromEmail: true,
+        // Secrets (smtpPass, graphClientSecret) intentionally excluded
+      },
+    });
+
+    if (!coop) {
+      throw new NotFoundException('Cooperative not found');
+    }
+
+    return coop;
+  }
+
   async create(createCoopDto: CreateCoopDto) {
     // Check if slug is already in use
     const existingSlug = await this.prisma.coop.findUnique({
@@ -174,9 +208,28 @@ export class CoopsService {
       throw new NotFoundException('Cooperative not found');
     }
 
+    const data: Record<string, unknown> = { ...updateCoopDto };
+
+    // Don't overwrite secrets with empty strings
+    if (!data.smtpPass) delete data.smtpPass;
+    if (!data.graphClientSecret) delete data.graphClientSecret;
+
+    // When switching to platform (null), clear all custom email fields
+    if (data.emailProvider === null) {
+      data.smtpHost = null;
+      data.smtpPort = null;
+      data.smtpUser = null;
+      data.smtpPass = null;
+      data.smtpFrom = null;
+      data.graphClientId = null;
+      data.graphClientSecret = null;
+      data.graphTenantId = null;
+      data.graphFromEmail = null;
+    }
+
     return this.prisma.coop.update({
       where: { id },
-      data: updateCoopDto,
+      data,
     });
   }
 

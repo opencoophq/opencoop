@@ -9,7 +9,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { api } from '@/lib/api';
+import { Info, AlertTriangle } from 'lucide-react';
+
+type EmailProvider = 'platform' | 'smtp' | 'graph';
 
 interface FormState {
   name: string;
@@ -18,12 +28,41 @@ interface FormState {
   bankIban: string;
   bankBic: string;
   termsUrl: string;
-  emailProvider: string;
+  emailEnabled: boolean;
+  emailProvider: EmailProvider;
   smtpHost: string;
   smtpPort: string;
   smtpUser: string;
   smtpPass: string;
   smtpFrom: string;
+  graphClientId: string;
+  graphClientSecret: string;
+  graphTenantId: string;
+  graphFromEmail: string;
+}
+
+interface SettingsResponse {
+  name: string;
+  requiresApproval: boolean;
+  bankName: string | null;
+  bankIban: string | null;
+  bankBic: string | null;
+  termsUrl: string | null;
+  emailEnabled: boolean;
+  emailProvider: string | null;
+  smtpHost: string | null;
+  smtpPort: number | null;
+  smtpUser: string | null;
+  smtpFrom: string | null;
+  graphClientId: string | null;
+  graphTenantId: string | null;
+  graphFromEmail: string | null;
+}
+
+function toEmailProvider(value: string | null): EmailProvider {
+  if (value === 'smtp') return 'smtp';
+  if (value === 'graph') return 'graph';
+  return 'platform';
 }
 
 export default function AdminSettingsPage() {
@@ -36,41 +75,104 @@ export default function AdminSettingsPage() {
     bankIban: '',
     bankBic: '',
     termsUrl: '',
-    emailProvider: '',
+    emailEnabled: true,
+    emailProvider: 'platform',
     smtpHost: '',
     smtpPort: '',
     smtpUser: '',
     smtpPass: '',
     smtpFrom: '',
+    graphClientId: '',
+    graphClientSecret: '',
+    graphTenantId: '',
+    graphFromEmail: '',
   });
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData);
+        setIsSystemAdmin(parsed.role === 'SYSTEM_ADMIN');
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!selectedCoop) return;
     setLoading(true);
-    api<Record<string, unknown>>(`/coops/${selectedCoop.slug}/public-info`)
-      .then((coop) => {
-        setForm((prev) => ({
-          ...prev,
-          name: (coop.name as string) || '',
-          bankName: (coop.bankName as string) || '',
-          bankIban: (coop.bankIban as string) || '',
-          bankBic: (coop.bankBic as string) || '',
-        }));
+    api<SettingsResponse>(`/admin/coops/${selectedCoop.id}/settings`)
+      .then((settings) => {
+        setForm({
+          name: settings.name || '',
+          requiresApproval: settings.requiresApproval,
+          bankName: settings.bankName || '',
+          bankIban: settings.bankIban || '',
+          bankBic: settings.bankBic || '',
+          termsUrl: settings.termsUrl || '',
+          emailEnabled: settings.emailEnabled,
+          emailProvider: toEmailProvider(settings.emailProvider),
+          smtpHost: settings.smtpHost || '',
+          smtpPort: settings.smtpPort?.toString() || '',
+          smtpUser: settings.smtpUser || '',
+          smtpPass: '', // Never pre-populated
+          smtpFrom: settings.smtpFrom || '',
+          graphClientId: settings.graphClientId || '',
+          graphClientSecret: '', // Never pre-populated
+          graphTenantId: settings.graphTenantId || '',
+          graphFromEmail: settings.graphFromEmail || '',
+        });
       })
-      .catch(() => {})
+      .catch(() => {
+        setError(t('admin.settings.error'));
+      })
       .finally(() => setLoading(false));
-  }, [selectedCoop]);
+  }, [selectedCoop, t]);
 
   const handleSave = async () => {
     if (!selectedCoop) return;
+    setError('');
     try {
-      await api(`/admin/coops/${selectedCoop.id}/settings`, { method: 'PUT', body: form });
-      setMessage(t('common.savedSuccessfully'));
+      const body: Record<string, unknown> = {
+        name: form.name,
+        requiresApproval: form.requiresApproval,
+        bankName: form.bankName,
+        bankIban: form.bankIban,
+        bankBic: form.bankBic,
+        termsUrl: form.termsUrl,
+        emailProvider: form.emailProvider === 'platform' ? null : form.emailProvider,
+      };
+
+      if (isSystemAdmin) {
+        body.emailEnabled = form.emailEnabled;
+      }
+
+      if (form.emailProvider === 'smtp') {
+        body.smtpHost = form.smtpHost;
+        body.smtpPort = form.smtpPort ? parseInt(form.smtpPort, 10) : undefined;
+        body.smtpUser = form.smtpUser;
+        body.smtpFrom = form.smtpFrom;
+        if (form.smtpPass) body.smtpPass = form.smtpPass;
+      }
+
+      if (form.emailProvider === 'graph') {
+        body.graphClientId = form.graphClientId;
+        body.graphTenantId = form.graphTenantId;
+        body.graphFromEmail = form.graphFromEmail;
+        if (form.graphClientSecret) body.graphClientSecret = form.graphClientSecret;
+      }
+
+      await api(`/admin/coops/${selectedCoop.id}/settings`, { method: 'PUT', body });
+      setMessage(t('admin.settings.saved'));
       setTimeout(() => setMessage(''), 3000);
     } catch {
-      // ignore
+      setError(t('admin.settings.error'));
     }
   };
 
@@ -84,12 +186,19 @@ export default function AdminSettingsPage() {
     );
   }
 
+  const emailDisabled = !form.emailEnabled;
+
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold mb-6">{t('common.settings')}</h1>
       {message && (
         <Alert className="mb-4">
           <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      )}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
@@ -158,42 +267,149 @@ export default function AdminSettingsPage() {
             <CardTitle>{t('admin.settings.email')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label>SMTP Host</Label>
-              <Input
-                value={form.smtpHost}
-                onChange={(e) => setForm({ ...form, smtpHost: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>SMTP Port</Label>
-              <Input
-                type="number"
-                value={form.smtpPort}
-                onChange={(e) => setForm({ ...form, smtpPort: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>SMTP User</Label>
-              <Input
-                value={form.smtpUser}
-                onChange={(e) => setForm({ ...form, smtpUser: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>SMTP Password</Label>
-              <Input
-                type="password"
-                value={form.smtpPass}
-                onChange={(e) => setForm({ ...form, smtpPass: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>From Address</Label>
-              <Input
-                value={form.smtpFrom}
-                onChange={(e) => setForm({ ...form, smtpFrom: e.target.value })}
-              />
+            {isSystemAdmin && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={form.emailEnabled}
+                  onCheckedChange={(c) => setForm({ ...form, emailEnabled: !!c })}
+                />
+                <Label>{t('admin.settings.emailEnabled')}</Label>
+              </div>
+            )}
+
+            {emailDisabled && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{t('admin.settings.emailDisabledWarning')}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className={emailDisabled ? 'opacity-50 pointer-events-none' : ''}>
+              <div className="space-y-4">
+                <div>
+                  <Label>{t('admin.settings.emailProvider')}</Label>
+                  <Select
+                    value={form.emailProvider}
+                    onValueChange={(v) => setForm({ ...form, emailProvider: v as EmailProvider })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="platform">
+                        {t('admin.settings.emailProviderPlatform')}
+                      </SelectItem>
+                      <SelectItem value="smtp">
+                        {t('admin.settings.emailProviderSmtp')}
+                      </SelectItem>
+                      <SelectItem value="graph">
+                        {t('admin.settings.emailProviderGraph')}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {form.emailProvider === 'platform' && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>{t('admin.settings.platformDescription')}</AlertDescription>
+                  </Alert>
+                )}
+
+                {form.emailProvider === 'smtp' && (
+                  <div className="space-y-4">
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{t('admin.settings.smtpDescription')}</AlertDescription>
+                    </Alert>
+                    <div>
+                      <Label>{t('admin.settings.smtpHost')}</Label>
+                      <Input
+                        value={form.smtpHost}
+                        onChange={(e) => setForm({ ...form, smtpHost: e.target.value })}
+                        placeholder="smtp.example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label>{t('admin.settings.smtpPort')}</Label>
+                      <Input
+                        type="number"
+                        value={form.smtpPort}
+                        onChange={(e) => setForm({ ...form, smtpPort: e.target.value })}
+                        placeholder="587"
+                      />
+                    </div>
+                    <div>
+                      <Label>{t('admin.settings.smtpUser')}</Label>
+                      <Input
+                        value={form.smtpUser}
+                        onChange={(e) => setForm({ ...form, smtpUser: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>{t('admin.settings.smtpPass')}</Label>
+                      <Input
+                        type="password"
+                        value={form.smtpPass}
+                        onChange={(e) => setForm({ ...form, smtpPass: e.target.value })}
+                        placeholder={t('admin.settings.smtpPassPlaceholder')}
+                      />
+                    </div>
+                    <div>
+                      <Label>{t('admin.settings.smtpFrom')}</Label>
+                      <Input
+                        value={form.smtpFrom}
+                        onChange={(e) => setForm({ ...form, smtpFrom: e.target.value })}
+                        placeholder="noreply@example.com"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {form.emailProvider === 'graph' && (
+                  <div className="space-y-4">
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        <p>{t('admin.settings.graphDescription')}</p>
+                        <p className="mt-2 text-xs">{t('admin.settings.graphSetupInstructions')}</p>
+                      </AlertDescription>
+                    </Alert>
+                    <div>
+                      <Label>{t('admin.settings.graphClientId')}</Label>
+                      <Input
+                        value={form.graphClientId}
+                        onChange={(e) => setForm({ ...form, graphClientId: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>{t('admin.settings.graphClientSecret')}</Label>
+                      <Input
+                        type="password"
+                        value={form.graphClientSecret}
+                        onChange={(e) => setForm({ ...form, graphClientSecret: e.target.value })}
+                        placeholder={t('admin.settings.graphClientSecretPlaceholder')}
+                      />
+                    </div>
+                    <div>
+                      <Label>{t('admin.settings.graphTenantId')}</Label>
+                      <Input
+                        value={form.graphTenantId}
+                        onChange={(e) => setForm({ ...form, graphTenantId: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>{t('admin.settings.graphFromEmail')}</Label>
+                      <Input
+                        type="email"
+                        value={form.graphFromEmail}
+                        onChange={(e) => setForm({ ...form, graphFromEmail: e.target.value })}
+                        placeholder="noreply@yourdomain.com"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

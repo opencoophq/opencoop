@@ -26,6 +26,11 @@ export class CreateCoopDto {
   @IsBoolean()
   requiresApproval?: boolean;
 
+  @ApiProperty({ example: true, required: false })
+  @IsOptional()
+  @IsBoolean()
+  emailEnabled?: boolean;
+
   @ApiProperty({ example: '#1e40af', required: false })
   @IsOptional()
   @IsString()

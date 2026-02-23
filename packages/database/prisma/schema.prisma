@@ -110,6 +110,7 @@ model Coop {
   ogmPrefix        String  @unique // Unique prefix for OGM codes (e.g., "001")
 
   // Email configuration (encrypted in production)
+  emailEnabled     Boolean @default(true)
   emailProvider    String? // "smtp" | "graph"
   smtpHost         String?
   smtpPort         Int?

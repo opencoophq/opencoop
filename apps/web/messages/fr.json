@@ -581,7 +581,28 @@
       "formattingLocale": "Paramètres régionaux de formatage",
       "requiresApproval": "Approbation requise",
       "termsUrl": "URL des conditions",
-      "email": "Paramètres e-mail"
+      "email": "Paramètres e-mail",
+      "emailEnabled": "E-mail activé",
+      "emailDisabledWarning": "L'e-mail est désactivé pour cette coopérative. Aucun e-mail ne sera envoyé. Contactez un administrateur système pour activer l'e-mail.",
+      "emailProvider": "Fournisseur d'e-mail",
+      "emailProviderPlatform": "Plateforme (OpenCoop)",
+      "emailProviderSmtp": "SMTP personnalisé",
+      "emailProviderGraph": "Microsoft Graph",
+      "platformDescription": "Les e-mails sont envoyés via le relais partagé d'OpenCoop. Aucune configuration nécessaire.",
+      "smtpDescription": "Utilisez votre propre serveur SMTP pour envoyer des e-mails.",
+      "graphDescription": "Envoyez des e-mails via Microsoft 365 en utilisant l'API Graph.",
+      "graphSetupInstructions": "Enregistrez une application dans Azure AD avec l'autorisation Mail.Send, puis entrez les identifiants ci-dessous.",
+      "smtpHost": "Hôte SMTP",
+      "smtpPort": "Port SMTP",
+      "smtpUser": "Utilisateur SMTP",
+      "smtpPass": "Mot de passe SMTP",
+      "smtpPassPlaceholder": "Laisser vide pour conserver l'actuel",
+      "smtpFrom": "Adresse d'expédition",
+      "graphClientId": "ID client",
+      "graphClientSecret": "Secret client",
+      "graphClientSecretPlaceholder": "Laisser vide pour conserver l'actuel",
+      "graphTenantId": "ID du locataire",
+      "graphFromEmail": "E-mail d'expédition"
     },
     "branding": {
       "title": "Paramètres d'image de marque",
@@ -631,7 +652,10 @@
       "totalCapital": "Capital total",
       "createdAt": "Créée le",
       "actions": "Actions",
-      "total": "Total des coopératives"
+      "total": "Total des coopératives",
+      "emailStatus": "E-mail",
+      "emailEnabled": "Activé",
+      "emailDisabled": "Désactivé"
     },
     "coopAdmins": {
       "title": "Administrateurs de la coopérative",

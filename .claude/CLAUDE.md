@@ -20,7 +20,7 @@ OpenCoop is a **multi-tenant SaaS platform** for managing cooperative shareholdi
 | **Frontend** | Next.js 14 (App Router), React 18, Tailwind CSS |
 | **Auth** | JWT (Passport.js), next-auth |
 | **Queue** | Bull + Redis |
-| **i18n** | next-intl (NL/EN) |
+| **i18n** | next-intl (EN/NL/FR/DE) |
 | **PDF** | @react-pdf/renderer |
 
 ## Project Structure
@@ -108,7 +108,7 @@ app/[locale]/
 | Auth guards | `apps/api/src/common/guards/` |
 | Web routes | `apps/web/src/app/[locale]/` |
 | UI components | `apps/web/src/components/ui/` |
-| Translations | `apps/web/src/i18n/` |
+| Translations | `apps/web/messages/{en,nl,fr,de}.json` |
 | PDF templates | `packages/pdf-templates/src/templates/` |
 | Shared types | `packages/shared/src/types.ts` |
 
@@ -198,7 +198,7 @@ HTML5 `<input type="date">` ignores JavaScript locale settings and displays date
 
 ### Adding a new frontend page
 1. Create route in `apps/web/src/app/[locale]/dashboard/<route>/page.tsx`
-2. Add translations in `apps/web/src/i18n/messages/<locale>.json`
+2. Add translations in all 4 locale files: `apps/web/messages/{en,nl,fr,de}.json`
 3. Use existing UI components from `components/ui/`
 
 ### Database schema changes

@@ -110,7 +110,10 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || t('auth.loginError'));
+        if (response.status === 401) {
+          throw new Error(t('auth.invalidCredentials'));
+        }
+        throw new Error(t('auth.loginError'));
       }
 
       localStorage.setItem('accessToken', result.accessToken);
