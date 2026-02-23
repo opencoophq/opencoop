@@ -59,12 +59,23 @@ export class AdminController {
 
   // ==================== COOP SETTINGS ====================
 
+  @Get('settings')
+  @ApiOperation({ summary: 'Get coop settings (excludes secrets)' })
+  async getSettings(@Param('coopId') coopId: string) {
+    return this.coopsService.getSettings(coopId);
+  }
+
   @Put('settings')
   @ApiOperation({ summary: 'Update coop settings' })
   async updateSettings(
     @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
     @Body() updateCoopDto: UpdateCoopDto,
   ) {
+    // Only SYSTEM_ADMIN can toggle emailEnabled
+    if (user.role !== 'SYSTEM_ADMIN') {
+      delete updateCoopDto.emailEnabled;
+    }
     return this.coopsService.update(coopId, updateCoopDto);
   }
 

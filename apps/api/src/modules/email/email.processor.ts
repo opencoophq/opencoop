@@ -1,7 +1,14 @@
 import { Processor, Process } from '@nestjs/bull';
+import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as nodemailer from 'nodemailer';
+import * as fs from 'fs';
+import { ClientSecretCredential } from '@azure/identity';
+import { Client } from '@microsoft/microsoft-graph-client';
+import {
+  TokenCredentialAuthenticationProvider,
+} from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
 
 interface EmailJob {
   emailLogId: string;
@@ -18,6 +25,8 @@ interface EmailJob {
 
 @Processor('email')
 export class EmailProcessor {
+  private readonly logger = new Logger(EmailProcessor.name);
+
   constructor(private prisma: PrismaService) {}
 
   @Process('send')
@@ -34,14 +43,29 @@ export class EmailProcessor {
         throw new Error('Coop not found');
       }
 
+      // Check if email is enabled for this coop
+      if (!coop.emailEnabled) {
+        this.logger.warn(`Email disabled for coop ${coop.name} (${coopId})`);
+        await this.prisma.emailLog.update({
+          where: { id: emailLogId },
+          data: {
+            status: 'FAILED',
+            errorMessage: 'Email disabled for this cooperative',
+          },
+        });
+        return; // Don't retry
+      }
+
       // Get email content from template
       const html = this.renderTemplate(templateKey, templateData, coop.name);
 
-      // Determine which email provider to use
+      // Route to the appropriate email provider
       if (coop.emailProvider === 'graph' && coop.graphClientId) {
         await this.sendViaGraph(coop, to, subject, html, attachments);
-      } else {
+      } else if (coop.emailProvider === 'smtp' && coop.smtpHost) {
         await this.sendViaSmtp(coop, to, subject, html, attachments);
+      } else {
+        await this.sendViaPlatformSmtp(coop.name, to, subject, html, attachments);
       }
 
       // Update email log
@@ -66,22 +90,21 @@ export class EmailProcessor {
     }
   }
 
-  private async sendViaSmtp(
-    coop: { smtpHost: string | null; smtpPort: number | null; smtpUser: string | null; smtpPass: string | null; smtpFrom: string | null; name: string },
+  private async sendViaPlatformSmtp(
+    coopName: string,
     to: string,
     subject: string,
     html: string,
     attachments?: Array<{ filename: string; path: string }>,
   ) {
-    // Use coop SMTP settings or fall back to environment
-    const host = coop.smtpHost || process.env.SMTP_HOST;
-    const port = coop.smtpPort || parseInt(process.env.SMTP_PORT || '587', 10);
-    const user = coop.smtpUser || process.env.SMTP_USER;
-    const pass = coop.smtpPass || process.env.SMTP_PASS;
-    const from = coop.smtpFrom || process.env.SMTP_FROM || `${coop.name} <noreply@opencoop.be>`;
+    const host = process.env.SMTP_HOST;
+    const port = parseInt(process.env.SMTP_PORT || '587', 10);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const from = process.env.SMTP_FROM || `${coopName} <noreply@opencoop.be>`;
 
     if (!host) {
-      throw new Error('SMTP not configured');
+      throw new Error('Platform SMTP not configured');
     }
 
     const transporter = nodemailer.createTransport({
@@ -100,26 +123,90 @@ export class EmailProcessor {
     });
   }
 
-  private async sendViaGraph(
-    coop: { graphClientId: string | null; graphClientSecret: string | null; graphTenantId: string | null; graphFromEmail: string | null },
+  private async sendViaSmtp(
+    coop: { smtpHost: string | null; smtpPort: number | null; smtpUser: string | null; smtpPass: string | null; smtpFrom: string | null; name: string },
     to: string,
     subject: string,
     html: string,
     attachments?: Array<{ filename: string; path: string }>,
   ) {
-    // Microsoft Graph API implementation
-    // This would require @azure/identity and @microsoft/microsoft-graph-client
-    // For now, we'll throw an error if Graph is configured but not implemented
-    throw new Error('Microsoft Graph email not yet implemented');
+    if (!coop.smtpHost) {
+      throw new Error('Custom SMTP not configured');
+    }
 
-    // TODO: Implement Graph API email sending
-    // const credential = new ClientSecretCredential(
-    //   coop.graphTenantId,
-    //   coop.graphClientId,
-    //   coop.graphClientSecret
-    // );
-    // const client = Client.initWithMiddleware({ authProvider: ... });
-    // await client.api(`/users/${coop.graphFromEmail}/sendMail`).post({ message: { ... } });
+    const transporter = nodemailer.createTransport({
+      host: coop.smtpHost,
+      port: coop.smtpPort || 587,
+      secure: coop.smtpPort === 465,
+      auth: coop.smtpUser && coop.smtpPass
+        ? { user: coop.smtpUser, pass: coop.smtpPass }
+        : undefined,
+    });
+
+    await transporter.sendMail({
+      from: coop.smtpFrom || `${coop.name} <noreply@opencoop.be>`,
+      to,
+      subject,
+      html,
+      attachments,
+    });
+  }
+
+  private async sendViaGraph(
+    coop: {
+      graphClientId: string | null;
+      graphClientSecret: string | null;
+      graphTenantId: string | null;
+      graphFromEmail: string | null;
+      name: string;
+    },
+    to: string,
+    subject: string,
+    html: string,
+    attachments?: Array<{ filename: string; path: string }>,
+  ) {
+    if (!coop.graphClientId || !coop.graphClientSecret || !coop.graphTenantId || !coop.graphFromEmail) {
+      throw new Error('Microsoft Graph not fully configured');
+    }
+
+    const credential = new ClientSecretCredential(
+      coop.graphTenantId,
+      coop.graphClientId,
+      coop.graphClientSecret,
+    );
+
+    const authProvider = new TokenCredentialAuthenticationProvider(credential, {
+      scopes: ['https://graph.microsoft.com/.default'],
+    });
+
+    const client = Client.initWithMiddleware({ authProvider });
+
+    // Build Graph API message
+    const message: Record<string, unknown> = {
+      subject,
+      body: {
+        contentType: 'HTML',
+        content: html,
+      },
+      toRecipients: [
+        {
+          emailAddress: { address: to },
+        },
+      ],
+    };
+
+    // Add attachments if present
+    if (attachments && attachments.length > 0) {
+      message.attachments = attachments.map((att) => ({
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: att.filename,
+        contentBytes: fs.readFileSync(att.path).toString('base64'),
+      }));
+    }
+
+    await client
+      .api(`/users/${coop.graphFromEmail}/sendMail`)
+      .post({ message, saveToSentItems: false });
   }
 
   private renderTemplate(

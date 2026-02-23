@@ -581,7 +581,28 @@
       "formattingLocale": "Opmaaklocatie",
       "requiresApproval": "Goedkeuring vereist",
       "termsUrl": "URL algemene voorwaarden",
-      "email": "E-mailinstellingen"
+      "email": "E-mailinstellingen",
+      "emailEnabled": "E-mail ingeschakeld",
+      "emailDisabledWarning": "E-mail is uitgeschakeld voor deze co\u00f6peratie. Er worden geen e-mails verstuurd. Neem contact op met een systeembeheerder om e-mail in te schakelen.",
+      "emailProvider": "E-mailprovider",
+      "emailProviderPlatform": "Platform (OpenCoop)",
+      "emailProviderSmtp": "Eigen SMTP",
+      "emailProviderGraph": "Microsoft Graph",
+      "platformDescription": "E-mails worden verstuurd via de gedeelde OpenCoop-relay. Geen configuratie nodig.",
+      "smtpDescription": "Gebruik uw eigen SMTP-server om e-mails te versturen.",
+      "graphDescription": "Verstuur e-mails via Microsoft 365 met de Graph API.",
+      "graphSetupInstructions": "Registreer een app in Azure AD met Mail.Send-machtiging en vul de gegevens hieronder in.",
+      "smtpHost": "SMTP-host",
+      "smtpPort": "SMTP-poort",
+      "smtpUser": "SMTP-gebruiker",
+      "smtpPass": "SMTP-wachtwoord",
+      "smtpPassPlaceholder": "Laat leeg om huidig te behouden",
+      "smtpFrom": "Afzenderadres",
+      "graphClientId": "Client-ID",
+      "graphClientSecret": "Clientgeheim",
+      "graphClientSecretPlaceholder": "Laat leeg om huidig te behouden",
+      "graphTenantId": "Tenant-ID",
+      "graphFromEmail": "Afzender e-mail"
     },
     "branding": {
       "title": "Huisstijl instellingen",
@@ -631,7 +652,10 @@
       "totalCapital": "Totaal kapitaal",
       "createdAt": "Aangemaakt",
       "actions": "Acties",
-      "total": "Totaal coöperaties"
+      "total": "Totaal coöperaties",
+      "emailStatus": "E-mail",
+      "emailEnabled": "Ingeschakeld",
+      "emailDisabled": "Uitgeschakeld"
     },
     "coopAdmins": {
       "title": "Coöperatie beheerders",

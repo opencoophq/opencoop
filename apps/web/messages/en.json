@@ -581,7 +581,28 @@
       "formattingLocale": "Formatting Locale",
       "requiresApproval": "Require Approval",
       "termsUrl": "Terms URL",
-      "email": "Email Settings"
+      "email": "Email Settings",
+      "emailEnabled": "Email enabled",
+      "emailDisabledWarning": "Email is disabled for this cooperative. No emails will be sent. Contact a system administrator to enable email.",
+      "emailProvider": "Email Provider",
+      "emailProviderPlatform": "Platform (OpenCoop)",
+      "emailProviderSmtp": "Custom SMTP",
+      "emailProviderGraph": "Microsoft Graph",
+      "platformDescription": "Emails are sent via OpenCoop's shared relay. No configuration needed.",
+      "smtpDescription": "Use your own SMTP server to send emails.",
+      "graphDescription": "Send emails via Microsoft 365 using the Graph API.",
+      "graphSetupInstructions": "Register an app in Azure AD with Mail.Send permission, then enter the credentials below.",
+      "smtpHost": "SMTP Host",
+      "smtpPort": "SMTP Port",
+      "smtpUser": "SMTP User",
+      "smtpPass": "SMTP Password",
+      "smtpPassPlaceholder": "Leave blank to keep current",
+      "smtpFrom": "From Address",
+      "graphClientId": "Client ID",
+      "graphClientSecret": "Client Secret",
+      "graphClientSecretPlaceholder": "Leave blank to keep current",
+      "graphTenantId": "Tenant ID",
+      "graphFromEmail": "From Email"
     },
     "branding": {
       "title": "Branding Settings",
@@ -631,7 +652,10 @@
       "totalCapital": "Total Capital",
       "createdAt": "Created",
       "actions": "Actions",
-      "total": "Total Cooperatives"
+      "total": "Total Cooperatives",
+      "emailStatus": "Email",
+      "emailEnabled": "Enabled",
+      "emailDisabled": "Disabled"
     },
     "coopAdmins": {
       "title": "Coop Administrators",

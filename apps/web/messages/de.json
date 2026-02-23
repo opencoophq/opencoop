@@ -581,7 +581,28 @@
       "formattingLocale": "Formatierungsregion",
       "requiresApproval": "Genehmigung erforderlich",
       "termsUrl": "URL der AGB",
-      "email": "E-Mail-Einstellungen"
+      "email": "E-Mail-Einstellungen",
+      "emailEnabled": "E-Mail aktiviert",
+      "emailDisabledWarning": "E-Mail ist für diese Genossenschaft deaktiviert. Es werden keine E-Mails versendet. Wenden Sie sich an einen Systemadministrator, um E-Mail zu aktivieren.",
+      "emailProvider": "E-Mail-Anbieter",
+      "emailProviderPlatform": "Plattform (OpenCoop)",
+      "emailProviderSmtp": "Eigener SMTP",
+      "emailProviderGraph": "Microsoft Graph",
+      "platformDescription": "E-Mails werden über das gemeinsame OpenCoop-Relay versendet. Keine Konfiguration erforderlich.",
+      "smtpDescription": "Verwenden Sie Ihren eigenen SMTP-Server zum Versenden von E-Mails.",
+      "graphDescription": "Versenden Sie E-Mails über Microsoft 365 mit der Graph-API.",
+      "graphSetupInstructions": "Registrieren Sie eine App in Azure AD mit der Berechtigung Mail.Send und geben Sie die Anmeldedaten unten ein.",
+      "smtpHost": "SMTP-Host",
+      "smtpPort": "SMTP-Port",
+      "smtpUser": "SMTP-Benutzer",
+      "smtpPass": "SMTP-Passwort",
+      "smtpPassPlaceholder": "Leer lassen, um aktuelles beizubehalten",
+      "smtpFrom": "Absenderadresse",
+      "graphClientId": "Client-ID",
+      "graphClientSecret": "Clientgeheimnis",
+      "graphClientSecretPlaceholder": "Leer lassen, um aktuelles beizubehalten",
+      "graphTenantId": "Mandanten-ID",
+      "graphFromEmail": "Absender-E-Mail"
     },
     "branding": {
       "title": "Branding-Einstellungen",
@@ -631,7 +652,10 @@
       "totalCapital": "Gesamtkapital",
       "createdAt": "Erstellt",
       "actions": "Aktionen",
-      "total": "Genossenschaften gesamt"
+      "total": "Genossenschaften gesamt",
+      "emailStatus": "E-Mail",
+      "emailEnabled": "Aktiviert",
+      "emailDisabled": "Deaktiviert"
     },
     "coopAdmins": {
       "title": "Genossenschaftsadministratoren",
