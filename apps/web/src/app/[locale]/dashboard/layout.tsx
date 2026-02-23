@@ -201,7 +201,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           )}
 
           <div className="flex-1 overflow-y-auto py-4 px-2">
-            {renderNavSection(t('common.myAccount'), shareholderNav)}
+            {!isAdmin && renderNavSection(t('common.myAccount'), shareholderNav)}
             {isAdmin && adminNav.length > 0 && renderNavSection(t('admin.title'), adminNav)}
             {isSystemAdmin && renderNavSection(t('system.title'), systemNav)}
           </div>
