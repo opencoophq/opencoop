@@ -682,7 +682,7 @@
       "pricing": "Pricing"
     },
     "hero": {
-      "title": "Shareholder management for Belgian cooperatives",
+      "title": "Shareholder management for cooperatives",
       "subtitle": "The open-source platform that helps cooperatives manage shareholders, shares, dividends, and documents — all in one place.",
       "cta": "Get started",
       "secondaryCta": "View on GitHub",
@@ -701,11 +701,11 @@
       },
       "dividends": {
         "title": "Dividend Distribution",
-        "description": "Calculate dividends with automatic Belgian withholding tax (roerende voorheffing). Generate statements per shareholder."
+        "description": "Calculate dividends with automatic withholding tax. Generate statements per shareholder."
       },
       "banking": {
         "title": "Bank Import & OGM Matching",
-        "description": "Import bank statements and automatically match payments using Belgian structured communication codes (OGM)."
+        "description": "Import bank statements and automatically match payments using structured communication codes."
       },
       "documents": {
         "title": "Document Generation",
@@ -760,11 +760,33 @@
       "primary": "Get started",
       "secondary": "View source on GitHub"
     },
+    "featureRequestCta": {
+      "title": "Missing a feature?",
+      "subtitle": "Tell us what you need — we're building OpenCoop together with our users.",
+      "cta": "Suggest a feature"
+    },
     "footer": {
       "copyright": "OpenCoop",
       "license": "Licensed under AGPL-3.0",
       "language": "Language"
     }
+  },
+  "featureRequest": {
+    "title": "Suggest a feature",
+    "subtitle": "Have an idea that would make OpenCoop better? We'd love to hear it.",
+    "form": {
+      "name": "Your name",
+      "namePlaceholder": "Jane Doe",
+      "email": "Email address",
+      "emailPlaceholder": "jane@example.com",
+      "title": "Feature title",
+      "titlePlaceholder": "A short summary of your idea",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe the feature you'd like to see and why it would be useful...",
+      "submit": "Submit feature request"
+    },
+    "success": "Thanks! Your feature request has been submitted. We'll review it soon.",
+    "error": "Something went wrong. Please try again."
   },
   "upgrade": {
     "title": "Create Your Account",

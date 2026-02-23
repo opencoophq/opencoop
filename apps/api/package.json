@@ -23,6 +23,7 @@
     "@nestjs/platform-express": "^10.4.0",
     "@nestjs/schedule": "^6.1.0",
     "@nestjs/swagger": "^8.1.0",
+    "@octokit/rest": "^22.0.1",
     "@opencoop/database": "workspace:*",
     "@opencoop/pdf-templates": "workspace:*",
     "@opencoop/shared": "workspace:*",

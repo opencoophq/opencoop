@@ -682,7 +682,7 @@
       "pricing": "Preise"
     },
     "hero": {
-      "title": "Anteilseignerverwaltung für belgische Genossenschaften",
+      "title": "Anteilseignerverwaltung für Genossenschaften",
       "subtitle": "Die Open-Source-Plattform, die Genossenschaften bei der Verwaltung von Anteilseignern, Anteilen, Dividenden und Dokumenten unterstützt — alles an einem Ort.",
       "cta": "Jetzt starten",
       "secondaryCta": "Auf GitHub ansehen",
@@ -701,11 +701,11 @@
       },
       "dividends": {
         "title": "Dividendenausschüttung",
-        "description": "Berechnen Sie Dividenden mit automatischer belgischer Quellensteuer (roerende voorheffing). Erstellen Sie Abrechnungen pro Anteilseigner."
+        "description": "Berechnen Sie Dividenden mit automatischer Quellensteuer. Erstellen Sie Abrechnungen pro Anteilseigner."
       },
       "banking": {
         "title": "Bankimport & OGM-Abgleich",
-        "description": "Importieren Sie Kontoauszüge und ordnen Sie Zahlungen automatisch anhand belgischer strukturierter Mitteilungscodes (OGM) zu."
+        "description": "Importieren Sie Kontoauszüge und ordnen Sie Zahlungen automatisch anhand strukturierter Mitteilungscodes zu."
       },
       "documents": {
         "title": "Dokumentenerstellung",
@@ -760,11 +760,33 @@
       "primary": "Jetzt starten",
       "secondary": "Quellcode auf GitHub ansehen"
     },
+    "featureRequestCta": {
+      "title": "Fehlt Ihnen eine Funktion?",
+      "subtitle": "Sagen Sie uns, was Sie brauchen — wir entwickeln OpenCoop gemeinsam mit unseren Nutzern.",
+      "cta": "Funktion vorschlagen"
+    },
     "footer": {
       "copyright": "OpenCoop",
       "license": "Lizenziert unter AGPL-3.0",
       "language": "Sprache"
     }
+  },
+  "featureRequest": {
+    "title": "Funktion vorschlagen",
+    "subtitle": "Haben Sie eine Idee, die OpenCoop verbessern würde? Wir freuen uns auf Ihr Feedback.",
+    "form": {
+      "name": "Ihr Name",
+      "namePlaceholder": "Max Mustermann",
+      "email": "E-Mail-Adresse",
+      "emailPlaceholder": "max@beispiel.de",
+      "title": "Titel der Funktion",
+      "titlePlaceholder": "Eine kurze Zusammenfassung Ihrer Idee",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Beschreiben Sie die gewünschte Funktion und warum sie nützlich wäre...",
+      "submit": "Vorschlag einreichen"
+    },
+    "success": "Danke! Ihr Vorschlag wurde eingereicht. Wir werden ihn in Kürze prüfen.",
+    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
   },
   "upgrade": {
     "title": "Konto erstellen",
