@@ -12,6 +12,7 @@ import { api } from '@/lib/api';
 interface UserRow {
   id: string;
   email: string;
+  name: string | null;
   role: string;
   preferredLanguage: string;
   emailVerified: string | null;
@@ -61,6 +62,7 @@ export default function SystemUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>{t('common.name')}</TableHead>
                   <TableHead>{t('common.email')}</TableHead>
                   <TableHead>{t('system.users.role')}</TableHead>
                   <TableHead>{t('system.users.adminOf')}</TableHead>
@@ -72,6 +74,7 @@ export default function SystemUsersPage() {
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user.id}>
+                    <TableCell>{user.name || '-'}</TableCell>
                     <TableCell className="font-medium">{user.email}</TableCell>
                     <TableCell>
                       <Badge variant={roleVariant(user.role)}>{t(`system.users.roles.${user.role}`)}</Badge>

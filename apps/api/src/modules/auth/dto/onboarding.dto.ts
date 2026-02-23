@@ -34,6 +34,12 @@ export class OnboardingDto {
   @IsIn(['monthly', 'yearly'])
   billingPeriod: 'monthly' | 'yearly';
 
+  @ApiProperty({ example: 'John Doe', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
   @ApiProperty({ example: 'nl', required: false })
   @IsOptional()
   @IsString()

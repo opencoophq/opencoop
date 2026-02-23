@@ -323,7 +323,9 @@
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "confirmPassword": "Confirm New Password",
-    "passwordChanged": "Password changed successfully"
+    "passwordChanged": "Password changed successfully",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Your name"
   },
   "nav": {
     "dashboard": "Dashboard",

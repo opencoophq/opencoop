@@ -89,7 +89,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User preferences updated' })
   async updateProfile(
     @CurrentUser() user: CurrentUserData,
-    @Body() body: { preferredLanguage?: string },
+    @Body() body: { name?: string; preferredLanguage?: string },
   ) {
     return this.authService.updateProfile(user.id, body);
   }
