@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Building2 } from 'lucide-react';
 
 interface CoopBranding {
   name: string;
@@ -148,14 +149,18 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
               alt={coop.name}
               className="h-12 mx-auto mb-4 object-contain"
             />
-          ) : (
+          ) : coop ? (
             <div
               className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4"
-              style={{ backgroundColor: coop?.primaryColor || 'hsl(var(--primary))' }}
+              style={{ backgroundColor: coop.primaryColor }}
             >
               <span className="text-white font-bold text-2xl">
-                {coop ? coop.name.charAt(0).toUpperCase() : 'O'}
+                {coop.name.charAt(0).toUpperCase()}
               </span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary text-primary-foreground mx-auto mb-4">
+              <Building2 className="w-7 h-7" />
             </div>
           )}
           <CardTitle className="text-2xl">{t('auth.welcomeBack')}</CardTitle>
