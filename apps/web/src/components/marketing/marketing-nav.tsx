@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Building2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LanguageSwitcher } from './language-switcher';
+import { ThemeToggle } from './theme-toggle';
 
 function useScrolled(threshold = 10) {
   const [scrolled, setScrolled] = useState(false);
@@ -58,6 +59,7 @@ export function MarketingNav() {
             <Button size="sm">{t('nav.register')}</Button>
           </Link>
           <LanguageSwitcher />
+          <ThemeToggle />
         </div>
       </div>
     </nav>
