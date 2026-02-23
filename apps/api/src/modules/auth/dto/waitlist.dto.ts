@@ -6,7 +6,7 @@ export class WaitlistDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'starter', required: false })
+  @ApiProperty({ example: 'essentials', required: false })
   @IsOptional()
   @IsString()
   plan?: string;

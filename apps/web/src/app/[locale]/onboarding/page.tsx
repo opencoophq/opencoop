@@ -30,7 +30,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const plan = (searchParams.get('plan') as 'starter' | 'growth') || 'starter';
+  const plan = (searchParams.get('plan') as 'essentials' | 'professional') || 'essentials';
   const billing = (searchParams.get('billing') as 'monthly' | 'yearly') || 'yearly';
 
   const [step, setStep] = useState(0);
@@ -280,7 +280,7 @@ export default function OnboardingPage() {
 
               <div className="flex gap-3 pt-2">
                 <Badge variant="secondary" className="text-sm">
-                  {t('cooperative.plan')}: {plan === 'starter' ? 'Starter' : 'Growth'}
+                  {t('cooperative.plan')}: {plan === 'essentials' ? 'Essentials' : 'Professional'}
                 </Badge>
                 <Badge variant="secondary" className="text-sm">
                   {t('cooperative.billing')}: {billing === 'yearly' ? t('billing.yearly') : t('billing.monthly')}

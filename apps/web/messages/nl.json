@@ -824,32 +824,32 @@
       "billedMonthly": "Maandelijks gefactureerd",
       "billedYearly": "Jaarlijks gefactureerd"
     },
-    "starter": {
-      "name": "Starter",
-      "description": "Voor coöperaties die net beginnen",
-      "priceMonthly": "49",
-      "priceYearly": "499",
+    "essentials": {
+      "name": "Essentials",
+      "description": "Voor coöperaties die af willen van spreadsheets",
+      "priceMonthly": "39",
+      "priceYearly": "399",
       "cta": "Aan de slag"
     },
-    "growth": {
-      "name": "Growth",
+    "professional": {
+      "name": "Professional",
       "badge": "Populairst",
-      "description": "Voor groeiende coöperaties met meer aandeelhouders",
-      "priceMonthly": "79",
-      "priceYearly": "799",
+      "description": "Voor coöperaties met actieve aandelenoperaties",
+      "priceMonthly": "89",
+      "priceYearly": "899",
       "cta": "Aan de slag"
     },
     "features": {
       "shareholders": "Aandeelhoudersbeheer",
-      "shareClasses": "Aandelenklassen & transacties",
-      "dividends": "Dividenduitkering",
+      "unlimitedShareholders": "Onbeperkt aandeelhouders",
+      "oneShareClass": "1 aandelenklasse",
+      "unlimitedShareClasses": "Onbeperkt aandelenklassen",
+      "oneDividendRun": "1 dividenduitkering per jaar",
+      "unlimitedDividends": "Onbeperkt dividenduitkeringen",
       "banking": "Bank import & OGM-matching",
       "documents": "PDF-documentgeneratie",
       "branding": "Eigen huisstijl",
-      "multiTenant": "Multi-tenant ondersteuning",
       "emailNotifications": "E-mailnotificaties",
-      "starterLimit": "Tot 500 aandeelhouders",
-      "unlimitedShareholders": "Onbeperkt aandeelhouders",
       "prioritySupport": "Prioriteits e-mailsupport"
     },
     "selfHosted": {
@@ -863,8 +863,8 @@
     },
     "faq": {
       "title": "Veelgestelde vragen",
-      "q1": "Wat gebeurt er als ik meer dan 500 aandeelhouders heb?",
-      "a1": "U kunt op elk moment upgraden naar het Growth-plan. Uw gegevens en instellingen blijven behouden — geen migratie nodig.",
+      "q1": "Wat als ik meer aandelenklassen of dividenduitkeringen nodig heb?",
+      "a1": "Upgrade op elk moment naar Professional. Uw gegevens en instellingen blijven behouden — geen migratie nodig.",
       "q2": "Kan ik wisselen tussen maandelijkse en jaarlijkse facturatie?",
       "a2": "Ja, u kunt op elk moment wisselen. Bij overstap naar jaarlijkse facturatie ontvangt u een pro-rata tegoed voor uw huidige facturatieperiode.",
       "q3": "Wat is inbegrepen bij prioriteitssupport?",

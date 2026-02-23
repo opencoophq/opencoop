@@ -26,9 +26,9 @@ export class OnboardingDto {
   })
   coopSlug: string;
 
-  @ApiProperty({ example: 'starter', enum: ['starter', 'growth'] })
-  @IsIn(['starter', 'growth'])
-  plan: 'starter' | 'growth';
+  @ApiProperty({ example: 'essentials', enum: ['essentials', 'professional'] })
+  @IsIn(['essentials', 'professional'])
+  plan: 'essentials' | 'professional';
 
   @ApiProperty({ example: 'yearly', enum: ['monthly', 'yearly'] })
   @IsIn(['monthly', 'yearly'])
