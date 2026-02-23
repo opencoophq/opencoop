@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
-import { Building2 } from 'lucide-react';
+import { Building2, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
@@ -23,11 +23,12 @@ export function MarketingNav() {
   const scrolled = useScrolled();
   const pathname = usePathname();
   const isPricing = pathname === '/pricing';
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <nav
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        scrolled
+        scrolled || mobileOpen
           ? 'bg-background/80 backdrop-blur-xl border-b shadow-sm'
           : 'bg-transparent'
       }`}
@@ -40,7 +41,8 @@ export function MarketingNav() {
           <span className="text-lg font-bold tracking-tight">OpenCoop</span>
         </Link>
 
-        <div className="flex items-center gap-3">
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-3">
           <Link href="/pricing">
             <Button
               variant="ghost"
@@ -61,7 +63,48 @@ export function MarketingNav() {
           <LanguageSwitcher />
           <ThemeToggle />
         </div>
+
+        {/* Mobile hamburger */}
+        <button
+          type="button"
+          className="md:hidden p-2 -mr-2"
+          aria-label="Toggle menu"
+          onClick={() => setMobileOpen((v) => !v)}
+        >
+          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
       </div>
+
+      {/* Mobile menu panel */}
+      {mobileOpen && (
+        <div className="md:hidden border-t bg-background/95 backdrop-blur-xl">
+          <div className="flex flex-col gap-1 px-6 py-4">
+            <Link href="/pricing" onClick={() => setMobileOpen(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${isPricing ? 'text-primary' : ''}`}
+              >
+                {t('nav.pricing')}
+              </Button>
+            </Link>
+            <Link href="/login" onClick={() => setMobileOpen(false)}>
+              <Button variant="ghost" size="sm" className="w-full justify-start">
+                {t('nav.login')}
+              </Button>
+            </Link>
+            <Link href="/pricing" onClick={() => setMobileOpen(false)}>
+              <Button size="sm" className="w-full mt-1">
+                {t('nav.register')}
+              </Button>
+            </Link>
+            <div className="flex items-center gap-3 pt-3 border-t mt-2">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
