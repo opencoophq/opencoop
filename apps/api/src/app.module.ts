@@ -17,6 +17,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { EmailModule } from './modules/email/email.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SystemModule } from './modules/system/system.module';
+import { FeatureRequestsModule } from './modules/feature-requests/feature-requests.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { SystemModule } from './modules/system/system.module';
     EmailModule,
     AdminModule,
     SystemModule,
+    FeatureRequestsModule,
   ],
 })
 export class AppModule {}

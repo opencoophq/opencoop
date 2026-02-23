@@ -557,3 +557,20 @@ model WaitlistEntry {
 
   @@map("waitlist_entries")
 }
+
+// ============================================================================
+// FEATURE REQUESTS
+// ============================================================================
+
+model FeatureRequest {
+  id             String   @id @default(cuid())
+  name           String
+  email          String
+  title          String
+  description    String
+  locale         String?
+  githubIssueUrl String?
+  createdAt      DateTime @default(now())
+
+  @@map("feature_requests")
+}

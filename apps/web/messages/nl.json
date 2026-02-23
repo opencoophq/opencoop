@@ -682,7 +682,7 @@
       "pricing": "Prijzen"
     },
     "hero": {
-      "title": "Aandeelhoudersbeheer voor Belgische coöperaties",
+      "title": "Aandeelhoudersbeheer voor coöperaties",
       "subtitle": "Het open-source platform waarmee coöperaties hun aandeelhouders, aandelen, dividenden en documenten beheren — alles op één plek.",
       "cta": "Aan de slag",
       "secondaryCta": "Bekijk op GitHub",
@@ -701,11 +701,11 @@
       },
       "dividends": {
         "title": "Dividenduitkering",
-        "description": "Bereken dividenden met automatische Belgische roerende voorheffing. Genereer afschriften per aandeelhouder."
+        "description": "Bereken dividenden met automatische roerende voorheffing. Genereer afschriften per aandeelhouder."
       },
       "banking": {
         "title": "Bank import & OGM-matching",
-        "description": "Importeer bankafschriften en koppel betalingen automatisch via Belgische gestructureerde mededelingen (OGM)."
+        "description": "Importeer bankafschriften en koppel betalingen automatisch via gestructureerde mededelingen."
       },
       "documents": {
         "title": "Documentgeneratie",
@@ -760,11 +760,33 @@
       "primary": "Aan de slag",
       "secondary": "Bekijk broncode op GitHub"
     },
+    "featureRequestCta": {
+      "title": "Mist u een functie?",
+      "subtitle": "Vertel ons wat u nodig heeft — we bouwen OpenCoop samen met onze gebruikers.",
+      "cta": "Stel een functie voor"
+    },
     "footer": {
       "copyright": "OpenCoop",
       "license": "Gelicentieerd onder AGPL-3.0",
       "language": "Taal"
     }
+  },
+  "featureRequest": {
+    "title": "Stel een functie voor",
+    "subtitle": "Heeft u een idee dat OpenCoop beter zou maken? We horen het graag.",
+    "form": {
+      "name": "Uw naam",
+      "namePlaceholder": "Jan Jansen",
+      "email": "E-mailadres",
+      "emailPlaceholder": "jan@voorbeeld.be",
+      "title": "Titel van de functie",
+      "titlePlaceholder": "Een korte samenvatting van uw idee",
+      "description": "Beschrijving",
+      "descriptionPlaceholder": "Beschrijf de functie die u zou willen zien en waarom deze nuttig zou zijn...",
+      "submit": "Feature request indienen"
+    },
+    "success": "Bedankt! Uw feature request is ingediend. We bekijken deze binnenkort.",
+    "error": "Er is iets misgegaan. Probeer het opnieuw."
   },
   "upgrade": {
     "title": "Account aanmaken",

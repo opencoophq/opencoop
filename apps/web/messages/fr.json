@@ -682,7 +682,7 @@
       "pricing": "Tarifs"
     },
     "hero": {
-      "title": "Gestion des coopérateurs pour les coopératives belges",
+      "title": "Gestion des coopérateurs pour les coopératives",
       "subtitle": "La plateforme open source qui aide les coopératives à gérer leurs coopérateurs, parts, dividendes et documents — tout en un seul endroit.",
       "cta": "Commencer",
       "secondaryCta": "Voir sur GitHub",
@@ -701,11 +701,11 @@
       },
       "dividends": {
         "title": "Distribution des dividendes",
-        "description": "Calculez les dividendes avec le précompte mobilier belge automatique (roerende voorheffing). Générez des relevés par coopérateur."
+        "description": "Calculez les dividendes avec le précompte mobilier automatique. Générez des relevés par coopérateur."
       },
       "banking": {
         "title": "Import bancaire et rapprochement OGM",
-        "description": "Importez les extraits bancaires et rapprochez automatiquement les paiements grâce aux communications structurées belges (OGM)."
+        "description": "Importez les extraits bancaires et rapprochez automatiquement les paiements grâce aux communications structurées."
       },
       "documents": {
         "title": "Génération de documents",
@@ -760,11 +760,33 @@
       "primary": "Commencer",
       "secondary": "Voir le code source sur GitHub"
     },
+    "featureRequestCta": {
+      "title": "Il vous manque une fonctionnalité ?",
+      "subtitle": "Dites-nous ce dont vous avez besoin — nous construisons OpenCoop avec nos utilisateurs.",
+      "cta": "Suggérer une fonctionnalité"
+    },
     "footer": {
       "copyright": "OpenCoop",
       "license": "Sous licence AGPL-3.0",
       "language": "Langue"
     }
+  },
+  "featureRequest": {
+    "title": "Suggérer une fonctionnalité",
+    "subtitle": "Vous avez une idée pour améliorer OpenCoop ? Nous serions ravis de l'entendre.",
+    "form": {
+      "name": "Votre nom",
+      "namePlaceholder": "Marie Dupont",
+      "email": "Adresse e-mail",
+      "emailPlaceholder": "marie@exemple.com",
+      "title": "Titre de la fonctionnalité",
+      "titlePlaceholder": "Un court résumé de votre idée",
+      "description": "Description",
+      "descriptionPlaceholder": "Décrivez la fonctionnalité souhaitée et en quoi elle serait utile...",
+      "submit": "Soumettre la suggestion"
+    },
+    "success": "Merci ! Votre suggestion a été soumise. Nous l'examinerons bientôt.",
+    "error": "Une erreur est survenue. Veuillez réessayer."
   },
   "upgrade": {
     "title": "Créez votre compte",

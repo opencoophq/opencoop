@@ -22,6 +22,7 @@ import {
   Cloud,
   Server,
   Check,
+  Lightbulb,
 } from 'lucide-react';
 
 const GITHUB_URL = 'https://github.com/opencoophq/opencoop';
@@ -282,6 +283,29 @@ export default function HomePage() {
                 {t('cta.secondary')}
               </Button>
             </a>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* ─── Feature Request CTA ─── */}
+      <section className="py-16 md:py-20 bg-muted/40">
+        <FadeIn className="max-w-3xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-5">
+            <Lightbulb className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+            {t('featureRequestCta.title')}
+          </h2>
+          <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
+            {t('featureRequestCta.subtitle')}
+          </p>
+          <div className="mt-8">
+            <Link href="/feature-request">
+              <Button size="lg" variant="outline" className="text-base px-8 h-12">
+                <Lightbulb className="w-4 h-4" />
+                {t('featureRequestCta.cta')}
+              </Button>
+            </Link>
           </div>
         </FadeIn>
       </section>
