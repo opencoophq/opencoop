@@ -209,10 +209,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           {/* User info + logout */}
           <div className="p-3 border-t">
             <div className="flex items-center justify-between">
-              <div className="text-sm truncate">
+              <Link href="/dashboard/settings" className="text-sm truncate min-w-0 hover:opacity-80">
                 <p className="font-medium truncate">{user.email}</p>
                 <p className="text-gray-500 text-xs">{t(`system.users.roles.${user.role}`)}</p>
-              </div>
+              </Link>
               <Button variant="ghost" size="icon" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
               </Button>
