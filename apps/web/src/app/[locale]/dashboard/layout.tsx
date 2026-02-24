@@ -33,6 +33,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface NavItem {
   href: string;
@@ -124,7 +126,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const renderNavSection = (title: string, items: NavItem[]) => (
     <div className="mb-6">
-      <h3 className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
         {title}
       </h3>
       <nav className="space-y-1">
@@ -137,7 +139,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
                 isActive
                   ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-foreground/70 hover:bg-accent'
               }`}
               onClick={() => setSidebarOpen(false)}
             >
@@ -159,18 +161,22 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/50">
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b px-4 py-3 flex items-center justify-between">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-between">
         <span className="font-semibold text-lg">OpenCoop</span>
-        <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r transform transition-transform lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-card border-r transform transition-transform lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -206,6 +212,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             {isSystemAdmin && renderNavSection(t('system.title'), systemNav)}
           </div>
 
+          {/* Language & theme controls */}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-2 border-t">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
+
           {/* User info + logout */}
           <div className="p-3 border-t">
             <div className="flex items-center justify-between">
@@ -213,12 +225,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 {user.name ? (
                   <>
                     <p className="font-medium truncate">{user.name}</p>
-                    <p className="text-gray-500 text-xs truncate">{user.email}</p>
+                    <p className="text-muted-foreground text-xs truncate">{user.email}</p>
                   </>
                 ) : (
                   <>
                     <p className="font-medium truncate">{user.email}</p>
-                    <p className="text-gray-500 text-xs">{t(`system.users.roles.${user.role}`)}</p>
+                    <p className="text-muted-foreground text-xs">{t(`system.users.roles.${user.role}`)}</p>
                   </>
                 )}
               </Link>
@@ -242,8 +254,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <main className="lg:pl-64 pt-14 lg:pt-0">
         {selectedCoop && selectedCoop.active === false && (
           <div className="px-6 pt-6">
-            <Alert className="border-yellow-300 bg-yellow-50 text-yellow-800">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <Alert className="border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-200">
+              <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
               <AlertDescription>{t('onboarding.pendingActivation')}</AlertDescription>
             </Alert>
           </div>
