@@ -91,6 +91,16 @@ export default function HomePage() {
                   {t('hero.demoCta')}
                 </Button>
               </Link>
+              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto text-base px-8 h-12"
+                >
+                  <Github className="w-4 h-4" />
+                  {t('hero.secondaryCta')}
+                </Button>
+              </a>
             </div>
           </FadeIn>
         </div>
