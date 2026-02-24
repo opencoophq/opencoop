@@ -713,6 +713,7 @@
       "subtitle": "La plateforme open source qui aide les coopératives à gérer leurs coopérateurs, parts, dividendes et documents — tout en un seul endroit.",
       "cta": "Commencer",
       "secondaryCta": "Voir sur GitHub",
+      "demoCta": "Essayer la démo",
       "openSourceBadge": "Open source — AGPL-3.0"
     },
     "features": {
@@ -786,6 +787,11 @@
       "subtitle": "Rejoignez les coopératives qui utilisent déjà OpenCoop pour gérer leurs coopérateurs.",
       "primary": "Commencer",
       "secondary": "Voir le code source sur GitHub"
+    },
+    "demoCta": {
+      "title": "Voyez-le en action",
+      "subtitle": "Explorez une coopérative de démonstration complète — aucune inscription requise. Essayez le tableau de bord admin ou le portail coopérateur.",
+      "cta": "Essayer la démo"
     },
     "featureRequestCta": {
       "title": "Il vous manque une fonctionnalité ?",

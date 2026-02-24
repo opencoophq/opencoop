@@ -713,6 +713,7 @@
       "subtitle": "Die Open-Source-Plattform, die Genossenschaften bei der Verwaltung von Anteilseignern, Anteilen, Dividenden und Dokumenten unterstützt — alles an einem Ort.",
       "cta": "Jetzt starten",
       "secondaryCta": "Auf GitHub ansehen",
+      "demoCta": "Demo ausprobieren",
       "openSourceBadge": "Open Source — AGPL-3.0"
     },
     "features": {
@@ -786,6 +787,11 @@
       "subtitle": "Schließen Sie sich den Genossenschaften an, die OpenCoop bereits zur Verwaltung ihrer Anteilseigner nutzen.",
       "primary": "Jetzt starten",
       "secondary": "Quellcode auf GitHub ansehen"
+    },
+    "demoCta": {
+      "title": "Sehen Sie es in Aktion",
+      "subtitle": "Erkunden Sie eine voll ausgestattete Demo-Genossenschaft — keine Registrierung erforderlich. Probieren Sie das Admin-Dashboard oder das Anteilseigner-Portal.",
+      "cta": "Demo ausprobieren"
     },
     "featureRequestCta": {
       "title": "Fehlt Ihnen eine Funktion?",
