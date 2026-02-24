@@ -23,6 +23,7 @@ export function MarketingNav() {
   const scrolled = useScrolled();
   const pathname = usePathname();
   const isPricing = pathname === '/pricing';
+  const isDemo = pathname === '/demo';
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -50,6 +51,15 @@ export function MarketingNav() {
               className={isPricing ? 'text-primary' : ''}
             >
               {t('nav.pricing')}
+            </Button>
+          </Link>
+          <Link href="/demo">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={isDemo ? 'text-primary' : ''}
+            >
+              {t('nav.demo')}
             </Button>
           </Link>
           <Link href="/login">
@@ -86,6 +96,15 @@ export function MarketingNav() {
                 className={`w-full justify-start ${isPricing ? 'text-primary' : ''}`}
               >
                 {t('nav.pricing')}
+              </Button>
+            </Link>
+            <Link href="/demo" onClick={() => setMobileOpen(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${isDemo ? 'text-primary' : ''}`}
+              >
+                {t('nav.demo')}
               </Button>
             </Link>
             <Link href="/login" onClick={() => setMobileOpen(false)}>
