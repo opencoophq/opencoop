@@ -81,7 +81,7 @@ export default function HomePage() {
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
-              <Link href="/demo">
+              <a href="#demo">
                 <Button
                   size="lg"
                   variant="outline"
@@ -90,7 +90,7 @@ export default function HomePage() {
                   <Play className="w-4 h-4" />
                   {t('hero.demoCta')}
                 </Button>
-              </Link>
+              </a>
               <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
                 <Button
                   size="lg"
@@ -176,7 +176,7 @@ export default function HomePage() {
       </section>
 
       {/* ─── Try the Demo ─── */}
-      <section className="py-24 md:py-32 bg-muted/40">
+      <section id="demo" className="py-24 md:py-32 bg-muted/40 scroll-mt-16">
         <FadeIn className="max-w-3xl mx-auto px-6 text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-5">
             <Play className="w-6 h-6" />
