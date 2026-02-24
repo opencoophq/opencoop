@@ -713,6 +713,7 @@
       "subtitle": "The open-source platform that helps cooperatives manage shareholders, shares, dividends, and documents — all in one place.",
       "cta": "Get started",
       "secondaryCta": "View on GitHub",
+      "demoCta": "Try the demo",
       "openSourceBadge": "Open source — AGPL-3.0"
     },
     "features": {
@@ -786,6 +787,11 @@
       "subtitle": "Join the cooperatives already using OpenCoop to manage their shareholders.",
       "primary": "Get started",
       "secondary": "View source on GitHub"
+    },
+    "demoCta": {
+      "title": "See it in action",
+      "subtitle": "Explore a fully loaded demo cooperative — no signup required. Try the admin dashboard or the shareholder portal.",
+      "cta": "Try the demo"
     },
     "featureRequestCta": {
       "title": "Missing a feature?",

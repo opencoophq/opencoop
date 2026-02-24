@@ -713,6 +713,7 @@
       "subtitle": "Het open-source platform waarmee coöperaties hun aandeelhouders, aandelen, dividenden en documenten beheren — alles op één plek.",
       "cta": "Aan de slag",
       "secondaryCta": "Bekijk op GitHub",
+      "demoCta": "Probeer de demo",
       "openSourceBadge": "Open source — AGPL-3.0"
     },
     "features": {
@@ -786,6 +787,11 @@
       "subtitle": "Sluit u aan bij de coöperaties die OpenCoop al gebruiken om hun aandeelhouders te beheren.",
       "primary": "Aan de slag",
       "secondary": "Bekijk broncode op GitHub"
+    },
+    "demoCta": {
+      "title": "Bekijk het in actie",
+      "subtitle": "Ontdek een volledig ingerichte democoöperatie — geen registratie nodig. Probeer het beheerdersdashboard of het aandeelhoudersportaal.",
+      "cta": "Probeer de demo"
     },
     "featureRequestCta": {
       "title": "Mist u een functie?",

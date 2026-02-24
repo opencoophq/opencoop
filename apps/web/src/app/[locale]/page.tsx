@@ -23,6 +23,7 @@ import {
   Server,
   Check,
   Lightbulb,
+  Play,
 } from 'lucide-react';
 
 const GITHUB_URL = 'https://github.com/opencoophq/opencoop';
@@ -80,16 +81,16 @@ export default function HomePage() {
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
-              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+              <Link href="/demo">
                 <Button
                   size="lg"
                   variant="outline"
                   className="w-full sm:w-auto text-base px-8 h-12"
                 >
-                  <Github className="w-4 h-4" />
-                  {t('hero.secondaryCta')}
+                  <Play className="w-4 h-4" />
+                  {t('hero.demoCta')}
                 </Button>
-              </a>
+              </Link>
             </div>
           </FadeIn>
         </div>
@@ -162,6 +163,29 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ─── Try the Demo ─── */}
+      <section className="py-24 md:py-32 bg-muted/40">
+        <FadeIn className="max-w-3xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-5">
+            <Play className="w-6 h-6" />
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+            {t('demoCta.title')}
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
+            {t('demoCta.subtitle')}
+          </p>
+          <div className="mt-8">
+            <Link href="/demo">
+              <Button size="lg" className="text-base px-8 h-12">
+                <Play className="w-4 h-4" />
+                {t('demoCta.cta')}
+              </Button>
+            </Link>
+          </div>
+        </FadeIn>
       </section>
 
       {/* ─── SaaS vs Self-hosted ─── */}
