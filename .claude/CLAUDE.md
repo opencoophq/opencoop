@@ -206,6 +206,14 @@ HTML5 `<input type="date">` ignores JavaScript locale settings and displays date
 2. Run `pnpm db:generate` to update client
 3. Run `pnpm db:push` (dev) or create migration (prod)
 
+## Demo Coop (Production)
+
+A demo coop exists in production for showcasing the platform:
+- **Coop**: Zonnecoöperatie Vlaanderen (slug: `demo`, `emailEnabled: false`)
+- **Coop admin login**: `admin@zonnecooperatie.be` / `demo1234`
+- **Shareholder login**: `jan.peeters@email.be` / `demo1234`
+- **Seed script**: `packages/database/prisma/seed-demo.ts` (idempotent, safe to re-run)
+
 ## Deployment
 
 Production uses Docker Compose with:
