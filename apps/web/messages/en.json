@@ -705,7 +705,8 @@
     "nav": {
       "login": "Log in",
       "register": "Get started",
-      "pricing": "Pricing"
+      "pricing": "Pricing",
+      "demo": "Demo"
     },
     "hero": {
       "title": "Shareholder management for cooperatives",
@@ -795,6 +796,52 @@
       "copyright": "OpenCoop",
       "license": "Licensed under AGPL-3.0",
       "language": "Language"
+    }
+  },
+  "demo": {
+    "hero": {
+      "badge": "Interactive demo",
+      "title": "Take us for a test ride",
+      "subtitle": "Explore a fully loaded demo cooperative with shareholders, shares, transactions, and dividends. No signup required.",
+      "cta": "Open the demo"
+    },
+    "credentials": {
+      "title": "Pick your role",
+      "subtitle": "Log in as a coop admin to manage everything, or as a shareholder to see the member experience.",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "admin": {
+        "badge": "Full access",
+        "title": "Coop Admin",
+        "description": "Manage shareholders, process transactions, distribute dividends, and generate documents.",
+        "cta": "Log in as admin"
+      },
+      "shareholder": {
+        "title": "Shareholder",
+        "description": "View your shares, download certificates, and check your dividend payouts.",
+        "cta": "Log in as shareholder"
+      }
+    },
+    "included": {
+      "title": "What's in the demo?",
+      "subtitle": "The demo cooperative comes pre-loaded with realistic sample data.",
+      "shareholders": {
+        "title": "6 shareholders",
+        "description": "Individuals, a company, a minor, and a pending registration — all shareholder types covered."
+      },
+      "shares": {
+        "title": "2 share classes",
+        "description": "Class A (€250) and Class B (€500) with different dividend rates and voting rights."
+      },
+      "dividends": {
+        "title": "Dividend period",
+        "description": "A completed 2025 dividend period with calculated payouts and withholding tax."
+      }
+    },
+    "cta": {
+      "title": "Ready to try it yourself?",
+      "subtitle": "Jump in and explore — no signup, no credit card, no strings attached.",
+      "primary": "Open the demo"
     }
   },
   "featureRequest": {

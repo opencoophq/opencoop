@@ -705,7 +705,8 @@
     "nav": {
       "login": "Inloggen",
       "register": "Aan de slag",
-      "pricing": "Prijzen"
+      "pricing": "Prijzen",
+      "demo": "Demo"
     },
     "hero": {
       "title": "Aandeelhoudersbeheer voor coöperaties",
@@ -795,6 +796,52 @@
       "copyright": "OpenCoop",
       "license": "Gelicentieerd onder AGPL-3.0",
       "language": "Taal"
+    }
+  },
+  "demo": {
+    "hero": {
+      "badge": "Interactieve demo",
+      "title": "Neem een proefrit",
+      "subtitle": "Ontdek een volledig ingerichte democoöperatie met aandeelhouders, aandelen, transacties en dividenden. Geen registratie nodig.",
+      "cta": "Open de demo"
+    },
+    "credentials": {
+      "title": "Kies uw rol",
+      "subtitle": "Log in als coöperatiebeheerder om alles te beheren, of als aandeelhouder om de ledenervaring te bekijken.",
+      "emailLabel": "E-mail",
+      "passwordLabel": "Wachtwoord",
+      "admin": {
+        "badge": "Volledige toegang",
+        "title": "Coöperatiebeheerder",
+        "description": "Beheer aandeelhouders, verwerk transacties, keer dividenden uit en genereer documenten.",
+        "cta": "Inloggen als beheerder"
+      },
+      "shareholder": {
+        "title": "Aandeelhouder",
+        "description": "Bekijk uw aandelen, download certificaten en raadpleeg uw dividenduitkeringen.",
+        "cta": "Inloggen als aandeelhouder"
+      }
+    },
+    "included": {
+      "title": "Wat zit er in de demo?",
+      "subtitle": "De democoöperatie is voorgeladen met realistische voorbeelddata.",
+      "shareholders": {
+        "title": "6 aandeelhouders",
+        "description": "Particulieren, een bedrijf, een minderjarige en een lopende registratie — alle types vertegenwoordigd."
+      },
+      "shares": {
+        "title": "2 aandelenklassen",
+        "description": "Klasse A (€250) en Klasse B (€500) met verschillende dividendpercentages en stemrechten."
+      },
+      "dividends": {
+        "title": "Dividendperiode",
+        "description": "Een voltooide dividendperiode 2025 met berekende uitkeringen en roerende voorheffing."
+      }
+    },
+    "cta": {
+      "title": "Klaar om het zelf te proberen?",
+      "subtitle": "Spring erin en ontdek — geen registratie, geen creditcard, geen verplichtingen.",
+      "primary": "Open de demo"
     }
   },
   "featureRequest": {

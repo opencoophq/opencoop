@@ -705,7 +705,8 @@
     "nav": {
       "login": "Anmelden",
       "register": "Jetzt starten",
-      "pricing": "Preise"
+      "pricing": "Preise",
+      "demo": "Demo"
     },
     "hero": {
       "title": "Anteilseignerverwaltung für Genossenschaften",
@@ -795,6 +796,52 @@
       "copyright": "OpenCoop",
       "license": "Lizenziert unter AGPL-3.0",
       "language": "Sprache"
+    }
+  },
+  "demo": {
+    "hero": {
+      "badge": "Interaktive Demo",
+      "title": "Machen Sie eine Probefahrt",
+      "subtitle": "Erkunden Sie eine voll ausgestattete Demo-Genossenschaft mit Anteilseignern, Anteilen, Transaktionen und Dividenden. Keine Registrierung erforderlich.",
+      "cta": "Demo öffnen"
+    },
+    "credentials": {
+      "title": "Wählen Sie Ihre Rolle",
+      "subtitle": "Melden Sie sich als Genossenschaftsadministrator an, um alles zu verwalten, oder als Anteilseigner, um die Mitgliedererfahrung zu sehen.",
+      "emailLabel": "E-Mail",
+      "passwordLabel": "Passwort",
+      "admin": {
+        "badge": "Vollzugriff",
+        "title": "Genossenschaftsadmin",
+        "description": "Verwalten Sie Anteilseigner, verarbeiten Sie Transaktionen, schütten Sie Dividenden aus und erstellen Sie Dokumente.",
+        "cta": "Als Admin anmelden"
+      },
+      "shareholder": {
+        "title": "Anteilseigner",
+        "description": "Sehen Sie Ihre Anteile ein, laden Sie Zertifikate herunter und prüfen Sie Ihre Dividendenauszahlungen.",
+        "cta": "Als Anteilseigner anmelden"
+      }
+    },
+    "included": {
+      "title": "Was steckt in der Demo?",
+      "subtitle": "Die Demo-Genossenschaft ist mit realistischen Beispieldaten vorgeladen.",
+      "shareholders": {
+        "title": "6 Anteilseigner",
+        "description": "Einzelpersonen, ein Unternehmen, ein Minderjähriger und eine ausstehende Registrierung — alle Typen abgedeckt."
+      },
+      "shares": {
+        "title": "2 Anteilsklassen",
+        "description": "Klasse A (250 €) und Klasse B (500 €) mit unterschiedlichen Dividendensätzen und Stimmrechten."
+      },
+      "dividends": {
+        "title": "Dividendenperiode",
+        "description": "Eine abgeschlossene Dividendenperiode 2025 mit berechneten Auszahlungen und Quellensteuer."
+      }
+    },
+    "cta": {
+      "title": "Bereit es selbst auszuprobieren?",
+      "subtitle": "Tauchen Sie ein und erkunden Sie — ohne Registrierung, ohne Kreditkarte, ohne Verpflichtungen.",
+      "primary": "Demo öffnen"
     }
   },
   "featureRequest": {

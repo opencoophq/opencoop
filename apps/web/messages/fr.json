@@ -705,7 +705,8 @@
     "nav": {
       "login": "Se connecter",
       "register": "Commencer",
-      "pricing": "Tarifs"
+      "pricing": "Tarifs",
+      "demo": "Démo"
     },
     "hero": {
       "title": "Gestion des coopérateurs pour les coopératives",
@@ -795,6 +796,52 @@
       "copyright": "OpenCoop",
       "license": "Sous licence AGPL-3.0",
       "language": "Langue"
+    }
+  },
+  "demo": {
+    "hero": {
+      "badge": "Démo interactive",
+      "title": "Faites un essai",
+      "subtitle": "Explorez une coopérative de démonstration complète avec des coopérateurs, des parts, des transactions et des dividendes. Aucune inscription requise.",
+      "cta": "Ouvrir la démo"
+    },
+    "credentials": {
+      "title": "Choisissez votre rôle",
+      "subtitle": "Connectez-vous en tant qu'administrateur pour tout gérer, ou en tant que coopérateur pour découvrir l'expérience membre.",
+      "emailLabel": "E-mail",
+      "passwordLabel": "Mot de passe",
+      "admin": {
+        "badge": "Accès complet",
+        "title": "Administrateur",
+        "description": "Gérez les coopérateurs, traitez les transactions, distribuez les dividendes et générez les documents.",
+        "cta": "Se connecter comme admin"
+      },
+      "shareholder": {
+        "title": "Coopérateur",
+        "description": "Consultez vos parts, téléchargez vos certificats et vérifiez vos versements de dividendes.",
+        "cta": "Se connecter comme coopérateur"
+      }
+    },
+    "included": {
+      "title": "Que contient la démo ?",
+      "subtitle": "La coopérative de démonstration est préchargée avec des données réalistes.",
+      "shareholders": {
+        "title": "6 coopérateurs",
+        "description": "Des personnes physiques, une société, un mineur et une inscription en attente — tous les types représentés."
+      },
+      "shares": {
+        "title": "2 classes de parts",
+        "description": "Classe A (250 €) et Classe B (500 €) avec des taux de dividende et des droits de vote différents."
+      },
+      "dividends": {
+        "title": "Période de dividendes",
+        "description": "Une période de dividendes 2025 complétée avec les versements calculés et le précompte mobilier."
+      }
+    },
+    "cta": {
+      "title": "Prêt à essayer ?",
+      "subtitle": "Plongez et explorez — sans inscription, sans carte de crédit, sans engagement.",
+      "primary": "Ouvrir la démo"
     }
   },
   "featureRequest": {
