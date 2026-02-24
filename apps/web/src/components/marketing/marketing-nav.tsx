@@ -5,8 +5,8 @@ import { Link, usePathname } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Building2, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { LanguageSwitcher } from './language-switcher';
-import { ThemeToggle } from './theme-toggle';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 function useScrolled(threshold = 10) {
   const [scrolled, setScrolled] = useState(false);
