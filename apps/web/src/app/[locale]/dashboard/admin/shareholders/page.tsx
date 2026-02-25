@@ -36,7 +36,7 @@ interface ShareholderRow {
   companyName?: string;
   email?: string;
   createdAt: string;
-  shares: Array<{ quantity: number; status: string }>;
+  shares: Array<{ quantity: number; status: string; purchaseDate: string }>;
 }
 
 interface PaginatedResponse {
@@ -89,6 +89,12 @@ export default function ShareholdersPage() {
 
   const activeShares = (sh: ShareholderRow) =>
     sh.shares?.filter((s) => s.status === 'ACTIVE').reduce((sum, s) => sum + s.quantity, 0) || 0;
+
+  const memberSince = (sh: ShareholderRow) => {
+    const dates = sh.shares?.map((s) => s.purchaseDate).filter(Boolean) || [];
+    if (dates.length === 0) return sh.createdAt;
+    return dates.reduce((earliest, d) => (d < earliest ? d : earliest));
+  };
 
   if (!selectedCoop) return <p className="text-muted-foreground">{t('admin.selectCoop')}</p>;
 
@@ -169,7 +175,7 @@ export default function ShareholdersPage() {
                     <TableHead>{t('common.email')}</TableHead>
                     <TableHead className="text-right">{t('shares.title')}</TableHead>
                     <TableHead>{t('common.status')}</TableHead>
-                    <TableHead>{t('common.date')}</TableHead>
+                    <TableHead>{t('shareholder.memberSince')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -201,7 +207,7 @@ export default function ShareholdersPage() {
                           {t(`shareholder.statuses.${sh.status}`)}
                         </Badge>
                       </TableCell>
-                      <TableCell>{new Date(sh.createdAt).toLocaleDateString(locale)}</TableCell>
+                      <TableCell>{new Date(memberSince(sh)).toLocaleDateString(locale)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

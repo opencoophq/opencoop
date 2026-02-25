@@ -160,7 +160,8 @@
       "PENDING": "In behandeling",
       "ACTIVE": "Actief",
       "INACTIVE": "Inactief"
-    }
+    },
+    "memberSince": "Lid sinds"
   },
   "shares": {
     "title": "Aandelen",
