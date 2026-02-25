@@ -1073,6 +1073,11 @@
     "downloading": "Téléchargement...",
     "exportCsv": "Exporter CSV",
     "exportPdf": "Exporter PDF",
+    "copyAsImage": "Copier comme image",
+    "copyTable": "Copier le tableau",
+    "copied": "Copié !",
+    "downloadPng": "Télécharger PNG",
+    "downloadSvg": "Télécharger SVG",
     "year": "Année",
     "from": "Du",
     "to": "Au",
@@ -1152,7 +1157,9 @@
       "capital": "Capital",
       "shareholders": "Actionnaires",
       "shares": "Actions",
-      "percentage": "%"
+      "percentage": "%",
+      "distribution": "Répartition du capital",
+      "details": "Détails des projets"
     }
   }
 }

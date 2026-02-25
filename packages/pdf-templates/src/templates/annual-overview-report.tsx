@@ -1,5 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { DonutChart } from '../charts/donut-chart';
+import { HorizontalBarChart } from '../charts/horizontal-bar-chart';
 
 const styles = StyleSheet.create({
   page: {
@@ -264,6 +266,17 @@ export const AnnualOverviewReport: React.FC<AnnualOverviewReportProps> = ({
           </View>
         </View>
 
+        {/* Capital comparison bar chart */}
+        <View style={[styles.section, { marginBottom: 12 }]}>
+          <HorizontalBarChart
+            data={[
+              { label: t.capitalStart, value: capitalStart, color: '#2563eb' },
+              { label: t.capitalEnd, value: capitalEnd, color: '#16a34a' },
+            ]}
+            formatValue={fmt}
+          />
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.transactions}</Text>
           <View style={styles.row}>
@@ -294,6 +307,14 @@ export const AnnualOverviewReport: React.FC<AnnualOverviewReportProps> = ({
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.shareClassBreakdown}</Text>
+          {shareClassBreakdown.length > 1 && (
+            <View style={{ marginBottom: 12 }}>
+              <DonutChart
+                data={shareClassBreakdown.map((sc) => ({ label: sc.name, value: sc.capital }))}
+                formatValue={fmt}
+              />
+            </View>
+          )}
           <View style={styles.table}>
             <View style={styles.tableHeader}>
               <Text style={styles.colName}>{t.colName}</Text>

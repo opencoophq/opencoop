@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
@@ -9,6 +9,7 @@ import { formatCurrency } from '@opencoop/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { ReportFilters } from './report-filters';
 import { ExportButtons } from './export-buttons';
+import { CopyTableButton } from './copy-table-button';
 
 interface DividendPayout {
   shareholderName: string;
@@ -42,6 +43,7 @@ export function DividendSummaryPreview() {
   const [data, setData] = useState<DividendSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [noData, setNoData] = useState(false);
+  const tableRef = useRef<HTMLTableElement>(null);
 
   const generate = () => {
     if (!selectedCoop) return;
@@ -64,7 +66,10 @@ export function DividendSummaryPreview() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <ReportFilters type="year" year={year} onYearChange={setYear} onGenerate={generate} loading={loading} />
-        <ExportButtons reportType="dividend-summary" params={{ year }} disabled={!data} />
+        <div className="flex items-center gap-2">
+          <CopyTableButton tableRef={tableRef} />
+          <ExportButtons reportType="dividend-summary" params={{ year }} disabled={!data} />
+        </div>
       </div>
 
       {noData && (
@@ -98,7 +103,7 @@ export function DividendSummaryPreview() {
           {/* Payout table */}
           {data.payouts.length > 0 && (
             <div className="border rounded-md overflow-auto">
-              <table className="w-full text-sm">
+              <table ref={tableRef} className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">{t('dividendSummary.shareholder')}</th>

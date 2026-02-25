@@ -8,3 +8,5 @@ export { ShareholderRegisterReport } from './templates/shareholder-register-repo
 export type { ShareholderRegisterReportProps } from './templates/shareholder-register-report';
 export { CapitalStatementReport } from './templates/capital-statement-report';
 export type { CapitalStatementReportProps } from './templates/capital-statement-report';
+export { ProjectInvestmentReport } from './templates/project-investment-report';
+export type { ProjectInvestmentReportProps } from './templates/project-investment-report';

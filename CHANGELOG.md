@@ -2,6 +2,15 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.34] - 2026-02-25
+
+### Added
+- Charts in PDF reports: horizontal bar (capital comparison) and donut chart (share class breakdown) in annual overview PDF
+- Project investment PDF report with donut chart showing capital distribution across projects
+- Copy-to-clipboard for charts (PNG image) and tables (formatted HTML) for easy PowerPoint/Keynote use
+- Chart action menu on report previews: copy as image, download PNG, download SVG
+- Copy table button on all 5 report previews
+
 ## [0.1.33] - 2026-02-25
 
 ### Fixed
