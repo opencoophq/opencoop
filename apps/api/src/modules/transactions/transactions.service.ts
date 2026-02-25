@@ -15,7 +15,9 @@ export class TransactionsService {
       shareholderId?: string;
     } = {},
   ) {
-    const { page = 1, pageSize = 25, status, type, shareholderId } = params;
+    const page = Number(params.page) || 1;
+    const pageSize = Number(params.pageSize) || 25;
+    const { status, type, shareholderId } = params;
     const skip = (page - 1) * pageSize;
 
     const where: Record<string, unknown> = { coopId };
