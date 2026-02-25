@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@opencoop/shared';
 
 interface TransactionData {
   id: string;
@@ -94,7 +95,7 @@ export default function TransactionsPage() {
                     </TableCell>
                     <TableCell>{new Date(tx.createdAt).toLocaleDateString(locale)}</TableCell>
                     <TableCell className="text-right">{tx.quantity}</TableCell>
-                    <TableCell className="text-right">€ {Number(tx.totalAmount).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(Number(tx.totalAmount), locale)}</TableCell>
                     <TableCell>
                       <Badge variant={statusColor(tx.status)}>{tx.status}</Badge>
                     </TableCell>

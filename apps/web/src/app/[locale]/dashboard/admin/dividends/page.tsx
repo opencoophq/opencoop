@@ -28,7 +28,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAdmin } from '@/contexts/admin-context';
+import { useLocale } from '@/contexts/locale-context';
 import { DatePicker } from '@/components/ui/date-picker';
+import { formatCurrency } from '@opencoop/shared';
 import { Plus, Eye, Calculator, Check } from 'lucide-react';
 
 interface DividendPeriod {
@@ -58,6 +60,7 @@ type DividendPeriodForm = z.infer<typeof dividendPeriodSchema>;
 export default function DividendsListPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
+  const { locale } = useLocale();
   const [periods, setPeriods] = useState<DividendPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
@@ -209,12 +212,10 @@ export default function DividendsListPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('nl-BE');
+    return new Date(dateString).toLocaleDateString(locale);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(amount);
-  };
+  const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {

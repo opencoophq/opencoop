@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@opencoop/shared';
 
 interface ShareData {
   id: string;
@@ -89,10 +90,10 @@ export default function SharesPage() {
                     <TableCell>{share.project?.name || '-'}</TableCell>
                     <TableCell className="text-right">{share.quantity}</TableCell>
                     <TableCell className="text-right">
-                      € {Number(share.purchasePricePerShare).toFixed(2)}
+                      {formatCurrency(Number(share.purchasePricePerShare), locale)}
                     </TableCell>
                     <TableCell className="text-right">
-                      € {(share.quantity * Number(share.purchasePricePerShare)).toFixed(2)}
+                      {formatCurrency(share.quantity * Number(share.purchasePricePerShare), locale)}
                     </TableCell>
                     <TableCell>
                       {new Date(share.purchaseDate).toLocaleDateString(locale)}

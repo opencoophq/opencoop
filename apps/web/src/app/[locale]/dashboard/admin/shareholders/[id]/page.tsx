@@ -29,8 +29,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAdmin } from '@/contexts/admin-context';
+import { useLocale } from '@/contexts/locale-context';
 import { DatePicker } from '@/components/ui/date-picker';
-import { ChevronLeft, Save } from 'lucide-react';
+import { formatCurrency } from '@opencoop/shared';
+import { ChevronLeft, Save, Check, X } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface Share {
   id: string;
@@ -103,6 +106,7 @@ export default function ShareholderDetailPage() {
   const params = useParams();
   const shareholderId = params.id as string;
   const { selectedCoop } = useAdmin();
+  const { locale } = useLocale();
   const [shareholder, setShareholder] = useState<ShareholderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -200,13 +204,40 @@ export default function ShareholderDetailPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('nl-BE');
+  const reloadShareholder = async () => {
+    if (!selectedCoop || !shareholderId) return;
+    try {
+      const data = await api<ShareholderDetail>(
+        `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
+      );
+      setShareholder(data);
+    } catch {
+      // ignore
+    }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(amount);
+  const handleApprove = async (txId: string) => {
+    if (!selectedCoop) return;
+    await api(`/admin/coops/${selectedCoop.id}/transactions/${txId}/approve`, { method: 'PUT' });
+    reloadShareholder();
   };
+
+  const handleReject = async (txId: string) => {
+    if (!selectedCoop) return;
+    const reason = prompt(t('transactions.rejectReason'));
+    if (!reason) return;
+    await api(`/admin/coops/${selectedCoop.id}/transactions/${txId}/reject`, {
+      method: 'PUT',
+      body: { reason },
+    });
+    reloadShareholder();
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(locale);
+  };
+
+  const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
 
   if (loading) {
     return (
@@ -427,10 +458,10 @@ export default function ShareholderDetailPage() {
                     <TableCell>{share.project?.name || '-'}</TableCell>
                     <TableCell className="text-right">{share.quantity}</TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(share.shareClass.pricePerShare)}
+                      {fmtCurrency(share.shareClass.pricePerShare)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(share.quantity * share.shareClass.pricePerShare)}
+                      {fmtCurrency(share.quantity * share.shareClass.pricePerShare)}
                     </TableCell>
                     <TableCell>{formatDate(share.purchaseDate)}</TableCell>
                     <TableCell>
@@ -464,6 +495,7 @@ export default function ShareholderDetailPage() {
                   <TableHead className="text-right">{t('shares.pricePerShare')}</TableHead>
                   <TableHead className="text-right">{t('common.amount')}</TableHead>
                   <TableHead>{t('common.status')}</TableHead>
+                  <TableHead>{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -477,10 +509,10 @@ export default function ShareholderDetailPage() {
                     </TableCell>
                     <TableCell className="text-right">{transaction.quantity}</TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(transaction.pricePerShare)}
+                      {fmtCurrency(transaction.pricePerShare)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(transaction.quantity * transaction.pricePerShare)}
+                      {fmtCurrency(transaction.quantity * transaction.pricePerShare)}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -494,6 +526,18 @@ export default function ShareholderDetailPage() {
                       >
                         {t(`transactions.status.${transaction.status.toLowerCase()}`)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {transaction.status === 'PENDING' && (
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleApprove(transaction.id)}>
+                            <Check className="h-4 w-4 text-green-600" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleReject(transaction.id)}>
+                            <X className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
