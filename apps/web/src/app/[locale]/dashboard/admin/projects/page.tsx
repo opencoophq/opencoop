@@ -34,6 +34,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAdmin } from '@/contexts/admin-context';
+import { useLocale } from '@/contexts/locale-context';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Plus, Edit, Trash2, Sun, Wind } from 'lucide-react';
 
@@ -66,6 +67,7 @@ type ProjectForm = z.infer<typeof projectSchema>;
 export default function ProjectsPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
+  const { locale } = useLocale();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
@@ -220,7 +222,7 @@ export default function ProjectsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('nl-BE');
+    return new Date(dateString).toLocaleDateString(locale);
   };
 
   const getTypeBadgeVariant = (type: string) => {
