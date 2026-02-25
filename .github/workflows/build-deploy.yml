@@ -90,7 +90,6 @@ jobs:
           retention-days: 7
 
   build:
-    needs: e2e
     runs-on: ubuntu-latest
     permissions:
       contents: read
