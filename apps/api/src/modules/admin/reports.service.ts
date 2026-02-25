@@ -1,4 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { renderToBuffer } from '@react-pdf/renderer';
+import {
+  AnnualOverviewReport,
+  ShareholderRegisterReport,
+  CapitalStatementReport,
+} from '@opencoop/pdf-templates';
+import React from 'react';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // ============================================================================
@@ -597,5 +604,97 @@ export class ReportsService {
       default:
         return { data: null, csv: '' };
     }
+  }
+
+  // --------------------------------------------------------------------------
+  // 8. PDF GENERATION
+  // --------------------------------------------------------------------------
+
+  async generatePdf(
+    coopId: string,
+    type: string,
+    params: Record<string, string>,
+  ): Promise<Buffer> {
+    const coop = await this.prisma.coop.findUnique({
+      where: { id: coopId },
+      select: { name: true },
+    });
+    if (!coop) throw new NotFoundException('Coop not found');
+
+    const locale = params.locale || 'nl';
+    let element: React.ReactElement;
+
+    switch (type) {
+      case 'annual-overview': {
+        const year = parseInt(params.year, 10) || new Date().getFullYear();
+        const data = await this.getAnnualOverview(coopId, year);
+        element = React.createElement(AnnualOverviewReport, {
+          coopName: coop.name,
+          year: data.year,
+          capitalStart: data.capitalStart,
+          capitalEnd: data.capitalEnd,
+          shareholdersStart: data.shareholdersStart,
+          shareholdersEnd: data.shareholdersEnd,
+          totalPurchases: data.totalPurchases,
+          totalSales: data.totalSales,
+          totalDividendsGross: data.totalDividendsGross,
+          totalDividendsNet: data.totalDividendsNet,
+          shareClassBreakdown: data.shareClassBreakdown,
+          locale,
+        });
+        break;
+      }
+
+      case 'shareholder-register': {
+        const data = await this.getShareholderRegister(coopId, params.date);
+        const totalShareCount = data.shareholders.reduce((sum, s) => sum + s.shareCount, 0);
+        const totalValue = data.shareholders.reduce((sum, s) => sum + s.totalValue, 0);
+        element = React.createElement(ShareholderRegisterReport, {
+          coopName: coop.name,
+          date: params.date || new Date().toISOString().split('T')[0],
+          shareholders: data.shareholders.map((s) => ({
+            name: s.name,
+            type: s.type,
+            email: s.email ?? '',
+            shareCount: s.shareCount,
+            totalValue: s.totalValue,
+            joinDate: s.joinDate.toISOString().split('T')[0],
+          })),
+          totalShareCount,
+          totalValue,
+          locale,
+        });
+        break;
+      }
+
+      case 'capital-statement': {
+        const now = new Date();
+        const from = params.from || `${now.getFullYear()}-01-01`;
+        const to = params.to || now.toISOString().split('T')[0];
+        const data = await this.getCapitalStatement(coopId, from, to);
+        element = React.createElement(CapitalStatementReport, {
+          coopName: coop.name,
+          fromDate: from,
+          toDate: to,
+          openingBalance: data.openingBalance,
+          closingBalance: data.closingBalance,
+          movements: data.movements.map((m) => ({
+            date: m.date.toISOString().split('T')[0],
+            type: m.type,
+            shareholderName: m.shareholderName,
+            shareClass: m.shareClass,
+            quantity: m.quantity,
+            amount: m.amount,
+          })),
+          locale,
+        });
+        break;
+      }
+
+      default:
+        throw new NotFoundException(`PDF export not available for report type: ${type}`);
+    }
+
+    return renderToBuffer(element as any) as Promise<Buffer>;
   }
 }

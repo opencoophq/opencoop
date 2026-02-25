@@ -1050,6 +1050,7 @@
     "generating": "Génération en cours...",
     "downloading": "Téléchargement...",
     "exportCsv": "Exporter CSV",
+    "exportPdf": "Exporter PDF",
     "year": "Année",
     "from": "Du",
     "to": "Au",

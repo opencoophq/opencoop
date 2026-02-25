@@ -58,7 +58,7 @@ export function CapitalStatementPreview() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <ReportFilters type="dateRange" from={from} to={to} onFromChange={setFrom} onToChange={setTo} onGenerate={generate} loading={loading} />
-        <ExportButtons reportType="capital-statement" params={{ from, to }} disabled={!data} />
+        <ExportButtons reportType="capital-statement" params={{ from, to }} disabled={!data} pdfSupported />
       </div>
 
       {data && (

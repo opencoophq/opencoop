@@ -520,6 +520,20 @@ export class AdminController {
     res.send(csv);
   }
 
+  @Get('reports/:type/pdf')
+  @ApiOperation({ summary: 'Export report as PDF' })
+  async exportReportPdf(
+    @Param('coopId') coopId: string,
+    @Param('type') type: string,
+    @Query() params: Record<string, string>,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.reportsService.generatePdf(coopId, type, params);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.pdf"`);
+    res.send(buffer);
+  }
+
   // ==================== DOCUMENTS ====================
 
   @Post('shareholders/:shareholderId/certificate')

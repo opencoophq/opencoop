@@ -1050,6 +1050,7 @@
     "generating": "Bezig met genereren...",
     "downloading": "Bezig met downloaden...",
     "exportCsv": "CSV exporteren",
+    "exportPdf": "PDF exporteren",
     "year": "Jaar",
     "from": "Van",
     "to": "Tot",
