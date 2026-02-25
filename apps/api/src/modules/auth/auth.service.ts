@@ -199,7 +199,6 @@ export class AuthService {
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: forgotPasswordDto.email.toLowerCase() },
-      include: { shareholders: true },
     });
 
     // Always return success to prevent email enumeration
@@ -221,10 +220,25 @@ export class AuthService {
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    const coopId = user.shareholders[0]?.coopId;
-    if (coopId) {
-      await this.emailService.sendPasswordReset(coopId, user.email, resetUrl);
-    }
+    await this.emailService.sendPlatformEmail({
+      to: user.email,
+      subject: 'Password Reset Request',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; } h1 { color: #1e40af; }</style></head>
+        <body>
+          <h1>Password Reset Request</h1>
+          <p>You have requested to reset your password.</p>
+          <p>Click the link below to reset your password:</p>
+          <p><a href="${resetUrl}">${resetUrl}</a></p>
+          <p>If you did not request this, please ignore this email.</p>
+          <p>This link will expire in 1 hour.</p>
+          <hr><p style="color: #666; font-size: 12px;">This email was sent by OpenCoop.</p>
+        </body>
+        </html>
+      `,
+    });
 
     return { message: 'If an account exists, a password reset email has been sent' };
   }
@@ -575,12 +589,6 @@ export class AuthService {
     // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
-      include: {
-        shareholders: {
-          take: 1,
-          select: { coopId: true },
-        },
-      },
     });
 
     // Always return success to prevent email enumeration
@@ -623,11 +631,31 @@ export class AuthService {
       ? `${baseUrl}/${coopSlug}/magic-link?token=${token}`
       : `${baseUrl}/magic-link?token=${token}`;
 
-    // Get coopId for email (use first shareholder's coop or a default)
-    const coopId = user.shareholders[0]?.coopId;
-    if (coopId) {
-      await this.emailService.sendMagicLink(coopId, email, magicLinkUrl);
-    }
+    await this.emailService.sendPlatformEmail({
+      to: email,
+      subject: 'Your Login Link',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; } h1 { color: #1e40af; }</style></head>
+        <body>
+          <h1>Login to OpenCoop</h1>
+          <p>Click the button below to log in:</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${magicLinkUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Log In
+            </a>
+          </p>
+          <p style="color: #666; font-size: 12px;">
+            This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.
+          </p>
+          <hr><p style="color: #666; font-size: 12px;">This email was sent by OpenCoop.</p>
+        </body>
+        </html>
+      `,
+    });
 
     return successMessage;
   }
