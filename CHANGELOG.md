@@ -2,6 +2,22 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.46] - 2026-02-25
+
+### Added
+- Helmet security headers on API and Next.js (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+- Global rate limiting (100 req/min) with stricter limits on auth endpoints (3-5/min)
+- Stronger password policy: min 8, max 128, requires uppercase + lowercase + digit
+- SHA-256 hashing of password reset and email verification tokens stored in DB
+- Email verification token expiry (24 hours)
+- AES-256-GCM encryption for nationalId fields at rest (requires FIELD_ENCRYPTION_KEY env var)
+- Input validation DTOs for profile update and user role update endpoints
+- Migration script for encrypting existing nationalId data
+
+### Fixed
+- Password reset tokens now cleared when password is changed via settings
+- Swagger API docs disabled in production (NODE_ENV=production)
+
 ## [0.1.45] - 2026-02-25
 
 ### Fixed
