@@ -28,6 +28,7 @@
     "date": "Date",
     "amount": "Amount",
     "quantity": "Quantity",
+    "perUnit": "ea",
     "price": "Price",
     "name": "Name",
     "email": "Email",

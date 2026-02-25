@@ -819,7 +819,7 @@ export default function ShareholderDetailPage() {
                 <SelectContent>
                   {activeShares.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.shareClass.name} - {s.quantity} {t('shares.quantity').toLowerCase()} ({fmtCurrency(s.shareClass.pricePerShare)}/ea)
+                      {s.shareClass.name} - {s.quantity} {t('shares.quantity').toLowerCase()} ({fmtCurrency(s.shareClass.pricePerShare)}/{t('shares.perUnit')})
                     </SelectItem>
                   ))}
                 </SelectContent>

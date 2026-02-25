@@ -28,6 +28,7 @@
     "date": "Datum",
     "amount": "Betrag",
     "quantity": "Anzahl",
+    "perUnit": "Stück",
     "price": "Preis",
     "name": "Name",
     "email": "E-Mail",

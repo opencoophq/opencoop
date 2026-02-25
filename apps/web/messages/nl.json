@@ -28,6 +28,7 @@
     "date": "Datum",
     "amount": "Bedrag",
     "quantity": "Aantal",
+    "perUnit": "stuk",
     "price": "Prijs",
     "name": "Naam",
     "email": "E-mail",
