@@ -2,13 +2,23 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.23] - 2026-02-25
+
+### Fixed
+- Currency formatting now respects user locale across all pages — Dutch shows `€ 2.000,00` instead of `€ 2000.00`
+- Date formatting respects user locale preference (was hardcoded to `nl-BE` in several admin pages)
+- PDF templates (dividend statement, share certificate) now use `Intl.NumberFormat` for proper thousands separators
+
+## [0.1.22] - 2026-02-25
+
+### Added
+- CHANGELOG.md covering all releases
+- Release workflow conventions in project docs
+
 ## [0.1.21] - 2026-02-25
 
 ### Added
 - Approve/reject actions on shareholder detail transaction history (admins no longer need to navigate to the transactions panel)
-
-### Improved
-- Locale-aware currency formatting across all dashboard pages (uses `formatCurrency` from shared package)
 
 ## [0.1.20] - 2026-02-25
 
