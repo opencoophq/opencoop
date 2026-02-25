@@ -94,6 +94,32 @@ export class AdminController {
     return this.coopsService.updateBranding(coopId, updateBrandingDto);
   }
 
+  @Post('logo')
+  @ApiOperation({ summary: 'Upload coop logo' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async uploadLogo(
+    @Param('coopId') coopId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.coopsService.uploadLogo(coopId, file);
+  }
+
+  @Delete('logo')
+  @ApiOperation({ summary: 'Remove coop logo' })
+  async removeLogo(@Param('coopId') coopId: string) {
+    await this.coopsService.removeLogo(coopId);
+    return { success: true };
+  }
+
   @Get('stats')
   @ApiOperation({ summary: 'Get coop statistics' })
   async getStats(@Param('coopId') coopId: string) {
