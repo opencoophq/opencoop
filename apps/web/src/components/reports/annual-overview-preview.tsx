@@ -50,7 +50,7 @@ export function AnnualOverviewPreview() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <ReportFilters type="year" year={year} onYearChange={setYear} onGenerate={generate} loading={loading} />
-        <ExportButtons reportType="annual-overview" params={{ year }} disabled={!data} />
+        <ExportButtons reportType="annual-overview" params={{ year }} disabled={!data} pdfSupported />
       </div>
 
       {data && (

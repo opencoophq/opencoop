@@ -55,7 +55,7 @@ export function ShareholderRegisterPreview() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <ReportFilters type="none" onGenerate={generate} loading={loading} />
-        <ExportButtons reportType="shareholder-register" params={{}} disabled={!data} />
+        <ExportButtons reportType="shareholder-register" params={{}} disabled={!data} pdfSupported />
       </div>
 
       {data && (

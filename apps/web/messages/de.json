@@ -1050,6 +1050,7 @@
     "generating": "Wird erstellt...",
     "downloading": "Wird heruntergeladen...",
     "exportCsv": "CSV exportieren",
+    "exportPdf": "PDF exportieren",
     "year": "Jahr",
     "from": "Von",
     "to": "Bis",
