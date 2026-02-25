@@ -201,6 +201,7 @@ export class AuthService {
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: forgotPasswordDto.email.toLowerCase() },
+      include: { shareholders: true },
     });
 
     // Always return success to prevent email enumeration
@@ -219,7 +220,13 @@ export class AuthService {
       },
     });
 
-    // TODO: Send password reset email
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+    const coopId = user.shareholders[0]?.coopId;
+    if (coopId) {
+      await this.emailService.sendPasswordReset(coopId, user.email, resetUrl);
+    }
 
     return { message: 'If an account exists, a password reset email has been sent' };
   }
