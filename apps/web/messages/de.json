@@ -728,7 +728,8 @@
       "login": "Anmelden",
       "register": "Jetzt starten",
       "pricing": "Preise",
-      "demo": "Demo"
+      "demo": "Demo",
+      "migration": "Migration"
     },
     "hero": {
       "title": "Anteilseignerverwaltung für Genossenschaften",
@@ -870,6 +871,88 @@
       "title": "Bereit es selbst auszuprobieren?",
       "subtitle": "Tauchen Sie ein und erkunden Sie — ohne Registrierung, ohne Kreditkarte, ohne Verpflichtungen.",
       "primary": "Demo öffnen"
+    }
+  },
+  "migration": {
+    "hero": {
+      "title": "Wir migrieren Ihre Daten",
+      "subtitle": "Sie wechseln zu OpenCoop? Wir übernehmen die schwere Arbeit. Senden Sie uns Ihre Tabellen, Exporte oder Datenbank-Dumps und wir richten Ihre Genossenschaft mit allen bestehenden Daten ein.",
+      "cta": "Migration anfragen"
+    },
+    "process": {
+      "title": "So funktioniert es",
+      "subtitle": "Ein einfacher, unkomplizierter Prozess, um Ihre Daten in OpenCoop zu übertragen.",
+      "stepLabel": "Schritt {number}",
+      "step1": {
+        "title": "Kontaktieren Sie uns",
+        "description": "Erzählen Sie uns von Ihrer Genossenschaft, Ihrem aktuellen System und den zu migrierenden Daten."
+      },
+      "step2": {
+        "title": "Wir analysieren Ihre Daten",
+        "description": "Wir prüfen Ihre Dateien und ordnen alles dem OpenCoop-Datenmodell zu. Wir melden eventuelle Probleme oder Fragen."
+      },
+      "step3": {
+        "title": "Wir importieren alles",
+        "description": "Wir führen die Migration in Ihren Mandanten durch und verifizieren die Daten. Anteilseigner, Anteile, Transaktionen — alles an Ort und Stelle."
+      },
+      "step4": {
+        "title": "Sie sind live",
+        "description": "Ihre Genossenschaft ist einsatzbereit. Alle historischen Daten erhalten, keine manuelle Neueingabe nötig."
+      }
+    },
+    "dataTypes": {
+      "title": "Was wir migrieren können",
+      "subtitle": "Ob Tabelle oder vollständiger Datenbankexport — wir kümmern uns darum.",
+      "shareholders": {
+        "title": "Anteilseigner",
+        "description": "Namen, Kontaktdaten, Typen (Einzelperson, Unternehmen, Minderjährige), Registrierungsdaten und Status."
+      },
+      "shares": {
+        "title": "Anteile & Anteilsklassen",
+        "description": "Anteilsklassen-Definitionen, individuelle Bestände, Zertifikatsnummern und Kaufpreise."
+      },
+      "transactions": {
+        "title": "Transaktionshistorie",
+        "description": "Käufe, Verkäufe und Übertragungen mit Datum, Beträgen und Genehmigungsstatus."
+      },
+      "dividends": {
+        "title": "Dividendenhistorie",
+        "description": "Vergangene Dividendenperioden, berechnete Ausschüttungen, Quellensteuer und Zahlungsaufzeichnungen."
+      },
+      "documents": {
+        "title": "Dokumente",
+        "description": "Bestehende Zertifikate, Abrechnungen und andere Anteilseigner-Dokumente."
+      },
+      "bankData": {
+        "title": "Bank- & Zahlungsdaten",
+        "description": "IBAN-Nummern, OGM-Codes, Zahlungsstatus und Bankimport-Historie."
+      }
+    },
+    "form": {
+      "title": "Migration anfragen",
+      "subtitle": "Erzählen Sie uns von Ihrer Situation und wir melden uns innerhalb von 2 Werktagen.",
+      "name": "Ihr Name",
+      "namePlaceholder": "Max Mustermann",
+      "email": "E-Mail-Adresse",
+      "emailPlaceholder": "max@beispiel.de",
+      "coopName": "Name der Genossenschaft",
+      "coopNamePlaceholder": "Meine Genossenschaft",
+      "estimatedShareholders": "Anzahl Anteilseigner",
+      "estimatedShareholdersPlaceholder": "z.B. 150",
+      "currentSystem": "Aktuelles System",
+      "currentSystemPlaceholder": "z.B. Excel, eigene Software, andere Plattform...",
+      "message": "Erzählen Sie uns mehr",
+      "messagePlaceholder": "Beschreiben Sie die zu migrierenden Daten, Dateiformate, besondere Anforderungen...",
+      "submit": "Migrationsanfrage senden",
+      "success": "Danke! Ihre Migrationsanfrage wurde eingereicht.",
+      "successDetail": "Wir prüfen Ihre Anfrage und melden uns innerhalb von 2 Werktagen.",
+      "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+    },
+    "cta": {
+      "title": "Noch nicht sicher?",
+      "subtitle": "Sehen Sie sich unsere Preise an oder probieren Sie zuerst die Demo — unverbindlich.",
+      "primary": "Preise ansehen",
+      "secondary": "Demo ausprobieren"
     }
   },
   "featureRequest": {

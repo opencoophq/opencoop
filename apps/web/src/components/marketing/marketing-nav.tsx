@@ -24,6 +24,7 @@ export function MarketingNav() {
   const pathname = usePathname();
   const isPricing = pathname === '/pricing';
   const isDemo = pathname === '/demo';
+  const isMigration = pathname === '/migration';
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -60,6 +61,15 @@ export function MarketingNav() {
               className={isDemo ? 'text-primary' : ''}
             >
               {t('nav.demo')}
+            </Button>
+          </Link>
+          <Link href="/migration">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={isMigration ? 'text-primary' : ''}
+            >
+              {t('nav.migration')}
             </Button>
           </Link>
           <Link href="/login">
@@ -105,6 +115,15 @@ export function MarketingNav() {
                 className={`w-full justify-start ${isDemo ? 'text-primary' : ''}`}
               >
                 {t('nav.demo')}
+              </Button>
+            </Link>
+            <Link href="/migration" onClick={() => setMobileOpen(false)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${isMigration ? 'text-primary' : ''}`}
+              >
+                {t('nav.migration')}
               </Button>
             </Link>
             <Link href="/login" onClick={() => setMobileOpen(false)}>
