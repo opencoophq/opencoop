@@ -97,12 +97,16 @@ export class AdminController {
       totalShares,
       pendingTransactions,
       pendingPayments,
+      pendingShareholders,
+      unmatchedBankTransactions,
     ] = await Promise.all([
       this.prisma.shareholder.count({ where: { coopId } }),
       this.prisma.shareholder.count({ where: { coopId, status: 'ACTIVE' } }),
       this.prisma.share.count({ where: { coopId, status: 'ACTIVE' } }),
       this.prisma.transaction.count({ where: { coopId, status: 'PENDING' } }),
       this.prisma.payment.count({ where: { coopId, status: 'PENDING' } }),
+      this.prisma.shareholder.count({ where: { coopId, status: 'PENDING' } }),
+      this.prisma.bankTransaction.count({ where: { coopId, matchStatus: 'UNMATCHED' } }),
     ]);
 
     const capitalResult = await this.prisma.share.aggregate({
@@ -134,6 +138,8 @@ export class AdminController {
       totalCapital,
       pendingTransactions,
       pendingPayments,
+      pendingShareholders,
+      unmatchedBankTransactions,
     };
   }
 
