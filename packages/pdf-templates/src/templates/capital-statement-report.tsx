@@ -1,5 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { StackedAreaChart } from '../charts/stacked-area-chart';
+import type { StackedAreaDataPoint } from '../charts/stacked-area-chart';
 
 const styles = StyleSheet.create({
   page: {
@@ -133,6 +135,7 @@ export interface CapitalStatementReportProps {
     quantity: number;
     amount: number;
   }[];
+  capitalTimeline?: { date: string; projects: { projectId: string | null; projectName: string; capital: number }[]; total: number }[];
   locale?: string;
 }
 
@@ -143,6 +146,7 @@ export const CapitalStatementReport: React.FC<CapitalStatementReportProps> = ({
   openingBalance,
   closingBalance,
   movements,
+  capitalTimeline,
   locale = 'nl',
 }) => {
   const t = locale === 'nl' ? {
@@ -150,6 +154,7 @@ export const CapitalStatementReport: React.FC<CapitalStatementReportProps> = ({
     period: 'Periode',
     openingBalance: 'Beginsaldo',
     closingBalance: 'Eindsaldo',
+    capitalGrowth: 'Kapitaalevolutie per project',
     movements: 'Kapitaalbewegingen',
     colDate: 'Datum',
     colType: 'Type',
@@ -164,6 +169,7 @@ export const CapitalStatementReport: React.FC<CapitalStatementReportProps> = ({
     period: 'Period',
     openingBalance: 'Opening Balance',
     closingBalance: 'Closing Balance',
+    capitalGrowth: 'Capital Growth by Project',
     movements: 'Capital Movements',
     colDate: 'Date',
     colType: 'Type',
@@ -199,6 +205,24 @@ export const CapitalStatementReport: React.FC<CapitalStatementReportProps> = ({
             <Text style={styles.balanceValue}>{fmt(openingBalance)}</Text>
           </View>
         </View>
+
+        {capitalTimeline && capitalTimeline.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t.capitalGrowth}</Text>
+            <StackedAreaChart
+              data={capitalTimeline.map((b) => ({
+                date: b.date,
+                values: b.projects.map((p) => ({
+                  key: p.projectId ?? 'unassigned',
+                  label: p.projectName,
+                  value: p.capital,
+                })),
+                total: b.total,
+              }))}
+              formatValue={fmt}
+            />
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.movements}</Text>

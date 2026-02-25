@@ -20,6 +20,18 @@ export interface ShareClassBreakdown {
   capital: number;
 }
 
+export interface ProjectCapitalPoint {
+  projectId: string | null;
+  projectName: string;
+  capital: number;
+}
+
+export interface CapitalTimelineBucket {
+  date: string;
+  projects: ProjectCapitalPoint[];
+  total: number;
+}
+
 export interface AnnualOverview {
   year: number;
   capitalStart: number;
@@ -31,6 +43,7 @@ export interface AnnualOverview {
   totalDividendsGross: number;
   totalDividendsNet: number;
   shareClassBreakdown: ShareClassBreakdown[];
+  capitalTimeline: CapitalTimelineBucket[];
 }
 
 export interface CapitalMovement {
@@ -46,6 +59,7 @@ export interface CapitalStatement {
   openingBalance: number;
   closingBalance: number;
   movements: CapitalMovement[];
+  capitalTimeline: CapitalTimelineBucket[];
 }
 
 export interface ShareholderRegisterEntry {
@@ -161,6 +175,77 @@ export class ReportsService {
     return result;
   }
 
+  /**
+   * Build a monthly capital timeline broken down by project for the given date range.
+   * Returns one bucket per month with cumulative capital per project.
+   */
+  private async computeCapitalTimelineByProject(
+    coopId: string,
+    rangeStart: Date,
+    rangeEnd: Date,
+  ): Promise<CapitalTimelineBucket[]> {
+    // 1. Get all active shares purchased before rangeEnd, with project info
+    const shares = await this.prisma.share.findMany({
+      where: {
+        coopId,
+        status: 'ACTIVE',
+        purchaseDate: { lt: rangeEnd },
+      },
+      select: {
+        projectId: true,
+        project: { select: { name: true } },
+        quantity: true,
+        purchasePricePerShare: true,
+        purchaseDate: true,
+      },
+    });
+
+    // 2. Collect all unique projects
+    const projectMap = new Map<string, string>(); // projectId -> name
+    for (const s of shares) {
+      const key = s.projectId ?? '__unassigned__';
+      if (!projectMap.has(key)) {
+        projectMap.set(key, s.project?.name ?? 'Unassigned');
+      }
+    }
+    const projectKeys = Array.from(projectMap.keys()).sort();
+
+    // 3. Generate month buckets spanning the range
+    const buckets: Date[] = [];
+    const cursor = new Date(rangeStart);
+    cursor.setUTCDate(1);
+    cursor.setUTCHours(0, 0, 0, 0);
+    while (cursor < rangeEnd) {
+      buckets.push(new Date(cursor));
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+
+    // 4. For each bucket, compute cumulative capital per project
+    return buckets.map((bucketDate) => {
+      const cutoff = new Date(bucketDate);
+      cutoff.setUTCMonth(cutoff.getUTCMonth() + 1); // end of this month
+
+      const projects: ProjectCapitalPoint[] = projectKeys.map((key) => {
+        const capital = shares
+          .filter(
+            (s) =>
+              (s.projectId ?? '__unassigned__') === key &&
+              s.purchaseDate < cutoff,
+          )
+          .reduce((sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(), 0);
+
+        return {
+          projectId: key === '__unassigned__' ? null : key,
+          projectName: projectMap.get(key) ?? 'Unassigned',
+          capital,
+        };
+      });
+
+      const total = projects.reduce((sum, p) => sum + p.capital, 0);
+      return { date: bucketDate.toISOString(), projects, total };
+    });
+  }
+
   // --------------------------------------------------------------------------
   // 1. ANNUAL OVERVIEW
   // --------------------------------------------------------------------------
@@ -262,6 +347,9 @@ export class ReportsService {
       return { name: sc.name, code: sc.code, shares, capital };
     });
 
+    // Monthly capital timeline broken down by project
+    const capitalTimeline = await this.computeCapitalTimelineByProject(coopId, yearStart, yearEnd);
+
     return {
       year,
       capitalStart,
@@ -273,6 +361,7 @@ export class ReportsService {
       totalDividendsGross,
       totalDividendsNet,
       shareClassBreakdown,
+      capitalTimeline,
     };
   }
 
@@ -331,10 +420,14 @@ export class ReportsService {
       return sum;
     }, 0);
 
+    // Monthly capital timeline broken down by project
+    const capitalTimeline = await this.computeCapitalTimelineByProject(coopId, fromDate, toDateEnd);
+
     return {
       openingBalance,
       closingBalance: openingBalance + netMovement,
       movements,
+      capitalTimeline,
     };
   }
 
@@ -661,6 +754,7 @@ export class ReportsService {
           totalDividendsGross: data.totalDividendsGross,
           totalDividendsNet: data.totalDividendsNet,
           shareClassBreakdown: data.shareClassBreakdown,
+          capitalTimeline: data.capitalTimeline,
           locale,
         });
         break;
@@ -707,6 +801,7 @@ export class ReportsService {
             quantity: m.quantity,
             amount: m.amount,
           })),
+          capitalTimeline: data.capitalTimeline,
           locale,
         });
         break;

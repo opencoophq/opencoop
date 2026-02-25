@@ -1206,9 +1206,11 @@
       "className": "Klasse",
       "code": "Code",
       "shares": "Aandelen",
-      "capital": "Kapitaal"
+      "capital": "Kapitaal",
+      "capitalGrowthByProject": "Kapitaalevolutie per project"
     },
     "capitalStatement": {
+      "capitalGrowthByProject": "Kapitaalevolutie per project",
       "openingBalance": "Beginsaldo",
       "closingBalance": "Eindsaldo",
       "date": "Datum",

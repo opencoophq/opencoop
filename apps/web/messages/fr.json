@@ -1206,9 +1206,11 @@
       "className": "Catégorie",
       "code": "Code",
       "shares": "Actions",
-      "capital": "Capital"
+      "capital": "Capital",
+      "capitalGrowthByProject": "Évolution du capital par projet"
     },
     "capitalStatement": {
+      "capitalGrowthByProject": "Évolution du capital par projet",
       "openingBalance": "Solde d'ouverture",
       "closingBalance": "Solde de clôture",
       "date": "Date",

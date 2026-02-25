@@ -2,6 +2,8 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { DonutChart } from '../charts/donut-chart';
 import { HorizontalBarChart } from '../charts/horizontal-bar-chart';
+import { StackedAreaChart } from '../charts/stacked-area-chart';
+import type { StackedAreaDataPoint } from '../charts/stacked-area-chart';
 
 const styles = StyleSheet.create({
   page: {
@@ -143,6 +145,7 @@ export interface AnnualOverviewReportProps {
   totalDividendsGross: number;
   totalDividendsNet: number;
   shareClassBreakdown: { name: string; code: string; shares: number; capital: number }[];
+  capitalTimeline?: { date: string; projects: { projectId: string | null; projectName: string; capital: number }[]; total: number }[];
   locale?: string;
 }
 
@@ -158,11 +161,13 @@ export const AnnualOverviewReport: React.FC<AnnualOverviewReportProps> = ({
   totalDividendsGross,
   totalDividendsNet,
   shareClassBreakdown,
+  capitalTimeline,
   locale = 'nl',
 }) => {
   const t = locale === 'nl' ? {
     title: `Jaaroverzicht ${year}`,
     keyFigures: 'Kerncijfers',
+    capitalGrowth: 'Kapitaalevolutie per project',
     capitalStart: 'Kapitaal begin',
     capitalEnd: 'Kapitaal einde',
     shareholdersStart: 'Aandeelhouders begin',
@@ -185,6 +190,7 @@ export const AnnualOverviewReport: React.FC<AnnualOverviewReportProps> = ({
   } : {
     title: `Annual Overview ${year}`,
     keyFigures: 'Key Figures',
+    capitalGrowth: 'Capital Growth by Project',
     capitalStart: 'Capital Start',
     capitalEnd: 'Capital End',
     shareholdersStart: 'Shareholders Start',
@@ -276,6 +282,25 @@ export const AnnualOverviewReport: React.FC<AnnualOverviewReportProps> = ({
             formatValue={fmt}
           />
         </View>
+
+        {/* Capital growth stacked area chart */}
+        {capitalTimeline && capitalTimeline.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t.capitalGrowth}</Text>
+            <StackedAreaChart
+              data={capitalTimeline.map((b) => ({
+                date: b.date,
+                values: b.projects.map((p) => ({
+                  key: p.projectId ?? 'unassigned',
+                  label: p.projectName,
+                  value: p.capital,
+                })),
+                total: b.total,
+              }))}
+              formatValue={fmt}
+            />
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.transactions}</Text>

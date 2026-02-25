@@ -1206,9 +1206,11 @@
       "className": "Class",
       "code": "Code",
       "shares": "Shares",
-      "capital": "Capital"
+      "capital": "Capital",
+      "capitalGrowthByProject": "Capital Growth by Project"
     },
     "capitalStatement": {
+      "capitalGrowthByProject": "Capital Growth by Project",
       "openingBalance": "Opening Balance",
       "closingBalance": "Closing Balance",
       "date": "Date",

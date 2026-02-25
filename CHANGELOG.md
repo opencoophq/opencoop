@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.38] - 2026-02-25
+
+### Added
+- Stacked area chart showing capital growth by project in Annual Overview and Capital Statement PDF reports
+- Interactive stacked area chart in on-screen report previews (Annual Overview + Capital Statement)
+- Backend `computeCapitalTimelineByProject` helper generating monthly per-project capital timeline data
+
 ## [0.1.37] - 2026-02-25
 
 ### Added
