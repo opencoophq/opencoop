@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface EmailOptions {
@@ -17,10 +18,50 @@ export interface EmailOptions {
 
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
+
   constructor(
     private prisma: PrismaService,
     @InjectQueue('email') private emailQueue: Queue,
   ) {}
+
+  /**
+   * Send a platform-level email (not tied to a coop).
+   * Sends directly via platform SMTP — no queue, no EmailLog.
+   * Use for internal notifications, thank-you emails, etc.
+   */
+  async sendPlatformEmail(options: {
+    to: string;
+    subject: string;
+    html?: string;
+    text?: string;
+  }) {
+    const host = process.env.SMTP_HOST;
+    if (!host) {
+      this.logger.warn('Platform SMTP not configured, skipping email');
+      return;
+    }
+
+    const port = parseInt(process.env.SMTP_PORT || '587', 10);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const from = process.env.SMTP_FROM || 'OpenCoop <noreply@opencoop.be>';
+
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: user && pass ? { user, pass } : undefined,
+    });
+
+    await transporter.sendMail({
+      from,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    });
+  }
 
   async send(options: EmailOptions) {
     // Create email log entry

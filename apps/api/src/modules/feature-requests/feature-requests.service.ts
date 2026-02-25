@@ -1,14 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Octokit } from '@octokit/rest';
-import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { CreateFeatureRequestDto } from './dto/create-feature-request.dto';
 
 @Injectable()
 export class FeatureRequestsService {
   private readonly logger = new Logger(FeatureRequestsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async create(dto: CreateFeatureRequestDto) {
     const featureRequest = await this.prisma.featureRequest.create({
@@ -63,25 +66,9 @@ export class FeatureRequestsService {
   }
 
   private async sendThankYouEmail(dto: CreateFeatureRequestDto) {
-    const host = process.env.SMTP_HOST;
-    if (!host) return;
-
-    const port = parseInt(process.env.SMTP_PORT || '587', 10);
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const from = process.env.SMTP_FROM || 'OpenCoop <noreply@opencoop.be>';
-
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: user && pass ? { user, pass } : undefined,
-    });
-
     const content = this.getEmailContent(dto.locale);
 
-    await transporter.sendMail({
-      from,
+    await this.emailService.sendPlatformEmail({
       to: dto.email,
       subject: content.subject,
       html: `

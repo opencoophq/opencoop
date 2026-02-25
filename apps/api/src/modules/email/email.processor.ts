@@ -270,6 +270,70 @@ export class EmailProcessor {
           This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.
         </p>
       `,
+      'minor-turned-adult': (d, cn) => `
+        <h1>Welkom bij ${cn}, ${d.firstName}!</h1>
+        <p>Gefeliciteerd met je 18de verjaardag! 🎉</p>
+        <p>Je bent nu volwassen en beheert voortaan zelf je aandelen bij ${cn}.</p>
+        <p>Log in op je account om je aandelen te bekijken:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${d.loginUrl}"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Inloggen
+          </a>
+        </p>
+      `,
+      'parent-minor-turned-adult': (d, cn) => `
+        <h1>${d.minorFirstName} beheert nu zelf de aandelen</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>${d.minorFirstName} ${d.minorLastName} is 18 geworden en beheert voortaan zelf de aandelen bij ${cn}.</p>
+        <p>U hoeft hier verder niets voor te doen. ${d.minorFirstName} kan nu zelfstandig inloggen.</p>
+      `,
+      'minor-upgrade-notification': (d, cn) => `
+        <h1>${d.minorFirstName} is 18 geworden</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>${d.minorFirstName} ${d.minorLastName} is 18 geworden en kan nu een eigen account aanmaken bij ${cn}.</p>
+        <p>Omdat er geen e-mailadres gekend is voor ${d.minorFirstName}, vragen we u om onderstaande link door te geven:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${d.upgradeUrl}"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 90 dagen geldig.
+        </p>
+      `,
+      'minor-upgrade-reminder': (d, cn) => `
+        <h1>Herinnering: account aanmaken voor ${d.minorFirstName}</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>We hebben u eerder gevraagd om onderstaande link door te geven aan ${d.minorFirstName} ${d.minorLastName} voor het aanmaken van een eigen account bij ${cn}.</p>
+        <p>De link is nog ${d.daysRemaining} dagen geldig:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${d.upgradeUrl}"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+      `,
+      'set-minor-email-reminder': (d, cn) => `
+        <h1>E-mailadres toevoegen voor ${d.minorFirstName}</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>${d.minorFirstName} ${d.minorLastName} is aandeelhouder bij ${cn} en wordt over ${d.yearsUntil18} jaar 18.</p>
+        <p>Op dat moment krijgt ${d.minorFirstName} een eigen account. Om dit automatisch te laten verlopen, kunt u nu al een e-mailadres toevoegen in het dashboard:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${d.dashboardUrl}"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Naar dashboard
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Als ${d.minorFirstName} nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
+        </p>
+      `,
     };
 
     const template = templates[templateKey];
