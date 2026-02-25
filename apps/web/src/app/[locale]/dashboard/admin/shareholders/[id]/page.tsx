@@ -95,11 +95,14 @@ interface ShareholderDetail {
   birthDate?: string;
   bankIban?: string;
   bankBic?: string;
-  street?: string;
-  houseNumber?: string;
-  postalCode?: string;
-  city?: string;
-  country?: string;
+  address?: {
+    street?: string;
+    number?: string;
+    box?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
+  };
   shares: Share[];
   transactions: Transaction[];
   createdAt: string;
@@ -177,6 +180,7 @@ export default function ShareholderDetailPage() {
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
       );
       setShareholder(data);
+      const addr = data.address || {};
       form.reset({
         firstName: data.firstName || '',
         lastName: data.lastName || '',
@@ -188,11 +192,11 @@ export default function ShareholderDetailPage() {
         phone: data.phone || '',
         bankIban: data.bankIban || '',
         bankBic: data.bankBic || '',
-        street: data.street || '',
-        houseNumber: data.houseNumber || '',
-        postalCode: data.postalCode || '',
-        city: data.city || '',
-        country: data.country || '',
+        street: addr.street || '',
+        houseNumber: addr.number || '',
+        postalCode: addr.postalCode || '',
+        city: addr.city || '',
+        country: addr.country || '',
         status: data.status,
       });
     } catch {
@@ -217,9 +221,35 @@ export default function ShareholderDetailPage() {
     setSuccess(null);
 
     try {
+      // Transform flat form fields to match backend DTO structure
+      const { street, houseNumber, postalCode, city, country, email, bankIban, bankBic, birthDate, ...rest } = data;
+
+      const body: Record<string, unknown> = { ...rest };
+
+      // Only send email if non-empty (backend rejects empty string with @IsEmail)
+      if (email) body.email = email;
+
+      // Only send bank fields if non-empty
+      if (bankIban) body.bankIban = bankIban;
+      if (bankBic) body.bankBic = bankBic;
+
+      // Only send birthDate if non-empty
+      if (birthDate) body.birthDate = birthDate;
+
+      // Convert flat address fields to nested object
+      if (street || houseNumber || postalCode || city || country) {
+        body.address = {
+          street: street || '',
+          number: houseNumber || '',
+          postalCode: postalCode || '',
+          city: city || '',
+          country: country || '',
+        };
+      }
+
       const updated = await api<ShareholderDetail>(
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
-        { method: 'PUT', body: data },
+        { method: 'PUT', body },
       );
       setSuccess(t('common.success'));
       setShareholder(updated);
