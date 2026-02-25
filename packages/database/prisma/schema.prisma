@@ -156,8 +156,9 @@ model User {
   email             String    @unique
   name              String?
   passwordHash      String
-  emailVerified     DateTime?
-  emailVerifyToken  String?
+  emailVerified      DateTime?
+  emailVerifyToken   String?
+  emailVerifyExpires DateTime?
   passwordResetToken String?
   passwordResetExpires DateTime?
   role              UserRole  @default(SHAREHOLDER)

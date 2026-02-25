@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, Matches, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ValidateUpgradeTokenDto {
@@ -16,9 +16,13 @@ export class UpgradeToAdultDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'securepassword', minLength: 8 })
+  @ApiProperty({ example: 'Securepass1', minLength: 8, maxLength: 128 })
   @IsString()
   @MinLength(8)
+  @MaxLength(128)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
+    message: 'Password must contain at least one lowercase letter, one uppercase letter, and one digit',
+  })
   password: string;
 
   @ApiProperty({ example: 'nl', required: false })
