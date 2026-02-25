@@ -41,6 +41,7 @@ import { useLocale } from '@/contexts/locale-context';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
+import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -165,6 +166,12 @@ export default function ShareholderDetailPage() {
   const [sellShareId, setSellShareId] = useState('');
   const [sellQuantity, setSellQuantity] = useState(1);
   const [sellLoading, setSellLoading] = useState(false);
+  const [sellResult, setSellResult] = useState<PaymentDetails | null>(null);
+
+  // Reject dialog state
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectTxId, setRejectTxId] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
 
   const form = useForm<ShareholderForm>({
     resolver: zodResolver(shareholderSchema),
@@ -270,14 +277,19 @@ export default function ShareholderDetailPage() {
     reloadShareholder();
   };
 
-  const handleReject = async (txId: string) => {
-    if (!selectedCoop) return;
-    const reason = prompt(t('transactions.rejectReason'));
-    if (!reason) return;
-    await api(`/admin/coops/${selectedCoop.id}/transactions/${txId}/reject`, {
+  const openRejectDialog = (txId: string) => {
+    setRejectTxId(txId);
+    setRejectReason('');
+    setRejectOpen(true);
+  };
+
+  const handleReject = async () => {
+    if (!selectedCoop || !rejectTxId || !rejectReason.trim()) return;
+    await api(`/admin/coops/${selectedCoop.id}/transactions/${rejectTxId}/reject`, {
       method: 'PUT',
-      body: { reason },
+      body: { reason: rejectReason.trim() },
     });
+    setRejectOpen(false);
     reloadShareholder();
   };
 
@@ -333,6 +345,7 @@ export default function ShareholderDetailPage() {
     const activeShares = shareholder?.shares.filter((s) => s.status === 'ACTIVE') || [];
     setSellShareId(activeShares[0]?.id || '');
     setSellQuantity(1);
+    setSellResult(null);
     setSellOpen(true);
   };
 
@@ -340,18 +353,22 @@ export default function ShareholderDetailPage() {
     if (!selectedCoop || !sellShareId) return;
     setSellLoading(true);
     try {
-      await api(
+      const tx = await api<{ id: string }>(
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}/sell`,
         {
           method: 'POST',
           body: { shareId: sellShareId, quantity: sellQuantity },
         },
       );
-      setSellOpen(false);
-      setSuccess(t('shares.sellRequestSubmitted'));
+      // Get payment details for QR code
+      const details = await api<PaymentDetails>(
+        `/admin/coops/${selectedCoop.id}/transactions/${tx.id}/payment-details`,
+      );
+      setSellResult(details);
       reloadShareholder();
     } catch {
       setError(t('common.error'));
+      setSellOpen(false);
     } finally {
       setSellLoading(false);
     }
@@ -681,7 +698,7 @@ export default function ShareholderDetailPage() {
                           <Button variant="ghost" size="sm" onClick={() => handleApprove(transaction.id)}>
                             <Check className="h-4 w-4 text-green-600" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleReject(transaction.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => openRejectDialog(transaction.id)}>
                             <X className="h-4 w-4 text-red-600" />
                           </Button>
                         </div>
@@ -809,53 +826,119 @@ export default function ShareholderDetailPage() {
             <DialogTitle>{t('shares.sellSharesTitle')}</DialogTitle>
             <DialogDescription>{t('shares.selectSharesToSell')}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>{t('shares.shareClass')}</Label>
-              <Select value={sellShareId} onValueChange={(v) => { setSellShareId(v); setSellQuantity(1); }}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeShares.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.shareClass.name} - {s.quantity} {t('shares.quantity').toLowerCase()} ({fmtCurrency(s.shareClass.pricePerShare)}/{t('shares.perUnit')})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{t('shares.quantityToSell')}</Label>
-              <Input
-                type="number"
-                min={1}
-                max={selectedSellShare?.quantity || 1}
-                value={sellQuantity}
-                onChange={(e) => setSellQuantity(Math.max(1, Math.min(selectedSellShare?.quantity || 1, parseInt(e.target.value) || 1)))}
-              />
-              {selectedSellShare && (
-                <p className="text-xs text-muted-foreground">
-                  {t('shares.maxQuantity', { max: selectedSellShare.quantity })}
-                </p>
-              )}
-            </div>
-            {selectedSellShare && (
-              <div className="border-t pt-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t('shares.totalRefund')}</span>
-                  <span className="font-bold">
-                    {fmtCurrency(sellQuantity * selectedSellShare.shareClass.pricePerShare)}
-                  </span>
-                </div>
+
+          {sellResult ? (
+            <div className="space-y-4">
+              <Alert>
+                <AlertDescription>{t('shares.sellRequestSubmitted')}</AlertDescription>
+              </Alert>
+              <div className="flex justify-center">
+                <EpcQrCode
+                  bic={sellResult.bic}
+                  beneficiaryName={sellResult.beneficiaryName}
+                  iban={sellResult.iban}
+                  amount={sellResult.amount}
+                  reference={sellResult.ogmCode}
+                />
               </div>
-            )}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('payments.beneficiary')}</span>
+                  <span className="font-medium">{sellResult.beneficiaryName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('payments.iban')}</span>
+                  <span className="font-mono text-xs">{formatIban(sellResult.iban)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('common.amount')}</span>
+                  <span className="font-medium">{fmtCurrency(sellResult.amount)}</span>
+                </div>
+                {sellResult.ogmCode && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('payments.ogmCode')}</span>
+                    <span className="font-mono text-xs">{sellResult.ogmCode}</span>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setSellOpen(false)}>{t('common.confirm')}</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t('shares.shareClass')}</Label>
+                <Select value={sellShareId} onValueChange={(v) => { setSellShareId(v); setSellQuantity(1); }}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeShares.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.shareClass.name} - {s.quantity} {t('shares.quantity').toLowerCase()} ({fmtCurrency(s.shareClass.pricePerShare)}/{t('shares.perUnit')})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('shares.quantityToSell')}</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={selectedSellShare?.quantity || 1}
+                  value={sellQuantity}
+                  onChange={(e) => setSellQuantity(Math.max(1, Math.min(selectedSellShare?.quantity || 1, parseInt(e.target.value) || 1)))}
+                />
+                {selectedSellShare && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('shares.maxQuantity', { max: selectedSellShare.quantity })}
+                  </p>
+                )}
+              </div>
+              {selectedSellShare && (
+                <div className="border-t pt-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{t('shares.totalRefund')}</span>
+                    <span className="font-bold">
+                      {fmtCurrency(sellQuantity * selectedSellShare.shareClass.pricePerShare)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSellOpen(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleSell} disabled={sellLoading || !sellShareId}>
+                  {sellLoading ? t('common.loading') : t('shares.confirmSell')}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Transaction Dialog */}
+      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('transactions.rejectReason')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder={t('transactions.rejectReason')}
+              rows={3}
+            />
             <DialogFooter>
-              <Button variant="outline" onClick={() => setSellOpen(false)}>
+              <Button variant="outline" onClick={() => setRejectOpen(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button onClick={handleSell} disabled={sellLoading || !sellShareId}>
-                {sellLoading ? t('common.loading') : t('shares.confirmSell')}
+              <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim()}>
+                {t('transactions.reject')}
               </Button>
             </DialogFooter>
           </div>
