@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.33] - 2026-02-25
+
+### Fixed
+- Shareholder edit crash: updating shareholder info as admin caused client-side exception because the API returned incomplete data (missing shares, transactions)
+
 ## [0.1.28] - 2026-02-25
 
 ### Added
