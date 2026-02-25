@@ -55,6 +55,11 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
+      - name: Build API & Web
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+
       - name: Push schema to test DB
         run: pnpm db:push
         env:
@@ -90,6 +95,7 @@ jobs:
           retention-days: 7
 
   build:
+    needs: e2e
     runs-on: ubuntu-latest
     permissions:
       contents: read
