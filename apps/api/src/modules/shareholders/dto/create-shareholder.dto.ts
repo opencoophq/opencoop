@@ -127,6 +127,17 @@ export class CreateShareholderDto {
   @Type(() => AddressDto)
   address?: AddressDto;
 
+  // Bank details
+  @ApiProperty({ required: false, description: 'IBAN for refunds' })
+  @IsOptional()
+  @IsString()
+  bankIban?: string;
+
+  @ApiProperty({ required: false, description: 'BIC for refunds' })
+  @IsOptional()
+  @IsString()
+  bankBic?: string;
+
   // Beneficial owners for company
   @ApiProperty({ required: false, type: [BeneficialOwnerDto] })
   @IsOptional()

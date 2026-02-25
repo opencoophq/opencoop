@@ -2,6 +2,17 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.28] - 2026-02-25
+
+### Added
+- Admin buy/sell on behalf of shareholders — coop admins can create purchase and sale transactions for shareholders
+- Shareholder self-service sell — shareholders can request to sell shares back with bank account confirmation
+- EPC QR codes for SEPA payments — purchase QR (shareholder pays coop) and refund QR (coop pays shareholder)
+- Payment details dialog on admin transactions page with QR code and "Mark Complete" action
+- Bank details (IBAN/BIC) on shareholder profile, editable by both admin and shareholder
+- Minimum holding period setting per coop (prevents selling shares before the holding period expires)
+- Double-sell prevention — checks pending sell quantities before allowing new sell requests
+
 ## [0.1.27] - 2026-02-25
 
 ### Fixed

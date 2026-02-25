@@ -326,7 +326,8 @@
     "confirmPassword": "Bevestig nieuw wachtwoord",
     "passwordChanged": "Wachtwoord succesvol gewijzigd",
     "displayName": "Weergavenaam",
-    "displayNamePlaceholder": "Je naam"
+    "displayNamePlaceholder": "Je naam",
+    "bankDetailsDescription": "Je bankrekening voor het ontvangen van terugbetalingen bij het verkopen van aandelen"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -456,7 +457,15 @@
       "paymentInfo": "Betalingsinformatie",
       "confirmApproval": "Goedkeuring bevestigen",
       "confirmRejection": "Afwijzing bevestigen",
-      "rejectionReasonPlaceholder": "Voer reden voor afwijzing in..."
+      "rejectionReasonPlaceholder": "Voer reden voor afwijzing in...",
+      "payRefund": "Terugbetaling",
+      "paymentInfo": "Betalingsinformatie",
+      "scanToPayRefund": "Scan de QR-code met je bankapp om de terugbetaling uit te voeren",
+      "scanToPay": "De aandeelhouder kan deze QR-code scannen om te betalen",
+      "missingBankDetails": "Bankgegevens (IBAN/BIC) ontbreken. Werk eerst de bankgegevens van de aandeelhouder bij.",
+      "markComplete": "Markeer als voltooid",
+      "bankDetailsRequired": "Een bankrekening (IBAN) is vereist om terugbetalingen te ontvangen bij het verkopen van aandelen.",
+      "refundToIban": "Terugbetaling wordt verstuurd naar"
     },
     "shareClasses": {
       "title": "Aandelenklassen",

@@ -33,6 +33,8 @@ import { DividendsService } from '../dividends/dividends.service';
 import { DocumentsService } from '../documents/documents.service';
 import { CreateShareholderDto } from '../shareholders/dto/create-shareholder.dto';
 import { UpdateShareholderDto } from '../shareholders/dto/update-shareholder.dto';
+import { CreatePurchaseDto } from '../transactions/dto/create-purchase.dto';
+import { CreateSaleDto } from '../transactions/dto/create-sale.dto';
 import { CreateShareClassDto } from '../shares/dto/create-share-class.dto';
 import { UpdateShareClassDto } from '../shares/dto/update-share-class.dto';
 import { CreateProjectDto } from '../projects/dto/create-project.dto';
@@ -304,6 +306,52 @@ export class AdminController {
       ...transferDto,
       processedByUserId: user.id,
     });
+  }
+
+  @Post('shareholders/:shareholderId/purchase')
+  @ApiOperation({ summary: 'Create a purchase on behalf of a shareholder' })
+  async createPurchase(
+    @Param('coopId') coopId: string,
+    @Param('shareholderId') shareholderId: string,
+    @Body() createPurchaseDto: CreatePurchaseDto,
+  ) {
+    return this.transactionsService.createPurchase({
+      coopId,
+      shareholderId,
+      ...createPurchaseDto,
+    });
+  }
+
+  @Post('shareholders/:shareholderId/sell')
+  @ApiOperation({ summary: 'Create a sale on behalf of a shareholder' })
+  async createSale(
+    @Param('coopId') coopId: string,
+    @Param('shareholderId') shareholderId: string,
+    @Body() createSaleDto: CreateSaleDto,
+  ) {
+    return this.transactionsService.createSale({
+      coopId,
+      shareholderId,
+      ...createSaleDto,
+    });
+  }
+
+  @Get('transactions/:id/payment-details')
+  @ApiOperation({ summary: 'Get payment details for a transaction (IBAN, amount, OGM for QR code)' })
+  async getPaymentDetails(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+  ) {
+    return this.transactionsService.getPaymentDetails(id, coopId);
+  }
+
+  @Put('transactions/:id/complete')
+  @ApiOperation({ summary: 'Mark an approved transaction as completed' })
+  async completeTransaction(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.transactionsService.complete(id, user.id);
   }
 
   // ==================== BANK IMPORT ====================

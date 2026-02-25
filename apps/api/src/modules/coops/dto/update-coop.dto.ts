@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsOptional, IsIn, MaxLength } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateCoopDto {
@@ -32,6 +32,12 @@ export class UpdateCoopDto {
   @IsOptional()
   @IsString()
   termsUrl?: string;
+
+  @ApiProperty({ required: false, description: 'Minimum holding period in months (0 = no restriction)' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  minimumHoldingPeriod?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()

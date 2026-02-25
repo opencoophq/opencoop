@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
@@ -28,12 +28,33 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { DatePicker } from '@/components/ui/date-picker';
-import { formatCurrency } from '@opencoop/shared';
-import { ChevronLeft, Save, Check, X } from 'lucide-react';
+import { formatCurrency, formatIban } from '@opencoop/shared';
+import { EpcQrCode } from '@/components/epc-qr-code';
+import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown } from 'lucide-react';
 import { api } from '@/lib/api';
+
+interface ShareClass {
+  id: string;
+  name: string;
+  code: string;
+  pricePerShare: number;
+}
+
+interface Project {
+  id: string;
+  name: string;
+}
 
 interface Share {
   id: string;
@@ -72,6 +93,8 @@ interface ShareholderDetail {
   phone?: string;
   nationalId?: string;
   birthDate?: string;
+  bankIban?: string;
+  bankBic?: string;
   street?: string;
   houseNumber?: string;
   postalCode?: string;
@@ -80,6 +103,15 @@ interface ShareholderDetail {
   shares: Share[];
   transactions: Transaction[];
   createdAt: string;
+}
+
+interface PaymentDetails {
+  direction: 'incoming' | 'outgoing';
+  beneficiaryName: string;
+  iban: string;
+  bic: string;
+  amount: number;
+  ogmCode: string;
 }
 
 const shareholderSchema = z.object({
@@ -91,6 +123,8 @@ const shareholderSchema = z.object({
   vatNumber: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
+  bankIban: z.string().optional(),
+  bankBic: z.string().optional(),
   street: z.string().optional(),
   houseNumber: z.string().optional(),
   postalCode: z.string().optional(),
@@ -113,6 +147,22 @@ export default function ShareholderDetailPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Buy dialog state
+  const [buyOpen, setBuyOpen] = useState(false);
+  const [shareClasses, setShareClasses] = useState<ShareClass[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [buyShareClassId, setBuyShareClassId] = useState('');
+  const [buyQuantity, setBuyQuantity] = useState(1);
+  const [buyProjectId, setBuyProjectId] = useState('');
+  const [buyLoading, setBuyLoading] = useState(false);
+  const [buyResult, setBuyResult] = useState<PaymentDetails | null>(null);
+
+  // Sell dialog state
+  const [sellOpen, setSellOpen] = useState(false);
+  const [sellShareId, setSellShareId] = useState('');
+  const [sellQuantity, setSellQuantity] = useState(1);
+  const [sellLoading, setSellLoading] = useState(false);
+
   const form = useForm<ShareholderForm>({
     resolver: zodResolver(shareholderSchema),
     defaultValues: {
@@ -120,54 +170,44 @@ export default function ShareholderDetailPage() {
     },
   });
 
+  const fetchShareholder = useCallback(async () => {
+    if (!selectedCoop || !shareholderId) return;
+    try {
+      const data = await api<ShareholderDetail>(
+        `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
+      );
+      setShareholder(data);
+      form.reset({
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        birthDate: data.birthDate ? data.birthDate.split('T')[0] : '',
+        companyName: data.companyName || '',
+        companyId: data.companyId || '',
+        vatNumber: data.vatNumber || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        bankIban: data.bankIban || '',
+        bankBic: data.bankBic || '',
+        street: data.street || '',
+        houseNumber: data.houseNumber || '',
+        postalCode: data.postalCode || '',
+        city: data.city || '',
+        country: data.country || '',
+        status: data.status,
+      });
+    } catch {
+      setError(t('common.error'));
+    }
+  }, [selectedCoop, shareholderId, form, t]);
+
   useEffect(() => {
     if (!selectedCoop || !shareholderId) {
       setLoading(false);
       return;
     }
-
-    const fetchShareholder = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem('accessToken');
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data: ShareholderDetail = await response.json();
-          setShareholder(data);
-          form.reset({
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            birthDate: data.birthDate ? data.birthDate.split('T')[0] : '',
-            companyName: data.companyName || '',
-            companyId: data.companyId || '',
-            vatNumber: data.vatNumber || '',
-            email: data.email || '',
-            phone: data.phone || '',
-            street: data.street || '',
-            houseNumber: data.houseNumber || '',
-            postalCode: data.postalCode || '',
-            city: data.city || '',
-            country: data.country || '',
-            status: data.status,
-          });
-        }
-      } catch {
-        setError(t('common.error'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchShareholder();
-  }, [selectedCoop, shareholderId, form, t]);
+    setLoading(true);
+    fetchShareholder().finally(() => setLoading(false));
+  }, [selectedCoop, shareholderId, fetchShareholder]);
 
   const onSubmit = async (data: ShareholderForm) => {
     if (!selectedCoop || !shareholderId) return;
@@ -177,26 +217,12 @@ export default function ShareholderDetailPage() {
     setSuccess(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(data),
-        }
+      const updated = await api<ShareholderDetail>(
+        `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
+        { method: 'PUT', body: data },
       );
-
-      if (response.ok) {
-        setSuccess(t('common.success'));
-        const updated = await response.json();
-        setShareholder(updated);
-      } else {
-        throw new Error('Failed to update');
-      }
+      setSuccess(t('common.success'));
+      setShareholder(updated);
     } catch {
       setError(t('common.error'));
     } finally {
@@ -205,15 +231,7 @@ export default function ShareholderDetailPage() {
   };
 
   const reloadShareholder = async () => {
-    if (!selectedCoop || !shareholderId) return;
-    try {
-      const data = await api<ShareholderDetail>(
-        `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
-      );
-      setShareholder(data);
-    } catch {
-      // ignore
-    }
+    await fetchShareholder();
   };
 
   const handleApprove = async (txId: string) => {
@@ -233,11 +251,92 @@ export default function ShareholderDetailPage() {
     reloadShareholder();
   };
 
+  const openBuyDialog = async () => {
+    if (!selectedCoop) return;
+    try {
+      const [scData, pData] = await Promise.all([
+        api<ShareClass[]>(`/admin/coops/${selectedCoop.id}/share-classes`),
+        api<Project[]>(`/admin/coops/${selectedCoop.id}/projects`),
+      ]);
+      setShareClasses(scData.filter((sc: ShareClass) => sc.pricePerShare));
+      setProjects(pData);
+      setBuyShareClassId(scData[0]?.id || '');
+      setBuyQuantity(1);
+      setBuyProjectId('');
+      setBuyResult(null);
+      setBuyOpen(true);
+    } catch {
+      setError(t('common.error'));
+    }
+  };
+
+  const handleBuy = async () => {
+    if (!selectedCoop || !buyShareClassId) return;
+    setBuyLoading(true);
+    try {
+      const tx = await api<{ id: string }>(
+        `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}/purchase`,
+        {
+          method: 'POST',
+          body: {
+            shareClassId: buyShareClassId,
+            quantity: buyQuantity,
+            ...(buyProjectId && buyProjectId !== 'none' && { projectId: buyProjectId }),
+          },
+        },
+      );
+      // Get payment details for QR code
+      const details = await api<PaymentDetails>(
+        `/admin/coops/${selectedCoop.id}/transactions/${tx.id}/payment-details`,
+      );
+      setBuyResult(details);
+      reloadShareholder();
+    } catch {
+      setError(t('common.error'));
+      setBuyOpen(false);
+    } finally {
+      setBuyLoading(false);
+    }
+  };
+
+  const openSellDialog = () => {
+    const activeShares = shareholder?.shares.filter((s) => s.status === 'ACTIVE') || [];
+    setSellShareId(activeShares[0]?.id || '');
+    setSellQuantity(1);
+    setSellOpen(true);
+  };
+
+  const handleSell = async () => {
+    if (!selectedCoop || !sellShareId) return;
+    setSellLoading(true);
+    try {
+      await api(
+        `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}/sell`,
+        {
+          method: 'POST',
+          body: { shareId: sellShareId, quantity: sellQuantity },
+        },
+      );
+      setSellOpen(false);
+      setSuccess(t('shares.sellRequestSubmitted'));
+      reloadShareholder();
+    } catch {
+      setError(t('common.error'));
+    } finally {
+      setSellLoading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(locale);
   };
 
   const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
+
+  const selectedShareClass = shareClasses.find((sc) => sc.id === buyShareClassId);
+  const buyTotal = (selectedShareClass?.pricePerShare || 0) * buyQuantity;
+  const activeShares = shareholder?.shares.filter((s) => s.status === 'ACTIVE') || [];
+  const selectedSellShare = shareholder?.shares.find((s) => s.id === sellShareId);
 
   if (loading) {
     return (
@@ -278,13 +377,23 @@ export default function ShareholderDetailPage() {
             {t('common.back')}
           </Link>
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">{t('admin.shareholderDetail.title')}</h1>
           <p className="text-muted-foreground">
             {shareholder.type === 'COMPANY'
               ? shareholder.companyName
               : `${shareholder.firstName || ''} ${shareholder.lastName || ''}`.trim()}
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={openBuyDialog}>
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            {t('shares.buyMore')}
+          </Button>
+          <Button variant="outline" onClick={openSellDialog} disabled={activeShares.length === 0}>
+            <TrendingDown className="h-4 w-4 mr-2" />
+            {t('shares.sellShares')}
+          </Button>
         </div>
       </div>
 
@@ -421,6 +530,20 @@ export default function ShareholderDetailPage() {
                 <Input {...form.register('country')} />
               </div>
 
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium mb-3">{t('payments.bankDetails')}</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t('payments.iban')}</Label>
+                    <Input {...form.register('bankIban')} placeholder="BE68 5390 0754 7034" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t('payments.bic')}</Label>
+                    <Input {...form.register('bankBic')} placeholder="BBRUBEBB" />
+                  </div>
+                </div>
+              </div>
+
               <Button type="submit" disabled={saving}>
                 <Save className="h-4 w-4 mr-2" />
                 {saving ? t('common.loading') : t('admin.shareholderDetail.saveChanges')}
@@ -546,6 +669,173 @@ export default function ShareholderDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Buy Shares Dialog */}
+      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('shares.buyMore')}</DialogTitle>
+            <DialogDescription>{t('shares.buyMoreDescription')}</DialogDescription>
+          </DialogHeader>
+
+          {buyResult ? (
+            <div className="space-y-4">
+              <Alert>
+                <AlertDescription>{t('common.success')}</AlertDescription>
+              </Alert>
+              <div className="flex justify-center">
+                <EpcQrCode
+                  bic={buyResult.bic}
+                  beneficiaryName={buyResult.beneficiaryName}
+                  iban={buyResult.iban}
+                  amount={buyResult.amount}
+                  reference={buyResult.ogmCode}
+                />
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('payments.beneficiary')}</span>
+                  <span className="font-medium">{buyResult.beneficiaryName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('payments.iban')}</span>
+                  <span className="font-mono text-xs">{formatIban(buyResult.iban)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('common.amount')}</span>
+                  <span className="font-medium">{fmtCurrency(buyResult.amount)}</span>
+                </div>
+                {buyResult.ogmCode && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('payments.ogmCode')}</span>
+                    <span className="font-mono text-xs">{buyResult.ogmCode}</span>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setBuyOpen(false)}>{t('common.confirm')}</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t('shares.shareClass')}</Label>
+                <Select value={buyShareClassId} onValueChange={setBuyShareClassId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {shareClasses.map((sc) => (
+                      <SelectItem key={sc.id} value={sc.id}>
+                        {sc.name} ({sc.code}) - {fmtCurrency(Number(sc.pricePerShare))}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('shares.quantity')}</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={buyQuantity}
+                  onChange={(e) => setBuyQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                />
+              </div>
+              {projects.length > 0 && (
+                <div className="space-y-2">
+                  <Label>{t('shares.project')}</Label>
+                  <Select value={buyProjectId} onValueChange={setBuyProjectId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">-</SelectItem>
+                      {projects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="border-t pt-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t('common.total')}</span>
+                  <span className="font-bold">{fmtCurrency(buyTotal)}</span>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setBuyOpen(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleBuy} disabled={buyLoading || !buyShareClassId}>
+                  {buyLoading ? t('common.loading') : t('common.confirm')}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Sell Shares Dialog */}
+      <Dialog open={sellOpen} onOpenChange={setSellOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('shares.sellSharesTitle')}</DialogTitle>
+            <DialogDescription>{t('shares.selectSharesToSell')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('shares.shareClass')}</Label>
+              <Select value={sellShareId} onValueChange={(v) => { setSellShareId(v); setSellQuantity(1); }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeShares.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.shareClass.name} - {s.quantity} {t('shares.quantity').toLowerCase()} ({fmtCurrency(s.shareClass.pricePerShare)}/ea)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('shares.quantityToSell')}</Label>
+              <Input
+                type="number"
+                min={1}
+                max={selectedSellShare?.quantity || 1}
+                value={sellQuantity}
+                onChange={(e) => setSellQuantity(Math.max(1, Math.min(selectedSellShare?.quantity || 1, parseInt(e.target.value) || 1)))}
+              />
+              {selectedSellShare && (
+                <p className="text-xs text-muted-foreground">
+                  {t('shares.maxQuantity', { max: selectedSellShare.quantity })}
+                </p>
+              )}
+            </div>
+            {selectedSellShare && (
+              <div className="border-t pt-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t('shares.totalRefund')}</span>
+                  <span className="font-bold">
+                    {fmtCurrency(sellQuantity * selectedSellShare.shareClass.pricePerShare)}
+                  </span>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSellOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button onClick={handleSell} disabled={sellLoading || !sellShareId}>
+                {sellLoading ? t('common.loading') : t('shares.confirmSell')}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

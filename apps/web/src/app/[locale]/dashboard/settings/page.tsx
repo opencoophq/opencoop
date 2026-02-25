@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { api } from '@/lib/api';
 import { useRouter } from '@/i18n/routing';
+import { formatIban } from '@opencoop/shared';
 
 const LOCALE_OPTIONS: { value: LocaleCode; label: string }[] = [
   { value: 'nl-BE', label: 'Nederlands (België)' },
@@ -38,6 +38,9 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [bankIban, setBankIban] = useState('');
+  const [bankBic, setBankBic] = useState('');
+  const [shareholderId, setShareholderId] = useState<string | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -46,6 +49,21 @@ export default function SettingsPage() {
       setName(user.name || '');
       setPreferredLanguage(user.preferredLanguage || 'nl');
     }
+
+    // Load shareholder bank details
+    async function loadProfile() {
+      try {
+        const profile = await api<{ shareholders: Array<{ id: string; bankIban?: string; bankBic?: string }> }>('/auth/me');
+        if (profile.shareholders?.[0]) {
+          setShareholderId(profile.shareholders[0].id);
+          setBankIban(profile.shareholders[0].bankIban || '');
+          setBankBic(profile.shareholders[0].bankBic || '');
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadProfile();
   }, []);
 
   const handleNameSave = async () => {
@@ -76,6 +94,19 @@ export default function SettingsPage() {
       router.replace('/dashboard/settings', { locale: language as 'nl' | 'en' });
     } catch {
       // ignore - preference still saved locally
+    }
+  };
+
+  const handleBankSave = async () => {
+    if (!shareholderId) return;
+    try {
+      await api(`/shareholders/${shareholderId}/bank-details`, {
+        method: 'PUT',
+        body: { bankIban: bankIban || '', bankBic: bankBic || undefined },
+      });
+      setMessage(t('common.savedSuccessfully'));
+    } catch {
+      setError(t('errors.generic'));
     }
   };
 
@@ -165,6 +196,36 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {shareholderId && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('payments.bankDetails')}</CardTitle>
+              <CardDescription>{t('settings.bankDetailsDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>{t('payments.iban')}</Label>
+                <Input
+                  value={bankIban}
+                  onChange={(e) => setBankIban(e.target.value)}
+                  placeholder="BE68 5390 0754 7034"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>{t('payments.bic')}</Label>
+                <Input
+                  value={bankBic}
+                  onChange={(e) => setBankBic(e.target.value)}
+                  placeholder="BBRUBEBB"
+                  className="mt-1"
+                />
+              </div>
+              <Button onClick={handleBankSave}>{t('common.save')}</Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

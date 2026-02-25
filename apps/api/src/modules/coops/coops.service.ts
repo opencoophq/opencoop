@@ -134,6 +134,7 @@ export class CoopsService {
         name: true,
         slug: true,
         requiresApproval: true,
+        minimumHoldingPeriod: true,
         bankName: true,
         bankIban: true,
         bankBic: true,

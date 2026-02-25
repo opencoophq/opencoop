@@ -326,7 +326,8 @@
     "confirmPassword": "Confirm New Password",
     "passwordChanged": "Password changed successfully",
     "displayName": "Display Name",
-    "displayNamePlaceholder": "Your name"
+    "displayNamePlaceholder": "Your name",
+    "bankDetailsDescription": "Your bank account for receiving refunds when selling shares"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -456,7 +457,15 @@
       "paymentInfo": "Payment Information",
       "confirmApproval": "Confirm Approval",
       "confirmRejection": "Confirm Rejection",
-      "rejectionReasonPlaceholder": "Enter reason for rejection..."
+      "rejectionReasonPlaceholder": "Enter reason for rejection...",
+      "payRefund": "Pay Refund",
+      "paymentInfo": "Payment Info",
+      "scanToPayRefund": "Scan QR code with your banking app to process the refund",
+      "scanToPay": "Shareholder can scan this QR code to pay",
+      "missingBankDetails": "Bank details (IBAN/BIC) are missing. Please update the shareholder's bank details first.",
+      "markComplete": "Mark Complete",
+      "bankDetailsRequired": "A bank account (IBAN) is required to receive refunds when selling shares.",
+      "refundToIban": "Refund will be sent to"
     },
     "shareClasses": {
       "title": "Share Classes",

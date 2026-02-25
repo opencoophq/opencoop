@@ -149,3 +149,61 @@ export function formatIban(iban: string): string {
   const cleaned = iban.replace(/\s/g, '').toUpperCase();
   return cleaned.replace(/(.{4})/g, '$1 ').trim();
 }
+
+/**
+ * Validate an IBAN using ISO 7064 Mod 97-10 checksum.
+ * Supports any country IBAN format.
+ */
+export function validateIban(iban: string): boolean {
+  const cleaned = iban.replace(/\s/g, '').toUpperCase();
+
+  // Basic format check: 2 letters + 2 digits + up to 30 alphanumeric
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$/.test(cleaned)) return false;
+
+  // Move first 4 chars to end and convert letters to numbers (A=10, B=11, ...)
+  const rearranged = cleaned.slice(4) + cleaned.slice(0, 4);
+  const numeric = rearranged.replace(/[A-Z]/g, (ch) =>
+    (ch.charCodeAt(0) - 55).toString(),
+  );
+
+  // Mod 97 check (process in chunks to avoid BigInt for portability)
+  let remainder = numeric;
+  while (remainder.length > 2) {
+    const block = remainder.slice(0, 9);
+    remainder = (parseInt(block, 10) % 97).toString() + remainder.slice(block.length);
+  }
+
+  return parseInt(remainder, 10) % 97 === 1;
+}
+
+/**
+ * Generate an EPC QR code payload (European Payments Council, version 002).
+ * This creates the text content for a SEPA Credit Transfer QR code.
+ *
+ * @param params - Payment parameters
+ * @returns Multi-line string to encode in a QR code
+ */
+export function generateEpcQrPayload(params: {
+  bic: string;
+  beneficiaryName: string;
+  iban: string;
+  amount: number;
+  reference?: string;       // Structured reference (OGM)
+  unstructured?: string;    // Unstructured remittance info
+}): string {
+  const lines = [
+    'BCD',                                        // Service tag
+    '002',                                        // Version
+    '1',                                          // Character set (UTF-8)
+    'SCT',                                        // Identification code (SEPA Credit Transfer)
+    params.bic.replace(/\s/g, '').toUpperCase(),  // BIC
+    params.beneficiaryName.slice(0, 70),          // Beneficiary name (max 70 chars)
+    params.iban.replace(/\s/g, '').toUpperCase(), // IBAN
+    `EUR${params.amount.toFixed(2)}`,             // Amount
+    '',                                           // Purpose (empty)
+    params.reference || '',                       // Structured reference
+    params.unstructured || '',                    // Unstructured remittance info
+  ];
+
+  return lines.join('\n');
+}
