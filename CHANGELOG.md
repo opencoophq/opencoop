@@ -2,6 +2,26 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.48] - 2026-02-25
+
+### Fixed
+- Dark mode on auth pages (login, register, forgot-password, reset-password, magic-link)
+- Auth pages no longer show white background in dark mode
+
+## [0.1.44] - 2026-02-25
+
+### Fixed
+- Password reset and magic link emails no longer require a coopId — works for all users regardless of coop membership or emailEnabled flag
+- Password reset and magic link emails now respect user's preferred language (NL/EN/FR/DE)
+
+### Changed
+- Waitlist confirmation email consolidated through EmailService (removed raw nodemailer from auth service)
+
+## [0.1.43] - 2026-02-25
+
+### Fixed
+- Password reset and magic link emails were silently skipped when user had no shareholder record or coop had emailEnabled=false
+
 ## [0.1.46] - 2026-02-25
 
 ### Added
