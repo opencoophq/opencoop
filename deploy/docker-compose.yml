@@ -55,6 +55,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY}
     volumes:
       - api_uploads:/app/uploads
     depends_on:
