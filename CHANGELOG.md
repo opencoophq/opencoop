@@ -2,7 +2,7 @@
 
 All notable changes to OpenCoop are documented in this file.
 
-## [0.1.36] - 2026-02-25
+## [0.1.37] - 2026-02-25
 
 ### Added
 - Migration service CTA section on homepage, linking to `/migration` page
