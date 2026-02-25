@@ -728,7 +728,8 @@
       "login": "Se connecter",
       "register": "Commencer",
       "pricing": "Tarifs",
-      "demo": "Démo"
+      "demo": "Démo",
+      "migration": "Migration"
     },
     "hero": {
       "title": "Gestion des coopérateurs pour les coopératives",
@@ -870,6 +871,88 @@
       "title": "Prêt à essayer ?",
       "subtitle": "Plongez et explorez — sans inscription, sans carte de crédit, sans engagement.",
       "primary": "Ouvrir la démo"
+    }
+  },
+  "migration": {
+    "hero": {
+      "title": "Nous migrons vos données",
+      "subtitle": "Vous passez à OpenCoop ? Nous nous chargeons du travail. Envoyez-nous vos tableurs, exports ou dumps de base de données et nous mettrons votre coopérative en route avec toutes vos données existantes.",
+      "cta": "Demander une migration"
+    },
+    "process": {
+      "title": "Comment ça marche",
+      "subtitle": "Un processus simple et clé en main pour intégrer vos données dans OpenCoop.",
+      "stepLabel": "Étape {number}",
+      "step1": {
+        "title": "Contactez-nous",
+        "description": "Parlez-nous de votre coopérative, de votre système actuel et des données à migrer."
+      },
+      "step2": {
+        "title": "Nous analysons vos données",
+        "description": "Nous examinons vos fichiers et les associons au modèle de données d'OpenCoop. Nous signalons tout problème ou question."
+      },
+      "step3": {
+        "title": "Nous importons tout",
+        "description": "Nous exécutons la migration dans votre espace et vérifions les données. Coopérateurs, parts, transactions — tout en place."
+      },
+      "step4": {
+        "title": "Vous êtes en ligne",
+        "description": "Votre coopérative est prête. Toutes les données historiques préservées, aucune ressaisie manuelle nécessaire."
+      }
+    },
+    "dataTypes": {
+      "title": "Ce que nous pouvons migrer",
+      "subtitle": "Qu'il s'agisse d'un tableur ou d'un export complet de base de données, nous nous en occupons.",
+      "shareholders": {
+        "title": "Coopérateurs",
+        "description": "Noms, coordonnées, types (personne physique, société, mineur), dates d'inscription et statuts."
+      },
+      "shares": {
+        "title": "Parts et classes de parts",
+        "description": "Définitions des classes de parts, positions individuelles, numéros de certificats et prix d'achat."
+      },
+      "transactions": {
+        "title": "Historique des transactions",
+        "description": "Achats, ventes et transferts avec dates, montants et statuts d'approbation."
+      },
+      "dividends": {
+        "title": "Historique des dividendes",
+        "description": "Périodes de dividendes passées, versements calculés, précompte mobilier et enregistrements de paiement."
+      },
+      "documents": {
+        "title": "Documents",
+        "description": "Certificats existants, relevés et autres documents des coopérateurs."
+      },
+      "bankData": {
+        "title": "Données bancaires et de paiement",
+        "description": "Numéros IBAN, codes OGM, statuts de paiement et historique d'import bancaire."
+      }
+    },
+    "form": {
+      "title": "Demander une migration",
+      "subtitle": "Décrivez votre situation et nous vous répondrons sous 2 jours ouvrables.",
+      "name": "Votre nom",
+      "namePlaceholder": "Marie Dupont",
+      "email": "Adresse e-mail",
+      "emailPlaceholder": "marie@exemple.com",
+      "coopName": "Nom de la coopérative",
+      "coopNamePlaceholder": "Ma Coopérative",
+      "estimatedShareholders": "Nombre de coopérateurs",
+      "estimatedShareholdersPlaceholder": "ex. 150",
+      "currentSystem": "Système actuel",
+      "currentSystemPlaceholder": "ex. Excel, logiciel sur mesure, autre plateforme...",
+      "message": "Dites-nous en plus",
+      "messagePlaceholder": "Décrivez les données à migrer, les formats de fichiers dont vous disposez, les exigences particulières...",
+      "submit": "Envoyer la demande de migration",
+      "success": "Merci ! Votre demande de migration a été soumise.",
+      "successDetail": "Nous examinerons votre demande et vous répondrons sous 2 jours ouvrables.",
+      "error": "Une erreur est survenue. Veuillez réessayer."
+    },
+    "cta": {
+      "title": "Pas encore sûr ?",
+      "subtitle": "Explorez nos tarifs ou essayez d'abord la démo — sans engagement.",
+      "primary": "Voir les tarifs",
+      "secondary": "Essayer la démo"
     }
   },
   "featureRequest": {

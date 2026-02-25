@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.35] - 2026-02-25
+
+### Added
+- Migration service marketing page (`/migration`) with contact form for cooperatives switching to OpenCoop
+- Migration request API endpoint (`POST /migration-requests`) with email notification
+- Navigation link to migration page in marketing header (desktop + mobile)
+- Full i18n support for migration page (EN, NL, FR, DE)
+
 ## [0.1.34] - 2026-02-25
 
 ### Added

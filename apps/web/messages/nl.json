@@ -728,7 +728,8 @@
       "login": "Inloggen",
       "register": "Aan de slag",
       "pricing": "Prijzen",
-      "demo": "Demo"
+      "demo": "Demo",
+      "migration": "Migratie"
     },
     "hero": {
       "title": "Aandeelhoudersbeheer voor coöperaties",
@@ -870,6 +871,88 @@
       "title": "Klaar om het zelf te proberen?",
       "subtitle": "Spring erin en ontdek — geen registratie, geen creditcard, geen verplichtingen.",
       "primary": "Open de demo"
+    }
+  },
+  "migration": {
+    "hero": {
+      "title": "Wij migreren uw data",
+      "subtitle": "Overstappen naar OpenCoop? Wij doen het zware werk. Stuur ons uw spreadsheets, exports of database-dumps en we zetten uw coöperatie op met al uw bestaande gegevens.",
+      "cta": "Migratie aanvragen"
+    },
+    "process": {
+      "title": "Hoe werkt het?",
+      "subtitle": "Een eenvoudig, hands-off proces om uw data in OpenCoop te krijgen.",
+      "stepLabel": "Stap {number}",
+      "step1": {
+        "title": "Neem contact op",
+        "description": "Vertel ons over uw coöperatie, uw huidig systeem en de data die gemigreerd moet worden."
+      },
+      "step2": {
+        "title": "Wij analyseren uw data",
+        "description": "We bekijken uw bestanden en mappen alles naar het OpenCoop-datamodel. We melden eventuele problemen of vragen."
+      },
+      "step3": {
+        "title": "Wij importeren alles",
+        "description": "We voeren de migratie uit in uw tenant en verifiëren de data. Aandeelhouders, aandelen, transacties — alles op z'n plek."
+      },
+      "step4": {
+        "title": "U bent live",
+        "description": "Uw coöperatie is klaar voor gebruik. Alle historische data behouden, geen handmatige invoer nodig."
+      }
+    },
+    "dataTypes": {
+      "title": "Wat we kunnen migreren",
+      "subtitle": "Of het nu een spreadsheet is of een volledige database-export, wij handelen het af.",
+      "shareholders": {
+        "title": "Aandeelhouders",
+        "description": "Namen, contactgegevens, types (particulier, bedrijf, minderjarige), registratiedata en statussen."
+      },
+      "shares": {
+        "title": "Aandelen & aandelenklassen",
+        "description": "Aandelenklasse-definities, individuele posities, certificaatnummers en aankoopprijzen."
+      },
+      "transactions": {
+        "title": "Transactiegeschiedenis",
+        "description": "Aankopen, verkopen en overdrachten met datums, bedragen en goedkeuringsstatussen."
+      },
+      "dividends": {
+        "title": "Dividendgeschiedenis",
+        "description": "Eerdere dividendperiodes, berekende uitkeringen, roerende voorheffing en betalingsgegevens."
+      },
+      "documents": {
+        "title": "Documenten",
+        "description": "Bestaande certificaten, afschriften en andere aandeelhoudersdocumenten."
+      },
+      "bankData": {
+        "title": "Bank- & betalingsgegevens",
+        "description": "IBAN-nummers, OGM-codes, betalingsstatussen en bankimportgeschiedenis."
+      }
+    },
+    "form": {
+      "title": "Migratie aanvragen",
+      "subtitle": "Vertel ons over uw situatie en we nemen binnen 2 werkdagen contact op.",
+      "name": "Uw naam",
+      "namePlaceholder": "Jan Jansen",
+      "email": "E-mailadres",
+      "emailPlaceholder": "jan@voorbeeld.be",
+      "coopName": "Naam coöperatie",
+      "coopNamePlaceholder": "Mijn Coöperatie",
+      "estimatedShareholders": "Aantal aandeelhouders",
+      "estimatedShareholdersPlaceholder": "bv. 150",
+      "currentSystem": "Huidig systeem",
+      "currentSystemPlaceholder": "bv. Excel, eigen software, ander platform...",
+      "message": "Vertel ons meer",
+      "messagePlaceholder": "Beschrijf de data die gemigreerd moet worden, bestandsformaten, eventuele bijzondere vereisten...",
+      "submit": "Migratieverzoek versturen",
+      "success": "Bedankt! Uw migratieverzoek is ingediend.",
+      "successDetail": "We bekijken uw verzoek en nemen binnen 2 werkdagen contact op.",
+      "error": "Er is iets misgegaan. Probeer het opnieuw."
+    },
+    "cta": {
+      "title": "Nog niet zeker?",
+      "subtitle": "Bekijk onze prijzen of probeer eerst de demo — vrijblijvend.",
+      "primary": "Bekijk prijzen",
+      "secondary": "Probeer de demo"
     }
   },
   "featureRequest": {

@@ -19,6 +19,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { SystemModule } from './modules/system/system.module';
 import { FeatureRequestsModule } from './modules/feature-requests/feature-requests.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { MigrationRequestsModule } from './modules/migration-requests/migration-requests.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     SystemModule,
     FeatureRequestsModule,
     UploadsModule,
+    MigrationRequestsModule,
   ],
 })
 export class AppModule {}

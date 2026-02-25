@@ -728,7 +728,8 @@
       "login": "Log in",
       "register": "Get started",
       "pricing": "Pricing",
-      "demo": "Demo"
+      "demo": "Demo",
+      "migration": "Migration"
     },
     "hero": {
       "title": "Shareholder management for cooperatives",
@@ -870,6 +871,88 @@
       "title": "Ready to try it yourself?",
       "subtitle": "Jump in and explore — no signup, no credit card, no strings attached.",
       "primary": "Open the demo"
+    }
+  },
+  "migration": {
+    "hero": {
+      "title": "We'll migrate your data",
+      "subtitle": "Switching to OpenCoop? We handle the heavy lifting. Send us your spreadsheets, exports, or database dumps and we'll get your cooperative up and running with all your existing data.",
+      "cta": "Request a migration"
+    },
+    "process": {
+      "title": "How it works",
+      "subtitle": "A simple, hands-off process to get your data into OpenCoop.",
+      "stepLabel": "Step {number}",
+      "step1": {
+        "title": "Get in touch",
+        "description": "Tell us about your cooperative, your current system, and the data you need migrated."
+      },
+      "step2": {
+        "title": "We analyze your data",
+        "description": "We review your files and map everything to OpenCoop's data model. We'll flag any issues or questions."
+      },
+      "step3": {
+        "title": "We import everything",
+        "description": "We run the migration into your tenant and verify the data. Shareholders, shares, transactions — all in place."
+      },
+      "step4": {
+        "title": "You're live",
+        "description": "Your cooperative is ready to go. All historical data preserved, no manual re-entry needed."
+      }
+    },
+    "dataTypes": {
+      "title": "What we can migrate",
+      "subtitle": "Whether it's a spreadsheet or a full database export, we'll handle it.",
+      "shareholders": {
+        "title": "Shareholders",
+        "description": "Names, contact details, types (individual, company, minor), registration dates, and statuses."
+      },
+      "shares": {
+        "title": "Shares & share classes",
+        "description": "Share class definitions, individual holdings, certificate numbers, and purchase prices."
+      },
+      "transactions": {
+        "title": "Transaction history",
+        "description": "Purchases, sales, and transfers with dates, amounts, and approval statuses."
+      },
+      "dividends": {
+        "title": "Dividend history",
+        "description": "Past dividend periods, calculated payouts, withholding tax, and payment records."
+      },
+      "documents": {
+        "title": "Documents",
+        "description": "Existing certificates, statements, and other shareholder documents."
+      },
+      "bankData": {
+        "title": "Bank & payment data",
+        "description": "IBAN numbers, OGM codes, payment statuses, and bank import history."
+      }
+    },
+    "form": {
+      "title": "Request a migration",
+      "subtitle": "Tell us about your situation and we'll get back to you within 2 business days.",
+      "name": "Your name",
+      "namePlaceholder": "Jane Doe",
+      "email": "Email address",
+      "emailPlaceholder": "jane@example.com",
+      "coopName": "Cooperative name",
+      "coopNamePlaceholder": "My Cooperative",
+      "estimatedShareholders": "Number of shareholders",
+      "estimatedShareholdersPlaceholder": "e.g. 150",
+      "currentSystem": "Current system",
+      "currentSystemPlaceholder": "e.g. Excel, custom software, another platform...",
+      "message": "Tell us more",
+      "messagePlaceholder": "Describe the data you need migrated, file formats you have, any special requirements...",
+      "submit": "Send migration request",
+      "success": "Thanks! Your migration request has been submitted.",
+      "successDetail": "We'll review your request and get back to you within 2 business days.",
+      "error": "Something went wrong. Please try again."
+    },
+    "cta": {
+      "title": "Not sure yet?",
+      "subtitle": "Explore our pricing or try the demo first — no commitment needed.",
+      "primary": "View pricing",
+      "secondary": "Try the demo"
     }
   },
   "featureRequest": {

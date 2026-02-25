@@ -581,3 +581,17 @@ model FeatureRequest {
 
   @@map("feature_requests")
 }
+
+model MigrationRequest {
+  id                    String   @id @default(cuid())
+  name                  String
+  email                 String
+  coopName              String
+  estimatedShareholders String?
+  currentSystem         String?
+  message               String
+  locale                String?
+  createdAt             DateTime @default(now())
+
+  @@map("migration_requests")
+}
