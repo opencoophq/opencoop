@@ -2,6 +2,17 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.51] - 2026-02-25
+
+### Fixed
+- Reject transaction dialog now uses a proper styled modal instead of native browser prompt()
+- Sell shares dialog now shows EPC QR code with payment details after confirming the sale
+
+## [0.1.50] - 2026-02-25
+
+### Fixed
+- `shares.perUnit` i18n key was in wrong namespace (common instead of shares), causing literal key to display
+
 ## [0.1.49] - 2026-02-25
 
 ### Fixed
