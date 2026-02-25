@@ -2,6 +2,25 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.26] - 2026-02-25
+
+### Added
+- PDF export for reports (annual overview, shareholder register, capital statement)
+
+## [0.1.25] - 2026-02-25
+
+### Added
+- Admin analytics dashboard with interactive charts (capital timeline, capital by project, shareholder growth, transaction activity)
+- Reports page with 5 pre-built reports: annual overview, capital statement, shareholder register, dividend summary, project investment
+- On-screen report preview with CSV export for all reports
+- 3 PDF report templates (annual overview, shareholder register, capital statement)
+- Period filter tabs (monthly/quarterly/yearly/all) on all chart components
+
+## [0.1.24] - 2026-02-25
+
+### Fixed
+- Translation key references for transaction types and statuses on shareholder detail and transactions pages
+
 ## [0.1.23] - 2026-02-25
 
 ### Fixed
