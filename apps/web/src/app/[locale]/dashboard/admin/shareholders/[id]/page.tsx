@@ -439,23 +439,23 @@ export default function ShareholderDetailPage() {
         </Alert>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Personal/Company Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {shareholder.type === 'COMPANY'
-                ? t('shareholder.fields.companyName')
-                : t('admin.shareholderDetail.personalInfo')}
-            </CardTitle>
-            <CardDescription>
-              <Badge>
-                {t(`shareholder.type.${shareholder.type.toLowerCase()}`)}
-              </Badge>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Personal/Company Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {shareholder.type === 'COMPANY'
+                  ? t('shareholder.fields.companyName')
+                  : t('admin.shareholderDetail.personalInfo')}
+              </CardTitle>
+              <CardDescription>
+                <Badge>
+                  {t(`shareholder.type.${shareholder.type.toLowerCase()}`)}
+                </Badge>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               {shareholder.type === 'COMPANY' ? (
                 <>
                   <div className="space-y-2">
@@ -511,22 +511,15 @@ export default function ShareholderDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </CardContent>
+          </Card>
 
-              <Button type="submit" disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? t('common.loading') : t('admin.shareholderDetail.saveChanges')}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Contact Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.shareholderDetail.contactInfo')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Contact Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('admin.shareholderDetail.contactInfo')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>{t('common.email')}</Label>
                 <Input type="email" {...form.register('email')} />
@@ -573,15 +566,17 @@ export default function ShareholderDetailPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
 
-              <Button type="submit" disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? t('common.loading') : t('admin.shareholderDetail.saveChanges')}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+        <div className="mt-6">
+          <Button type="submit" disabled={saving}>
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? t('common.loading') : t('admin.shareholderDetail.saveChanges')}
+          </Button>
+        </div>
+      </form>
 
       {/* Shareholdings */}
       <Card>

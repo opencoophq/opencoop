@@ -24,9 +24,11 @@ test.describe('Shareholder List', () => {
   });
 
   test('type filter shows only company shareholders', async ({ page }) => {
-    // Find the type filter select
-    const typeFilter = page.locator('select').filter({ hasText: /type/i });
-    await typeFilter.selectOption('COMPANY');
+    // Open the type filter (second combobox, after the status filter)
+    await page.getByRole('combobox').nth(1).click();
+
+    // Select COMPANY from the dropdown
+    await page.getByRole('option', { name: /bedrijf/i }).click();
 
     // Should show company shareholders
     await expect(page.getByText('Bakkerij Janssens BVBA')).toBeVisible();
