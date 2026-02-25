@@ -149,7 +149,7 @@ export class ShareholdersService {
 
     const { beneficialOwners, birthDate, address, ...rest } = dto;
 
-    return this.prisma.shareholder.update({
+    await this.prisma.shareholder.update({
       where: { id },
       data: {
         ...rest,
@@ -163,9 +163,8 @@ export class ShareholdersService {
           },
         }),
       },
-      include: {
-        beneficialOwners: true,
-      },
     });
+
+    return this.findById(id, coopId);
   }
 }
