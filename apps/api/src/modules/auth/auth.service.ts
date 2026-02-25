@@ -15,6 +15,7 @@ import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { WaitlistDto } from './dto/waitlist.dto';
 import { randomBytes } from 'crypto';
+import { hashToken } from '../../common/crypto/hash-token';
 @Injectable()
 export class AuthService {
   constructor(
@@ -94,7 +95,8 @@ export class AuthService {
         name: registerDto.name,
         passwordHash,
         preferredLanguage: registerDto.preferredLanguage || 'nl',
-        emailVerifyToken,
+        emailVerifyToken: hashToken(emailVerifyToken),
+        emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       },
     });
 
@@ -212,7 +214,7 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        passwordResetToken: resetToken,
+        passwordResetToken: hashToken(resetToken),
         passwordResetExpires: resetExpires,
       },
     });
@@ -246,7 +248,7 @@ export class AuthService {
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     const user = await this.prisma.user.findFirst({
       where: {
-        passwordResetToken: resetPasswordDto.token,
+        passwordResetToken: hashToken(resetPasswordDto.token),
         passwordResetExpires: {
           gt: new Date(),
         },
@@ -273,11 +275,14 @@ export class AuthService {
 
   async verifyEmail(token: string) {
     const user = await this.prisma.user.findFirst({
-      where: { emailVerifyToken: token },
+      where: {
+        emailVerifyToken: hashToken(token),
+        emailVerifyExpires: { gt: new Date() },
+      },
     });
 
     if (!user) {
-      throw new BadRequestException('Invalid verification token');
+      throw new BadRequestException('Invalid or expired verification token');
     }
 
     await this.prisma.user.update({
@@ -285,6 +290,7 @@ export class AuthService {
       data: {
         emailVerified: new Date(),
         emailVerifyToken: null,
+        emailVerifyExpires: null,
       },
     });
 
@@ -347,7 +353,7 @@ export class AuthService {
     }
 
     // Exclude sensitive fields
-    const { passwordHash, emailVerifyToken, passwordResetToken, passwordResetExpires, ...safeUser } = user;
+    const { passwordHash, emailVerifyToken, emailVerifyExpires, passwordResetToken, passwordResetExpires, ...safeUser } = user;
 
     // SYSTEM_ADMIN can manage all coops, not just ones they're explicitly assigned to
     let adminCoops = user.coopAdminOf.map((ca) => ca.coop);
@@ -385,7 +391,11 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      },
     });
 
     return { message: 'Password changed successfully' };

@@ -1,11 +1,13 @@
 import { Controller, Post, Put, Body, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { OnboardingDto } from './dto/onboarding.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ValidateUpgradeTokenDto, UpgradeToAdultDto } from './dto/upgrade-to-adult.dto';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
@@ -22,6 +24,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
@@ -31,6 +34,7 @@ export class AuthController {
 
   @Public()
   @Post('onboarding')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Register user and create a new cooperative' })
   @ApiResponse({ status: 201, description: 'User and cooperative created successfully' })
   @ApiResponse({ status: 409, description: 'Email or slug already in use' })
@@ -40,6 +44,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
@@ -49,6 +54,7 @@ export class AuthController {
 
   @Public()
   @Post('forgot-password')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Request password reset email' })
   @ApiResponse({ status: 200, description: 'Reset email sent if account exists' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
@@ -57,6 +63,7 @@ export class AuthController {
 
   @Public()
   @Post('reset-password')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: 'Reset password with token' })
   @ApiResponse({ status: 200, description: 'Password reset successful' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
@@ -89,7 +96,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User preferences updated' })
   async updateProfile(
     @CurrentUser() user: CurrentUserData,
-    @Body() body: { name?: string; preferredLanguage?: string },
+    @Body() body: UpdateProfileDto,
   ) {
     return this.authService.updateProfile(user.id, body);
   }
@@ -123,6 +130,7 @@ export class AuthController {
 
   @Public()
   @Post('upgrade-to-adult')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: 'Convert minor shareholder to adult with new account' })
   @ApiResponse({ status: 201, description: 'Account created, shareholder upgraded' })
   @ApiResponse({ status: 400, description: 'Invalid token or validation error' })
@@ -133,6 +141,7 @@ export class AuthController {
 
   @Public()
   @Post('magic-link/request')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Request a magic link login email' })
   @ApiResponse({ status: 200, description: 'If an account exists, a login link has been sent' })
   async requestMagicLink(@Body() requestMagicLinkDto: RequestMagicLinkDto) {
@@ -150,6 +159,7 @@ export class AuthController {
 
   @Public()
   @Post('waitlist')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Join the waitlist with email' })
   @ApiResponse({ status: 201, description: 'Successfully joined the waitlist' })
   async joinWaitlist(@Body() waitlistDto: WaitlistDto) {
