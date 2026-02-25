@@ -1,13 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { CreateMigrationRequestDto } from './dto/create-migration-request.dto';
 
 @Injectable()
 export class MigrationRequestsService {
   private readonly logger = new Logger(MigrationRequestsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async create(dto: CreateMigrationRequestDto) {
     await this.prisma.migrationRequest.create({
@@ -30,21 +33,7 @@ export class MigrationRequestsService {
   }
 
   private async sendNotificationEmail(dto: CreateMigrationRequestDto) {
-    const host = process.env.SMTP_HOST;
-    if (!host) return;
-
-    const transporter = nodemailer.createTransport({
-      host,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@opencoop.be',
+    await this.emailService.sendPlatformEmail({
       to: process.env.SMTP_FROM || 'info@opencoop.be',
       subject: `Migration request: ${dto.coopName}`,
       text: [
