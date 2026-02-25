@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@opencoop/shared';
 import { Building2, LogIn, UserPlus } from 'lucide-react';
+import { resolveLogoUrl } from '@/lib/api';
 
 interface CoopInfo {
   id: string;
@@ -74,7 +75,7 @@ export default function CoopPage() {
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           {coop.logoUrl ? (
-            <img src={coop.logoUrl} alt={coop.name} className="h-16 mx-auto mb-4" />
+            <img src={resolveLogoUrl(coop.logoUrl)!} alt={coop.name} className="h-16 mx-auto mb-4" />
           ) : (
             <Building2 className="h-16 w-16 text-primary mx-auto mb-4" />
           )}

@@ -7,6 +7,7 @@ import { useSearchParams, useParams, notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { resolveLogoUrl } from '@/lib/api';
 
 type VerifyState = 'loading' | 'success' | 'error';
 
@@ -134,7 +135,7 @@ export default function CoopMagicLinkPage() {
           {/* Logo */}
           {coop?.logoUrl ? (
             <img
-              src={coop.logoUrl}
+              src={resolveLogoUrl(coop.logoUrl)!}
               alt={coop.name}
               className="h-12 mx-auto mb-4 object-contain"
             />

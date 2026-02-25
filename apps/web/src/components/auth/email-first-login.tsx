@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Building2 } from 'lucide-react';
+import { resolveLogoUrl } from '@/lib/api';
 
 interface CoopBranding {
   name: string;
@@ -148,7 +149,7 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
           {/* Logo */}
           {coop?.logoUrl ? (
             <img
-              src={coop.logoUrl}
+              src={resolveLogoUrl(coop.logoUrl)!}
               alt={coop.name}
               className="h-12 mx-auto mb-4 object-contain"
             />

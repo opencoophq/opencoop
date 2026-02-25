@@ -4,6 +4,12 @@ interface FetchOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
 }
 
+export function resolveLogoUrl(logoUrl: string | null | undefined): string | null {
+  if (!logoUrl) return null;
+  if (logoUrl.startsWith('http')) return logoUrl;
+  return `${API_URL}${logoUrl}`;
+}
+
 export async function api<T = unknown>(
   path: string,
   options: FetchOptions = {},
@@ -12,9 +18,10 @@ export async function api<T = unknown>(
     typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
   const { body, headers: customHeaders, ...rest } = options;
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...((customHeaders as Record<string, string>) || {}),
   };
 
@@ -25,7 +32,7 @@ export async function api<T = unknown>(
   const response = await fetch(`${API_URL}${path}`, {
     ...rest,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
   });
 
   if (response.status === 401) {

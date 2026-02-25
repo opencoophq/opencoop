@@ -1,8 +1,15 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCoopDto } from './dto/create-coop.dto';
 import { UpdateCoopDto } from './dto/update-coop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
+import sharp from 'sharp';
+import * as path from 'path';
+import * as fs from 'fs';
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
+const LOGO_MAX_SIZE = 512;
+const LOGO_QUALITY = 80;
 
 @Injectable()
 export class CoopsService {
@@ -243,6 +250,62 @@ export class CoopsService {
     return this.prisma.coop.update({
       where: { id },
       data: updateBrandingDto,
+    });
+  }
+
+  async uploadLogo(coopId: string, file: Express.Multer.File): Promise<{ logoUrl: string }> {
+    const coop = await this.prisma.coop.findUnique({ where: { id: coopId } });
+    if (!coop) {
+      throw new NotFoundException('Cooperative not found');
+    }
+
+    if (!file || !file.buffer) {
+      throw new BadRequestException('No file provided');
+    }
+
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Invalid file type. Allowed: JPEG, PNG, WebP, GIF, SVG');
+    }
+
+    const dir = path.join(UPLOAD_DIR, 'logos');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const filename = `${coopId}.webp`;
+    const filePath = path.join(dir, filename);
+
+    await sharp(file.buffer)
+      .resize(LOGO_MAX_SIZE, LOGO_MAX_SIZE, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: LOGO_QUALITY })
+      .toFile(filePath);
+
+    const logoUrl = `/uploads/logos/${filename}`;
+
+    await this.prisma.coop.update({
+      where: { id: coopId },
+      data: { logoUrl },
+    });
+
+    return { logoUrl };
+  }
+
+  async removeLogo(coopId: string): Promise<void> {
+    const coop = await this.prisma.coop.findUnique({ where: { id: coopId } });
+    if (!coop) {
+      throw new NotFoundException('Cooperative not found');
+    }
+
+    // Delete the file if it exists
+    const filePath = path.join(UPLOAD_DIR, 'logos', `${coopId}.webp`);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    await this.prisma.coop.update({
+      where: { id: coopId },
+      data: { logoUrl: null },
     });
   }
 
