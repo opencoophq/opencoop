@@ -504,7 +504,7 @@ export default function ShareholderDetailPage() {
                     <TableCell>{formatDate(transaction.createdAt)}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {t(`transactions.type.${transaction.type.toLowerCase()}`)}
+                        {t(`transactions.types.${transaction.type}`)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{transaction.quantity}</TableCell>
@@ -524,7 +524,7 @@ export default function ShareholderDetailPage() {
                               : 'secondary'
                         }
                       >
-                        {t(`transactions.status.${transaction.status.toLowerCase()}`)}
+                        {t(`transactions.statuses.${transaction.status}`)}
                       </Badge>
                     </TableCell>
                     <TableCell>

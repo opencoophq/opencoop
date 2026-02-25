@@ -22,6 +22,7 @@ import {
   LogOut,
   Menu,
   X,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -132,6 +133,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { href: '/dashboard/admin/projects', label: t('admin.projects.title'), icon: <Building2 className="h-4 w-4" /> },
         { href: '/dashboard/admin/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
         { href: '/dashboard/admin/bank-import', label: t('admin.bankImport.title'), icon: <Upload className="h-4 w-4" />, badge: adminStats?.unmatchedBankTransactions },
+        { href: '/dashboard/admin/reports', label: t('reports.title'), icon: <BarChart3 className="h-4 w-4" /> },
         { href: '/dashboard/admin/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
         { href: '/dashboard/admin/branding', label: t('admin.branding.title'), icon: <Palette className="h-4 w-4" /> },
       ]

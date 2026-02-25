@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AdminController } from './admin.controller';
+import { AnalyticsService } from './analytics.service';
+import { ReportsService } from './reports.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { ShareholdersModule } from '../shareholders/shareholders.module';
 import { SharesModule } from '../shares/shares.module';
@@ -25,5 +27,7 @@ import { CoopsModule } from '../coops/coops.module';
     DocumentsModule,
   ],
   controllers: [AdminController],
+  providers: [AnalyticsService, ReportsService],
+  exports: [AnalyticsService, ReportsService],
 })
 export class AdminModule {}

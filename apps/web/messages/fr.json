@@ -1015,5 +1015,121 @@
       "generic": "Une erreur est survenue. Veuillez réessayer."
     },
     "pendingActivation": "Votre coopérative est en cours d'examen. Nous l'activerons sous peu."
+  },
+  "analytics": {
+    "capitalTimeline": "Capital dans le temps",
+    "capitalByProject": "Capital par projet",
+    "shareholderGrowth": "Croissance des actionnaires",
+    "transactionActivity": "Activité des transactions",
+    "totalCapital": "Capital total",
+    "total": "Total",
+    "cumulative": "Cumulatif",
+    "noData": "Aucune donnée disponible",
+    "periods": {
+      "month": "Mensuel",
+      "quarter": "Trimestriel",
+      "year": "Annuel",
+      "all": "Tout"
+    },
+    "types": {
+      "individual": "Particulier",
+      "company": "Entreprise",
+      "minor": "Mineur"
+    },
+    "transactionTypes": {
+      "purchases": "Achats",
+      "sales": "Ventes",
+      "transfers": "Transferts"
+    }
+  },
+  "reports": {
+    "title": "Rapports",
+    "description": "Générez et téléchargez des rapports pour les réunions du conseil et l'assemblée générale.",
+    "selectCoop": "Sélectionnez une coopérative pour générer des rapports",
+    "generate": "Générer",
+    "generating": "Génération en cours...",
+    "downloading": "Téléchargement...",
+    "exportCsv": "Exporter CSV",
+    "year": "Année",
+    "from": "Du",
+    "to": "Au",
+    "noMovements": "Aucun mouvement de capital dans cette période.",
+    "common": {
+      "total": "Total"
+    },
+    "tabs": {
+      "annualOverview": "Aperçu annuel",
+      "capitalStatement": "Relevé de capital",
+      "shareholderRegister": "Registre des actionnaires",
+      "dividendSummary": "Résumé des dividendes",
+      "projectInvestment": "Investissement par projet"
+    },
+    "types": {
+      "purchase": "Achat",
+      "sale": "Vente",
+      "transferIn": "Transfert entrant",
+      "transferOut": "Transfert sortant"
+    },
+    "shareholderTypes": {
+      "individual": "Particulier",
+      "company": "Entreprise",
+      "minor": "Mineur"
+    },
+    "annualOverview": {
+      "capitalStart": "Capital (début d'année)",
+      "capitalEnd": "Capital (fin d'année)",
+      "shareholdersStart": "Actionnaires (début)",
+      "shareholdersEnd": "Actionnaires (fin)",
+      "transactionSummary": "Transactions",
+      "dividendSummary": "Dividendes",
+      "purchases": "Achats",
+      "sales": "Ventes",
+      "gross": "Brut",
+      "net": "Net",
+      "shareClassBreakdown": "Répartition par catégorie d'actions",
+      "className": "Catégorie",
+      "code": "Code",
+      "shares": "Actions",
+      "capital": "Capital"
+    },
+    "capitalStatement": {
+      "openingBalance": "Solde d'ouverture",
+      "closingBalance": "Solde de clôture",
+      "date": "Date",
+      "type": "Type",
+      "shareholder": "Actionnaire",
+      "shareClass": "Catégorie d'actions",
+      "qty": "Qté",
+      "amount": "Montant"
+    },
+    "shareholderRegister": {
+      "name": "Nom",
+      "type": "Type",
+      "email": "E-mail",
+      "shares": "Actions",
+      "value": "Valeur",
+      "memberSince": "Membre depuis",
+      "total": "Total"
+    },
+    "dividendSummary": {
+      "noPeriod": "Aucune période de dividende trouvée pour cette année.",
+      "totalGross": "Total brut",
+      "totalTax": "Précompte mobilier",
+      "totalNet": "Total net",
+      "shareholder": "Actionnaire",
+      "shares": "Actions",
+      "gross": "Brut",
+      "tax": "Impôt",
+      "net": "Net"
+    },
+    "projectInvestment": {
+      "noProjects": "Aucun projet trouvé.",
+      "project": "Projet",
+      "type": "Type",
+      "capital": "Capital",
+      "shareholders": "Actionnaires",
+      "shares": "Actions",
+      "percentage": "%"
+    }
   }
 }
