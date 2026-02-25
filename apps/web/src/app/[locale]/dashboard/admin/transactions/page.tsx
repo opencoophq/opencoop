@@ -34,6 +34,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
+import { Textarea } from '@/components/ui/textarea';
 import { Check, X, QrCode, CreditCard } from 'lucide-react';
 
 interface TransactionRow {
@@ -76,6 +77,11 @@ export default function AdminTransactionsPage() {
   const [paymentTxStatus, setPaymentTxStatus] = useState('');
   const [completing, setCompleting] = useState(false);
 
+  // Reject dialog state
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectTxId, setRejectTxId] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+
   const loadData = useCallback(async () => {
     if (!selectedCoop) return;
     setLoading(true);
@@ -103,14 +109,19 @@ export default function AdminTransactionsPage() {
     loadData();
   };
 
-  const handleReject = async (id: string) => {
-    if (!selectedCoop) return;
-    const reason = prompt(t('transactions.rejectReason'));
-    if (!reason) return;
-    await api(`/admin/coops/${selectedCoop.id}/transactions/${id}/reject`, {
+  const openRejectDialog = (id: string) => {
+    setRejectTxId(id);
+    setRejectReason('');
+    setRejectOpen(true);
+  };
+
+  const handleReject = async () => {
+    if (!selectedCoop || !rejectTxId || !rejectReason.trim()) return;
+    await api(`/admin/coops/${selectedCoop.id}/transactions/${rejectTxId}/reject`, {
       method: 'PUT',
-      body: { reason },
+      body: { reason: rejectReason.trim() },
     });
+    setRejectOpen(false);
     loadData();
   };
 
@@ -231,7 +242,7 @@ export default function AdminTransactionsPage() {
                             <Button variant="ghost" size="sm" onClick={() => handleApprove(tx.id)}>
                               <Check className="h-4 w-4 text-green-600" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleReject(tx.id)}>
+                            <Button variant="ghost" size="sm" onClick={() => openRejectDialog(tx.id)}>
                               <X className="h-4 w-4 text-red-600" />
                             </Button>
                           </>
@@ -326,6 +337,31 @@ export default function AdminTransactionsPage() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Transaction Dialog */}
+      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('transactions.rejectReason')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder={t('transactions.rejectReason')}
+              rows={3}
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRejectOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim()}>
+                {t('transactions.reject')}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
