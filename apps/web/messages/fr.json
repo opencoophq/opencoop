@@ -326,7 +326,8 @@
     "confirmPassword": "Confirmer le nouveau mot de passe",
     "passwordChanged": "Mot de passe modifié avec succès",
     "displayName": "Nom d'affichage",
-    "displayNamePlaceholder": "Votre nom"
+    "displayNamePlaceholder": "Votre nom",
+    "bankDetailsDescription": "Votre compte bancaire pour recevoir les remboursements lors de la vente d'actions"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -456,7 +457,15 @@
       "paymentInfo": "Informations de paiement",
       "confirmApproval": "Confirmer l'approbation",
       "confirmRejection": "Confirmer le rejet",
-      "rejectionReasonPlaceholder": "Indiquez le motif du rejet..."
+      "rejectionReasonPlaceholder": "Indiquez le motif du rejet...",
+      "payRefund": "Rembourser",
+      "paymentInfo": "Informations de paiement",
+      "scanToPayRefund": "Scannez le code QR avec votre application bancaire pour traiter le remboursement",
+      "scanToPay": "L'actionnaire peut scanner ce code QR pour payer",
+      "missingBankDetails": "Les coordonnées bancaires (IBAN/BIC) sont manquantes. Veuillez d'abord mettre à jour les coordonnées bancaires de l'actionnaire.",
+      "markComplete": "Marquer comme terminé",
+      "bankDetailsRequired": "Un compte bancaire (IBAN) est requis pour recevoir les remboursements lors de la vente d'actions.",
+      "refundToIban": "Le remboursement sera envoyé à"
     },
     "shareClasses": {
       "title": "Classes de parts",

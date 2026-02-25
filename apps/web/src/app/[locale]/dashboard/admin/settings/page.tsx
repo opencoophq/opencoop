@@ -24,6 +24,7 @@ type EmailProvider = 'platform' | 'smtp' | 'graph';
 interface FormState {
   name: string;
   requiresApproval: boolean;
+  minimumHoldingPeriod: string;
   bankName: string;
   bankIban: string;
   bankBic: string;
@@ -44,6 +45,7 @@ interface FormState {
 interface SettingsResponse {
   name: string;
   requiresApproval: boolean;
+  minimumHoldingPeriod: number;
   bankName: string | null;
   bankIban: string | null;
   bankBic: string | null;
@@ -71,6 +73,7 @@ export default function AdminSettingsPage() {
   const [form, setForm] = useState<FormState>({
     name: '',
     requiresApproval: true,
+    minimumHoldingPeriod: '0',
     bankName: '',
     bankIban: '',
     bankBic: '',
@@ -112,6 +115,7 @@ export default function AdminSettingsPage() {
         setForm({
           name: settings.name || '',
           requiresApproval: settings.requiresApproval,
+          minimumHoldingPeriod: (settings.minimumHoldingPeriod || 0).toString(),
           bankName: settings.bankName || '',
           bankIban: settings.bankIban || '',
           bankBic: settings.bankBic || '',
@@ -142,6 +146,7 @@ export default function AdminSettingsPage() {
       const body: Record<string, unknown> = {
         name: form.name,
         requiresApproval: form.requiresApproval,
+        minimumHoldingPeriod: parseInt(form.minimumHoldingPeriod, 10) || 0,
         bankName: form.bankName,
         bankIban: form.bankIban,
         bankBic: form.bankBic,
@@ -228,6 +233,15 @@ export default function AdminSettingsPage() {
                 value={form.termsUrl}
                 onChange={(e) => setForm({ ...form, termsUrl: e.target.value })}
                 placeholder="https://..."
+              />
+            </div>
+            <div>
+              <Label>{t('admin.settings.minHoldingPeriod')}</Label>
+              <Input
+                type="number"
+                min={0}
+                value={form.minimumHoldingPeriod}
+                onChange={(e) => setForm({ ...form, minimumHoldingPeriod: e.target.value })}
               />
             </div>
           </CardContent>

@@ -22,9 +22,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
-import { formatCurrency } from '@opencoop/shared';
-import { Check, X } from 'lucide-react';
+import { formatCurrency, formatIban } from '@opencoop/shared';
+import { EpcQrCode } from '@/components/epc-qr-code';
+import { Check, X, QrCode, CreditCard } from 'lucide-react';
 
 interface TransactionRow {
   id: string;
@@ -42,6 +52,15 @@ interface TransactionRow {
   };
 }
 
+interface PaymentDetails {
+  direction: 'incoming' | 'outgoing';
+  beneficiaryName: string;
+  iban: string;
+  bic: string;
+  amount: number;
+  ogmCode: string;
+}
+
 export default function AdminTransactionsPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
@@ -49,6 +68,13 @@ export default function AdminTransactionsPage() {
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Payment details dialog
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [paymentTxId, setPaymentTxId] = useState('');
+  const [paymentTxStatus, setPaymentTxStatus] = useState('');
+  const [completing, setCompleting] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!selectedCoop) return;
@@ -88,10 +114,47 @@ export default function AdminTransactionsPage() {
     loadData();
   };
 
+  const showPaymentDetails = async (txId: string, txStatus: string) => {
+    if (!selectedCoop) return;
+    try {
+      const details = await api<PaymentDetails>(
+        `/admin/coops/${selectedCoop.id}/transactions/${txId}/payment-details`,
+      );
+      setPaymentDetails(details);
+      setPaymentTxId(txId);
+      setPaymentTxStatus(txStatus);
+      setPaymentOpen(true);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleComplete = async () => {
+    if (!selectedCoop || !paymentTxId) return;
+    setCompleting(true);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/transactions/${paymentTxId}/complete`, {
+        method: 'PUT',
+      });
+      setPaymentOpen(false);
+      loadData();
+    } catch {
+      // ignore
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   const getName = (sh: TransactionRow['shareholder']) =>
     sh.type === 'COMPANY'
       ? sh.companyName || ''
       : `${sh.firstName || ''} ${sh.lastName || ''}`.trim();
+
+  const canShowPayment = (tx: TransactionRow) => {
+    if (tx.type === 'PURCHASE' && (tx.status === 'PENDING' || tx.status === 'APPROVED')) return true;
+    if (tx.type === 'SALE' && tx.status === 'APPROVED') return true;
+    return false;
+  };
 
   if (!selectedCoop) return <p className="text-muted-foreground">{t('admin.selectCoop')}</p>;
 
@@ -162,16 +225,32 @@ export default function AdminTransactionsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {tx.status === 'PENDING' && (
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleApprove(tx.id)}>
-                            <Check className="h-4 w-4 text-green-600" />
+                      <div className="flex gap-1">
+                        {tx.status === 'PENDING' && (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => handleApprove(tx.id)}>
+                              <Check className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleReject(tx.id)}>
+                              <X className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </>
+                        )}
+                        {canShowPayment(tx) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => showPaymentDetails(tx.id, tx.status)}
+                            title={tx.type === 'SALE' ? t('admin.transactions.payRefund') : t('admin.transactions.paymentInfo')}
+                          >
+                            {tx.type === 'SALE' ? (
+                              <CreditCard className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <QrCode className="h-4 w-4 text-blue-600" />
+                            )}
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleReject(tx.id)}>
-                            <X className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -180,6 +259,75 @@ export default function AdminTransactionsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Payment Details Dialog */}
+      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {paymentDetails?.direction === 'outgoing'
+                ? t('admin.transactions.payRefund')
+                : t('admin.transactions.paymentInfo')}
+            </DialogTitle>
+            <DialogDescription>
+              {paymentDetails?.direction === 'outgoing'
+                ? t('admin.transactions.scanToPayRefund')
+                : t('admin.transactions.scanToPay')}
+            </DialogDescription>
+          </DialogHeader>
+          {paymentDetails && (
+            <div className="space-y-4">
+              {paymentDetails.iban && paymentDetails.bic ? (
+                <div className="flex justify-center">
+                  <EpcQrCode
+                    bic={paymentDetails.bic}
+                    beneficiaryName={paymentDetails.beneficiaryName}
+                    iban={paymentDetails.iban}
+                    amount={paymentDetails.amount}
+                    reference={paymentDetails.ogmCode}
+                  />
+                </div>
+              ) : (
+                <Alert variant="destructive">
+                  <AlertDescription>{t('admin.transactions.missingBankDetails')}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('payments.beneficiary')}</span>
+                  <span className="font-medium">{paymentDetails.beneficiaryName}</span>
+                </div>
+                {paymentDetails.iban && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('payments.iban')}</span>
+                    <span className="font-mono text-xs">{formatIban(paymentDetails.iban)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('common.amount')}</span>
+                  <span className="font-medium">{formatCurrency(paymentDetails.amount, locale)}</span>
+                </div>
+                {paymentDetails.ogmCode && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('payments.ogmCode')}</span>
+                    <span className="font-mono text-xs">{paymentDetails.ogmCode}</span>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                {paymentTxStatus === 'APPROVED' && (
+                  <Button onClick={handleComplete} disabled={completing}>
+                    {completing ? t('common.loading') : t('admin.transactions.markComplete')}
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setPaymentOpen(false)}>
+                  {t('common.confirm')}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ShareholdersService } from './shareholders.service';
+import { ShareholderActionsController } from './shareholder-actions.controller';
 import { BirthdaySchedulerService } from './birthday-scheduler.service';
 import { AuthModule } from '../auth/auth.module';
 import { EmailModule } from '../email/email.module';
+import { TransactionsModule } from '../transactions/transactions.module';
 
 @Module({
-  imports: [AuthModule, EmailModule],
+  imports: [AuthModule, EmailModule, TransactionsModule],
+  controllers: [ShareholderActionsController],
   providers: [ShareholdersService, BirthdaySchedulerService],
   exports: [ShareholdersService],
 })

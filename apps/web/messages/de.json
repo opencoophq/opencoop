@@ -326,7 +326,8 @@
     "confirmPassword": "Neues Passwort bestätigen",
     "passwordChanged": "Passwort erfolgreich geändert",
     "displayName": "Anzeigename",
-    "displayNamePlaceholder": "Ihr Name"
+    "displayNamePlaceholder": "Ihr Name",
+    "bankDetailsDescription": "Ihr Bankkonto für den Empfang von Rückerstattungen beim Verkauf von Aktien"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -456,7 +457,15 @@
       "paymentInfo": "Zahlungsinformationen",
       "confirmApproval": "Genehmigung bestätigen",
       "confirmRejection": "Ablehnung bestätigen",
-      "rejectionReasonPlaceholder": "Ablehnungsgrund eingeben..."
+      "rejectionReasonPlaceholder": "Ablehnungsgrund eingeben...",
+      "payRefund": "Rückerstattung",
+      "paymentInfo": "Zahlungsinformationen",
+      "scanToPayRefund": "Scannen Sie den QR-Code mit Ihrer Banking-App, um die Rückerstattung zu verarbeiten",
+      "scanToPay": "Der Aktionär kann diesen QR-Code scannen, um zu bezahlen",
+      "missingBankDetails": "Bankdaten (IBAN/BIC) fehlen. Bitte aktualisieren Sie zuerst die Bankdaten des Aktionärs.",
+      "markComplete": "Als abgeschlossen markieren",
+      "bankDetailsRequired": "Ein Bankkonto (IBAN) ist erforderlich, um Rückerstattungen beim Verkauf von Aktien zu erhalten.",
+      "refundToIban": "Rückerstattung wird gesendet an"
     },
     "shareClasses": {
       "title": "Anteilsklassen",
