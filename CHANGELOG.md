@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.52] - 2026-02-26
+
+### Fixed
+- Demo coop routes (/demo/login, /demo/register, /demo/magic-link) returning 404 due to Next.js static/dynamic route conflict
+- Extracted coop login, register, and magic-link page logic into shared components to avoid duplication
+
 ## [0.1.51] - 2026-02-25
 
 ### Fixed
