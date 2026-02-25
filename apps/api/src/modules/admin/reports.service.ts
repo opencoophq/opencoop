@@ -4,6 +4,7 @@ import {
   AnnualOverviewReport,
   ShareholderRegisterReport,
   CapitalStatementReport,
+  ProjectInvestmentReport,
 } from '@opencoop/pdf-templates';
 import React from 'react';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -706,6 +707,25 @@ export class ReportsService {
             quantity: m.quantity,
             amount: m.amount,
           })),
+          locale,
+        });
+        break;
+      }
+
+      case 'project-investment': {
+        const data = await this.getProjectInvestment(coopId, params.projectId);
+        const totalCapital = data.projects.reduce((sum, p) => sum + p.totalCapital, 0);
+        element = React.createElement(ProjectInvestmentReport, {
+          coopName: coop.name,
+          projects: data.projects.map((p) => ({
+            name: p.name,
+            type: p.type,
+            totalCapital: p.totalCapital,
+            shareholderCount: p.shareholderCount,
+            shareCount: p.shareCount,
+            percentage: p.percentage,
+          })),
+          totalCapital,
           locale,
         });
         break;

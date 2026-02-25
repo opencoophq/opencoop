@@ -1,14 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
 import { Card, CardContent } from '@/components/ui/card';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ReportFilters } from './report-filters';
 import { ExportButtons } from './export-buttons';
+import { ChartActionBar } from '@/components/charts/chart-action-bar';
+import { CopyTableButton } from './copy-table-button';
+
+const COLORS = [
+  'hsl(221, 83%, 53%)',
+  'hsl(142, 71%, 45%)',
+  'hsl(262, 83%, 58%)',
+  'hsl(25, 95%, 53%)',
+  'hsl(350, 89%, 60%)',
+  'hsl(174, 72%, 40%)',
+  'hsl(47, 96%, 53%)',
+  'hsl(280, 67%, 51%)',
+];
 
 interface AnnualOverview {
   year: number;
@@ -30,6 +44,8 @@ export function AnnualOverviewPreview() {
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [data, setData] = useState<AnnualOverview | null>(null);
   const [loading, setLoading] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
 
   const generate = () => {
     if (!selectedCoop) return;
@@ -119,12 +135,46 @@ export function AnnualOverviewPreview() {
             </Card>
           </div>
 
-          {/* Share Class Breakdown */}
+          {/* Share Class Breakdown — chart + table */}
           {data.shareClassBreakdown.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold mb-2">{t('annualOverview.shareClassBreakdown')}</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">{t('annualOverview.shareClassBreakdown')}</h3>
+                <div className="flex items-center gap-1">
+                  {data.shareClassBreakdown.length > 1 && (
+                    <ChartActionBar chartRef={chartRef} filename={`share-class-breakdown-${year}`} />
+                  )}
+                  <CopyTableButton tableRef={tableRef} />
+                </div>
+              </div>
+
+              {data.shareClassBreakdown.length > 1 && (
+                <div ref={chartRef} className="mb-4">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={data.shareClassBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={90}
+                        paddingAngle={2}
+                        dataKey="capital"
+                        nameKey="name"
+                      >
+                        {data.shareClassBreakdown.map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number | undefined) => formatCurrency(value ?? 0, locale)} />
+                      <Legend formatter={(value) => <span className="text-xs">{value}</span>} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
               <div className="border rounded-md overflow-hidden">
-                <table className="w-full text-sm">
+                <table ref={tableRef} className="w-full text-sm">
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="text-left px-3 py-2 font-medium">{t('annualOverview.className')}</th>

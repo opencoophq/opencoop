@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
@@ -9,6 +9,7 @@ import { formatCurrency } from '@opencoop/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { ReportFilters } from './report-filters';
 import { ExportButtons } from './export-buttons';
+import { CopyTableButton } from './copy-table-button';
 
 interface Movement {
   date: string;
@@ -34,6 +35,7 @@ export function CapitalStatementPreview() {
   const [to, setTo] = useState(now.toISOString().split('T')[0]);
   const [data, setData] = useState<CapitalStatement | null>(null);
   const [loading, setLoading] = useState(false);
+  const tableRef = useRef<HTMLTableElement>(null);
 
   const generate = () => {
     if (!selectedCoop) return;
@@ -58,7 +60,10 @@ export function CapitalStatementPreview() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <ReportFilters type="dateRange" from={from} to={to} onFromChange={setFrom} onToChange={setTo} onGenerate={generate} loading={loading} />
-        <ExportButtons reportType="capital-statement" params={{ from, to }} disabled={!data} pdfSupported />
+        <div className="flex items-center gap-2">
+          <CopyTableButton tableRef={tableRef} />
+          <ExportButtons reportType="capital-statement" params={{ from, to }} disabled={!data} pdfSupported />
+        </div>
       </div>
 
       {data && (
@@ -80,7 +85,7 @@ export function CapitalStatementPreview() {
 
           {data.movements.length > 0 ? (
             <div className="border rounded-md overflow-auto">
-              <table className="w-full text-sm">
+              <table ref={tableRef} className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">{t('capitalStatement.date')}</th>

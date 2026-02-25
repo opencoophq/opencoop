@@ -1073,6 +1073,11 @@
     "downloading": "Bezig met downloaden...",
     "exportCsv": "CSV exporteren",
     "exportPdf": "PDF exporteren",
+    "copyAsImage": "Kopieer als afbeelding",
+    "copyTable": "Kopieer tabel",
+    "copied": "Gekopieerd!",
+    "downloadPng": "Download PNG",
+    "downloadSvg": "Download SVG",
     "year": "Jaar",
     "from": "Van",
     "to": "Tot",
@@ -1152,7 +1157,9 @@
       "capital": "Kapitaal",
       "shareholders": "Aandeelhouders",
       "shares": "Aandelen",
-      "percentage": "%"
+      "percentage": "%",
+      "distribution": "Kapitaalverdeling",
+      "details": "Projectdetails"
     }
   }
 }
