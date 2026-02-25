@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.49] - 2026-02-25
+
+### Fixed
+- Hardcoded "ea" (each) in sell shares dialog replaced with i18n translation (ea/stuk/pièce/Stück)
+
 ## [0.1.48] - 2026-02-25
 
 ### Fixed
