@@ -38,6 +38,7 @@ interface DatePickerProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  defaultMonth?: Date; // Month to show when calendar opens (defaults to current month)
 }
 
 export function DatePicker({
@@ -46,6 +47,7 @@ export function DatePicker({
   placeholder = 'Select date',
   disabled = false,
   className,
+  defaultMonth,
 }: DatePickerProps) {
   const { locale } = useLocale();
   const [open, setOpen] = React.useState(false);
@@ -101,8 +103,12 @@ export function DatePicker({
         <DayPicker
           mode="single"
           selected={selectedDate}
+          defaultMonth={selectedDate || defaultMonth}
           onSelect={handleSelect}
           locale={dateLocale}
+          captionLayout="dropdown"
+          startMonth={new Date(2000, 0)}
+          endMonth={new Date(2100, 11)}
           showOutsideDays
           classNames={{
             root: `${defaultClassNames.root} p-3`,
@@ -124,6 +130,10 @@ export function DatePicker({
             outside: `${defaultClassNames.outside} text-muted-foreground opacity-50`,
             disabled: `${defaultClassNames.disabled} text-muted-foreground opacity-50`,
             hidden: `${defaultClassNames.hidden} invisible`,
+            dropdowns: `${defaultClassNames.dropdowns} flex gap-2 justify-center`,
+            dropdown: `${defaultClassNames.dropdown} text-sm`,
+            months_dropdown: `${defaultClassNames.months_dropdown} rounded-md border border-input bg-background px-2 py-1`,
+            years_dropdown: `${defaultClassNames.years_dropdown} rounded-md border border-input bg-background px-2 py-1`,
           }}
           components={{
             Chevron: ({ orientation }) => {
