@@ -47,12 +47,19 @@ interface DividendPeriod {
   createdAt: string;
 }
 
+// Parse a number string that may use comma as decimal separator (NL/BE locale)
+const parseLocaleNumber = (val: unknown): number => {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string') return Number(val.replace(',', '.'));
+  return Number(val);
+};
+
 const dividendPeriodSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   year: z.coerce.number().min(2000).max(2100),
   exDividendDate: z.string().min(1, 'Ex-dividend date is required'),
   paymentDate: z.string().optional(),
-  dividendRate: z.coerce.number().min(0).max(100),
+  dividendRate: z.preprocess(parseLocaleNumber, z.number().min(0).max(100)),
 });
 
 type DividendPeriodForm = z.infer<typeof dividendPeriodSchema>;
@@ -381,7 +388,7 @@ export default function DividendsListPage() {
               </div>
               <div className="space-y-2">
                 <Label>{t('admin.dividends.dividendRate')} (%)</Label>
-                <Input type="number" step="0.01" {...form.register('dividendRate')} />
+                <Input type="text" inputMode="decimal" {...form.register('dividendRate')} />
               </div>
             </div>
 
@@ -396,6 +403,7 @@ export default function DividendsListPage() {
                       value={field.value}
                       onChange={field.onChange}
                       placeholder={t('common.selectDate')}
+                      defaultMonth={new Date(form.watch('year'), 11)}
                     />
                   )}
                 />
@@ -415,6 +423,7 @@ export default function DividendsListPage() {
                       value={field.value}
                       onChange={field.onChange}
                       placeholder={t('common.selectDate')}
+                      defaultMonth={new Date(form.watch('year') + 1, 0)}
                     />
                   )}
                 />
