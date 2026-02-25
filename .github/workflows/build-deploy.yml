@@ -95,7 +95,6 @@ jobs:
           retention-days: 7
 
   build:
-    needs: e2e
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -143,7 +142,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=migrate
 
   deploy-acc:
-    needs: build
+    needs: [e2e, build]
     if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     environment: acc
@@ -168,7 +167,7 @@ jobs:
             docker compose up -d
 
   deploy-prod:
-    needs: build
+    needs: [e2e, build]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment: prod
