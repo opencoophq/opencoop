@@ -160,7 +160,8 @@
       "PENDING": "En attente",
       "ACTIVE": "Actif",
       "INACTIVE": "Inactif"
-    }
+    },
+    "memberSince": "Membre depuis"
   },
   "shares": {
     "title": "Parts",

@@ -160,7 +160,8 @@
       "PENDING": "Pending",
       "ACTIVE": "Active",
       "INACTIVE": "Inactive"
-    }
+    },
+    "memberSince": "Member since"
   },
   "shares": {
     "title": "Shares",
