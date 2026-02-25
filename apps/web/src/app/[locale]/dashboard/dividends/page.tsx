@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@opencoop/shared';
 
 interface PayoutData {
   id: string;
@@ -77,9 +78,9 @@ export default function DividendsPage() {
                       {payout.dividendPeriod.name || `${payout.dividendPeriod.year}`}
                     </TableCell>
                     <TableCell>{payout.dividendPeriod.year}</TableCell>
-                    <TableCell className="text-right">€ {Number(payout.grossAmount).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">€ {Number(payout.withholdingTax).toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-medium">€ {Number(payout.netAmount).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(Number(payout.grossAmount), locale)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(Number(payout.withholdingTax), locale)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(Number(payout.netAmount), locale)}</TableCell>
                     <TableCell>
                       <Badge variant={payout.paidAt ? 'default' : 'secondary'}>
                         {payout.paidAt ? t('dividends.paid') : t('dividends.pending')}

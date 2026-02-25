@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@opencoop/shared';
 import { FileText, ArrowLeftRight, Coins, TrendingUp } from 'lucide-react';
 
 export default function DashboardPage() {
   const t = useTranslations();
+  const { locale } = useLocale();
   const [stats, setStats] = useState({
     totalShares: 0,
     totalValue: 0,
@@ -66,7 +69,7 @@ export default function DashboardPage() {
     },
     {
       title: t('shares.totalValue'),
-      value: `€ ${stats.totalValue.toFixed(2)}`,
+      value: formatCurrency(stats.totalValue, locale),
       icon: <TrendingUp className="h-5 w-5 text-green-600" />,
     },
     {
@@ -76,7 +79,7 @@ export default function DashboardPage() {
     },
     {
       title: t('dividends.title'),
-      value: `€ ${stats.totalDividends.toFixed(2)}`,
+      value: formatCurrency(stats.totalDividends, locale),
       icon: <Coins className="h-5 w-5 text-purple-600" />,
     },
   ];
