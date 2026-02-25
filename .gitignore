@@ -43,5 +43,8 @@ uploads/*
 # Docker
 .docker-data
 
+# Claude Code
+.claude/worktrees/
+
 # Allow project documentation
 !CLAUDE.md
