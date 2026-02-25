@@ -2,6 +2,15 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.41] - 2026-02-25
+
+### Fixed
+- Consolidated all email sending through EmailService (migration requests, feature requests, waitlist no longer bypass queue with raw nodemailer)
+- Added 5 missing minor-related email templates used by the birthday scheduler (minor-turned-adult, parent notification, upgrade notification/reminder, email setup reminder)
+
+### Changed
+- Form notifications (migration requests, feature requests, waitlist signups) now sent to hello@opencoop.be
+
 ## [0.1.38] - 2026-02-25
 
 ### Added

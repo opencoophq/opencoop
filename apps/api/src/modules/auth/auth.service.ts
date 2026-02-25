@@ -15,8 +15,6 @@ import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { WaitlistDto } from './dto/waitlist.dto';
 import { randomBytes } from 'crypto';
-import * as nodemailer from 'nodemailer';
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -716,9 +714,18 @@ export class AuthService {
       update: {},
     });
 
-    // Send confirmation email (don't block or fail the signup)
+    // Send confirmation email to user (don't block or fail the signup)
     this.sendWaitlistConfirmationEmail(waitlistDto.email.toLowerCase(), waitlistDto.locale).catch((err) => {
       console.error('Failed to send waitlist confirmation email:', err.message);
+    });
+
+    // Notify team
+    this.emailService.sendPlatformEmail({
+      to: 'hello@opencoop.be',
+      subject: `Waitlist signup: ${waitlistDto.email}`,
+      text: `New waitlist signup:\n\nEmail: ${waitlistDto.email}\nPlan: ${waitlistDto.plan || 'Not specified'}`,
+    }).catch((err) => {
+      console.error('Failed to send waitlist notification:', err.message);
     });
 
     return { message: 'Successfully joined the waitlist' };
@@ -775,26 +782,10 @@ export class AuthService {
   }
 
   private async sendWaitlistConfirmationEmail(email: string, locale?: string) {
-    const host = process.env.SMTP_HOST;
-    if (!host) return;
-
-    const port = parseInt(process.env.SMTP_PORT || '587', 10);
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const from = process.env.SMTP_FROM || 'OpenCoop <noreply@opencoop.be>';
-
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: user && pass ? { user, pass } : undefined,
-    });
-
     const content = this.getWaitlistEmailContent(locale);
     const sign = this.getWaitlistClosing(locale);
 
-    await transporter.sendMail({
-      from,
+    await this.emailService.sendPlatformEmail({
       to: email,
       subject: content.subject,
       html: `

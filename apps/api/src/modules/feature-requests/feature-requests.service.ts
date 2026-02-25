@@ -34,6 +34,22 @@ export class FeatureRequestsService {
       this.logger.error('Failed to send thank-you email:', err.message);
     });
 
+    // Fire-and-forget: notify team
+    this.emailService.sendPlatformEmail({
+      to: 'hello@opencoop.be',
+      subject: `Feature request: ${dto.title}`,
+      text: [
+        `New feature request from ${dto.name} (${dto.email})`,
+        ``,
+        `Title: ${dto.title}`,
+        ``,
+        `Description:`,
+        dto.description,
+      ].join('\n'),
+    }).catch((err) => {
+      this.logger.error('Failed to send feature request notification:', err.message);
+    });
+
     return { message: 'Feature request submitted successfully' };
   }
 
