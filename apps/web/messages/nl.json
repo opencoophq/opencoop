@@ -75,7 +75,7 @@
     "loginSuccess": "Succesvol ingelogd",
     "loginError": "Inloggen mislukt",
     "registerSuccess": "Registratie succesvol",
-    "passwordResetSent": "Password reset e-mail verzonden",
+    "passwordResetSent": "E-mail voor wachtwoordherstel verzonden",
     "passwordResetSuccess": "Wachtwoord succesvol gewijzigd",
     "invalidCredentials": "Ongeldige inloggegevens",
     "emailNotVerified": "E-mail niet geverifieerd",
