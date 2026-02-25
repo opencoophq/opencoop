@@ -1015,5 +1015,121 @@
       "generic": "Er is iets misgegaan. Probeer het opnieuw."
     },
     "pendingActivation": "Uw coöperatie wordt beoordeeld. We activeren deze binnenkort."
+  },
+  "analytics": {
+    "capitalTimeline": "Kapitaal over tijd",
+    "capitalByProject": "Kapitaal per project",
+    "shareholderGrowth": "Groei aandeelhouders",
+    "transactionActivity": "Transactieactiviteit",
+    "totalCapital": "Totaal kapitaal",
+    "total": "Totaal",
+    "cumulative": "Cumulatief",
+    "noData": "Nog geen gegevens beschikbaar",
+    "periods": {
+      "month": "Maandelijks",
+      "quarter": "Kwartaal",
+      "year": "Jaarlijks",
+      "all": "Alles"
+    },
+    "types": {
+      "individual": "Particulier",
+      "company": "Bedrijf",
+      "minor": "Minderjarige"
+    },
+    "transactionTypes": {
+      "purchases": "Aankopen",
+      "sales": "Verkopen",
+      "transfers": "Overdrachten"
+    }
+  },
+  "reports": {
+    "title": "Rapporten",
+    "description": "Genereer en download rapporten voor bestuursvergaderingen en de algemene vergadering.",
+    "selectCoop": "Selecteer een coöperatie om rapporten te genereren",
+    "generate": "Genereren",
+    "generating": "Bezig met genereren...",
+    "downloading": "Bezig met downloaden...",
+    "exportCsv": "CSV exporteren",
+    "year": "Jaar",
+    "from": "Van",
+    "to": "Tot",
+    "noMovements": "Geen kapitaalbewegingen in deze periode.",
+    "common": {
+      "total": "Totaal"
+    },
+    "tabs": {
+      "annualOverview": "Jaaroverzicht",
+      "capitalStatement": "Kapitaaloverzicht",
+      "shareholderRegister": "Aandeelhoudersregister",
+      "dividendSummary": "Dividendoverzicht",
+      "projectInvestment": "Projectinvestering"
+    },
+    "types": {
+      "purchase": "Aankoop",
+      "sale": "Verkoop",
+      "transferIn": "Overdracht in",
+      "transferOut": "Overdracht uit"
+    },
+    "shareholderTypes": {
+      "individual": "Particulier",
+      "company": "Bedrijf",
+      "minor": "Minderjarige"
+    },
+    "annualOverview": {
+      "capitalStart": "Kapitaal (begin jaar)",
+      "capitalEnd": "Kapitaal (einde jaar)",
+      "shareholdersStart": "Aandeelhouders (begin)",
+      "shareholdersEnd": "Aandeelhouders (einde)",
+      "transactionSummary": "Transacties",
+      "dividendSummary": "Dividenden",
+      "purchases": "Aankopen",
+      "sales": "Verkopen",
+      "gross": "Bruto",
+      "net": "Netto",
+      "shareClassBreakdown": "Verdeling per aandelenklasse",
+      "className": "Klasse",
+      "code": "Code",
+      "shares": "Aandelen",
+      "capital": "Kapitaal"
+    },
+    "capitalStatement": {
+      "openingBalance": "Beginsaldo",
+      "closingBalance": "Eindsaldo",
+      "date": "Datum",
+      "type": "Type",
+      "shareholder": "Aandeelhouder",
+      "shareClass": "Aandelenklasse",
+      "qty": "Aantal",
+      "amount": "Bedrag"
+    },
+    "shareholderRegister": {
+      "name": "Naam",
+      "type": "Type",
+      "email": "E-mail",
+      "shares": "Aandelen",
+      "value": "Waarde",
+      "memberSince": "Lid sinds",
+      "total": "Totaal"
+    },
+    "dividendSummary": {
+      "noPeriod": "Geen dividendperiode gevonden voor dit jaar.",
+      "totalGross": "Totaal bruto",
+      "totalTax": "Roerende voorheffing",
+      "totalNet": "Totaal netto",
+      "shareholder": "Aandeelhouder",
+      "shares": "Aandelen",
+      "gross": "Bruto",
+      "tax": "Belasting",
+      "net": "Netto"
+    },
+    "projectInvestment": {
+      "noProjects": "Geen projecten gevonden.",
+      "project": "Project",
+      "type": "Type",
+      "capital": "Kapitaal",
+      "shareholders": "Aandeelhouders",
+      "shares": "Aandelen",
+      "percentage": "%"
+    }
   }
 }

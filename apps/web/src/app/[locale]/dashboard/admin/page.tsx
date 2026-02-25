@@ -8,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
 import { Users, FileText, TrendingUp, ArrowLeftRight, CreditCard, UserCheck } from 'lucide-react';
+import { CapitalTimelineChart } from '@/components/charts/capital-timeline-chart';
+import { CapitalByProjectChart } from '@/components/charts/capital-by-project-chart';
+import { ShareholderGrowthChart } from '@/components/charts/shareholder-growth-chart';
+import { TransactionActivityChart } from '@/components/charts/transaction-activity-chart';
 
 interface Stats {
   totalShareholders: number;
@@ -82,10 +86,12 @@ export default function AdminPage() {
     : [];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">
         {selectedCoop.name} - {t('common.overview')}
       </h1>
+
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((card) => (
           <Card key={card.title}>
@@ -98,6 +104,14 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CapitalTimelineChart />
+        <CapitalByProjectChart />
+        <ShareholderGrowthChart />
+        <TransactionActivityChart />
       </div>
     </div>
   );

@@ -97,7 +97,7 @@ export default function TransactionsPage() {
                     <TableCell className="text-right">{tx.quantity}</TableCell>
                     <TableCell className="text-right">{formatCurrency(Number(tx.totalAmount), locale)}</TableCell>
                     <TableCell>
-                      <Badge variant={statusColor(tx.status)}>{tx.status}</Badge>
+                      <Badge variant={statusColor(tx.status)}>{t(`transactions.statuses.${tx.status}`)}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}

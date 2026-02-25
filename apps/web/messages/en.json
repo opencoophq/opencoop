@@ -1015,5 +1015,121 @@
       "generic": "Something went wrong. Please try again."
     },
     "pendingActivation": "Your cooperative is being reviewed. We'll activate it shortly."
+  },
+  "analytics": {
+    "capitalTimeline": "Capital Over Time",
+    "capitalByProject": "Capital by Project",
+    "shareholderGrowth": "Shareholder Growth",
+    "transactionActivity": "Transaction Activity",
+    "totalCapital": "Total Capital",
+    "total": "Total",
+    "cumulative": "Cumulative",
+    "noData": "No data available yet",
+    "periods": {
+      "month": "Monthly",
+      "quarter": "Quarterly",
+      "year": "Yearly",
+      "all": "All"
+    },
+    "types": {
+      "individual": "Individual",
+      "company": "Company",
+      "minor": "Minor"
+    },
+    "transactionTypes": {
+      "purchases": "Purchases",
+      "sales": "Sales",
+      "transfers": "Transfers"
+    }
+  },
+  "reports": {
+    "title": "Reports",
+    "description": "Generate and download reports for board meetings and shareholder assemblies.",
+    "selectCoop": "Select a cooperative to generate reports",
+    "generate": "Generate",
+    "generating": "Generating...",
+    "downloading": "Downloading...",
+    "exportCsv": "Export CSV",
+    "year": "Year",
+    "from": "From",
+    "to": "To",
+    "noMovements": "No capital movements in this period.",
+    "common": {
+      "total": "Total"
+    },
+    "tabs": {
+      "annualOverview": "Annual Overview",
+      "capitalStatement": "Capital Statement",
+      "shareholderRegister": "Shareholder Register",
+      "dividendSummary": "Dividend Summary",
+      "projectInvestment": "Project Investment"
+    },
+    "types": {
+      "purchase": "Purchase",
+      "sale": "Sale",
+      "transferIn": "Transfer In",
+      "transferOut": "Transfer Out"
+    },
+    "shareholderTypes": {
+      "individual": "Individual",
+      "company": "Company",
+      "minor": "Minor"
+    },
+    "annualOverview": {
+      "capitalStart": "Capital (start of year)",
+      "capitalEnd": "Capital (end of year)",
+      "shareholdersStart": "Shareholders (start)",
+      "shareholdersEnd": "Shareholders (end)",
+      "transactionSummary": "Transactions",
+      "dividendSummary": "Dividends",
+      "purchases": "Purchases",
+      "sales": "Sales",
+      "gross": "Gross",
+      "net": "Net",
+      "shareClassBreakdown": "Share Class Breakdown",
+      "className": "Class",
+      "code": "Code",
+      "shares": "Shares",
+      "capital": "Capital"
+    },
+    "capitalStatement": {
+      "openingBalance": "Opening Balance",
+      "closingBalance": "Closing Balance",
+      "date": "Date",
+      "type": "Type",
+      "shareholder": "Shareholder",
+      "shareClass": "Share Class",
+      "qty": "Qty",
+      "amount": "Amount"
+    },
+    "shareholderRegister": {
+      "name": "Name",
+      "type": "Type",
+      "email": "Email",
+      "shares": "Shares",
+      "value": "Value",
+      "memberSince": "Member Since",
+      "total": "Total"
+    },
+    "dividendSummary": {
+      "noPeriod": "No dividend period found for this year.",
+      "totalGross": "Total Gross",
+      "totalTax": "Withholding Tax",
+      "totalNet": "Total Net",
+      "shareholder": "Shareholder",
+      "shares": "Shares",
+      "gross": "Gross",
+      "tax": "Tax",
+      "net": "Net"
+    },
+    "projectInvestment": {
+      "noProjects": "No projects found.",
+      "project": "Project",
+      "type": "Type",
+      "capital": "Capital",
+      "shareholders": "Shareholders",
+      "shares": "Shares",
+      "percentage": "%"
+    }
   }
 }

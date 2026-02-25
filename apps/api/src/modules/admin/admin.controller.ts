@@ -22,6 +22,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { CoopsService } from '../coops/coops.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AnalyticsService } from './analytics.service';
+import { ReportsService } from './reports.service';
 import { ShareholdersService } from '../shareholders/shareholders.service';
 import { ShareClassesService } from '../shares/share-classes.service';
 import { ProjectsService } from '../projects/projects.service';
@@ -48,6 +50,8 @@ export class AdminController {
   constructor(
     private coopsService: CoopsService,
     private prisma: PrismaService,
+    private analyticsService: AnalyticsService,
+    private reportsService: ReportsService,
     private shareholdersService: ShareholdersService,
     private shareClassesService: ShareClassesService,
     private projectsService: ProjectsService,
@@ -402,6 +406,117 @@ export class AdminController {
     const csv = await this.dividendsService.exportToCsv(id);
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="dividend-payouts-${id}.csv"`);
+    res.send(csv);
+  }
+
+  // ==================== ANALYTICS ====================
+
+  @Get('analytics/capital-timeline')
+  @ApiOperation({ summary: 'Get capital timeline data' })
+  async getCapitalTimeline(
+    @Param('coopId') coopId: string,
+    @Query('period') period?: string,
+  ) {
+    const validPeriod = ['month', 'quarter', 'year', 'all'].includes(period || '')
+      ? (period as 'month' | 'quarter' | 'year' | 'all')
+      : 'month';
+    return this.analyticsService.getCapitalTimeline(coopId, validPeriod);
+  }
+
+  @Get('analytics/capital-by-project')
+  @ApiOperation({ summary: 'Get capital breakdown by project' })
+  async getCapitalByProject(@Param('coopId') coopId: string) {
+    return this.analyticsService.getCapitalByProject(coopId);
+  }
+
+  @Get('analytics/shareholder-growth')
+  @ApiOperation({ summary: 'Get shareholder growth data' })
+  async getShareholderGrowth(
+    @Param('coopId') coopId: string,
+    @Query('period') period?: string,
+  ) {
+    const validPeriod = ['month', 'quarter', 'year', 'all'].includes(period || '')
+      ? (period as 'month' | 'quarter' | 'year' | 'all')
+      : 'month';
+    return this.analyticsService.getShareholderGrowth(coopId, validPeriod);
+  }
+
+  @Get('analytics/transaction-summary')
+  @ApiOperation({ summary: 'Get transaction summary data' })
+  async getTransactionSummary(
+    @Param('coopId') coopId: string,
+    @Query('period') period?: string,
+  ) {
+    const validPeriod = ['month', 'quarter', 'year', 'all'].includes(period || '')
+      ? (period as 'month' | 'quarter' | 'year' | 'all')
+      : 'month';
+    return this.analyticsService.getTransactionSummary(coopId, validPeriod);
+  }
+
+  // ==================== REPORTS ====================
+
+  @Get('reports/annual-overview')
+  @ApiOperation({ summary: 'Get annual overview report data' })
+  async getAnnualOverview(
+    @Param('coopId') coopId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = parseInt(year || '', 10) || new Date().getFullYear();
+    return this.reportsService.getAnnualOverview(coopId, y);
+  }
+
+  @Get('reports/capital-statement')
+  @ApiOperation({ summary: 'Get capital statement report data' })
+  async getCapitalStatement(
+    @Param('coopId') coopId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    const now = new Date();
+    const fromDate = from || `${now.getFullYear()}-01-01`;
+    const toDate = to || now.toISOString().split('T')[0];
+    return this.reportsService.getCapitalStatement(coopId, fromDate, toDate);
+  }
+
+  @Get('reports/shareholder-register')
+  @ApiOperation({ summary: 'Get shareholder register report data' })
+  async getShareholderRegister(
+    @Param('coopId') coopId: string,
+    @Query('date') date?: string,
+  ) {
+    return this.reportsService.getShareholderRegister(coopId, date);
+  }
+
+  @Get('reports/dividend-summary')
+  @ApiOperation({ summary: 'Get dividend summary report data' })
+  async getDividendSummary(
+    @Param('coopId') coopId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = parseInt(year || '', 10) || new Date().getFullYear();
+    return this.reportsService.getDividendSummary(coopId, y);
+  }
+
+  @Get('reports/project-investment')
+  @ApiOperation({ summary: 'Get project investment report data' })
+  async getProjectInvestment(
+    @Param('coopId') coopId: string,
+    @Query('projectId') projectId?: string,
+  ) {
+    return this.reportsService.getProjectInvestment(coopId, projectId);
+  }
+
+  @Get('reports/:type/csv')
+  @ApiOperation({ summary: 'Export report as CSV' })
+  async exportReportCsv(
+    @Param('coopId') coopId: string,
+    @Param('type') type: string,
+    @Query() params: Record<string, string>,
+    @Res() res: Response,
+  ) {
+    const { csv } = await this.reportsService.exportReport(coopId, type, params);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.csv"`);
     res.send(csv);
   }
 

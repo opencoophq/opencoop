@@ -1015,5 +1015,121 @@
       "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
     },
     "pendingActivation": "Ihre Genossenschaft wird geprüft. Wir aktivieren sie in Kürze."
+  },
+  "analytics": {
+    "capitalTimeline": "Kapital im Zeitverlauf",
+    "capitalByProject": "Kapital nach Projekt",
+    "shareholderGrowth": "Wachstum der Anteilseigner",
+    "transactionActivity": "Transaktionsaktivität",
+    "totalCapital": "Gesamtkapital",
+    "total": "Gesamt",
+    "cumulative": "Kumulativ",
+    "noData": "Noch keine Daten verfügbar",
+    "periods": {
+      "month": "Monatlich",
+      "quarter": "Quartal",
+      "year": "Jährlich",
+      "all": "Alle"
+    },
+    "types": {
+      "individual": "Einzelperson",
+      "company": "Unternehmen",
+      "minor": "Minderjährig"
+    },
+    "transactionTypes": {
+      "purchases": "Käufe",
+      "sales": "Verkäufe",
+      "transfers": "Übertragungen"
+    }
+  },
+  "reports": {
+    "title": "Berichte",
+    "description": "Erstellen und laden Sie Berichte für Vorstandssitzungen und die Hauptversammlung herunter.",
+    "selectCoop": "Wählen Sie eine Genossenschaft, um Berichte zu erstellen",
+    "generate": "Erstellen",
+    "generating": "Wird erstellt...",
+    "downloading": "Wird heruntergeladen...",
+    "exportCsv": "CSV exportieren",
+    "year": "Jahr",
+    "from": "Von",
+    "to": "Bis",
+    "noMovements": "Keine Kapitalbewegungen in diesem Zeitraum.",
+    "common": {
+      "total": "Gesamt"
+    },
+    "tabs": {
+      "annualOverview": "Jahresübersicht",
+      "capitalStatement": "Kapitalübersicht",
+      "shareholderRegister": "Anteilseignerregister",
+      "dividendSummary": "Dividendenübersicht",
+      "projectInvestment": "Projektinvestition"
+    },
+    "types": {
+      "purchase": "Kauf",
+      "sale": "Verkauf",
+      "transferIn": "Übertragung ein",
+      "transferOut": "Übertragung aus"
+    },
+    "shareholderTypes": {
+      "individual": "Einzelperson",
+      "company": "Unternehmen",
+      "minor": "Minderjährig"
+    },
+    "annualOverview": {
+      "capitalStart": "Kapital (Jahresbeginn)",
+      "capitalEnd": "Kapital (Jahresende)",
+      "shareholdersStart": "Anteilseigner (Anfang)",
+      "shareholdersEnd": "Anteilseigner (Ende)",
+      "transactionSummary": "Transaktionen",
+      "dividendSummary": "Dividenden",
+      "purchases": "Käufe",
+      "sales": "Verkäufe",
+      "gross": "Brutto",
+      "net": "Netto",
+      "shareClassBreakdown": "Aufschlüsselung nach Anteilsklasse",
+      "className": "Klasse",
+      "code": "Code",
+      "shares": "Anteile",
+      "capital": "Kapital"
+    },
+    "capitalStatement": {
+      "openingBalance": "Anfangssaldo",
+      "closingBalance": "Endsaldo",
+      "date": "Datum",
+      "type": "Typ",
+      "shareholder": "Anteilseigner",
+      "shareClass": "Anteilsklasse",
+      "qty": "Anz.",
+      "amount": "Betrag"
+    },
+    "shareholderRegister": {
+      "name": "Name",
+      "type": "Typ",
+      "email": "E-Mail",
+      "shares": "Anteile",
+      "value": "Wert",
+      "memberSince": "Mitglied seit",
+      "total": "Gesamt"
+    },
+    "dividendSummary": {
+      "noPeriod": "Keine Dividendenperiode für dieses Jahr gefunden.",
+      "totalGross": "Gesamt brutto",
+      "totalTax": "Quellensteuer",
+      "totalNet": "Gesamt netto",
+      "shareholder": "Anteilseigner",
+      "shares": "Anteile",
+      "gross": "Brutto",
+      "tax": "Steuer",
+      "net": "Netto"
+    },
+    "projectInvestment": {
+      "noProjects": "Keine Projekte gefunden.",
+      "project": "Projekt",
+      "type": "Typ",
+      "capital": "Kapital",
+      "shareholders": "Anteilseigner",
+      "shares": "Anteile",
+      "percentage": "%"
+    }
   }
 }
