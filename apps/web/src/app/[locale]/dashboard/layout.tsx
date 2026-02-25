@@ -40,6 +40,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  badge?: number;
 }
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -49,6 +50,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const { selectedCoop, adminCoops, setSelectedCoop, setAdminCoops } = useAdmin();
   const [user, setUser] = useState<{ email: string; name?: string; role: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [adminStats, setAdminStats] = useState<{
+    pendingTransactions: number;
+    pendingShareholders: number;
+    unmatchedBankTransactions: number;
+  } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -84,6 +90,21 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Fetch admin stats for attention dots
+  useEffect(() => {
+    if (!selectedCoop) return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/coops/${selectedCoop.id}/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setAdminStats(data);
+      })
+      .catch(() => {});
+  }, [selectedCoop]);
+
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
@@ -105,12 +126,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const adminNav: NavItem[] = selectedCoop
     ? [
         { href: '/dashboard/admin', label: t('common.overview'), icon: <LayoutDashboard className="h-4 w-4" /> },
-        { href: '/dashboard/admin/shareholders', label: t('admin.shareholders.title'), icon: <Users className="h-4 w-4" /> },
+        { href: '/dashboard/admin/shareholders', label: t('admin.shareholders.title'), icon: <Users className="h-4 w-4" />, badge: adminStats?.pendingShareholders },
         { href: '/dashboard/admin/share-classes', label: t('admin.shareClasses.title'), icon: <FileText className="h-4 w-4" /> },
-        { href: '/dashboard/admin/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" /> },
+        { href: '/dashboard/admin/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" />, badge: adminStats?.pendingTransactions },
         { href: '/dashboard/admin/projects', label: t('admin.projects.title'), icon: <Building2 className="h-4 w-4" /> },
         { href: '/dashboard/admin/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
-        { href: '/dashboard/admin/bank-import', label: t('admin.bankImport.title'), icon: <Upload className="h-4 w-4" /> },
+        { href: '/dashboard/admin/bank-import', label: t('admin.bankImport.title'), icon: <Upload className="h-4 w-4" />, badge: adminStats?.unmatchedBankTransactions },
         { href: '/dashboard/admin/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
         { href: '/dashboard/admin/branding', label: t('admin.branding.title'), icon: <Palette className="h-4 w-4" /> },
       ]
@@ -144,7 +165,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               onClick={() => setSidebarOpen(false)}
             >
               {item.icon}
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {!!item.badge && (
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-medium text-white">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}
