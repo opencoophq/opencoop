@@ -37,9 +37,10 @@ export default defineConfig({
       command: isCI
         ? 'cd .. && node apps/api/dist/main'
         : 'cd .. && pnpm dev --filter @opencoop/api',
-      url: 'http://localhost:3001/api/docs',
+      url: 'http://localhost:3001/docs',
       reuseExistingServer: !isCI,
-      timeout: isCI ? 30_000 : 120_000,
+      stdout: 'pipe',
+      timeout: isCI ? 60_000 : 120_000,
       env: {
         DATABASE_URL: 'postgresql://opencoop:opencoop@localhost:5433/opencoop_test',
         REDIS_URL: 'redis://localhost:6380',
@@ -53,7 +54,8 @@ export default defineConfig({
         : 'cd .. && pnpm dev --filter @opencoop/web',
       url: 'http://localhost:3002',
       reuseExistingServer: !isCI,
-      timeout: isCI ? 30_000 : 120_000,
+      stdout: 'pipe',
+      timeout: isCI ? 60_000 : 120_000,
       env: {
         API_URL: 'http://localhost:3001',
         NEXT_PUBLIC_API_URL: 'http://localhost:3001',
