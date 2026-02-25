@@ -251,7 +251,7 @@ export default function ShareholderDetailPage() {
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
         { method: 'PUT', body },
       );
-      setSuccess(t('common.success'));
+      setSuccess(t('common.savedSuccessfully'));
       setShareholder(updated);
     } catch {
       setError(t('common.error'));
