@@ -1,12 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const isCI = !!process.env.CI;
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
   workers: 1,
-  reporter: process.env.CI ? 'github' : 'html',
+  reporter: isCI ? 'github' : 'html',
   timeout: 30_000,
 
   use: {
@@ -32,10 +34,12 @@ export default defineConfig({
 
   webServer: [
     {
-      command: 'cd .. && pnpm dev --filter @opencoop/api',
+      command: isCI
+        ? 'cd .. && node apps/api/dist/main'
+        : 'cd .. && pnpm dev --filter @opencoop/api',
       url: 'http://localhost:3001/api/docs',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
+      reuseExistingServer: !isCI,
+      timeout: isCI ? 30_000 : 120_000,
       env: {
         DATABASE_URL: 'postgresql://opencoop:opencoop@localhost:5433/opencoop_test',
         REDIS_URL: 'redis://localhost:6380',
@@ -44,10 +48,12 @@ export default defineConfig({
       },
     },
     {
-      command: 'cd .. && pnpm dev --filter @opencoop/web',
+      command: isCI
+        ? 'cd ../apps/web && npx next start -p 3002'
+        : 'cd .. && pnpm dev --filter @opencoop/web',
       url: 'http://localhost:3002',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
+      reuseExistingServer: !isCI,
+      timeout: isCI ? 30_000 : 120_000,
       env: {
         API_URL: 'http://localhost:3001',
         NEXT_PUBLIC_API_URL: 'http://localhost:3001',
