@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@opencoop/shared';
 import { Check, X } from 'lucide-react';
 
 interface TransactionRow {
@@ -142,7 +143,7 @@ export default function AdminTransactionsPage() {
                     </TableCell>
                     <TableCell className="text-right">{tx.quantity}</TableCell>
                     <TableCell className="text-right">
-                      € {Number(tx.totalAmount).toFixed(2)}
+                      {formatCurrency(Number(tx.totalAmount), locale)}
                     </TableCell>
                     <TableCell>{new Date(tx.createdAt).toLocaleDateString(locale)}</TableCell>
                     <TableCell>

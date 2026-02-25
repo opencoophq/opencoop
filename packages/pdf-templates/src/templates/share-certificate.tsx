@@ -152,8 +152,9 @@ export const ShareCertificate: React.FC<ShareCertificateProps> = ({
     types: { INDIVIDUAL: 'Individual', COMPANY: 'Company', MINOR: 'Minor' },
   };
 
+  const fmtLocale = locale === 'nl' ? 'nl-BE' : 'en-US';
   const formatCurrency = (amount: number) =>
-    `€ ${amount.toFixed(2).replace('.', ',')}`;
+    new Intl.NumberFormat(fmtLocale, { style: 'currency', currency: 'EUR' }).format(amount);
 
   return (
     <Document>

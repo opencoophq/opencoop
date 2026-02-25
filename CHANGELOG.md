@@ -1,0 +1,109 @@
+# Changelog
+
+All notable changes to OpenCoop are documented in this file.
+
+## [0.1.21] - 2026-02-25
+
+### Added
+- Approve/reject actions on shareholder detail transaction history (admins no longer need to navigate to the transactions panel)
+
+### Improved
+- Locale-aware currency formatting across all dashboard pages (uses `formatCurrency` from shared package)
+
+## [0.1.20] - 2026-02-25
+
+### Added
+- Attention badges with counters on admin sidebar nav items (pending shareholders, pending transactions, unmatched bank imports)
+
+## [0.1.19] - 2026-02-25
+
+### Fixed
+- Pagination crash (500 Internal Server Error) on transactions and shareholders endpoints when query params are omitted (NestJS `enableImplicitConversion` converts missing params to `NaN`)
+
+## [0.1.18] - 2026-02-24
+
+### Added
+- Language switcher and theme toggle to dashboard portal (shared components with marketing pages)
+
+### Fixed
+- Dark mode in coop portal using hardcoded colors instead of theme-aware CSS variables
+
+## [0.1.17] - 2026-02-24
+
+### Changed
+- Hero demo button scrolls to demo section instead of navigating away
+
+## [0.1.16] - 2026-02-24
+
+### Changed
+- Added GitHub button back to hero, demo button in the middle
+
+## [0.1.15] - 2026-02-24
+
+### Added
+- Demo CTA section on homepage with hero button linking to it
+
+## [0.1.14] - 2026-02-24
+
+### Added
+- Demo page with credentials for test-driving the platform
+
+## [0.1.13] - 2026-02-23
+
+### Improved
+- User email in sidebar links to account settings
+
+## [0.1.12] - 2026-02-23
+
+### Changed
+- Set `emailEnabled=false` for demo coop via migration
+
+## [0.1.11] - 2026-02-23
+
+### Added
+- Per-coop email provider settings with disable toggle (allows SYSTEM_ADMIN to control email sending per tenant)
+
+## [0.1.10] - 2026-02-23
+
+### Changed
+- Hide shareholder nav section for admin users (admins see only admin and system nav)
+
+## [0.1.9] - 2026-02-23
+
+### Added
+- Responsive mobile hamburger menu to marketing nav
+
+## [0.1.8] - 2026-02-23
+
+### Changed
+- Use Building2 icon as default logo on coop login page
+
+## [0.1.7] - 2026-02-23
+
+### Changed
+- Revised pricing tiers from Starter/Growth to Essentials/Professional
+
+## [0.1.6] - 2026-02-23
+
+### Changed
+- Replaced theme toggle button with animated slider switch
+
+## [0.1.5] - 2026-02-23
+
+### Added
+- Dark mode support with system preference detection and manual toggle
+
+## [0.1.4] - 2026-02-23
+
+### Changed
+- Default pricing page to monthly billing toggle
+
+## [0.1.3] - 2026-02-23
+
+### Fixed
+- Production deploy race condition by building images on tag push
+
+## [0.1.2] - 2026-02-23
+
+### Added
+- French and German locales with flag-based language switcher (NL, EN, FR, DE)

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@opencoop/shared';
 import { Building2, Users, UserCheck, TrendingUp } from 'lucide-react';
 
 interface SystemStats {
@@ -16,6 +18,7 @@ interface SystemStats {
 
 export default function SystemPage() {
   const t = useTranslations();
+  const { locale } = useLocale();
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +41,7 @@ export default function SystemPage() {
     { title: t('system.coops.total'), value: stats.totalCoops, icon: <Building2 className="h-5 w-5 text-blue-600" /> },
     { title: t('system.users.total'), value: stats.totalUsers, icon: <Users className="h-5 w-5 text-indigo-600" /> },
     { title: t('system.shareholders.total'), value: stats.totalShareholders, icon: <UserCheck className="h-5 w-5 text-green-600" /> },
-    { title: t('admin.totalCapital'), value: `€ ${stats.totalCapital.toFixed(2)}`, icon: <TrendingUp className="h-5 w-5 text-emerald-600" /> },
+    { title: t('admin.totalCapital'), value: formatCurrency(stats.totalCapital, locale), icon: <TrendingUp className="h-5 w-5 text-emerald-600" /> },
   ] : [];
 
   return (
