@@ -1206,9 +1206,11 @@
       "className": "Klasse",
       "code": "Code",
       "shares": "Anteile",
-      "capital": "Kapital"
+      "capital": "Kapital",
+      "capitalGrowthByProject": "Kapitalentwicklung nach Projekt"
     },
     "capitalStatement": {
+      "capitalGrowthByProject": "Kapitalentwicklung nach Projekt",
       "openingBalance": "Anfangssaldo",
       "closingBalance": "Endsaldo",
       "date": "Datum",

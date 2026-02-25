@@ -7,9 +7,22 @@ import { useLocale } from '@/contexts/locale-context';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
 import { Card, CardContent } from '@/components/ui/card';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ReportFilters } from './report-filters';
 import { ExportButtons } from './export-buttons';
 import { CopyTableButton } from './copy-table-button';
+import { ChartActionBar } from '@/components/charts/chart-action-bar';
+
+const COLORS = [
+  'hsl(221, 83%, 53%)',
+  'hsl(142, 71%, 45%)',
+  'hsl(262, 83%, 58%)',
+  'hsl(25, 95%, 53%)',
+  'hsl(350, 89%, 60%)',
+  'hsl(174, 72%, 40%)',
+  'hsl(47, 96%, 53%)',
+  'hsl(280, 67%, 51%)',
+];
 
 interface Movement {
   date: string;
@@ -20,10 +33,17 @@ interface Movement {
   amount: number;
 }
 
+interface CapitalTimelineBucket {
+  date: string;
+  projects: { projectId: string | null; projectName: string; capital: number }[];
+  total: number;
+}
+
 interface CapitalStatement {
   openingBalance: number;
   closingBalance: number;
   movements: Movement[];
+  capitalTimeline?: CapitalTimelineBucket[];
 }
 
 export function CapitalStatementPreview() {
@@ -36,6 +56,7 @@ export function CapitalStatementPreview() {
   const [data, setData] = useState<CapitalStatement | null>(null);
   const [loading, setLoading] = useState(false);
   const tableRef = useRef<HTMLTableElement>(null);
+  const areaChartRef = useRef<HTMLDivElement>(null);
 
   const generate = () => {
     if (!selectedCoop) return;
@@ -82,6 +103,66 @@ export function CapitalStatementPreview() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Capital Growth by Project — stacked area chart */}
+          {data.capitalTimeline && data.capitalTimeline.length > 0 && (() => {
+            const projectKeys = data.capitalTimeline[0].projects.map((p) => p.projectId ?? 'unassigned');
+            const projectLabels = new Map(data.capitalTimeline[0].projects.map((p) => [p.projectId ?? 'unassigned', p.projectName]));
+            const chartData = data.capitalTimeline.map((b) => {
+              const point: Record<string, unknown> = { date: b.date };
+              for (const p of b.projects) {
+                point[p.projectId ?? 'unassigned'] = p.capital;
+              }
+              return point;
+            });
+            return (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold">{t('capitalStatement.capitalGrowthByProject')}</h3>
+                  <ChartActionBar chartRef={areaChartRef} filename={`capital-growth-${from}-${to}`} />
+                </div>
+                <div ref={areaChartRef}>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(d: string) => {
+                          const dt = new Date(d);
+                          return `${dt.getUTCMonth() + 1}/${String(dt.getUTCFullYear()).slice(2)}`;
+                        }}
+                        fontSize={11}
+                      />
+                      <YAxis
+                        tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
+                        fontSize={11}
+                      />
+                      <Tooltip
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        formatter={(value: any, name: any) => [
+                          formatCurrency(Number(value) || 0, locale),
+                          projectLabels.get(String(name)) ?? name,
+                        ]}
+                        labelFormatter={(d) => new Date(String(d)).toLocaleDateString(locale)}
+                      />
+                      <Legend formatter={(value) => <span className="text-xs">{projectLabels.get(value) ?? value}</span>} />
+                      {projectKeys.map((key, i) => (
+                        <Area
+                          key={key}
+                          type="monotone"
+                          dataKey={key}
+                          stackId="1"
+                          stroke={COLORS[i % COLORS.length]}
+                          fill={COLORS[i % COLORS.length]}
+                          fillOpacity={0.6}
+                        />
+                      ))}
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            );
+          })()}
 
           {data.movements.length > 0 ? (
             <div className="border rounded-md overflow-auto">
