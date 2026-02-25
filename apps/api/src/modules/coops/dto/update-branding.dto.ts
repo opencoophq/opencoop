@@ -2,11 +2,6 @@ import { IsString, IsOptional, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateBrandingDto {
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  logoUrl?: string;
-
   @ApiProperty({ required: false, example: '#1e40af' })
   @IsOptional()
   @IsString()

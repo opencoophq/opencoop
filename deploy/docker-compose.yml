@@ -55,6 +55,8 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    volumes:
+      - api_uploads:/app/uploads
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -83,6 +85,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  api_uploads:
 
 networks:
   internal:
