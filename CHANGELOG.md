@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.45] - 2026-02-25
+
+### Fixed
+- Dividend date picker: added dropdown year/month navigation so users can quickly select dates in past years (e.g. 2024) instead of clicking arrows dozens of times
+- Dividend date pickers now open to the correct month (ex-dividend → Dec of selected year, payment → Jan of next year)
+- Dividend percentage input now accepts comma as decimal separator for NL/BE locale (e.g. `2,5` works alongside `2.5`)
+
 ## [0.1.41] - 2026-02-25
 
 ### Fixed
