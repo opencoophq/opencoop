@@ -202,29 +202,43 @@ export class AnalyticsService {
     const since = this.getDateRange(period);
     const trunc = this.getTrunc(period);
 
+    // Use the earliest share purchaseDate as the effective join date for each
+    // shareholder, rather than shareholder.createdAt which reflects DB record
+    // insertion time (e.g. seed scripts set createdAt = now(), not the actual
+    // membership start date).
     const rows = since
       ? await this.prisma.$queryRaw<ShareholderGrowthRow[]>(Prisma.sql`
           SELECT
-            date_trunc(${trunc}, "createdAt") AS bucket,
+            date_trunc(${trunc}, first_share_date) AS bucket,
             COUNT(*) FILTER (WHERE type = 'INDIVIDUAL')::text AS individual,
             COUNT(*) FILTER (WHERE type = 'COMPANY')::text    AS company,
             COUNT(*) FILTER (WHERE type = 'MINOR')::text      AS minor
-          FROM shareholders
-          WHERE "coopId" = ${coopId}
-            AND status = 'ACTIVE'
-            AND "createdAt" >= ${since}
+          FROM (
+            SELECT sh.id, sh.type, MIN(s."purchaseDate") AS first_share_date
+            FROM shareholders sh
+            INNER JOIN shares s ON s."shareholderId" = sh.id AND s.status = 'ACTIVE'
+            WHERE sh."coopId" = ${coopId}
+              AND sh.status = 'ACTIVE'
+            GROUP BY sh.id, sh.type
+          ) sub
+          WHERE first_share_date >= ${since}
           GROUP BY bucket
           ORDER BY bucket ASC
         `)
       : await this.prisma.$queryRaw<ShareholderGrowthRow[]>(Prisma.sql`
           SELECT
-            date_trunc(${trunc}, "createdAt") AS bucket,
+            date_trunc(${trunc}, first_share_date) AS bucket,
             COUNT(*) FILTER (WHERE type = 'INDIVIDUAL')::text AS individual,
             COUNT(*) FILTER (WHERE type = 'COMPANY')::text    AS company,
             COUNT(*) FILTER (WHERE type = 'MINOR')::text      AS minor
-          FROM shareholders
-          WHERE "coopId" = ${coopId}
-            AND status = 'ACTIVE'
+          FROM (
+            SELECT sh.id, sh.type, MIN(s."purchaseDate") AS first_share_date
+            FROM shareholders sh
+            INNER JOIN shares s ON s."shareholderId" = sh.id AND s.status = 'ACTIVE'
+            WHERE sh."coopId" = ${coopId}
+              AND sh.status = 'ACTIVE'
+            GROUP BY sh.id, sh.type
+          ) sub
           GROUP BY bucket
           ORDER BY bucket ASC
         `);
