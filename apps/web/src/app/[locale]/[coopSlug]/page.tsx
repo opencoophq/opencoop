@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@opencoop/shared';
 import { Building2, LogIn, UserPlus } from 'lucide-react';
 
 interface CoopInfo {
@@ -97,7 +98,7 @@ export default function CoopPage() {
                       <p className="text-sm text-muted-foreground">{sc.code}</p>
                     </div>
                     <p className="font-medium">
-                      &euro; {Number(sc.pricePerShare).toFixed(2)}
+                      {formatCurrency(Number(sc.pricePerShare))}
                     </p>
                   </div>
                 ))}

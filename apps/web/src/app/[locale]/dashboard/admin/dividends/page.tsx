@@ -303,10 +303,10 @@ export default function DividendsListPage() {
                     <TableCell>{formatDate(period.exDividendDate)}</TableCell>
                     <TableCell className="text-right">{(period.dividendRate * 100).toFixed(2)}%</TableCell>
                     <TableCell className="text-right">
-                      {period.totalGross > 0 ? formatCurrency(period.totalGross) : '-'}
+                      {period.totalGross > 0 ? fmtCurrency(period.totalGross) : '-'}
                     </TableCell>
                     <TableCell className="text-right">
-                      {period.totalNet > 0 ? formatCurrency(period.totalNet) : '-'}
+                      {period.totalNet > 0 ? fmtCurrency(period.totalNet) : '-'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(period.status)}>

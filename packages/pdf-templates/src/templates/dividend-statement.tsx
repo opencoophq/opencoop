@@ -195,7 +195,8 @@ export const DividendStatement: React.FC<DividendStatementProps> = ({
     types: { INDIVIDUAL: 'Individual', COMPANY: 'Company', MINOR: 'Minor' },
   };
 
-  const fmt = (n: number) => `€ ${n.toFixed(2).replace('.', ',')}`;
+  const fmtLocale = locale === 'nl' ? 'nl-BE' : 'en-US';
+  const fmt = (n: number) => new Intl.NumberFormat(fmtLocale, { style: 'currency', currency: 'EUR' }).format(n);
   const pct = (n: number) => `${(n * 100).toFixed(2)}%`;
 
   return (

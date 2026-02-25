@@ -78,12 +78,15 @@ export class ShareholdersController {
 }
 ```
 
+**Pagination gotcha**: NestJS `ValidationPipe` with `enableImplicitConversion: true` converts omitted query params to `NaN`, not `undefined`. Always use `Number(params.page) || 1` instead of destructuring defaults like `{ page = 1 }` which don't trigger for `NaN`.
+
 ### Frontend (Next.js)
 
 - **Routing**: App Router with `[locale]` dynamic segment for i18n
 - **Auth**: next-auth with JWT strategy
 - **State**: React Query for server state, React Context for UI state
 - **Components**: Radix UI primitives wrapped in `components/ui/`
+- **API calls**: Use `api()` helper from `@/lib/api` (handles auth, JSON, 401 redirect) instead of raw `fetch`
 
 ```
 app/[locale]/
@@ -111,6 +114,8 @@ app/[locale]/
 | Translations | `apps/web/messages/{en,nl,fr,de}.json` |
 | PDF templates | `packages/pdf-templates/src/templates/` |
 | Shared types | `packages/shared/src/types.ts` |
+| Changelog | `CHANGELOG.md` |
+| API helper | `apps/web/src/lib/api.ts` |
 
 ## Environment Variables
 
@@ -185,6 +190,22 @@ const { locale } = useLocale();
 const formatted = new Date(dateString).toLocaleDateString(locale);
 ```
 
+### Currency Formatting
+Use `formatCurrency` from the shared package with the user's locale:
+```typescript
+import { formatCurrency } from '@opencoop/shared';
+const { locale } = useLocale();
+const formatted = formatCurrency(amount, locale); // e.g., "€ 25,00"
+```
+Do **not** use hardcoded `€ ${amount.toFixed(2)}` or `new Intl.NumberFormat('nl-BE', ...)`.
+
+### Shared Components
+Reusable components shared between marketing and dashboard:
+- `apps/web/src/components/language-switcher.tsx` - Flag-based language switcher
+- `apps/web/src/components/theme-toggle.tsx` - Animated day/night theme toggle
+
+Marketing-specific wrappers re-export from shared location for backward compatibility.
+
 ### Known Limitation
 HTML5 `<input type="date">` ignores JavaScript locale settings and displays dates according to the browser's OS locale. To properly respect user locale preferences for date inputs, use a custom date picker component instead of native `<input type="date">`.
 
@@ -205,6 +226,11 @@ HTML5 `<input type="date">` ignores JavaScript locale settings and displays date
 1. Edit `packages/database/prisma/schema.prisma`
 2. Run `pnpm db:generate` to update client
 3. Run `pnpm db:push` (dev) or create migration (prod)
+
+### Releasing changes
+1. Push to `main` (auto-deploys to acc.opencoop.be)
+2. Tag with `v*` for prod (e.g., `git tag -a v0.1.22 -m "description" && git push origin v0.1.22`)
+3. **Update `CHANGELOG.md`** in the repo root with the new version entry before or alongside the commit
 
 ## Demo Coop (Production)
 

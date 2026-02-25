@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
+import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@opencoop/shared';
 import { Users, FileText, TrendingUp, ArrowLeftRight, CreditCard, UserCheck } from 'lucide-react';
 
 interface Stats {
@@ -19,6 +21,7 @@ interface Stats {
 export default function AdminPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
+  const { locale } = useLocale();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +65,7 @@ export default function AdminPage() {
         },
         {
           title: t('admin.totalCapital'),
-          value: `€ ${stats.totalCapital.toFixed(2)}`,
+          value: formatCurrency(stats.totalCapital, locale),
           icon: <TrendingUp className="h-5 w-5 text-emerald-600" />,
         },
         {

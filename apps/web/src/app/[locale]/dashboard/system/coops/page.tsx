@@ -28,6 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useLocale } from '@/contexts/locale-context';
+import { formatCurrency } from '@opencoop/shared';
 import { Plus, Edit, Users } from 'lucide-react';
 
 interface Coop {
@@ -50,6 +52,7 @@ type CoopForm = z.infer<typeof coopSchema>;
 
 export default function CoopsManagementPage() {
   const t = useTranslations();
+  const { locale } = useLocale();
   const [coops, setCoops] = useState<Coop[]>([]);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
@@ -147,12 +150,10 @@ export default function CoopsManagementPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(amount);
-  };
+  const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('nl-BE');
+    return new Date(dateString).toLocaleDateString(locale);
   };
 
   return (
@@ -217,7 +218,7 @@ export default function CoopsManagementPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{coop.shareholdersCount}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(coop.totalCapital)}</TableCell>
+                    <TableCell className="text-right">{fmtCurrency(coop.totalCapital)}</TableCell>
                     <TableCell>{formatDate(coop.createdAt)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

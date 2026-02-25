@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
+import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -25,6 +26,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@opencoop/shared';
 import { Plus, Pencil } from 'lucide-react';
 
 interface ShareClass {
@@ -53,6 +55,7 @@ interface FormState {
 export default function ShareClassesPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
+  const { locale } = useLocale();
   const [classes, setClasses] = useState<ShareClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -177,7 +180,7 @@ export default function ShareClassesPage() {
                     <TableCell className="font-medium">{sc.name}</TableCell>
                     <TableCell>{sc.code}</TableCell>
                     <TableCell className="text-right">
-                      € {Number(sc.pricePerShare).toFixed(2)}
+                      {formatCurrency(Number(sc.pricePerShare), locale)}
                     </TableCell>
                     <TableCell className="text-right">{sc.minShares}</TableCell>
                     <TableCell className="text-right">{sc.maxShares ?? '\u221e'}</TableCell>

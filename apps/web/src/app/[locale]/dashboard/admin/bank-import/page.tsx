@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@opencoop/shared';
 import { Upload, Link2 } from 'lucide-react';
 
 interface MatchedShareholder {
@@ -147,7 +148,7 @@ export default function BankImportPage() {
                     <TableRow key={tx.id}>
                       <TableCell>{new Date(tx.date).toLocaleDateString(locale)}</TableCell>
                       <TableCell className="text-right">
-                        &euro; {Number(tx.amount).toFixed(2)}
+                        {formatCurrency(Number(tx.amount), locale)}
                       </TableCell>
                       <TableCell>{tx.counterparty || '-'}</TableCell>
                       <TableCell className="font-mono text-sm">{tx.ogmCode || '-'}</TableCell>

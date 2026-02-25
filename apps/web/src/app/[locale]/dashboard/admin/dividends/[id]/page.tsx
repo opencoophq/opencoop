@@ -17,6 +17,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAdmin } from '@/contexts/admin-context';
+import { useLocale } from '@/contexts/locale-context';
+import { formatCurrency } from '@opencoop/shared';
 import { ChevronLeft, Calculator, Check, Download } from 'lucide-react';
 
 interface DividendPayout {
@@ -53,6 +55,7 @@ export default function DividendDetailPage() {
   const params = useParams();
   const dividendId = params.id as string;
   const { selectedCoop } = useAdmin();
+  const { locale } = useLocale();
   const [period, setPeriod] = useState<DividendPeriod | null>(null);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
@@ -177,12 +180,10 @@ export default function DividendDetailPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('nl-BE');
+    return new Date(dateString).toLocaleDateString(locale);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(amount);
-  };
+  const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
 
   const getShareholderName = (shareholder: DividendPayout['shareholder']) => {
     if (shareholder.type === 'COMPANY') {
@@ -281,15 +282,15 @@ export default function DividendDetailPage() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('admin.dividends.totalGross')}</p>
-              <p className="text-2xl font-bold">{formatCurrency(period.totalGross)}</p>
+              <p className="text-2xl font-bold">{fmtCurrency(period.totalGross)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('admin.dividends.totalTax')}</p>
-              <p className="text-2xl font-bold">{formatCurrency(period.totalTax)}</p>
+              <p className="text-2xl font-bold">{fmtCurrency(period.totalTax)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('admin.dividends.totalNet')}</p>
-              <p className="text-2xl font-bold">{formatCurrency(period.totalNet)}</p>
+              <p className="text-2xl font-bold">{fmtCurrency(period.totalNet)}</p>
             </div>
           </div>
 
@@ -357,10 +358,10 @@ export default function DividendDetailPage() {
                       </Link>
                     </TableCell>
                     <TableCell className="text-right">{payout.shares}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(payout.grossAmount)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(payout.taxAmount)}</TableCell>
+                    <TableCell className="text-right">{fmtCurrency(payout.grossAmount)}</TableCell>
+                    <TableCell className="text-right">{fmtCurrency(payout.taxAmount)}</TableCell>
                     <TableCell className="text-right font-medium">
-                      {formatCurrency(payout.netAmount)}
+                      {fmtCurrency(payout.netAmount)}
                     </TableCell>
                   </TableRow>
                 ))}
