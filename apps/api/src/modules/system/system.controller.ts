@@ -15,6 +15,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CoopsService } from '../coops/coops.service';
 import { CreateCoopDto } from '../coops/dto/create-coop.dto';
 import { UpdateCoopDto } from '../coops/dto/update-coop.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @ApiTags('system')
@@ -154,11 +155,11 @@ export class SystemController {
   @ApiOperation({ summary: 'Update user role' })
   async updateUserRole(
     @Param('id') id: string,
-    @Body('role') role: 'SYSTEM_ADMIN' | 'COOP_ADMIN' | 'SHAREHOLDER',
+    @Body() updateUserRoleDto: UpdateUserRoleDto,
   ) {
     return this.prisma.user.update({
       where: { id },
-      data: { role },
+      data: { role: updateUserRoleDto.role as any },
       select: {
         id: true,
         email: true,

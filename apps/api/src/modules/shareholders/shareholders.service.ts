@@ -2,10 +2,27 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateShareholderDto } from './dto/create-shareholder.dto';
 import { UpdateShareholderDto } from './dto/update-shareholder.dto';
+import { encryptField, decryptField, isEncrypted } from '../../common/crypto';
 
 @Injectable()
 export class ShareholdersService {
   constructor(private prisma: PrismaService) {}
+
+  private decryptShareholder<T extends { nationalId?: string | null; beneficialOwners?: Array<{ nationalId?: string | null }> }>(
+    shareholder: T,
+  ): T {
+    if (shareholder.nationalId && isEncrypted(shareholder.nationalId)) {
+      shareholder.nationalId = decryptField(shareholder.nationalId);
+    }
+    if (shareholder.beneficialOwners) {
+      for (const bo of shareholder.beneficialOwners) {
+        if (bo.nationalId && isEncrypted(bo.nationalId)) {
+          bo.nationalId = decryptField(bo.nationalId);
+        }
+      }
+    }
+    return shareholder;
+  }
 
   async findAll(
     coopId: string,
@@ -57,7 +74,7 @@ export class ShareholdersService {
     ]);
 
     return {
-      items,
+      items: items.map((item) => this.decryptShareholder(item)),
       total,
       page,
       pageSize,
@@ -96,7 +113,7 @@ export class ShareholdersService {
       throw new NotFoundException('Shareholder not found');
     }
 
-    return shareholder;
+    return this.decryptShareholder(shareholder);
   }
 
   async create(coopId: string, dto: CreateShareholderDto) {
@@ -111,17 +128,25 @@ export class ShareholdersService {
 
     const { beneficialOwners, birthDate, address, ...rest } = dto;
 
-    return this.prisma.shareholder.create({
+    // Encrypt nationalId fields before storage
+    const nationalId = rest.nationalId ? encryptField(rest.nationalId) : rest.nationalId;
+    const encryptedBeneficialOwners = beneficialOwners?.map((bo) => ({
+      ...bo,
+      nationalId: bo.nationalId ? encryptField(bo.nationalId) : bo.nationalId,
+    }));
+
+    const created = await this.prisma.shareholder.create({
       data: {
         ...rest,
+        nationalId,
         coopId,
         email: rest.email?.toLowerCase(),
         birthDate: birthDate ? new Date(birthDate) : null,
         status: 'ACTIVE',
         address: address ? JSON.parse(JSON.stringify(address)) : undefined,
-        beneficialOwners: beneficialOwners?.length
+        beneficialOwners: encryptedBeneficialOwners?.length
           ? {
-              create: beneficialOwners,
+              create: encryptedBeneficialOwners,
             }
           : undefined,
       },
@@ -129,6 +154,8 @@ export class ShareholdersService {
         beneficialOwners: true,
       },
     });
+
+    return this.decryptShareholder(created);
   }
 
   async update(id: string, coopId: string, dto: UpdateShareholderDto) {
@@ -149,17 +176,25 @@ export class ShareholdersService {
 
     const { beneficialOwners, birthDate, address, ...rest } = dto;
 
+    // Encrypt nationalId fields before storage
+    const nationalId = rest.nationalId ? encryptField(rest.nationalId) : rest.nationalId;
+    const encryptedBeneficialOwners = beneficialOwners?.map((bo) => ({
+      ...bo,
+      nationalId: bo.nationalId ? encryptField(bo.nationalId) : bo.nationalId,
+    }));
+
     await this.prisma.shareholder.update({
       where: { id },
       data: {
         ...rest,
+        ...(rest.nationalId !== undefined && { nationalId }),
         email: rest.email?.toLowerCase(),
         ...(address !== undefined && { address: address ? JSON.parse(JSON.stringify(address)) : null }),
         ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
-        ...(beneficialOwners && {
+        ...(encryptedBeneficialOwners && {
           beneficialOwners: {
             deleteMany: {},
-            create: beneficialOwners,
+            create: encryptedBeneficialOwners,
           },
         }),
       },
