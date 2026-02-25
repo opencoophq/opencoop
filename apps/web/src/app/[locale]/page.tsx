@@ -17,6 +17,7 @@ import {
   Palette,
   Github,
   ArrowRight,
+  ArrowRightLeft,
   Shield,
   ChevronDown,
   Cloud,
@@ -317,6 +318,29 @@ export default function HomePage() {
                 {t('cta.secondary')}
               </Button>
             </a>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* ─── Migration CTA ─── */}
+      <section className="py-16 md:py-20">
+        <FadeIn className="max-w-3xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-5">
+            <ArrowRightLeft className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+            {t('migrationCta.title')}
+          </h2>
+          <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
+            {t('migrationCta.subtitle')}
+          </p>
+          <div className="mt-8">
+            <Link href="/migration">
+              <Button size="lg" variant="outline" className="text-base px-8 h-12">
+                <ArrowRightLeft className="w-4 h-4" />
+                {t('migrationCta.cta')}
+              </Button>
+            </Link>
           </div>
         </FadeIn>
       </section>

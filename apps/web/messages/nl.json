@@ -816,6 +816,11 @@
       "subtitle": "Ontdek een volledig ingerichte democoöperatie — geen registratie nodig. Probeer het beheerdersdashboard of het aandeelhoudersportaal.",
       "cta": "Probeer de demo"
     },
+    "migrationCta": {
+      "title": "Overstappen van een ander platform?",
+      "subtitle": "Wij migreren uw aandeelhouders, aandelen en transactiegeschiedenis — zodat u meteen aan de slag kunt.",
+      "cta": "Migratie aanvragen"
+    },
     "featureRequestCta": {
       "title": "Mist u een functie?",
       "subtitle": "Vertel ons wat u nodig heeft — we bouwen OpenCoop samen met onze gebruikers.",
