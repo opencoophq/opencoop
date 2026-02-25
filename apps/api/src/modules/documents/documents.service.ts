@@ -5,6 +5,7 @@ import { ShareCertificate } from '@opencoop/pdf-templates';
 import React from 'react';
 import * as fs from 'fs';
 import * as path from 'path';
+import { decryptField, isEncrypted } from '../../common/crypto';
 
 @Injectable()
 export class DocumentsService {
@@ -46,7 +47,9 @@ export class DocumentsService {
       coopName: shareholder.coop.name,
       shareholderName,
       shareholderType: shareholder.type,
-      nationalId: shareholder.nationalId || undefined,
+      nationalId: shareholder.nationalId
+        ? (isEncrypted(shareholder.nationalId) ? decryptField(shareholder.nationalId) : shareholder.nationalId)
+        : undefined,
       companyId: shareholder.companyId || undefined,
       shareClassName: share.shareClass.name,
       shareClassCode: share.shareClass.code,
