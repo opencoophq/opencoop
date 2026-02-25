@@ -330,10 +330,20 @@ export class AuthService {
     // Exclude sensitive fields
     const { passwordHash, emailVerifyToken, passwordResetToken, passwordResetExpires, ...safeUser } = user;
 
+    // SYSTEM_ADMIN can manage all coops, not just ones they're explicitly assigned to
+    let adminCoops = user.coopAdminOf.map((ca) => ca.coop);
+    if (user.role === 'SYSTEM_ADMIN') {
+      const allCoops = await this.prisma.coop.findMany({
+        select: { id: true, name: true, slug: true, active: true },
+        orderBy: { name: 'asc' },
+      });
+      adminCoops = allCoops;
+    }
+
     return {
       ...safeUser,
       emailVerified: !!user.emailVerified,
-      adminCoops: user.coopAdminOf.map((ca) => ca.coop),
+      adminCoops,
       shareholderCoops: user.shareholders.map((s) => s.coop),
     };
   }
