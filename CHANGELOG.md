@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.27] - 2026-02-25
+
+### Fixed
+- Shareholder counts in annual overview, shareholder growth chart, and shareholder register now use earliest share purchase date instead of DB record creation date
+- Shareholder register join date reflects actual first share purchase, not account creation timestamp
+
 ## [0.1.26] - 2026-02-25
 
 ### Added

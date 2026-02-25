@@ -139,6 +139,27 @@ export class ReportsService {
     return shares.reduce((sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(), 0);
   }
 
+  /**
+   * Count active shareholders who had at least one active share purchased before `before`.
+   * Uses the earliest share purchaseDate as the effective join date (not shareholder.createdAt,
+   * which reflects when the DB record was inserted and may differ from actual membership start).
+   */
+  private async countShareholdersWithSharesBefore(coopId: string, before: Date): Promise<number> {
+    const result = await this.prisma.shareholder.count({
+      where: {
+        coopId,
+        status: 'ACTIVE',
+        shares: {
+          some: {
+            status: 'ACTIVE',
+            purchaseDate: { lt: before },
+          },
+        },
+      },
+    });
+    return result;
+  }
+
   // --------------------------------------------------------------------------
   // 1. ANNUAL OVERVIEW
   // --------------------------------------------------------------------------
@@ -163,23 +184,11 @@ export class ReportsService {
       // Capital at the end of the year
       this.computeCapitalAtDate(coopId, yearEnd),
 
-      // Active shareholders created before the start of the year
-      this.prisma.shareholder.count({
-        where: {
-          coopId,
-          status: 'ACTIVE',
-          createdAt: { lt: yearStart },
-        },
-      }),
+      // Active shareholders with at least one share purchased before year start
+      this.countShareholdersWithSharesBefore(coopId, yearStart),
 
-      // Active shareholders created before the end of the year
-      this.prisma.shareholder.count({
-        where: {
-          coopId,
-          status: 'ACTIVE',
-          createdAt: { lt: yearEnd },
-        },
-      }),
+      // Active shareholders with at least one share purchased before year end
+      this.countShareholdersWithSharesBefore(coopId, yearEnd),
 
       // Sum of COMPLETED PURCHASE transactions in the year
       this.prisma.transaction.aggregate({
@@ -349,6 +358,7 @@ export class ReportsService {
           select: {
             quantity: true,
             purchasePricePerShare: true,
+            purchaseDate: true,
           },
         },
       },
@@ -362,6 +372,16 @@ export class ReportsService {
         0,
       );
 
+      // Use earliest share purchaseDate as join date (not shareholder.createdAt
+      // which reflects DB record insertion time, not actual membership start)
+      const joinDate =
+        sh.shares.length > 0
+          ? sh.shares.reduce(
+              (earliest, s) => (s.purchaseDate < earliest ? s.purchaseDate : earliest),
+              sh.shares[0].purchaseDate,
+            )
+          : sh.createdAt;
+
       return {
         name: this.getShareholderName(sh),
         type: sh.type,
@@ -369,7 +389,7 @@ export class ReportsService {
         status: sh.status,
         shareCount,
         totalValue,
-        joinDate: sh.createdAt,
+        joinDate,
       };
     });
 
