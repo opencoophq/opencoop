@@ -816,6 +816,11 @@
       "subtitle": "Explore a fully loaded demo cooperative — no signup required. Try the admin dashboard or the shareholder portal.",
       "cta": "Try the demo"
     },
+    "migrationCta": {
+      "title": "Switching from another platform?",
+      "subtitle": "We'll migrate your shareholders, shares, and transaction history — so you can hit the ground running.",
+      "cta": "Request a migration"
+    },
     "featureRequestCta": {
       "title": "Missing a feature?",
       "subtitle": "Tell us what you need — we're building OpenCoop together with our users.",

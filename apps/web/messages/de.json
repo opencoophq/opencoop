@@ -816,6 +816,11 @@
       "subtitle": "Erkunden Sie eine voll ausgestattete Demo-Genossenschaft — keine Registrierung erforderlich. Probieren Sie das Admin-Dashboard oder das Anteilseigner-Portal.",
       "cta": "Demo ausprobieren"
     },
+    "migrationCta": {
+      "title": "Wechsel von einer anderen Plattform?",
+      "subtitle": "Wir migrieren Ihre Anteilseigner, Anteile und Transaktionshistorie — damit Sie sofort loslegen können.",
+      "cta": "Migration anfragen"
+    },
     "featureRequestCta": {
       "title": "Fehlt Ihnen eine Funktion?",
       "subtitle": "Sagen Sie uns, was Sie brauchen — wir entwickeln OpenCoop gemeinsam mit unseren Nutzern.",

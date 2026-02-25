@@ -816,6 +816,11 @@
       "subtitle": "Explorez une coopérative de démonstration complète — aucune inscription requise. Essayez le tableau de bord admin ou le portail coopérateur.",
       "cta": "Essayer la démo"
     },
+    "migrationCta": {
+      "title": "Vous changez de plateforme ?",
+      "subtitle": "Nous migrons vos coopérateurs, parts et historique de transactions — pour que vous puissiez démarrer immédiatement.",
+      "cta": "Demander une migration"
+    },
     "featureRequestCta": {
       "title": "Il vous manque une fonctionnalité ?",
       "subtitle": "Dites-nous ce dont vous avez besoin — nous construisons OpenCoop avec nos utilisateurs.",
