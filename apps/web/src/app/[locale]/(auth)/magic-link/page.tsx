@@ -104,8 +104,7 @@ export default function MagicLinkPage() {
   const loginUrl = coop ? `/${coop.slug}/login` : '/login';
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           {/* Logo */}
           {coop?.logoUrl ? (
@@ -145,12 +144,12 @@ export default function MagicLinkPage() {
           {state === 'success' && (
             <div className="text-center space-y-4">
               <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-                style={{ backgroundColor: coop ? `${coop.primaryColor}20` : 'rgb(220 252 231)' }}
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto bg-green-100 dark:bg-green-900/30"
+                style={coop ? { backgroundColor: `${coop.primaryColor}20` } : undefined}
               >
                 <svg
-                  className="w-8 h-8"
-                  style={{ color: coop?.primaryColor || 'rgb(22 163 74)' }}
+                  className="w-8 h-8 text-green-600 dark:text-green-400"
+                  style={coop ? { color: coop.primaryColor } : undefined}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -188,6 +187,5 @@ export default function MagicLinkPage() {
           )}
         </CardContent>
       </Card>
-    </div>
   );
 }
