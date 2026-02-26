@@ -37,6 +37,9 @@ interface Coop {
   name: string;
   slug: string;
   emailEnabled: boolean;
+  plan: string;
+  trialEndsAt: string | null;
+  subscriptionStatus: string | null;
   shareholdersCount: number;
   totalCapital: number;
   createdAt: string;
@@ -196,6 +199,8 @@ export default function CoopsManagementPage() {
                 <TableRow>
                   <TableHead>{t('system.coops.coopName')}</TableHead>
                   <TableHead>{t('system.coops.slug')}</TableHead>
+                  <TableHead>{t('system.coops.plan')}</TableHead>
+                  <TableHead>{t('system.coops.subscriptionStatus')}</TableHead>
                   <TableHead>{t('system.coops.emailStatus')}</TableHead>
                   <TableHead className="text-right">{t('system.coops.shareholders')}</TableHead>
                   <TableHead className="text-right">{t('system.coops.totalCapital')}</TableHead>
@@ -209,6 +214,24 @@ export default function CoopsManagementPage() {
                     <TableCell className="font-medium">{coop.name}</TableCell>
                     <TableCell>
                       <code className="text-sm bg-muted px-1 rounded">{coop.slug}</code>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={coop.plan === 'FREE' ? 'secondary' : 'default'}>
+                        {coop.plan}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {coop.subscriptionStatus ? (
+                        <Badge variant={coop.subscriptionStatus === 'ACTIVE' ? 'default' : 'secondary'}>
+                          {coop.subscriptionStatus}
+                        </Badge>
+                      ) : coop.trialEndsAt ? (
+                        <span className="text-sm text-muted-foreground">
+                          Trial ends {formatDate(coop.trialEndsAt)}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={coop.emailEnabled ? 'default' : 'secondary'}>

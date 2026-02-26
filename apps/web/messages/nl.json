@@ -682,6 +682,33 @@
       "saved": "Huisstijl instellingen opgeslagen",
       "error": "Kon huisstijl instellingen niet opslaan",
       "preview": "Voorbeeld"
+    },
+    "billing": {
+      "title": "Facturatie",
+      "currentPlan": "Huidig abonnement",
+      "planFree": "Gratis",
+      "statusActive": "Actief",
+      "statusTrial": "Nog {days} dagen proefperiode",
+      "statusPastDue": "Betaling mislukt",
+      "statusExpired": "Proefperiode verlopen",
+      "statusNone": "Geen abonnement",
+      "trialEnds": "Proefperiode eindigt op {date}",
+      "nextBilling": "Volgende factuurdatum: {date}",
+      "cancelingAtPeriodEnd": "Je abonnement wordt geannuleerd aan het einde van de huidige factureringsperiode.",
+      "subscribe": "Abonneren",
+      "subscribeDescription": "Kies een abonnement om alle functies te blijven gebruiken na je proefperiode.",
+      "essentialsDescription": "Alles wat je nodig hebt om een coöperatie te beheren.",
+      "professionalDescription": "Geavanceerde functies voor grotere coöperaties.",
+      "subscribeYearly": "Abonneren — €{price}/jaar",
+      "subscribeMonthly": "€{price}/maand",
+      "manageBilling": "Facturatie beheren",
+      "manageBillingDescription": "Wijzig je betaalmethode, bekijk facturen of annuleer je abonnement.",
+      "openBillingPortal": "Facturatieportaal openen",
+      "checkoutSuccess": "Betaling gelukt! Je abonnement is nu actief.",
+      "checkoutCanceled": "Afrekenen geannuleerd. Je kunt het op elk moment opnieuw proberen.",
+      "readOnlyBanner": "Je proefperiode is verlopen. Neem een abonnement om je coöperatie te blijven beheren.",
+      "trialBanner": "Nog {days} dagen in je gratis proefperiode — abonneer nu om onderbreking te voorkomen.",
+      "upgradeToUnlock": "Abonneer om te ontgrendelen"
     }
   },
   "system": {
@@ -719,7 +746,9 @@
       "total": "Totaal coöperaties",
       "emailStatus": "E-mail",
       "emailEnabled": "Ingeschakeld",
-      "emailDisabled": "Uitgeschakeld"
+      "emailDisabled": "Uitgeschakeld",
+      "plan": "Abonnement",
+      "subscriptionStatus": "Abonnementsstatus"
     },
     "coopAdmins": {
       "title": "Coöperatie beheerders",
@@ -1051,7 +1080,8 @@
       "perMonth": "/maand",
       "perYear": "/jaar",
       "billedMonthly": "Maandelijks gefactureerd",
-      "billedYearly": "Jaarlijks gefactureerd"
+      "billedYearly": "Jaarlijks gefactureerd",
+      "freeTrial": "30 dagen gratis proefperiode inbegrepen"
     },
     "free": {
       "name": "Early Access",
@@ -1151,7 +1181,8 @@
       "title": "Alles klaar!",
       "subtitle": "Uw coöperatie is aangemaakt. Ons team zal deze binnenkort beoordelen en activeren.",
       "verifySubtitle": "Uw coöperatie is aangemaakt! Check uw e-mail om uw account te verifiëren en te starten.",
-      "goToDashboard": "Ga naar dashboard"
+      "goToDashboard": "Ga naar dashboard",
+      "trialSubtitle": "Je 30 dagen gratis proefperiode is gestart. Ontdek alle functies — nog geen betaling nodig."
     },
     "billing": {
       "monthly": "Maandelijks",

@@ -88,6 +88,26 @@ enum DocumentType {
   TRANSACTION_REPORT
 }
 
+enum CoopPlan {
+  FREE
+  ESSENTIALS
+  PROFESSIONAL
+}
+
+enum BillingPeriod {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+}
+
 // ============================================================================
 // MULTI-TENANCY: COOPS
 // ============================================================================
@@ -106,6 +126,8 @@ model Coop {
 
   // Settings
   active               Boolean @default(true)
+  plan                 CoopPlan @default(FREE)
+  trialEndsAt          DateTime?
   requiresApproval     Boolean @default(true)
   ogmPrefix            String  @unique // Unique prefix for OGM codes (e.g., "001")
   minimumHoldingPeriod Int     @default(0) // months, 0 = no restriction
@@ -143,6 +165,7 @@ model Coop {
   bankTransactions BankTransaction[]
   dividendPeriods  DividendPeriod[]
   emailLogs        EmailLog[]
+  subscription     Subscription?
 
   @@map("coops")
 }
@@ -595,4 +618,28 @@ model MigrationRequest {
   createdAt             DateTime @default(now())
 
   @@map("migration_requests")
+}
+
+// ============================================================================
+// SUBSCRIPTIONS & BILLING
+// ============================================================================
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  coopId                 String             @unique
+  stripeCustomerId       String             @unique
+  stripeSubscriptionId   String?            @unique
+  status                 SubscriptionStatus @default(TRIALING)
+  billingPeriod          BillingPeriod      @default(YEARLY)
+  stripePriceId          String?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  coop Coop @relation(fields: [coopId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
 }

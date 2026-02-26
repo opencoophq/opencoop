@@ -682,6 +682,33 @@
       "saved": "Branding settings saved successfully",
       "error": "Failed to save branding settings",
       "preview": "Preview"
+    },
+    "billing": {
+      "title": "Billing",
+      "currentPlan": "Current Plan",
+      "planFree": "Free",
+      "statusActive": "Active",
+      "statusTrial": "{days} days left in trial",
+      "statusPastDue": "Payment Failed",
+      "statusExpired": "Trial Expired",
+      "statusNone": "No Subscription",
+      "trialEnds": "Trial ends on {date}",
+      "nextBilling": "Next billing date: {date}",
+      "cancelingAtPeriodEnd": "Your subscription will cancel at the end of the current billing period.",
+      "subscribe": "Subscribe",
+      "subscribeDescription": "Choose a plan to continue using all features after your trial ends.",
+      "essentialsDescription": "Everything you need to manage a cooperative.",
+      "professionalDescription": "Advanced features for larger cooperatives.",
+      "subscribeYearly": "Subscribe — €{price}/year",
+      "subscribeMonthly": "€{price}/month",
+      "manageBilling": "Manage Billing",
+      "manageBillingDescription": "Update your payment method, view invoices, or cancel your subscription.",
+      "openBillingPortal": "Open Billing Portal",
+      "checkoutSuccess": "Payment successful! Your subscription is now active.",
+      "checkoutCanceled": "Checkout was canceled. You can try again anytime.",
+      "readOnlyBanner": "Your trial has expired. Subscribe to continue managing your cooperative.",
+      "trialBanner": "{days} days left in your free trial — subscribe now to avoid interruption.",
+      "upgradeToUnlock": "Subscribe to unlock"
     }
   },
   "system": {
@@ -719,7 +746,9 @@
       "total": "Total Cooperatives",
       "emailStatus": "Email",
       "emailEnabled": "Enabled",
-      "emailDisabled": "Disabled"
+      "emailDisabled": "Disabled",
+      "plan": "Plan",
+      "subscriptionStatus": "Subscription"
     },
     "coopAdmins": {
       "title": "Coop Administrators",
@@ -1051,7 +1080,8 @@
       "perMonth": "/month",
       "perYear": "/year",
       "billedMonthly": "Billed monthly",
-      "billedYearly": "Billed yearly"
+      "billedYearly": "Billed yearly",
+      "freeTrial": "30-day free trial included"
     },
     "free": {
       "name": "Early Access",
@@ -1151,7 +1181,8 @@
       "title": "You're all set!",
       "subtitle": "Your cooperative has been created. Our team will review and activate it shortly.",
       "verifySubtitle": "Your cooperative has been created! Check your email to verify your account and get started.",
-      "goToDashboard": "Go to dashboard"
+      "goToDashboard": "Go to dashboard",
+      "trialSubtitle": "Your 30-day free trial has started. Explore all features — no payment needed yet."
     },
     "billing": {
       "monthly": "Monthly",

@@ -147,6 +147,13 @@ export class AuthService {
     const ogmPrefix = await this.coopsService.generateUniqueOgmPrefix();
     const emailVerifyToken = randomBytes(32).toString('hex');
     const isFree = onboardingDto.plan === 'free';
+    const planMap: Record<string, 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL'> = {
+      free: 'FREE',
+      essentials: 'ESSENTIALS',
+      professional: 'PROFESSIONAL',
+    };
+    const coopPlan = planMap[onboardingDto.plan] || 'FREE';
+    const trialEndsAt = isFree ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -165,7 +172,9 @@ export class AuthService {
         data: {
           name: onboardingDto.coopName,
           slug: onboardingDto.coopSlug,
-          active: isFree,
+          active: true,
+          plan: coopPlan,
+          trialEndsAt,
           ogmPrefix,
         },
       });
@@ -321,6 +330,8 @@ export class AuthService {
                 name: true,
                 slug: true,
                 active: true,
+                plan: true,
+                trialEndsAt: true,
               },
             },
           },
@@ -368,14 +379,30 @@ export class AuthService {
     const { passwordHash, emailVerifyToken, emailVerifyExpires, passwordResetToken, passwordResetExpires, ...safeUser } = user;
 
     // SYSTEM_ADMIN can manage all coops, not just ones they're explicitly assigned to
-    let adminCoops = user.coopAdminOf.map((ca) => ca.coop);
+    let adminCoopsRaw = user.coopAdminOf.map((ca) => ca.coop);
     if (user.role === 'SYSTEM_ADMIN') {
-      const allCoops = await this.prisma.coop.findMany({
-        select: { id: true, name: true, slug: true, active: true },
+      adminCoopsRaw = await this.prisma.coop.findMany({
+        select: { id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true },
         orderBy: { name: 'asc' },
       });
-      adminCoops = allCoops;
     }
+
+    // Compute isReadOnly for each coop
+    const adminCoops = await Promise.all(
+      adminCoopsRaw.map(async (coop) => {
+        const full = await this.prisma.coop.findUnique({
+          where: { id: coop.id },
+          select: { plan: true, trialEndsAt: true, subscription: { select: { status: true } } },
+        });
+        const isReadOnly = full ? this.computeIsReadOnly(full) : false;
+        return {
+          ...coop,
+          plan: full?.plan ?? 'FREE',
+          trialEndsAt: full?.trialEndsAt?.toISOString() ?? undefined,
+          isReadOnly,
+        };
+      }),
+    );
 
     // Legacy users (no token AND no verified date) are treated as verified
     const isLegacyUser = !user.emailVerified && !user.emailVerifyToken;
@@ -1011,6 +1038,17 @@ export class AuthService {
           footer: 'Deze e-mail is verzonden door OpenCoop.',
         };
     }
+  }
+
+  private computeIsReadOnly(coop: {
+    plan: string;
+    trialEndsAt: Date | null;
+    subscription: { status: string } | null;
+  }): boolean {
+    if (coop.plan === 'FREE') return false;
+    if (coop.subscription?.status === 'ACTIVE') return false;
+    if (coop.trialEndsAt && coop.trialEndsAt > new Date()) return false;
+    return true;
   }
 
   private async sendWaitlistConfirmationEmail(email: string, locale?: string) {

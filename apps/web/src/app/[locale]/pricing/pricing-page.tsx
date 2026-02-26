@@ -226,6 +226,7 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
                 <p className="text-sm text-muted-foreground mt-1">
                   {yearly ? t('billing.billedYearly') : t('billing.billedMonthly')}
                 </p>
+                <p className="text-sm text-primary font-medium mt-1">{t('billing.freeTrial')}</p>
               </div>
 
               {isWaitlistMode ? (
@@ -282,6 +283,7 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
                 <p className="text-sm text-muted-foreground mt-1">
                   {yearly ? t('billing.billedYearly') : t('billing.billedMonthly')}
                 </p>
+                <p className="text-sm text-primary font-medium mt-1">{t('billing.freeTrial')}</p>
               </div>
 
               {isWaitlistMode ? (
