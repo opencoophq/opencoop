@@ -2,6 +2,21 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.54] - 2026-02-26
+
+### Added
+- **SEO metadata** — localized page titles and descriptions for all marketing pages (NL/EN/FR/DE)
+- **Open Graph & Twitter Cards** — social sharing meta tags on every public page
+- **Hreflang alternates** — cross-language links in HTML head and sitemap for multi-language SEO
+- **Canonical URLs** — proper `rel=canonical` on all marketing pages
+- **robots.txt** — blocks `/dashboard/` and `/api/` from search engine crawlers
+- **XML sitemap** — `/sitemap.xml` with all public pages and hreflang alternates
+- **JSON-LD structured data** — `SoftwareApplication` schema on the landing page
+
+### Changed
+- Marketing pages split into server/client components to enable server-side metadata generation
+- Root layout enhanced with title template (`%s | OpenCoop`), `metadataBase`, and default OG/Twitter config
+
 ## [0.1.53] - 2026-02-26
 
 ### Added
