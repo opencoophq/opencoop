@@ -30,13 +30,14 @@ export class OnboardingDto {
   })
   coopSlug: string;
 
-  @ApiProperty({ example: 'essentials', enum: ['essentials', 'professional'] })
-  @IsIn(['essentials', 'professional'])
-  plan: 'essentials' | 'professional';
+  @ApiProperty({ example: 'essentials', enum: ['free', 'essentials', 'professional'] })
+  @IsIn(['free', 'essentials', 'professional'])
+  plan: 'free' | 'essentials' | 'professional';
 
-  @ApiProperty({ example: 'yearly', enum: ['monthly', 'yearly'] })
+  @ApiProperty({ example: 'yearly', enum: ['monthly', 'yearly'], required: false })
+  @IsOptional()
   @IsIn(['monthly', 'yearly'])
-  billingPeriod: 'monthly' | 'yearly';
+  billingPeriod?: 'monthly' | 'yearly';
 
   @ApiProperty({ example: 'John Doe', required: false })
   @IsOptional()

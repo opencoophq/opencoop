@@ -103,6 +103,11 @@
     "emailNotVerified": "E-Mail nicht verifiziert",
     "verifyEmail": "Bestätigen Sie Ihre E-Mail",
     "resendVerification": "Bestätigungsmail erneut senden",
+    "verifyEmailDescription": "Wir haben einen Bestätigungslink an Ihre E-Mail-Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang und klicken Sie auf den Link, um Ihr Konto zu bestätigen.",
+    "verifyEmailSuccess": "Ihre E-Mail wurde bestätigt!",
+    "verifyEmailError": "Dieser Bestätigungslink ist ungültig oder abgelaufen.",
+    "verifyEmailSent": "Bestätigungsmail gesendet! Überprüfen Sie Ihren Posteingang.",
+    "goToDashboard": "Zum Dashboard",
     "magicLinkLogin": "E-Mail-Link",
     "passwordLogin": "Passwort",
     "sendMagicLink": "Anmeldelink senden",
@@ -1048,6 +1053,13 @@
       "billedMonthly": "Monatliche Abrechnung",
       "billedYearly": "Jährliche Abrechnung"
     },
+    "free": {
+      "name": "Early Access",
+      "badge": "Kostenlos",
+      "description": "Starten Sie noch heute mit der Verwaltung Ihrer Genossenschaft — keine Kreditkarte erforderlich.",
+      "cta": "Kostenlos starten",
+      "earlyAccessNote": "Kostenlos während der Early-Access-Phase"
+    },
     "essentials": {
       "name": "Essentials",
       "description": "Für Genossenschaften, die von Tabellen wegkommen wollen",
@@ -1132,11 +1144,13 @@
       "slug": "URL",
       "slugPrefix": "opencoop.be/",
       "plan": "Plan",
-      "billing": "Abrechnung"
+      "billing": "Abrechnung",
+      "freePlan": "Kostenlos — Early Access"
     },
     "done": {
       "title": "Alles bereit!",
       "subtitle": "Ihre Genossenschaft wurde erstellt. Unser Team wird sie in Kürze prüfen und aktivieren.",
+      "verifySubtitle": "Ihre Genossenschaft wurde erstellt! Überprüfen Sie Ihre E-Mail, um Ihr Konto zu bestätigen und loszulegen.",
       "goToDashboard": "Zum Dashboard"
     },
     "billing": {

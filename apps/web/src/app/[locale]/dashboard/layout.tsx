@@ -24,6 +24,8 @@ import {
   X,
   BarChart3,
   UserCog,
+  Mail as MailIcon,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,7 +52,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const t = useTranslations();
   const { selectedCoop, adminCoops, setSelectedCoop, setAdminCoops } = useAdmin();
-  const [user, setUser] = useState<{ email: string; name?: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ email: string; name?: string; role: string; emailVerified?: boolean } | null>(null);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminStats, setAdminStats] = useState<{
     pendingTransactions: number;
@@ -71,22 +76,22 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       const parsed = JSON.parse(userData);
       setUser(parsed);
 
-      // Load admin coops if admin
-      if (parsed.role === 'COOP_ADMIN' || parsed.role === 'SYSTEM_ADMIN') {
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.adminCoops) {
-              setAdminCoops(data.adminCoops);
-              if (data.adminCoops.length > 0 && !selectedCoop) {
-                setSelectedCoop(data.adminCoops[0]);
-              }
+      // Always fetch profile to get emailVerified status
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setEmailVerified(data.emailVerified ?? true);
+
+          if (data.adminCoops) {
+            setAdminCoops(data.adminCoops);
+            if (data.adminCoops.length > 0 && !selectedCoop) {
+              setSelectedCoop(data.adminCoops[0]);
             }
-          })
-          .catch(() => {});
-      }
+          }
+        })
+        .catch(() => {});
     } catch {
       router.push('/login');
     }
@@ -182,10 +187,59 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     </div>
   );
 
+  const handleResendVerification = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    setResendingVerification(true);
+    setVerificationResent(false);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/resend-verification`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setVerificationResent(true);
+    } catch {
+      // silently fail
+    } finally {
+      setResendingVerification(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (emailVerified === false) {
+    return (
+      <div className="min-h-screen bg-muted/50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-card rounded-xl border p-8 text-center shadow-sm">
+          <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+            <MailIcon className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-semibold mb-2">{t('auth.verifyEmail')}</h2>
+          <p className="text-sm text-muted-foreground mb-6">{t('auth.verifyEmailDescription')}</p>
+          {verificationResent ? (
+            <p className="text-sm text-green-600 font-medium mb-4">{t('auth.verifyEmailSent')}</p>
+          ) : (
+            <Button
+              onClick={handleResendVerification}
+              disabled={resendingVerification}
+              variant="outline"
+              className="w-full mb-4"
+            >
+              {resendingVerification && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {t('auth.resendVerification')}
+            </Button>
+          )}
+          <Button variant="ghost" onClick={handleLogout} className="w-full">
+            <LogOut className="w-4 h-4 mr-2" />
+            {t('auth.logout')}
+          </Button>
+        </div>
       </div>
     );
   }
