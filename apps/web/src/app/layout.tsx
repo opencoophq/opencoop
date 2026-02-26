@@ -5,9 +5,28 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
+const BASE_URL = 'https://opencoop.be';
+
 export const metadata: Metadata = {
-  title: 'OpenCoop',
-  description: 'Cooperative shareholding management platform',
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: 'OpenCoop — Shareholder Management for Cooperatives',
+    template: '%s | OpenCoop',
+  },
+  description: 'The open-source platform that helps cooperatives manage shareholders, shares, dividends, and documents — all in one place.',
+  openGraph: {
+    type: 'website',
+    siteName: 'OpenCoop',
+    locale: 'nl_BE',
+    alternateLocale: ['en_US', 'fr_FR', 'de_DE'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

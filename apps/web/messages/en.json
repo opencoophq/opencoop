@@ -1,4 +1,26 @@
 {
+  "metadata": {
+    "home": {
+      "title": "OpenCoop — Shareholder Management for Cooperatives",
+      "description": "The open-source platform that helps cooperatives manage shareholders, shares, dividends, and documents — all in one place."
+    },
+    "pricing": {
+      "title": "Pricing",
+      "description": "Simple, transparent pricing for cooperative shareholder management. Start free or choose a plan that fits your cooperative."
+    },
+    "demo": {
+      "title": "Try the Demo",
+      "description": "Explore OpenCoop with a live demo. Log in as an admin or shareholder to see cooperative management in action."
+    },
+    "migration": {
+      "title": "Migrate to OpenCoop",
+      "description": "Switch from spreadsheets or legacy tools to OpenCoop. We handle the data migration for your cooperative — free of charge."
+    },
+    "featureRequest": {
+      "title": "Request a Feature",
+      "description": "Help shape the future of OpenCoop. Submit your feature ideas and suggestions for cooperative shareholder management."
+    }
+  },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
