@@ -1,4 +1,26 @@
 {
+  "metadata": {
+    "home": {
+      "title": "OpenCoop — Anteilseignerverwaltung für Genossenschaften",
+      "description": "Die Open-Source-Plattform, die Genossenschaften bei der Verwaltung von Anteilseignern, Anteilen, Dividenden und Dokumenten unterstützt — alles an einem Ort."
+    },
+    "pricing": {
+      "title": "Preise",
+      "description": "Einfache, transparente Preise für genossenschaftliche Anteilseignerverwaltung. Starten Sie kostenlos oder wählen Sie einen passenden Plan."
+    },
+    "demo": {
+      "title": "Demo ausprobieren",
+      "description": "Entdecken Sie OpenCoop mit einer Live-Demo. Melden Sie sich als Administrator oder Anteilseigner an und erleben Sie Genossenschaftsverwaltung in Aktion."
+    },
+    "migration": {
+      "title": "Zu OpenCoop migrieren",
+      "description": "Wechseln Sie von Tabellenkalkulationen oder bestehenden Tools zu OpenCoop. Wir übernehmen die Datenmigration — kostenlos."
+    },
+    "featureRequest": {
+      "title": "Feature anfragen",
+      "description": "Gestalten Sie die Zukunft von OpenCoop mit. Reichen Sie Ihre Ideen und Vorschläge für die Anteilseignerverwaltung ein."
+    }
+  },
   "common": {
     "loading": "Wird geladen...",
     "error": "Ein Fehler ist aufgetreten",

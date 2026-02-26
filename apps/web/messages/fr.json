@@ -1,4 +1,26 @@
 {
+  "metadata": {
+    "home": {
+      "title": "OpenCoop — Gestion des coopérateurs pour les coopératives",
+      "description": "La plateforme open source qui aide les coopératives à gérer leurs coopérateurs, parts, dividendes et documents — tout en un seul endroit."
+    },
+    "pricing": {
+      "title": "Tarifs",
+      "description": "Des tarifs simples et transparents pour la gestion coopérative des coopérateurs. Commencez gratuitement ou choisissez un plan adapté."
+    },
+    "demo": {
+      "title": "Essayer la démo",
+      "description": "Découvrez OpenCoop avec une démo en direct. Connectez-vous en tant qu'administrateur ou coopérateur pour voir la gestion coopérative en action."
+    },
+    "migration": {
+      "title": "Migrer vers OpenCoop",
+      "description": "Passez des tableurs ou des outils existants à OpenCoop. Nous gérons la migration de vos données — gratuitement."
+    },
+    "featureRequest": {
+      "title": "Demander une fonctionnalité",
+      "description": "Aidez à façonner l'avenir d'OpenCoop. Soumettez vos idées et suggestions pour la gestion coopérative des coopérateurs."
+    }
+  },
   "common": {
     "loading": "Chargement...",
     "error": "Une erreur est survenue",

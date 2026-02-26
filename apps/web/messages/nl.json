@@ -1,4 +1,26 @@
 {
+  "metadata": {
+    "home": {
+      "title": "OpenCoop — Aandeelhoudersbeheer voor coöperaties",
+      "description": "Het open-source platform waarmee coöperaties hun aandeelhouders, aandelen, dividenden en documenten beheren — alles op één plek."
+    },
+    "pricing": {
+      "title": "Prijzen",
+      "description": "Eenvoudige, transparante prijzen voor coöperatief aandeelhoudersbeheer. Start gratis of kies een plan dat bij uw coöperatie past."
+    },
+    "demo": {
+      "title": "Probeer de demo",
+      "description": "Ontdek OpenCoop met een live demo. Log in als beheerder of aandeelhouder en ervaar coöperatiebeheer in de praktijk."
+    },
+    "migration": {
+      "title": "Migreer naar OpenCoop",
+      "description": "Stap over van spreadsheets of verouderde tools naar OpenCoop. Wij verzorgen de datamigratie voor uw coöperatie — gratis."
+    },
+    "featureRequest": {
+      "title": "Feature aanvragen",
+      "description": "Help de toekomst van OpenCoop vorm te geven. Dien uw ideeën en suggesties in voor coöperatief aandeelhoudersbeheer."
+    }
+  },
   "common": {
     "loading": "Laden...",
     "error": "Er is een fout opgetreden",
