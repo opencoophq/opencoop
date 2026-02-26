@@ -312,6 +312,18 @@
     "noDocuments": "Aucun document pour le moment",
     "generatedOn": "Généré le"
   },
+  "personalData": {
+    "title": "Données personnelles",
+    "personalInfo": "Informations personnelles",
+    "companyInfo": "Informations de l'entreprise",
+    "contactInfo": "Contact & coordonnées bancaires",
+    "readOnlyEmail": "L'adresse e-mail ne peut pas être modifiée. Contactez le support si nécessaire.",
+    "saveChanges": "Enregistrer les modifications",
+    "generateCertificate": "Générer un certificat",
+    "generateDividendStatement": "Générer un relevé",
+    "generating": "Génération...",
+    "downloadError": "Échec du téléchargement. Veuillez réessayer."
+  },
   "settings": {
     "title": "Paramètres",
     "preferences": "Préférences",

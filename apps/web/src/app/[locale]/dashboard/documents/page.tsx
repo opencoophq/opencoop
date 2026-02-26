@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
-import { Download } from 'lucide-react';
+import { Download, FilePlus, Loader2 } from 'lucide-react';
 
 interface DocumentData {
   id: string;
@@ -22,13 +22,17 @@ export default function DocumentsPage() {
   const { locale } = useLocale();
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareholderId, setShareholderId] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
         const profile = await api<{ shareholders: Array<{ id: string; documents: DocumentData[] }> }>('/auth/me');
-        if (profile.shareholders?.[0]?.documents) {
-          setDocuments(profile.shareholders[0].documents);
+        if (profile.shareholders?.[0]) {
+          setShareholderId(profile.shareholders[0].id);
+          setDocuments(profile.shareholders[0].documents || []);
         }
       } catch {
         // ignore
@@ -38,6 +42,48 @@ export default function DocumentsPage() {
     }
     loadData();
   }, []);
+
+  const handleDownload = async (doc: DocumentData) => {
+    if (!shareholderId) return;
+    setDownloadError(null);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(
+        `${apiUrl}/shareholders/${shareholderId}/documents/${doc.id}/download`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.filePath.split('/').pop() || 'document.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch {
+      setDownloadError(t('personalData.downloadError'));
+    }
+  };
+
+  const handleGenerateCertificate = async () => {
+    if (!shareholderId) return;
+    setGenerating(true);
+    setDownloadError(null);
+    try {
+      const doc = await api<DocumentData>(`/shareholders/${shareholderId}/generate-certificate`, {
+        method: 'POST',
+        body: { locale: locale.split('-')[0] },
+      });
+      setDocuments((prev) => [doc, ...prev]);
+    } catch {
+      setDownloadError(t('common.error'));
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const typeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -59,7 +105,26 @@ export default function DocumentsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">{t('common.documents')}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">{t('common.documents')}</h1>
+        {shareholderId && (
+          <Button onClick={handleGenerateCertificate} disabled={generating}>
+            {generating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <FilePlus className="h-4 w-4 mr-2" />
+            )}
+            {generating ? t('personalData.generating') : t('personalData.generateCertificate')}
+          </Button>
+        )}
+      </div>
+
+      {downloadError && (
+        <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md">
+          {downloadError}
+        </div>
+      )}
+
       <Card>
         <CardContent className="pt-6">
           {documents.length === 0 ? (
@@ -83,7 +148,7 @@ export default function DocumentsPage() {
                       {new Date(doc.generatedAt).toLocaleDateString(locale)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleDownload(doc)}>
                         <Download className="h-4 w-4 mr-1" />
                         {t('common.download')}
                       </Button>

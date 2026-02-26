@@ -2,6 +2,9 @@ import {
   Controller,
   Post,
   Put,
+  Get,
+  Res,
+  StreamableFile,
   Body,
   Param,
   UseGuards,
@@ -9,12 +12,18 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TransactionsService } from '../transactions/transactions.service';
-import { IsString, IsInt, IsOptional, Min } from 'class-validator';
+import { IsString, IsInt, IsOptional, Min, ValidateNested, IsObject, IsDateString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { AddressDto } from './dto/create-shareholder.dto';
+import { DocumentsService } from '../documents/documents.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 class SellRequestDto {
   @IsString()
@@ -34,6 +43,72 @@ class UpdateBankDetailsDto {
   bankBic?: string;
 }
 
+class UpdateProfileAddressDto {
+  @IsOptional()
+  @IsString()
+  street?: string;
+
+  @IsOptional()
+  @IsString()
+  number?: string;
+
+  @IsOptional()
+  @IsString()
+  postalCode?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+}
+
+class UpdateProfileDto {
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @IsOptional()
+  @IsDateString()
+  birthDate?: string;
+
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @IsOptional()
+  @IsString()
+  companyId?: string;
+
+  @IsOptional()
+  @IsString()
+  vatNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => UpdateProfileAddressDto)
+  address?: UpdateProfileAddressDto;
+
+  @IsOptional()
+  @IsString()
+  bankIban?: string;
+
+  @IsOptional()
+  @IsString()
+  bankBic?: string;
+}
+
 @ApiTags('shareholder-actions')
 @Controller('shareholders/:shareholderId')
 @UseGuards(JwtAuthGuard)
@@ -42,6 +117,7 @@ export class ShareholderActionsController {
   constructor(
     private prisma: PrismaService,
     private transactionsService: TransactionsService,
+    private documentsService: DocumentsService,
   ) {}
 
   private async verifyShareholder(shareholderId: string, userId: string) {
@@ -130,5 +206,91 @@ export class ShareholderActionsController {
         bankBic: true,
       },
     });
+  }
+
+  @Put('profile')
+  @ApiOperation({ summary: 'Update shareholder profile (self-service)' })
+  async updateProfile(
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+
+    const { address, birthDate, ...rest } = dto;
+
+    const data: Record<string, unknown> = { ...rest };
+    if (birthDate) {
+      data.birthDate = new Date(birthDate);
+    }
+    if (address) {
+      data.address = address;
+    }
+
+    return this.prisma.shareholder.update({
+      where: { id: shareholderId },
+      data,
+    });
+  }
+
+  @Get('documents/:documentId/download')
+  @ApiOperation({ summary: 'Download a document (shareholder self-service)' })
+  async downloadDocument(
+    @Param('shareholderId') shareholderId: string,
+    @Param('documentId') documentId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Res() res: Response,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+
+    const doc = await this.prisma.shareholderDocument.findFirst({
+      where: { id: documentId, shareholderId },
+    });
+
+    if (!doc) {
+      throw new NotFoundException('Document not found');
+    }
+
+    if (!fs.existsSync(doc.filePath)) {
+      throw new NotFoundException('Document file not found');
+    }
+
+    const fileName = path.basename(doc.filePath);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    fs.createReadStream(doc.filePath).pipe(res);
+  }
+
+  @Post('generate-certificate')
+  @ApiOperation({ summary: 'Generate share certificate (shareholder self-service)' })
+  async generateCertificate(
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body('locale') locale?: string,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+    return this.documentsService.generateCertificate(shareholderId, locale);
+  }
+
+  @Post('generate-dividend-statement/:dividendPayoutId')
+  @ApiOperation({ summary: 'Generate dividend statement (shareholder self-service)' })
+  async generateDividendStatement(
+    @Param('shareholderId') shareholderId: string,
+    @Param('dividendPayoutId') dividendPayoutId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body('locale') locale?: string,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+
+    // Verify the payout belongs to this shareholder
+    const payout = await this.prisma.dividendPayout.findFirst({
+      where: { id: dividendPayoutId, shareholderId },
+    });
+
+    if (!payout) {
+      throw new NotFoundException('Dividend payout not found');
+    }
+
+    return this.documentsService.generateDividendStatement(shareholderId, dividendPayoutId, locale);
   }
 }

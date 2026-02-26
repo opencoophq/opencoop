@@ -618,4 +618,14 @@ export class AdminController {
   ) {
     return this.documentsService.generateCertificate(shareholderId, locale);
   }
+
+  @Post('shareholders/:shareholderId/dividend-statement/:dividendPayoutId')
+  @ApiOperation({ summary: 'Generate dividend statement for a shareholder' })
+  async generateDividendStatement(
+    @Param('shareholderId') shareholderId: string,
+    @Param('dividendPayoutId') dividendPayoutId: string,
+    @Query('locale') locale?: string,
+  ) {
+    return this.documentsService.generateDividendStatement(shareholderId, dividendPayoutId, locale);
+  }
 }

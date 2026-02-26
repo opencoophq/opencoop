@@ -312,6 +312,18 @@
     "noDocuments": "Nog geen documenten",
     "generatedOn": "Gegenereerd op"
   },
+  "personalData": {
+    "title": "Persoonlijke gegevens",
+    "personalInfo": "Persoonlijke informatie",
+    "companyInfo": "Bedrijfsinformatie",
+    "contactInfo": "Contact- & bankgegevens",
+    "readOnlyEmail": "E-mailadres kan niet worden gewijzigd. Neem contact op met support indien nodig.",
+    "saveChanges": "Wijzigingen opslaan",
+    "generateCertificate": "Certificaat genereren",
+    "generateDividendStatement": "Afschrift genereren",
+    "generating": "Genereren...",
+    "downloadError": "Download mislukt. Probeer het opnieuw."
+  },
   "settings": {
     "title": "Instellingen",
     "preferences": "Voorkeuren",

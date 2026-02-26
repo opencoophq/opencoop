@@ -23,6 +23,7 @@ import {
   Menu,
   X,
   BarChart3,
+  UserCog,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -121,6 +122,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" /> },
     { href: '/dashboard/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
     { href: '/dashboard/documents', label: t('common.documents'), icon: <FileDown className="h-4 w-4" /> },
+    { href: '/dashboard/personal-data', label: t('personalData.title'), icon: <UserCog className="h-4 w-4" /> },
     { href: '/dashboard/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
   ];
 

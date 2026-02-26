@@ -312,6 +312,18 @@
     "noDocuments": "Noch keine Dokumente",
     "generatedOn": "Erstellt am"
   },
+  "personalData": {
+    "title": "Persönliche Daten",
+    "personalInfo": "Persönliche Informationen",
+    "companyInfo": "Unternehmensinformationen",
+    "contactInfo": "Kontakt- & Bankdaten",
+    "readOnlyEmail": "Die E-Mail-Adresse kann nicht geändert werden. Wenden Sie sich bei Bedarf an den Support.",
+    "saveChanges": "Änderungen speichern",
+    "generateCertificate": "Zertifikat erstellen",
+    "generateDividendStatement": "Abrechnung erstellen",
+    "generating": "Wird erstellt...",
+    "downloadError": "Download fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
   "settings": {
     "title": "Einstellungen",
     "preferences": "Einstellungen",

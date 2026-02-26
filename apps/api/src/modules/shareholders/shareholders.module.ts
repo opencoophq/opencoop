@@ -5,9 +5,10 @@ import { BirthdaySchedulerService } from './birthday-scheduler.service';
 import { AuthModule } from '../auth/auth.module';
 import { EmailModule } from '../email/email.module';
 import { TransactionsModule } from '../transactions/transactions.module';
+import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
-  imports: [AuthModule, EmailModule, TransactionsModule],
+  imports: [AuthModule, EmailModule, TransactionsModule, DocumentsModule],
   controllers: [ShareholderActionsController],
   providers: [ShareholdersService, BirthdaySchedulerService],
   exports: [ShareholdersService],
