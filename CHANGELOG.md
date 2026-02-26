@@ -2,6 +2,21 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.53] - 2026-02-26
+
+### Added
+- **Personal Data page** — shareholders can view and edit their profile (name, company, address, bank details) from a dedicated page
+- **PDF document downloads** — shareholders can download their certificates and statements directly from the documents page
+- **Self-service certificate generation** — shareholders can generate share certificates themselves
+- **Self-service dividend statement generation** — shareholders can generate dividend statements per payout period
+- **Admin dividend statement endpoint** — admins can generate dividend statements for any shareholder
+
+### Changed
+- Bank details (IBAN/BIC) moved from Settings to the new Personal Data page
+- Documents page now has a working download button and a "Generate Certificate" action
+- Dividends page now has a "Generate Statement" action per payout row
+- Navigation: added "Personal Data" item with UserCog icon before Settings
+
 ## [0.1.52] - 2026-02-26
 
 ### Fixed
