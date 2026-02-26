@@ -2,6 +2,23 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.55] - 2026-02-26
+
+### Added
+- **Free early access plan** — new "Early Access (Free)" tier on the pricing page, allowing cooperatives to sign up without payment
+- **Email verification flow** — users must verify their email before accessing the dashboard; verification email sent on register and onboarding
+- **Verify email page** — `/verify-email?token=...` validates the token and shows success or error
+- **Dashboard verification gate** — unverified users see a "Check your email" card with resend button instead of dashboard content
+- **Resend verification endpoint** — `POST /auth/resend-verification` (JWT-guarded, throttled 3/min)
+- **Verification email templates** — multi-language (NL/EN/FR/DE) email with verify button
+
+### Changed
+- Onboarding accepts `plan=free`; billing period is now optional
+- Free plan sets `coop.active = true` immediately (no admin review needed)
+- Pricing page grid changed from 2 to 3 columns to accommodate the free tier
+- Bottom CTA on pricing page links to free plan instead of essentials
+- Legacy users (created before verification was required) are treated as verified
+
 ## [0.1.54] - 2026-02-26
 
 ### Added
