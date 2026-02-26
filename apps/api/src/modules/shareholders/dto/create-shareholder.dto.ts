@@ -15,7 +15,7 @@ import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { ShareholderType } from '@opencoop/database';
 
-class AddressDto {
+export class AddressDto {
   @ApiProperty()
   @IsString()
   street: string;

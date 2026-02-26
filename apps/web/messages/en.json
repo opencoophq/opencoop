@@ -312,6 +312,18 @@
     "noDocuments": "No documents yet",
     "generatedOn": "Generated on"
   },
+  "personalData": {
+    "title": "Personal Data",
+    "personalInfo": "Personal Information",
+    "companyInfo": "Company Information",
+    "contactInfo": "Contact & Bank Details",
+    "readOnlyEmail": "Email address cannot be changed. Contact support if needed.",
+    "saveChanges": "Save Changes",
+    "generateCertificate": "Generate Certificate",
+    "generateDividendStatement": "Generate Statement",
+    "generating": "Generating...",
+    "downloadError": "Download failed. Please try again."
+  },
   "settings": {
     "title": "Settings",
     "preferences": "Preferences",
