@@ -85,6 +85,32 @@ export interface UserDto {
 }
 
 // ============================================================================
+// Billing Types
+// ============================================================================
+
+export type CoopPlan = 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL';
+export type BillingPeriod = 'MONTHLY' | 'YEARLY';
+export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE';
+
+export interface SubscriptionDto {
+  id: string;
+  coopId: string;
+  status: SubscriptionStatus;
+  billingPeriod: BillingPeriod;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd: boolean;
+  canceledAt?: string;
+}
+
+export interface CoopBillingInfo {
+  plan: CoopPlan;
+  trialEndsAt?: string;
+  isReadOnly: boolean;
+  subscription?: SubscriptionDto;
+}
+
+// ============================================================================
 // Coop Types
 // ============================================================================
 
@@ -114,6 +140,8 @@ export interface CoopDto {
   bankName?: string;
   bankIban?: string;
   bankBic?: string;
+  plan?: CoopPlan;
+  trialEndsAt?: string;
   createdAt: string;
   updatedAt: string;
 }

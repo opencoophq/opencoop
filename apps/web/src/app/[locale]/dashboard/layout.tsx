@@ -143,6 +143,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { href: '/dashboard/admin/reports', label: t('reports.title'), icon: <BarChart3 className="h-4 w-4" /> },
         { href: '/dashboard/admin/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
         { href: '/dashboard/admin/branding', label: t('admin.branding.title'), icon: <Palette className="h-4 w-4" /> },
+        { href: '/dashboard/admin/billing', label: t('admin.billing.title'), icon: <CreditCard className="h-4 w-4" /> },
       ]
     : [];
 
@@ -341,6 +342,39 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <Alert className="border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-200">
               <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
               <AlertDescription>{t('onboarding.pendingActivation')}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+        {selectedCoop && selectedCoop.active !== false && selectedCoop.isReadOnly && (
+          <div className="px-6 pt-6">
+            <Alert className="border-red-300 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>{t('admin.billing.readOnlyBanner')}</span>
+                <Link href="/dashboard/admin/billing">
+                  <Button size="sm" variant="outline" className="ml-4 text-red-800 border-red-300 hover:bg-red-100 dark:text-red-200 dark:border-red-700">
+                    {t('admin.billing.subscribe')}
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        {selectedCoop && selectedCoop.active !== false && !selectedCoop.isReadOnly && selectedCoop.plan !== 'FREE' && selectedCoop.trialEndsAt && (() => {
+          const daysLeft = Math.ceil((new Date(selectedCoop.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          return daysLeft > 0 && daysLeft <= 30;
+        })() && (
+          <div className="px-6 pt-6">
+            <Alert className="border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-200">
+              <AlertTriangle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>{t('admin.billing.trialBanner', { days: Math.ceil((new Date(selectedCoop.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) })}</span>
+                <Link href="/dashboard/admin/billing">
+                  <Button size="sm" variant="outline" className="ml-4 text-blue-800 border-blue-300 hover:bg-blue-100 dark:text-blue-200 dark:border-blue-700">
+                    {t('admin.billing.subscribe')}
+                  </Button>
+                </Link>
+              </AlertDescription>
             </Alert>
           </div>
         )}

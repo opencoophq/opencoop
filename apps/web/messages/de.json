@@ -682,6 +682,33 @@
       "saved": "Branding-Einstellungen erfolgreich gespeichert",
       "error": "Branding-Einstellungen konnten nicht gespeichert werden",
       "preview": "Vorschau"
+    },
+    "billing": {
+      "title": "Abrechnung",
+      "currentPlan": "Aktueller Plan",
+      "planFree": "Kostenlos",
+      "statusActive": "Aktiv",
+      "statusTrial": "Noch {days} Tage Testphase",
+      "statusPastDue": "Zahlung fehlgeschlagen",
+      "statusExpired": "Testphase abgelaufen",
+      "statusNone": "Kein Abonnement",
+      "trialEnds": "Testphase endet am {date}",
+      "nextBilling": "Nächstes Abrechnungsdatum: {date}",
+      "cancelingAtPeriodEnd": "Ihr Abonnement wird am Ende des aktuellen Abrechnungszeitraums gekündigt.",
+      "subscribe": "Abonnieren",
+      "subscribeDescription": "Wählen Sie ein Abonnement, um nach Ihrer Testphase alle Funktionen weiterhin nutzen zu können.",
+      "essentialsDescription": "Alles, was Sie zur Verwaltung einer Genossenschaft benötigen.",
+      "professionalDescription": "Erweiterte Funktionen für größere Genossenschaften.",
+      "subscribeYearly": "Abonnieren — €{price}/Jahr",
+      "subscribeMonthly": "€{price}/Monat",
+      "manageBilling": "Abrechnung verwalten",
+      "manageBillingDescription": "Zahlungsmethode ändern, Rechnungen anzeigen oder Abonnement kündigen.",
+      "openBillingPortal": "Abrechnungsportal öffnen",
+      "checkoutSuccess": "Zahlung erfolgreich! Ihr Abonnement ist jetzt aktiv.",
+      "checkoutCanceled": "Bezahlung abgebrochen. Sie können es jederzeit erneut versuchen.",
+      "readOnlyBanner": "Ihre Testphase ist abgelaufen. Abonnieren Sie, um Ihre Genossenschaft weiterhin zu verwalten.",
+      "trialBanner": "Noch {days} Tage in Ihrer kostenlosen Testphase — abonnieren Sie jetzt, um Unterbrechungen zu vermeiden.",
+      "upgradeToUnlock": "Abonnieren zum Freischalten"
     }
   },
   "system": {
@@ -719,7 +746,9 @@
       "total": "Genossenschaften gesamt",
       "emailStatus": "E-Mail",
       "emailEnabled": "Aktiviert",
-      "emailDisabled": "Deaktiviert"
+      "emailDisabled": "Deaktiviert",
+      "plan": "Plan",
+      "subscriptionStatus": "Abonnementstatus"
     },
     "coopAdmins": {
       "title": "Genossenschaftsadministratoren",
@@ -1051,7 +1080,8 @@
       "perMonth": "/Monat",
       "perYear": "/Jahr",
       "billedMonthly": "Monatliche Abrechnung",
-      "billedYearly": "Jährliche Abrechnung"
+      "billedYearly": "Jährliche Abrechnung",
+      "freeTrial": "30 Tage kostenlose Testphase inklusive"
     },
     "free": {
       "name": "Early Access",
@@ -1151,7 +1181,8 @@
       "title": "Alles bereit!",
       "subtitle": "Ihre Genossenschaft wurde erstellt. Unser Team wird sie in Kürze prüfen und aktivieren.",
       "verifySubtitle": "Ihre Genossenschaft wurde erstellt! Überprüfen Sie Ihre E-Mail, um Ihr Konto zu bestätigen und loszulegen.",
-      "goToDashboard": "Zum Dashboard"
+      "goToDashboard": "Zum Dashboard",
+      "trialSubtitle": "Ihre 30-tägige kostenlose Testphase hat begonnen. Entdecken Sie alle Funktionen — noch keine Zahlung erforderlich."
     },
     "billing": {
       "monthly": "Monatlich",

@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CoopsService } from '../coops/coops.service';
+import { BillingService } from '../billing/billing.service';
 import { CreateCoopDto } from '../coops/dto/create-coop.dto';
 import { UpdateCoopDto } from '../coops/dto/update-coop.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
@@ -26,6 +27,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class SystemController {
   constructor(
     private coopsService: CoopsService,
+    private billingService: BillingService,
     private prisma: PrismaService,
   ) {}
 
@@ -166,5 +168,16 @@ export class SystemController {
         role: true,
       },
     });
+  }
+
+  // ==================== BILLING ====================
+
+  @Put('coops/:id/billing')
+  @ApiOperation({ summary: 'Update coop billing (extend trial, change plan)' })
+  async updateCoopBilling(
+    @Param('id') id: string,
+    @Body() data: { plan?: string; trialEndsAt?: string; extendTrialDays?: number },
+  ) {
+    return this.billingService.adminUpdateBilling(id, data);
   }
 }

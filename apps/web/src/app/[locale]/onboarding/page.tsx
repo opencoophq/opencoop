@@ -321,7 +321,7 @@ export default function OnboardingPage() {
             </div>
             <h2 className="text-lg font-semibold mb-2">{t('done.title')}</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              {isFree ? t('done.verifySubtitle') : t('done.subtitle')}
+              {isFree ? t('done.verifySubtitle') : t('done.trialSubtitle')}
             </p>
             <Button onClick={() => router.push('/dashboard')} className="w-full">
               {t('done.goToDashboard')}

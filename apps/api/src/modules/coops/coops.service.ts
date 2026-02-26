@@ -25,6 +25,8 @@ export class CoopsService {
         primaryColor: true,
         secondaryColor: true,
         emailEnabled: true,
+        plan: true,
+        trialEndsAt: true,
         createdAt: true,
         _count: {
           select: {
@@ -38,6 +40,11 @@ export class CoopsService {
             shareClass: {
               select: { pricePerShare: true },
             },
+          },
+        },
+        subscription: {
+          select: {
+            status: true,
           },
         },
       },
@@ -58,6 +65,9 @@ export class CoopsService {
         primaryColor: coop.primaryColor,
         secondaryColor: coop.secondaryColor,
         emailEnabled: coop.emailEnabled,
+        plan: coop.plan,
+        trialEndsAt: coop.trialEndsAt,
+        subscriptionStatus: coop.subscription?.status ?? null,
         createdAt: coop.createdAt,
         shareholdersCount: coop._count.shareholders,
         totalCapital,

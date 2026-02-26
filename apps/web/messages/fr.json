@@ -682,6 +682,33 @@
       "saved": "Paramètres d'image de marque enregistrés avec succès",
       "error": "Échec de l'enregistrement des paramètres d'image de marque",
       "preview": "Aperçu"
+    },
+    "billing": {
+      "title": "Facturation",
+      "currentPlan": "Abonnement actuel",
+      "planFree": "Gratuit",
+      "statusActive": "Actif",
+      "statusTrial": "{days} jours restants d'essai",
+      "statusPastDue": "Paiement échoué",
+      "statusExpired": "Période d'essai expirée",
+      "statusNone": "Pas d'abonnement",
+      "trialEnds": "La période d'essai se termine le {date}",
+      "nextBilling": "Prochaine date de facturation : {date}",
+      "cancelingAtPeriodEnd": "Votre abonnement sera annulé à la fin de la période de facturation en cours.",
+      "subscribe": "S'abonner",
+      "subscribeDescription": "Choisissez un abonnement pour continuer à utiliser toutes les fonctionnalités après votre période d'essai.",
+      "essentialsDescription": "Tout ce dont vous avez besoin pour gérer une coopérative.",
+      "professionalDescription": "Fonctionnalités avancées pour les grandes coopératives.",
+      "subscribeYearly": "S'abonner — €{price}/an",
+      "subscribeMonthly": "€{price}/mois",
+      "manageBilling": "Gérer la facturation",
+      "manageBillingDescription": "Modifiez votre moyen de paiement, consultez vos factures ou annulez votre abonnement.",
+      "openBillingPortal": "Ouvrir le portail de facturation",
+      "checkoutSuccess": "Paiement réussi ! Votre abonnement est maintenant actif.",
+      "checkoutCanceled": "Le paiement a été annulé. Vous pouvez réessayer à tout moment.",
+      "readOnlyBanner": "Votre période d'essai a expiré. Abonnez-vous pour continuer à gérer votre coopérative.",
+      "trialBanner": "{days} jours restants dans votre essai gratuit — abonnez-vous maintenant pour éviter toute interruption.",
+      "upgradeToUnlock": "Abonnez-vous pour débloquer"
     }
   },
   "system": {
@@ -719,7 +746,9 @@
       "total": "Total des coopératives",
       "emailStatus": "E-mail",
       "emailEnabled": "Activé",
-      "emailDisabled": "Désactivé"
+      "emailDisabled": "Désactivé",
+      "plan": "Abonnement",
+      "subscriptionStatus": "Statut d'abonnement"
     },
     "coopAdmins": {
       "title": "Administrateurs de la coopérative",
@@ -1051,7 +1080,8 @@
       "perMonth": "/mois",
       "perYear": "/an",
       "billedMonthly": "Facturé mensuellement",
-      "billedYearly": "Facturé annuellement"
+      "billedYearly": "Facturé annuellement",
+      "freeTrial": "Essai gratuit de 30 jours inclus"
     },
     "free": {
       "name": "Early Access",
@@ -1151,7 +1181,8 @@
       "title": "Tout est prêt !",
       "subtitle": "Votre coopérative a été créée. Notre équipe l'examinera et l'activera sous peu.",
       "verifySubtitle": "Votre coopérative a été créée ! Vérifiez votre e-mail pour confirmer votre compte et commencer.",
-      "goToDashboard": "Accéder au tableau de bord"
+      "goToDashboard": "Accéder au tableau de bord",
+      "trialSubtitle": "Votre essai gratuit de 30 jours a commencé. Explorez toutes les fonctionnalités — aucun paiement requis pour l'instant."
     },
     "billing": {
       "monthly": "Mensuel",

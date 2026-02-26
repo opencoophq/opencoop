@@ -18,6 +18,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nes
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CoopGuard } from '../../common/guards/coop.guard';
+import { SubscriptionGuard } from '../../common/guards/subscription.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { CoopsService } from '../coops/coops.service';
@@ -45,7 +46,7 @@ import { UpdateBrandingDto } from '../coops/dto/update-branding.dto';
 
 @ApiTags('admin')
 @Controller('admin/coops/:coopId')
-@UseGuards(JwtAuthGuard, RolesGuard, CoopGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, CoopGuard, SubscriptionGuard)
 @Roles('SYSTEM_ADMIN', 'COOP_ADMIN')
 @ApiBearerAuth()
 export class AdminController {

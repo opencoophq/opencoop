@@ -22,6 +22,7 @@ import { SystemModule } from './modules/system/system.module';
 import { FeatureRequestsModule } from './modules/feature-requests/feature-requests.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { MigrationRequestsModule } from './modules/migration-requests/migration-requests.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { MigrationRequestsModule } from './modules/migration-requests/migration-
     FeatureRequestsModule,
     UploadsModule,
     MigrationRequestsModule,
+    BillingModule,
   ],
   providers: [
     {

@@ -7,6 +7,9 @@ interface AdminCoop {
   name: string;
   slug: string;
   active?: boolean;
+  plan?: 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL';
+  trialEndsAt?: string;
+  isReadOnly?: boolean;
 }
 
 interface AdminContextValue {

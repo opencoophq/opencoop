@@ -46,6 +46,14 @@ export async function api<T = unknown>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Request failed' }));
+
+    // Handle subscription-required errors
+    if (response.status === 403 && error.code === 'SUBSCRIPTION_REQUIRED') {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('subscription-required'));
+      }
+    }
+
     throw new Error(error.message || `HTTP ${response.status}`);
   }
 
