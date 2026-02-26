@@ -103,6 +103,11 @@
     "emailNotVerified": "Email not verified",
     "verifyEmail": "Verify your email",
     "resendVerification": "Resend verification email",
+    "verifyEmailDescription": "We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.",
+    "verifyEmailSuccess": "Your email has been verified!",
+    "verifyEmailError": "This verification link is invalid or has expired.",
+    "verifyEmailSent": "Verification email sent! Check your inbox.",
+    "goToDashboard": "Go to dashboard",
     "magicLinkLogin": "Email link",
     "passwordLogin": "Password",
     "sendMagicLink": "Send login link",
@@ -1048,6 +1053,13 @@
       "billedMonthly": "Billed monthly",
       "billedYearly": "Billed yearly"
     },
+    "free": {
+      "name": "Early Access",
+      "badge": "Free",
+      "description": "Start managing your cooperative today — no credit card needed.",
+      "cta": "Start for free",
+      "earlyAccessNote": "Free during early access period"
+    },
     "essentials": {
       "name": "Essentials",
       "description": "For cooperatives getting off spreadsheets",
@@ -1132,11 +1144,13 @@
       "slug": "URL",
       "slugPrefix": "opencoop.be/",
       "plan": "Plan",
-      "billing": "Billing"
+      "billing": "Billing",
+      "freePlan": "Free — Early Access"
     },
     "done": {
       "title": "You're all set!",
       "subtitle": "Your cooperative has been created. Our team will review and activate it shortly.",
+      "verifySubtitle": "Your cooperative has been created! Check your email to verify your account and get started.",
       "goToDashboard": "Go to dashboard"
     },
     "billing": {

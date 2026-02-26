@@ -100,7 +100,10 @@ export class AuthService {
       },
     });
 
-    // TODO: Send verification email
+    // Send verification email (non-blocking)
+    this.sendVerificationEmail(user.email, emailVerifyToken, registerDto.preferredLanguage || 'nl').catch((err) => {
+      console.error('Failed to send verification email:', err.message);
+    });
 
     const payload = {
       sub: user.id,
@@ -142,6 +145,8 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(onboardingDto.password, 12);
     const ogmPrefix = await this.coopsService.generateUniqueOgmPrefix();
+    const emailVerifyToken = randomBytes(32).toString('hex');
+    const isFree = onboardingDto.plan === 'free';
 
     const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -151,6 +156,8 @@ export class AuthService {
           passwordHash,
           role: 'COOP_ADMIN',
           preferredLanguage: onboardingDto.preferredLanguage || 'nl',
+          emailVerifyToken: hashToken(emailVerifyToken),
+          emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         },
       });
 
@@ -158,7 +165,7 @@ export class AuthService {
         data: {
           name: onboardingDto.coopName,
           slug: onboardingDto.coopSlug,
-          active: false,
+          active: isFree,
           ogmPrefix,
         },
       });
@@ -171,6 +178,11 @@ export class AuthService {
       });
 
       return { user, coop };
+    });
+
+    // Send verification email (non-blocking)
+    this.sendVerificationEmail(result.user.email, emailVerifyToken, onboardingDto.preferredLanguage || 'nl').catch((err) => {
+      console.error('Failed to send verification email:', err.message);
     });
 
     const payload = {
@@ -365,9 +377,13 @@ export class AuthService {
       adminCoops = allCoops;
     }
 
+    // Legacy users (no token AND no verified date) are treated as verified
+    const isLegacyUser = !user.emailVerified && !user.emailVerifyToken;
+    const emailVerified = !!user.emailVerified || isLegacyUser;
+
     return {
       ...safeUser,
-      emailVerified: !!user.emailVerified,
+      emailVerified,
       adminCoops,
       shareholderCoops: user.shareholders.map((s) => s.coop),
     };
@@ -767,6 +783,102 @@ export class AuthService {
     });
 
     return { message: 'Successfully joined the waitlist' };
+  }
+
+  async resendVerificationEmail(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (user.emailVerified) {
+      return { message: 'Email already verified' };
+    }
+
+    const emailVerifyToken = randomBytes(32).toString('hex');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerifyToken: hashToken(emailVerifyToken),
+        emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    });
+
+    await this.sendVerificationEmail(user.email, emailVerifyToken, user.preferredLanguage);
+
+    return { message: 'Verification email sent' };
+  }
+
+  private async sendVerificationEmail(email: string, token: string, lang?: string) {
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+    const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
+    const t = this.getEmailVerificationContent(lang);
+
+    await this.emailService.sendPlatformEmail({
+      to: email,
+      subject: t.subject,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; } h1 { color: #1e40af; }</style></head>
+        <body>
+          <h1>${t.heading}</h1>
+          <p>${t.body}</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${verifyUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${t.button}
+            </a>
+          </p>
+          <p style="color: #666; font-size: 12px;">${t.expiry}</p>
+          <hr><p style="color: #666; font-size: 12px;">${t.footer}</p>
+        </body>
+        </html>
+      `,
+    });
+  }
+
+  private getEmailVerificationContent(lang?: string) {
+    switch (lang) {
+      case 'fr':
+        return {
+          subject: 'Vérifiez votre adresse e-mail',
+          heading: 'Vérifiez votre e-mail',
+          body: 'Cliquez sur le bouton ci-dessous pour vérifier votre adresse e-mail :',
+          button: 'Vérifier mon e-mail',
+          expiry: 'Ce lien expire dans 24 heures. Si vous n\'avez pas créé de compte, vous pouvez ignorer cet e-mail.',
+          footer: 'Cet e-mail a été envoyé par OpenCoop.',
+        };
+      case 'de':
+        return {
+          subject: 'E-Mail-Adresse bestätigen',
+          heading: 'E-Mail bestätigen',
+          body: 'Klicken Sie auf die Schaltfläche unten, um Ihre E-Mail-Adresse zu bestätigen:',
+          button: 'E-Mail bestätigen',
+          expiry: 'Dieser Link ist 24 Stunden gültig. Wenn Sie kein Konto erstellt haben, können Sie diese E-Mail ignorieren.',
+          footer: 'Diese E-Mail wurde von OpenCoop gesendet.',
+        };
+      case 'en':
+        return {
+          subject: 'Verify your email address',
+          heading: 'Verify your email',
+          body: 'Click the button below to verify your email address:',
+          button: 'Verify email',
+          expiry: 'This link expires in 24 hours. If you didn\'t create an account, you can safely ignore this email.',
+          footer: 'This email was sent by OpenCoop.',
+        };
+      default: // nl
+        return {
+          subject: 'Bevestig je e-mailadres',
+          heading: 'Bevestig je e-mail',
+          body: 'Klik op de knop hieronder om je e-mailadres te bevestigen:',
+          button: 'E-mail bevestigen',
+          expiry: 'Deze link is 24 uur geldig. Als je geen account hebt aangemaakt, kun je deze e-mail negeren.',
+          footer: 'Deze e-mail is verzonden door OpenCoop.',
+        };
+    }
   }
 
   private getWaitlistEmailContent(locale?: string): { subject: string; heading: string; body: string; closing: string; footer: string } {

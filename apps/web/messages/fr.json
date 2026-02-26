@@ -103,6 +103,11 @@
     "emailNotVerified": "E-mail non vérifié",
     "verifyEmail": "Vérifiez votre e-mail",
     "resendVerification": "Renvoyer l'e-mail de vérification",
+    "verifyEmailDescription": "Nous avons envoyé un lien de vérification à votre adresse e-mail. Veuillez vérifier votre boîte de réception et cliquer sur le lien pour vérifier votre compte.",
+    "verifyEmailSuccess": "Votre e-mail a été vérifié !",
+    "verifyEmailError": "Ce lien de vérification est invalide ou a expiré.",
+    "verifyEmailSent": "E-mail de vérification envoyé ! Vérifiez votre boîte de réception.",
+    "goToDashboard": "Accéder au tableau de bord",
     "magicLinkLogin": "Lien par e-mail",
     "passwordLogin": "Mot de passe",
     "sendMagicLink": "Envoyer le lien de connexion",
@@ -1048,6 +1053,13 @@
       "billedMonthly": "Facturé mensuellement",
       "billedYearly": "Facturé annuellement"
     },
+    "free": {
+      "name": "Early Access",
+      "badge": "Gratuit",
+      "description": "Commencez à gérer votre coopérative dès aujourd'hui — aucune carte de crédit requise.",
+      "cta": "Commencer gratuitement",
+      "earlyAccessNote": "Gratuit pendant la période d'accès anticipé"
+    },
     "essentials": {
       "name": "Essentials",
       "description": "Pour les coopératives qui veulent quitter les tableurs",
@@ -1132,11 +1144,13 @@
       "slug": "URL",
       "slugPrefix": "opencoop.be/",
       "plan": "Plan",
-      "billing": "Facturation"
+      "billing": "Facturation",
+      "freePlan": "Gratuit — Accès anticipé"
     },
     "done": {
       "title": "Tout est prêt !",
       "subtitle": "Votre coopérative a été créée. Notre équipe l'examinera et l'activera sous peu.",
+      "verifySubtitle": "Votre coopérative a été créée ! Vérifiez votre e-mail pour confirmer votre compte et commencer.",
       "goToDashboard": "Accéder au tableau de bord"
     },
     "billing": {

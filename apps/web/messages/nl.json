@@ -103,6 +103,11 @@
     "emailNotVerified": "E-mail niet geverifieerd",
     "verifyEmail": "Verifieer uw e-mail",
     "resendVerification": "Verificatie e-mail opnieuw verzenden",
+    "verifyEmailDescription": "We hebben een verificatielink naar je e-mailadres gestuurd. Check je inbox en klik op de link om je account te verifiëren.",
+    "verifyEmailSuccess": "Je e-mailadres is geverifieerd!",
+    "verifyEmailError": "Deze verificatielink is ongeldig of verlopen.",
+    "verifyEmailSent": "Verificatie e-mail verzonden! Check je inbox.",
+    "goToDashboard": "Ga naar dashboard",
     "magicLinkLogin": "Login link",
     "passwordLogin": "Wachtwoord",
     "sendMagicLink": "Verstuur login link",
@@ -1048,6 +1053,13 @@
       "billedMonthly": "Maandelijks gefactureerd",
       "billedYearly": "Jaarlijks gefactureerd"
     },
+    "free": {
+      "name": "Early Access",
+      "badge": "Gratis",
+      "description": "Begin vandaag met het beheren van uw coöperatie — geen creditcard nodig.",
+      "cta": "Gratis starten",
+      "earlyAccessNote": "Gratis tijdens de early access periode"
+    },
     "essentials": {
       "name": "Essentials",
       "description": "Voor coöperaties die af willen van spreadsheets",
@@ -1132,11 +1144,13 @@
       "slug": "URL",
       "slugPrefix": "opencoop.be/",
       "plan": "Plan",
-      "billing": "Facturatie"
+      "billing": "Facturatie",
+      "freePlan": "Gratis — Early Access"
     },
     "done": {
       "title": "Alles klaar!",
       "subtitle": "Uw coöperatie is aangemaakt. Ons team zal deze binnenkort beoordelen en activeren.",
+      "verifySubtitle": "Uw coöperatie is aangemaakt! Check uw e-mail om uw account te verifiëren en te starten.",
       "goToDashboard": "Ga naar dashboard"
     },
     "billing": {

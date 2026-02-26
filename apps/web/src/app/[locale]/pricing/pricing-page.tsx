@@ -32,6 +32,15 @@ import { useState } from 'react';
 
 const GITHUB_URL = 'https://github.com/opencoophq/opencoop';
 
+const FREE_FEATURES = [
+  'unlimitedShareholders',
+  'shareholders',
+  'oneShareClass',
+  'oneDividendRun',
+  'documents',
+  'emailNotifications',
+] as const;
+
 const ESSENTIALS_FEATURES = [
   'unlimitedShareholders',
   'shareholders',
@@ -158,10 +167,47 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
       </FadeIn>
 
       {/* Pricing cards */}
-      <section className="max-w-5xl mx-auto px-6 pb-24">
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Essentials */}
+      <section className="max-w-6xl mx-auto px-6 pb-24">
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Free — Early Access */}
           <FadeIn>
+            <div className="rounded-2xl border-2 border-green-500 bg-card p-8 flex flex-col h-full relative">
+              <Badge className="absolute -top-3 left-8 bg-green-500 text-white">
+                {t('free.badge')}
+              </Badge>
+
+              <div className="mb-6">
+                <h3 className="text-xl font-bold">{t('free.name')}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{t('free.description')}</p>
+              </div>
+
+              <div className="mb-8">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-5xl font-extrabold tracking-tight">&euro;0</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">{t('free.earlyAccessNote')}</p>
+              </div>
+
+              <Link href="/onboarding?plan=free">
+                <Button size="lg" className="w-full text-base h-12 mb-8 bg-green-500 hover:bg-green-600">
+                  {t('free.cta')}
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+
+              <ul className="space-y-3 flex-1">
+                {FREE_FEATURES.map((key) => (
+                  <li key={key} className="flex items-start gap-3 text-sm">
+                    <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                    <span>{t(`features.${key}`)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </FadeIn>
+
+          {/* Essentials */}
+          <FadeIn delay={100}>
             <div className="rounded-2xl border bg-card p-8 flex flex-col h-full">
               <div className="mb-6">
                 <h3 className="text-xl font-bold">{t('essentials.name')}</h3>
@@ -213,7 +259,7 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
           </FadeIn>
 
           {/* Professional */}
-          <FadeIn delay={100}>
+          <FadeIn delay={200}>
             <div className="rounded-2xl border-2 border-primary bg-card p-8 flex flex-col h-full relative">
               <Badge className="absolute -top-3 left-8 bg-primary text-primary-foreground">
                 {t('professional.badge')}
@@ -375,7 +421,7 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
                 {t('cta.primary')}
               </Button>
             ) : (
-              <Link href="/onboarding?plan=essentials&billing=yearly">
+              <Link href="/onboarding?plan=free">
                 <Button size="lg" className="w-full sm:w-auto text-base px-8 h-12">
                   <ArrowRight className="w-4 h-4" />
                   {t('cta.primary')}

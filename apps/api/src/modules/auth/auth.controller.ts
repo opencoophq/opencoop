@@ -81,6 +81,16 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('resend-verification')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Resend email verification' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  async resendVerification(@CurrentUser() user: CurrentUserData) {
+    return this.authService.resendVerificationEmail(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })

@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Check, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { Check, ArrowRight, ArrowLeft, Loader2, Mail } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -30,8 +30,9 @@ export default function OnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const plan = (searchParams.get('plan') as 'essentials' | 'professional') || 'essentials';
+  const plan = (searchParams.get('plan') as 'free' | 'essentials' | 'professional') || 'essentials';
   const billing = (searchParams.get('billing') as 'monthly' | 'yearly') || 'yearly';
+  const isFree = plan === 'free';
 
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +94,7 @@ export default function OnboardingPage() {
           coopName: data.coopName,
           coopSlug: data.coopSlug,
           plan,
-          billingPeriod: billing,
+          ...(!isFree && { billingPeriod: billing }),
         }),
       });
 
@@ -280,11 +281,13 @@ export default function OnboardingPage() {
 
               <div className="flex gap-3 pt-2">
                 <Badge variant="secondary" className="text-sm">
-                  {t('cooperative.plan')}: {plan === 'essentials' ? 'Essentials' : 'Professional'}
+                  {t('cooperative.plan')}: {isFree ? t('cooperative.freePlan') : plan === 'essentials' ? 'Essentials' : 'Professional'}
                 </Badge>
-                <Badge variant="secondary" className="text-sm">
-                  {t('cooperative.billing')}: {billing === 'yearly' ? t('billing.yearly') : t('billing.monthly')}
-                </Badge>
+                {!isFree && (
+                  <Badge variant="secondary" className="text-sm">
+                    {t('cooperative.billing')}: {billing === 'yearly' ? t('billing.yearly') : t('billing.monthly')}
+                  </Badge>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">
@@ -311,11 +314,15 @@ export default function OnboardingPage() {
         {/* Step 3: Done */}
         {step === 2 && (
           <div className="bg-white rounded-xl border p-6 shadow-sm text-center">
-            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check className="w-6 h-6" />
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
+              isFree ? 'bg-primary/10 text-primary' : 'bg-green-100 text-green-600'
+            }`}>
+              {isFree ? <Mail className="w-6 h-6" /> : <Check className="w-6 h-6" />}
             </div>
             <h2 className="text-lg font-semibold mb-2">{t('done.title')}</h2>
-            <p className="text-sm text-muted-foreground mb-6">{t('done.subtitle')}</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              {isFree ? t('done.verifySubtitle') : t('done.subtitle')}
+            </p>
             <Button onClick={() => router.push('/dashboard')} className="w-full">
               {t('done.goToDashboard')}
               <ArrowRight className="w-4 h-4 ml-1" />
