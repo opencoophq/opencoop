@@ -1,10 +1,19 @@
-import { Controller, Post, Req, Headers, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Req,
+  Headers,
+  BadRequestException,
+  Inject,
+  Optional,
+  ServiceUnavailableException,
+  RawBodyRequest,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { BillingService } from './billing.service';
 import { STRIPE_CLIENT } from './stripe.provider';
 import Stripe from 'stripe';
-import { RawBodyRequest } from '@nestjs/common';
 import { Request } from 'express';
 
 @ApiTags('billing')
@@ -12,7 +21,7 @@ import { Request } from 'express';
 export class BillingWebhookController {
   constructor(
     private billingService: BillingService,
-    @Inject(STRIPE_CLIENT) private stripe: Stripe,
+    @Inject(STRIPE_CLIENT) @Optional() private stripe: Stripe | null,
   ) {}
 
   @Post('webhook')
@@ -22,6 +31,10 @@ export class BillingWebhookController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
   ) {
+    if (!this.stripe) {
+      throw new ServiceUnavailableException('Stripe is not configured');
+    }
+
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
       throw new BadRequestException('Webhook secret not configured');

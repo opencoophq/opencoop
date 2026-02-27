@@ -1,4 +1,11 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  Optional,
+  NotFoundException,
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service';
 import { STRIPE_CLIENT } from './stripe.provider';
@@ -34,8 +41,15 @@ function getItemPeriod(sub: Stripe.Subscription): { start: Date | null; end: Dat
 export class BillingService {
   constructor(
     private prisma: PrismaService,
-    @Inject(STRIPE_CLIENT) private stripe: Stripe,
+    @Inject(STRIPE_CLIENT) @Optional() private stripe: Stripe | null,
   ) {}
+
+  private requireStripe(): Stripe {
+    if (!this.stripe) {
+      throw new ServiceUnavailableException('Stripe is not configured');
+    }
+    return this.stripe;
+  }
 
   async createCheckoutSession(
     coopId: string,
@@ -59,7 +73,7 @@ export class BillingService {
     if (coop.subscription?.stripeCustomerId) {
       stripeCustomerId = coop.subscription.stripeCustomerId;
     } else {
-      const customer = await this.stripe.customers.create({
+      const customer = await this.requireStripe().customers.create({
         metadata: { coopId: coop.id },
         name: coop.name,
       });
@@ -81,7 +95,7 @@ export class BillingService {
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
 
-    const session = await this.stripe.checkout.sessions.create({
+    const session = await this.requireStripe().checkout.sessions.create({
       customer: stripeCustomerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
@@ -110,7 +124,7 @@ export class BillingService {
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
 
-    const session = await this.stripe.billingPortal.sessions.create({
+    const session = await this.requireStripe().billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
       return_url: `${frontendUrl}/dashboard/admin/billing`,
     });
@@ -177,7 +191,7 @@ export class BillingService {
       : (session.subscription as Stripe.Subscription | null)?.id;
     if (!subscriptionId) return;
 
-    const stripeSub = await this.stripe.subscriptions.retrieve(subscriptionId);
+    const stripeSub = await this.requireStripe().subscriptions.retrieve(subscriptionId);
     const period = getItemPeriod(stripeSub);
 
     await this.prisma.subscription.update({
@@ -201,7 +215,7 @@ export class BillingService {
     });
     if (!subscription) return;
 
-    const stripeSub = await this.stripe.subscriptions.retrieve(subscriptionId);
+    const stripeSub = await this.requireStripe().subscriptions.retrieve(subscriptionId);
     const period = getItemPeriod(stripeSub);
 
     await this.prisma.subscription.update({
