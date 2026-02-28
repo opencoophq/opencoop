@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.58] - 2026-02-28
+
+### Changed
+- **Consolidated settings page** — merged shareholder links, branding (logo & colors), and general settings into a single settings page; removed separate branding nav item
+
 ## [0.1.57] - 2026-02-28
 
 ### Added
