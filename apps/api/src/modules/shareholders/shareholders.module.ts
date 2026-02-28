@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ShareholdersService } from './shareholders.service';
 import { ShareholderActionsController } from './shareholder-actions.controller';
 import { BirthdaySchedulerService } from './birthday-scheduler.service';
@@ -8,7 +8,7 @@ import { TransactionsModule } from '../transactions/transactions.module';
 import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
-  imports: [AuthModule, EmailModule, TransactionsModule, DocumentsModule],
+  imports: [forwardRef(() => AuthModule), EmailModule, TransactionsModule, DocumentsModule],
   controllers: [ShareholderActionsController],
   providers: [ShareholdersService, BirthdaySchedulerService],
   exports: [ShareholdersService],
