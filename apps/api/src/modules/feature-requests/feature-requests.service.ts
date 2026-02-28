@@ -14,6 +14,9 @@ export class FeatureRequestsService {
   ) {}
 
   async create(dto: CreateFeatureRequestDto) {
+    const type = dto.type || 'feature';
+    const isBug = type === 'bug';
+
     const featureRequest = await this.prisma.featureRequest.create({
       data: {
         name: dto.name,
@@ -25,21 +28,22 @@ export class FeatureRequestsService {
     });
 
     // Fire-and-forget: create GitHub issue
-    this.createGitHubIssue(featureRequest.id, dto).catch((err) => {
+    this.createGitHubIssue(featureRequest.id, dto, type).catch((err) => {
       this.logger.error('Failed to create GitHub issue:', err.message);
     });
 
     // Fire-and-forget: send thank-you email
-    this.sendThankYouEmail(dto).catch((err) => {
+    this.sendThankYouEmail(dto, type).catch((err) => {
       this.logger.error('Failed to send thank-you email:', err.message);
     });
 
     // Fire-and-forget: notify team
+    const subjectPrefix = isBug ? 'Bug report' : 'Feature request';
     this.emailService.sendPlatformEmail({
       to: 'hello@opencoop.be',
-      subject: `Feature request: ${dto.title}`,
+      subject: `${subjectPrefix}: ${dto.title}`,
       text: [
-        `New feature request from ${dto.name} (${dto.email})`,
+        `New ${subjectPrefix.toLowerCase()} from ${dto.name} (${dto.email})`,
         ``,
         `Title: ${dto.title}`,
         ``,
@@ -50,19 +54,27 @@ export class FeatureRequestsService {
       this.logger.error('Failed to send feature request notification:', err.message);
     });
 
-    return { message: 'Feature request submitted successfully' };
+    return { message: `${subjectPrefix} submitted successfully` };
   }
 
-  private async createGitHubIssue(featureRequestId: string, dto: CreateFeatureRequestDto) {
+  private async createGitHubIssue(
+    featureRequestId: string,
+    dto: CreateFeatureRequestDto,
+    type: 'feature' | 'bug',
+  ) {
     const token = process.env.GITHUB_TOKEN;
     if (!token) return;
 
     const octokit = new Octokit({ auth: token });
+    const isBug = type === 'bug';
+    const prefix = isBug ? 'Bug Report' : 'Feature Request';
+    const label = isBug ? 'bug' : 'feature-request';
+    const source = 'the dashboard feedback form';
 
     const { data: issue } = await octokit.issues.create({
       owner: 'opencoophq',
       repo: 'opencoop',
-      title: `[Feature Request] ${dto.title}`,
+      title: `[${prefix}] ${dto.title}`,
       body: [
         `**Submitted by:** ${dto.name} (${dto.email})`,
         '',
@@ -70,9 +82,9 @@ export class FeatureRequestsService {
         dto.description,
         '',
         `---`,
-        `*Submitted via the feature request form*`,
+        `*Submitted via ${source}*`,
       ].join('\n'),
-      labels: ['feature-request'],
+      labels: [label],
     });
 
     await this.prisma.featureRequest.update({
@@ -81,8 +93,8 @@ export class FeatureRequestsService {
     });
   }
 
-  private async sendThankYouEmail(dto: CreateFeatureRequestDto) {
-    const content = this.getEmailContent(dto.locale);
+  private async sendThankYouEmail(dto: CreateFeatureRequestDto, type: 'feature' | 'bug') {
+    const content = this.getEmailContent(dto.locale, type);
 
     await this.emailService.sendPlatformEmail({
       to: dto.email,
@@ -98,41 +110,74 @@ export class FeatureRequestsService {
     });
   }
 
-  private getEmailContent(locale?: string): {
+  private getEmailContent(
+    locale?: string,
+    type: 'feature' | 'bug' = 'feature',
+  ): {
     subject: string;
     heading: string;
     body: string;
     closing: string;
   } {
+    const isBug = type === 'bug';
+
     switch (locale) {
       case 'nl':
-        return {
-          subject: 'Bedankt voor je feature request — OpenCoop',
-          heading: 'Bedankt voor je suggestie!',
-          body: 'We hebben je feature request ontvangen en zullen deze beoordelen:',
-          closing: 'Het OpenCoop-team',
-        };
+        return isBug
+          ? {
+              subject: 'Bedankt voor je bugmelding — OpenCoop',
+              heading: 'Bedankt voor je melding!',
+              body: 'We hebben je bugmelding ontvangen en zullen deze bekijken:',
+              closing: 'Het OpenCoop-team',
+            }
+          : {
+              subject: 'Bedankt voor je feature request — OpenCoop',
+              heading: 'Bedankt voor je suggestie!',
+              body: 'We hebben je feature request ontvangen en zullen deze beoordelen:',
+              closing: 'Het OpenCoop-team',
+            };
       case 'fr':
-        return {
-          subject: 'Merci pour votre suggestion — OpenCoop',
-          heading: 'Merci pour votre suggestion !',
-          body: 'Nous avons reçu votre demande de fonctionnalité et nous l\'examinerons :',
-          closing: "L'équipe OpenCoop",
-        };
+        return isBug
+          ? {
+              subject: 'Merci pour votre signalement — OpenCoop',
+              heading: 'Merci pour votre signalement !',
+              body: 'Nous avons reçu votre rapport de bug et nous l\'examinerons :',
+              closing: "L'équipe OpenCoop",
+            }
+          : {
+              subject: 'Merci pour votre suggestion — OpenCoop',
+              heading: 'Merci pour votre suggestion !',
+              body: 'Nous avons reçu votre demande de fonctionnalité et nous l\'examinerons :',
+              closing: "L'équipe OpenCoop",
+            };
       case 'de':
-        return {
-          subject: 'Danke für Ihren Vorschlag — OpenCoop',
-          heading: 'Danke für Ihren Vorschlag!',
-          body: 'Wir haben Ihre Funktionsanfrage erhalten und werden sie prüfen:',
-          closing: 'Das OpenCoop-Team',
-        };
+        return isBug
+          ? {
+              subject: 'Danke für Ihre Fehlermeldung — OpenCoop',
+              heading: 'Danke für Ihre Meldung!',
+              body: 'Wir haben Ihre Fehlermeldung erhalten und werden sie prüfen:',
+              closing: 'Das OpenCoop-Team',
+            }
+          : {
+              subject: 'Danke für Ihren Vorschlag — OpenCoop',
+              heading: 'Danke für Ihren Vorschlag!',
+              body: 'Wir haben Ihre Funktionsanfrage erhalten und werden sie prüfen:',
+              closing: 'Das OpenCoop-Team',
+            };
       default:
-        return {
-          subject: 'Thanks for your feature request — OpenCoop',
-          heading: 'Thanks for your suggestion!',
-          body: "We've received your feature request and will review it:",
-          closing: 'The OpenCoop team',
-        };
+        return isBug
+          ? {
+              subject: 'Thanks for your bug report — OpenCoop',
+              heading: 'Thanks for your report!',
+              body: "We've received your bug report and will look into it:",
+              closing: 'The OpenCoop team',
+            }
+          : {
+              subject: 'Thanks for your feature request — OpenCoop',
+              heading: 'Thanks for your suggestion!',
+              body: "We've received your feature request and will review it:",
+              closing: 'The OpenCoop team',
+            };
     }
   }
 }

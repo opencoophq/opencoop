@@ -1331,5 +1331,24 @@
       "distribution": "Kapitaalverdeling",
       "details": "Projectdetails"
     }
+  },
+  "feedback": {
+    "title": "Feedback geven",
+    "subtitle": "Help ons OpenCoop te verbeteren door problemen te melden of functies voor te stellen.",
+    "form": {
+      "type": "Wat voor feedback?",
+      "typeBug": "Bugmelding",
+      "typeFeature": "Functieverzoek",
+      "title": "Titel",
+      "titlePlaceholderBug": "Wat ging er mis?",
+      "titlePlaceholderFeature": "Een korte samenvatting van je idee",
+      "description": "Beschrijving",
+      "descriptionPlaceholderBug": "Beschrijf het probleem, inclusief wat je verwachtte en wat er daadwerkelijk gebeurde...",
+      "descriptionPlaceholderFeature": "Beschrijf de functie die je graag zou zien en waarom deze nuttig zou zijn...",
+      "submitBug": "Bugmelding versturen",
+      "submitFeature": "Functieverzoek versturen"
+    },
+    "success": "Bedankt! Je feedback is verzonden. We bekijken het binnenkort.",
+    "error": "Er ging iets mis. Probeer het opnieuw."
   }
 }

@@ -1331,5 +1331,24 @@
       "distribution": "Capital Distribution",
       "details": "Project Details"
     }
+  },
+  "feedback": {
+    "title": "Send feedback",
+    "subtitle": "Help us improve OpenCoop by reporting issues or suggesting features.",
+    "form": {
+      "type": "What kind of feedback?",
+      "typeBug": "Bug report",
+      "typeFeature": "Feature request",
+      "title": "Title",
+      "titlePlaceholderBug": "What went wrong?",
+      "titlePlaceholderFeature": "A short summary of your idea",
+      "description": "Description",
+      "descriptionPlaceholderBug": "Describe the issue, including what you expected to happen and what actually happened...",
+      "descriptionPlaceholderFeature": "Describe the feature you'd like to see and why it would be useful...",
+      "submitBug": "Submit bug report",
+      "submitFeature": "Submit feature request"
+    },
+    "success": "Thanks! Your feedback has been submitted. We'll review it soon.",
+    "error": "Something went wrong. Please try again."
   }
 }

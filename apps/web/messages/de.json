@@ -1331,5 +1331,24 @@
       "distribution": "Kapitalverteilung",
       "details": "Projektdetails"
     }
+  },
+  "feedback": {
+    "title": "Feedback senden",
+    "subtitle": "Helfen Sie uns, OpenCoop zu verbessern, indem Sie Probleme melden oder Funktionen vorschlagen.",
+    "form": {
+      "type": "Welche Art von Feedback?",
+      "typeBug": "Fehlermeldung",
+      "typeFeature": "Funktionsanfrage",
+      "title": "Titel",
+      "titlePlaceholderBug": "Was ist schiefgelaufen?",
+      "titlePlaceholderFeature": "Eine kurze Zusammenfassung Ihrer Idee",
+      "description": "Beschreibung",
+      "descriptionPlaceholderBug": "Beschreiben Sie das Problem, einschließlich dessen, was Sie erwartet haben und was tatsächlich passiert ist...",
+      "descriptionPlaceholderFeature": "Beschreiben Sie die gewünschte Funktion und warum sie nützlich wäre...",
+      "submitBug": "Fehlermeldung senden",
+      "submitFeature": "Funktionsanfrage senden"
+    },
+    "success": "Danke! Ihr Feedback wurde gesendet. Wir werden es bald prüfen.",
+    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
   }
 }

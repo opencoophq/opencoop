@@ -1331,5 +1331,24 @@
       "distribution": "Répartition du capital",
       "details": "Détails des projets"
     }
+  },
+  "feedback": {
+    "title": "Envoyer un commentaire",
+    "subtitle": "Aidez-nous à améliorer OpenCoop en signalant des problèmes ou en suggérant des fonctionnalités.",
+    "form": {
+      "type": "Quel type de commentaire ?",
+      "typeBug": "Signaler un bug",
+      "typeFeature": "Demande de fonctionnalité",
+      "title": "Titre",
+      "titlePlaceholderBug": "Que s'est-il passé ?",
+      "titlePlaceholderFeature": "Un bref résumé de votre idée",
+      "description": "Description",
+      "descriptionPlaceholderBug": "Décrivez le problème, y compris ce que vous attendiez et ce qui s'est réellement passé...",
+      "descriptionPlaceholderFeature": "Décrivez la fonctionnalité souhaitée et pourquoi elle serait utile...",
+      "submitBug": "Signaler le bug",
+      "submitFeature": "Soumettre la demande"
+    },
+    "success": "Merci ! Votre commentaire a été envoyé. Nous l'examinerons bientôt.",
+    "error": "Une erreur s'est produite. Veuillez réessayer."
   }
 }
