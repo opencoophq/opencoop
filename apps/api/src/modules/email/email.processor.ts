@@ -1,6 +1,7 @@
 import { Processor, Process } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
+import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as nodemailer from 'nodemailer';
 import * as fs from 'fs';
@@ -31,63 +32,69 @@ export class EmailProcessor {
 
   @Process('send')
   async handleSend(job: Job<EmailJob>) {
-    const { emailLogId, coopId, to, subject, templateKey, templateData, attachments } = job.data;
+    return Sentry.withIsolationScope(async (scope) => {
+      scope.setTag('queue', 'email');
+      scope.setTag('job', 'send');
+      const { emailLogId, coopId, to, subject, templateKey, templateData, attachments } = job.data;
 
-    try {
-      // Get coop email configuration
-      const coop = await this.prisma.coop.findUnique({
-        where: { id: coopId },
-      });
+      try {
+        // Get coop email configuration
+        const coop = await this.prisma.coop.findUnique({
+          where: { id: coopId },
+        });
 
-      if (!coop) {
-        throw new Error('Coop not found');
-      }
+        if (!coop) {
+          throw new Error('Coop not found');
+        }
 
-      // Check if email is enabled for this coop
-      if (!coop.emailEnabled) {
-        this.logger.warn(`Email disabled for coop ${coop.name} (${coopId})`);
+        // Check if email is enabled for this coop
+        if (!coop.emailEnabled) {
+          this.logger.warn(`Email disabled for coop ${coop.name} (${coopId})`);
+          await this.prisma.emailLog.update({
+            where: { id: emailLogId },
+            data: {
+              status: 'FAILED',
+              errorMessage: 'Email disabled for this cooperative',
+            },
+          });
+          return; // Don't retry
+        }
+
+        // Get email content from template
+        const html = this.renderTemplate(templateKey, templateData, coop.name);
+
+        // Route to the appropriate email provider
+        if (coop.emailProvider === 'graph' && coop.graphClientId) {
+          await this.sendViaGraph(coop, to, subject, html, attachments);
+        } else if (coop.emailProvider === 'smtp' && coop.smtpHost) {
+          await this.sendViaSmtp(coop, to, subject, html, attachments);
+        } else {
+          await this.sendViaPlatformSmtp(coop.name, to, subject, html, attachments);
+        }
+
+        // Update email log
+        await this.prisma.emailLog.update({
+          where: { id: emailLogId },
+          data: {
+            status: 'SENT',
+            sentAt: new Date(),
+          },
+        });
+      } catch (error) {
+        Sentry.captureException(error);
+
+        // Update email log with error
         await this.prisma.emailLog.update({
           where: { id: emailLogId },
           data: {
             status: 'FAILED',
-            errorMessage: 'Email disabled for this cooperative',
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
           },
         });
-        return; // Don't retry
+
+        throw error;
       }
-
-      // Get email content from template
-      const html = this.renderTemplate(templateKey, templateData, coop.name);
-
-      // Route to the appropriate email provider
-      if (coop.emailProvider === 'graph' && coop.graphClientId) {
-        await this.sendViaGraph(coop, to, subject, html, attachments);
-      } else if (coop.emailProvider === 'smtp' && coop.smtpHost) {
-        await this.sendViaSmtp(coop, to, subject, html, attachments);
-      } else {
-        await this.sendViaPlatformSmtp(coop.name, to, subject, html, attachments);
-      }
-
-      // Update email log
-      await this.prisma.emailLog.update({
-        where: { id: emailLogId },
-        data: {
-          status: 'SENT',
-          sentAt: new Date(),
-        },
-      });
-    } catch (error) {
-      // Update email log with error
-      await this.prisma.emailLog.update({
-        where: { id: emailLogId },
-        data: {
-          status: 'FAILED',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        },
-      });
-
-      throw error;
-    }
+    });
   }
 
   private async sendViaPlatformSmtp(
