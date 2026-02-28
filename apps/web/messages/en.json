@@ -416,7 +416,19 @@
     "updateDetails": "Update details",
     "buyingFor": "Buying shares for",
     "registerNewPerson": "Register someone else",
-    "registerNewPersonDescription": "Register a new shareholder"
+    "registerNewPersonDescription": "Register a new shareholder",
+    "familyHelperText": "Enter the details of the person who will receive the shares.",
+    "companyHelperText": "Enter the company details that the shares will be registered to.",
+    "giftExplanation": "You'll receive a gift certificate with a unique code. Share it with the recipient so they can claim the shares and fill in their own details.",
+    "giftBuyerEmail": "Your email (to receive the gift certificate)",
+    "alreadyMember": "Already a member? Log in",
+    "giftCode": "Gift code",
+    "giftCertificate": "Gift Certificate",
+    "giftShareWith": "Share this code or QR with the recipient",
+    "claimGift": "Claim Gift Certificate",
+    "enterGiftCode": "Enter your gift code",
+    "claimDescription": "Enter the code from your gift certificate to claim your shares.",
+    "yourDetails": "Your details"
   },
   "home": {
     "title": "OpenCoop",

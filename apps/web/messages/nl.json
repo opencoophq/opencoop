@@ -416,7 +416,19 @@
     "updateDetails": "Gegevens bijwerken",
     "buyingFor": "Aandelen kopen voor",
     "registerNewPerson": "Iemand anders registreren",
-    "registerNewPersonDescription": "Registreer een nieuwe aandeelhouder"
+    "registerNewPersonDescription": "Registreer een nieuwe aandeelhouder",
+    "familyHelperText": "Vul de gegevens in van de persoon die de aandelen zal ontvangen.",
+    "companyHelperText": "Vul de bedrijfsgegevens in waarop de aandelen geregistreerd worden.",
+    "giftExplanation": "Je ontvangt een cadeaubon met een unieke code. Deel deze met de ontvanger zodat zij de aandelen kunnen claimen en hun eigen gegevens invullen.",
+    "giftBuyerEmail": "Jouw e-mail (om de cadeaubon te ontvangen)",
+    "alreadyMember": "Al lid? Log in",
+    "giftCode": "Cadeaucode",
+    "giftCertificate": "Cadeaubon",
+    "giftShareWith": "Deel deze code of QR met de ontvanger",
+    "claimGift": "Cadeaubon inwisselen",
+    "enterGiftCode": "Voer je cadeaucode in",
+    "claimDescription": "Voer de code van je cadeaubon in om je aandelen te claimen.",
+    "yourDetails": "Jouw gegevens"
   },
   "home": {
     "title": "OpenCoop",
