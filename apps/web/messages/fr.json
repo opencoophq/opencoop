@@ -416,7 +416,19 @@
     "updateDetails": "Mettre à jour les informations",
     "buyingFor": "Achat de parts pour",
     "registerNewPerson": "Inscrire une autre personne",
-    "registerNewPersonDescription": "Inscrire un nouveau coopérateur"
+    "registerNewPersonDescription": "Inscrire un nouveau coopérateur",
+    "familyHelperText": "Saisissez les coordonnées de la personne qui recevra les parts.",
+    "companyHelperText": "Saisissez les informations de la société à laquelle les parts seront enregistrées.",
+    "giftExplanation": "Vous recevrez un bon cadeau avec un code unique. Partagez-le avec le destinataire afin qu'il puisse réclamer les parts et remplir ses propres coordonnées.",
+    "giftBuyerEmail": "Votre e-mail (pour recevoir le bon cadeau)",
+    "alreadyMember": "Déjà membre ? Se connecter",
+    "giftCode": "Code cadeau",
+    "giftCertificate": "Bon cadeau",
+    "giftShareWith": "Partagez ce code ou QR avec le destinataire",
+    "claimGift": "Utiliser le bon cadeau",
+    "enterGiftCode": "Saisissez votre code cadeau",
+    "claimDescription": "Saisissez le code de votre bon cadeau pour réclamer vos parts.",
+    "yourDetails": "Vos coordonnées"
   },
   "home": {
     "title": "OpenCoop",

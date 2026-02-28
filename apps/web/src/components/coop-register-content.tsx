@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency } from '@opencoop/shared';
 import { DatePicker } from '@/components/ui/date-picker';
 import { EpcQrCode } from '@/components/epc-qr-code';
-import { UserPlus } from 'lucide-react';
+import { Gift, UserPlus } from 'lucide-react';
 
 interface CoopPublicInfo {
   id: string;
@@ -85,6 +87,7 @@ type RegistrationForm = z.infer<typeof registrationSchema>;
 
 export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   const t = useTranslations();
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const preselectedClass = searchParams.get('class');
   const preselectedProject = searchParams.get('project');
@@ -100,6 +103,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   const [result, setResult] = useState<{
     transactionId: string;
     ogmCode?: string;
+    giftCode?: string;
   } | null>(null);
 
   // Determine if user has existing shareholders (short flow) or is new (long flow)
@@ -269,10 +273,14 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
     }
 
     // Validate required fields based on beneficiary type
-    const fieldsToValidate: (keyof RegistrationForm)[] =
-      watchBeneficiaryType === 'company'
-        ? ['companyName', 'email', 'street', 'number', 'postalCode', 'city', 'country']
-        : ['firstName', 'lastName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
+    let fieldsToValidate: (keyof RegistrationForm)[];
+    if (watchBeneficiaryType === 'gift') {
+      fieldsToValidate = ['email'];
+    } else if (watchBeneficiaryType === 'company') {
+      fieldsToValidate = ['companyName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
+    } else {
+      fieldsToValidate = ['firstName', 'lastName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
+    }
 
     const result = await form.trigger(fieldsToValidate);
     if (result) {
@@ -286,9 +294,13 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
     try {
       // This would normally call the API
       // For now, simulate success
+      const isGift = form.getValues('beneficiaryType') === 'gift';
       setResult({
         transactionId: 'TRX-' + Math.random().toString(36).substring(7),
         ogmCode: '+++123/4567/89012+++',
+        ...(isGift && {
+          giftCode: 'GIFT-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+        }),
       });
       setStep(totalSteps);
     } catch (error) {
@@ -418,6 +430,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   );
 
   const renderStep1NewUser = () => (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>{t('registration.beneficiaryType.title')}</CardTitle>
@@ -454,7 +467,33 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
 
         {/* Details form (inline, merged from old step 2) */}
         <div className="border-t pt-6 space-y-4">
-          {watchBeneficiaryType === 'company' ? (
+          {/* Helper text for family/company */}
+          {watchBeneficiaryType === 'family' && (
+            <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+              {t('registration.familyHelperText')}
+            </p>
+          )}
+          {watchBeneficiaryType === 'company' && (
+            <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+              {t('registration.companyHelperText')}
+            </p>
+          )}
+
+          {watchBeneficiaryType === 'gift' ? (
+            /* Gift flow: explanation + buyer email only */
+            <>
+              <div className="flex items-start gap-3 bg-muted/50 p-4 rounded-md">
+                <Gift className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-sm text-muted-foreground">
+                  {t('registration.giftExplanation')}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('registration.giftBuyerEmail')} *</Label>
+                <Input type="email" {...form.register('email')} />
+              </div>
+            </>
+          ) : watchBeneficiaryType === 'company' ? (
             <>
               <div className="space-y-2">
                 <Label>{t('shareholder.fields.companyName')} *</Label>
@@ -467,6 +506,38 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
               <div className="space-y-2">
                 <Label>{t('shareholder.fields.vatNumber')}</Label>
                 <Input {...form.register('vatNumber')} placeholder="BE0XXX.XXX.XXX" />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('common.email')} *</Label>
+                <Input type="email" {...form.register('email')} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('common.phone')}</Label>
+                <Input type="tel" {...form.register('phone')} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <Label>{t('common.street')} *</Label>
+                  <Input {...form.register('street')} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('common.houseNumber')} *</Label>
+                  <Input {...form.register('number')} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('common.postalCode')} *</Label>
+                  <Input {...form.register('postalCode')} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('common.city')} *</Label>
+                  <Input {...form.register('city')} />
+                </div>
               </div>
             </>
           ) : (
@@ -489,40 +560,40 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
                   placeholder={t('shareholder.fields.birthDate')}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label>{t('common.email')} *</Label>
+                <Input type="email" {...form.register('email')} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('common.phone')}</Label>
+                <Input type="tel" {...form.register('phone')} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <Label>{t('common.street')} *</Label>
+                  <Input {...form.register('street')} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('common.houseNumber')} *</Label>
+                  <Input {...form.register('number')} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('common.postalCode')} *</Label>
+                  <Input {...form.register('postalCode')} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('common.city')} *</Label>
+                  <Input {...form.register('city')} />
+                </div>
+              </div>
             </>
           )}
-
-          <div className="space-y-2">
-            <Label>{t('common.email')} *</Label>
-            <Input type="email" {...form.register('email')} />
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t('common.phone')}</Label>
-            <Input type="tel" {...form.register('phone')} />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2 space-y-2">
-              <Label>{t('common.street')} *</Label>
-              <Input {...form.register('street')} />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('common.houseNumber')} *</Label>
-              <Input {...form.register('number')} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>{t('common.postalCode')} *</Label>
-              <Input {...form.register('postalCode')} />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('common.city')} *</Label>
-              <Input {...form.register('city')} />
-            </div>
-          </div>
         </div>
 
         <div className="flex gap-4 mt-6">
@@ -550,6 +621,20 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
         </div>
       </CardContent>
     </Card>
+
+    {/* "Already a member? Log in" link for non-logged-in users */}
+    {allShareholders.length === 0 && (
+      <p className="text-center text-sm text-muted-foreground mt-4">
+        <Link
+          href={`/${locale}/${coopSlug}/login`}
+          className="underline hover:no-underline"
+          style={{ color: coop.primaryColor }}
+        >
+          {t('registration.alreadyMember')}
+        </Link>
+      </p>
+    )}
+    </>
   );
 
   // ============================================================================
@@ -743,7 +828,33 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
         </div>
         <CardTitle>{t('registration.registrationComplete')}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        {/* Gift certificate section */}
+        {result?.giftCode && (
+          <div className="border rounded-lg p-6 space-y-4">
+            <h4 className="font-medium text-center">{t('registration.giftCertificate')}</h4>
+            <div className="flex flex-col items-center gap-4">
+              <div
+                className="text-2xl font-mono font-bold tracking-wider px-4 py-2 rounded-md"
+                style={{ backgroundColor: `${coop.primaryColor}15`, color: coop.primaryColor }}
+              >
+                {result.giftCode}
+              </div>
+              <QRCodeSVG
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/${locale}/${coopSlug}/claim?code=${result.giftCode}`}
+                size={160}
+                level="M"
+              />
+              <p className="text-sm text-muted-foreground text-center">
+                {t('registration.giftShareWith')}
+              </p>
+              <p className="text-xs text-muted-foreground font-mono break-all text-center">
+                {typeof window !== 'undefined' ? window.location.origin : ''}/{locale}/{coopSlug}/claim?code={result.giftCode}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* EPC QR code */}
         {coop.bankBic && coop.bankIban && (
           <div className="flex flex-col items-center py-4">

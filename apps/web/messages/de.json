@@ -416,7 +416,19 @@
     "updateDetails": "Daten aktualisieren",
     "buyingFor": "Anteile kaufen für",
     "registerNewPerson": "Andere Person registrieren",
-    "registerNewPersonDescription": "Neuen Anteilseigner registrieren"
+    "registerNewPersonDescription": "Neuen Anteilseigner registrieren",
+    "familyHelperText": "Geben Sie die Daten der Person ein, die die Anteile erhalten wird.",
+    "companyHelperText": "Geben Sie die Unternehmensdaten ein, auf die die Anteile registriert werden.",
+    "giftExplanation": "Sie erhalten einen Geschenkgutschein mit einem einzigartigen Code. Teilen Sie ihn mit dem Empfänger, damit dieser die Anteile beanspruchen und seine eigenen Daten eingeben kann.",
+    "giftBuyerEmail": "Ihre E-Mail (um den Geschenkgutschein zu erhalten)",
+    "alreadyMember": "Bereits Mitglied? Anmelden",
+    "giftCode": "Geschenkcode",
+    "giftCertificate": "Geschenkgutschein",
+    "giftShareWith": "Teilen Sie diesen Code oder QR mit dem Empfänger",
+    "claimGift": "Geschenkgutschein einlösen",
+    "enterGiftCode": "Geben Sie Ihren Geschenkcode ein",
+    "claimDescription": "Geben Sie den Code Ihres Geschenkgutscheins ein, um Ihre Anteile zu beanspruchen.",
+    "yourDetails": "Ihre Angaben"
   },
   "home": {
     "title": "OpenCoop",
