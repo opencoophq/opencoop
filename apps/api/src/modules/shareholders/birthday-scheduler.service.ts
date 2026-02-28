@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
@@ -17,9 +18,12 @@ export class BirthdaySchedulerService {
   // Run every day at 8:00 AM
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async checkMinorBirthdays() {
-    await this.handleMinorsTurning18();
-    await this.handleMinorsTurning16();
-    await this.sendYearlyEmailReminders();
+    return Sentry.withIsolationScope(async (scope) => {
+      scope.setTag('cron', 'checkMinorBirthdays');
+      await this.handleMinorsTurning18();
+      await this.handleMinorsTurning16();
+      await this.sendYearlyEmailReminders();
+    });
   }
 
   // ============================================================================
@@ -66,6 +70,7 @@ export class BirthdaySchedulerService {
           await this.handleMinorWithoutEmail(minor, today);
         }
       } catch (error) {
+        Sentry.captureException(error);
         this.logger.error(`Failed to process minor ${minor.id}: ${error.message}`);
       }
     }
@@ -236,6 +241,7 @@ export class BirthdaySchedulerService {
 
         this.logger.log(`Sent email setup reminder for ${minor.firstName} ${minor.lastName} to ${parentEmail}`);
       } catch (error) {
+        Sentry.captureException(error);
         this.logger.error(`Failed to send reminder for minor ${minor.id}: ${error.message}`);
       }
     }
@@ -313,6 +319,7 @@ export class BirthdaySchedulerService {
 
         this.logger.log(`Sent yearly email reminder for ${minor.firstName} ${minor.lastName}`);
       } catch (error) {
+        Sentry.captureException(error);
         this.logger.error(`Failed to send yearly reminder for minor ${minor.id}: ${error.message}`);
       }
     }
@@ -325,59 +332,63 @@ export class BirthdaySchedulerService {
   // Send reminder for tokens that haven't been used after 30 days
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async sendUpgradeTokenReminders() {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return Sentry.withIsolationScope(async (scope) => {
+      scope.setTag('cron', 'sendUpgradeTokenReminders');
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const tokensNeedingReminder = await this.prisma.minorUpgradeToken.findMany({
-      where: {
-        usedAt: null,
-        parentNotifiedAt: {
-          lte: thirtyDaysAgo,
-        },
-        reminderSentAt: null,
-        expiresAt: {
-          gt: new Date(), // Token not expired
-        },
-      },
-      include: {
-        shareholder: {
-          include: {
-            registeredBy: true,
-            coop: true,
+      const tokensNeedingReminder = await this.prisma.minorUpgradeToken.findMany({
+        where: {
+          usedAt: null,
+          parentNotifiedAt: {
+            lte: thirtyDaysAgo,
+          },
+          reminderSentAt: null,
+          expiresAt: {
+            gt: new Date(), // Token not expired
           },
         },
-      },
-    });
-
-    this.logger.log(`Sending ${tokensNeedingReminder.length} upgrade token reminder emails`);
-
-    for (const tokenRecord of tokensNeedingReminder) {
-      try {
-        const parentEmail = tokenRecord.shareholder.registeredBy?.email;
-        if (!parentEmail) continue;
-
-        const daysRemaining = Math.ceil((tokenRecord.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-        const upgradeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3002'}/upgrade-to-adult?token=${tokenRecord.token}`;
-
-        await this.emailService.sendMinorUpgradeReminder(
-          tokenRecord.shareholder.coopId,
-          parentEmail,
-          {
-            minorFirstName: tokenRecord.shareholder.firstName || '',
-            minorLastName: tokenRecord.shareholder.lastName || '',
-            coopName: tokenRecord.shareholder.coop.name,
-            upgradeUrl,
-            daysRemaining,
+        include: {
+          shareholder: {
+            include: {
+              registeredBy: true,
+              coop: true,
+            },
           },
-        );
+        },
+      });
 
-        await this.prisma.minorUpgradeToken.update({
-          where: { id: tokenRecord.id },
-          data: { reminderSentAt: new Date() },
-        });
-      } catch (error) {
-        this.logger.error(`Failed to send reminder for token ${tokenRecord.id}: ${error.message}`);
+      this.logger.log(`Sending ${tokensNeedingReminder.length} upgrade token reminder emails`);
+
+      for (const tokenRecord of tokensNeedingReminder) {
+        try {
+          const parentEmail = tokenRecord.shareholder.registeredBy?.email;
+          if (!parentEmail) continue;
+
+          const daysRemaining = Math.ceil((tokenRecord.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          const upgradeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3002'}/upgrade-to-adult?token=${tokenRecord.token}`;
+
+          await this.emailService.sendMinorUpgradeReminder(
+            tokenRecord.shareholder.coopId,
+            parentEmail,
+            {
+              minorFirstName: tokenRecord.shareholder.firstName || '',
+              minorLastName: tokenRecord.shareholder.lastName || '',
+              coopName: tokenRecord.shareholder.coop.name,
+              upgradeUrl,
+              daysRemaining,
+            },
+          );
+
+          await this.prisma.minorUpgradeToken.update({
+            where: { id: tokenRecord.id },
+            data: { reminderSentAt: new Date() },
+          });
+        } catch (error) {
+          Sentry.captureException(error);
+          this.logger.error(`Failed to send reminder for token ${tokenRecord.id}: ${error.message}`);
+        }
       }
-    }
+    });
   }
 }

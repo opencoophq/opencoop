@@ -132,6 +132,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 Optional:
 ```
 LAUNCH_MODE=waitlist    # Set on prod to show waitlist dialog instead of onboarding links
+SENTRY_DSN=https://...  # Sentry error tracking DSN (API only, no-op if unset)
 ```
 
 ## Feature Flags
