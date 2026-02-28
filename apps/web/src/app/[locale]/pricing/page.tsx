@@ -3,9 +3,13 @@ import { getTranslations } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 import { PricingPage } from './pricing-page';
 
-const BASE_URL = 'https://opencoop.be';
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
+
+const BASE_URL = 'https://opencoop.be';
 
 export async function generateMetadata({
   params,
