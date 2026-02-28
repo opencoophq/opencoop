@@ -391,12 +391,11 @@
       "giftDescription": "Ich erwerbe Anteile als Geschenk für jemanden"
     },
     "steps": {
-      "beneficiary": "Begünstigter",
-      "details": "Details",
-      "shares": "Anteile",
-      "payment": "Zahlung",
+      "details": "Angaben",
+      "order": "Bestellung",
       "confirm": "Bestätigung"
     },
+    "scanToPay": "Mit Banking-App scannen zum Bezahlen",
     "selectShareClass": "Anteilsklasse auswählen",
     "selectProject": "Projekt auswählen (optional)",
     "enterQuantity": "Anzahl eingeben",

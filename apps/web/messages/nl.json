@@ -391,12 +391,11 @@
       "giftDescription": "Ik koop aandelen als cadeau voor iemand"
     },
     "steps": {
-      "beneficiary": "Begunstigde",
       "details": "Gegevens",
-      "shares": "Aandelen",
-      "payment": "Betaling",
-      "confirm": "Bevestigen"
+      "order": "Bestelling",
+      "confirm": "Bevestiging"
     },
+    "scanToPay": "Scan met je bankapp om te betalen",
     "selectShareClass": "Selecteer aandelenklasse",
     "selectProject": "Selecteer project (optioneel)",
     "enterQuantity": "Voer aantal in",

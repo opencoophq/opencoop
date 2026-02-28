@@ -391,12 +391,11 @@
       "giftDescription": "I am purchasing shares as a gift for someone"
     },
     "steps": {
-      "beneficiary": "Beneficiary",
       "details": "Details",
-      "shares": "Shares",
-      "payment": "Payment",
-      "confirm": "Confirm"
+      "order": "Order",
+      "confirm": "Confirmation"
     },
+    "scanToPay": "Scan with your banking app to pay",
     "selectShareClass": "Select share class",
     "selectProject": "Select project (optional)",
     "enterQuantity": "Enter quantity",

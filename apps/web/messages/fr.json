@@ -391,12 +391,11 @@
       "giftDescription": "J'achète des parts en cadeau pour quelqu'un"
     },
     "steps": {
-      "beneficiary": "Bénéficiaire",
-      "details": "Détails",
-      "shares": "Parts",
-      "payment": "Paiement",
+      "details": "Coordonnées",
+      "order": "Commande",
       "confirm": "Confirmation"
     },
+    "scanToPay": "Scannez avec votre appli bancaire pour payer",
     "selectShareClass": "Sélectionner une classe de parts",
     "selectProject": "Sélectionner un projet (facultatif)",
     "enterQuantity": "Entrer la quantité",
