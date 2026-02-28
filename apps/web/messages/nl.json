@@ -428,6 +428,11 @@
     "title": "Coöperatiebeheer",
     "selectCoop": "Selecteer coöperatie om te beheren",
     "totalCapital": "Totaal kapitaal",
+    "shareholderLinks": "Aandeelhouderslinks",
+    "publicPage": "Publieke pagina",
+    "registrationLink": "Registratie",
+    "loginLink": "Inloggen",
+    "copied": "Gekopieerd!",
     "nav": {
       "overview": "Overzicht",
       "shareholders": "Aandeelhouders",

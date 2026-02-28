@@ -428,6 +428,11 @@
     "title": "Administration de la coopérative",
     "selectCoop": "Sélectionner la coopérative à gérer",
     "totalCapital": "Capital total",
+    "shareholderLinks": "Liens coopérateurs",
+    "publicPage": "Page publique",
+    "registrationLink": "Inscription",
+    "loginLink": "Connexion",
+    "copied": "Copié !",
     "nav": {
       "overview": "Aperçu",
       "shareholders": "Coopérateurs",

@@ -428,6 +428,11 @@
     "title": "Genossenschaftsverwaltung",
     "selectCoop": "Genossenschaft zur Verwaltung auswählen",
     "totalCapital": "Gesamtkapital",
+    "shareholderLinks": "Anteilseigner-Links",
+    "publicPage": "Öffentliche Seite",
+    "registrationLink": "Registrierung",
+    "loginLink": "Anmeldung",
+    "copied": "Kopiert!",
     "nav": {
       "overview": "Übersicht",
       "shareholders": "Anteilseigner",

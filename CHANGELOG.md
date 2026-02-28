@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.57] - 2026-02-28
+
+### Added
+- **Shareholder links card** — admin dashboard overview now shows copyable URLs for the coop's public page, registration, and login, so admins can easily share them with shareholders
+
 ## [0.1.56] - 2026-02-28
 
 ### Changed
