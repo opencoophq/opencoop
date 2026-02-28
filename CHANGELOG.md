@@ -2,6 +2,16 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.56] - 2026-02-28
+
+### Changed
+- **Streamlined registration flow** — compressed shareholder registration from 5 steps to 3 (Details → Order → Confirmation) for better conversion
+- Step 1 now combines beneficiary type selection with the personal/company details form inline
+- Step 2 merges share class selection, payment method, order summary, and terms acceptance
+
+### Added
+- **EPC QR code on confirmation** — the registration confirmation step now displays a scannable EPC QR code that banking apps can use to initiate a SEPA payment with the correct OGM reference pre-filled
+
 ## [0.1.55] - 2026-02-26
 
 ### Added
