@@ -99,6 +99,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [selectedShareholder, setSelectedShareholder] = useState<ExistingShareholder | null>(null);
   const [allShareholders, setAllShareholders] = useState<ExistingShareholder[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isRegisteringNew, setIsRegisteringNew] = useState(false);
   const [result, setResult] = useState<{
     transactionId: string;
@@ -170,18 +171,48 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
         const token = localStorage.getItem('accessToken');
         if (token) {
           try {
-            const shareholdersResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/me/shareholders`,
+            const meResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
             );
-            if (shareholdersResponse.ok) {
-              const shareholders = await shareholdersResponse.json();
-              // Filter shareholders for this coop
-              const shareholdersForCoop = shareholders.filter(
-                (s: ExistingShareholder & { coop: { id: string } }) => s.coop.id === coopData.id
-              );
+            if (meResponse.ok) {
+              const meData = await meResponse.json();
+              setIsLoggedIn(true);
+
+              // Filter shareholders for this coop and flatten the address JSON
+              const shareholdersForCoop: ExistingShareholder[] = (meData.shareholders || [])
+                .filter((s: { coop: { id: string } }) => s.coop.id === coopData.id)
+                .map((s: {
+                  id: string;
+                  type: 'INDIVIDUAL' | 'COMPANY' | 'MINOR';
+                  firstName?: string;
+                  lastName?: string;
+                  birthDate?: string;
+                  companyName?: string;
+                  companyId?: string;
+                  vatNumber?: string;
+                  email?: string;
+                  phone?: string;
+                  address?: { street?: string; number?: string; postalCode?: string; city?: string; country?: string } | null;
+                }) => ({
+                  id: s.id,
+                  type: s.type,
+                  firstName: s.firstName,
+                  lastName: s.lastName,
+                  birthDate: s.birthDate,
+                  companyName: s.companyName,
+                  companyId: s.companyId,
+                  vatNumber: s.vatNumber,
+                  email: s.email,
+                  phone: s.phone,
+                  street: s.address?.street,
+                  number: s.address?.number,
+                  postalCode: s.address?.postalCode,
+                  city: s.address?.city,
+                  country: s.address?.country,
+                }));
               setAllShareholders(shareholdersForCoop);
 
               // If shareholderId provided, pre-select that shareholder
@@ -197,6 +228,9 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
                 // Default to first shareholder
                 setSelectedShareholder(shareholdersForCoop[0]);
                 prefillFormWithShareholder(shareholdersForCoop[0]);
+              } else if (meData.email) {
+                // Logged in but no shareholders in this coop — pre-fill email
+                form.setValue('email', meData.email);
               }
             }
           } catch {
@@ -623,7 +657,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
     </Card>
 
     {/* "Already a member? Log in" link for non-logged-in users */}
-    {allShareholders.length === 0 && (
+    {!isLoggedIn && (
       <p className="text-center text-sm text-muted-foreground mt-4">
         <Link
           href={`/${locale}/${coopSlug}/login`}
