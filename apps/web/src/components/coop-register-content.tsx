@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency } from '@opencoop/shared';
 import { DatePicker } from '@/components/ui/date-picker';
+import { EpcQrCode } from '@/components/epc-qr-code';
 import { UserPlus } from 'lucide-react';
 
 interface CoopPublicInfo {
@@ -104,27 +105,13 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   // Determine if user has existing shareholders (short flow) or is new (long flow)
   const hasExistingShareholders = allShareholders.length > 0 && !isRegisteringNew;
 
-  // Steps differ based on flow
-  const getSteps = () => {
-    if (hasExistingShareholders) {
-      return [
-        t('registration.steps.beneficiary'), // Select who to buy for
-        t('registration.steps.shares'),
-        t('registration.steps.payment'),
-        t('registration.steps.confirm'),
-      ];
-    }
-    return [
-      t('registration.steps.beneficiary'), // Beneficiary type
-      t('registration.steps.details'),
-      t('registration.steps.shares'),
-      t('registration.steps.payment'),
-      t('registration.steps.confirm'),
-    ];
-  };
-
-  const steps = getSteps();
-  const totalSteps = steps.length;
+  // Always 3 steps now
+  const steps = [
+    t('registration.steps.details'),
+    t('registration.steps.order'),
+    t('registration.steps.confirm'),
+  ];
+  const totalSteps = 3;
 
   const form = useForm<RegistrationForm>({
     resolver: zodResolver(registrationSchema),
@@ -273,6 +260,26 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
 
+  // Validate step 1 fields before navigating to step 2
+  const handleStep1Next = async () => {
+    if (hasExistingShareholders) {
+      // Existing shareholder selected — no form validation needed
+      nextStep();
+      return;
+    }
+
+    // Validate required fields based on beneficiary type
+    const fieldsToValidate: (keyof RegistrationForm)[] =
+      watchBeneficiaryType === 'company'
+        ? ['companyName', 'email', 'street', 'number', 'postalCode', 'city', 'country']
+        : ['firstName', 'lastName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
+
+    const result = await form.trigger(fieldsToValidate);
+    if (result) {
+      nextStep();
+    }
+  };
+
   const onSubmit = async () => {
     setSubmitting(true);
 
@@ -347,9 +354,9 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   );
 
   // ============================================================================
-  // EXISTING USER FLOW (4 steps)
+  // STEP 1: DETAILS (existing shareholder picker OR beneficiary type + details)
   // ============================================================================
-  const renderExistingUserStep1 = () => (
+  const renderStep1ExistingUser = () => (
     <Card>
       <CardHeader>
         <CardTitle>{t('registration.buyingFor')}</CardTitle>
@@ -401,7 +408,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
           type="button"
           className="w-full mt-6"
           style={{ backgroundColor: coop.primaryColor }}
-          onClick={nextStep}
+          onClick={handleStep1Next}
           disabled={!selectedShareholder}
         >
           {t('common.next')}
@@ -410,15 +417,13 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
     </Card>
   );
 
-  // ============================================================================
-  // NEW USER FLOW (5 steps) - Step 1: Beneficiary Type
-  // ============================================================================
-  const renderNewUserStep1 = () => (
+  const renderStep1NewUser = () => (
     <Card>
       <CardHeader>
         <CardTitle>{t('registration.beneficiaryType.title')}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        {/* Beneficiary type selector */}
         <RadioGroup
           value={watchBeneficiaryType}
           onValueChange={(value) =>
@@ -447,6 +452,79 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
           ))}
         </RadioGroup>
 
+        {/* Details form (inline, merged from old step 2) */}
+        <div className="border-t pt-6 space-y-4">
+          {watchBeneficiaryType === 'company' ? (
+            <>
+              <div className="space-y-2">
+                <Label>{t('shareholder.fields.companyName')} *</Label>
+                <Input {...form.register('companyName')} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('shareholder.fields.companyId')} *</Label>
+                <Input {...form.register('companyId')} placeholder="0XXX.XXX.XXX" />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('shareholder.fields.vatNumber')}</Label>
+                <Input {...form.register('vatNumber')} placeholder="BE0XXX.XXX.XXX" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('shareholder.fields.firstName')} *</Label>
+                  <Input {...form.register('firstName')} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('shareholder.fields.lastName')} *</Label>
+                  <Input {...form.register('lastName')} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('shareholder.fields.birthDate')} *</Label>
+                <DatePicker
+                  value={form.watch('birthDate')}
+                  onChange={(value) => form.setValue('birthDate', value || '')}
+                  placeholder={t('shareholder.fields.birthDate')}
+                />
+              </div>
+            </>
+          )}
+
+          <div className="space-y-2">
+            <Label>{t('common.email')} *</Label>
+            <Input type="email" {...form.register('email')} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t('common.phone')}</Label>
+            <Input type="tel" {...form.register('phone')} />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2 space-y-2">
+              <Label>{t('common.street')} *</Label>
+              <Input {...form.register('street')} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common.houseNumber')} *</Label>
+              <Input {...form.register('number')} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{t('common.postalCode')} *</Label>
+              <Input {...form.register('postalCode')} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common.city')} *</Label>
+              <Input {...form.register('city')} />
+            </div>
+          </div>
+        </div>
+
         <div className="flex gap-4 mt-6">
           {allShareholders.length > 0 && (
             <Button
@@ -465,7 +543,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
             type="button"
             className="flex-1"
             style={{ backgroundColor: coop.primaryColor }}
-            onClick={nextStep}
+            onClick={handleStep1Next}
           >
             {t('common.next')}
           </Button>
@@ -475,110 +553,15 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   );
 
   // ============================================================================
-  // NEW USER FLOW - Step 2: Details
+  // STEP 2: ORDER (shares + payment + summary + terms)
   // ============================================================================
-  const renderDetailsStep = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('registration.steps.details')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {watchBeneficiaryType === 'company' ? (
-          <>
-            <div className="space-y-2">
-              <Label>{t('shareholder.fields.companyName')} *</Label>
-              <Input {...form.register('companyName')} />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('shareholder.fields.companyId')} *</Label>
-              <Input {...form.register('companyId')} placeholder="0XXX.XXX.XXX" />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('shareholder.fields.vatNumber')}</Label>
-              <Input {...form.register('vatNumber')} placeholder="BE0XXX.XXX.XXX" />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t('shareholder.fields.firstName')} *</Label>
-                <Input {...form.register('firstName')} />
-              </div>
-              <div className="space-y-2">
-                <Label>{t('shareholder.fields.lastName')} *</Label>
-                <Input {...form.register('lastName')} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>{t('shareholder.fields.birthDate')} *</Label>
-              <DatePicker
-                value={form.watch('birthDate')}
-                onChange={(value) => form.setValue('birthDate', value || '')}
-                placeholder={t('shareholder.fields.birthDate')}
-              />
-            </div>
-          </>
-        )}
-
-        <div className="space-y-2">
-          <Label>{t('common.email')} *</Label>
-          <Input type="email" {...form.register('email')} />
-        </div>
-
-        <div className="space-y-2">
-          <Label>{t('common.phone')}</Label>
-          <Input type="tel" {...form.register('phone')} />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2 space-y-2">
-            <Label>{t('common.street')} *</Label>
-            <Input {...form.register('street')} />
-          </div>
-          <div className="space-y-2">
-            <Label>{t('common.houseNumber')} *</Label>
-            <Input {...form.register('number')} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>{t('common.postalCode')} *</Label>
-            <Input {...form.register('postalCode')} />
-          </div>
-          <div className="space-y-2">
-            <Label>{t('common.city')} *</Label>
-            <Input {...form.register('city')} />
-          </div>
-        </div>
-
-        <div className="flex gap-4 mt-6">
-          <Button type="button" variant="outline" onClick={prevStep}>
-            {t('common.back')}
-          </Button>
-          <Button
-            type="button"
-            className="flex-1"
-            style={{ backgroundColor: coop.primaryColor }}
-            onClick={nextStep}
-          >
-            {t('common.next')}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  // ============================================================================
-  // SHARES STEP (Step 2 for existing, Step 3 for new)
-  // ============================================================================
-  const renderSharesStep = () => (
+  const renderStep2Order = () => (
     <Card>
       <CardHeader>
         <CardTitle>{t('registration.selectShareClass')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Share class selection */}
         <div className="space-y-2">
           <Label>{t('shares.shareClass')} *</Label>
           <Select
@@ -646,53 +629,31 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
           </div>
         )}
 
-        <div className="flex gap-4 mt-6">
-          <Button type="button" variant="outline" onClick={prevStep}>
-            {t('common.back')}
-          </Button>
-          <Button
-            type="button"
-            className="flex-1"
-            style={{ backgroundColor: coop.primaryColor }}
-            onClick={nextStep}
-            disabled={!watchShareClassId || watchQuantity < 1}
+        {/* Payment method */}
+        <div className="border-t pt-4 space-y-4">
+          <h4 className="font-medium">{t('registration.choosePaymentMethod')}</h4>
+          <RadioGroup
+            value={form.watch('paymentMethod')}
+            onValueChange={(value) =>
+              form.setValue(
+                'paymentMethod',
+                value as 'BANK_TRANSFER' | 'MOLLIE' | 'STRIPE'
+              )
+            }
+            className="space-y-3"
           >
-            {t('common.next')}
-          </Button>
+            <div className="flex items-center space-x-3 border rounded-lg p-4">
+              <RadioGroupItem value="BANK_TRANSFER" id="bank" />
+              <Label htmlFor="bank" className="flex-1 cursor-pointer">
+                <span className="font-medium">
+                  {t('payments.method.bankTransfer')}
+                </span>
+              </Label>
+            </div>
+          </RadioGroup>
         </div>
-      </CardContent>
-    </Card>
-  );
 
-  // ============================================================================
-  // PAYMENT STEP
-  // ============================================================================
-  const renderPaymentStep = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('registration.choosePaymentMethod')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <RadioGroup
-          value={form.watch('paymentMethod')}
-          onValueChange={(value) =>
-            form.setValue(
-              'paymentMethod',
-              value as 'BANK_TRANSFER' | 'MOLLIE' | 'STRIPE'
-            )
-          }
-          className="space-y-3"
-        >
-          <div className="flex items-center space-x-3 border rounded-lg p-4">
-            <RadioGroupItem value="BANK_TRANSFER" id="bank" />
-            <Label htmlFor="bank" className="flex-1 cursor-pointer">
-              <span className="font-medium">
-                {t('payments.method.bankTransfer')}
-              </span>
-            </Label>
-          </div>
-        </RadioGroup>
-
+        {/* Order summary */}
         <div className="bg-muted p-4 rounded-lg space-y-2">
           <h4 className="font-medium">{t('registration.orderSummary')}</h4>
           <div className="text-sm space-y-1">
@@ -721,6 +682,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
           </div>
         </div>
 
+        {/* Terms */}
         <div className="flex items-start space-x-2">
           <Checkbox
             id="terms"
@@ -757,7 +719,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
             type="button"
             className="flex-1"
             style={{ backgroundColor: coop.primaryColor }}
-            disabled={!form.watch('acceptTerms') || submitting}
+            disabled={!form.watch('acceptTerms') || !watchShareClassId || watchQuantity < 1 || submitting}
             onClick={onSubmit}
           >
             {submitting ? t('common.loading') : t('registration.completeRegistration')}
@@ -768,9 +730,9 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   );
 
   // ============================================================================
-  // CONFIRMATION STEP
+  // STEP 3: CONFIRMATION (success + EPC QR code + bank details)
   // ============================================================================
-  const renderConfirmationStep = () => (
+  const renderStep3Confirmation = () => (
     <Card>
       <CardHeader className="text-center">
         <div
@@ -782,6 +744,23 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
         <CardTitle>{t('registration.registrationComplete')}</CardTitle>
       </CardHeader>
       <CardContent>
+        {/* EPC QR code */}
+        {coop.bankBic && coop.bankIban && (
+          <div className="flex flex-col items-center py-4">
+            <EpcQrCode
+              bic={coop.bankBic}
+              beneficiaryName={coop.name}
+              iban={coop.bankIban}
+              amount={totalAmount}
+              reference={result?.ogmCode}
+              size={180}
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              {t('registration.scanToPay')}
+            </p>
+          </div>
+        )}
+
         <div className="bg-muted p-4 rounded-lg space-y-3">
           <h4 className="font-medium">{t('payments.bankDetails')}</h4>
           <div className="text-sm space-y-2">
@@ -832,25 +811,15 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   // RENDER CURRENT STEP
   // ============================================================================
   const renderStep = () => {
-    if (hasExistingShareholders) {
-      // Short flow for existing users: Select -> Shares -> Payment -> Confirm
-      switch (step) {
-        case 1: return renderExistingUserStep1();
-        case 2: return renderSharesStep();
-        case 3: return renderPaymentStep();
-        case 4: return renderConfirmationStep();
-        default: return null;
-      }
-    } else {
-      // Long flow for new users: Type -> Details -> Shares -> Payment -> Confirm
-      switch (step) {
-        case 1: return renderNewUserStep1();
-        case 2: return renderDetailsStep();
-        case 3: return renderSharesStep();
-        case 4: return renderPaymentStep();
-        case 5: return renderConfirmationStep();
-        default: return null;
-      }
+    switch (step) {
+      case 1:
+        return hasExistingShareholders ? renderStep1ExistingUser() : renderStep1NewUser();
+      case 2:
+        return renderStep2Order();
+      case 3:
+        return renderStep3Confirmation();
+      default:
+        return null;
     }
   };
 
