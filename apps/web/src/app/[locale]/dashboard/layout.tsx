@@ -39,6 +39,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { FeedbackButton } from '@/components/feedback-button';
 
 interface NavItem {
   href: string;
@@ -380,6 +381,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         )}
         <div className="p-6">{children}</div>
       </main>
+
+      {user && <FeedbackButton user={user} />}
     </div>
   );
 }
