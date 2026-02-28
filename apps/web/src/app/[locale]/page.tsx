@@ -3,6 +3,12 @@ import { getTranslations } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 import HomePage from './home-page';
 
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
+export const revalidate = 3600;
+
 const BASE_URL = 'https://opencoop.be';
 
 export async function generateMetadata({
