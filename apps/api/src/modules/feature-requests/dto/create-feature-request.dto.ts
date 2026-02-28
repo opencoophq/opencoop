@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateFeatureRequestDto {
   @ApiProperty({ example: 'Jane Doe' })
@@ -28,4 +28,9 @@ export class CreateFeatureRequestDto {
   @IsOptional()
   @IsString()
   locale?: string;
+
+  @ApiProperty({ example: 'feature', required: false, enum: ['feature', 'bug'] })
+  @IsOptional()
+  @IsIn(['feature', 'bug'])
+  type?: 'feature' | 'bug';
 }
