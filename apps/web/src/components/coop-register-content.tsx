@@ -62,6 +62,7 @@ interface ExistingShareholder {
 }
 
 const registrationSchema = z.object({
+  shareholderId: z.string().optional(),
   beneficiaryType: z.enum(['self', 'family', 'company', 'gift']),
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
@@ -232,6 +233,10 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
                 // Logged in but no shareholders in this coop — pre-fill email
                 form.setValue('email', meData.email);
               }
+            } else {
+              // Token is invalid/expired — clean up
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('user');
             }
           } catch {
             // User not logged in or error fetching - continue as new user
@@ -249,7 +254,9 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
 
   // Helper function to pre-fill form with shareholder data
   const prefillFormWithShareholder = (shareholder: ExistingShareholder) => {
-    form.setValue('beneficiaryType', shareholder.type === 'COMPANY' ? 'company' : 'self');
+    form.setValue('shareholderId', shareholder.id);
+    const typeMap: Record<string, 'self' | 'family' | 'company'> = { INDIVIDUAL: 'self', MINOR: 'family', COMPANY: 'company' };
+    form.setValue('beneficiaryType', typeMap[shareholder.type] || 'self');
     if (shareholder.firstName) form.setValue('firstName', shareholder.firstName);
     if (shareholder.lastName) form.setValue('lastName', shareholder.lastName);
     if (shareholder.birthDate) form.setValue('birthDate', shareholder.birthDate.split('T')[0]);
@@ -278,12 +285,15 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
     if (shareholderId === 'new') {
       setIsRegisteringNew(true);
       setSelectedShareholder(null);
-      // Reset form for new registration
+      // Preserve preselected share class and project across reset
+      const { shareClassId, projectId } = form.getValues();
       form.reset({
         beneficiaryType: 'self',
         paymentMethod: 'BANK_TRANSFER',
         quantity: 1,
         country: 'Belgium',
+        shareClassId,
+        projectId,
       });
     } else {
       const shareholder = allShareholders.find(s => s.id === shareholderId);
@@ -323,22 +333,76 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   };
 
   const onSubmit = async () => {
+    const valid = await form.trigger(['shareClassId', 'quantity', 'acceptTerms']);
+    if (!valid) return;
+
     setSubmitting(true);
 
     try {
-      // This would normally call the API
-      // For now, simulate success
-      const isGift = form.getValues('beneficiaryType') === 'gift';
+      const values = form.getValues();
+
+      // Build payload based on whether we have an existing shareholder
+      let payload: Record<string, unknown>;
+      if (values.shareholderId) {
+        payload = {
+          shareholderId: values.shareholderId,
+          shareClassId: values.shareClassId,
+          quantity: values.quantity,
+          projectId: values.projectId,
+        };
+      } else {
+        const beneficiaryToType: Record<string, string> = {
+          self: 'INDIVIDUAL',
+          family: 'MINOR',
+          company: 'COMPANY',
+          gift: 'INDIVIDUAL',
+        };
+        payload = {
+          type: beneficiaryToType[values.beneficiaryType],
+          firstName: values.firstName,
+          lastName: values.lastName,
+          birthDate: values.birthDate,
+          companyName: values.companyName,
+          companyId: values.companyId,
+          vatNumber: values.vatNumber,
+          email: values.email,
+          phone: values.phone,
+          address: {
+            street: values.street,
+            number: values.number,
+            postalCode: values.postalCode,
+            city: values.city,
+            country: values.country,
+          },
+          shareClassId: values.shareClassId,
+          quantity: values.quantity,
+          projectId: values.projectId,
+        };
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/register`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || 'Registration failed');
+      }
+
+      const data = await response.json();
       setResult({
-        transactionId: 'TRX-' + Math.random().toString(36).substring(7),
-        ogmCode: '+++123/4567/89012+++',
-        ...(isGift && {
-          giftCode: 'GIFT-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
-        }),
+        transactionId: data.transactionId,
+        ogmCode: data.ogmCode,
       });
       setStep(totalSteps);
     } catch (error) {
       console.error('Registration failed:', error);
+      alert(error instanceof Error ? error.message : 'Registration failed');
     } finally {
       setSubmitting(false);
     }

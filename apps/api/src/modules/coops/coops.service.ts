@@ -3,6 +3,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCoopDto } from './dto/create-coop.dto';
 import { UpdateCoopDto } from './dto/update-coop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
+import { PublicRegisterDto } from './dto/public-register.dto';
+import { ShareholdersService } from '../shareholders/shareholders.service';
+import { TransactionsService } from '../transactions/transactions.service';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -13,7 +16,11 @@ const LOGO_QUALITY = 80;
 
 @Injectable()
 export class CoopsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private shareholdersService: ShareholdersService,
+    private transactionsService: TransactionsService,
+  ) {}
 
   async findAll() {
     const coops = await this.prisma.coop.findMany({
@@ -367,5 +374,58 @@ export class CoopsService {
     return this.prisma.coopAdmin.delete({
       where: { id: admin.id },
     });
+  }
+
+  async publicRegister(slug: string, dto: PublicRegisterDto) {
+    const coop = await this.findBySlug(slug);
+
+    let shareholderId: string;
+
+    if (dto.shareholderId) {
+      // Verify shareholder belongs to this coop
+      const shareholder = await this.prisma.shareholder.findFirst({
+        where: { id: dto.shareholderId, coopId: coop.id },
+      });
+      if (!shareholder) {
+        throw new NotFoundException('Shareholder not found in this cooperative');
+      }
+      shareholderId = shareholder.id;
+    } else {
+      // Create new shareholder
+      if (!dto.type) {
+        throw new BadRequestException('Shareholder type is required for new registrations');
+      }
+      if (!dto.email) {
+        throw new BadRequestException('Email is required for new registrations');
+      }
+
+      const newShareholder = await this.shareholdersService.create(coop.id, {
+        type: dto.type,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        birthDate: dto.birthDate,
+        companyName: dto.companyName,
+        companyId: dto.companyId,
+        vatNumber: dto.vatNumber,
+        email: dto.email,
+        phone: dto.phone,
+        address: dto.address,
+      });
+      shareholderId = newShareholder.id;
+    }
+
+    const transaction = await this.transactionsService.createPurchase({
+      coopId: coop.id,
+      shareholderId,
+      shareClassId: dto.shareClassId,
+      quantity: dto.quantity,
+      projectId: dto.projectId,
+    });
+
+    return {
+      transactionId: transaction!.id,
+      ogmCode: transaction?.payment?.ogmCode ?? null,
+      shareholderId,
+    };
   }
 }
