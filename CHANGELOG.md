@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.59] - 2026-02-28
+
+### Added
+- **Gift certificate flow** — selecting "As a gift" on registration now shows a simplified form (buyer email only) and generates a gift code + QR code on confirmation that the recipient can use to claim their shares
+- **Gift claim page** — new public page at `/{coopSlug}/claim` where gift recipients enter their code and fill in their own details to claim shares
+- **Beneficiary helper text** — family and company beneficiary types now show contextual guidance about whose details to enter
+- **"Already a member?" link** — non-logged-in users on the registration page now see a link to the login page
+
 ## [0.1.58] - 2026-02-28
 
 ### Changed
