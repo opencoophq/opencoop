@@ -62,10 +62,19 @@ services:
       STRIPE_ESSENTIALS_YEARLY_PRICE_ID: ${STRIPE_ESSENTIALS_YEARLY_PRICE_ID:-}
       STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID: ${STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID:-}
       STRIPE_PROFESSIONAL_YEARLY_PRICE_ID: ${STRIPE_PROFESSIONAL_YEARLY_PRICE_ID:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_KEY_PATH: /app/apple-auth-key.p8
+      APPLE_CALLBACK_URL: ${APPLE_CALLBACK_URL:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
       NODE_ENV: production
     volumes:
       - api_uploads:/app/uploads
+      - ./AuthKey_3M95C28C22.p8:/app/apple-auth-key.p8:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
