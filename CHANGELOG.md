@@ -2,6 +2,23 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.61] - 2026-03-01
+
+### Added
+- **Documentation site** — new Fumadocs-based docs app (`apps/docs`) with i18n support (EN/NL/FR/DE), deployed at `docs.opencoop.be`
+- Starter content: Welcome page, Getting Started guide, and Coop Administration guide in all 4 languages
+- Full-text search across all documentation pages
+- "Docs" link in marketing navbar and dashboard sidebar
+
+## [0.1.60] - 2026-03-01
+
+### Added
+- **Passkeys (WebAuthn)** — passwordless login via biometrics or security keys
+- **Google OAuth & Apple Sign In** — social login options on registration and login
+- **MFA/TOTP** — two-factor authentication with authenticator apps
+- **OAuth prefill** — registration form auto-fills name/email from OAuth profile
+- **Auto-link orphan shareholders** — when a user registers with an email matching an existing shareholder, they are automatically linked
+
 ## [0.1.59] - 2026-02-28
 
 ### Added
