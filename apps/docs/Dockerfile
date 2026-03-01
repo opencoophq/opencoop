@@ -10,12 +10,12 @@ COPY apps/docs/source.config.ts apps/docs/
 COPY apps/docs/content apps/docs/content
 RUN pnpm install --frozen-lockfile
 
-# Build (content is flat — no subdirectories under content/docs/)
+# Build
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/docs/node_modules ./apps/docs/node_modules
 COPY . .
-RUN pnpm --filter @opencoop/docs build
+RUN echo "=== CONTENT ===" && ls apps/docs/content/docs/ && echo "=== .SOURCE BEFORE ===" && cat apps/docs/.source/index.ts 2>/dev/null || echo "no .source yet" && pnpm --filter @opencoop/docs build && echo "=== .SOURCE AFTER ===" && head -5 apps/docs/.source/index.ts
 
 # Production
 FROM node:20-alpine AS production
