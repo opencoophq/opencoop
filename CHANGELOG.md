@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.65] - 2026-03-01
+
+### Fixed
+- Docs sidebar no longer shows redundant section headers above each page link
+
 ## [0.1.64] - 2026-03-01
 
 ### Changed
