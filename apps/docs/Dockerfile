@@ -10,7 +10,7 @@ COPY apps/docs/source.config.ts apps/docs/
 COPY apps/docs/content apps/docs/content
 RUN pnpm install --frozen-lockfile
 
-# Build
+# Build (content is flat — no subdirectories under content/docs/)
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/docs/node_modules ./apps/docs/node_modules
