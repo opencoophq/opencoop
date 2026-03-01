@@ -58,6 +58,13 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://api:3001
 
+  docs:
+    build:
+      context: .
+      dockerfile: apps/docs/Dockerfile
+    ports:
+      - "3003:3000"
+
   nginx:
     image: nginx:alpine
     ports:

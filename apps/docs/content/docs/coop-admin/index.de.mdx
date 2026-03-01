@@ -1,0 +1,90 @@
+---
+title: Genossenschaftsverwaltung
+description: Ein Leitfaden für Genossenschaftsadministratoren zur Verwaltung von Anteilseignern, Transaktionen und Einstellungen.
+---
+
+Dieser Leitfaden behandelt die Verwaltungsfunktionen, die Genossenschaftsadministratoren in OpenCoop zur Verfügung stehen.
+
+## Dashboard-Übersicht
+
+Das Admin-Dashboard gibt Ihnen einen Überblick über Ihre Genossenschaft:
+
+- **Gesamtzahl der Anteilseigner** und Anzahl aktiver Anteilseigner
+- **Gesamtkapital** über alle Anteilsklassen hinweg
+- **Ausstehende Transaktionen**, die eine Genehmigung oder Zahlung benötigen
+- **Letzte Aktivitäten** mit den neuesten Änderungen
+
+## Anteilseigner verwalten
+
+### Anteilseigner anzeigen
+
+Die Seite **Anteilseigner** zeigt alle registrierten Anteilseigner in einer durchsuchbaren, sortierbaren Tabelle. Sie können nach Status (aktiv, ausstehend, inaktiv) und Typ (Einzelperson, Unternehmen, Minderjähriger) filtern.
+
+### Anteilseigner hinzufügen
+
+Klicken Sie auf **Anteilseigner hinzufügen** und füllen Sie die erforderlichen Informationen aus:
+
+- **Typ** — Einzelperson, Unternehmen oder Minderjähriger
+- **Persönliche Daten** — Name, E-Mail, Adresse, Nationalregisternummer
+- **Unternehmensdaten** (falls zutreffend) — Firmenname, KBO/BCE-Nummer, USt-IdNr.
+- **Gesetzlicher Vertreter** (für Minderjährige) — Name und Beziehung
+
+### Anteilseigner bearbeiten
+
+Klicken Sie auf einen Anteilseigner, um sein vollständiges Profil anzuzeigen. Von dort aus können Sie seine Daten aktualisieren, sein Anteilsportfolio einsehen und seine Transaktionshistorie anzeigen.
+
+## Anteilsklassen verwalten
+
+Navigieren Sie zu **Anteilsklassen**, um die Arten von Anteilen zu konfigurieren, die Ihre Genossenschaft anbietet:
+
+- **Name** — Ein beschreibender Name (z.B. „Anteil A", „Anteil B")
+- **Nennwert** — Der Preis pro Anteil
+- **Mindestanteile** — Mindestanzahl von Anteilen, die ein Anteilseigner halten muss
+- **Höchstanteile** — Maximale Anzahl von Anteilen pro Anteilseigner (optional)
+
+## Transaktionen verarbeiten
+
+### Transaktionen genehmigen
+
+Wenn Anteilseigner einen Kauf- oder Verkaufsantrag stellen, erscheint dieser als ausstehende Transaktion. Überprüfen Sie die Details und:
+
+1. **Genehmigen** — Bestätigen Sie die Transaktion und generieren Sie den OGM-Zahlungscode
+2. **Ablehnen** — Lehnen Sie die Transaktion mit einem optionalen Grund ab
+
+### Zahlungsverfolgung
+
+Jede genehmigte Kauftransaktion erhält einen einzigartigen OGM-Code (+++XXX/XXXX/XXXXX+++). Wenn Sie Bankauszüge importieren, ordnet OpenCoop Zahlungen automatisch über diese Codes den Transaktionen zu.
+
+### Bankimport
+
+Gehen Sie zu **Bankimport**, um CODA- oder CSV-Dateien von Ihrer Bank hochzuladen. OpenCoop wird:
+
+1. Alle eingehenden Transaktionen analysieren
+2. Sie über OGM-Codes ausstehenden Zahlungen zuordnen
+3. Nicht zugeordnete Transaktionen zur manuellen Überprüfung anzeigen
+
+## Dividenden
+
+Navigieren Sie zu **Dividenden**, um Dividendenausschüttungen zu verwalten:
+
+1. **Dividendenrunde erstellen** — Legen Sie das Geschäftsjahr und den Betrag pro Anteil fest
+2. **Berechnen** — OpenCoop berechnet die Dividende jedes Anteilseigners, einschließlich der belgischen Quellensteuer (30%)
+3. **Genehmigen und ausschütten** — Erstellen Sie Dividendenabrechnungen und Steuerdokumente
+
+## Berichte
+
+Der Bereich **Berichte** bietet exportierbare Daten:
+
+- Anteilseignerregister (PDF/CSV)
+- Transaktionsübersicht
+- Kapitalübersicht nach Anteilsklasse
+- Dividendenausschüttungsberichte
+
+## Einstellungen
+
+In **Einstellungen** können Sie verwalten:
+
+- **Allgemein** — Name der Genossenschaft, Slug, Kontaktdaten
+- **Branding** — Logo, Primärfarbe, benutzerdefinierte E-Mail-Vorlagen
+- **E-Mail** — SMTP-Konfiguration und Benachrichtigungseinstellungen
+- **Bankkonto** — IBAN und BIC für den Zahlungsabgleich

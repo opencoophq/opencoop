@@ -131,6 +131,16 @@ jobs:
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
+      - name: Build & push Docs
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/docs/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-docs:${{ github.sha }}
+          cache-from: type=gha,scope=docs
+          cache-to: type=gha,mode=max,scope=docs
+
       - name: Build & push Migrate
         uses: docker/build-push-action@v6
         with:

@@ -70,6 +70,7 @@
     "showMore": "Meer tonen",
     "showLess": "Minder tonen",
     "overview": "Overzicht",
+    "docs": "Documentatie",
     "documents": "Documenten",
     "settings": "Instellingen",
     "myAccount": "Mijn account",
@@ -874,7 +875,8 @@
       "register": "Aan de slag",
       "pricing": "Prijzen",
       "demo": "Demo",
-      "migration": "Migratie"
+      "migration": "Migratie",
+      "docs": "Docs"
     },
     "hero": {
       "title": "Aandeelhoudersbeheer voor coöperaties",

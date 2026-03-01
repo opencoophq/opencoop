@@ -70,6 +70,7 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "overview": "Overview",
+    "docs": "Documentation",
     "documents": "Documents",
     "settings": "Settings",
     "myAccount": "My Account",
@@ -874,7 +875,8 @@
       "register": "Get started",
       "pricing": "Pricing",
       "demo": "Demo",
-      "migration": "Migration"
+      "migration": "Migration",
+      "docs": "Docs"
     },
     "hero": {
       "title": "Shareholder management for cooperatives",
