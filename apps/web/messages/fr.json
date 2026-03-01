@@ -82,7 +82,9 @@
     "verified": "Vérifié",
     "certificate": "Certificat",
     "savedSuccessfully": "Enregistré avec succès",
-    "language": "Langue"
+    "language": "Langue",
+    "done": "Terminé",
+    "copied": "Copié"
   },
   "auth": {
     "login": "Se connecter",
@@ -797,6 +799,64 @@
     "shareholders": {
       "total": "Total des coopérateurs"
     }
+  },
+  "mfa": {
+    "title": "Authentification à deux facteurs",
+    "description": "Ajoutez une couche de sécurité supplémentaire à votre compte avec une application d'authentification.",
+    "enable": "Activer la 2FA",
+    "disable": "Désactiver la 2FA",
+    "enabled": "L'authentification à deux facteurs est activée",
+    "verifyTitle": "Vérification à deux facteurs",
+    "enterCode": "Entrez le code à 6 chiffres de votre application d'authentification.",
+    "enterRecoveryCode": "Entrez un de vos codes de récupération.",
+    "code": "Code de vérification",
+    "recoveryCode": "Code de récupération",
+    "verify": "Vérifier",
+    "verifyError": "Échec de la vérification",
+    "useAuthenticator": "Utiliser le code d'authentification",
+    "useRecoveryCode": "Utiliser un code de récupération",
+    "scanQrCode": "Scannez ce QR code avec votre application d'authentification (Google Authenticator, Authy, etc.).",
+    "manualEntry": "Ou entrez ce code manuellement :",
+    "enterVerificationCode": "Entrez le code de votre application pour vérifier",
+    "setupError": "Échec de la configuration de la 2FA",
+    "invalidCode": "Code de vérification invalide",
+    "saveRecoveryCodes": "Conservez ces codes de récupération dans un endroit sûr. Chaque code ne peut être utilisé qu'une seule fois. Vous ne pourrez plus les voir.",
+    "copyRecoveryCodes": "Copier les codes de récupération",
+    "regenerateRecoveryCodes": "Régénérer les codes de récupération",
+    "regenerateError": "Échec de la régénération des codes",
+    "confirmDisable": "Entrez votre mot de passe pour désactiver l'authentification à deux facteurs.",
+    "disableError": "Échec de la désactivation de la 2FA"
+  },
+  "passkeys": {
+    "title": "Passkeys",
+    "description": "Connectez-vous avec votre empreinte digitale, visage ou code PIN. Les passkeys sont plus sûres que les mots de passe.",
+    "add": "Ajouter une passkey",
+    "remove": "Supprimer",
+    "rename": "Renommer",
+    "noPasskeys": "Aucune passkey enregistrée.",
+    "registerSuccess": "Passkey enregistrée avec succès",
+    "registerError": "Échec de l'enregistrement de la passkey",
+    "removeConfirm": "Êtes-vous sûr de vouloir supprimer cette passkey ?",
+    "removeSuccess": "Passkey supprimée",
+    "removeError": "Échec de la suppression de la passkey",
+    "loginButton": "Se connecter avec une passkey",
+    "loginError": "Échec de l'authentification par passkey",
+    "friendlyName": "Nom de la passkey",
+    "friendlyNamePlaceholder": "ex. MacBook, iPhone",
+    "lastUsed": "Dernière utilisation",
+    "never": "Jamais",
+    "createdAt": "Créée le"
+  },
+  "oauth": {
+    "continueWith": "Ou continuer avec",
+    "google": "Google",
+    "apple": "Apple",
+    "connectedAccounts": "Comptes connectés",
+    "connectedAccountsDescription": "Gérez vos comptes de connexion sociale liés.",
+    "linked": "Lié",
+    "notLinked": "Non lié",
+    "linkAccount": "Lier le compte",
+    "unlinkAccount": "Délier"
   },
   "errors": {
     "generic": "Une erreur est survenue",

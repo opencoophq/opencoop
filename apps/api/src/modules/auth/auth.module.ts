@@ -6,9 +6,22 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { AppleStrategy } from './strategies/apple.strategy';
+import { WebAuthnService } from './webauthn.service';
+import { RedisService } from './redis.service';
 import { UsersModule } from '../users/users.module';
 import { EmailModule } from '../email/email.module';
 import { CoopsModule } from '../coops/coops.module';
+
+// Only register OAuth strategies if credentials are configured
+const conditionalProviders: any[] = [];
+if (process.env.GOOGLE_CLIENT_ID) {
+  conditionalProviders.push(GoogleStrategy);
+}
+if (process.env.APPLE_CLIENT_ID) {
+  conditionalProviders.push(AppleStrategy);
+}
 
 @Module({
   imports: [
@@ -16,6 +29,7 @@ import { CoopsModule } from '../coops/coops.module';
     PassportModule,
     EmailModule,
     CoopsModule,
+    ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -28,7 +42,14 @@ import { CoopsModule } from '../coops/coops.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    LocalStrategy,
+    WebAuthnService,
+    RedisService,
+    ...conditionalProviders,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}
