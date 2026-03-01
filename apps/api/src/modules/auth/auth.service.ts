@@ -16,6 +16,9 @@ import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { WaitlistDto } from './dto/waitlist.dto';
 import { randomBytes } from 'crypto';
 import { hashToken } from '../../common/crypto/hash-token';
+import { encryptMfaSecret, decryptMfaSecret, generateRecoveryCodes, hashRecoveryCode } from '../../common/crypto';
+import * as OTPAuth from 'otpauth';
+import * as QRCode from 'qrcode';
 @Injectable()
 export class AuthService {
   constructor(
@@ -36,7 +39,7 @@ export class AuthService {
       },
     });
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       return null;
     }
 
@@ -48,6 +51,23 @@ export class AuthService {
     return user;
   }
 
+  /**
+   * Public wrapper for issueJwtForUser, used by WebAuthn and OAuth flows
+   * that authenticate users outside of AuthService.
+   */
+  issueJwtForUserPublic(user: {
+    id: string;
+    email: string;
+    name: string | null;
+    role: string;
+    preferredLanguage: string;
+    emailVerified: Date | null;
+    mfaEnabled?: boolean;
+    coopAdminOf?: { coopId: string }[];
+  }) {
+    return this.issueJwtForUser(user);
+  }
+
   async login(loginDto: LoginDto) {
     const user = await this.validateUser(loginDto.email, loginDto.password);
 
@@ -55,26 +75,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const coopIds = user.coopAdminOf.map((ca) => ca.coopId);
-
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      ...(coopIds.length > 0 && { coopIds }),
-    };
-
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        preferredLanguage: user.preferredLanguage,
-        emailVerified: !!user.emailVerified,
-      },
-    };
+    return this.issueJwtForUser(user);
   }
 
   async register(registerDto: RegisterDto) {
@@ -376,7 +377,7 @@ export class AuthService {
     }
 
     // Exclude sensitive fields
-    const { passwordHash, emailVerifyToken, emailVerifyExpires, passwordResetToken, passwordResetExpires, ...safeUser } = user;
+    const { passwordHash, emailVerifyToken, emailVerifyExpires, passwordResetToken, passwordResetExpires, mfaSecret, mfaRecoveryCodes, ...safeUser } = user;
 
     // SYSTEM_ADMIN can manage all coops, not just ones they're explicitly assigned to
     let adminCoopsRaw = user.coopAdminOf.map((ca) => ca.coop);
@@ -411,6 +412,9 @@ export class AuthService {
     return {
       ...safeUser,
       emailVerified,
+      hasPassword: !!passwordHash,
+      googleLinked: !!user.googleId,
+      appleLinked: !!user.appleId,
       adminCoops,
       shareholderCoops: user.shareholders.map((s) => s.coop),
     };
@@ -426,9 +430,11 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isValid) {
-      throw new BadRequestException('Current password is incorrect');
+    if (user.passwordHash) {
+      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isValid) {
+        throw new BadRequestException('Current password is incorrect');
+      }
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
@@ -442,6 +448,231 @@ export class AuthService {
     });
 
     return { message: 'Password changed successfully' };
+  }
+
+  // ============================================================================
+  // MFA / TOTP
+  // ============================================================================
+
+  async mfaSetup(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    if (user.mfaEnabled) throw new BadRequestException('MFA is already enabled');
+
+    const secret = new OTPAuth.Secret({ size: 20 });
+    const totp = new OTPAuth.TOTP({
+      issuer: 'OpenCoop',
+      label: user.email,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+
+    const otpauthUri = totp.toString();
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUri);
+
+    // Store encrypted secret temporarily (not yet enabled)
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaSecret: encryptMfaSecret(secret.base32) },
+    });
+
+    return { qrCodeDataUrl, secret: secret.base32, otpauthUri };
+  }
+
+  async mfaEnable(userId: string, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    if (user.mfaEnabled) throw new BadRequestException('MFA is already enabled');
+    if (!user.mfaSecret) throw new BadRequestException('Call /auth/mfa/setup first');
+
+    const secret = decryptMfaSecret(user.mfaSecret);
+    const totp = new OTPAuth.TOTP({
+      issuer: 'OpenCoop',
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: OTPAuth.Secret.fromBase32(secret),
+    });
+
+    const delta = totp.validate({ token: code, window: 1 });
+    if (delta === null) {
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    const { plain, hashed } = generateRecoveryCodes();
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: true, mfaRecoveryCodes: hashed },
+    });
+
+    return { recoveryCodes: plain };
+  }
+
+  async mfaVerify(mfaToken: string, code?: string, recoveryCode?: string) {
+    let payload: { sub: string; type: string };
+    try {
+      payload = this.jwtService.verify(mfaToken);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired MFA token');
+    }
+
+    if (payload.type !== 'mfa-pending') {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: { coopAdminOf: { select: { coopId: true } } },
+    });
+    if (!user || !user.mfaEnabled || !user.mfaSecret) {
+      throw new UnauthorizedException('MFA not configured');
+    }
+
+    if (recoveryCode) {
+      // Recovery code flow
+      const hashedInput = hashRecoveryCode(recoveryCode);
+      const idx = user.mfaRecoveryCodes.indexOf(hashedInput);
+      if (idx === -1) {
+        throw new BadRequestException('Invalid recovery code');
+      }
+      // Remove used recovery code
+      const updatedCodes = [...user.mfaRecoveryCodes];
+      updatedCodes.splice(idx, 1);
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { mfaRecoveryCodes: updatedCodes },
+      });
+    } else if (code) {
+      // TOTP code flow
+      const secret = decryptMfaSecret(user.mfaSecret);
+      const totp = new OTPAuth.TOTP({
+        issuer: 'OpenCoop',
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret: OTPAuth.Secret.fromBase32(secret),
+      });
+
+      const delta = totp.validate({ token: code, window: 1 });
+      if (delta === null) {
+        throw new BadRequestException('Invalid verification code');
+      }
+    } else {
+      throw new BadRequestException('Provide either code or recoveryCode');
+    }
+
+    // Issue full JWT
+    const coopIds = user.coopAdminOf.map((ca) => ca.coopId);
+    const jwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      ...(coopIds.length > 0 && { coopIds }),
+    };
+
+    return {
+      accessToken: this.jwtService.sign(jwtPayload),
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        preferredLanguage: user.preferredLanguage,
+        emailVerified: !!user.emailVerified,
+      },
+    };
+  }
+
+  async mfaDisable(userId: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    if (!user.mfaEnabled) throw new BadRequestException('MFA is not enabled');
+
+    if (user.passwordHash) {
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) throw new BadRequestException('Invalid password');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: false, mfaSecret: null, mfaRecoveryCodes: [] },
+    });
+
+    return { message: 'MFA disabled' };
+  }
+
+  async mfaRegenerateRecoveryCodes(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    if (!user.mfaEnabled) throw new BadRequestException('MFA is not enabled');
+
+    const { plain, hashed } = generateRecoveryCodes();
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaRecoveryCodes: hashed },
+    });
+
+    return { recoveryCodes: plain };
+  }
+
+  async mfaStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { mfaEnabled: true },
+    });
+    if (!user) throw new UnauthorizedException('User not found');
+    return { mfaEnabled: user.mfaEnabled };
+  }
+
+  // ============================================================================
+  // OAUTH (GOOGLE / APPLE)
+  // ============================================================================
+
+  async handleOAuthLogin(provider: 'google' | 'apple', data: { providerId: string; email: string; name?: string }) {
+    const providerIdField = provider === 'google' ? 'googleId' : 'appleId';
+
+    // 1. Check if user already linked by provider ID
+    let user = await this.prisma.user.findFirst({
+      where: { [providerIdField]: data.providerId },
+      include: { coopAdminOf: { select: { coopId: true } } },
+    });
+
+    if (user) {
+      return this.issueJwtForUser(user);
+    }
+
+    // 2. Check if user exists by email
+    user = await this.prisma.user.findUnique({
+      where: { email: data.email.toLowerCase() },
+      include: { coopAdminOf: { select: { coopId: true } } },
+    });
+
+    if (user) {
+      // Link provider to existing user
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { [providerIdField]: data.providerId },
+      });
+      return this.issueJwtForUser(user);
+    }
+
+    // 3. Create new user (no password, OAuth-only)
+    const newUser = await this.prisma.user.create({
+      data: {
+        email: data.email.toLowerCase(),
+        name: data.name || null,
+        [providerIdField]: data.providerId,
+        emailVerified: new Date(), // OAuth-verified email
+      },
+    });
+
+    return this.issueJwtForUser({
+      ...newUser,
+      coopAdminOf: [],
+    });
   }
 
   // ============================================================================
@@ -757,28 +988,7 @@ export class AuthService {
       throw new BadRequestException('This login link has already been used');
     }
 
-    const user = magicLinkToken.user;
-    const coopIds = user.coopAdminOf.map((ca) => ca.coopId);
-
-    // Generate JWT (same as login method)
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      ...(coopIds.length > 0 && { coopIds }),
-    };
-
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        preferredLanguage: user.preferredLanguage,
-        emailVerified: !!user.emailVerified,
-      },
-    };
+    return this.issueJwtForUser(magicLinkToken.user);
   }
 
   // ============================================================================
@@ -1038,6 +1248,54 @@ export class AuthService {
           footer: 'Deze e-mail is verzonden door OpenCoop.',
         };
     }
+  }
+
+  /**
+   * Central JWT issuance. All auth flows (password, magic link, passkey, OAuth)
+   * converge here. When MFA is enabled, returns an MFA-pending response instead.
+   */
+  private issueJwtForUser(user: {
+    id: string;
+    email: string;
+    name: string | null;
+    role: string;
+    preferredLanguage: string;
+    emailVerified: Date | null;
+    mfaEnabled?: boolean;
+    coopAdminOf?: { coopId: string }[];
+  }) {
+    const coopIds = (user.coopAdminOf ?? []).map((ca) => ca.coopId);
+
+    // If MFA is enabled, issue a short-lived mfa-pending token
+    if (user.mfaEnabled) {
+      const mfaPayload = {
+        sub: user.id,
+        type: 'mfa-pending',
+      };
+      return {
+        requiresMfa: true,
+        mfaToken: this.jwtService.sign(mfaPayload, { expiresIn: '5m' }),
+      };
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      ...(coopIds.length > 0 && { coopIds }),
+    };
+
+    return {
+      accessToken: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        preferredLanguage: user.preferredLanguage,
+        emailVerified: !!user.emailVerified,
+      },
+    };
   }
 
   private computeIsReadOnly(coop: {

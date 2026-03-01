@@ -82,7 +82,9 @@
     "verified": "Verifiziert",
     "certificate": "Zertifikat",
     "savedSuccessfully": "Erfolgreich gespeichert",
-    "language": "Sprache"
+    "language": "Sprache",
+    "done": "Fertig",
+    "copied": "Kopiert"
   },
   "auth": {
     "login": "Anmelden",
@@ -797,6 +799,64 @@
     "shareholders": {
       "total": "Anteilseigner gesamt"
     }
+  },
+  "mfa": {
+    "title": "Zwei-Faktor-Authentifizierung",
+    "description": "Fügen Sie Ihrem Konto eine zusätzliche Sicherheitsebene mit einer Authenticator-App hinzu.",
+    "enable": "2FA aktivieren",
+    "disable": "2FA deaktivieren",
+    "enabled": "Zwei-Faktor-Authentifizierung ist aktiviert",
+    "verifyTitle": "Zwei-Faktor-Verifizierung",
+    "enterCode": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein.",
+    "enterRecoveryCode": "Geben Sie einen Ihrer Wiederherstellungscodes ein.",
+    "code": "Verifizierungscode",
+    "recoveryCode": "Wiederherstellungscode",
+    "verify": "Verifizieren",
+    "verifyError": "Verifizierung fehlgeschlagen",
+    "useAuthenticator": "Authenticator-Code verwenden",
+    "useRecoveryCode": "Wiederherstellungscode verwenden",
+    "scanQrCode": "Scannen Sie diesen QR-Code mit Ihrer Authenticator-App (Google Authenticator, Authy, etc.).",
+    "manualEntry": "Oder geben Sie diesen Code manuell ein:",
+    "enterVerificationCode": "Geben Sie den Code aus Ihrer App zur Verifizierung ein",
+    "setupError": "2FA-Einrichtung fehlgeschlagen",
+    "invalidCode": "Ungültiger Verifizierungscode",
+    "saveRecoveryCodes": "Speichern Sie diese Wiederherstellungscodes an einem sicheren Ort. Jeder Code kann nur einmal verwendet werden. Sie können sie nicht erneut anzeigen.",
+    "copyRecoveryCodes": "Wiederherstellungscodes kopieren",
+    "regenerateRecoveryCodes": "Wiederherstellungscodes neu generieren",
+    "regenerateError": "Wiederherstellungscodes konnten nicht generiert werden",
+    "confirmDisable": "Geben Sie Ihr Passwort ein, um die Zwei-Faktor-Authentifizierung zu deaktivieren.",
+    "disableError": "2FA konnte nicht deaktiviert werden"
+  },
+  "passkeys": {
+    "title": "Passkeys",
+    "description": "Melden Sie sich mit Fingerabdruck, Gesicht oder Geräte-PIN an. Passkeys sind sicherer als Passwörter.",
+    "add": "Passkey hinzufügen",
+    "remove": "Entfernen",
+    "rename": "Umbenennen",
+    "noPasskeys": "Noch keine Passkeys registriert.",
+    "registerSuccess": "Passkey erfolgreich registriert",
+    "registerError": "Passkey-Registrierung fehlgeschlagen",
+    "removeConfirm": "Sind Sie sicher, dass Sie diesen Passkey entfernen möchten?",
+    "removeSuccess": "Passkey entfernt",
+    "removeError": "Passkey konnte nicht entfernt werden",
+    "loginButton": "Mit Passkey anmelden",
+    "loginError": "Passkey-Authentifizierung fehlgeschlagen",
+    "friendlyName": "Passkey-Name",
+    "friendlyNamePlaceholder": "z.B. MacBook, iPhone",
+    "lastUsed": "Zuletzt verwendet",
+    "never": "Nie",
+    "createdAt": "Erstellt"
+  },
+  "oauth": {
+    "continueWith": "Oder weiter mit",
+    "google": "Google",
+    "apple": "Apple",
+    "connectedAccounts": "Verknüpfte Konten",
+    "connectedAccountsDescription": "Verwalten Sie Ihre verknüpften Social-Login-Konten.",
+    "linked": "Verknüpft",
+    "notLinked": "Nicht verknüpft",
+    "linkAccount": "Konto verknüpfen",
+    "unlinkAccount": "Trennen"
   },
   "errors": {
     "generic": "Etwas ist schiefgelaufen",

@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { resolveLogoUrl } from '@/lib/api';
+import { MfaVerifyStep } from '@/components/auth/mfa-verify-step';
 
-type VerifyState = 'loading' | 'success' | 'error';
+type VerifyState = 'loading' | 'success' | 'error' | 'mfa';
 
 interface CoopPublicInfo {
   id: string;
@@ -30,6 +31,7 @@ export default function MagicLinkPage() {
   const [state, setState] = useState<VerifyState>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [coop, setCoop] = useState<CoopPublicInfo | null>(null);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
 
   // Fetch coop branding if coopSlug is provided
   useEffect(() => {
@@ -82,6 +84,13 @@ export default function MagicLinkPage() {
           return;
         }
 
+        // Check if MFA is required
+        if (result.requiresMfa) {
+          setMfaToken(result.mfaToken);
+          setState('mfa');
+          return;
+        }
+
         // Store token and user data
         localStorage.setItem('accessToken', result.accessToken);
         localStorage.setItem('user', JSON.stringify(result.user));
@@ -126,6 +135,7 @@ export default function MagicLinkPage() {
           <CardTitle className="text-2xl">
             {state === 'loading' && t('auth.magicLinkVerifying')}
             {state === 'success' && t('auth.loginSuccess')}
+            {state === 'mfa' && t('mfa.verifyTitle')}
             {state === 'error' && t('auth.loginError')}
           </CardTitle>
           <CardDescription>{coop?.name || 'OpenCoop'}</CardDescription>
@@ -164,6 +174,21 @@ export default function MagicLinkPage() {
               </div>
               <p className="text-muted-foreground">{t('auth.magicLinkSuccess')}</p>
             </div>
+          )}
+
+          {state === 'mfa' && mfaToken && (
+            <MfaVerifyStep
+              mfaToken={mfaToken}
+              brandColor={coop?.primaryColor}
+              onSuccess={(result) => {
+                localStorage.setItem('accessToken', result.accessToken);
+                localStorage.setItem('user', JSON.stringify(result.user));
+                setState('success');
+                setTimeout(() => {
+                  router.push('/dashboard');
+                }, 2000);
+              }}
+            />
           )}
 
           {state === 'error' && (

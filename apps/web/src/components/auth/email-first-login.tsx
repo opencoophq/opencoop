@@ -13,6 +13,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Building2 } from 'lucide-react';
 import { resolveLogoUrl } from '@/lib/api';
+import { MfaVerifyStep } from './mfa-verify-step';
+import { PasskeyLoginButton } from './passkey-login-button';
+import { OAuthButtons } from './oauth-buttons';
 
 interface CoopBranding {
   name: string;
@@ -26,7 +29,7 @@ interface EmailFirstLoginProps {
   coop?: CoopBranding;
 }
 
-type LoginStep = 'email' | 'method' | 'magic-link-sent' | 'password';
+type LoginStep = 'email' | 'method' | 'magic-link-sent' | 'password' | 'mfa';
 
 const emailSchema = z.object({
   email: z.string().email(),
@@ -46,6 +49,7 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
 
   const {
     register: registerEmail,
@@ -115,6 +119,13 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
           throw new Error(t('auth.invalidCredentials'));
         }
         throw new Error(t('auth.loginError'));
+      }
+
+      // Check if MFA is required
+      if (result.requiresMfa) {
+        setMfaToken(result.mfaToken);
+        setStep('mfa');
+        return;
       }
 
       localStorage.setItem('accessToken', result.accessToken);
@@ -195,6 +206,40 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
               <Button type="submit" className="w-full" style={coop ? { backgroundColor: coop.primaryColor } : undefined}>
                 {t('auth.continue')}
               </Button>
+
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">{t('common.or')}</span>
+                </div>
+              </div>
+
+              <PasskeyLoginButton
+                brandColor={coop?.primaryColor}
+                onSuccess={(result) => {
+                  localStorage.setItem('accessToken', result.accessToken);
+                  localStorage.setItem('user', JSON.stringify(result.user));
+                  router.push('/dashboard');
+                }}
+                onMfaRequired={(token) => {
+                  setMfaToken(token);
+                  setStep('mfa');
+                }}
+                onError={(msg) => setError(msg)}
+              />
+
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">{t('oauth.continueWith')}</span>
+                </div>
+              </div>
+
+              <OAuthButtons brandColor={coop?.primaryColor} />
             </form>
           )}
 
@@ -362,8 +407,26 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
             </form>
           )}
 
+          {/* Step 4: MFA Verification */}
+          {step === 'mfa' && mfaToken && (
+            <MfaVerifyStep
+              mfaToken={mfaToken}
+              brandColor={coop?.primaryColor}
+              onSuccess={(result) => {
+                localStorage.setItem('accessToken', result.accessToken);
+                localStorage.setItem('user', JSON.stringify(result.user));
+                router.push('/dashboard');
+              }}
+              onBack={() => {
+                setStep('method');
+                setMfaToken(null);
+                setError(null);
+              }}
+            />
+          )}
+
           {/* Register Link */}
-          {step !== 'magic-link-sent' && (
+          {step !== 'magic-link-sent' && step !== 'mfa' && (
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">{t('registration.createAccount')} </span>
               <Link href={registerUrl} className="text-primary hover:underline">
