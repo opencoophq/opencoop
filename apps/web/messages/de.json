@@ -206,7 +206,8 @@
       "pending": "Ausstehend",
       "active": "Aktiv",
       "sold": "Verkauft",
-      "transferred": "Übertragen"
+      "transferred": "Übertragen",
+      "awaitingPayment": "Zahlung ausstehend"
     },
     "purchase": "Kauf",
     "sell": "Verkauf",
@@ -246,7 +247,14 @@
     "childShares": "Anteile für Ihre Kinder",
     "companyShares": "Unternehmensanteile",
     "myShares": "Meine Anteile",
-    "totalShares": "Anteile gesamt"
+    "totalShares": "Anteile gesamt",
+    "buyShares": "Anteile kaufen",
+    "buySharesTitle": "Anteile kaufen",
+    "selectShareClass": "Anteilsklasse auswählen",
+    "totalCost": "Gesamtkosten",
+    "awaitingPayment": "Zahlung ausstehend",
+    "purchaseSubmitted": "Kauf erfolgreich eingereicht",
+    "scanToPayMessage": "Scannen Sie den QR-Code mit Ihrer Banking-App, um zu bezahlen"
   },
   "transactions": {
     "title": "Transaktionen",
@@ -282,6 +290,7 @@
     },
     "statuses": {
       "PENDING": "Ausstehend",
+      "AWAITING_PAYMENT": "Zahlung ausstehend",
       "APPROVED": "Genehmigt",
       "COMPLETED": "Abgeschlossen",
       "REJECTED": "Abgelehnt"
