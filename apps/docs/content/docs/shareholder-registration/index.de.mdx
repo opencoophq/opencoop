@@ -1,0 +1,85 @@
+---
+title: Anteilseignerregistrierung
+description: Wie Anteilseigner über die öffentliche Registrierungsseite Anteile erwerben.
+---
+
+OpenCoop bietet für jede Genossenschaft eine öffentliche Registrierungsseite, auf der Anteilseigner online Anteile erwerben können. Dieser Leitfaden erklärt den vollständigen Ablauf.
+
+## Registrierungslink
+
+Jede Genossenschaft hat eine öffentliche Registrierungsseite unter:
+
+```
+https://opencoop.be/{ihr-geno-slug}/register
+```
+
+Als Administrator finden Sie diesen Link in Ihrem Dashboard unter **Einstellungen** in der Karte **Anteilseigner-Links**. Teilen Sie ihn mit potenziellen Anteilseignern per E-Mail, auf Ihrer Website oder in sozialen Medien.
+
+## Der 3-Schritte-Ablauf
+
+### Schritt 1: Angaben
+
+Der Anteilseigner wählt, für wen die Anteile erworben werden:
+
+- **Für mich selbst** — Der Käufer registriert sich als individueller Anteilseigner. Die Anmeldung über **Google** oder **Apple** füllt Name und E-Mail automatisch aus.
+- **Für ein Familienmitglied** — Registriert einen Minderjährigen (unter 18). Der Käufer gibt die Daten des Minderjährigen ein und handelt als gesetzlicher Vertreter.
+- **Für ein Unternehmen** — Registriert eine juristische Person. Erfordert Firmenname und KBO/BCE-Nummer.
+- **Als Geschenk** — Der Käufer gibt nur seine E-Mail-Adresse ein. Es wird ein Geschenkgutschein mit einem einzigartigen Code generiert, den der Empfänger später verwenden kann, um die Anteile zu beanspruchen.
+
+Das Formular erfasst persönliche oder Unternehmensdaten, einschließlich Adresse, E-Mail und Telefonnummer.
+
+### Schritt 2: Bestellung
+
+Der Anteilseigner konfiguriert seinen Kauf:
+
+- **Anteilsklasse** — Auswahl aus den verfügbaren Anteilsklassen (z.B. „Anteil A" zu 250 EUR)
+- **Projekt** — Optional den Kauf mit einem bestimmten Projekt verknüpfen
+- **Menge** — Anzahl der zu kaufenden Anteile (unter Beachtung der Min/Max-Regeln pro Anteilsklasse)
+- **Bestellübersicht** — Zeigt den Gesamtbetrag an
+- **Allgemeine Geschäftsbedingungen** — Müssen vor dem Fortfahren akzeptiert werden
+
+### Schritt 3: Bestätigung
+
+Nach der Übermittlung sieht der Anteilseigner seine Zahlungsinformationen:
+
+- **OGM-Code** — Ein einzigartiger strukturierter Mitteilungscode (+++XXX/XXXX/XXXXX+++) für die Banküberweisung
+- **Bankdaten** — IBAN und BIC der Genossenschaft
+- **EPC-QR-Code** — Ein scanbarer QR-Code, der die Zahlung in den meisten Banking-Apps vorausfüllt
+- **Geschenkgutschein** (falls zutreffend) — Ein einzigartiger Geschenkcode und QR-Code zum Teilen mit dem Empfänger
+
+## Geschenkgutscheine
+
+Wenn ein Anteilseigner „Als Geschenk" wählt, ändert sich der Ablauf:
+
+1. Der Käufer gibt nur seine E-Mail-Adresse an
+2. Nach Abschluss des Kaufs erhält er einen **Geschenkgutschein** mit einem einzigartigen Code und QR-Code
+3. Der Käufer teilt diesen Code mit dem Empfänger
+4. Der Empfänger besucht die **Einlöseseite** der Genossenschaft unter `/{genoSlug}/claim`
+5. Der Empfänger gibt den Geschenkcode ein und füllt seine eigenen persönlichen Daten aus, um die Anteile zu beanspruchen
+
+## URL-Parameter
+
+Sie können das Registrierungsformular über URL-Parameter vorkonfigurieren:
+
+| Parameter | Beschreibung | Beispiel |
+|-----------|-------------|---------|
+| `class` | Eine Anteilsklasse nach Code vorauswählen | `?class=ANTEIL_A` |
+| `project` | Ein Projekt nach ID vorauswählen | `?project=abc123` |
+| `shareholderId` | Einen bestehenden Anteilseigner vorauswählen | `?shareholderId=xyz789` |
+
+Dies ist nützlich für gezielte Registrierungslinks, beispielsweise in E-Mail-Kampagnen oder auf projektspezifischen Landingpages.
+
+## Für Administratoren
+
+Nachdem ein Anteilseigner die Registrierung abgeschlossen hat:
+
+1. Ein neuer **Anteilseigner-Datensatz** wird erstellt (Status: ausstehend)
+2. Eine neue **Kauftransaktion** wird mit einem einzigartigen OGM-Code erstellt
+3. Wenn der Anteilseigner die Überweisung tätigt, können Sie den Bankauszug über **Bankimport** importieren — OpenCoop ordnet die Zahlung automatisch über den OGM-Code der Transaktion zu
+4. Sobald die Zahlung bestätigt ist, werden die Anteile aktiviert
+
+Sie können das Registrierungserlebnis unter **Einstellungen** anpassen:
+
+- **Branding** — Laden Sie Ihr Logo hoch und legen Sie die Farben Ihrer Genossenschaft fest
+- **Anteilsklassen** — Konfigurieren Sie verfügbare Anteilsklassen, Preise und Min/Max-Regeln
+- **E-Mail** — Aktivieren Sie automatische E-Mail-Benachrichtigungen für Transaktionsbestätigungen

@@ -7,9 +7,10 @@ Multi-tenant SaaS platform for managing cooperative shareholding. Enables cooper
 - **Monorepo**: pnpm workspaces + Turbo
 - **Backend**: NestJS 10, Prisma 6, PostgreSQL 16
 - **Frontend**: Next.js 14 (App Router), React 18, Tailwind CSS
-- **Auth**: JWT (Passport.js)
+- **Auth**: JWT (Passport.js), Passkeys (WebAuthn), Google/Apple OAuth, MFA/TOTP
 - **Queue**: Bull + Redis
-- **i18n**: next-intl (NL/EN)
+- **i18n**: next-intl (EN/NL/FR/DE)
+- **Docs**: Fumadocs (deployed at [docs.opencoop.be](https://docs.opencoop.be))
 
 ## Quick Start
 
@@ -38,6 +39,7 @@ pnpm dev
 
 The API runs on http://localhost:3001 (Swagger: http://localhost:3001/api/docs).
 The web app runs on http://localhost:3002.
+The docs app runs on http://localhost:3003.
 
 ## Project Structure
 
@@ -45,7 +47,8 @@ The web app runs on http://localhost:3002.
 opencoop/
 ├── apps/
 │   ├── api/           # NestJS backend
-│   └── web/           # Next.js frontend
+│   ├── web/           # Next.js frontend
+│   └── docs/          # Fumadocs documentation
 ├── packages/
 │   ├── database/      # Prisma schema & client
 │   ├── shared/        # Shared types & utils

@@ -1,0 +1,85 @@
+---
+title: Aandeelhoudersregistratie
+description: Hoe aandeelhouders aandelen kopen via de openbare registratiepagina.
+---
+
+OpenCoop biedt een openbare registratiepagina voor elke coöperatie waar aandeelhouders online aandelen kunnen kopen. Deze gids legt de volledige flow uit.
+
+## Registratielink
+
+Elke coöperatie heeft een openbare registratiepagina op:
+
+```
+https://opencoop.be/{uw-coop-slug}/register
+```
+
+Als beheerder vindt u deze link in uw dashboard onder **Instellingen** in de kaart **Aandeelhouderslinks**. Deel deze met potentiële aandeelhouders via e-mail, uw website of sociale media.
+
+## De 3-stappenflow
+
+### Stap 1: Gegevens
+
+De aandeelhouder kiest voor wie de aandelen worden gekocht:
+
+- **Voor mezelf** — De koper registreert zich als individuele aandeelhouder. Inloggen met **Google** of **Apple** vult automatisch naam en e-mail in.
+- **Voor een familielid** — Registreert een minderjarige (onder 18). De koper vult de gegevens van de minderjarige in en treedt op als wettelijk vertegenwoordiger.
+- **Voor een bedrijf** — Registreert een rechtspersoon. Vereist bedrijfsnaam en KBO/BCE-nummer.
+- **Als cadeau** — De koper vult alleen een e-mailadres in. Er wordt een cadeaubon met een unieke code gegenereerd die de ontvanger kan gebruiken om de aandelen later te claimen.
+
+Het formulier verzamelt persoonlijke of bedrijfsgegevens, inclusief adres, e-mail en telefoonnummer.
+
+### Stap 2: Bestelling
+
+De aandeelhouder configureert de aankoop:
+
+- **Aandelenklasse** — Kies uit de beschikbare aandelenklassen (bijv. "Aandeel A" aan 250 EUR)
+- **Project** — Koppel de aankoop optioneel aan een specifiek project
+- **Aantal** — Aantal aandelen om te kopen (met inachtneming van min/max regels per aandelenklasse)
+- **Besteloverzicht** — Toont het totaalbedrag
+- **Algemene voorwaarden** — Moeten worden geaccepteerd voor het doorgaan
+
+### Stap 3: Bevestiging
+
+Na het indienen ziet de aandeelhouder de betalingsgegevens:
+
+- **OGM-code** — Een unieke gestructureerde mededeling (+++XXX/XXXX/XXXXX+++) voor de overschrijving
+- **Bankgegevens** — Het IBAN en BIC van de coöperatie
+- **EPC QR-code** — Een scanbare QR-code die de betaling vooraf invult in de meeste bank-apps
+- **Cadeaubon** (indien van toepassing) — Een unieke cadeaucode en QR-code om te delen met de ontvanger
+
+## Cadeaubonnen
+
+Wanneer een aandeelhouder "Als cadeau" selecteert, verandert de flow:
+
+1. De koper geeft alleen een e-mailadres op
+2. Na het afronden van de aankoop ontvangt de koper een **cadeaubon** met een unieke code en QR-code
+3. De koper deelt deze code met de ontvanger
+4. De ontvanger bezoekt de **claimpagina** van de coöperatie op `/{coopSlug}/claim`
+5. De ontvanger voert de cadeaucode in en vult eigen persoonlijke gegevens in om de aandelen te claimen
+
+## URL-parameters
+
+U kunt het registratieformulier vooraf configureren via URL-parameters:
+
+| Parameter | Beschrijving | Voorbeeld |
+|-----------|-------------|---------|
+| `class` | Vooraf een aandelenklasse selecteren op code | `?class=AANDEEL_A` |
+| `project` | Vooraf een project selecteren op ID | `?project=abc123` |
+| `shareholderId` | Vooraf een bestaande aandeelhouder selecteren | `?shareholderId=xyz789` |
+
+Dit is handig voor gerichte registratielinks, bijvoorbeeld in e-mailcampagnes of op projectspecifieke landingspagina's.
+
+## Voor beheerders
+
+Nadat een aandeelhouder de registratie heeft voltooid:
+
+1. Er wordt een nieuw **aandeelhoudersrecord** aangemaakt (status: in behandeling)
+2. Er wordt een nieuwe **aankooptransactie** aangemaakt met een unieke OGM-code
+3. Wanneer de aandeelhouder de overschrijving doet, kunt u het bankafschrift importeren via **Bankimport** — OpenCoop koppelt de betaling automatisch aan de transactie via de OGM-code
+4. Zodra de betaling is bevestigd, worden de aandelen geactiveerd
+
+U kunt de registratie-ervaring aanpassen in **Instellingen**:
+
+- **Huisstijl** — Upload uw logo en stel de kleuren van uw coöperatie in
+- **Aandelenklassen** — Configureer beschikbare aandelenklassen, prijzen en min/max regels
+- **E-mail** — Schakel automatische e-mailmeldingen in voor transactiebevestigingen

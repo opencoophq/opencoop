@@ -1,0 +1,85 @@
+---
+title: Shareholder Registration
+description: How shareholders purchase shares through the public registration page.
+---
+
+OpenCoop provides a public registration page for each cooperative where shareholders can purchase shares online. This guide explains the complete flow.
+
+## Registration Link
+
+Every cooperative has a public registration page at:
+
+```
+https://opencoop.be/{your-coop-slug}/register
+```
+
+As a coop admin, you can find this link in your dashboard under **Settings** in the **Shareholder Links** card. Share it with potential shareholders via email, your website, or social media.
+
+## The 3-Step Flow
+
+### Step 1: Details
+
+The shareholder chooses who they are purchasing shares for:
+
+- **For myself** — The buyer registers as an individual shareholder. They can sign in with **Google** or **Apple** to auto-fill their name and email.
+- **For a family member** — Registers a minor (under 18). The buyer enters the minor's details and acts as legal representative.
+- **For a company** — Registers a legal entity. Requires company name and KBO/BCE number.
+- **As a gift** — The buyer only enters their email. A gift certificate with a unique code is generated that the recipient can use to claim the shares later.
+
+The form collects personal or company details, including address, email, and phone number.
+
+### Step 2: Order
+
+The shareholder configures their purchase:
+
+- **Share class** — Select from the available share classes (e.g. "Part A" at 250 EUR)
+- **Project** — Optionally link the purchase to a specific project
+- **Quantity** — Number of shares to purchase (respecting min/max rules per share class)
+- **Order summary** — Shows the total amount to pay
+- **Terms & conditions** — Must be accepted before proceeding
+
+### Step 3: Confirmation
+
+After submitting, the shareholder sees their payment details:
+
+- **OGM code** — A unique structured communication code (+++XXX/XXXX/XXXXX+++) to use for the bank transfer
+- **Bank details** — The cooperative's IBAN and BIC
+- **EPC QR code** — A scannable QR code that pre-fills the payment in most banking apps
+- **Gift certificate** (if applicable) — A unique gift code and QR code to share with the recipient
+
+## Gift Certificates
+
+When a shareholder selects "As a gift", the flow changes:
+
+1. The buyer only provides their email address
+2. After completing the purchase, they receive a **gift certificate** with a unique code and a QR code
+3. The buyer shares this code with the recipient
+4. The recipient visits the cooperative's **claim page** at `/{coopSlug}/claim`
+5. The recipient enters the gift code and fills in their own personal details to claim the shares
+
+## URL Parameters
+
+You can pre-configure the registration form using URL parameters:
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `class` | Pre-select a share class by code | `?class=PART_A` |
+| `project` | Pre-select a project by ID | `?project=abc123` |
+| `shareholderId` | Pre-select an existing shareholder | `?shareholderId=xyz789` |
+
+This is useful for creating targeted registration links, for example in email campaigns or on project-specific landing pages.
+
+## For Coop Admins
+
+After a shareholder completes registration:
+
+1. A new **shareholder record** is created (status: pending)
+2. A new **purchase transaction** is created with a unique OGM code
+3. When the shareholder makes the bank transfer, you can import the bank statement via **Bank Import** — OpenCoop automatically matches the payment to the transaction using the OGM code
+4. Once payment is confirmed, the shares are activated
+
+You can customize the registration experience in **Settings**:
+
+- **Branding** — Upload your logo and set your cooperative's colors
+- **Share classes** — Configure available share classes, prices, and min/max rules
+- **Email** — Enable automatic email notifications for transaction confirmations

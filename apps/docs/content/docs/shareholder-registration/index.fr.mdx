@@ -1,0 +1,85 @@
+---
+title: Inscription des actionnaires
+description: Comment les actionnaires achètent des parts via la page d'inscription publique.
+---
+
+OpenCoop fournit une page d'inscription publique pour chaque coopérative où les actionnaires peuvent acheter des parts en ligne. Ce guide explique le processus complet.
+
+## Lien d'inscription
+
+Chaque coopérative dispose d'une page d'inscription publique à l'adresse :
+
+```
+https://opencoop.be/{slug-de-votre-coop}/register
+```
+
+En tant qu'administrateur, vous trouverez ce lien dans votre tableau de bord sous **Paramètres** dans la carte **Liens actionnaires**. Partagez-le avec les actionnaires potentiels par e-mail, sur votre site web ou sur les réseaux sociaux.
+
+## Le processus en 3 étapes
+
+### Étape 1 : Coordonnées
+
+L'actionnaire choisit pour qui il achète les parts :
+
+- **Pour moi-même** — L'acheteur s'inscrit en tant qu'actionnaire individuel. La connexion via **Google** ou **Apple** remplit automatiquement le nom et l'e-mail.
+- **Pour un membre de la famille** — Inscrit un mineur (moins de 18 ans). L'acheteur saisit les coordonnées du mineur et agit en tant que représentant légal.
+- **Pour une entreprise** — Inscrit une personne morale. Nécessite le nom de l'entreprise et le numéro KBO/BCE.
+- **En cadeau** — L'acheteur saisit uniquement son adresse e-mail. Un bon cadeau avec un code unique est généré que le destinataire peut utiliser pour réclamer les parts ultérieurement.
+
+Le formulaire collecte les données personnelles ou d'entreprise, y compris l'adresse, l'e-mail et le numéro de téléphone.
+
+### Étape 2 : Commande
+
+L'actionnaire configure son achat :
+
+- **Classe de parts** — Sélectionner parmi les classes de parts disponibles (ex. « Part A » à 250 EUR)
+- **Projet** — Associer optionnellement l'achat à un projet spécifique
+- **Quantité** — Nombre de parts à acheter (dans le respect des règles min/max par classe de parts)
+- **Récapitulatif de commande** — Affiche le montant total à payer
+- **Conditions générales** — Doivent être acceptées avant de continuer
+
+### Étape 3 : Confirmation
+
+Après la soumission, l'actionnaire voit ses informations de paiement :
+
+- **Code OGM** — Un code de communication structurée unique (+++XXX/XXXX/XXXXX+++) à utiliser pour le virement bancaire
+- **Coordonnées bancaires** — L'IBAN et le BIC de la coopérative
+- **QR code EPC** — Un QR code scannable qui pré-remplit le paiement dans la plupart des applications bancaires
+- **Bon cadeau** (le cas échéant) — Un code cadeau unique et un QR code à partager avec le destinataire
+
+## Bons cadeaux
+
+Lorsqu'un actionnaire sélectionne « En cadeau », le processus change :
+
+1. L'acheteur fournit uniquement son adresse e-mail
+2. Après avoir finalisé l'achat, il reçoit un **bon cadeau** avec un code unique et un QR code
+3. L'acheteur partage ce code avec le destinataire
+4. Le destinataire visite la **page de réclamation** de la coopérative à `/{slugCoop}/claim`
+5. Le destinataire saisit le code cadeau et remplit ses propres coordonnées pour réclamer les parts
+
+## Paramètres d'URL
+
+Vous pouvez pré-configurer le formulaire d'inscription via des paramètres d'URL :
+
+| Paramètre | Description | Exemple |
+|-----------|-------------|---------|
+| `class` | Pré-sélectionner une classe de parts par code | `?class=PART_A` |
+| `project` | Pré-sélectionner un projet par ID | `?project=abc123` |
+| `shareholderId` | Pré-sélectionner un actionnaire existant | `?shareholderId=xyz789` |
+
+Ceci est utile pour créer des liens d'inscription ciblés, par exemple dans des campagnes e-mail ou sur des pages d'atterrissage spécifiques à un projet.
+
+## Pour les administrateurs
+
+Après qu'un actionnaire a complété l'inscription :
+
+1. Un nouveau **dossier d'actionnaire** est créé (statut : en attente)
+2. Une nouvelle **transaction d'achat** est créée avec un code OGM unique
+3. Lorsque l'actionnaire effectue le virement, vous pouvez importer le relevé bancaire via **Import bancaire** — OpenCoop associe automatiquement le paiement à la transaction via le code OGM
+4. Une fois le paiement confirmé, les parts sont activées
+
+Vous pouvez personnaliser l'expérience d'inscription dans **Paramètres** :
+
+- **Image de marque** — Téléchargez votre logo et définissez les couleurs de votre coopérative
+- **Classes de parts** — Configurez les classes de parts disponibles, les prix et les règles min/max
+- **E-mail** — Activez les notifications automatiques par e-mail pour les confirmations de transactions
