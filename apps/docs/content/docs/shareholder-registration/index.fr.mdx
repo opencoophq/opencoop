@@ -73,10 +73,13 @@ Ceci est utile pour créer des liens d'inscription ciblés, par exemple dans des
 
 Après qu'un actionnaire a complété l'inscription :
 
-1. Un nouveau **dossier d'actionnaire** est créé (statut : en attente)
-2. Une nouvelle **transaction d'achat** est créée avec un code OGM unique
-3. Lorsque l'actionnaire effectue le virement, vous pouvez importer le relevé bancaire via **Import bancaire** — OpenCoop associe automatiquement le paiement à la transaction via le code OGM
-4. Une fois le paiement confirmé, les parts sont activées
+1. Un nouveau **dossier d'actionnaire** est créé
+2. Une nouvelle **transaction d'achat** est créée avec un code OGM unique (statut : en attente de paiement)
+3. L'actionnaire reçoit immédiatement les informations de paiement (code OGM + QR code EPC)
+4. Lorsque l'actionnaire effectue le virement, vous pouvez importer le relevé bancaire via **Import bancaire** — OpenCoop associe automatiquement le paiement à la transaction via le code OGM
+5. Une fois le paiement confirmé, les parts sont activées
+
+Si votre coopérative a activé **Approbation requise**, la transaction commence en **attente d'approbation** et doit être approuvée par un administrateur avant que l'actionnaire ne reçoive les informations de paiement.
 
 Vous pouvez personnaliser l'expérience d'inscription dans **Paramètres** :
 

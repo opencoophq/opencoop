@@ -73,10 +73,13 @@ Dies ist nützlich für gezielte Registrierungslinks, beispielsweise in E-Mail-K
 
 Nachdem ein Anteilseigner die Registrierung abgeschlossen hat:
 
-1. Ein neuer **Anteilseigner-Datensatz** wird erstellt (Status: ausstehend)
-2. Eine neue **Kauftransaktion** wird mit einem einzigartigen OGM-Code erstellt
-3. Wenn der Anteilseigner die Überweisung tätigt, können Sie den Bankauszug über **Bankimport** importieren — OpenCoop ordnet die Zahlung automatisch über den OGM-Code der Transaktion zu
-4. Sobald die Zahlung bestätigt ist, werden die Anteile aktiviert
+1. Ein neuer **Anteilseigner-Datensatz** wird erstellt
+2. Eine neue **Kauftransaktion** wird mit einem einzigartigen OGM-Code erstellt (Status: Zahlung ausstehend)
+3. Der Anteilseigner erhält sofort die Zahlungsinformationen (OGM-Code + EPC-QR-Code)
+4. Wenn der Anteilseigner die Überweisung tätigt, können Sie den Bankauszug über **Bankimport** importieren — OpenCoop ordnet die Zahlung automatisch über den OGM-Code der Transaktion zu
+5. Sobald die Zahlung bestätigt ist, werden die Anteile aktiviert
+
+Wenn Ihre Genossenschaft **Genehmigung erforderlich** aktiviert hat, startet die Transaktion als **ausstehend** und muss von einem Administrator genehmigt werden, bevor der Anteilseigner Zahlungsinformationen erhält.
 
 Sie können das Registrierungserlebnis unter **Einstellungen** anpassen:
 
