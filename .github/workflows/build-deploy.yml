@@ -3,6 +3,7 @@ name: Build & Deploy
 on:
   push:
     branches: [main]
+    paths-ignore: ["apps/docs/**"]
     tags: ["v*"]
 
 concurrency:
