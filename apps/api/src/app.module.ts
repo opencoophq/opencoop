@@ -24,6 +24,7 @@ import { FeatureRequestsModule } from './modules/feature-requests/feature-reques
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { MigrationRequestsModule } from './modules/migration-requests/migration-requests.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { BillingModule } from './modules/billing/billing.module';
     UploadsModule,
     MigrationRequestsModule,
     BillingModule,
+    HealthModule,
   ],
   providers: [
     {

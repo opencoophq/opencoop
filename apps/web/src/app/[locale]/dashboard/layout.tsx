@@ -40,6 +40,7 @@ import { AlertTriangle } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FeedbackButton } from '@/components/feedback-button';
+import { api } from '@/lib/api';
 
 interface NavItem {
   href: string;
@@ -78,10 +79,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       setUser(parsed);
 
       // Always fetch profile to get emailVerified status
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((res) => res.json())
+      api<{ emailVerified?: boolean; adminCoops?: typeof adminCoops }>('/auth/me')
         .then((data) => {
           setEmailVerified(data.emailVerified ?? true);
 
@@ -101,12 +99,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   // Fetch admin stats for attention dots
   useEffect(() => {
     if (!selectedCoop) return;
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/coops/${selectedCoop.id}/stats`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => (res.ok ? res.json() : null))
+    api<typeof adminStats>(`/admin/coops/${selectedCoop.id}/stats`)
       .then((data) => {
         if (data) setAdminStats(data);
       })
@@ -189,16 +182,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   );
 
   const handleResendVerification = async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
     setResendingVerification(true);
     setVerificationResent(false);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/resend-verification`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) setVerificationResent(true);
+      await api('/auth/resend-verification', { method: 'POST' });
+      setVerificationResent(true);
     } catch {
       // silently fail
     } finally {

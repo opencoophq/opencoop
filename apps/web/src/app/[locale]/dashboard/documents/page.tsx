@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { api } from '@/lib/api';
+import { api, apiFetch } from '@/lib/api';
 import { Download, FilePlus, Loader2 } from 'lucide-react';
 
 interface DocumentData {
@@ -47,13 +47,9 @@ export default function DocumentsPage() {
     if (!shareholderId) return;
     setDownloadError(null);
     try {
-      const token = localStorage.getItem('accessToken');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(
-        `${apiUrl}/shareholders/${shareholderId}/documents/${doc.id}/download`,
-        { headers: { Authorization: `Bearer ${token}` } },
+      const response = await apiFetch(
+        `/shareholders/${shareholderId}/documents/${doc.id}/download`,
       );
-      if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

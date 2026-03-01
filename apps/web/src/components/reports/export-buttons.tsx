@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 interface ExportButtonsProps {
   reportType: string;
@@ -24,19 +25,9 @@ export function ExportButtons({ reportType, params, disabled, pdfSupported = fal
 
     try {
       const queryString = new URLSearchParams(params).toString();
-      const token = localStorage.getItem('accessToken');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-      const response = await fetch(
-        `${apiUrl}/admin/coops/${selectedCoop.id}/reports/${reportType}/${format}?${queryString}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+      const response = await apiFetch(
+        `/admin/coops/${selectedCoop.id}/reports/${reportType}/${format}?${queryString}`,
       );
-
-      if (!response.ok) throw new Error('Download failed');
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);

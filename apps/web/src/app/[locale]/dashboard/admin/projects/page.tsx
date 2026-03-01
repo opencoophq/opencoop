@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
+import { api } from '@/lib/api';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Plus, Edit, Trash2, Sun, Wind } from 'lucide-react';
 
@@ -93,23 +94,12 @@ export default function ProjectsPage() {
 
   const fetchProjects = useCallback(async () => {
     if (!selectedCoop) return;
-
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/projects`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const data = await api<Project[] | { data: Project[] }>(
+        `/admin/coops/${selectedCoop.id}/projects`,
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        setProjects(Array.isArray(data) ? data : data.data || []);
-      }
+      setProjects(Array.isArray(data) ? data : data.data || []);
     } catch {
       // Handle error silently
     } finally {
@@ -153,23 +143,15 @@ export default function ProjectsPage() {
 
   const onSubmit = async (data: ProjectForm) => {
     if (!selectedCoop) return;
-
     setSaving(true);
     setError(null);
-
     try {
-      const token = localStorage.getItem('accessToken');
       const url = editingProject
-        ? `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/projects/${editingProject.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/projects`;
-
-      const response = await fetch(url, {
+        ? `/admin/coops/${selectedCoop.id}/projects/${editingProject.id}`
+        : `/admin/coops/${selectedCoop.id}/projects`;
+      await api(url, {
         method: editingProject ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+        body: {
           name: data.name,
           description: data.description || undefined,
           type: data.type,
@@ -178,16 +160,11 @@ export default function ProjectsPage() {
           startDate: data.startDate || undefined,
           endDate: data.endDate || undefined,
           isActive: data.isActive,
-        }),
+        },
       });
-
-      if (response.ok) {
-        setSuccess(t('common.success'));
-        setDialogOpen(false);
-        fetchProjects();
-      } else {
-        throw new Error('Failed to save');
-      }
+      setSuccess(t('common.success'));
+      setDialogOpen(false);
+      fetchProjects();
     } catch {
       setError(t('common.error'));
     } finally {
@@ -197,25 +174,12 @@ export default function ProjectsPage() {
 
   const handleDelete = async (project: Project) => {
     if (!confirm(t('common.confirm'))) return;
-
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop?.id}/projects/${project.id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        setSuccess(t('common.success'));
-        fetchProjects();
-      } else {
-        throw new Error('Failed to delete');
-      }
+      await api(`/admin/coops/${selectedCoop?.id}/projects/${project.id}`, {
+        method: 'DELETE',
+      });
+      setSuccess(t('common.success'));
+      fetchProjects();
     } catch {
       setError(t('common.error'));
     }

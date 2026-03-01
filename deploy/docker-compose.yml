@@ -83,6 +83,17 @@ services:
     networks:
       - internal
       - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   web:
     image: ghcr.io/${GHCR_OWNER}/opencoop-web:${TAG}
@@ -99,6 +110,11 @@ services:
     networks:
       - internal
       - proxy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   docs:
     image: ghcr.io/${GHCR_OWNER}/opencoop-docs:${DOCS_TAG}

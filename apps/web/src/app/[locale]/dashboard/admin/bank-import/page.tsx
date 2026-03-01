@@ -76,15 +76,10 @@ export default function BankImportPage() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const token = localStorage.getItem('accessToken');
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/coops/${selectedCoop.id}/bank-import`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        },
-      );
+      await api(`/admin/coops/${selectedCoop.id}/bank-import`, {
+        method: 'POST',
+        body: formData,
+      });
       loadData();
     } catch {
       // ignore
