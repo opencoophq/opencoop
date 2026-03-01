@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
+import { api, apiFetch } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,20 +71,10 @@ export default function DividendDetailPage() {
     const fetchPeriod = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('accessToken');
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends/${dividendId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        const data = await api<DividendPeriod>(
+          `/admin/coops/${selectedCoop.id}/dividends/${dividendId}`,
         );
-
-        if (response.ok) {
-          const data = await response.json();
-          setPeriod(data);
-        }
+        setPeriod(data);
       } catch {
         setError(t('common.error'));
       } finally {
@@ -98,24 +89,12 @@ export default function DividendDetailPage() {
     if (!selectedCoop || !period) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends/${period.id}/calculate`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const data = await api<DividendPeriod>(
+        `/admin/coops/${selectedCoop.id}/dividends/${period.id}/calculate`,
+        { method: 'POST' },
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        setPeriod(data);
-        setSuccess(t('common.success'));
-      } else {
-        throw new Error('Calculation failed');
-      }
+      setPeriod(data);
+      setSuccess(t('common.success'));
     } catch {
       setError(t('common.error'));
     }
@@ -126,24 +105,12 @@ export default function DividendDetailPage() {
       return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends/${period.id}/mark-paid`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const data = await api<DividendPeriod>(
+        `/admin/coops/${selectedCoop.id}/dividends/${period.id}/mark-paid`,
+        { method: 'POST' },
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        setPeriod(data);
-        setSuccess(t('common.success'));
-      } else {
-        throw new Error('Mark paid failed');
-      }
+      setPeriod(data);
+      setSuccess(t('common.success'));
     } catch {
       setError(t('common.error'));
     }
@@ -153,27 +120,18 @@ export default function DividendDetailPage() {
     if (!selectedCoop || !period) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends/${period.id}/export`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await apiFetch(
+        `/admin/coops/${selectedCoop.id}/dividends/${period.id}/export`,
       );
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `dividends-${period.name}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dividends-${period.name}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch {
       setError(t('common.error'));
     }

@@ -31,6 +31,7 @@ import {
 import { useLocale } from '@/contexts/locale-context';
 import { formatCurrency } from '@opencoop/shared';
 import { Plus, Edit, Users } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface Coop {
   id: string;
@@ -77,18 +78,8 @@ export default function CoopsManagementPage() {
   const fetchCoops = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/system/coops`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Handle both array and paginated response
-        setCoops(Array.isArray(data) ? data : data.data || []);
-      }
+      const data = await api<Coop[] | { data: Coop[] }>('/system/coops');
+      setCoops(Array.isArray(data) ? data : data.data || []);
     } catch {
       // Handle error silently
     } finally {
@@ -125,27 +116,16 @@ export default function CoopsManagementPage() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
       const url = editingCoop
-        ? `${process.env.NEXT_PUBLIC_API_URL}/system/coops/${editingCoop.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/system/coops`;
-
-      const response = await fetch(url, {
+        ? `/system/coops/${editingCoop.id}`
+        : '/system/coops';
+      await api(url, {
         method: editingCoop ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
+        body: data,
       });
-
-      if (response.ok) {
-        setSuccess(t('common.success'));
-        setDialogOpen(false);
-        fetchCoops();
-      } else {
-        throw new Error('Failed to save');
-      }
+      setSuccess(t('common.success'));
+      setDialogOpen(false);
+      fetchCoops();
     } catch {
       setError(t('common.error'));
     } finally {

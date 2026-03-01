@@ -6,6 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from '@/i18n/routing';
+import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,21 +93,10 @@ export default function DividendsListPage() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const data = await api<DividendPeriod[] | { data: DividendPeriod[] }>(
+        `/admin/coops/${selectedCoop.id}/dividends`,
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        // Handle both array and paginated response
-        setPeriods(Array.isArray(data) ? data : data.data || []);
-      }
+      setPeriods(Array.isArray(data) ? data : data.data || []);
     } catch {
       // Handle error silently
     } finally {
@@ -136,29 +126,13 @@ export default function DividendsListPage() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            ...data,
-            paymentDate: data.paymentDate || undefined,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        setSuccess(t('common.success'));
-        setDialogOpen(false);
-        fetchPeriods();
-      } else {
-        throw new Error('Failed to create');
-      }
+      await api(`/admin/coops/${selectedCoop.id}/dividends`, {
+        method: 'POST',
+        body: { ...data, paymentDate: data.paymentDate || undefined },
+      });
+      setSuccess(t('common.success'));
+      setDialogOpen(false);
+      fetchPeriods();
     } catch {
       setError(t('common.error'));
     } finally {
@@ -170,23 +144,11 @@ export default function DividendsListPage() {
     if (!selectedCoop) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends/${period.id}/calculate`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        setSuccess(t('common.success'));
-        fetchPeriods();
-      } else {
-        throw new Error('Calculation failed');
-      }
+      await api(`/admin/coops/${selectedCoop.id}/dividends/${period.id}/calculate`, {
+        method: 'POST',
+      });
+      setSuccess(t('common.success'));
+      fetchPeriods();
     } catch {
       setError(t('common.error'));
     }
@@ -196,23 +158,11 @@ export default function DividendsListPage() {
     if (!selectedCoop || !confirm(t('admin.dividendDetail.confirmMarkPaid'))) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/coops/${selectedCoop.id}/dividends/${period.id}/mark-paid`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        setSuccess(t('common.success'));
-        fetchPeriods();
-      } else {
-        throw new Error('Mark paid failed');
-      }
+      await api(`/admin/coops/${selectedCoop.id}/dividends/${period.id}/mark-paid`, {
+        method: 'POST',
+      });
+      setSuccess(t('common.success'));
+      fetchPeriods();
     } catch {
       setError(t('common.error'));
     }
