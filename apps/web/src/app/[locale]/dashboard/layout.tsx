@@ -25,6 +25,7 @@ import {
   UserCog,
   Mail as MailIcon,
   Loader2,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -294,6 +295,19 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             {!isAdmin && renderNavSection(t('common.myAccount'), shareholderNav)}
             {isAdmin && adminNav.length > 0 && renderNavSection(t('admin.title'), adminNav)}
             {isSystemAdmin && renderNavSection(t('system.title'), systemNav)}
+          </div>
+
+          {/* Docs link */}
+          <div className="px-2 pb-2">
+            <a
+              href="https://docs.opencoop.be"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-3 py-2 text-sm rounded-md text-foreground/70 hover:bg-accent transition-colors"
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>{t('common.docs')}</span>
+            </a>
           </div>
 
           {/* Language & theme controls */}

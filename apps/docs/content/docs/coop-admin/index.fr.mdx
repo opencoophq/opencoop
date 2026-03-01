@@ -1,0 +1,90 @@
+---
+title: Administration de la coopérative
+description: Guide pour les administrateurs de coopératives sur la gestion des actionnaires, transactions et paramètres.
+---
+
+Ce guide couvre les fonctionnalités d'administration disponibles pour les administrateurs de coopératives dans OpenCoop.
+
+## Aperçu du tableau de bord
+
+Le tableau de bord d'administration vous donne une vue d'ensemble de votre coopérative :
+
+- **Nombre total d'actionnaires** et nombre d'actionnaires actifs
+- **Capital total** levé sur toutes les classes de parts
+- **Transactions en attente** nécessitant une approbation ou un paiement
+- **Activité récente** montrant les dernières modifications
+
+## Gérer les actionnaires
+
+### Consulter les actionnaires
+
+La page **Actionnaires** affiche tous les actionnaires enregistrés dans un tableau consultable et triable. Vous pouvez filtrer par statut (actif, en attente, inactif) et par type (particulier, entreprise, mineur).
+
+### Ajouter un actionnaire
+
+Cliquez sur **Ajouter un actionnaire** et remplissez les informations requises :
+
+- **Type** — Particulier, Entreprise ou Mineur
+- **Données personnelles** — Nom, e-mail, adresse, numéro de registre national
+- **Données d'entreprise** (le cas échéant) — Nom de l'entreprise, numéro KBO/BCE, numéro de TVA
+- **Représentant légal** (pour les mineurs) — Nom et lien de parenté
+
+### Modifier les actionnaires
+
+Cliquez sur un actionnaire pour voir son profil complet. De là, vous pouvez mettre à jour ses données, consulter son portefeuille de parts et voir son historique de transactions.
+
+## Gérer les classes de parts
+
+Naviguez vers **Classes de parts** pour configurer les types de parts que votre coopérative propose :
+
+- **Nom** — Un nom descriptif (ex. « Part A », « Part B »)
+- **Valeur nominale** — Le prix par part
+- **Parts minimum** — Nombre minimum de parts qu'un actionnaire doit détenir
+- **Parts maximum** — Nombre maximum de parts par actionnaire (optionnel)
+
+## Traiter les transactions
+
+### Approuver les transactions
+
+Lorsque les actionnaires soumettent une demande d'achat ou de vente, elle apparaît comme une transaction en attente. Examinez les détails et :
+
+1. **Approuver** — Confirmez la transaction et générez le code de paiement OGM
+2. **Rejeter** — Refusez la transaction avec une raison optionnelle
+
+### Suivi des paiements
+
+Chaque transaction d'achat approuvée reçoit un code OGM unique (+++XXX/XXXX/XXXXX+++). Lorsque vous importez des extraits bancaires, OpenCoop associe automatiquement les paiements aux transactions via ces codes.
+
+### Import bancaire
+
+Allez dans **Import bancaire** pour télécharger des fichiers CODA ou CSV de votre banque. OpenCoop va :
+
+1. Analyser toutes les transactions entrantes
+2. Les associer aux paiements en attente via les codes OGM
+3. Afficher les transactions non associées pour un examen manuel
+
+## Dividendes
+
+Naviguez vers **Dividendes** pour gérer les distributions de dividendes :
+
+1. **Créer un cycle de dividendes** — Définissez l'exercice fiscal et le montant par part
+2. **Calculer** — OpenCoop calcule le dividende de chaque actionnaire, y compris le précompte mobilier belge (30%)
+3. **Approuver et distribuer** — Générez les relevés de dividendes et les documents fiscaux
+
+## Rapports
+
+La section **Rapports** fournit des données exportables :
+
+- Registre des actionnaires (PDF/CSV)
+- Aperçu des transactions
+- Aperçu du capital par classe de parts
+- Rapports de distribution des dividendes
+
+## Paramètres
+
+Dans **Paramètres**, vous pouvez gérer :
+
+- **Général** — Nom de la coopérative, slug, coordonnées
+- **Image de marque** — Logo, couleur principale, modèles d'e-mail personnalisés
+- **E-mail** — Configuration SMTP et préférences de notification
+- **Compte bancaire** — IBAN et BIC pour le rapprochement des paiements

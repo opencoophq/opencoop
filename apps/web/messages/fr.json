@@ -70,6 +70,7 @@
     "showMore": "Afficher plus",
     "showLess": "Afficher moins",
     "overview": "Aperçu",
+    "docs": "Documentation",
     "documents": "Documents",
     "settings": "Paramètres",
     "myAccount": "Mon compte",
@@ -876,7 +877,8 @@
       "dashboard": "Tableau de bord",
       "pricing": "Tarifs",
       "demo": "Démo",
-      "migration": "Migration"
+      "migration": "Migration",
+      "docs": "Docs"
     },
     "hero": {
       "title": "Gestion des coopérateurs pour les coopératives",
