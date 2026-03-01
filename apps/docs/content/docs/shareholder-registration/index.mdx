@@ -73,10 +73,13 @@ This is useful for creating targeted registration links, for example in email ca
 
 After a shareholder completes registration:
 
-1. A new **shareholder record** is created (status: pending)
-2. A new **purchase transaction** is created with a unique OGM code
-3. When the shareholder makes the bank transfer, you can import the bank statement via **Bank Import** — OpenCoop automatically matches the payment to the transaction using the OGM code
-4. Once payment is confirmed, the shares are activated
+1. A new **shareholder record** is created
+2. A new **purchase transaction** is created with a unique OGM code (status: awaiting payment)
+3. The shareholder receives payment details (OGM code + EPC QR code) immediately
+4. When the shareholder makes the bank transfer, you can import the bank statement via **Bank Import** — OpenCoop automatically matches the payment to the transaction using the OGM code
+5. Once payment is confirmed, the shares are activated
+
+If your cooperative has **Require approval** enabled, the transaction starts as **pending** and must be approved by an admin before the shareholder receives payment details.
 
 You can customize the registration experience in **Settings**:
 

@@ -73,10 +73,13 @@ Dit is handig voor gerichte registratielinks, bijvoorbeeld in e-mailcampagnes of
 
 Nadat een aandeelhouder de registratie heeft voltooid:
 
-1. Er wordt een nieuw **aandeelhoudersrecord** aangemaakt (status: in behandeling)
-2. Er wordt een nieuwe **aankooptransactie** aangemaakt met een unieke OGM-code
-3. Wanneer de aandeelhouder de overschrijving doet, kunt u het bankafschrift importeren via **Bankimport** — OpenCoop koppelt de betaling automatisch aan de transactie via de OGM-code
-4. Zodra de betaling is bevestigd, worden de aandelen geactiveerd
+1. Er wordt een nieuw **aandeelhoudersrecord** aangemaakt
+2. Er wordt een nieuwe **aankooptransactie** aangemaakt met een unieke OGM-code (status: wachtend op betaling)
+3. De aandeelhouder ontvangt onmiddellijk de betalingsgegevens (OGM-code + EPC QR-code)
+4. Wanneer de aandeelhouder de overschrijving doet, kunt u het bankafschrift importeren via **Bankimport** — OpenCoop koppelt de betaling automatisch aan de transactie via de OGM-code
+5. Zodra de betaling is bevestigd, worden de aandelen geactiveerd
+
+Als uw coöperatie **Goedkeuring vereist** heeft ingeschakeld, start de transactie als **in behandeling** en moet deze door een beheerder worden goedgekeurd voordat de aandeelhouder betalingsgegevens ontvangt.
 
 U kunt de registratie-ervaring aanpassen in **Instellingen**:
 

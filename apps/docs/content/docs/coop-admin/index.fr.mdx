@@ -44,16 +44,18 @@ Naviguez vers **Classes de parts** pour configurer les types de parts que votre 
 
 ## Traiter les transactions
 
-### Approuver les transactions
+### Flux d'achat
 
-Lorsque les actionnaires soumettent une demande d'achat ou de vente, elle apparaît comme une transaction en attente. Examinez les détails et :
+Par défaut, les achats de parts passent immédiatement en **attente de paiement** et l'actionnaire reçoit un code de paiement OGM et un QR code EPC directement — aucune action de l'administrateur n'est requise.
 
-1. **Approuver** — Confirmez la transaction et générez le code de paiement OGM
-2. **Rejeter** — Refusez la transaction avec une raison optionnelle
+Si votre coopérative a activé **Approbation requise** (dans Paramètres), les achats commencent en **attente d'approbation** et doivent être approuvés par un administrateur avant l'envoi des informations de paiement :
+
+1. **Approuver** — Passer la transaction en attente de paiement pour que l'actionnaire puisse payer
+2. **Rejeter** — Refuser la transaction avec une raison optionnelle
 
 ### Suivi des paiements
 
-Chaque transaction d'achat approuvée reçoit un code OGM unique (+++XXX/XXXX/XXXXX+++). Lorsque vous importez des extraits bancaires, OpenCoop associe automatiquement les paiements aux transactions via ces codes.
+Chaque transaction d'achat reçoit un code OGM unique (+++XXX/XXXX/XXXXX+++). Lorsque vous importez des extraits bancaires, OpenCoop associe automatiquement les paiements aux transactions via ces codes.
 
 ### Import bancaire
 

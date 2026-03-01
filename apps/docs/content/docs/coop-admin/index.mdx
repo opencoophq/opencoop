@@ -44,16 +44,18 @@ Navigate to **Share Classes** to configure the types of shares your cooperative 
 
 ## Processing Transactions
 
-### Approving Transactions
+### Purchase Flow
 
-When shareholders submit a purchase or sale request, it appears as a pending transaction. Review the details and:
+By default, share purchases are immediately set to **awaiting payment** and the shareholder receives an OGM payment code and EPC QR code right away — no admin action needed.
 
-1. **Approve** — Confirm the transaction and generate the OGM payment code
+If your cooperative has **Require approval** enabled (in Settings), purchases start as **pending** and must be approved by an admin before the payment details are sent:
+
+1. **Approve** — Move the transaction to awaiting payment so the shareholder can pay
 2. **Reject** — Decline the transaction with an optional reason
 
 ### Payment Tracking
 
-Each approved purchase transaction gets a unique OGM code (+++XXX/XXXX/XXXXX+++). When you import bank statements, OpenCoop automatically matches payments to transactions using these codes.
+Each purchase transaction gets a unique OGM code (+++XXX/XXXX/XXXXX+++). When you import bank statements, OpenCoop automatically matches payments to transactions using these codes.
 
 ### Bank Import
 

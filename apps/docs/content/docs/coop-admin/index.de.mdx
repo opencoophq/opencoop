@@ -44,16 +44,18 @@ Navigieren Sie zu **Anteilsklassen**, um die Arten von Anteilen zu konfigurieren
 
 ## Transaktionen verarbeiten
 
-### Transaktionen genehmigen
+### Kaufablauf
 
-Wenn Anteilseigner einen Kauf- oder Verkaufsantrag stellen, erscheint dieser als ausstehende Transaktion. Überprüfen Sie die Details und:
+Standardmäßig werden Anteilskäufe sofort auf **Zahlung ausstehend** gesetzt und der Anteilseigner erhält direkt einen OGM-Zahlungscode und EPC-QR-Code — keine Aktion des Administrators erforderlich.
 
-1. **Genehmigen** — Bestätigen Sie die Transaktion und generieren Sie den OGM-Zahlungscode
-2. **Ablehnen** — Lehnen Sie die Transaktion mit einem optionalen Grund ab
+Wenn Ihre Genossenschaft **Genehmigung erforderlich** aktiviert hat (in Einstellungen), starten Käufe als **ausstehend** und müssen von einem Administrator genehmigt werden, bevor die Zahlungsinformationen gesendet werden:
+
+1. **Genehmigen** — Transaktion auf Zahlung ausstehend setzen, damit der Anteilseigner bezahlen kann
+2. **Ablehnen** — Transaktion mit einem optionalen Grund ablehnen
 
 ### Zahlungsverfolgung
 
-Jede genehmigte Kauftransaktion erhält einen einzigartigen OGM-Code (+++XXX/XXXX/XXXXX+++). Wenn Sie Bankauszüge importieren, ordnet OpenCoop Zahlungen automatisch über diese Codes den Transaktionen zu.
+Jede Kauftransaktion erhält einen einzigartigen OGM-Code (+++XXX/XXXX/XXXXX+++). Wenn Sie Bankauszüge importieren, ordnet OpenCoop Zahlungen automatisch über diese Codes den Transaktionen zu.
 
 ### Bankimport
 
