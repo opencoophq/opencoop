@@ -101,7 +101,7 @@ services:
       - proxy
 
   docs:
-    image: ghcr.io/${GHCR_OWNER}/opencoop-docs:${TAG}
+    image: ghcr.io/${GHCR_OWNER}/opencoop-docs:${DOCS_TAG}
     container_name: opencoop-${ENV_NAME}-docs
     restart: unless-stopped
     environment:
