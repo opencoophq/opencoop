@@ -178,7 +178,7 @@ model User {
   id                String    @id @default(cuid())
   email             String    @unique
   name              String?
-  passwordHash      String
+  passwordHash      String?
   emailVerified      DateTime?
   emailVerifyToken   String?
   emailVerifyExpires DateTime?
@@ -189,6 +189,15 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  // MFA
+  mfaEnabled       Boolean   @default(false)
+  mfaSecret        String?   // AES-256-GCM encrypted TOTP secret
+  mfaRecoveryCodes String[]  @default([]) // SHA-256 hashed recovery codes
+
+  // OAuth
+  googleId         String?   @unique
+  appleId          String?   @unique
+
   // Relations
   coopAdminOf           CoopAdmin[]
   shareholders          Shareholder[]         @relation("UserShareholder")
@@ -196,8 +205,28 @@ model User {
   processedTransactions Transaction[]
   importedBankFiles     BankImport[]
   magicLinkTokens       MagicLinkToken[]
+  webAuthnCredentials   WebAuthnCredential[]
 
   @@map("users")
+}
+
+model WebAuthnCredential {
+  id                    String   @id @default(cuid())
+  userId                String
+  credentialId          Bytes    @unique
+  publicKey             Bytes
+  counter               BigInt
+  credentialDeviceType  String
+  credentialBackedUp    Boolean
+  transports            String[]
+  friendlyName          String?
+  createdAt             DateTime @default(now())
+  lastUsedAt            DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("webauthn_credentials")
 }
 
 model MagicLinkToken {

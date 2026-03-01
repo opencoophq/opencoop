@@ -1,4 +1,4 @@
-import { Controller, Post, Put, Body, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Put, Body, Get, Query, UseGuards, Delete, Param, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -13,14 +13,21 @@ import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { WaitlistDto } from './dto/waitlist.dto';
+import { MfaEnableDto, MfaVerifyDto, MfaDisableDto } from './dto/mfa.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { WebAuthnService } from './webauthn.service';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { AppleAuthGuard } from './guards/apple-auth.guard';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly webAuthnService: WebAuthnService,
+  ) {}
 
   @Public()
   @Post('register')
@@ -165,6 +172,208 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid, expired, or already used token' })
   async verifyMagicLink(@Body() verifyMagicLinkDto: VerifyMagicLinkDto) {
     return this.authService.verifyMagicLink(verifyMagicLinkDto);
+  }
+
+  // ============================================================================
+  // MFA / TOTP
+  // ============================================================================
+
+  @UseGuards(JwtAuthGuard)
+  @Post('mfa/setup')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate TOTP secret and QR code for MFA setup' })
+  @ApiResponse({ status: 200, description: 'QR code and secret returned' })
+  async mfaSetup(@CurrentUser() user: CurrentUserData) {
+    return this.authService.mfaSetup(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('mfa/enable')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verify TOTP code and enable MFA' })
+  @ApiResponse({ status: 200, description: 'MFA enabled, recovery codes returned' })
+  async mfaEnable(
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: MfaEnableDto,
+  ) {
+    return this.authService.mfaEnable(user.id, dto.code);
+  }
+
+  @Public()
+  @Post('mfa/verify')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @ApiOperation({ summary: 'Verify TOTP or recovery code during login' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  async mfaVerify(@Body() dto: MfaVerifyDto) {
+    return this.authService.mfaVerify(dto.mfaToken, dto.code, dto.recoveryCode);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('mfa/disable')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Disable MFA (requires password confirmation)' })
+  @ApiResponse({ status: 200, description: 'MFA disabled' })
+  async mfaDisable(
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: MfaDisableDto,
+  ) {
+    return this.authService.mfaDisable(user.id, dto.password);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('mfa/recovery-codes')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Regenerate MFA recovery codes' })
+  @ApiResponse({ status: 200, description: 'New recovery codes returned' })
+  async mfaRegenerateRecoveryCodes(@CurrentUser() user: CurrentUserData) {
+    return this.authService.mfaRegenerateRecoveryCodes(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('mfa/status')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get MFA status' })
+  @ApiResponse({ status: 200, description: 'MFA status returned' })
+  async mfaStatus(@CurrentUser() user: CurrentUserData) {
+    return this.authService.mfaStatus(user.id);
+  }
+
+  // ============================================================================
+  // WEBAUTHN / PASSKEYS
+  // ============================================================================
+
+  @UseGuards(JwtAuthGuard)
+  @Post('webauthn/register-options')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate WebAuthn registration options' })
+  async webauthnRegisterOptions(@CurrentUser() user: CurrentUserData) {
+    return this.webAuthnService.generateRegistrationOptions(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('webauthn/register-verify')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verify WebAuthn registration response' })
+  async webauthnRegisterVerify(
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: { response: Record<string, unknown>; friendlyName?: string },
+  ) {
+    return this.webAuthnService.verifyRegistration(user.id, body.response as any, body.friendlyName);
+  }
+
+  @Public()
+  @Post('webauthn/authenticate-options')
+  @ApiOperation({ summary: 'Generate WebAuthn authentication options' })
+  async webauthnAuthenticateOptions(@Body() body: { email?: string }) {
+    return this.webAuthnService.generateAuthenticationOptions(body.email);
+  }
+
+  @Public()
+  @Post('webauthn/authenticate-verify')
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @ApiOperation({ summary: 'Verify WebAuthn authentication response' })
+  async webauthnAuthenticateVerify(@Body() body: { response: Record<string, unknown> }) {
+    const user = await this.webAuthnService.verifyAuthentication(body.response as any);
+    return this.authService.issueJwtForUserPublic(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('webauthn/credentials')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List registered passkeys' })
+  async webauthnListCredentials(@CurrentUser() user: CurrentUserData) {
+    return this.webAuthnService.listCredentials(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('webauthn/credentials/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a registered passkey' })
+  async webauthnDeleteCredential(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') credentialId: string,
+  ) {
+    return this.webAuthnService.deleteCredential(user.id, credentialId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('webauthn/credentials/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Rename a passkey' })
+  async webauthnRenameCredential(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') credentialId: string,
+    @Body() body: { friendlyName: string },
+  ) {
+    return this.webAuthnService.renameCredential(user.id, credentialId, body.friendlyName);
+  }
+
+  // ============================================================================
+  // GOOGLE OAUTH
+  // ============================================================================
+
+  @Public()
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Initiate Google OAuth login' })
+  async googleLogin() {
+    // Guard redirects to Google
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  async googleCallback(@Req() req: any, @Res() res: any) {
+    const { googleId, email, name } = req.user;
+    const result = await this.authService.handleOAuthLogin('google', {
+      providerId: googleId,
+      email,
+      name,
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+
+    if ('requiresMfa' in result && result.requiresMfa) {
+      return res.redirect(`${frontendUrl}/oauth-callback?mfaToken=${result.mfaToken}`);
+    }
+
+    const tokenData = encodeURIComponent(JSON.stringify(result));
+    return res.redirect(`${frontendUrl}/oauth-callback?data=${tokenData}`);
+  }
+
+  // ============================================================================
+  // APPLE OAUTH
+  // ============================================================================
+
+  @Public()
+  @Get('apple')
+  @UseGuards(AppleAuthGuard)
+  @ApiOperation({ summary: 'Initiate Apple OAuth login' })
+  async appleLogin() {
+    // Guard redirects to Apple
+  }
+
+  @Public()
+  @Post('apple/callback')
+  @UseGuards(AppleAuthGuard)
+  @ApiOperation({ summary: 'Apple OAuth callback (POST)' })
+  async appleCallback(@Req() req: any, @Res() res: any) {
+    const { appleId, email, name } = req.user;
+    const result = await this.authService.handleOAuthLogin('apple', {
+      providerId: appleId,
+      email,
+      name,
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+
+    if ('requiresMfa' in result && result.requiresMfa) {
+      return res.redirect(`${frontendUrl}/oauth-callback?mfaToken=${result.mfaToken}`);
+    }
+
+    const tokenData = encodeURIComponent(JSON.stringify(result));
+    return res.redirect(`${frontendUrl}/oauth-callback?data=${tokenData}`);
   }
 
   @Public()
