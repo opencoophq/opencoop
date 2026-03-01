@@ -127,7 +127,7 @@ export class TransactionsService {
     // Generate OGM code
     const coop = await this.prisma.coop.findUnique({
       where: { id: data.coopId },
-      select: { ogmPrefix: true },
+      select: { ogmPrefix: true, requiresApproval: true },
     });
 
     const paymentCount = await this.prisma.payment.count({
@@ -135,8 +135,10 @@ export class TransactionsService {
     });
     const ogmCode = generateOgmCode(coop!.ogmPrefix, paymentCount + 1);
 
+    const initialStatus = coop!.requiresApproval ? 'PENDING' : 'AWAITING_PAYMENT';
+
     return this.prisma.$transaction(async (tx) => {
-      // Create share in PENDING status
+      // Create share with status based on requiresApproval
       const share = await tx.share.create({
         data: {
           coopId: data.coopId,
@@ -146,7 +148,7 @@ export class TransactionsService {
           quantity: data.quantity,
           purchasePricePerShare: pricePerShare,
           purchaseDate: new Date(),
-          status: 'PENDING',
+          status: initialStatus,
         },
       });
 
@@ -155,7 +157,7 @@ export class TransactionsService {
         data: {
           coopId: data.coopId,
           type: 'PURCHASE',
-          status: 'PENDING',
+          status: initialStatus,
           shareholderId: data.shareholderId,
           shareId: share.id,
           quantity: data.quantity,
@@ -219,7 +221,7 @@ export class TransactionsService {
       where: {
         shareId: data.shareId,
         type: 'SALE',
-        status: { in: ['PENDING', 'APPROVED'] },
+        status: { in: ['PENDING', 'APPROVED', 'AWAITING_PAYMENT'] },
       },
       _sum: { quantity: true },
     });
@@ -277,7 +279,7 @@ export class TransactionsService {
       const updated = await tx.transaction.update({
         where: { id },
         data: {
-          status: 'APPROVED',
+          status: transaction.type === 'PURCHASE' ? 'AWAITING_PAYMENT' : 'APPROVED',
           processedByUserId,
           processedAt: new Date(),
         },
@@ -304,11 +306,11 @@ export class TransactionsService {
             });
           }
         }
-      } else if (transaction.shareId) {
-        // For purchases: activate the share
+      } else if (transaction.type === 'PURCHASE' && transaction.shareId) {
+        // For purchases: transition share to AWAITING_PAYMENT
         await tx.share.update({
           where: { id: transaction.shareId },
-          data: { status: 'ACTIVE' },
+          data: { status: 'AWAITING_PAYMENT' },
         });
       }
 
@@ -319,8 +321,10 @@ export class TransactionsService {
   async complete(id: string, processedByUserId: string) {
     const transaction = await this.findById(id);
 
-    if (transaction.status !== 'APPROVED') {
-      throw new BadRequestException('Only approved transactions can be completed');
+    if (transaction.status !== 'APPROVED' && transaction.status !== 'AWAITING_PAYMENT') {
+      throw new BadRequestException(
+        'Only approved or awaiting payment transactions can be completed',
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -332,6 +336,14 @@ export class TransactionsService {
           processedAt: new Date(),
         },
       });
+
+      // Activate share for purchases
+      if (transaction.type === 'PURCHASE' && transaction.shareId) {
+        await tx.share.update({
+          where: { id: transaction.shareId },
+          data: { status: 'ACTIVE' },
+        });
+      }
 
       // Mark payment as confirmed if it exists
       if (transaction.payment) {

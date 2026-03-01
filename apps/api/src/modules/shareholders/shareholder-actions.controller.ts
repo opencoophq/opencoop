@@ -25,6 +25,19 @@ import { DocumentsService } from '../documents/documents.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
+class PurchaseRequestDto {
+  @IsString()
+  shareClassId: string;
+
+  @IsInt()
+  @Min(1)
+  quantity: number;
+
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+}
+
 class SellRequestDto {
   @IsString()
   shareId: string;
@@ -292,5 +305,68 @@ export class ShareholderActionsController {
     }
 
     return this.documentsService.generateDividendStatement(shareholderId, dividendPayoutId, locale);
+  }
+
+  @Post('purchase')
+  @ApiOperation({ summary: 'Purchase shares (shareholder self-service)' })
+  async purchaseRequest(
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: PurchaseRequestDto,
+  ) {
+    const shareholder = await this.verifyShareholder(shareholderId, user.id);
+
+    const transaction = await this.transactionsService.createPurchase({
+      coopId: shareholder.coopId,
+      shareholderId,
+      shareClassId: dto.shareClassId,
+      quantity: dto.quantity,
+      projectId: dto.projectId,
+    });
+
+    // Return payment details so frontend can show QR code
+    if (transaction) {
+      const paymentDetails = await this.transactionsService.getPaymentDetails(
+        transaction.id,
+        shareholder.coopId,
+      );
+      return {
+        transaction,
+        paymentDetails,
+      };
+    }
+
+    return { transaction };
+  }
+
+  @Get('share-classes')
+  @ApiOperation({ summary: 'Get available share classes for purchasing' })
+  async getShareClasses(
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    const shareholder = await this.verifyShareholder(shareholderId, user.id);
+
+    return this.prisma.shareClass.findMany({
+      where: { coopId: shareholder.coopId, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        pricePerShare: true,
+        minShares: true,
+        maxShares: true,
+      },
+    });
+  }
+
+  @Get('transactions')
+  @ApiOperation({ summary: 'Get shareholder transactions' })
+  async getTransactions(
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+    return this.transactionsService.findByShareholder(shareholderId);
   }
 }
