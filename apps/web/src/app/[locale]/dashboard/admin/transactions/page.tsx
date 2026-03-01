@@ -162,7 +162,7 @@ export default function AdminTransactionsPage() {
       : `${sh.firstName || ''} ${sh.lastName || ''}`.trim();
 
   const canShowPayment = (tx: TransactionRow) => {
-    if (tx.type === 'PURCHASE' && (tx.status === 'PENDING' || tx.status === 'APPROVED')) return true;
+    if (tx.type === 'PURCHASE' && ['PENDING', 'AWAITING_PAYMENT', 'APPROVED'].includes(tx.status)) return true;
     if (tx.type === 'SALE' && tx.status === 'APPROVED') return true;
     return false;
   };
@@ -182,6 +182,7 @@ export default function AdminTransactionsPage() {
               <SelectContent>
                 <SelectItem value="all">{t('common.all')}</SelectItem>
                 <SelectItem value="PENDING">{t('transactions.statuses.PENDING')}</SelectItem>
+                <SelectItem value="AWAITING_PAYMENT">{t('transactions.statuses.AWAITING_PAYMENT')}</SelectItem>
                 <SelectItem value="APPROVED">{t('transactions.statuses.APPROVED')}</SelectItem>
                 <SelectItem value="COMPLETED">{t('transactions.statuses.COMPLETED')}</SelectItem>
                 <SelectItem value="REJECTED">{t('transactions.statuses.REJECTED')}</SelectItem>
@@ -326,7 +327,7 @@ export default function AdminTransactionsPage() {
                 )}
               </div>
               <DialogFooter>
-                {paymentTxStatus === 'APPROVED' && (
+                {(paymentTxStatus === 'APPROVED' || paymentTxStatus === 'AWAITING_PAYMENT') && (
                   <Button onClick={handleComplete} disabled={completing}>
                     {completing ? t('common.loading') : t('admin.transactions.markComplete')}
                   </Button>
