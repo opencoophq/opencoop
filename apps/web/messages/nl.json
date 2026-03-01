@@ -424,6 +424,7 @@
     "giftExplanation": "Je ontvangt een cadeaubon met een unieke code. Deel deze met de ontvanger zodat zij de aandelen kunnen claimen en hun eigen gegevens invullen.",
     "giftBuyerEmail": "Jouw e-mail (om de cadeaubon te ontvangen)",
     "alreadyMember": "Al lid? Log in",
+    "prefillWithOAuth": "Of vul je gegevens in met",
     "giftCode": "Cadeaucode",
     "giftCertificate": "Cadeaubon",
     "giftShareWith": "Deel deze code of QR met de ontvanger",
@@ -872,6 +873,7 @@
     "nav": {
       "login": "Inloggen",
       "register": "Aan de slag",
+      "dashboard": "Dashboard",
       "pricing": "Prijzen",
       "demo": "Demo",
       "migration": "Migratie"

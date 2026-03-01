@@ -424,6 +424,7 @@
     "giftExplanation": "Vous recevrez un bon cadeau avec un code unique. Partagez-le avec le destinataire afin qu'il puisse réclamer les parts et remplir ses propres coordonnées.",
     "giftBuyerEmail": "Votre e-mail (pour recevoir le bon cadeau)",
     "alreadyMember": "Déjà membre ? Se connecter",
+    "prefillWithOAuth": "Ou remplissez vos données avec",
     "giftCode": "Code cadeau",
     "giftCertificate": "Bon cadeau",
     "giftShareWith": "Partagez ce code ou QR avec le destinataire",
@@ -872,6 +873,7 @@
     "nav": {
       "login": "Se connecter",
       "register": "Commencer",
+      "dashboard": "Tableau de bord",
       "pricing": "Tarifs",
       "demo": "Démo",
       "migration": "Migration"

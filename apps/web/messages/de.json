@@ -424,6 +424,7 @@
     "giftExplanation": "Sie erhalten einen Geschenkgutschein mit einem einzigartigen Code. Teilen Sie ihn mit dem Empfänger, damit dieser die Anteile beanspruchen und seine eigenen Daten eingeben kann.",
     "giftBuyerEmail": "Ihre E-Mail (um den Geschenkgutschein zu erhalten)",
     "alreadyMember": "Bereits Mitglied? Anmelden",
+    "prefillWithOAuth": "Oder füllen Sie Ihre Daten aus mit",
     "giftCode": "Geschenkcode",
     "giftCertificate": "Geschenkgutschein",
     "giftShareWith": "Teilen Sie diesen Code oder QR mit dem Empfänger",
@@ -872,6 +873,7 @@
     "nav": {
       "login": "Anmelden",
       "register": "Jetzt starten",
+      "dashboard": "Dashboard",
       "pricing": "Preise",
       "demo": "Demo",
       "migration": "Migration"

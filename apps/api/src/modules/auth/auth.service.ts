@@ -75,6 +75,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    this.linkOrphanShareholders(user.id, user.email).catch((err) =>
+      console.error('Failed to link orphan shareholders:', err.message),
+    );
+
     return this.issueJwtForUser(user);
   }
 
@@ -105,6 +109,11 @@ export class AuthService {
     this.sendVerificationEmail(user.email, emailVerifyToken, registerDto.preferredLanguage || 'nl').catch((err) => {
       console.error('Failed to send verification email:', err.message);
     });
+
+    // Link any orphan shareholders with matching email
+    this.linkOrphanShareholders(user.id, user.email).catch((err) =>
+      console.error('Failed to link orphan shareholders:', err.message),
+    );
 
     const payload = {
       sub: user.id,
@@ -641,6 +650,9 @@ export class AuthService {
     });
 
     if (user) {
+      this.linkOrphanShareholders(user.id, user.email).catch((err) =>
+        console.error('Failed to link orphan shareholders:', err.message),
+      );
       return this.issueJwtForUser(user);
     }
 
@@ -656,6 +668,9 @@ export class AuthService {
         where: { id: user.id },
         data: { [providerIdField]: data.providerId },
       });
+      this.linkOrphanShareholders(user.id, user.email).catch((err) =>
+        console.error('Failed to link orphan shareholders:', err.message),
+      );
       return this.issueJwtForUser(user);
     }
 
@@ -668,6 +683,10 @@ export class AuthService {
         emailVerified: new Date(), // OAuth-verified email
       },
     });
+
+    this.linkOrphanShareholders(newUser.id, newUser.email).catch((err) =>
+      console.error('Failed to link orphan shareholders:', err.message),
+    );
 
     return this.issueJwtForUser({
       ...newUser,
@@ -988,6 +1007,10 @@ export class AuthService {
       throw new BadRequestException('This login link has already been used');
     }
 
+    this.linkOrphanShareholders(magicLinkToken.user.id, magicLinkToken.user.email).catch((err) =>
+      console.error('Failed to link orphan shareholders:', err.message),
+    );
+
     return this.issueJwtForUser(magicLinkToken.user);
   }
 
@@ -1254,6 +1277,13 @@ export class AuthService {
    * Central JWT issuance. All auth flows (password, magic link, passkey, OAuth)
    * converge here. When MFA is enabled, returns an MFA-pending response instead.
    */
+  private async linkOrphanShareholders(userId: string, email: string): Promise<void> {
+    await this.prisma.shareholder.updateMany({
+      where: { email: { equals: email, mode: 'insensitive' }, userId: null },
+      data: { userId },
+    });
+  }
+
   private issueJwtForUser(user: {
     id: string;
     email: string;
