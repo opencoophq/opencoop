@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TransactionsService } from '../transactions/transactions.service';
 
 @Injectable()
 export class BankImportService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private transactionsService: TransactionsService,
+  ) {}
 
   async getImports(coopId: string) {
     return this.prisma.bankImport.findMany({
@@ -98,6 +102,22 @@ export class BankImportService {
             where: { id: payment.id },
             data: { status: 'MATCHED' },
           });
+
+          // Auto-complete the transaction (activates the share)
+          const paymentWithTx = await this.prisma.payment.findUnique({
+            where: { id: payment.id },
+            select: { transaction: { select: { id: true, status: true } } },
+          });
+          if (
+            paymentWithTx?.transaction &&
+            (paymentWithTx.transaction.status === 'AWAITING_PAYMENT' ||
+              paymentWithTx.transaction.status === 'APPROVED')
+          ) {
+            await this.transactionsService.complete(
+              paymentWithTx.transaction.id,
+              importedById,
+            );
+          }
         } else {
           unmatchedCount++;
         }
