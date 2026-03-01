@@ -221,7 +221,7 @@ export class TransactionsService {
       where: {
         shareId: data.shareId,
         type: 'SALE',
-        status: { in: ['PENDING', 'APPROVED'] },
+        status: { in: ['PENDING', 'APPROVED', 'AWAITING_PAYMENT'] },
       },
       _sum: { quantity: true },
     });
