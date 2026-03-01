@@ -6,6 +6,8 @@ WORKDIR /app
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY apps/docs/package.json apps/docs/
+COPY apps/docs/source.config.ts apps/docs/
+COPY apps/docs/content apps/docs/content
 RUN pnpm install --frozen-lockfile
 
 # Build
