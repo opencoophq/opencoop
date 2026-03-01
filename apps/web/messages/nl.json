@@ -82,7 +82,9 @@
     "verified": "Geverifieerd",
     "certificate": "Certificaat",
     "savedSuccessfully": "Succesvol opgeslagen",
-    "language": "Taal"
+    "language": "Taal",
+    "done": "Klaar",
+    "copied": "Gekopieerd"
   },
   "auth": {
     "login": "Inloggen",
@@ -797,6 +799,64 @@
     "shareholders": {
       "total": "Totaal aandeelhouders"
     }
+  },
+  "mfa": {
+    "title": "Tweestapsverificatie",
+    "description": "Voeg een extra beveiligingslaag toe aan je account met een authenticator-app.",
+    "enable": "2FA inschakelen",
+    "disable": "2FA uitschakelen",
+    "enabled": "Tweestapsverificatie is ingeschakeld",
+    "verifyTitle": "Tweestapsverificatie",
+    "enterCode": "Voer de 6-cijferige code in uit je authenticator-app.",
+    "enterRecoveryCode": "Voer een van je herstelcodes in.",
+    "code": "Verificatiecode",
+    "recoveryCode": "Herstelcode",
+    "verify": "Verifiëren",
+    "verifyError": "Verificatie mislukt",
+    "useAuthenticator": "Gebruik authenticatorcode",
+    "useRecoveryCode": "Gebruik een herstelcode",
+    "scanQrCode": "Scan deze QR-code met je authenticator-app (Google Authenticator, Authy, etc.).",
+    "manualEntry": "Of voer deze code handmatig in:",
+    "enterVerificationCode": "Voer de code uit je app in om te verifiëren",
+    "setupError": "Instellen van 2FA mislukt",
+    "invalidCode": "Ongeldige verificatiecode",
+    "saveRecoveryCodes": "Bewaar deze herstelcodes op een veilige plek. Elke code kan maar één keer worden gebruikt. Je kunt ze niet opnieuw bekijken.",
+    "copyRecoveryCodes": "Herstelcodes kopiëren",
+    "regenerateRecoveryCodes": "Herstelcodes opnieuw genereren",
+    "regenerateError": "Opnieuw genereren van herstelcodes mislukt",
+    "confirmDisable": "Voer je wachtwoord in om tweestapsverificatie uit te schakelen.",
+    "disableError": "Uitschakelen van 2FA mislukt"
+  },
+  "passkeys": {
+    "title": "Passkeys",
+    "description": "Log in met je vingerafdruk, gezicht of apparaat-PIN. Passkeys zijn veiliger dan wachtwoorden.",
+    "add": "Passkey toevoegen",
+    "remove": "Verwijderen",
+    "rename": "Hernoemen",
+    "noPasskeys": "Nog geen passkeys geregistreerd.",
+    "registerSuccess": "Passkey succesvol geregistreerd",
+    "registerError": "Passkey registreren mislukt",
+    "removeConfirm": "Weet je zeker dat je deze passkey wilt verwijderen?",
+    "removeSuccess": "Passkey verwijderd",
+    "removeError": "Passkey verwijderen mislukt",
+    "loginButton": "Inloggen met een passkey",
+    "loginError": "Passkey-authenticatie mislukt",
+    "friendlyName": "Passkey-naam",
+    "friendlyNamePlaceholder": "bijv. MacBook, iPhone",
+    "lastUsed": "Laatst gebruikt",
+    "never": "Nooit",
+    "createdAt": "Aangemaakt"
+  },
+  "oauth": {
+    "continueWith": "Of ga verder met",
+    "google": "Google",
+    "apple": "Apple",
+    "connectedAccounts": "Gekoppelde accounts",
+    "connectedAccountsDescription": "Beheer je gekoppelde social login-accounts.",
+    "linked": "Gekoppeld",
+    "notLinked": "Niet gekoppeld",
+    "linkAccount": "Account koppelen",
+    "unlinkAccount": "Ontkoppelen"
   },
   "errors": {
     "generic": "Er is iets misgegaan",
