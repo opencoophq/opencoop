@@ -2,6 +2,15 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.62] - 2026-03-01
+
+### Added
+- **Share buying flow** — members can purchase shares directly from their dashboard: select share class, choose quantity, and pay via EPC QR code bank transfer
+- **AWAITING_PAYMENT status** — new transaction/share status for purchases waiting on bank payment
+- Approval-aware flow: coops with `requiresApproval` route purchases through admin approval before payment; others go directly to awaiting payment
+- Auto-complete on bank import: when a CSV import matches an OGM code, the transaction is automatically completed and shares activated
+- New member API endpoints: `POST /shareholders/:id/purchase`, `GET /shareholders/:id/share-classes`, `GET /shareholders/:id/transactions`
+
 ## [0.1.61] - 2026-03-01
 
 ### Added
