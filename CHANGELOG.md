@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.64] - 2026-03-01
+
+### Changed
+- **Docs site theming** — aligned docs.opencoop.be color palette with the marketing site (primary blue, dark mode, brand colors)
+- Added Building2 icon to docs nav title to match marketing site branding
+- Fixed docs language switcher not showing available languages (EN/NL/FR/DE)
+
 ## [0.1.63] - 2026-03-01
 
 ### Added
