@@ -41,34 +41,8 @@ jobs:
           cache-from: type=gha,scope=docs
           cache-to: type=gha,mode=max,scope=docs
 
-  deploy-acc:
+  deploy:
     needs: [build-docs]
-    if: github.ref_type == 'branch'
-    runs-on: ubuntu-latest
-    environment: acc
-    steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
-      - name: Deploy docs to acc
-        uses: appleboy/ssh-action@v1
-        with:
-          host: fsn1
-          username: wouter
-          key: ${{ secrets.FSN1_SSH_KEY }}
-          script: |
-            cd ~/opencoop/acc
-            sed -i 's/^DOCS_TAG=.*/DOCS_TAG=${{ github.sha }}/' .env
-            docker compose pull docs
-            docker compose up -d docs
-
-  deploy-prod:
-    needs: [build-docs]
-    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment: prod
     steps:
@@ -79,7 +53,7 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
-      - name: Deploy docs to prod
+      - name: Deploy docs
         uses: appleboy/ssh-action@v1
         with:
           host: fsn1
