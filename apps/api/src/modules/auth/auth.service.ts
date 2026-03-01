@@ -353,6 +353,8 @@ export class AuthService {
                 id: true,
                 name: true,
                 slug: true,
+                bankIban: true,
+                bankBic: true,
               },
             },
             shares: {
