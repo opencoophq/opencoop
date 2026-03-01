@@ -206,7 +206,8 @@
       "pending": "In behandeling",
       "active": "Actief",
       "sold": "Verkocht",
-      "transferred": "Overgedragen"
+      "transferred": "Overgedragen",
+      "awaitingPayment": "Wacht op betaling"
     },
     "purchase": "Aankopen",
     "sell": "Verkopen",
@@ -246,7 +247,14 @@
     "childShares": "Aandelen voor uw kinderen",
     "companyShares": "Bedrijfsaandelen",
     "myShares": "Mijn aandelen",
-    "totalShares": "Totaal aandelen"
+    "totalShares": "Totaal aandelen",
+    "buyShares": "Aandelen kopen",
+    "buySharesTitle": "Aandelen kopen",
+    "selectShareClass": "Selecteer aandelenklasse",
+    "totalCost": "Totale kosten",
+    "awaitingPayment": "Wacht op betaling",
+    "purchaseSubmitted": "Aankoop succesvol ingediend",
+    "scanToPayMessage": "Scan de QR-code met je bank-app om te betalen"
   },
   "transactions": {
     "title": "Transacties",
@@ -282,6 +290,7 @@
     },
     "statuses": {
       "PENDING": "In behandeling",
+      "AWAITING_PAYMENT": "Wacht op betaling",
       "APPROVED": "Goedgekeurd",
       "COMPLETED": "Voltooid",
       "REJECTED": "Afgewezen"

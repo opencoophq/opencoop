@@ -206,7 +206,8 @@
       "pending": "En attente",
       "active": "Active",
       "sold": "Vendue",
-      "transferred": "Transférée"
+      "transferred": "Transférée",
+      "awaitingPayment": "En attente de paiement"
     },
     "purchase": "Achat",
     "sell": "Vente",
@@ -246,7 +247,14 @@
     "childShares": "Parts pour vos enfants",
     "companyShares": "Parts de la société",
     "myShares": "Mes parts",
-    "totalShares": "Total des parts"
+    "totalShares": "Total des parts",
+    "buyShares": "Acheter des parts",
+    "buySharesTitle": "Acheter des parts",
+    "selectShareClass": "Sélectionner la classe de parts",
+    "totalCost": "Coût total",
+    "awaitingPayment": "En attente de paiement",
+    "purchaseSubmitted": "Achat soumis avec succès",
+    "scanToPayMessage": "Scannez le code QR avec votre application bancaire pour payer"
   },
   "transactions": {
     "title": "Transactions",
@@ -282,6 +290,7 @@
     },
     "statuses": {
       "PENDING": "En attente",
+      "AWAITING_PAYMENT": "En attente de paiement",
       "APPROVED": "Approuvée",
       "COMPLETED": "Terminée",
       "REJECTED": "Rejetée"

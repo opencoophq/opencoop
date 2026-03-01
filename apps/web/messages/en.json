@@ -206,7 +206,8 @@
       "pending": "Pending",
       "active": "Active",
       "sold": "Sold",
-      "transferred": "Transferred"
+      "transferred": "Transferred",
+      "awaitingPayment": "Awaiting Payment"
     },
     "purchase": "Purchase",
     "sell": "Sell",
@@ -246,7 +247,14 @@
     "childShares": "Shares for your children",
     "companyShares": "Company shares",
     "myShares": "My Shares",
-    "totalShares": "Total Shares"
+    "totalShares": "Total Shares",
+    "buyShares": "Buy Shares",
+    "buySharesTitle": "Buy Shares",
+    "selectShareClass": "Select share class",
+    "totalCost": "Total cost",
+    "awaitingPayment": "Awaiting Payment",
+    "purchaseSubmitted": "Purchase submitted successfully",
+    "scanToPayMessage": "Scan the QR code with your banking app to pay"
   },
   "transactions": {
     "title": "Transactions",
@@ -282,6 +290,7 @@
     },
     "statuses": {
       "PENDING": "Pending",
+      "AWAITING_PAYMENT": "Awaiting Payment",
       "APPROVED": "Approved",
       "COMPLETED": "Completed",
       "REJECTED": "Rejected"
