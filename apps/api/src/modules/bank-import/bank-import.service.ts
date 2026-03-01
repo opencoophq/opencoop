@@ -147,7 +147,7 @@ export class BankImportService {
     });
   }
 
-  async manualMatch(bankTransactionId: string, paymentId: string) {
+  async manualMatch(bankTransactionId: string, paymentId: string, userId: string) {
     const bankTx = await this.prisma.bankTransaction.findUnique({
       where: { id: bankTransactionId },
     });
@@ -182,6 +182,22 @@ export class BankImportService {
       where: { id: paymentId },
       data: { status: 'MATCHED' },
     });
+
+    // Auto-complete the transaction
+    const paymentWithTx = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: { transaction: { select: { id: true, status: true } } },
+    });
+    if (
+      paymentWithTx?.transaction &&
+      (paymentWithTx.transaction.status === 'AWAITING_PAYMENT' ||
+        paymentWithTx.transaction.status === 'APPROVED')
+    ) {
+      await this.transactionsService.complete(
+        paymentWithTx.transaction.id,
+        userId,
+      );
+    }
 
     return { success: true };
   }

@@ -306,7 +306,7 @@ export class TransactionsService {
             });
           }
         }
-      } else if (transaction.shareId) {
+      } else if (transaction.type === 'PURCHASE' && transaction.shareId) {
         // For purchases: transition share to AWAITING_PAYMENT
         await tx.share.update({
           where: { id: transaction.shareId },
