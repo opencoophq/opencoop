@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.63] - 2026-03-01
+
+### Added
+- **Shareholder registration docs** — new documentation section covering the public share purchase flow (3-step registration, beneficiary types, gift certificates, OAuth prefill, URL parameters) in all 4 languages
+- Updated README with docs app, current auth methods, and i18n languages
+
 ## [0.1.62] - 2026-03-01
 
 ### Added
