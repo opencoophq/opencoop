@@ -601,7 +601,7 @@ export default function ShareholderDetailPage() {
           <CardTitle>{t('admin.shareholderDetail.shareholdings')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {shareholder.shares.length === 0 ? (
+          {shareholder.shares.filter((s) => s.status !== 'AWAITING_PAYMENT').length === 0 ? (
             <p className="text-muted-foreground">{t('common.noResults')}</p>
           ) : (
             <Table>
@@ -617,7 +617,9 @@ export default function ShareholderDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shareholder.shares.map((share) => (
+                {shareholder.shares
+                  .filter((share) => share.status !== 'AWAITING_PAYMENT')
+                  .map((share) => (
                   <TableRow key={share.id}>
                     <TableCell>{share.shareClass.name}</TableCell>
                     <TableCell>{share.project?.name || '-'}</TableCell>
