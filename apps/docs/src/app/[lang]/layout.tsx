@@ -2,9 +2,17 @@ import { RootProvider } from 'fumadocs-ui/provider';
 import { I18nProvider, type Translations } from 'fumadocs-ui/i18n';
 import { Inter } from 'next/font/google';
 import type { ReactNode } from 'react';
+import { i18n } from '@/lib/i18n';
 import '../global.css';
 
 const inter = Inter({ subsets: ['latin'] });
+
+const localeNames: Record<string, string> = {
+  en: 'English',
+  nl: 'Nederlands',
+  fr: 'Français',
+  de: 'Deutsch',
+};
 
 const translations: Record<string, Partial<Translations>> = {
   nl: {
@@ -51,6 +59,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <I18nProvider
           locale={params.lang}
+          locales={i18n.languages.map((lang) => ({
+            locale: lang,
+            name: localeNames[lang] ?? lang,
+          }))}
           translations={translations[params.lang]}
         >
           <RootProvider>
