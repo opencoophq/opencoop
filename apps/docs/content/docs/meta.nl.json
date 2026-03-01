@@ -1,11 +1,8 @@
 {
   "title": "Documentatie",
   "pages": [
-    "---Aan de slag---",
     "getting-started",
-    "---Aandeelhoudersregistratie---",
     "shareholder-registration",
-    "---Coöperatiebeheer---",
     "coop-admin"
   ]
 }
