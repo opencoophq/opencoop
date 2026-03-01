@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +19,7 @@ import { formatCurrency } from '@opencoop/shared';
 import { DatePicker } from '@/components/ui/date-picker';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Gift, UserPlus } from 'lucide-react';
+import { OAuthButtons } from '@/components/auth/oauth-buttons';
 
 interface CoopPublicInfo {
   id: string;
@@ -90,6 +91,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
   const t = useTranslations();
   const locale = useLocale();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const preselectedClass = searchParams.get('class');
   const preselectedProject = searchParams.get('project');
   const preselectedShareholderId = searchParams.get('shareholderId');
@@ -251,6 +253,20 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
 
     fetchData();
   }, [coopSlug, preselectedClass, preselectedProject, preselectedShareholderId, form]);
+
+  // Read OAuth prefill params from URL (after redirect back from Google/Apple)
+  useEffect(() => {
+    if (searchParams.get('prefill') === '1') {
+      const email = searchParams.get('email');
+      const firstName = searchParams.get('firstName');
+      const lastName = searchParams.get('lastName');
+      if (email) form.setValue('email', email);
+      if (firstName) form.setValue('firstName', firstName);
+      if (lastName) form.setValue('lastName', lastName);
+      // Clean prefill params from URL without triggering navigation
+      window.history.replaceState({}, '', pathname);
+    }
+  }, [searchParams, pathname, form]);
 
   // Helper function to pre-fill form with shareholder data
   const prefillFormWithShareholder = (shareholder: ExistingShareholder) => {
@@ -562,6 +578,20 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
             </div>
           ))}
         </RadioGroup>
+
+        {/* OAuth prefill buttons for non-logged-in self registrations */}
+        {watchBeneficiaryType === 'self' && !isLoggedIn && (
+          <div className="space-y-3">
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t" />
+              <span className="mx-3 text-sm text-muted-foreground">
+                {t('registration.prefillWithOAuth')}
+              </span>
+              <div className="flex-grow border-t" />
+            </div>
+            <OAuthButtons brandColor={coop.primaryColor} mode="prefill" redirectPath={pathname} />
+          </div>
+        )}
 
         {/* Details form (inline, merged from old step 2) */}
         <div className="border-t pt-6 space-y-4">

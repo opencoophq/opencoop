@@ -325,14 +325,35 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({ summary: 'Google OAuth callback' })
   async googleCallback(@Req() req: any, @Res() res: any) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+
+    // Check for prefill mode via state parameter
+    try {
+      if (req.query.state) {
+        const state = JSON.parse(req.query.state);
+        if (state.mode === 'prefill' && state.redirect) {
+          const { email, name } = req.user;
+          const [firstName, ...rest] = (name || '').split(' ');
+          const lastName = rest.join(' ');
+          const params = new URLSearchParams({
+            prefill: '1',
+            ...(email && { email }),
+            ...(firstName && { firstName }),
+            ...(lastName && { lastName }),
+          });
+          return res.redirect(`${frontendUrl}${state.redirect}?${params.toString()}`);
+        }
+      }
+    } catch {
+      // Invalid state — fall through to normal login
+    }
+
     const { googleId, email, name } = req.user;
     const result = await this.authService.handleOAuthLogin('google', {
       providerId: googleId,
       email,
       name,
     });
-
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
 
     if ('requiresMfa' in result && result.requiresMfa) {
       return res.redirect(`${frontendUrl}/oauth-callback?mfaToken=${result.mfaToken}`);
@@ -359,14 +380,34 @@ export class AuthController {
   @UseGuards(AppleAuthGuard)
   @ApiOperation({ summary: 'Apple OAuth callback (POST)' })
   async appleCallback(@Req() req: any, @Res() res: any) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+
+    // Check for prefill mode via state parameter (Apple sends state in POST body)
+    try {
+      const rawState = req.body?.state || req.query?.state;
+      if (rawState) {
+        const state = JSON.parse(rawState);
+        if (state.mode === 'prefill' && state.redirect) {
+          const { email, firstName, lastName } = req.user;
+          const params = new URLSearchParams({
+            prefill: '1',
+            ...(email && { email }),
+            ...(firstName && { firstName }),
+            ...(lastName && { lastName }),
+          });
+          return res.redirect(`${frontendUrl}${state.redirect}?${params.toString()}`);
+        }
+      }
+    } catch {
+      // Invalid state — fall through to normal login
+    }
+
     const { appleId, email, name } = req.user;
     const result = await this.authService.handleOAuthLogin('apple', {
       providerId: appleId,
       email,
       name,
     });
-
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
 
     if ('requiresMfa' in result && result.requiresMfa) {
       return res.redirect(`${frontendUrl}/oauth-callback?mfaToken=${result.mfaToken}`);

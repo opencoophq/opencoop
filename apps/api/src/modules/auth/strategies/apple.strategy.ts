@@ -25,12 +25,16 @@ export class AppleStrategy extends PassportStrategy(Strategy, 'apple') {
     profile: any,
     done: (err: any, user?: any) => void,
   ) {
+    const firstName = profile?.name?.firstName || undefined;
+    const lastName = profile?.name?.lastName || undefined;
     const user = {
       appleId: idToken.sub,
       email: idToken.email,
-      name: profile?.name
-        ? `${profile.name.firstName || ''} ${profile.name.lastName || ''}`.trim()
+      name: firstName || lastName
+        ? `${firstName || ''} ${lastName || ''}`.trim()
         : undefined,
+      firstName,
+      lastName,
     };
     done(null, user);
   }

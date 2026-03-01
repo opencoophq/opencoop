@@ -424,6 +424,7 @@
     "giftExplanation": "You'll receive a gift certificate with a unique code. Share it with the recipient so they can claim the shares and fill in their own details.",
     "giftBuyerEmail": "Your email (to receive the gift certificate)",
     "alreadyMember": "Already a member? Log in",
+    "prefillWithOAuth": "Or fill in your details with",
     "giftCode": "Gift code",
     "giftCertificate": "Gift Certificate",
     "giftShareWith": "Share this code or QR with the recipient",
@@ -872,6 +873,7 @@
     "nav": {
       "login": "Log in",
       "register": "Get started",
+      "dashboard": "Dashboard",
       "pricing": "Pricing",
       "demo": "Demo",
       "migration": "Migration"
