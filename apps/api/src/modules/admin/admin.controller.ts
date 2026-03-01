@@ -429,9 +429,10 @@ export class AdminController {
   @ApiOperation({ summary: 'Manually match a bank transaction to a payment' })
   async matchBankTransaction(
     @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
     @Body('paymentId') paymentId: string,
   ) {
-    return this.bankImportService.manualMatch(id, paymentId);
+    return this.bankImportService.manualMatch(id, paymentId, user.id);
   }
 
   // ==================== DIVIDENDS ====================

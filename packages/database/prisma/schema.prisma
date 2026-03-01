@@ -31,6 +31,7 @@ enum ShareholderStatus {
 
 enum ShareStatus {
   PENDING
+  AWAITING_PAYMENT
   ACTIVE
   SOLD
   TRANSFERRED
@@ -45,6 +46,7 @@ enum TransactionType {
 
 enum TransactionStatus {
   PENDING
+  AWAITING_PAYMENT
   APPROVED
   COMPLETED
   REJECTED
