@@ -1,0 +1,9 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "---Getting Started---",
+    "getting-started",
+    "---Coop Administration---",
+    "coop-admin"
+  ]
+}

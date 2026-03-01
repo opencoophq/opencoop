@@ -1,0 +1,90 @@
+---
+title: Coöperatiebeheer
+description: Een gids voor coöperatiebeheerders over het beheren van aandeelhouders, transacties en instellingen.
+---
+
+Deze gids behandelt de beheerfuncties die beschikbaar zijn voor coöperatiebeheerders in OpenCoop.
+
+## Dashboardoverzicht
+
+Het beheerdersdashboard geeft u een overzicht van uw coöperatie:
+
+- **Totaal aantal aandeelhouders** en aantal actieve aandeelhouders
+- **Totaal kapitaal** opgehaald over alle aandelenklassen
+- **Lopende transacties** die goedkeuring of betaling nodig hebben
+- **Recente activiteit** met de laatste wijzigingen
+
+## Aandeelhouders beheren
+
+### Aandeelhouders bekijken
+
+De pagina **Aandeelhouders** toont alle geregistreerde aandeelhouders in een doorzoekbare, sorteerbare tabel. U kunt filteren op status (actief, in behandeling, inactief) en type (individu, bedrijf, minderjarige).
+
+### Aandeelhouder toevoegen
+
+Klik op **Aandeelhouder toevoegen** en vul de vereiste informatie in:
+
+- **Type** — Individu, Bedrijf of Minderjarige
+- **Persoonlijke gegevens** — Naam, e-mail, adres, rijksregisternummer
+- **Bedrijfsgegevens** (indien van toepassing) — Bedrijfsnaam, KBO/BCE-nummer, BTW-nummer
+- **Wettelijke vertegenwoordiger** (voor minderjarigen) — Naam en relatie
+
+### Aandeelhouders bewerken
+
+Klik op een aandeelhouder om hun volledige profiel te bekijken. Van daaruit kunt u hun gegevens bijwerken, hun aandelenportefeuille bekijken en hun transactiegeschiedenis raadplegen.
+
+## Aandelenklassen beheren
+
+Navigeer naar **Aandelenklassen** om de soorten aandelen te configureren die uw coöperatie aanbiedt:
+
+- **Naam** — Een beschrijvende naam (bijv. "Aandeel A", "Aandeel B")
+- **Nominale waarde** — De prijs per aandeel
+- **Minimum aandelen** — Minimaal aantal aandelen dat een aandeelhouder moet bezitten
+- **Maximum aandelen** — Maximaal aantal aandelen per aandeelhouder (optioneel)
+
+## Transacties verwerken
+
+### Transacties goedkeuren
+
+Wanneer aandeelhouders een aankoop- of verkoopverzoek indienen, verschijnt dit als een lopende transactie. Bekijk de details en:
+
+1. **Goedkeuren** — Bevestig de transactie en genereer de OGM-betalingscode
+2. **Afwijzen** — Wijs de transactie af met een optionele reden
+
+### Betalingsopvolging
+
+Elke goedgekeurde aankooptransactie krijgt een unieke OGM-code (+++XXX/XXXX/XXXXX+++). Wanneer u bankafschriften importeert, koppelt OpenCoop betalingen automatisch aan transacties via deze codes.
+
+### Bankimport
+
+Ga naar **Bankimport** om CODA- of CSV-bestanden van uw bank te uploaden. OpenCoop zal:
+
+1. Alle inkomende transacties verwerken
+2. Ze koppelen aan lopende betalingen via OGM-codes
+3. Niet-gekoppelde transacties tonen voor handmatige beoordeling
+
+## Dividenden
+
+Navigeer naar **Dividenden** om dividenduitkeringen te beheren:
+
+1. **Dividendronde aanmaken** — Stel het boekjaar en het bedrag per aandeel in
+2. **Berekenen** — OpenCoop berekent het dividend van elke aandeelhouder, inclusief Belgische roerende voorheffing (30%)
+3. **Goedkeuren en uitkeren** — Genereer dividendoverzichten en belastingdocumenten
+
+## Rapporten
+
+De sectie **Rapporten** biedt exporteerbare gegevens:
+
+- Aandeelhoudersregister (PDF/CSV)
+- Transactieoverzicht
+- Kapitaaloverzicht per aandelenklasse
+- Dividenduitkeringsrapporten
+
+## Instellingen
+
+In **Instellingen** kunt u beheren:
+
+- **Algemeen** — Naam coöperatie, slug, contactgegevens
+- **Huisstijl** — Logo, primaire kleur, aangepaste e-mailsjablonen
+- **E-mail** — SMTP-configuratie en meldingsvoorkeuren
+- **Bankrekening** — IBAN en BIC voor betalingsopvolging

@@ -72,6 +72,11 @@ export function MarketingNav() {
               {t('nav.migration')}
             </Button>
           </Link>
+          <a href="https://docs.opencoop.be" target="_blank" rel="noopener noreferrer">
+            <Button variant="ghost" size="sm">
+              {t('nav.docs')}
+            </Button>
+          </a>
           <Link href="/login">
             <Button variant="ghost" size="sm">
               {t('nav.login')}
@@ -126,6 +131,11 @@ export function MarketingNav() {
                 {t('nav.migration')}
               </Button>
             </Link>
+            <a href="https://docs.opencoop.be" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
+              <Button variant="ghost" size="sm" className="w-full justify-start">
+                {t('nav.docs')}
+              </Button>
+            </a>
             <Link href="/login" onClick={() => setMobileOpen(false)}>
               <Button variant="ghost" size="sm" className="w-full justify-start">
                 {t('nav.login')}

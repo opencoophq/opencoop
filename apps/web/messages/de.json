@@ -70,6 +70,7 @@
     "showMore": "Mehr anzeigen",
     "showLess": "Weniger anzeigen",
     "overview": "Übersicht",
+    "docs": "Dokumentation",
     "documents": "Dokumente",
     "settings": "Einstellungen",
     "myAccount": "Mein Konto",
@@ -876,7 +877,8 @@
       "dashboard": "Dashboard",
       "pricing": "Preise",
       "demo": "Demo",
-      "migration": "Migration"
+      "migration": "Migration",
+      "docs": "Docs"
     },
     "hero": {
       "title": "Anteilseignerverwaltung für Genossenschaften",

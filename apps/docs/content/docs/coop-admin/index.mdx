@@ -1,0 +1,90 @@
+---
+title: Coop Administration
+description: A guide for cooperative administrators on managing shareholders, transactions, and settings.
+---
+
+This guide covers the administrative features available to coop admins in OpenCoop.
+
+## Dashboard Overview
+
+The admin dashboard gives you a bird's-eye view of your cooperative:
+
+- **Total shareholders** and active shareholders count
+- **Total capital** raised across all share classes
+- **Pending transactions** that need approval or payment
+- **Recent activity** feed showing the latest changes
+
+## Managing Shareholders
+
+### Viewing Shareholders
+
+The **Shareholders** page shows all registered shareholders in a searchable, sortable table. You can filter by status (active, pending, inactive) and type (individual, company, minor).
+
+### Adding a Shareholder
+
+Click **Add Shareholder** and fill in the required information:
+
+- **Type** — Individual, Company, or Minor
+- **Personal details** — Name, email, address, national register number
+- **Company details** (if applicable) — Company name, KBO/BCE number, VAT number
+- **Legal representative** (for minors) — Name and relationship
+
+### Editing Shareholders
+
+Click on any shareholder to view their full profile. From there you can update their details, view their share portfolio, and see their transaction history.
+
+## Managing Share Classes
+
+Navigate to **Share Classes** to configure the types of shares your cooperative offers:
+
+- **Name** — A descriptive name (e.g. "Part A", "Part B")
+- **Nominal value** — The price per share
+- **Minimum shares** — Minimum number of shares a shareholder must hold
+- **Maximum shares** — Maximum number of shares per shareholder (optional)
+
+## Processing Transactions
+
+### Approving Transactions
+
+When shareholders submit a purchase or sale request, it appears as a pending transaction. Review the details and:
+
+1. **Approve** — Confirm the transaction and generate the OGM payment code
+2. **Reject** — Decline the transaction with an optional reason
+
+### Payment Tracking
+
+Each approved purchase transaction gets a unique OGM code (+++XXX/XXXX/XXXXX+++). When you import bank statements, OpenCoop automatically matches payments to transactions using these codes.
+
+### Bank Import
+
+Go to **Bank Import** to upload CODA or CSV files from your bank. OpenCoop will:
+
+1. Parse all incoming transactions
+2. Match them to pending payments via OGM codes
+3. Show unmatched transactions for manual review
+
+## Dividends
+
+Navigate to **Dividends** to manage dividend distributions:
+
+1. **Create a dividend round** — Set the fiscal year and amount per share
+2. **Calculate** — OpenCoop computes each shareholder's dividend, including Belgian withholding tax (30%)
+3. **Approve and distribute** — Generate dividend statements and tax documents
+
+## Reports
+
+The **Reports** section provides exportable data:
+
+- Shareholder register (PDF/CSV)
+- Transaction overview
+- Capital overview by share class
+- Dividend distribution reports
+
+## Settings
+
+In **Settings** you can manage:
+
+- **General** — Cooperative name, slug, contact details
+- **Branding** — Logo, primary color, custom email templates
+- **Email** — SMTP configuration and notification preferences
+- **Bank account** — IBAN and BIC for payment matching

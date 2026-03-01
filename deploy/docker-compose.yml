@@ -100,6 +100,15 @@ services:
       - internal
       - proxy
 
+  docs:
+    image: ghcr.io/${GHCR_OWNER}/opencoop-docs:${TAG}
+    container_name: opencoop-${ENV_NAME}-docs
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    networks:
+      - proxy
+
 volumes:
   postgres_data:
   redis_data:
