@@ -16,6 +16,7 @@
   "dependencies": {
     "@azure/identity": "^4.13.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@nestjs/bull": "^10.2.0",
     "@nestjs/common": "^10.4.0",
     "@nestjs/config": "^3.3.0",
@@ -33,6 +34,7 @@
     "@opencoop/shared": "workspace:*",
     "@prisma/client": "^6.2.0",
     "@react-pdf/renderer": "^4.1.0",
+    "@rekog/mcp-nest": "^1.9.6",
     "@sentry/nestjs": "^10.40.0",
     "@simplewebauthn/server": "^13.2.3",
     "bcrypt": "^5.1.1",
@@ -54,7 +56,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "sharp": "^0.34.5",
-    "stripe": "^20.4.0"
+    "stripe": "^20.4.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",
