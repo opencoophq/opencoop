@@ -425,6 +425,7 @@ model Share {
   quantity              Int
   purchasePricePerShare Decimal     @db.Decimal(10, 2)
   purchaseDate          DateTime
+  paymentDate           DateTime?
   status                ShareStatus @default(PENDING)
   certificateNumber     String?
 

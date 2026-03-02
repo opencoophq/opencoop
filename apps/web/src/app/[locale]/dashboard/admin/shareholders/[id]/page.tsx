@@ -68,6 +68,7 @@ interface Share {
     name: string;
   };
   purchaseDate: string;
+  paymentDate?: string;
   status: string;
 }
 
@@ -630,7 +631,7 @@ export default function ShareholderDetailPage() {
                     <TableCell className="text-right">
                       {fmtCurrency(share.quantity * share.shareClass.pricePerShare)}
                     </TableCell>
-                    <TableCell>{formatDate(share.purchaseDate)}</TableCell>
+                    <TableCell>{formatDate(share.paymentDate || share.purchaseDate)}</TableCell>
                     <TableCell>
                       <Badge variant={share.status === 'ACTIVE' ? 'default' : 'secondary'}>
                         {t(`shares.status.${share.status.toLowerCase()}`)}

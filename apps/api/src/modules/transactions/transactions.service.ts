@@ -318,7 +318,7 @@ export class TransactionsService {
     });
   }
 
-  async complete(id: string, processedByUserId: string) {
+  async complete(id: string, processedByUserId: string, paymentDate?: Date) {
     const transaction = await this.findById(id);
 
     if (transaction.status !== 'APPROVED' && transaction.status !== 'AWAITING_PAYMENT') {
@@ -341,7 +341,7 @@ export class TransactionsService {
       if (transaction.type === 'PURCHASE' && transaction.shareId) {
         await tx.share.update({
           where: { id: transaction.shareId },
-          data: { status: 'ACTIVE' },
+          data: { status: 'ACTIVE', paymentDate: paymentDate || new Date() },
         });
       }
 
@@ -490,6 +490,7 @@ export class TransactionsService {
           quantity: data.quantity,
           purchasePricePerShare: pricePerShare,
           purchaseDate: new Date(),
+          paymentDate: new Date(),
           status: 'ACTIVE',
         },
       });

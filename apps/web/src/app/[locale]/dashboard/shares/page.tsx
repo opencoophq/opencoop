@@ -29,6 +29,7 @@ interface ShareData {
   quantity: number;
   purchasePricePerShare: number;
   purchaseDate: string;
+  paymentDate?: string;
   status: string;
   shareClass: { name: string; code: string };
   project?: { name: string } | null;
@@ -322,7 +323,7 @@ export default function SharesPage() {
                       {formatCurrency(share.quantity * Number(share.purchasePricePerShare), locale)}
                     </TableCell>
                     <TableCell>
-                      {new Date(share.purchaseDate).toLocaleDateString(locale)}
+                      {new Date(share.paymentDate || share.purchaseDate).toLocaleDateString(locale)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(share.status)}>{share.status}</Badge>

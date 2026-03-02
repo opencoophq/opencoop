@@ -151,7 +151,7 @@ export class DividendsService {
       where: {
         coopId: period.coopId,
         status: 'ACTIVE',
-        purchaseDate: {
+        paymentDate: {
           lt: period.exDividendDate,
         },
       },
