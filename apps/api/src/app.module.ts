@@ -27,6 +27,7 @@ import { MigrationRequestsModule } from './modules/migration-requests/migration-
 import { BillingModule } from './modules/billing/billing.module';
 import { HealthModule } from './modules/health/health.module';
 import { McpToolsModule } from './modules/mcp/mcp.module';
+import { LlmsModule } from './modules/llms/llms.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { McpToolsModule } from './modules/mcp/mcp.module';
       },
     }),
     McpToolsModule,
+    LlmsModule,
   ],
   providers: [
     {
