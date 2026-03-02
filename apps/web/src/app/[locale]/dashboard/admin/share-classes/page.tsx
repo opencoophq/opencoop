@@ -25,9 +25,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, Upload } from 'lucide-react';
 
 interface ShareClass {
   id: string;
@@ -59,6 +60,9 @@ export default function ShareClassesPage() {
   const [classes, setClasses] = useState<ShareClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<ShareClass | null>(null);
   const [form, setForm] = useState<FormState>({
     name: '',
@@ -118,6 +122,28 @@ export default function ShareClassesPage() {
     setDialogOpen(true);
   };
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedCoop) return;
+    setImporting(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const result = await api<{ imported: number; skipped: number }>(
+        `/admin/coops/${selectedCoop.id}/share-classes/import`,
+        { method: 'POST', body: formData },
+      );
+      setSuccess(t('admin.importSuccess', { imported: result.imported, skipped: result.skipped }));
+      loadData();
+    } catch {
+      setError(t('common.error'));
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedCoop) return;
     const body: Record<string, unknown> = {
@@ -146,11 +172,40 @@ export default function ShareClassesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{t('admin.shareClasses.title')}</h1>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('admin.shareClasses.add')}
-        </Button>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleImport}
+            className="hidden"
+            id="share-classes-csv-upload"
+          />
+          <Button
+            variant="outline"
+            onClick={() => document.getElementById('share-classes-csv-upload')?.click()}
+            disabled={importing}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {t('admin.shareClasses.importCsv')}
+          </Button>
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('admin.shareClasses.add')}
+          </Button>
+        </div>
       </div>
+
+      {success && (
+        <Alert className="mb-6">
+          <AlertDescription>{success}</AlertDescription>
+        </Alert>
+      )}
+
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardContent className="pt-6">

@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.67] - 2026-03-02
+
+### Added
+- **CSV import for projects and share classes** — admins can now bulk-import projects and share classes from semicolon-delimited CSV files
+- Import buttons on both admin pages (Projects and Share Classes) with uploaded/skipped count feedback
+- Duplicate detection: skips projects with existing names and share classes with existing codes
+- Translations for import UI in all 4 languages (EN/NL/FR/DE)
+
 ## [0.1.66] - 2026-03-02
 
 ### Added

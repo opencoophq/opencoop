@@ -553,7 +553,8 @@
       "deleteWarning": "Eine Anteilsklasse mit bestehenden Anteilen kann nicht gelöscht werden.",
       "hasIssuedSharesWarning": "Diese Anteilsklasse hat ausgegebene Anteile. Nur der Aktivstatus kann geändert werden.",
       "add": "Anteilsklasse hinzufügen",
-      "edit": "Anteilsklasse bearbeiten"
+      "edit": "Anteilsklasse bearbeiten",
+      "importCsv": "CSV importieren"
     },
     "projects": {
       "title": "Projekte",
@@ -570,8 +571,10 @@
       "endDate": "Enddatum",
       "status": "Status",
       "active": "Aktiv",
-      "inactive": "Inaktiv"
+      "inactive": "Inaktiv",
+      "importCsv": "CSV importieren"
     },
+    "importSuccess": "{imported} importiert, {skipped} übersprungen",
     "bank": {
       "title": "Bankimport",
       "uploadCsv": "CSV hochladen",

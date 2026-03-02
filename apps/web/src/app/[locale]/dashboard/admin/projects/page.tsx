@@ -37,7 +37,7 @@ import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { api } from '@/lib/api';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Edit, Trash2, Sun, Wind } from 'lucide-react';
+import { Plus, Edit, Trash2, Sun, Wind, Upload } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -77,6 +77,7 @@ export default function ProjectsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const form = useForm<ProjectForm>({
     resolver: zodResolver(projectSchema),
@@ -172,6 +173,28 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedCoop) return;
+    setImporting(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const result = await api<{ imported: number; skipped: number }>(
+        `/admin/coops/${selectedCoop.id}/projects/import`,
+        { method: 'POST', body: formData },
+      );
+      setSuccess(t('admin.importSuccess', { imported: result.imported, skipped: result.skipped }));
+      fetchProjects();
+    } catch {
+      setError(t('common.error'));
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
+
   const handleDelete = async (project: Project) => {
     if (!confirm(t('common.confirm'))) return;
     try {
@@ -222,10 +245,27 @@ export default function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t('admin.projects.title')}</h1>
-        <Button onClick={openCreateDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('admin.projects.addProject')}
-        </Button>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleImport}
+            className="hidden"
+            id="projects-csv-upload"
+          />
+          <Button
+            variant="outline"
+            onClick={() => document.getElementById('projects-csv-upload')?.click()}
+            disabled={importing}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {t('admin.projects.importCsv')}
+          </Button>
+          <Button onClick={openCreateDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('admin.projects.addProject')}
+          </Button>
+        </div>
       </div>
 
       {success && (
