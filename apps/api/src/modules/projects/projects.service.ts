@@ -79,6 +79,60 @@ export class ProjectsService {
     });
   }
 
+  async importCsv(
+    coopId: string,
+    csvContent: string,
+  ): Promise<{ imported: number; skipped: number }> {
+    const lines = csvContent.split('\n').filter((l) => l.trim());
+    if (lines.length < 2) {
+      throw new BadRequestException('CSV file is empty or has no data rows');
+    }
+
+    const dataLines = lines.slice(1);
+    let imported = 0;
+    let skipped = 0;
+
+    for (const line of dataLines) {
+      const fields = line.split(';').map((f) => f.trim().replace(/^"|"$/g, ''));
+      const [name, description, type, capacityKw, estimatedAnnualMwh, startDate, endDate] = fields;
+
+      if (!name) {
+        skipped++;
+        continue;
+      }
+
+      const existing = await this.prisma.project.findFirst({
+        where: { coopId, name },
+      });
+
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
+      const projectType =
+        type?.toUpperCase() === 'WIND' ? 'WIND' : 'SOLAR';
+
+      await this.prisma.project.create({
+        data: {
+          coopId,
+          name,
+          description: description || null,
+          type: projectType,
+          capacityKw: capacityKw ? parseFloat(capacityKw.replace(',', '.')) : null,
+          estimatedAnnualMwh: estimatedAnnualMwh
+            ? parseFloat(estimatedAnnualMwh.replace(',', '.'))
+            : null,
+          startDate: startDate ? new Date(startDate) : null,
+          endDate: endDate ? new Date(endDate) : null,
+        },
+      });
+      imported++;
+    }
+
+    return { imported, skipped };
+  }
+
   async delete(id: string, coopId: string) {
     const project = await this.findById(id, coopId);
 

@@ -553,7 +553,8 @@
       "deleteWarning": "Cannot delete a share class with existing shares.",
       "hasIssuedSharesWarning": "This share class has issued shares. Only the active status can be changed.",
       "add": "Add Share Class",
-      "edit": "Edit Share Class"
+      "edit": "Edit Share Class",
+      "importCsv": "Import CSV"
     },
     "projects": {
       "title": "Projects",
@@ -570,8 +571,10 @@
       "endDate": "End Date",
       "status": "Status",
       "active": "Active",
-      "inactive": "Inactive"
+      "inactive": "Inactive",
+      "importCsv": "Import CSV"
     },
+    "importSuccess": "{imported} imported, {skipped} skipped",
     "bank": {
       "title": "Bank Import",
       "uploadCsv": "Upload CSV",

@@ -553,7 +553,8 @@
       "deleteWarning": "Impossible de supprimer une classe de parts avec des parts existantes.",
       "hasIssuedSharesWarning": "Cette classe de parts a des parts émises. Seul le statut actif peut être modifié.",
       "add": "Ajouter une classe de parts",
-      "edit": "Modifier la classe de parts"
+      "edit": "Modifier la classe de parts",
+      "importCsv": "Importer CSV"
     },
     "projects": {
       "title": "Projets",
@@ -570,8 +571,10 @@
       "endDate": "Date de fin",
       "status": "Statut",
       "active": "Actif",
-      "inactive": "Inactif"
+      "inactive": "Inactif",
+      "importCsv": "Importer CSV"
     },
+    "importSuccess": "{imported} importé(s), {skipped} ignoré(s)",
     "bank": {
       "title": "Import bancaire",
       "uploadCsv": "Téléverser un CSV",

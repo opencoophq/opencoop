@@ -282,6 +282,46 @@ export class AdminController {
     return this.projectsService.delete(id, coopId);
   }
 
+  @Post('projects/import')
+  @ApiOperation({ summary: 'Import projects from CSV' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async importProjects(
+    @Param('coopId') coopId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const csvContent = file.buffer.toString('utf-8');
+    return this.projectsService.importCsv(coopId, csvContent);
+  }
+
+  @Post('share-classes/import')
+  @ApiOperation({ summary: 'Import share classes from CSV' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async importShareClasses(
+    @Param('coopId') coopId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const csvContent = file.buffer.toString('utf-8');
+    return this.shareClassesService.importCsv(coopId, csvContent);
+  }
+
   // ==================== TRANSACTIONS ====================
 
   @Get('transactions')

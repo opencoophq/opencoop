@@ -553,7 +553,8 @@
       "deleteWarning": "Kan aandelenklasse met bestaande aandelen niet verwijderen.",
       "hasIssuedSharesWarning": "Deze aandelenklasse heeft uitgegeven aandelen. Alleen de actieve status kan worden gewijzigd.",
       "add": "Aandelenklasse toevoegen",
-      "edit": "Aandelenklasse bewerken"
+      "edit": "Aandelenklasse bewerken",
+      "importCsv": "CSV importeren"
     },
     "projects": {
       "title": "Projecten",
@@ -570,8 +571,10 @@
       "endDate": "Einddatum",
       "status": "Status",
       "active": "Actief",
-      "inactive": "Inactief"
+      "inactive": "Inactief",
+      "importCsv": "CSV importeren"
     },
+    "importSuccess": "{imported} geïmporteerd, {skipped} overgeslagen",
     "bank": {
       "title": "Bank import",
       "uploadCsv": "CSV uploaden",
