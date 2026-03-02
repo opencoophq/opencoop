@@ -5,7 +5,8 @@ import { BullModule } from '@nestjs/bull';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
-import { McpModule } from '@rekog/mcp-nest';
+import { McpModule, McpTransportType } from '@rekog/mcp-nest';
+import { randomUUID } from 'crypto';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -26,7 +27,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
 import { MigrationRequestsModule } from './modules/migration-requests/migration-requests.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { HealthModule } from './modules/health/health.module';
-import { McpToolsModule } from './modules/mcp/mcp.module';
+import { McpTools } from './modules/mcp/mcp.tools';
 import { LlmsModule } from './modules/llms/llms.module';
 
 @Module({
@@ -69,11 +70,14 @@ import { LlmsModule } from './modules/llms/llms.module';
       version: '1.0.0',
       instructions:
         'OpenCoop public API for AI agents — query cooperative data and generate share purchase URLs',
+      transport: McpTransportType.STREAMABLE_HTTP,
       capabilities: {
         tools: {},
       },
+      streamableHttp: {
+        sessionIdGenerator: () => randomUUID(),
+      },
     }),
-    McpToolsModule,
     LlmsModule,
   ],
   providers: [
@@ -85,6 +89,7 @@ import { LlmsModule } from './modules/llms/llms.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    McpTools,
   ],
 })
 export class AppModule {}
