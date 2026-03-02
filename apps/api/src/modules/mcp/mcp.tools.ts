@@ -35,10 +35,9 @@ export class McpTools {
     }),
   })
   async getCoopInfo({ slug }: { slug: string }) {
-    const coop = await this.prisma.coop.findUnique({
-      where: { slug },
+    const coop = await this.prisma.coop.findFirst({
+      where: { slug, active: true },
       select: {
-        id: true,
         slug: true,
         name: true,
         logoUrl: true,
@@ -63,8 +62,8 @@ export class McpTools {
     }),
   })
   async listProjects({ slug }: { slug: string }) {
-    const coop = await this.prisma.coop.findUnique({
-      where: { slug },
+    const coop = await this.prisma.coop.findFirst({
+      where: { slug, active: true },
       select: {
         projects: {
           where: { isActive: true },
@@ -133,8 +132,8 @@ export class McpTools {
     }),
   })
   async listShareClasses({ slug }: { slug: string }) {
-    const coop = await this.prisma.coop.findUnique({
-      where: { slug },
+    const coop = await this.prisma.coop.findFirst({
+      where: { slug, active: true },
       select: {
         shareClasses: {
           where: { isActive: true },
@@ -172,23 +171,29 @@ export class McpTools {
         .optional()
         .describe('Share class code to pre-select (e.g. "A", "B")'),
       projectId: z.string().optional().describe('Project ID to pre-select'),
+      locale: z
+        .enum(['nl', 'en', 'fr', 'de'])
+        .default('nl')
+        .describe('URL locale (default: nl)'),
     }),
   })
   async getSharePurchaseUrl({
     slug,
     classCode,
     projectId,
+    locale = 'nl',
   }: {
     slug: string;
     classCode?: string;
     projectId?: string;
+    locale?: string;
   }) {
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
     const params = new URLSearchParams();
     if (classCode) params.set('class', classCode);
     if (projectId) params.set('project', projectId);
     const query = params.toString();
-    const url = `${baseUrl}/nl/${slug}/register${query ? `?${query}` : ''}`;
+    const url = `${baseUrl}/${locale}/${slug}/register${query ? `?${query}` : ''}`;
     return JSON.stringify({ url }, null, 2);
   }
 }
