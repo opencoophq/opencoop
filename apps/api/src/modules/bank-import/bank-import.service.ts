@@ -116,6 +116,7 @@ export class BankImportService {
             await this.transactionsService.complete(
               paymentWithTx.transaction.id,
               importedById,
+              date,
             );
           }
         } else {
@@ -196,6 +197,7 @@ export class BankImportService {
       await this.transactionsService.complete(
         paymentWithTx.transaction.id,
         userId,
+        bankTx.date,
       );
     }
 

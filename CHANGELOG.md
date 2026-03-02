@@ -2,6 +2,15 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.66] - 2026-03-02
+
+### Added
+- **Payment date tracking** — new `paymentDate` field on shares, set when bank import matches a payment or admin manually completes a transaction
+- Dividend eligibility now calculated from `paymentDate` instead of `purchaseDate` (order date), ensuring only paid shares qualify
+- Bank import passes the actual bank transaction date through as the payment date (both auto-match and manual match)
+- Transferred shares get `paymentDate` set immediately (already paid)
+- Frontend displays `paymentDate` (with `purchaseDate` fallback) in admin shareholder detail, shareholder shares page, and shareholders list "member since"
+
 ## [0.1.65] - 2026-03-01
 
 ### Fixed

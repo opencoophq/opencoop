@@ -36,7 +36,7 @@ interface ShareholderRow {
   companyName?: string;
   email?: string;
   createdAt: string;
-  shares: Array<{ quantity: number; status: string; purchaseDate: string }>;
+  shares: Array<{ quantity: number; status: string; purchaseDate: string; paymentDate?: string }>;
 }
 
 interface PaginatedResponse {
@@ -91,7 +91,7 @@ export default function ShareholdersPage() {
     sh.shares?.filter((s) => s.status === 'ACTIVE').reduce((sum, s) => sum + s.quantity, 0) || 0;
 
   const memberSince = (sh: ShareholderRow) => {
-    const dates = sh.shares?.map((s) => s.purchaseDate).filter(Boolean) || [];
+    const dates = sh.shares?.map((s) => s.paymentDate || s.purchaseDate).filter(Boolean) || [];
     if (dates.length === 0) return sh.createdAt;
     return dates.reduce((earliest, d) => (d < earliest ? d : earliest));
   };
