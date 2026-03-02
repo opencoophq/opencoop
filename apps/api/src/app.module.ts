@@ -5,6 +5,7 @@ import { BullModule } from '@nestjs/bull';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
+import { McpModule } from '@rekog/mcp-nest';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -25,6 +26,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
 import { MigrationRequestsModule } from './modules/migration-requests/migration-requests.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { HealthModule } from './modules/health/health.module';
+import { McpToolsModule } from './modules/mcp/mcp.module';
 
 @Module({
   imports: [
@@ -61,6 +63,16 @@ import { HealthModule } from './modules/health/health.module';
     MigrationRequestsModule,
     BillingModule,
     HealthModule,
+    McpModule.forRoot({
+      name: 'opencoop',
+      version: '1.0.0',
+      instructions:
+        'OpenCoop public API for AI agents — query cooperative data and generate share purchase URLs',
+      capabilities: {
+        tools: {},
+      },
+    }),
+    McpToolsModule,
   ],
   providers: [
     {
