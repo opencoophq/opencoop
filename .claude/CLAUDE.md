@@ -149,6 +149,12 @@ Controls whether the pricing page CTAs link to `/onboarding` or open a waitlist 
 
 Swagger UI available at: `http://localhost:3001/api/docs`
 
+## AI Integration
+
+- **MCP Server:** `POST /mcp` — Streamable HTTP transport, public, no auth. Tools: `list_coops`, `get_coop_info`, `list_projects`, `list_share_classes`, `get_share_purchase_url`
+- **llms.txt:** `GET /llms.txt` — Plain text API overview for LLMs
+- **llms-full.txt:** `GET /llms-full.txt` — Full public data dump (cached 5 min)
+
 ## Testing
 
 ```bash
