@@ -44,4 +44,10 @@ export class CreateProjectDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @ApiProperty({ required: false, example: 160, description: 'Financing goal: number of shares to sell' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  targetShares?: number;
 }
