@@ -402,6 +402,7 @@ model Project {
   estimatedAnnualMwh Decimal?     @db.Decimal(10, 2) // Estimated annual production in MWh
   startDate          DateTime?
   endDate            DateTime?    // Optional end date
+  targetShares       Int?         // Financing goal: number of shares to sell
   isActive           Boolean      @default(true)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt

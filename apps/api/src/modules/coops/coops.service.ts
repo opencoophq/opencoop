@@ -137,6 +137,7 @@ export class CoopsService {
             id: true,
             name: true,
             description: true,
+            targetShares: true,
           },
           orderBy: { name: 'asc' },
         },
@@ -148,6 +149,89 @@ export class CoopsService {
     }
 
     return coop;
+  }
+
+  async getPublicProjects(slug: string) {
+    const coop = await this.prisma.coop.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        projects: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            capacityKw: true,
+            targetShares: true,
+            isActive: true,
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+
+    if (!coop) {
+      throw new NotFoundException('Cooperative not found');
+    }
+
+    const projectIds = coop.projects.map((p) => p.id);
+
+    const shareStats = await this.prisma.share.groupBy({
+      by: ['projectId'],
+      where: {
+        projectId: { in: projectIds },
+        status: 'ACTIVE',
+      },
+      _sum: { quantity: true },
+      _count: { shareholderId: true },
+    });
+
+    // Get distinct shareholder counts per project
+    const shareholderCounts = await Promise.all(
+      projectIds.map(async (projectId) => {
+        const count = await this.prisma.share.findMany({
+          where: { projectId, status: 'ACTIVE' },
+          select: { shareholderId: true },
+          distinct: ['shareholderId'],
+        });
+        return { projectId, count: count.length };
+      }),
+    );
+
+    // Get capital raised per project
+    const capitalByProject = await Promise.all(
+      projectIds.map(async (projectId) => {
+        const shares = await this.prisma.share.findMany({
+          where: { projectId, status: 'ACTIVE' },
+          select: { quantity: true, purchasePricePerShare: true },
+        });
+        const capital = shares.reduce(
+          (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(),
+          0,
+        );
+        return { projectId, capital };
+      }),
+    );
+
+    const statsMap = new Map(shareStats.map((s) => [s.projectId, s]));
+    const shareholderMap = new Map(shareholderCounts.map((s) => [s.projectId, s.count]));
+    const capitalMap = new Map(capitalByProject.map((c) => [c.projectId, c.capital]));
+
+    return coop.projects.map((project) => {
+      const stats = statsMap.get(project.id);
+      return {
+        id: project.id,
+        name: project.name,
+        type: project.type,
+        capacityKw: project.capacityKw?.toNumber() ?? null,
+        targetShares: project.targetShares,
+        sharesSold: stats?._sum.quantity ?? 0,
+        capitalRaised: capitalMap.get(project.id) ?? 0,
+        shareholderCount: shareholderMap.get(project.id) ?? 0,
+        isActive: project.isActive,
+      };
+    });
   }
 
   async getSettings(id: string) {

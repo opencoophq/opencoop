@@ -19,6 +19,15 @@ export class CoopsController {
   }
 
   @Public()
+  @Get(':slug/public-projects')
+  @ApiOperation({ summary: 'Get public project data with live investment stats' })
+  @ApiResponse({ status: 200, description: 'Projects with aggregated share stats' })
+  @ApiResponse({ status: 404, description: 'Cooperative not found' })
+  async getPublicProjects(@Param('slug') slug: string) {
+    return this.coopsService.getPublicProjects(slug);
+  }
+
+  @Public()
   @Post(':slug/register')
   @ApiOperation({ summary: 'Public share registration (new or existing shareholder)' })
   @ApiResponse({ status: 201, description: 'Registration successful, returns transaction details' })
