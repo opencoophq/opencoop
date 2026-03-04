@@ -748,7 +748,8 @@
     "nav": {
       "overview": "Overzicht",
       "coops": "Coöperaties",
-      "users": "Gebruikers"
+      "users": "Gebruikers",
+      "audit": "Auditlog"
     },
     "overview": {
       "title": "Systeemoverzicht",
@@ -1457,6 +1458,8 @@
       "UPDATE": "Gewijzigd",
       "DELETE": "Verwijderd"
     },
+    "entity": "Entiteit",
+    "changes": "Wijzigingen",
     "system": "Systeem",
     "masked": "(gevoelig)"
   }

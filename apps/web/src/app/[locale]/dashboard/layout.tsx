@@ -17,6 +17,7 @@ import {
   CreditCard,
   Upload,
   Shield,
+  History,
   ChevronDown,
   LogOut,
   Menu,
@@ -145,6 +146,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { href: '/dashboard/system', label: t('common.overview'), icon: <Shield className="h-4 w-4" /> },
         { href: '/dashboard/system/coops', label: t('system.coops.title'), icon: <Building2 className="h-4 w-4" /> },
         { href: '/dashboard/system/users', label: t('system.users.title'), icon: <Users className="h-4 w-4" /> },
+        { href: '/dashboard/system/audit', label: t('system.nav.audit'), icon: <History className="h-4 w-4" /> },
       ]
     : [];
 

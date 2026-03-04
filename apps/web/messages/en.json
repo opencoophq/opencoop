@@ -748,7 +748,8 @@
     "nav": {
       "overview": "Overview",
       "coops": "Cooperatives",
-      "users": "Users"
+      "users": "Users",
+      "audit": "Audit Log"
     },
     "overview": {
       "title": "System Overview",
@@ -1457,6 +1458,8 @@
       "UPDATE": "Updated",
       "DELETE": "Deleted"
     },
+    "entity": "Entity",
+    "changes": "Changes",
     "system": "System",
     "masked": "(sensitive)"
   }

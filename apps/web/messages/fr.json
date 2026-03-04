@@ -748,7 +748,8 @@
     "nav": {
       "overview": "Aperçu",
       "coops": "Coopératives",
-      "users": "Utilisateurs"
+      "users": "Utilisateurs",
+      "audit": "Journal d'audit"
     },
     "overview": {
       "title": "Aperçu du système",
@@ -1457,6 +1458,8 @@
       "UPDATE": "Modifié",
       "DELETE": "Supprimé"
     },
+    "entity": "Entité",
+    "changes": "Modifications",
     "system": "Système",
     "masked": "(sensible)"
   }
