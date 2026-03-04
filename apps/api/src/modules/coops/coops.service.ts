@@ -6,6 +6,7 @@ import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { PublicRegisterDto } from './dto/public-register.dto';
 import { ShareholdersService } from '../shareholders/shareholders.service';
 import { TransactionsService } from '../transactions/transactions.service';
+import { AuditService } from '../audit/audit.service';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -20,6 +21,7 @@ export class CoopsService {
     private prisma: PrismaService,
     private shareholdersService: ShareholdersService,
     private transactionsService: TransactionsService,
+    private auditService: AuditService,
   ) {}
 
   async findAll() {
@@ -311,7 +313,7 @@ export class CoopsService {
     return nextPrefix.toString().padStart(3, '0');
   }
 
-  async update(id: string, updateCoopDto: UpdateCoopDto) {
+  async update(id: string, updateCoopDto: UpdateCoopDto, actorId?: string) {
     const coop = await this.prisma.coop.findUnique({ where: { id } });
     if (!coop) {
       throw new NotFoundException('Cooperative not found');
@@ -336,22 +338,55 @@ export class CoopsService {
       data.graphFromEmail = null;
     }
 
-    return this.prisma.coop.update({
+    const changes = this.auditService.diff(coop as Record<string, unknown>, data);
+
+    const updated = await this.prisma.coop.update({
       where: { id },
       data,
     });
+
+    if (changes.length > 0) {
+      await this.auditService.log({
+        coopId: id,
+        entity: 'Coop',
+        entityId: id,
+        action: 'UPDATE',
+        changes,
+        actorId,
+      });
+    }
+
+    return updated;
   }
 
-  async updateBranding(id: string, updateBrandingDto: UpdateBrandingDto) {
+  async updateBranding(id: string, updateBrandingDto: UpdateBrandingDto, actorId?: string) {
     const coop = await this.prisma.coop.findUnique({ where: { id } });
     if (!coop) {
       throw new NotFoundException('Cooperative not found');
     }
 
-    return this.prisma.coop.update({
+    const changes = this.auditService.diff(
+      { primaryColor: coop.primaryColor, secondaryColor: coop.secondaryColor },
+      updateBrandingDto as Record<string, unknown>,
+    );
+
+    const updated = await this.prisma.coop.update({
       where: { id },
       data: updateBrandingDto,
     });
+
+    if (changes.length > 0) {
+      await this.auditService.log({
+        coopId: id,
+        entity: 'Coop',
+        entityId: id,
+        action: 'UPDATE',
+        changes,
+        actorId,
+      });
+    }
+
+    return updated;
   }
 
   async uploadLogo(coopId: string, file: Express.Multer.File): Promise<{ logoUrl: string }> {
