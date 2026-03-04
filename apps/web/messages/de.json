@@ -748,7 +748,8 @@
     "nav": {
       "overview": "Übersicht",
       "coops": "Genossenschaften",
-      "users": "Benutzer"
+      "users": "Benutzer",
+      "audit": "Auditprotokoll"
     },
     "overview": {
       "title": "Systemübersicht",
@@ -1457,6 +1458,8 @@
       "UPDATE": "Geändert",
       "DELETE": "Gelöscht"
     },
+    "entity": "Entität",
+    "changes": "Änderungen",
     "system": "System",
     "masked": "(sensibel)"
   }
