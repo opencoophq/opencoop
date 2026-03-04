@@ -500,7 +500,18 @@
       "total": "Total Shareholders",
       "active": "Active Shareholders",
       "shareholder": "Shareholder",
-      "add": "Add Shareholder"
+      "add": "Add Shareholder",
+      "create": {
+        "title": "Add Shareholder",
+        "description": "Add a new shareholder to this cooperative.",
+        "type": "Shareholder Type",
+        "submit": "Add Shareholder",
+        "success": "Shareholder added successfully.",
+        "beneficialOwners": "Beneficial Owners",
+        "addOwner": "Add Owner",
+        "removeOwner": "Remove",
+        "ownershipPercentage": "Ownership %"
+      }
     },
     "shareholderDetail": {
       "title": "Shareholder Details",

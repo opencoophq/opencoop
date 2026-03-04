@@ -500,7 +500,18 @@
       "total": "Totaal aandeelhouders",
       "active": "Actieve aandeelhouders",
       "shareholder": "Aandeelhouder",
-      "add": "Aandeelhouder toevoegen"
+      "add": "Aandeelhouder toevoegen",
+      "create": {
+        "title": "Aandeelhouder toevoegen",
+        "description": "Voeg een nieuwe aandeelhouder toe aan deze coöperatie.",
+        "type": "Type aandeelhouder",
+        "submit": "Aandeelhouder toevoegen",
+        "success": "Aandeelhouder succesvol toegevoegd.",
+        "beneficialOwners": "Uiteindelijk begunstigden",
+        "addOwner": "Begunstigde toevoegen",
+        "removeOwner": "Verwijderen",
+        "ownershipPercentage": "Eigendom %"
+      }
     },
     "shareholderDetail": {
       "title": "Aandeelhouder details",

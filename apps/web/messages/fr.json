@@ -500,7 +500,18 @@
       "total": "Total des coopérateurs",
       "active": "Coopérateurs actifs",
       "shareholder": "Coopérateur",
-      "add": "Ajouter un coopérateur"
+      "add": "Ajouter un coopérateur",
+      "create": {
+        "title": "Ajouter un actionnaire",
+        "description": "Ajouter un nouvel actionnaire à cette coopérative.",
+        "type": "Type d'actionnaire",
+        "submit": "Ajouter l'actionnaire",
+        "success": "Actionnaire ajouté avec succès.",
+        "beneficialOwners": "Bénéficiaires effectifs",
+        "addOwner": "Ajouter un bénéficiaire",
+        "removeOwner": "Supprimer",
+        "ownershipPercentage": "Propriété %"
+      }
     },
     "shareholderDetail": {
       "title": "Détails du coopérateur",
