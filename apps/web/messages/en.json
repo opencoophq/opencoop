@@ -1442,5 +1442,22 @@
     },
     "success": "Thanks! Your feedback has been submitted. We'll review it soon.",
     "error": "Something went wrong. Please try again."
+  },
+  "audit": {
+    "title": "Change History",
+    "noChanges": "No changes recorded yet.",
+    "field": "Field",
+    "oldValue": "Old Value",
+    "newValue": "New Value",
+    "changedBy": "Changed By",
+    "date": "Date",
+    "action": "Action",
+    "actions": {
+      "CREATE": "Created",
+      "UPDATE": "Updated",
+      "DELETE": "Deleted"
+    },
+    "system": "System",
+    "masked": "(sensitive)"
   }
 }

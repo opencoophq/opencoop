@@ -119,6 +119,20 @@ interface PaymentDetails {
   ogmCode: string;
 }
 
+interface AuditLogChange {
+  field: string;
+  oldValue: unknown;
+  newValue: unknown;
+}
+
+interface AuditLog {
+  id: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  changes: AuditLogChange[];
+  actorEmail?: string;
+  createdAt: string;
+}
+
 const shareholderSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
@@ -174,6 +188,10 @@ export default function ShareholderDetailPage() {
   const [rejectTxId, setRejectTxId] = useState('');
   const [rejectReason, setRejectReason] = useState('');
 
+  // Audit log state
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+
   const form = useForm<ShareholderForm>({
     resolver: zodResolver(shareholderSchema),
     defaultValues: {
@@ -220,6 +238,17 @@ export default function ShareholderDetailPage() {
     setLoading(true);
     fetchShareholder().finally(() => setLoading(false));
   }, [selectedCoop, shareholderId, fetchShareholder]);
+
+  useEffect(() => {
+    if (!selectedCoop || !shareholderId) return;
+    setAuditLoading(true);
+    api<AuditLog[]>(
+      `/admin/coops/${selectedCoop.id}/audit-logs?entity=Shareholder&entityId=${shareholderId}&limit=50`,
+    )
+      .then(setAuditLogs)
+      .catch(() => setAuditLogs([]))
+      .finally(() => setAuditLoading(false));
+  }, [selectedCoop, shareholderId]);
 
   const onSubmit = async (data: ShareholderForm) => {
     if (!selectedCoop || !shareholderId) return;
@@ -706,6 +735,68 @@ export default function ShareholderDetailPage() {
                           </Button>
                         </div>
                       )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Change History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('audit.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {auditLoading ? (
+            <div className="animate-pulse space-y-2">
+              <div className="h-4 w-full bg-muted rounded" />
+              <div className="h-4 w-3/4 bg-muted rounded" />
+            </div>
+          ) : auditLogs.length === 0 ? (
+            <p className="text-muted-foreground">{t('audit.noChanges')}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('audit.date')}</TableHead>
+                  <TableHead>{t('audit.action')}</TableHead>
+                  <TableHead>{t('audit.field')}</TableHead>
+                  <TableHead>{t('audit.changedBy')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {auditLogs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="whitespace-nowrap">
+                      {formatDate(log.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {t(`audit.actions.${log.action}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {log.changes.length === 0
+                        ? '-'
+                        : log.changes.map((c, i) => (
+                            <div key={i} className="text-sm">
+                              <span className="font-medium">{c.field}</span>
+                              {': '}
+                              <span className="text-muted-foreground">
+                                {c.oldValue === '***' ? t('audit.masked') : String(c.oldValue ?? '-')}
+                              </span>
+                              {' → '}
+                              <span>
+                                {c.newValue === '***' ? t('audit.masked') : String(c.newValue ?? '-')}
+                              </span>
+                            </div>
+                          ))}
+                    </TableCell>
+                    <TableCell>
+                      {log.actorEmail || t('audit.system')}
                     </TableCell>
                   </TableRow>
                 ))}
