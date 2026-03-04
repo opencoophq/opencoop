@@ -1442,5 +1442,22 @@
     },
     "success": "Bedankt! Je feedback is verzonden. We bekijken het binnenkort.",
     "error": "Er ging iets mis. Probeer het opnieuw."
+  },
+  "audit": {
+    "title": "Wijzigingsgeschiedenis",
+    "noChanges": "Nog geen wijzigingen geregistreerd.",
+    "field": "Veld",
+    "oldValue": "Oude waarde",
+    "newValue": "Nieuwe waarde",
+    "changedBy": "Gewijzigd door",
+    "date": "Datum",
+    "action": "Actie",
+    "actions": {
+      "CREATE": "Aangemaakt",
+      "UPDATE": "Gewijzigd",
+      "DELETE": "Verwijderd"
+    },
+    "system": "Systeem",
+    "masked": "(gevoelig)"
   }
 }

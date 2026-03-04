@@ -1442,5 +1442,22 @@
     },
     "success": "Merci ! Votre commentaire a été envoyé. Nous l'examinerons bientôt.",
     "error": "Une erreur s'est produite. Veuillez réessayer."
+  },
+  "audit": {
+    "title": "Historique des modifications",
+    "noChanges": "Aucune modification enregistrée.",
+    "field": "Champ",
+    "oldValue": "Ancienne valeur",
+    "newValue": "Nouvelle valeur",
+    "changedBy": "Modifié par",
+    "date": "Date",
+    "action": "Action",
+    "actions": {
+      "CREATE": "Créé",
+      "UPDATE": "Modifié",
+      "DELETE": "Supprimé"
+    },
+    "system": "Système",
+    "masked": "(sensible)"
   }
 }

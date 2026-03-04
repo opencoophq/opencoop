@@ -1442,5 +1442,22 @@
     },
     "success": "Danke! Ihr Feedback wurde gesendet. Wir werden es bald prüfen.",
     "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+  },
+  "audit": {
+    "title": "Änderungsverlauf",
+    "noChanges": "Noch keine Änderungen aufgezeichnet.",
+    "field": "Feld",
+    "oldValue": "Alter Wert",
+    "newValue": "Neuer Wert",
+    "changedBy": "Geändert von",
+    "date": "Datum",
+    "action": "Aktion",
+    "actions": {
+      "CREATE": "Erstellt",
+      "UPDATE": "Geändert",
+      "DELETE": "Gelöscht"
+    },
+    "system": "System",
+    "masked": "(sensibel)"
   }
 }
