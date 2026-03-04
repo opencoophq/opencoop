@@ -500,7 +500,18 @@
       "total": "Anteilseigner gesamt",
       "active": "Aktive Anteilseigner",
       "shareholder": "Anteilseigner",
-      "add": "Anteilseigner hinzufügen"
+      "add": "Anteilseigner hinzufügen",
+      "create": {
+        "title": "Aktionär hinzufügen",
+        "description": "Fügen Sie dieser Genossenschaft einen neuen Aktionär hinzu.",
+        "type": "Aktionärstyp",
+        "submit": "Aktionär hinzufügen",
+        "success": "Aktionär erfolgreich hinzugefügt.",
+        "beneficialOwners": "Wirtschaftlich Berechtigte",
+        "addOwner": "Berechtigten hinzufügen",
+        "removeOwner": "Entfernen",
+        "ownershipPercentage": "Eigentum %"
+      }
     },
     "shareholderDetail": {
       "title": "Anteilseignerdetails",
