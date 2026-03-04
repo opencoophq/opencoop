@@ -27,6 +27,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
 import { MigrationRequestsModule } from './modules/migration-requests/migration-requests.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { HealthModule } from './modules/health/health.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { McpTools } from './modules/mcp/mcp.tools';
 import { LlmsModule } from './modules/llms/llms.module';
 
@@ -46,6 +47,7 @@ import { LlmsModule } from './modules/llms/llms.module';
       },
     }),
     PrismaModule,
+    AuditModule,
     AuthModule,
     UsersModule,
     CoopsModule,
