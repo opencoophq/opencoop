@@ -17,6 +17,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { IsString, IsInt, IsOptional, Min, ValidateNested, IsObject, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -129,6 +130,7 @@ class UpdateProfileDto {
 export class ShareholderActionsController {
   constructor(
     private prisma: PrismaService,
+    private auditService: AuditService,
     private transactionsService: TransactionsService,
     private documentsService: DocumentsService,
   ) {}
@@ -205,9 +207,14 @@ export class ShareholderActionsController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: UpdateBankDetailsDto,
   ) {
-    await this.verifyShareholder(shareholderId, user.id);
+    const shareholder = await this.verifyShareholder(shareholderId, user.id);
 
-    return this.prisma.shareholder.update({
+    const changes = this.auditService.diff(
+      { bankIban: shareholder.bankIban, bankBic: shareholder.bankBic },
+      { bankIban: dto.bankIban, bankBic: dto.bankBic || null },
+    );
+
+    const result = await this.prisma.shareholder.update({
       where: { id: shareholderId },
       data: {
         bankIban: dto.bankIban,
@@ -219,6 +226,19 @@ export class ShareholderActionsController {
         bankBic: true,
       },
     });
+
+    if (changes.length > 0) {
+      await this.auditService.log({
+        coopId: shareholder.coopId,
+        entity: 'Shareholder',
+        entityId: shareholderId,
+        action: 'UPDATE',
+        changes,
+        actorId: user.id,
+      });
+    }
+
+    return result;
   }
 
   @Put('profile')
@@ -228,7 +248,7 @@ export class ShareholderActionsController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: UpdateProfileDto,
   ) {
-    await this.verifyShareholder(shareholderId, user.id);
+    const shareholder = await this.verifyShareholder(shareholderId, user.id);
 
     const { address, birthDate, ...rest } = dto;
 
@@ -240,10 +260,25 @@ export class ShareholderActionsController {
       data.address = address;
     }
 
-    return this.prisma.shareholder.update({
+    const changes = this.auditService.diff(shareholder as Record<string, unknown>, data);
+
+    const result = await this.prisma.shareholder.update({
       where: { id: shareholderId },
       data,
     });
+
+    if (changes.length > 0) {
+      await this.auditService.log({
+        coopId: shareholder.coopId,
+        entity: 'Shareholder',
+        entityId: shareholderId,
+        action: 'UPDATE',
+        changes,
+        actorId: user.id,
+      });
+    }
+
+    return result;
   }
 
   @Get('documents/:documentId/download')

@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateShareholderDto } from './dto/create-shareholder.dto';
 import { UpdateShareholderDto } from './dto/update-shareholder.dto';
 import { encryptField, decryptField, isEncrypted } from '../../common/crypto';
 
 @Injectable()
 export class ShareholdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private auditService: AuditService) {}
 
   private decryptShareholder<T extends { nationalId?: string | null; beneficialOwners?: Array<{ nationalId?: string | null }> }>(
     shareholder: T,
@@ -116,7 +117,7 @@ export class ShareholdersService {
     return this.decryptShareholder(shareholder);
   }
 
-  async create(coopId: string, dto: CreateShareholderDto) {
+  async create(coopId: string, dto: CreateShareholderDto, actorId?: string) {
     if (dto.email) {
       const existing = await this.prisma.shareholder.findFirst({
         where: { coopId, email: dto.email.toLowerCase() },
@@ -155,10 +156,19 @@ export class ShareholdersService {
       },
     });
 
+    await this.auditService.log({
+      coopId,
+      entity: 'Shareholder',
+      entityId: created.id,
+      action: 'CREATE',
+      changes: [{ field: '_created', oldValue: null, newValue: dto.type }],
+      actorId,
+    });
+
     return this.decryptShareholder(created);
   }
 
-  async update(id: string, coopId: string, dto: UpdateShareholderDto) {
+  async update(id: string, coopId: string, dto: UpdateShareholderDto, actorId?: string) {
     const existing = await this.findById(id, coopId);
 
     if (dto.email && dto.email.toLowerCase() !== existing.email?.toLowerCase()) {
@@ -199,6 +209,18 @@ export class ShareholdersService {
         }),
       },
     });
+
+    const changes = this.auditService.diff(existing as Record<string, unknown>, dto as Record<string, unknown>);
+    if (changes.length > 0) {
+      await this.auditService.log({
+        coopId,
+        entity: 'Shareholder',
+        entityId: id,
+        action: 'UPDATE',
+        changes,
+        actorId,
+      });
+    }
 
     return this.findById(id, coopId);
   }
