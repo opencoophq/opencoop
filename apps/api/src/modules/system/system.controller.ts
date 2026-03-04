@@ -12,6 +12,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { CoopsService } from '../coops/coops.service';
 import { BillingService } from '../billing/billing.service';
 import { CreateCoopDto } from '../coops/dto/create-coop.dto';
@@ -49,9 +50,10 @@ export class SystemController {
   @ApiOperation({ summary: 'Update a coop' })
   async updateCoop(
     @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
     @Body() updateCoopDto: UpdateCoopDto,
   ) {
-    return this.coopsService.update(id, updateCoopDto);
+    return this.coopsService.update(id, updateCoopDto, user.id);
   }
 
   @Get('coops/:id/admins')
