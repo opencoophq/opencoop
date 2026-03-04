@@ -168,6 +168,7 @@ model Coop {
   dividendPeriods  DividendPeriod[]
   emailLogs        EmailLog[]
   subscription     Subscription?
+  auditLogs        AuditLog[]
 
   @@map("coops")
 }
@@ -208,6 +209,7 @@ model User {
   importedBankFiles     BankImport[]
   magicLinkTokens       MagicLinkToken[]
   webAuthnCredentials   WebAuthnCredential[]
+  auditLogs             AuditLog[]
 
   @@map("users")
 }
@@ -675,4 +677,29 @@ model Subscription {
   coop Coop @relation(fields: [coopId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
+}
+
+// ============================================================================
+// AUDIT LOGS
+// ============================================================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  coopId    String?
+  entity    String               // "Shareholder", "User", "Coop"
+  entityId  String
+  action    String               // "CREATE", "UPDATE", "DELETE"
+  changes   Json                 // [{ field, oldValue, newValue }]
+  actorId   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  coop      Coop?    @relation(fields: [coopId], references: [id])
+  actor     User?    @relation(fields: [actorId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([coopId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
