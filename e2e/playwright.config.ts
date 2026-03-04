@@ -24,10 +24,20 @@ export default defineConfig({
       testMatch: /global-setup\.ts/,
     },
     {
-      name: 'chromium',
+      name: 'admin',
+      testMatch: /tests\/admin\/.*/,
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/admin.json',
+      },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'shareholder',
+      testMatch: /tests\/shareholder\/.*/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/shareholder.json',
       },
       dependencies: ['setup'],
     },
