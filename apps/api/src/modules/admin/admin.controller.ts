@@ -22,6 +22,7 @@ import { SubscriptionGuard } from '../../common/guards/subscription.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { CoopsService } from '../coops/coops.service';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AnalyticsService } from './analytics.service';
 import { ReportsService } from './reports.service';
@@ -52,6 +53,7 @@ import { UpdateBrandingDto } from '../coops/dto/update-branding.dto';
 export class AdminController {
   constructor(
     private coopsService: CoopsService,
+    private auditService: AuditService,
     private prisma: PrismaService,
     private analyticsService: AnalyticsService,
     private reportsService: ReportsService,
@@ -83,16 +85,17 @@ export class AdminController {
     if (user.role !== 'SYSTEM_ADMIN') {
       delete updateCoopDto.emailEnabled;
     }
-    return this.coopsService.update(coopId, updateCoopDto);
+    return this.coopsService.update(coopId, updateCoopDto, user.id);
   }
 
   @Put('branding')
   @ApiOperation({ summary: 'Update coop branding' })
   async updateBranding(
     @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
     @Body() updateBrandingDto: UpdateBrandingDto,
   ) {
-    return this.coopsService.updateBranding(coopId, updateBrandingDto);
+    return this.coopsService.updateBranding(coopId, updateBrandingDto, user.id);
   }
 
   @Post('logo')
@@ -204,9 +207,10 @@ export class AdminController {
   @ApiOperation({ summary: 'Create a new shareholder' })
   async createShareholder(
     @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
     @Body() createShareholderDto: CreateShareholderDto,
   ) {
-    return this.shareholdersService.create(coopId, createShareholderDto);
+    return this.shareholdersService.create(coopId, createShareholderDto, user.id);
   }
 
   @Put('shareholders/:id')
@@ -214,9 +218,10 @@ export class AdminController {
   async updateShareholder(
     @Param('coopId') coopId: string,
     @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
     @Body() updateShareholderDto: UpdateShareholderDto,
   ) {
-    return this.shareholdersService.update(id, coopId, updateShareholderDto);
+    return this.shareholdersService.update(id, coopId, updateShareholderDto, user.id);
   }
 
   // ==================== SHARE CLASSES ====================
