@@ -2,6 +2,17 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.68] - 2026-03-05
+
+### Added
+- **Audit history** — all data changes are now logged to an append-only audit trail
+  - Tracks changes to shareholders (profile, bank details, status), users (password, MFA, preferences), and coop settings (branding, email config, bank details)
+  - Sensitive fields (passwords, MFA secrets, national IDs) are masked in the log
+  - Shareholder detail page shows "Change History" section for coop admins
+  - New system-wide audit log page at `/dashboard/system/audit` with entity filters and pagination
+  - API endpoints: `GET /admin/coops/:coopId/audit-logs` (coop-scoped) and `GET /system/audit-logs` (global)
+  - Translations in all 4 languages (EN/NL/FR/DE)
+
 ## [0.1.67] - 2026-03-02
 
 ### Added
