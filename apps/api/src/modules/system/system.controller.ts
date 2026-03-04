@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ import { BillingService } from '../billing/billing.service';
 import { CreateCoopDto } from '../coops/dto/create-coop.dto';
 import { UpdateCoopDto } from '../coops/dto/update-coop.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @ApiTags('system')
@@ -29,6 +31,7 @@ export class SystemController {
   constructor(
     private coopsService: CoopsService,
     private billingService: BillingService,
+    private auditService: AuditService,
     private prisma: PrismaService,
   ) {}
 
@@ -181,5 +184,27 @@ export class SystemController {
     @Body() data: { plan?: string; trialEndsAt?: string; extendTrialDays?: number },
   ) {
     return this.billingService.adminUpdateBilling(id, data);
+  }
+
+  // ==================== AUDIT LOGS ====================
+
+  @Get('audit-logs')
+  @ApiOperation({ summary: 'Get global audit logs' })
+  async getAuditLogs(
+    @Query('coopId') coopId?: string,
+    @Query('entity') entity?: string,
+    @Query('entityId') entityId?: string,
+    @Query('actorId') actorId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.auditService.findAll({
+      coopId,
+      entity,
+      entityId,
+      actorId,
+      page: Number(page) || 1,
+      limit: Number(limit) || 50,
+    });
   }
 }
