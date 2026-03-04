@@ -675,4 +675,23 @@ export class AdminController {
   ) {
     return this.documentsService.generateDividendStatement(shareholderId, dividendPayoutId, locale);
   }
+
+  // ==================== AUDIT LOGS ====================
+
+  @Get('audit-logs')
+  @ApiOperation({ summary: 'Get audit logs for this coop' })
+  async getAuditLogs(
+    @Param('coopId') coopId: string,
+    @Query('entity') entity?: string,
+    @Query('entityId') entityId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.auditService.findByCoop(coopId, {
+      entity,
+      entityId,
+      page: Number(page) || 1,
+      limit: Number(limit) || 50,
+    });
+  }
 }
