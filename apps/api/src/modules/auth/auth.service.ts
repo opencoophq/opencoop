@@ -19,6 +19,7 @@ import { hashToken } from '../../common/crypto/hash-token';
 import { encryptMfaSecret, decryptMfaSecret, generateRecoveryCodes, hashRecoveryCode } from '../../common/crypto';
 import * as OTPAuth from 'otpauth';
 import * as QRCode from 'qrcode';
+import { AuditService } from '../audit/audit.service';
 @Injectable()
 export class AuthService {
   constructor(
@@ -27,6 +28,7 @@ export class AuthService {
     private jwtService: JwtService,
     private emailService: EmailService,
     private coopsService: CoopsService,
+    private auditService: AuditService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -458,6 +460,14 @@ export class AuthService {
       },
     });
 
+    await this.auditService.log({
+      entity: 'User',
+      entityId: userId,
+      action: 'UPDATE',
+      changes: [{ field: 'passwordHash', oldValue: '***', newValue: '***' }],
+      actorId: userId,
+    });
+
     return { message: 'Password changed successfully' };
   }
 
@@ -517,6 +527,14 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: userId },
       data: { mfaEnabled: true, mfaRecoveryCodes: hashed },
+    });
+
+    await this.auditService.log({
+      entity: 'User',
+      entityId: userId,
+      action: 'UPDATE',
+      changes: [{ field: 'mfaEnabled', oldValue: false, newValue: true }],
+      actorId: userId,
     });
 
     return { recoveryCodes: plain };
@@ -610,6 +628,14 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: userId },
       data: { mfaEnabled: false, mfaSecret: null, mfaRecoveryCodes: [] },
+    });
+
+    await this.auditService.log({
+      entity: 'User',
+      entityId: userId,
+      action: 'UPDATE',
+      changes: [{ field: 'mfaEnabled', oldValue: true, newValue: false }],
+      actorId: userId,
     });
 
     return { message: 'MFA disabled' };
