@@ -6,7 +6,6 @@ import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   BarChart,
@@ -31,13 +30,16 @@ interface DataPoint {
 
 type Period = 'month' | 'quarter' | 'year' | 'all';
 
-export function ShareholderGrowthChart() {
+interface Props {
+  period: Period;
+}
+
+export function ShareholderGrowthChart({ period }: Props) {
   const t = useTranslations('analytics');
   const { selectedCoop } = useAdmin();
   const { locale } = useLocale();
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<Period>('month');
 
   useEffect(() => {
     if (!selectedCoop) return;
@@ -60,16 +62,8 @@ export function ShareholderGrowthChart() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold">{t('shareholderGrowth')}</CardTitle>
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-          <TabsList className="h-8">
-            <TabsTrigger value="month" className="text-xs px-2 py-1">{t('periods.month')}</TabsTrigger>
-            <TabsTrigger value="quarter" className="text-xs px-2 py-1">{t('periods.quarter')}</TabsTrigger>
-            <TabsTrigger value="year" className="text-xs px-2 py-1">{t('periods.year')}</TabsTrigger>
-            <TabsTrigger value="all" className="text-xs px-2 py-1">{t('periods.all')}</TabsTrigger>
-          </TabsList>
-        </Tabs>
       </CardHeader>
       <CardContent>
         {loading ? (
