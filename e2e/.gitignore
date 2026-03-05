@@ -1,0 +1,7 @@
+*.js
+*.d.ts
+!playwright.config.ts
+node_modules/
+test-results/
+.auth/
+playwright-report/
