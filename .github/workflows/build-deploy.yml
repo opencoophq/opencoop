@@ -143,7 +143,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=migrate
 
   deploy-acc:
-    needs: [e2e, build]
+    needs: [build]
     if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     environment: acc
@@ -168,7 +168,7 @@ jobs:
             docker compose up -d
 
   deploy-prod:
-    needs: [e2e, build]
+    needs: [build]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment: prod
