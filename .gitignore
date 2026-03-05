@@ -51,3 +51,4 @@ uploads/*
 
 # Allow project documentation
 !CLAUDE.md
+.worktrees/
