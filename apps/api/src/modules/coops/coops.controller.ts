@@ -28,6 +28,15 @@ export class CoopsController {
   }
 
   @Public()
+  @Get(':slug/public-stats')
+  @ApiOperation({ summary: 'Get aggregate coop statistics (all shares, not just per-project)' })
+  @ApiResponse({ status: 200, description: 'Aggregate stats: shareholders, capital, shares' })
+  @ApiResponse({ status: 404, description: 'Cooperative not found' })
+  async getPublicStats(@Param('slug') slug: string) {
+    return this.coopsService.getPublicStats(slug);
+  }
+
+  @Public()
   @Post(':slug/register')
   @ApiOperation({ summary: 'Public share registration (new or existing shareholder)' })
   @ApiResponse({ status: 201, description: 'Registration successful, returns transaction details' })

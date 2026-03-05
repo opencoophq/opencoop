@@ -236,6 +236,49 @@ export class CoopsService {
     });
   }
 
+  async getPublicStats(slug: string) {
+    const coop = await this.prisma.coop.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (!coop) {
+      throw new NotFoundException('Cooperative not found');
+    }
+
+    const coopId = coop.id;
+
+    // Query all active shares across the entire coop (including unassigned)
+    const activeShares = await this.prisma.share.findMany({
+      where: { coopId, status: 'ACTIVE' },
+      select: {
+        shareholderId: true,
+        quantity: true,
+        purchasePricePerShare: true,
+      },
+    });
+
+    const uniqueShareholders = new Set(
+      activeShares.map((s) => s.shareholderId),
+    ).size;
+    const totalCapital = activeShares.reduce(
+      (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(),
+      0,
+    );
+    const totalShares = activeShares.reduce((sum, s) => sum + s.quantity, 0);
+
+    const projectCount = await this.prisma.project.count({
+      where: { coopId, isActive: true },
+    });
+
+    return {
+      shareholderCount: uniqueShareholders,
+      totalCapital,
+      totalShares,
+      projectCount,
+    };
+  }
+
   async getSettings(id: string) {
     const coop = await this.prisma.coop.findUnique({
       where: { id },
