@@ -17,13 +17,13 @@ test.describe('Edit Individual Shareholder', () => {
     await firstNameInput.fill('Johannes');
 
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
 
     // Revert
     await firstNameInput.clear();
     await firstNameInput.fill(originalValue);
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
 
   test('can edit last name and save successfully', async ({ page }) => {
@@ -36,13 +36,13 @@ test.describe('Edit Individual Shareholder', () => {
     await lastNameInput.fill('Pieters');
 
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
 
     // Revert
     await lastNameInput.clear();
     await lastNameInput.fill(originalValue);
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
 
   test('can edit contact info (phone)', async ({ page }) => {
@@ -55,13 +55,13 @@ test.describe('Edit Individual Shareholder', () => {
     await phoneInput.fill('+32 499 00 00 00');
 
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
 
     // Revert
     await phoneInput.clear();
     await phoneInput.fill(originalValue);
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
 
   test('can edit address fields', async ({ page }) => {
@@ -74,12 +74,12 @@ test.describe('Edit Individual Shareholder', () => {
     await streetInput.fill('Stationsstraat');
 
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
 
     // Revert
     await streetInput.clear();
     await streetInput.fill(originalStreet);
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
 });

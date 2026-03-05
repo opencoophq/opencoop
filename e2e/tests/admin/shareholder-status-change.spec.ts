@@ -20,7 +20,7 @@ test.describe('Shareholder status change', () => {
 
     // Save
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
 
     // Reload the page and verify persistence
     await page.reload();
@@ -32,6 +32,6 @@ test.describe('Shareholder status change', () => {
     await statusTriggerAfter.click();
     await page.getByRole('option', { name: originalStatus!.trim() }).click();
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
 });

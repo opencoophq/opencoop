@@ -16,7 +16,7 @@ test.describe('Audit history', () => {
 
     // Save changes
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
 
     // Reload to ensure audit log is fetched fresh
     await page.reload();
@@ -41,7 +41,7 @@ test.describe('Audit history', () => {
     await page.locator('input[name="phone"]').clear();
     await page.locator('input[name="phone"]').fill(original);
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
 
   test('audit history section is visible on detail page', async ({ page }) => {
