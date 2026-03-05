@@ -5,7 +5,7 @@ test.describe('Purchase shares', () => {
     await page.goto('/nl/dashboard/shares');
 
     // Wait for shares page to load
-    await expect(page.getByRole('heading', { name: 'Aandelen' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Aandelen', exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Click "Aandelen kopen" button
     await page.getByRole('button', { name: 'Aandelen kopen' }).click();
