@@ -20,13 +20,13 @@ test.describe('Edit Company Shareholder', () => {
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
 
     // Should show success alert (not error)
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
 
     // Revert: restore original name
     await companyNameInput.clear();
     await companyNameInput.fill('Bakkerij Janssens BVBA');
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
 
   test('can edit company ID (KBO number)', async ({ page }) => {
@@ -39,13 +39,13 @@ test.describe('Edit Company Shareholder', () => {
     await companyIdInput.fill('0999888777');
 
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
 
     // Revert
     await companyIdInput.clear();
     await companyIdInput.fill(originalValue);
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
 
   test('can edit VAT number', async ({ page }) => {
@@ -58,13 +58,13 @@ test.describe('Edit Company Shareholder', () => {
     await vatInput.fill('BE0999888777');
 
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
 
     // Revert
     await vatInput.clear();
     await vatInput.fill(originalValue);
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
-    await expect(page.getByText('Succes')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
 
   test('shows error alert not shown on valid save', async ({ page }) => {
