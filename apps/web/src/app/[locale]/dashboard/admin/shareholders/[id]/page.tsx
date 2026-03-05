@@ -242,10 +242,10 @@ export default function ShareholderDetailPage() {
   useEffect(() => {
     if (!selectedCoop || !shareholderId) return;
     setAuditLoading(true);
-    api<AuditLog[]>(
+    api<{ items: AuditLog[] }>(
       `/admin/coops/${selectedCoop.id}/audit-logs?entity=Shareholder&entityId=${shareholderId}&limit=50`,
     )
-      .then(setAuditLogs)
+      .then((res) => setAuditLogs(Array.isArray(res) ? res : res.items ?? []))
       .catch(() => setAuditLogs([]))
       .finally(() => setAuditLoading(false));
   }, [selectedCoop, shareholderId]);
