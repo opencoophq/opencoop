@@ -60,42 +60,53 @@ export function CapitalByProjectChart() {
             {t('noData')}
           </div>
         ) : (
-          <div className="relative">
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  dataKey="totalCapital"
-                  nameKey="projectName"
-                >
-                  {data.map((_, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number | undefined) => formatCurrency(value ?? 0, locale)}
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                  }}
-                />
-                <Legend
-                  formatter={(value) => <span className="text-xs text-foreground">{value}</span>}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Center total */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ marginBottom: 40 }}>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">{t('total')}</p>
-                <p className="text-sm font-bold">{formatCurrency(totalCapital, locale)}</p>
+          <div>
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={1}
+                    dataKey="totalCapital"
+                    nameKey="projectName"
+                  >
+                    {data.map((_, index) => (
+                      <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number | undefined) => formatCurrency(value ?? 0, locale)}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Center total */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ height: 220 }}>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">{t('total')}</p>
+                  <p className="text-sm font-bold">{formatCurrency(totalCapital, locale)}</p>
+                </div>
               </div>
+            </div>
+            {/* Legend below chart */}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center mt-2 px-2">
+              {data.map((d, i) => (
+                <div key={d.projectName} className="flex items-center gap-1">
+                  <div
+                    className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                    style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                  />
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">{d.projectName}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
