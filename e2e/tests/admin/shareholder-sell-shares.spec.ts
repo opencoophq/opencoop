@@ -3,7 +3,15 @@ import { test, expect } from '@playwright/test';
 test.describe('Sell shares for shareholder', () => {
   test('can sell shares via admin dialog', async ({ page }) => {
     await page.goto('/nl/dashboard/admin/shareholders');
-    await page.getByText('Jan Peeters').click();
+    // Wait for the table to load
+    await expect(page.locator('table')).toBeVisible({ timeout: 10_000 });
+    // Use the search box to find Jan Peeters by email (name may have changed from prior test runs)
+    await page.getByPlaceholder('Zoeken').fill('jan.peeters@email.be');
+    // Wait for the filtered results to appear
+    await expect(page.getByRole('cell', { name: 'jan.peeters@email.be' })).toBeVisible({ timeout: 10_000 });
+    // Click the shareholder name link in the row containing this email
+    const row = page.getByRole('row').filter({ hasText: 'jan.peeters@email.be' });
+    await row.getByRole('link').click();
     await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
 
     // Click the sell button ("Aandelen verkopen")

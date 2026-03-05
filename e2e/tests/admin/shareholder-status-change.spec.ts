@@ -3,7 +3,13 @@ import { test, expect } from '@playwright/test';
 test.describe('Shareholder status change', () => {
   test('can change shareholder status and save', async ({ page }) => {
     await page.goto('/nl/dashboard/admin/shareholders');
-    await page.getByText('Jan Peeters').click();
+    // Wait for the table to load
+    await expect(page.locator('table')).toBeVisible({ timeout: 10_000 });
+    // Use the search box to find Jan Peeters by email (name may have changed from prior test runs)
+    await page.getByPlaceholder('Zoeken').fill('jan.peeters@email.be');
+    await expect(page.getByRole('cell', { name: 'jan.peeters@email.be' })).toBeVisible({ timeout: 10_000 });
+    const row = page.getByRole('row').filter({ hasText: 'jan.peeters@email.be' });
+    await row.getByRole('link').click();
     await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
 
     // Find the status select — it's the combobox inside the personal info card
@@ -30,7 +36,7 @@ test.describe('Shareholder status change', () => {
 
     // REVERT: change back to original status
     await statusTriggerAfter.click();
-    await page.getByRole('option', { name: originalStatus!.trim() }).click();
+    await page.getByRole('option', { name: originalStatus!.trim(), exact: true }).click();
     await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
     await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
   });
