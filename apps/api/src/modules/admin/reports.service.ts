@@ -574,13 +574,20 @@ export class ReportsService {
       orderBy: { name: 'asc' },
     });
 
-    // Total active capital across all projects for percentage calculation
-    const totalCapitalAllProjects = projects.reduce((sum, p) => {
-      return (
-        sum +
-        p.shares.reduce((pSum, s) => pSum + s.quantity * s.purchasePricePerShare.toNumber(), 0)
-      );
+    // Also fetch shares with no project assigned
+    const unassignedShares = await this.prisma.share.findMany({
+      where: { coopId, status: 'ACTIVE', projectId: null },
+      select: { shareholderId: true, quantity: true, purchasePricePerShare: true },
+    });
+
+    // Total active capital across all projects + unassigned for percentage calculation
+    const assignedCapital = projects.reduce((sum, p) => {
+      return sum + p.shares.reduce((pSum, s) => pSum + s.quantity * s.purchasePricePerShare.toNumber(), 0);
     }, 0);
+    const unassignedCapital = unassignedShares.reduce(
+      (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(), 0,
+    );
+    const totalCapitalAll = assignedCapital + unassignedCapital;
 
     const entries: ProjectInvestmentEntry[] = projects.map((p) => {
       const totalCapital = p.shares.reduce(
@@ -590,7 +597,7 @@ export class ReportsService {
       const shareCount = p.shares.reduce((sum, s) => sum + s.quantity, 0);
       const uniqueShareholders = new Set(p.shares.map((s) => s.shareholderId)).size;
       const percentage =
-        totalCapitalAllProjects > 0 ? (totalCapital / totalCapitalAllProjects) * 100 : 0;
+        totalCapitalAll > 0 ? (totalCapital / totalCapitalAll) * 100 : 0;
 
       return {
         id: p.id,
@@ -602,6 +609,22 @@ export class ReportsService {
         percentage: Math.round(percentage * 100) / 100,
       };
     });
+
+    // Add unassigned entry if there are shares without a project
+    if (unassignedShares.length > 0 && !projectId) {
+      const unassignedShareCount = unassignedShares.reduce((sum, s) => sum + s.quantity, 0);
+      const unassignedShareholders = new Set(unassignedShares.map((s) => s.shareholderId)).size;
+      const percentage = totalCapitalAll > 0 ? (unassignedCapital / totalCapitalAll) * 100 : 0;
+      entries.push({
+        id: 'unassigned',
+        name: 'Niet toegewezen',
+        type: '-',
+        totalCapital: unassignedCapital,
+        shareholderCount: unassignedShareholders,
+        shareCount: unassignedShareCount,
+        percentage: Math.round(percentage * 100) / 100,
+      });
+    }
 
     return { projects: entries };
   }
