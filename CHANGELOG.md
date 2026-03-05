@@ -2,16 +2,24 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.70] - 2026-04-06
+
+### Added
+- **Coop logo in sidebar** — dashboard sidebar shows the coop's uploaded logo (or name) instead of "OpenCoop", for both admin and shareholder dashboards
+
 ## [0.1.69] - 2026-04-06
 
 ### Added
 - **Bronsgroen data import** — migrated 751 shareholders, 992 shares, and 16 projects from CSV into production
 - **Shared chart period filter** — all dashboard charts now sync when changing the time filter (monthly/quarterly/yearly/all)
+- **Unassigned capital in reports** — shares without a project now show as "Niet toegewezen" in project investment reports
 
 ### Fixed
 - Capital timeline and shareholder growth charts now start at the correct pre-period total instead of 0
 - Pie chart (capital by project) legend moved below chart so it's fully visible with many projects
+- Report donut chart layout: legend on the left, chart on the right for better readability
 - Shareholdings section only shows active shares (sold/awaiting shares hidden, still visible in transaction history)
+- Upgraded web app to Zod 4, fixing CI build failures since March 3rd
 
 ## [0.1.68] - 2026-03-05
 
