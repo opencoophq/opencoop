@@ -143,8 +143,20 @@ export class AnalyticsService {
           ORDER BY bucket ASC
         `);
 
-    // Build cumulative running total
+    // Get the capital that existed BEFORE the period start so the chart
+    // doesn't begin at 0 when using a filtered time range.
     let runningTotal = 0;
+    if (since) {
+      const [pre] = await this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
+        SELECT COALESCE(SUM(quantity * "purchasePricePerShare"), 0)::text AS total
+        FROM shares
+        WHERE "coopId" = ${coopId}
+          AND status = 'ACTIVE'
+          AND "purchaseDate" < ${since}
+      `);
+      runningTotal = Number(pre.total) || 0;
+    }
+
     return rows.map((row) => {
       const netChange = Number(row.net_change) || 0;
       runningTotal += netChange;
@@ -243,7 +255,20 @@ export class AnalyticsService {
           ORDER BY bucket ASC
         `);
 
+    // Count shareholders who joined BEFORE the period start
     let cumulative = 0;
+    if (since) {
+      const [pre] = await this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
+        SELECT COUNT(DISTINCT sh.id)::text AS total
+        FROM shareholders sh
+        INNER JOIN shares s ON s."shareholderId" = sh.id AND s.status = 'ACTIVE'
+        WHERE sh."coopId" = ${coopId}
+          AND sh.status = 'ACTIVE'
+          AND (SELECT MIN(s2."purchaseDate") FROM shares s2 WHERE s2."shareholderId" = sh.id AND s2.status = 'ACTIVE') < ${since}
+      `);
+      cumulative = Number(pre.total) || 0;
+    }
+
     return rows.map((row) => {
       const individual = Number(row.individual) || 0;
       const company = Number(row.company) || 0;
