@@ -21,6 +21,16 @@ const COLORS = [
   'hsl(174, 72%, 40%)',
   'hsl(47, 96%, 53%)',
   'hsl(280, 67%, 51%)',
+  'hsl(199, 89%, 48%)',
+  'hsl(160, 84%, 39%)',
+  'hsl(330, 81%, 60%)',
+  'hsl(38, 92%, 50%)',
+  'hsl(210, 40%, 60%)',
+  'hsl(120, 40%, 55%)',
+  'hsl(290, 50%, 55%)',
+  'hsl(15, 75%, 55%)',
+  'hsl(190, 60%, 50%)',
+  'hsl(60, 70%, 50%)',
 ];
 
 interface ProjectEntry {
@@ -76,27 +86,42 @@ export function ProjectInvestmentPreview() {
                   <h3 className="text-sm font-semibold">{t('projectInvestment.distribution')}</h3>
                   <ChartActionBar chartRef={chartRef} filename="project-investment" />
                 </div>
-                <div ref={chartRef}>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <PieChart>
-                      <Pie
-                        data={data.projects}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={55}
-                        outerRadius={95}
-                        paddingAngle={2}
-                        dataKey="totalCapital"
-                        nameKey="name"
-                      >
-                        {data.projects.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number | undefined) => formatCurrency(value ?? 0, locale)} />
-                      <Legend formatter={(value) => <span className="text-xs">{value}</span>} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <div ref={chartRef} className="flex items-center gap-6">
+                  {/* Legend on the left */}
+                  <div className="flex flex-col gap-1.5 min-w-[180px]">
+                    {data.projects.map((p, i) => (
+                      <div key={p.id} className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-sm flex-shrink-0"
+                          style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                        />
+                        <span className="text-xs text-muted-foreground truncate">{p.name}</span>
+                        <span className="text-xs font-medium ml-auto">{p.percentage.toFixed(1)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Donut on the right */}
+                  <div className="flex-1 min-w-[200px]">
+                    <ResponsiveContainer width="100%" height={260}>
+                      <PieChart>
+                        <Pie
+                          data={data.projects}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={95}
+                          paddingAngle={1}
+                          dataKey="totalCapital"
+                          nameKey="name"
+                        >
+                          {data.projects.map((_, i) => (
+                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: number | undefined) => formatCurrency(value ?? 0, locale)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
             )}
