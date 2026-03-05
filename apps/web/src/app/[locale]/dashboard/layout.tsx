@@ -65,6 +65,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     pendingShareholders: number;
     unmatchedBankTransactions: number;
   } | null>(null);
+  const [shareholderCoop, setShareholderCoop] = useState<{ name: string; logoUrl?: string } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -80,7 +81,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       setUser(parsed);
 
       // Always fetch profile to get emailVerified status
-      api<{ emailVerified?: boolean; adminCoops?: typeof adminCoops }>('/auth/me')
+      api<{
+        emailVerified?: boolean;
+        adminCoops?: typeof adminCoops;
+        shareholderCoops?: Array<{ name: string; logoUrl?: string }>;
+      }>('/auth/me')
         .then((data) => {
           setEmailVerified(data.emailVerified ?? true);
 
@@ -89,6 +94,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             if (data.adminCoops.length > 0 && !selectedCoop) {
               setSelectedCoop(data.adminCoops[0]);
             }
+          }
+
+          if (data.shareholderCoops?.length) {
+            setShareholderCoop(data.shareholderCoops[0]);
           }
         })
         .catch(() => {});
@@ -115,6 +124,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const isAdmin = user?.role === 'COOP_ADMIN' || user?.role === 'SYSTEM_ADMIN';
   const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
+
+  // Resolve the coop branding to show in the sidebar
+  const activeCoop = selectedCoop || shareholderCoop;
+  const coopLogoUrl = activeCoop && 'logoUrl' in activeCoop ? activeCoop.logoUrl : undefined;
+  const coopName = activeCoop?.name;
 
   const shareholderNav: NavItem[] = [
     { href: '/dashboard', label: t('common.overview'), icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -239,7 +253,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-muted/50">
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-between">
-        <span className="font-semibold text-lg">OpenCoop</span>
+        {coopLogoUrl ? (
+          <img src={coopLogoUrl} alt={coopName || ''} className="h-8 max-w-[140px] object-contain" />
+        ) : (
+          <span className="font-semibold text-lg">{coopName || 'OpenCoop'}</span>
+        )}
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
           <ThemeToggle />
@@ -257,7 +275,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       >
         <div className="flex flex-col h-full">
           <div className="p-4 border-b">
-            <h1 className="text-xl font-bold text-primary">OpenCoop</h1>
+            {coopLogoUrl ? (
+              <img src={coopLogoUrl} alt={coopName || ''} className="h-8 max-w-[180px] object-contain" />
+            ) : (
+              <h1 className="text-xl font-bold text-primary">{coopName || 'OpenCoop'}</h1>
+            )}
           </div>
 
           {/* Coop selector for admins */}

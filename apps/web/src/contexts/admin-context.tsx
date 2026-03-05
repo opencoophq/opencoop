@@ -10,6 +10,7 @@ interface AdminCoop {
   plan?: 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL';
   trialEndsAt?: string;
   isReadOnly?: boolean;
+  logoUrl?: string;
 }
 
 interface AdminContextValue {
