@@ -344,6 +344,7 @@ export class AuthService {
                 active: true,
                 plan: true,
                 trialEndsAt: true,
+                logoUrl: true,
               },
             },
           },
@@ -357,6 +358,7 @@ export class AuthService {
                 slug: true,
                 bankIban: true,
                 bankBic: true,
+                logoUrl: true,
               },
             },
             shares: {
@@ -396,7 +398,7 @@ export class AuthService {
     let adminCoopsRaw = user.coopAdminOf.map((ca) => ca.coop);
     if (user.role === 'SYSTEM_ADMIN') {
       adminCoopsRaw = await this.prisma.coop.findMany({
-        select: { id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true },
+        select: { id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true, logoUrl: true },
         orderBy: { name: 'asc' },
       });
     }
