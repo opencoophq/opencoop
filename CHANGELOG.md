@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.78] - 2026-03-06
+
+### Fixed
+- **Capital timeline uses transaction log** — capital chart now correctly subtracts sold-back shares using the transaction log (PURCHASE adds, SALE subtracts) instead of only counting active shares
+- **Shareholder growth tracks exits** — shareholder growth chart now shows exits (red bars below zero) for shareholders who sold all shares, with cumulative line adjusted accordingly
+- **Dashboard charts extend to current month** — charts no longer stop at the last month with activity
+
 ## [0.1.77] - 2026-03-06
 
 ### Fixed
