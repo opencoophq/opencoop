@@ -87,7 +87,13 @@ const registrationSchema = z.object({
 
 type RegistrationForm = z.infer<typeof registrationSchema>;
 
-export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
+export function CoopRegisterContent({
+  coopSlug,
+  channelSlug,
+}: {
+  coopSlug: string;
+  channelSlug: string;
+}) {
   const t = useTranslations();
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -147,7 +153,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
       try {
         // Fetch coop info
         const coopResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/public-info`
+          `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/channels/${channelSlug}/public-info`
         );
         if (!coopResponse.ok) {
           throw new Error('Failed to fetch coop info');
@@ -252,7 +258,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
     }
 
     fetchData();
-  }, [coopSlug, preselectedClass, preselectedProject, preselectedShareholderId, form]);
+  }, [coopSlug, channelSlug, preselectedClass, preselectedProject, preselectedShareholderId, form]);
 
   // Read OAuth prefill params from URL (after redirect back from Google/Apple)
   useEffect(() => {
@@ -397,7 +403,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/register`,
+        `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/channels/${channelSlug}/register`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -754,7 +760,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
     {!isLoggedIn && (
       <p className="text-center text-sm text-muted-foreground mt-4">
         <Link
-          href={`/${locale}/${coopSlug}/login`}
+          href={`/${locale}/${coopSlug}/${channelSlug}/login`}
           className="underline hover:no-underline"
           style={{ color: coop.primaryColor }}
         >
@@ -969,7 +975,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
                 {result.giftCode}
               </div>
               <QRCodeSVG
-                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/${locale}/${coopSlug}/claim?code=${result.giftCode}`}
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/${locale}/${coopSlug}/${channelSlug}/claim?code=${result.giftCode}`}
                 size={160}
                 level="M"
               />
@@ -977,7 +983,7 @@ export function CoopRegisterContent({ coopSlug }: { coopSlug: string }) {
                 {t('registration.giftShareWith')}
               </p>
               <p className="text-xs text-muted-foreground font-mono break-all text-center">
-                {typeof window !== 'undefined' ? window.location.origin : ''}/{locale}/{coopSlug}/claim?code={result.giftCode}
+                {typeof window !== 'undefined' ? window.location.origin : ''}/{locale}/{coopSlug}/{channelSlug}/claim?code={result.giftCode}
               </p>
             </div>
           </div>

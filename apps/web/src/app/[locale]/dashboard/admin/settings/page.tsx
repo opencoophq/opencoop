@@ -208,7 +208,7 @@ export default function AdminSettingsPage() {
 
     Promise.all([
       api<SettingsResponse>(`/admin/coops/${selectedCoop.id}/settings`),
-      api<CoopPublicInfo>(`/coops/${selectedCoop.slug}/public-info`),
+      api<CoopPublicInfo>(`/coops/${selectedCoop.slug}/channels/default/public-info`),
     ])
       .then(([settings, publicInfo]) => {
         setForm({
