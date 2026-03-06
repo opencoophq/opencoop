@@ -12,12 +12,14 @@ import { BankImportModule } from '../bank-import/bank-import.module';
 import { DividendsModule } from '../dividends/dividends.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { CoopsModule } from '../coops/coops.module';
+import { ChannelsModule } from '../channels/channels.module';
 import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
     PrismaModule,
     CoopsModule,
+    ChannelsModule,
     BillingModule,
     ShareholdersModule,
     SharesModule,
