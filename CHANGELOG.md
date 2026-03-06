@@ -8,6 +8,8 @@ All notable changes to OpenCoop are documented in this file.
 - **Capital timeline uses transaction log** — capital chart now correctly subtracts sold-back shares using the transaction log (PURCHASE adds, SALE subtracts) instead of only counting active shares
 - **Shareholder growth tracks exits** — shareholder growth chart now shows exits (red bars below zero) for shareholders who sold all shares, with cumulative line adjusted accordingly
 - **Dashboard charts fill gaps to current month** — charts now fill all intermediate empty months (no more jumping from Dec to Mar)
+- **Reports use transaction log for historical capital** — annual overview and capital statement reports were showing flat capital because they filtered by current share status; now use transaction running balance for accurate history
+- **Admin stats use purchase price** — dashboard KPI and system coop list now use `purchasePricePerShare` (actual invested amount) instead of current share class price
 
 ## [0.1.77] - 2026-03-06
 
