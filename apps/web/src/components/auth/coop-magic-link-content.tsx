@@ -20,7 +20,13 @@ interface CoopPublicInfo {
   secondaryColor: string;
 }
 
-export function CoopMagicLinkContent({ coopSlug }: { coopSlug: string }) {
+export function CoopMagicLinkContent({
+  coopSlug,
+  channelSlug,
+}: {
+  coopSlug: string;
+  channelSlug: string;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,7 +43,7 @@ export function CoopMagicLinkContent({ coopSlug }: { coopSlug: string }) {
     const fetchCoop = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/public-info`
+          `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/channels/${channelSlug}/public-info`
         );
 
         if (response.status === 404) {
@@ -59,7 +65,7 @@ export function CoopMagicLinkContent({ coopSlug }: { coopSlug: string }) {
     };
 
     fetchCoop();
-  }, [coopSlug]);
+  }, [coopSlug, channelSlug]);
 
   // Verify token
   useEffect(() => {
@@ -124,7 +130,7 @@ export function CoopMagicLinkContent({ coopSlug }: { coopSlug: string }) {
     );
   }
 
-  const loginUrl = coop ? `/${coop.slug}/login` : '/login';
+  const loginUrl = coop ? `/${coop.slug}/${channelSlug}/login` : '/login';
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">

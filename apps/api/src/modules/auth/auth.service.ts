@@ -216,6 +216,16 @@ export class AuthService {
         },
       });
 
+      // Create default channel for the new coop
+      await tx.channel.create({
+        data: {
+          coopId: coop.id,
+          slug: 'default',
+          name: onboardingDto.coopName,
+          isDefault: true,
+        },
+      });
+
       return { user, coop };
     });
 
@@ -365,7 +375,11 @@ export class AuthService {
                 active: true,
                 plan: true,
                 trialEndsAt: true,
-                logoUrl: true,
+                channels: {
+                  where: { isDefault: true },
+                  select: { logoUrl: true },
+                  take: 1,
+                },
               },
             },
             role: {
@@ -382,7 +396,11 @@ export class AuthService {
                 slug: true,
                 bankIban: true,
                 bankBic: true,
-                logoUrl: true,
+                channels: {
+                  where: { isDefault: true },
+                  select: { logoUrl: true },
+                  take: 1,
+                },
               },
             },
             shares: {
@@ -422,7 +440,10 @@ export class AuthService {
     let adminCoopsRaw = user.coopAdminOf.map((ca) => ca.coop);
     if (user.role === 'SYSTEM_ADMIN') {
       adminCoopsRaw = await this.prisma.coop.findMany({
-        select: { id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true, logoUrl: true },
+        select: {
+          id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true,
+          channels: { where: { isDefault: true }, select: { logoUrl: true }, take: 1 },
+        },
         orderBy: { name: 'asc' },
       });
     }
@@ -435,8 +456,10 @@ export class AuthService {
           select: { plan: true, trialEndsAt: true, subscription: { select: { status: true } } },
         });
         const isReadOnly = full ? this.computeIsReadOnly(full) : false;
+        const { channels, ...rest } = coop as typeof coop & { channels?: { logoUrl: string | null }[] };
         return {
-          ...coop,
+          ...rest,
+          logoUrl: channels?.[0]?.logoUrl ?? null,
           plan: full?.plan ?? 'FREE',
           trialEndsAt: full?.trialEndsAt?.toISOString() ?? undefined,
           isReadOnly,
@@ -455,7 +478,10 @@ export class AuthService {
       googleLinked: !!user.googleId,
       appleLinked: !!user.appleId,
       adminCoops,
-      shareholderCoops: user.shareholders.map((s) => s.coop),
+      shareholderCoops: user.shareholders.map((s) => {
+        const { channels, ...rest } = s.coop as typeof s.coop & { channels?: { logoUrl: string | null }[] };
+        return { ...rest, logoUrl: channels?.[0]?.logoUrl ?? null };
+      }),
     };
   }
 
@@ -770,7 +796,11 @@ export class AuthService {
                 id: true,
                 name: true,
                 slug: true,
-                logoUrl: true,
+                channels: {
+                  where: { isDefault: true },
+                  select: { logoUrl: true },
+                  take: 1,
+                },
               },
             },
           },
@@ -794,13 +824,14 @@ export class AuthService {
       throw new BadRequestException('This shareholder is not a minor');
     }
 
+    const { channels, ...coopRest } = upgradeToken.shareholder.coop;
     return {
       valid: true,
       shareholder: {
         id: upgradeToken.shareholder.id,
         firstName: upgradeToken.shareholder.firstName,
         lastName: upgradeToken.shareholder.lastName,
-        coop: upgradeToken.shareholder.coop,
+        coop: { ...coopRest, logoUrl: channels[0]?.logoUrl ?? null },
       },
     };
   }

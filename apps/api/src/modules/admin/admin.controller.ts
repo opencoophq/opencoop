@@ -47,6 +47,9 @@ import { CreateDividendPeriodDto } from '../dividends/dto/create-dividend-period
 import { UpdateCoopDto } from '../coops/dto/update-coop.dto';
 import { UpdateBrandingDto } from '../coops/dto/update-branding.dto';
 import { maskShareholderPII, maskShareholderListPII } from '../../common/utils/mask-pii';
+import { ChannelsService } from '../channels/channels.service';
+import { CreateChannelDto } from '../channels/dto/create-channel.dto';
+import { UpdateChannelDto } from '../channels/dto/update-channel.dto';
 
 @ApiTags('admin')
 @Controller('admin/coops/:coopId')
@@ -67,6 +70,7 @@ export class AdminController {
     private bankImportService: BankImportService,
     private dividendsService: DividendsService,
     private documentsService: DocumentsService,
+    private channelsService: ChannelsService,
   ) {}
 
   // ==================== COOP SETTINGS ====================
@@ -129,6 +133,90 @@ export class AdminController {
   @ApiOperation({ summary: 'Remove coop logo' })
   async removeLogo(@Param('coopId') coopId: string) {
     await this.coopsService.removeLogo(coopId);
+    return { success: true };
+  }
+
+  // ==================== CHANNELS ====================
+
+  @Get('channels')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'List all channels' })
+  async getChannels(@Param('coopId') coopId: string) {
+    return this.channelsService.findAll(coopId);
+  }
+
+  @Get('channels/:channelId')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Get channel by ID' })
+  async getChannel(
+    @Param('coopId') coopId: string,
+    @Param('channelId') channelId: string,
+  ) {
+    return this.channelsService.findById(channelId, coopId);
+  }
+
+  @Post('channels')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Create a channel' })
+  async createChannel(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: CreateChannelDto,
+  ) {
+    return this.channelsService.create(coopId, dto, user.id);
+  }
+
+  @Put('channels/:channelId')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Update a channel' })
+  async updateChannel(
+    @Param('coopId') coopId: string,
+    @Param('channelId') channelId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: UpdateChannelDto,
+  ) {
+    return this.channelsService.update(channelId, coopId, dto, user.id);
+  }
+
+  @Delete('channels/:channelId')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Delete a channel (not the default)' })
+  async deleteChannel(
+    @Param('coopId') coopId: string,
+    @Param('channelId') channelId: string,
+  ) {
+    return this.channelsService.delete(channelId, coopId);
+  }
+
+  @Post('channels/:channelId/logo')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Upload channel logo' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async uploadChannelLogo(
+    @Param('coopId') coopId: string,
+    @Param('channelId') channelId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.channelsService.uploadLogo(channelId, coopId, file);
+  }
+
+  @Delete('channels/:channelId/logo')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Remove channel logo' })
+  async removeChannelLogo(
+    @Param('coopId') coopId: string,
+    @Param('channelId') channelId: string,
+  ) {
+    await this.channelsService.removeLogo(channelId, coopId);
     return { success: true };
   }
 

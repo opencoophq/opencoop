@@ -1,11 +1,18 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useParams } from 'next/navigation';
-import { CoopRegisterContent } from '@/components/coop-register-content';
-
-export default function RegisterSharesPage() {
-  const params = useParams<{ locale: string; coopSlug: string }>();
-  const coopSlug = params.coopSlug;
-
-  return <CoopRegisterContent coopSlug={coopSlug} />;
+export default async function RegisterSharesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string; coopSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { locale, coopSlug } = await params;
+  const query = await searchParams;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value === 'string') qs.set(key, value);
+  }
+  const search = qs.toString();
+  redirect(`/${locale}/${coopSlug}/default/register${search ? `?${search}` : ''}`);
 }

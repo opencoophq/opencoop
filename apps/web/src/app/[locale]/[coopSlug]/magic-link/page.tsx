@@ -1,11 +1,18 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useParams } from 'next/navigation';
-import { CoopMagicLinkContent } from '@/components/auth/coop-magic-link-content';
-
-export default function CoopMagicLinkPage() {
-  const params = useParams();
-  const coopSlug = params.coopSlug as string;
-
-  return <CoopMagicLinkContent coopSlug={coopSlug} />;
+export default async function CoopMagicLinkPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string; coopSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { locale, coopSlug } = await params;
+  const query = await searchParams;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value === 'string') qs.set(key, value);
+  }
+  const search = qs.toString();
+  redirect(`/${locale}/${coopSlug}/default/magic-link${search ? `?${search}` : ''}`);
 }

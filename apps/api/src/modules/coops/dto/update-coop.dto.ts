@@ -28,11 +28,6 @@ export class UpdateCoopDto {
   @IsString()
   bankBic?: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  termsUrl?: string;
-
   @ApiProperty({ required: false, description: 'Minimum holding period in months (0 = no restriction)' })
   @IsOptional()
   @IsInt()
