@@ -2,6 +2,20 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.76] - 2026-03-06
+
+### Added
+- **Onboarding channels** — coops can now have multiple branded entry points for share registration (e.g., a partnership "Onze Energie" branding alongside the coop's own)
+- **Channel management UI** — new Settings → Channels page to create, edit, and delete channels with custom logo, colors, name, description, and terms URL
+- **Per-channel share class/project filtering** — each channel can show only a subset of share classes and projects
+- **Acquisition tracking** — transactions and shareholders record which channel they came through
+- **Backward-compatible URLs** — old `/{coopSlug}/register` URLs redirect to `/{coopSlug}/default/register`
+- **Auto-linking** — new share classes and projects are automatically linked to the default channel
+
+### Changed
+- Coop branding (logo, colors, terms URL) migrated from the Coop model to the default Channel
+- Public pages now use `/{coopSlug}/{channelSlug}/` URL structure
+
 ## [0.1.74] - 2026-03-06
 
 ### Added
