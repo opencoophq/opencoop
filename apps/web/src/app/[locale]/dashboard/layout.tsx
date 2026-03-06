@@ -28,6 +28,7 @@ import {
   Mail as MailIcon,
   Loader2,
   BookOpen,
+  Layers,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -154,6 +155,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         hasPermission('canManageTransactions') && { href: '/dashboard/admin/bank-import', label: t('admin.bankImport.title'), icon: <Upload className="h-4 w-4" />, badge: adminStats?.unmatchedBankTransactions },
         hasPermission('canViewReports') && { href: '/dashboard/admin/reports', label: t('reports.title'), icon: <BarChart3 className="h-4 w-4" /> },
         hasPermission('canManageSettings') && { href: '/dashboard/admin/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
+        hasPermission('canManageSettings') && { href: '/dashboard/admin/settings/channels', label: t('admin.channels.title'), icon: <Layers className="h-4 w-4" /> },
         hasPermission('canManageSettings') && { href: '/dashboard/admin/billing', label: t('admin.billing.title'), icon: <CreditCard className="h-4 w-4" /> },
         hasPermission('canManageAdmins') && { href: '/dashboard/admin/team', label: t('admin.team.title'), icon: <UserCog className="h-4 w-4" /> },
       ].filter(Boolean) as NavItem[])

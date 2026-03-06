@@ -1,11 +1,10 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useParams } from 'next/navigation';
-import { CoopLoginContent } from '@/components/auth/coop-login-content';
-
-export default function CoopLoginPage() {
-  const params = useParams();
-  const coopSlug = params.coopSlug as string;
-
-  return <CoopLoginContent coopSlug={coopSlug} />;
+export default async function CoopLoginPage({
+  params,
+}: {
+  params: Promise<{ locale: string; coopSlug: string }>;
+}) {
+  const { locale, coopSlug } = await params;
+  redirect(`/${locale}/${coopSlug}/default/login`);
 }

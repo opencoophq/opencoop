@@ -121,11 +121,6 @@ model Coop {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Branding
-  logoUrl        String?
-  primaryColor   String  @default("#1e40af")
-  secondaryColor String  @default("#3b82f6")
-
   // Settings
   active               Boolean @default(true)
   plan                 CoopPlan @default(FREE)
@@ -152,10 +147,8 @@ model Coop {
   bankIban    String?
   bankBic     String?
 
-  // Legal
-  termsUrl    String?  // URL to terms and conditions page
-
   // Relations
+  channels         Channel[]
   admins           CoopAdmin[]
   roles            CoopRole[]
   adminInvitations AdminInvitation[]
@@ -173,6 +166,53 @@ model Coop {
   auditLogs        AuditLog[]
 
   @@map("coops")
+}
+
+model Channel {
+  id             String   @id @default(cuid())
+  coopId         String
+  slug           String
+  name           String
+  description    String?
+  logoUrl        String?
+  primaryColor   String   @default("#1e40af")
+  secondaryColor String   @default("#3b82f6")
+  termsUrl       String?
+  isDefault      Boolean  @default(false)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  coop         Coop                @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shareClasses ChannelShareClass[]
+  projects     ChannelProject[]
+  transactions Transaction[]
+  shareholders Shareholder[]
+
+  @@unique([coopId, slug])
+  @@map("channels")
+}
+
+model ChannelShareClass {
+  channelId    String
+  shareClassId String
+
+  channel    Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  shareClass ShareClass @relation(fields: [shareClassId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, shareClassId])
+  @@map("channel_share_classes")
+}
+
+model ChannelProject {
+  channelId String
+  projectId String
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, projectId])
+  @@map("channel_projects")
 }
 
 // ============================================================================
@@ -338,11 +378,15 @@ model Shareholder {
   bankIban String?
   bankBic  String?
 
+  // Channel tracking
+  channelId          String?
+
   // Minor email reminder tracking (for reminding parents to set email before 18)
   emailReminderSentAt DateTime?
 
   // Relations
   coop            Coop               @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  channel         Channel?           @relation(fields: [channelId], references: [id], onDelete: SetNull)
   user            User?              @relation("UserShareholder", fields: [userId], references: [id], onDelete: SetNull)
   registeredBy    User?              @relation("RegisteredBy", fields: [registeredByUserId], references: [id], onDelete: SetNull)
   beneficialOwners BeneficialOwner[]
@@ -421,8 +465,9 @@ model ShareClass {
   dividendRateOverride Decimal? @db.Decimal(5, 4) // e.g., 0.0350 = 3.5%
   isActive             Boolean  @default(true)
 
-  coop   Coop    @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  shares Share[]
+  coop     Coop                @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shares   Share[]
+  channels ChannelShareClass[]
 
   @@unique([coopId, code])
   @@map("share_classes")
@@ -448,8 +493,9 @@ model Project {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
-  coop   Coop    @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  shares Share[]
+  coop     Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shares   Share[]
+  channels ChannelProject[]
 
   @@unique([coopId, name])
   @@map("projects")
@@ -502,12 +548,16 @@ model Transaction {
   fromShareholderId String?
   toShareholderId   String?
 
+  // Channel tracking
+  channelId         String?
+
   // Processing
   processedByUserId String?
   processedAt       DateTime?
   rejectionReason   String?
 
   coop            Coop         @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  channel         Channel?     @relation(fields: [channelId], references: [id], onDelete: SetNull)
   shareholder     Shareholder  @relation("ShareholderTransactions", fields: [shareholderId], references: [id], onDelete: Cascade)
   share           Share?       @relation(fields: [shareId], references: [id], onDelete: SetNull)
   fromShareholder Shareholder? @relation("TransferOut", fields: [fromShareholderId], references: [id], onDelete: SetNull)
