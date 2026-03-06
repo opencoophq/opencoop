@@ -107,6 +107,35 @@ export class AnalyticsService {
     return period === 'quarter' ? 'quarter' : period === 'year' ? 'year' : 'month';
   }
 
+  /**
+   * Ensure the timeline extends to the current period by appending an empty
+   * bucket if the last data point is before today.
+   */
+  private padToNow<T extends { date: string }>(
+    points: T[],
+    period: string,
+    makeEmpty: (date: string) => T,
+  ): T[] {
+    if (points.length === 0) return points;
+
+    const now = new Date();
+    let currentBucket: Date;
+    if (period === 'year') {
+      currentBucket = new Date(Date.UTC(now.getFullYear(), 0, 1));
+    } else if (period === 'quarter') {
+      const q = Math.floor(now.getMonth() / 3) * 3;
+      currentBucket = new Date(Date.UTC(now.getFullYear(), q, 1));
+    } else {
+      currentBucket = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+    }
+
+    const lastDate = new Date(points[points.length - 1].date);
+    if (lastDate < currentBucket) {
+      points.push(makeEmpty(currentBucket.toISOString()));
+    }
+    return points;
+  }
+
   // -------------------------------------------------------------------------
   // 1. Capital timeline
   // -------------------------------------------------------------------------
@@ -157,7 +186,7 @@ export class AnalyticsService {
       runningTotal = Number(pre.total) || 0;
     }
 
-    return rows.map((row) => {
+    const points = rows.map((row) => {
       const netChange = Number(row.net_change) || 0;
       runningTotal += netChange;
       return {
@@ -166,6 +195,12 @@ export class AnalyticsService {
         netChange,
       };
     });
+
+    return this.padToNow(points, period, (date) => ({
+      date,
+      totalCapital: runningTotal,
+      netChange: 0,
+    }));
   }
 
   // -------------------------------------------------------------------------
@@ -269,7 +304,7 @@ export class AnalyticsService {
       cumulative = Number(pre.total) || 0;
     }
 
-    return rows.map((row) => {
+    const points = rows.map((row) => {
       const individual = Number(row.individual) || 0;
       const company = Number(row.company) || 0;
       const minor = Number(row.minor) || 0;
@@ -282,6 +317,14 @@ export class AnalyticsService {
         cumulative,
       };
     });
+
+    return this.padToNow(points, period, (date) => ({
+      date,
+      individual: 0,
+      company: 0,
+      minor: 0,
+      cumulative,
+    }));
   }
 
   // -------------------------------------------------------------------------
@@ -324,13 +367,17 @@ export class AnalyticsService {
           ORDER BY bucket ASC
         `);
 
-    const timeline: TransactionSummaryPoint[] = rows.map((row) => ({
-      date: row.bucket.toISOString(),
-      purchases: Number(row.purchases) || 0,
-      sales: Number(row.sales) || 0,
-      transfers: Number(row.transfers) || 0,
-      volume: Number(row.volume) || 0,
-    }));
+    const timeline: TransactionSummaryPoint[] = this.padToNow(
+      rows.map((row) => ({
+        date: row.bucket.toISOString(),
+        purchases: Number(row.purchases) || 0,
+        sales: Number(row.sales) || 0,
+        transfers: Number(row.transfers) || 0,
+        volume: Number(row.volume) || 0,
+      })),
+      period,
+      (date) => ({ date, purchases: 0, sales: 0, transfers: 0, volume: 0 }),
+    );
 
     const totals = timeline.reduce(
       (acc, point) => ({
