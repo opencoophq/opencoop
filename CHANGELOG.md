@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.71] - 2026-04-06
+
+### Added
+- **Project investment filter** — search box to filter projects by name in the project investment report (e.g., filter by "lommel", "solar", "wind")
+
+### Fixed
+- **Coop logo broken image** — dashboard sidebar now correctly resolves logo URLs (was showing broken image for coops with uploaded logos like Bronsgroen)
+
 ## [0.1.70] - 2026-04-06
 
 ### Added

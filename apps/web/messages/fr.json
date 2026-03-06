@@ -1434,7 +1434,8 @@
       "shares": "Actions",
       "percentage": "%",
       "distribution": "Répartition du capital",
-      "details": "Détails des projets"
+      "details": "Détails des projets",
+      "searchPlaceholder": "Filtrer les projets par nom..."
     }
   },
   "feedback": {
