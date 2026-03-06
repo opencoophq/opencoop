@@ -40,7 +40,7 @@ export default function MagicLinkPage() {
     const fetchCoop = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/public-info`
+          `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/channels/default/public-info`
         );
 
         if (response.ok) {

@@ -13,7 +13,13 @@ interface CoopPublicInfo {
   secondaryColor: string;
 }
 
-export function CoopLoginContent({ coopSlug }: { coopSlug: string }) {
+export function CoopLoginContent({
+  coopSlug,
+  channelSlug,
+}: {
+  coopSlug: string;
+  channelSlug: string;
+}) {
   const [coop, setCoop] = useState<CoopPublicInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFoundError, setNotFoundError] = useState(false);
@@ -22,7 +28,7 @@ export function CoopLoginContent({ coopSlug }: { coopSlug: string }) {
     const fetchCoop = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/public-info`
+          `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/channels/${channelSlug}/public-info`
         );
 
         if (response.status === 404) {
@@ -44,7 +50,7 @@ export function CoopLoginContent({ coopSlug }: { coopSlug: string }) {
     };
 
     fetchCoop();
-  }, [coopSlug]);
+  }, [coopSlug, channelSlug]);
 
   if (notFoundError) {
     notFound();
