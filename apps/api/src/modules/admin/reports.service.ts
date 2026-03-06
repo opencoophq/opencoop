@@ -6,6 +6,7 @@ import {
   CapitalStatementReport,
   ProjectInvestmentReport,
 } from '@opencoop/pdf-templates';
+import { Prisma } from '@opencoop/database';
 import React from 'react';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -139,19 +140,21 @@ export class ReportsService {
   }
 
   private async computeCapitalAtDate(coopId: string, before: Date): Promise<number> {
-    const shares = await this.prisma.share.findMany({
-      where: {
-        coopId,
-        status: 'ACTIVE',
-        purchaseDate: { lt: before },
-      },
-      select: {
-        quantity: true,
-        purchasePricePerShare: true,
-      },
-    });
-
-    return shares.reduce((sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(), 0);
+    // Use transactions for historical accuracy: shares that were later sold
+    // must still count for dates when they were active.
+    const [result] = await this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
+      SELECT COALESCE(SUM(
+        CASE WHEN type = 'PURCHASE' THEN "totalAmount"
+             WHEN type = 'SALE'     THEN -"totalAmount"
+             ELSE 0 END
+      ), 0)::text AS total
+      FROM transactions
+      WHERE "coopId" = ${coopId}
+        AND status = 'COMPLETED'
+        AND type IN ('PURCHASE', 'SALE')
+        AND "createdAt" < ${before}
+    `);
+    return Number(result.total) || 0;
   }
 
   /**
@@ -184,33 +187,34 @@ export class ReportsService {
     rangeStart: Date,
     rangeEnd: Date,
   ): Promise<CapitalTimelineBucket[]> {
-    // 1. Get all active shares purchased before rangeEnd, with project info
-    const shares = await this.prisma.share.findMany({
+    // Use transactions for historical accuracy — shares that were later sold
+    // must still count for months when they were active.
+    const txns = await this.prisma.transaction.findMany({
       where: {
         coopId,
-        status: 'ACTIVE',
-        purchaseDate: { lt: rangeEnd },
+        status: 'COMPLETED',
+        type: { in: ['PURCHASE', 'SALE'] },
+        createdAt: { lt: rangeEnd },
       },
       select: {
-        projectId: true,
-        project: { select: { name: true } },
-        quantity: true,
-        purchasePricePerShare: true,
-        purchaseDate: true,
+        type: true,
+        totalAmount: true,
+        createdAt: true,
+        share: { select: { projectId: true, project: { select: { name: true } } } },
       },
     });
 
-    // 2. Collect all unique projects
-    const projectMap = new Map<string, string>(); // projectId -> name
-    for (const s of shares) {
-      const key = s.projectId ?? '__unassigned__';
+    // Collect unique projects
+    const projectMap = new Map<string, string>();
+    for (const t of txns) {
+      const key = t.share?.projectId ?? '__unassigned__';
       if (!projectMap.has(key)) {
-        projectMap.set(key, s.project?.name ?? 'Unassigned');
+        projectMap.set(key, t.share?.project?.name ?? 'Unassigned');
       }
     }
     const projectKeys = Array.from(projectMap.keys()).sort();
 
-    // 3. Generate month buckets spanning the range
+    // Generate month buckets
     const buckets: Date[] = [];
     const cursor = new Date(rangeStart);
     cursor.setUTCDate(1);
@@ -220,19 +224,22 @@ export class ReportsService {
       cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     }
 
-    // 4. For each bucket, compute cumulative capital per project
+    // For each bucket, compute cumulative capital per project
     return buckets.map((bucketDate) => {
       const cutoff = new Date(bucketDate);
-      cutoff.setUTCMonth(cutoff.getUTCMonth() + 1); // end of this month
+      cutoff.setUTCMonth(cutoff.getUTCMonth() + 1);
 
       const projects: ProjectCapitalPoint[] = projectKeys.map((key) => {
-        const capital = shares
+        const capital = txns
           .filter(
-            (s) =>
-              (s.projectId ?? '__unassigned__') === key &&
-              s.purchaseDate < cutoff,
+            (t) =>
+              (t.share?.projectId ?? '__unassigned__') === key &&
+              t.createdAt < cutoff,
           )
-          .reduce((sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(), 0);
+          .reduce((sum, t) => {
+            const amount = t.totalAmount.toNumber();
+            return sum + (t.type === 'PURCHASE' ? amount : -amount);
+          }, 0);
 
         return {
           projectId: key === '__unassigned__' ? null : key,

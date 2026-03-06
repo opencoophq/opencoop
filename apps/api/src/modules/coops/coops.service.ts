@@ -52,9 +52,7 @@ export class CoopsService {
           where: { status: 'ACTIVE' },
           select: {
             quantity: true,
-            shareClass: {
-              select: { pricePerShare: true },
-            },
+            purchasePricePerShare: true,
           },
         },
         subscription: {
@@ -68,8 +66,7 @@ export class CoopsService {
 
     return coops.map((coop) => {
       const totalCapital = coop.shares.reduce((sum, share) => {
-        const price = share.shareClass?.pricePerShare?.toNumber() || 0;
-        return sum + share.quantity * price;
+        return sum + share.quantity * share.purchasePricePerShare.toNumber();
       }, 0);
 
       const defaultChannel = coop.channels[0];
