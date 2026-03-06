@@ -55,7 +55,24 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
       }
 
       const coopId = selectedCoop?.id;
-      if (!coopId || !payload.coopPermissions) return null;
+      if (!coopId) return null;
+
+      // Backwards compat: old JWTs without coopPermissions default to full access
+      if (!payload.coopPermissions) {
+        return {
+          canManageShareholders: true,
+          canManageTransactions: true,
+          canManageShareClasses: true,
+          canManageProjects: true,
+          canManageDividends: true,
+          canManageSettings: true,
+          canManageAdmins: true,
+          canViewPII: true,
+          canViewReports: true,
+          canViewShareholderRegister: true,
+        } as CoopPermissions;
+      }
+
       return (payload.coopPermissions[coopId] as CoopPermissions) ?? null;
     } catch {
       return null;
