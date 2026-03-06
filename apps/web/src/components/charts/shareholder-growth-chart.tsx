@@ -25,6 +25,8 @@ interface DataPoint {
   individual: number;
   company: number;
   minor: number;
+  exits: number;
+  negExits?: number;
   cumulative: number;
 }
 
@@ -45,7 +47,7 @@ export function ShareholderGrowthChart({ period }: Props) {
     if (!selectedCoop) return;
     setLoading(true);
     api<DataPoint[]>(`/admin/coops/${selectedCoop.id}/analytics/shareholder-growth?period=${period}`)
-      .then(setData)
+      .then((points) => setData(points.map((p) => ({ ...p, negExits: p.exits > 0 ? -p.exits : 0 }))))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
   }, [selectedCoop, period]);
@@ -97,6 +99,7 @@ export function ShareholderGrowthChart({ period }: Props) {
               />
               <Tooltip
                 labelFormatter={(label) => formatDate(String(label))}
+                formatter={(value: number | undefined) => [Math.abs(Number(value) || 0)]}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -109,6 +112,7 @@ export function ShareholderGrowthChart({ period }: Props) {
               <Bar yAxisId="left" dataKey="individual" name={t('types.individual')} stackId="a" fill="hsl(221, 83%, 53%)" radius={[0, 0, 0, 0]} />
               <Bar yAxisId="left" dataKey="company" name={t('types.company')} stackId="a" fill="hsl(142, 71%, 45%)" radius={[0, 0, 0, 0]} />
               <Bar yAxisId="left" dataKey="minor" name={t('types.minor')} stackId="a" fill="hsl(262, 83%, 58%)" radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="left" dataKey="negExits" name={t('types.exits')} fill="hsl(0, 84%, 60%)" radius={[0, 0, 4, 4]} />
               <Line yAxisId="right" type="monotone" dataKey="cumulative" name={t('cumulative')} stroke="hsl(25, 95%, 53%)" strokeWidth={2} dot={false} />
             </ComposedChart>
           </ResponsiveContainer>

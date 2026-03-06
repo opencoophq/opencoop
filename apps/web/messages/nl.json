@@ -1412,7 +1412,8 @@
     "types": {
       "individual": "Particulier",
       "company": "Bedrijf",
-      "minor": "Minderjarige"
+      "minor": "Minderjarige",
+      "exits": "Uitstappen"
     },
     "transactionTypes": {
       "purchases": "Aankopen",
