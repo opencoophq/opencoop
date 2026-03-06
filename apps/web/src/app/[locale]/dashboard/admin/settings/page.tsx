@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations, useLocale as useIntlLocale } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,38 +10,23 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, resolveLogoUrl } from '@/lib/api';
+import { api } from '@/lib/api';
 import {
   Info,
   AlertTriangle,
-  Upload,
-  Trash2,
-  ImageIcon,
   Link2,
   Copy,
   Check,
+  Layers,
+  ChevronRight,
 } from 'lucide-react';
-import ReactCrop, {
-  type Crop,
-  type PixelCrop,
-  centerCrop,
-  makeAspectCrop,
-} from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import { Link } from '@/i18n/routing';
 
 type EmailProvider = 'platform' | 'smtp' | 'graph';
 
@@ -85,61 +70,10 @@ interface SettingsResponse {
   graphFromEmail: string | null;
 }
 
-interface BrandingFormState {
-  primaryColor: string;
-  secondaryColor: string;
-}
-
-interface CoopPublicInfo {
-  logoUrl?: string;
-  primaryColor?: string;
-  secondaryColor?: string;
-  name?: string;
-}
-
 function toEmailProvider(value: string | null): EmailProvider {
   if (value === 'smtp') return 'smtp';
   if (value === 'graph') return 'graph';
   return 'platform';
-}
-
-function getCroppedBlob(image: HTMLImageElement, crop: PixelCrop): Promise<Blob | null> {
-  const canvas = document.createElement('canvas');
-  const scaleX = image.naturalWidth / image.width;
-  const scaleY = image.naturalHeight / image.height;
-  canvas.width = crop.width * scaleX;
-  canvas.height = crop.height * scaleY;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return Promise.resolve(null);
-
-  ctx.drawImage(
-    image,
-    crop.x * scaleX,
-    crop.y * scaleY,
-    crop.width * scaleX,
-    crop.height * scaleY,
-    0,
-    0,
-    canvas.width,
-    canvas.height,
-  );
-
-  return new Promise((resolve) => {
-    canvas.toBlob(resolve, 'image/png', 1);
-  });
-}
-
-function onImageLoad(
-  e: React.SyntheticEvent<HTMLImageElement>,
-  setCrop: (crop: Crop) => void,
-) {
-  const { width, height } = e.currentTarget;
-  const crop = centerCrop(
-    makeAspectCrop({ unit: '%', width: 90 }, 1, width, height),
-    width,
-    height,
-  );
-  setCrop(crop);
 }
 
 export default function AdminSettingsPage() {
@@ -173,20 +107,6 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [isSystemAdmin, setIsSystemAdmin] = useState(false);
 
-  // Branding state
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [brandingForm, setBrandingForm] = useState<BrandingFormState>({
-    primaryColor: '#1e40af',
-    secondaryColor: '#3b82f6',
-  });
-  const [uploading, setUploading] = useState(false);
-  const [cropDialogOpen, setCropDialogOpen] = useState(false);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [crop, setCrop] = useState<Crop>();
-  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
-  const imgRef = useRef<HTMLImageElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Shareholder links state
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
@@ -206,11 +126,8 @@ export default function AdminSettingsPage() {
     if (!selectedCoop) return;
     setLoading(true);
 
-    Promise.all([
-      api<SettingsResponse>(`/admin/coops/${selectedCoop.id}/settings`),
-      api<CoopPublicInfo>(`/coops/${selectedCoop.slug}/channels/default/public-info`),
-    ])
-      .then(([settings, publicInfo]) => {
+    api<SettingsResponse>(`/admin/coops/${selectedCoop.id}/settings`)
+      .then((settings) => {
         setForm({
           name: settings.name || '',
           requiresApproval: settings.requiresApproval,
@@ -230,11 +147,6 @@ export default function AdminSettingsPage() {
           graphClientSecret: '',
           graphTenantId: settings.graphTenantId || '',
           graphFromEmail: settings.graphFromEmail || '',
-        });
-        setLogoUrl(publicInfo.logoUrl || null);
-        setBrandingForm({
-          primaryColor: publicInfo.primaryColor || '#1e40af',
-          secondaryColor: publicInfo.secondaryColor || '#3b82f6',
         });
       })
       .catch(() => {
@@ -289,97 +201,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleBrandingSave = async () => {
-    if (!selectedCoop) return;
-    try {
-      await api(`/admin/coops/${selectedCoop.id}/branding`, {
-        method: 'PUT',
-        body: brandingForm,
-      });
-      showMessage(t('common.savedSuccessfully'));
-    } catch {
-      // ignore
-    }
-  };
-
-  const handleFileSelect = useCallback(
-    (file: File) => {
-      const allowedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'image/gif',
-        'image/svg+xml',
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        setMessage(t('admin.branding.invalidFileType'));
-        setTimeout(() => setMessage(''), 5000);
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage(t('admin.branding.fileTooLarge'));
-        setTimeout(() => setMessage(''), 5000);
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImageSrc(reader.result as string);
-        setCropDialogOpen(true);
-      };
-      reader.readAsDataURL(file);
-    },
-    [t],
-  );
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file) handleFileSelect(file);
-    },
-    [handleFileSelect],
-  );
-
-  const handleUploadCropped = async () => {
-    if (!selectedCoop || !imgRef.current || !completedCrop) return;
-
-    setUploading(true);
-    try {
-      const blob = await getCroppedBlob(imgRef.current, completedCrop);
-      if (!blob) throw new Error('Failed to crop image');
-
-      const formData = new FormData();
-      formData.append('file', blob, 'logo.png');
-
-      const result = await api<{ logoUrl: string }>(
-        `/admin/coops/${selectedCoop.id}/logo`,
-        { method: 'POST', body: formData },
-      );
-
-      setLogoUrl(result.logoUrl);
-      setCropDialogOpen(false);
-      setImageSrc(null);
-      showMessage(t('common.savedSuccessfully'));
-    } catch {
-      setMessage(t('admin.branding.uploadError'));
-      setTimeout(() => setMessage(''), 5000);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleRemoveLogo = async () => {
-    if (!selectedCoop) return;
-    try {
-      await api(`/admin/coops/${selectedCoop.id}/logo`, { method: 'DELETE' });
-      setLogoUrl(null);
-      showMessage(t('common.savedSuccessfully'));
-    } catch {
-      // ignore
-    }
-  };
-
   const handleCopyLink = async (key: string, url: string) => {
     await navigator.clipboard.writeText(url);
     setCopiedLink(key);
@@ -397,13 +218,12 @@ export default function AdminSettingsPage() {
   }
 
   const emailDisabled = !form.emailEnabled;
-  const resolvedLogoUrl = resolveLogoUrl(logoUrl);
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const coopBasePath = `${baseUrl}/${intlLocale}/${selectedCoop.slug}`;
   const shareholderLinks = [
     { key: 'publicPage', url: coopBasePath },
-    { key: 'registrationLink', url: `${coopBasePath}/register` },
+    { key: 'registrationLink', url: `${coopBasePath}/default/register` },
     { key: 'loginLink', url: `${coopBasePath}/login` },
   ];
 
@@ -453,6 +273,24 @@ export default function AdminSettingsPage() {
             ))}
           </CardContent>
         </Card>
+
+        {/* Channels (Branding & Registration) */}
+        <Link href="/dashboard/admin/settings/channels" className="block">
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <Layers className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="font-semibold">{t('admin.channels.title')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t('admin.channels.settingsDescription')}
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* General Settings */}
         <Card>
@@ -678,173 +516,7 @@ export default function AdminSettingsPage() {
         </Card>
 
         <Button onClick={handleSave}>{t('common.save')}</Button>
-
-        {/* Branding: Logo */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.branding.logo')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {resolvedLogoUrl ? (
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 border rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={resolvedLogoUrl}
-                    alt="Logo"
-                    className="max-w-full max-h-full object-contain"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {t('admin.branding.changeLogo')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRemoveLogo}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {t('admin.branding.removeLogo')}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div
-                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-              >
-                <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm font-medium">{t('admin.branding.dropOrClick')}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('admin.branding.logoFormats')}
-                </p>
-              </div>
-            )}
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileSelect(file);
-                e.target.value = '';
-              }}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Branding: Colors */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.branding.colors')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>{t('admin.branding.primaryColor')}</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="color"
-                    value={brandingForm.primaryColor}
-                    onChange={(e) =>
-                      setBrandingForm({ ...brandingForm, primaryColor: e.target.value })
-                    }
-                    className="h-10 w-10 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={brandingForm.primaryColor}
-                    onChange={(e) =>
-                      setBrandingForm({ ...brandingForm, primaryColor: e.target.value })
-                    }
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label>{t('admin.branding.secondaryColor')}</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="color"
-                    value={brandingForm.secondaryColor}
-                    onChange={(e) =>
-                      setBrandingForm({ ...brandingForm, secondaryColor: e.target.value })
-                    }
-                    className="h-10 w-10 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={brandingForm.secondaryColor}
-                    onChange={(e) =>
-                      setBrandingForm({ ...brandingForm, secondaryColor: e.target.value })
-                    }
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="p-4 rounded-lg"
-              style={{
-                background: `linear-gradient(135deg, ${brandingForm.primaryColor}, ${brandingForm.secondaryColor})`,
-              }}
-            >
-              <p className="text-white font-bold text-lg">{selectedCoop.name}</p>
-              <p className="text-white/80 text-sm">{t('admin.branding.preview')}</p>
-            </div>
-
-            <Button onClick={handleBrandingSave}>{t('common.save')}</Button>
-          </CardContent>
-        </Card>
       </div>
-
-      {/* Crop Dialog */}
-      <Dialog open={cropDialogOpen} onOpenChange={setCropDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t('admin.branding.cropLogo')}</DialogTitle>
-            <DialogDescription>{t('admin.branding.cropDescription')}</DialogDescription>
-          </DialogHeader>
-          {imageSrc && (
-            <div className="flex justify-center">
-              <ReactCrop
-                crop={crop}
-                onChange={(c) => setCrop(c)}
-                onComplete={(c) => setCompletedCrop(c)}
-                aspect={1}
-                className="max-h-[60vh]"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  ref={imgRef}
-                  src={imageSrc}
-                  alt="Crop preview"
-                  onLoad={(e) => onImageLoad(e, setCrop)}
-                  className="max-h-[60vh]"
-                />
-              </ReactCrop>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCropDialogOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button onClick={handleUploadCropped} disabled={uploading || !completedCrop}>
-              {uploading ? t('common.loading') : t('admin.branding.uploadLogo')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
