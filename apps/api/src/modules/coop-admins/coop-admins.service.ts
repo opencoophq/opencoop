@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -17,10 +18,24 @@ export class CoopAdminsService {
   // ==================== ROLES ====================
 
   async getRoles(coopId: string) {
-    return this.prisma.coopRole.findMany({
+    const roles = await this.prisma.coopRole.findMany({
       where: { coopId },
       include: { _count: { select: { coopAdmins: true } } },
-      orderBy: { createdAt: 'asc' },
+    });
+
+    // Default roles in logical order, then custom roles alphabetically
+    const defaultOrder: Record<string, number> = {
+      'Admin': 1,
+      'Manager': 2,
+      'Viewer': 3,
+      'GDPR Viewer': 4,
+    };
+
+    return roles.sort((a, b) => {
+      const aDefault = a.isDefault ? (defaultOrder[a.name] ?? 99) : 100;
+      const bDefault = b.isDefault ? (defaultOrder[b.name] ?? 99) : 100;
+      if (aDefault !== bDefault) return aDefault - bDefault;
+      return a.name.localeCompare(b.name);
     });
   }
 
@@ -75,7 +90,10 @@ export class CoopAdminsService {
   async getAdmins(coopId: string) {
     return this.prisma.coopAdmin.findMany({
       where: { coopId },
-      include: {
+      select: {
+        id: true,
+        permissionOverrides: true,
+        createdAt: true,
         user: {
           select: { id: true, email: true, name: true, role: true },
         },
@@ -84,6 +102,24 @@ export class CoopAdminsService {
         },
       },
       orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async updateAdminPermissionOverrides(coopId: string, adminId: string, overrides: Record<string, boolean> | null) {
+    const admin = await this.prisma.coopAdmin.findFirst({
+      where: { id: adminId, coopId },
+    });
+    if (!admin) {
+      throw new NotFoundException('Admin not found');
+    }
+
+    return this.prisma.coopAdmin.update({
+      where: { id: adminId },
+      data: { permissionOverrides: overrides === null ? Prisma.JsonNull : overrides },
+      include: {
+        user: { select: { id: true, email: true, name: true, role: true } },
+        role: { select: { id: true, name: true, permissions: true } },
+      },
     });
   }
 

@@ -252,11 +252,12 @@ model MagicLinkToken {
 }
 
 model CoopAdmin {
-  id        String   @id @default(cuid())
-  userId    String
-  coopId    String
-  roleId    String
-  createdAt DateTime @default(now())
+  id                  String   @id @default(cuid())
+  userId              String
+  coopId              String
+  roleId              String
+  permissionOverrides Json?
+  createdAt           DateTime @default(now())
 
   user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   coop Coop     @relation(fields: [coopId], references: [id], onDelete: Cascade)

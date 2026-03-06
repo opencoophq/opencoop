@@ -750,6 +750,10 @@
       "acceptInvitation": "Einladung annehmen",
       "invitationAccepted": "Einladung angenommen! Weiterleitung...",
       "goToDashboard": "Zum Dashboard",
+      "customPermissions": "Benutzerdefinierte Berechtigungen",
+      "customPermissionsDescription": "Rollenberechtigungen für {name} überschreiben. Klicken Sie auf eine Berechtigung, um sie umzuschalten.",
+      "overridden": "angepasst",
+      "overrideHint": "Klicken Sie auf eine Berechtigung, um sie unabhängig von der Rolle ein-/auszuschalten. Klicken Sie erneut, um zum Rollenstandard zurückzukehren.",
       "roles": {
         "title": "Rollen",
         "createRole": "Rolle erstellen",

@@ -32,13 +32,30 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { api } from '@/lib/api';
-import { UserPlus, Trash2, Settings, Mail, X } from 'lucide-react';
+import { UserPlus, Trash2, Settings, Mail, X, Shield } from 'lucide-react';
+
+const PERMISSION_KEYS = [
+  'canManageShareholders',
+  'canManageTransactions',
+  'canManageShareClasses',
+  'canManageProjects',
+  'canManageDividends',
+  'canManageSettings',
+  'canManageAdmins',
+  'canViewPII',
+  'canViewReports',
+  'canViewShareholderRegister',
+] as const;
+
+type PermissionKey = (typeof PERMISSION_KEYS)[number];
 
 interface Admin {
   id: string;
   user: { id: string; name: string | null; email: string };
-  role: { id: string; name: string };
+  role: { id: string; name: string; permissions: Record<string, boolean> };
+  permissionOverrides: Record<string, boolean> | null;
   createdAt: string;
 }
 
@@ -77,6 +94,11 @@ export default function TeamPage() {
   const [adminToRemove, setAdminToRemove] = useState<Admin | null>(null);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState('');
+
+  const [permsOpen, setPermsOpen] = useState(false);
+  const [permsAdmin, setPermsAdmin] = useState<Admin | null>(null);
+  const [permsOverrides, setPermsOverrides] = useState<Record<string, boolean | undefined>>({});
+  const [permsSaving, setPermsSaving] = useState(false);
 
   const coopId = selectedCoop?.id;
 
@@ -151,6 +173,50 @@ export default function TeamPage() {
       setRemoveError(err.message || 'Failed to remove admin');
     } finally {
       setRemoving(false);
+    }
+  };
+
+  const openPermsDialog = (admin: Admin) => {
+    setPermsAdmin(admin);
+    setPermsOverrides(admin.permissionOverrides ?? {});
+    setPermsOpen(true);
+  };
+
+  const togglePermOverride = (key: PermissionKey) => {
+    if (!permsAdmin) return;
+    const roleValue = permsAdmin.role.permissions[key] ?? false;
+    const hasOverride = permsOverrides[key] !== undefined;
+    const effectiveValue = hasOverride ? permsOverrides[key] : roleValue;
+    const newValue = !effectiveValue;
+
+    if (newValue === roleValue) {
+      // Matches role default → remove override
+      setPermsOverrides((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    } else {
+      // Differs from role → create override
+      setPermsOverrides((prev) => ({ ...prev, [key]: newValue }));
+    }
+  };
+
+  const handleSavePerms = async () => {
+    if (!coopId || !permsAdmin) return;
+    setPermsSaving(true);
+    try {
+      const hasOverrides = Object.keys(permsOverrides).length > 0;
+      await api(`/admin/coops/${coopId}/team/${permsAdmin.id}/permissions`, {
+        method: 'PUT',
+        body: { permissionOverrides: hasOverrides ? permsOverrides : null },
+      });
+      setPermsOpen(false);
+      loadData();
+    } catch {
+      // silently fail
+    } finally {
+      setPermsSaving(false);
     }
   };
 
@@ -239,18 +305,29 @@ export default function TeamPage() {
                       {new Date(admin.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => {
-                          setAdminToRemove(admin);
-                          setRemoveOpen(true);
-                          setRemoveError('');
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title={t('team.customPermissions')}
+                          onClick={() => openPermsDialog(admin)}
+                        >
+                          <Shield className={`h-4 w-4 ${admin.permissionOverrides ? 'text-primary' : ''}`} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => {
+                            setAdminToRemove(admin);
+                            setRemoveOpen(true);
+                            setRemoveError('');
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -375,6 +452,58 @@ export default function TeamPage() {
             </Button>
             <Button variant="destructive" onClick={handleRemove} disabled={removing}>
               {tc('delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Per-user permission overrides dialog */}
+      <Dialog open={permsOpen} onOpenChange={setPermsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('team.customPermissions')}</DialogTitle>
+            <DialogDescription>
+              {t('team.customPermissionsDescription', { name: permsAdmin?.user.name || permsAdmin?.user.email || '' })}
+            </DialogDescription>
+          </DialogHeader>
+          {permsAdmin && (
+            <div className="space-y-2 border rounded-md p-3 max-h-[400px] overflow-y-auto">
+              {PERMISSION_KEYS.map((key) => {
+                const roleValue = permsAdmin.role.permissions[key] ?? false;
+                const hasOverride = permsOverrides[key] !== undefined;
+                const effectiveValue = hasOverride ? permsOverrides[key] : roleValue;
+
+                return (
+                  <label
+                    key={key}
+                    className="flex items-center gap-3 py-1 cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={effectiveValue}
+                      onCheckedChange={() => togglePermOverride(key)}
+                    />
+                    <span className={`text-sm flex-1 ${hasOverride ? 'font-medium' : ''}`}>
+                      {t(`permissions.${key}`)}
+                    </span>
+                    {hasOverride && (
+                      <Badge variant="outline" className="text-xs">
+                        {t('team.overridden')}
+                      </Badge>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {t('team.overrideHint')}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPermsOpen(false)}>
+              {tc('cancel')}
+            </Button>
+            <Button onClick={handleSavePerms} disabled={permsSaving}>
+              {tc('save')}
             </Button>
           </DialogFooter>
         </DialogContent>
