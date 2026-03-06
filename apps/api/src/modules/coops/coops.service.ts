@@ -30,13 +30,19 @@ export class CoopsService {
         id: true,
         slug: true,
         name: true,
-        logoUrl: true,
-        primaryColor: true,
-        secondaryColor: true,
         emailEnabled: true,
         plan: true,
         trialEndsAt: true,
         createdAt: true,
+        channels: {
+          where: { isDefault: true },
+          select: {
+            logoUrl: true,
+            primaryColor: true,
+            secondaryColor: true,
+          },
+          take: 1,
+        },
         _count: {
           select: {
             shareholders: true,
@@ -66,13 +72,14 @@ export class CoopsService {
         return sum + share.quantity * price;
       }, 0);
 
+      const defaultChannel = coop.channels[0];
       return {
         id: coop.id,
         slug: coop.slug,
         name: coop.name,
-        logoUrl: coop.logoUrl,
-        primaryColor: coop.primaryColor,
-        secondaryColor: coop.secondaryColor,
+        logoUrl: defaultChannel?.logoUrl ?? null,
+        primaryColor: defaultChannel?.primaryColor ?? '#1e40af',
+        secondaryColor: defaultChannel?.secondaryColor ?? '#3b82f6',
         emailEnabled: coop.emailEnabled,
         plan: coop.plan,
         trialEndsAt: coop.trialEndsAt,
@@ -113,13 +120,19 @@ export class CoopsService {
         id: true,
         slug: true,
         name: true,
-        logoUrl: true,
-        primaryColor: true,
-        secondaryColor: true,
         bankName: true,
         bankIban: true,
         bankBic: true,
-        termsUrl: true,
+        channels: {
+          where: { isDefault: true },
+          select: {
+            logoUrl: true,
+            primaryColor: true,
+            secondaryColor: true,
+            termsUrl: true,
+          },
+          take: 1,
+        },
         shareClasses: {
           where: { isActive: true },
           select: {
@@ -150,7 +163,21 @@ export class CoopsService {
       throw new NotFoundException('Cooperative not found');
     }
 
-    return coop;
+    const ch = coop.channels[0];
+    return {
+      id: coop.id,
+      slug: coop.slug,
+      name: coop.name,
+      logoUrl: ch?.logoUrl ?? null,
+      primaryColor: ch?.primaryColor ?? '#1e40af',
+      secondaryColor: ch?.secondaryColor ?? '#3b82f6',
+      bankName: coop.bankName,
+      bankIban: coop.bankIban,
+      bankBic: coop.bankBic,
+      termsUrl: ch?.termsUrl ?? null,
+      shareClasses: coop.shareClasses,
+      projects: coop.projects,
+    };
   }
 
   async getPublicProjects(slug: string) {
@@ -291,7 +318,6 @@ export class CoopsService {
         bankName: true,
         bankIban: true,
         bankBic: true,
-        termsUrl: true,
         emailEnabled: true,
         emailProvider: true,
         smtpHost: true,
@@ -325,11 +351,25 @@ export class CoopsService {
     // Auto-generate a unique OGM prefix
     const ogmPrefix = await this.generateUniqueOgmPrefix();
 
-    return this.prisma.coop.create({
-      data: {
-        ...createCoopDto,
-        ogmPrefix,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const coop = await tx.coop.create({
+        data: {
+          ...createCoopDto,
+          ogmPrefix,
+        },
+      });
+
+      // Create default channel for the new coop
+      await tx.channel.create({
+        data: {
+          coopId: coop.id,
+          slug: 'default',
+          name: coop.name,
+          isDefault: true,
+        },
+      });
+
+      return coop;
     });
   }
 
@@ -403,26 +443,26 @@ export class CoopsService {
   }
 
   async updateBranding(id: string, updateBrandingDto: UpdateBrandingDto, actorId?: string) {
-    const coop = await this.prisma.coop.findUnique({ where: { id } });
-    if (!coop) {
-      throw new NotFoundException('Cooperative not found');
-    }
+    const channel = await this.prisma.channel.findFirst({
+      where: { coopId: id, isDefault: true },
+    });
+    if (!channel) throw new NotFoundException('Default channel not found');
 
     const changes = this.auditService.diff(
-      { primaryColor: coop.primaryColor, secondaryColor: coop.secondaryColor },
+      { primaryColor: channel.primaryColor, secondaryColor: channel.secondaryColor },
       updateBrandingDto as Record<string, unknown>,
     );
 
-    const updated = await this.prisma.coop.update({
-      where: { id },
+    const updated = await this.prisma.channel.update({
+      where: { id: channel.id },
       data: updateBrandingDto,
     });
 
     if (changes.length > 0) {
       await this.auditService.log({
         coopId: id,
-        entity: 'Coop',
-        entityId: id,
+        entity: 'Channel',
+        entityId: channel.id,
         action: 'UPDATE',
         changes,
         actorId,
@@ -433,10 +473,10 @@ export class CoopsService {
   }
 
   async uploadLogo(coopId: string, file: Express.Multer.File): Promise<{ logoUrl: string }> {
-    const coop = await this.prisma.coop.findUnique({ where: { id: coopId } });
-    if (!coop) {
-      throw new NotFoundException('Cooperative not found');
-    }
+    const channel = await this.prisma.channel.findFirst({
+      where: { coopId, isDefault: true },
+    });
+    if (!channel) throw new NotFoundException('Default channel not found');
 
     if (!file || !file.buffer) {
       throw new BadRequestException('No file provided');
@@ -452,7 +492,7 @@ export class CoopsService {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    const filename = `${coopId}.webp`;
+    const filename = `${channel.id}.webp`;
     const filePath = path.join(dir, filename);
 
     await sharp(file.buffer)
@@ -462,8 +502,8 @@ export class CoopsService {
 
     const logoUrl = `/uploads/logos/${filename}`;
 
-    await this.prisma.coop.update({
-      where: { id: coopId },
+    await this.prisma.channel.update({
+      where: { id: channel.id },
       data: { logoUrl },
     });
 
@@ -471,19 +511,19 @@ export class CoopsService {
   }
 
   async removeLogo(coopId: string): Promise<void> {
-    const coop = await this.prisma.coop.findUnique({ where: { id: coopId } });
-    if (!coop) {
-      throw new NotFoundException('Cooperative not found');
-    }
+    const channel = await this.prisma.channel.findFirst({
+      where: { coopId, isDefault: true },
+    });
+    if (!channel) throw new NotFoundException('Default channel not found');
 
     // Delete the file if it exists
-    const filePath = path.join(UPLOAD_DIR, 'logos', `${coopId}.webp`);
+    const filePath = path.join(UPLOAD_DIR, 'logos', `${channel.id}.webp`);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
 
-    await this.prisma.coop.update({
-      where: { id: coopId },
+    await this.prisma.channel.update({
+      where: { id: channel.id },
       data: { logoUrl: null },
     });
   }

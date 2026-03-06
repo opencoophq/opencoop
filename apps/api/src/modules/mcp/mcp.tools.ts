@@ -19,11 +19,19 @@ export class McpTools {
       select: {
         slug: true,
         name: true,
-        logoUrl: true,
+        channels: {
+          where: { isDefault: true },
+          select: { logoUrl: true },
+          take: 1,
+        },
       },
       orderBy: { name: 'asc' },
     });
-    return JSON.stringify(coops, null, 2);
+    const result = coops.map(({ channels, ...rest }) => ({
+      ...rest,
+      logoUrl: channels[0]?.logoUrl ?? null,
+    }));
+    return JSON.stringify(result, null, 2);
   }
 
   @Tool({
@@ -40,17 +48,32 @@ export class McpTools {
       select: {
         slug: true,
         name: true,
-        logoUrl: true,
-        primaryColor: true,
-        secondaryColor: true,
         bankName: true,
         bankIban: true,
         bankBic: true,
-        termsUrl: true,
+        channels: {
+          where: { isDefault: true },
+          select: {
+            logoUrl: true,
+            primaryColor: true,
+            secondaryColor: true,
+            termsUrl: true,
+          },
+          take: 1,
+        },
       },
     });
     if (!coop) return JSON.stringify({ error: 'Cooperative not found' });
-    return JSON.stringify(coop, null, 2);
+    const { channels, ...rest } = coop;
+    const ch = channels[0];
+    const result = {
+      ...rest,
+      logoUrl: ch?.logoUrl ?? null,
+      primaryColor: ch?.primaryColor ?? '#1e40af',
+      secondaryColor: ch?.secondaryColor ?? '#3b82f6',
+      termsUrl: ch?.termsUrl ?? null,
+    };
+    return JSON.stringify(result, null, 2);
   }
 
   @Tool({

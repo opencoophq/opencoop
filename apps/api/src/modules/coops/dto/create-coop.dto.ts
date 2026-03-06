@@ -30,16 +30,4 @@ export class CreateCoopDto {
   @IsOptional()
   @IsBoolean()
   emailEnabled?: boolean;
-
-  @ApiProperty({ example: '#1e40af', required: false })
-  @IsOptional()
-  @IsString()
-  @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'Must be a valid hex color' })
-  primaryColor?: string;
-
-  @ApiProperty({ example: '#3b82f6', required: false })
-  @IsOptional()
-  @IsString()
-  @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'Must be a valid hex color' })
-  secondaryColor?: string;
 }
