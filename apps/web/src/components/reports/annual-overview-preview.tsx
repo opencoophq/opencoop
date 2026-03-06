@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
@@ -55,14 +55,14 @@ export function AnnualOverviewPreview() {
   const areaChartRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
 
-  const generate = () => {
+  useEffect(() => {
     if (!selectedCoop) return;
     setLoading(true);
     api<AnnualOverview>(`/admin/coops/${selectedCoop.id}/reports/annual-overview?year=${year}`)
       .then(setData)
       .catch(() => setData(null))
       .finally(() => setLoading(false));
-  };
+  }, [selectedCoop?.id, year]);
 
   const pctChange = (start: number, end: number) => {
     if (start === 0) return end > 0 ? '+100%' : '0%';
@@ -73,7 +73,7 @@ export function AnnualOverviewPreview() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <ReportFilters type="year" year={year} onYearChange={setYear} onGenerate={generate} loading={loading} />
+        <ReportFilters type="year" year={year} onYearChange={setYear} />
         <ExportButtons reportType="annual-overview" params={{ year }} disabled={!data} pdfSupported />
       </div>
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -14,8 +13,6 @@ interface YearFilterProps {
   type: 'year';
   year: string;
   onYearChange: (year: string) => void;
-  onGenerate: () => void;
-  loading?: boolean;
 }
 
 interface DateRangeFilterProps {
@@ -24,17 +21,9 @@ interface DateRangeFilterProps {
   to: string;
   onFromChange: (from: string) => void;
   onToChange: (to: string) => void;
-  onGenerate: () => void;
-  loading?: boolean;
 }
 
-interface NoFilterProps {
-  type: 'none';
-  onGenerate: () => void;
-  loading?: boolean;
-}
-
-type ReportFiltersProps = YearFilterProps | DateRangeFilterProps | NoFilterProps;
+type ReportFiltersProps = YearFilterProps | DateRangeFilterProps;
 
 export function ReportFilters(props: ReportFiltersProps) {
   const t = useTranslations('reports');
@@ -80,9 +69,6 @@ export function ReportFilters(props: ReportFiltersProps) {
           </div>
         </>
       )}
-      <Button onClick={props.onGenerate} disabled={props.loading}>
-        {props.loading ? t('generating') : t('generate')}
-      </Button>
     </div>
   );
 }

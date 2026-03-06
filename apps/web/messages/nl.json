@@ -1427,6 +1427,10 @@
     },
     "projectInvestment": {
       "noProjects": "Geen projecten gevonden.",
+      "noSelection": "Geen projecten geselecteerd",
+      "allProjects": "Alle projecten",
+      "nSelected": "{count} projecten geselecteerd",
+      "selectAll": "Alles selecteren",
       "project": "Project",
       "type": "Type",
       "capital": "Kapitaal",
@@ -1435,7 +1439,7 @@
       "percentage": "%",
       "distribution": "Kapitaalverdeling",
       "details": "Projectdetails",
-      "searchPlaceholder": "Projecten filteren op naam..."
+      "searchPlaceholder": "Projecten zoeken..."
     }
   },
   "feedback": {

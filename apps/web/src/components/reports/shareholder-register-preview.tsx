@@ -1,12 +1,11 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
-import { ReportFilters } from './report-filters';
 import { ExportButtons } from './export-buttons';
 import { CopyTableButton } from './copy-table-button';
 
@@ -32,14 +31,14 @@ export function ShareholderRegisterPreview() {
   const [loading, setLoading] = useState(false);
   const tableRef = useRef<HTMLTableElement>(null);
 
-  const generate = () => {
+  useEffect(() => {
     if (!selectedCoop) return;
     setLoading(true);
     api<ShareholderRegister>(`/admin/coops/${selectedCoop.id}/reports/shareholder-register`)
       .then(setData)
       .catch(() => setData(null))
       .finally(() => setLoading(false));
-  };
+  }, [selectedCoop?.id]);
 
   const typeLabel = (type: string) => {
     const map: Record<string, string> = {
@@ -56,7 +55,6 @@ export function ShareholderRegisterPreview() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <ReportFilters type="none" onGenerate={generate} loading={loading} />
         <div className="flex items-center gap-2">
           <CopyTableButton tableRef={tableRef} />
           <ExportButtons reportType="shareholder-register" params={{}} disabled={!data} pdfSupported />
