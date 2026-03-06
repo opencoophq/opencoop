@@ -114,8 +114,8 @@ export class AnalyticsService {
   }
 
   /**
-   * Ensure the timeline extends to the current period by appending an empty
-   * bucket if the last data point is before today.
+   * Fill all empty buckets between the last data point and the current period
+   * so the chart has no gaps.
    */
   private padToNow<T extends { date: string }>(
     points: T[],
@@ -136,8 +136,13 @@ export class AnalyticsService {
     }
 
     const lastDate = new Date(points[points.length - 1].date);
-    if (lastDate < currentBucket) {
-      points.push(makeEmpty(currentBucket.toISOString()));
+    const next = new Date(lastDate);
+    while (true) {
+      if (period === 'year') next.setUTCFullYear(next.getUTCFullYear() + 1);
+      else if (period === 'quarter') next.setUTCMonth(next.getUTCMonth() + 3);
+      else next.setUTCMonth(next.getUTCMonth() + 1);
+      if (next > currentBucket) break;
+      points.push(makeEmpty(next.toISOString()));
     }
     return points;
   }
