@@ -2,6 +2,19 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.74] - 2026-03-06
+
+### Added
+- **Coop admin management** — admins can now invite, manage, and remove other coop admins
+- **Granular permissions** — 4 default roles (Admin, Viewer, GDPR Viewer, GDPR Admin) with 10 configurable permission flags
+- **Custom roles** — create custom named roles with individually toggled permissions per coop
+- **Email-based admin invitations** — invite new admins via email with token-based acceptance flow
+- **PII masking** — GDPR-restricted roles see masked names, emails, phone numbers, and addresses
+- **Permission-gated navigation** — sidebar items hidden based on the admin's permissions
+- **Report access control** — shareholder register hidden from roles without `canViewShareholderRegister`
+- **Team management UI** — new Team page to manage admins, roles, and invitations
+- **Role management UI** — create, edit, and delete custom roles with permission toggle grid
+
 ## [0.1.73] - 2026-04-06
 
 ### Fixed
