@@ -41,7 +41,7 @@ import { AlertTriangle } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FeedbackButton } from '@/components/feedback-button';
-import { api } from '@/lib/api';
+import { api, resolveLogoUrl } from '@/lib/api';
 
 interface NavItem {
   href: string;
@@ -127,7 +127,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   // Resolve the coop branding to show in the sidebar
   const activeCoop = selectedCoop || shareholderCoop;
-  const coopLogoUrl = activeCoop && 'logoUrl' in activeCoop ? activeCoop.logoUrl : undefined;
+  const rawLogoUrl = activeCoop && 'logoUrl' in activeCoop ? activeCoop.logoUrl : undefined;
+  const coopLogoUrl = resolveLogoUrl(rawLogoUrl) ?? undefined;
   const coopName = activeCoop?.name;
 
   const shareholderNav: NavItem[] = [

@@ -1434,7 +1434,8 @@
       "shares": "Anteile",
       "percentage": "%",
       "distribution": "Kapitalverteilung",
-      "details": "Projektdetails"
+      "details": "Projektdetails",
+      "searchPlaceholder": "Projekte nach Name filtern..."
     }
   },
   "feedback": {
