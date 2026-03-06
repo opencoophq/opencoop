@@ -25,6 +25,7 @@ import { RequirePermission } from '../../common/decorators/permissions.decorator
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { CoopsService } from '../coops/coops.service';
 import { AuditService } from '../audit/audit.service';
+import { Prisma } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AnalyticsService } from './analytics.service';
 import { ReportsService } from './reports.service';
@@ -246,14 +247,19 @@ export class AdminController {
       _sum: { quantity: true },
     });
 
-    const shares = await this.prisma.share.findMany({
-      where: { coopId, status: 'ACTIVE' },
-      select: { quantity: true, purchasePricePerShare: true },
-    });
-
-    const totalCapital = shares.reduce((sum, share) => {
-      return sum + share.quantity * share.purchasePricePerShare.toNumber();
-    }, 0);
+    // Use transaction log for capital — same source of truth as reports/charts
+    const [capitalRow] = await this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
+      SELECT COALESCE(SUM(
+        CASE WHEN type = 'PURCHASE' THEN "totalAmount"
+             WHEN type = 'SALE'     THEN -"totalAmount"
+             ELSE 0 END
+      ), 0)::text AS total
+      FROM transactions
+      WHERE "coopId" = ${coopId}
+        AND status = 'COMPLETED'
+        AND type IN ('PURCHASE', 'SALE')
+    `);
+    const totalCapital = Number(capitalRow.total) || 0;
 
     return {
       totalShareholders,
