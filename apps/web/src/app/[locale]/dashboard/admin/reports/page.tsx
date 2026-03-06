@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
+import { usePermissions } from '@/contexts/permissions-context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnnualOverviewPreview } from '@/components/reports/annual-overview-preview';
 import { CapitalStatementPreview } from '@/components/reports/capital-statement-preview';
@@ -12,10 +13,13 @@ import { ProjectInvestmentPreview } from '@/components/reports/project-investmen
 export default function ReportsPage() {
   const t = useTranslations('reports');
   const { selectedCoop } = useAdmin();
+  const { hasPermission } = usePermissions();
 
   if (!selectedCoop) {
     return <p className="text-muted-foreground">{t('selectCoop')}</p>;
   }
+
+  const canViewShareholderRegister = hasPermission('canViewShareholderRegister');
 
   return (
     <div className="space-y-6">
@@ -26,7 +30,9 @@ export default function ReportsPage() {
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="annual-overview">{t('tabs.annualOverview')}</TabsTrigger>
           <TabsTrigger value="capital-statement">{t('tabs.capitalStatement')}</TabsTrigger>
-          <TabsTrigger value="shareholder-register">{t('tabs.shareholderRegister')}</TabsTrigger>
+          {canViewShareholderRegister && (
+            <TabsTrigger value="shareholder-register">{t('tabs.shareholderRegister')}</TabsTrigger>
+          )}
           <TabsTrigger value="dividend-summary">{t('tabs.dividendSummary')}</TabsTrigger>
           <TabsTrigger value="project-investment">{t('tabs.projectInvestment')}</TabsTrigger>
         </TabsList>
@@ -39,9 +45,11 @@ export default function ReportsPage() {
           <CapitalStatementPreview />
         </TabsContent>
 
-        <TabsContent value="shareholder-register" className="mt-6">
-          <ShareholderRegisterPreview />
-        </TabsContent>
+        {canViewShareholderRegister && (
+          <TabsContent value="shareholder-register" className="mt-6">
+            <ShareholderRegisterPreview />
+          </TabsContent>
+        )}
 
         <TabsContent value="dividend-summary" className="mt-6">
           <DividendSummaryPreview />

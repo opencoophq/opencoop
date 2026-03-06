@@ -13,6 +13,7 @@ import { RedisService } from './redis.service';
 import { UsersModule } from '../users/users.module';
 import { EmailModule } from '../email/email.module';
 import { CoopsModule } from '../coops/coops.module';
+import { CoopAdminsModule } from '../coop-admins/coop-admins.module';
 
 // Only register OAuth strategies if credentials are configured
 const conditionalProviders: any[] = [];
@@ -29,6 +30,7 @@ if (process.env.APPLE_CLIENT_ID) {
     PassportModule,
     EmailModule,
     CoopsModule,
+    CoopAdminsModule,
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

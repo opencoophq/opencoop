@@ -65,9 +65,80 @@ export interface JwtPayload {
   email: string;
   role: UserRole;
   coopIds?: string[]; // coop IDs for admins
+  coopPermissions?: Record<string, CoopPermissions>; // permissions per coopId
   iat?: number;
   exp?: number;
 }
+
+// ============================================================================
+// Coop Permissions
+// ============================================================================
+
+export interface CoopPermissions {
+  canManageShareholders: boolean;
+  canManageTransactions: boolean;
+  canManageShareClasses: boolean;
+  canManageProjects: boolean;
+  canManageDividends: boolean;
+  canManageSettings: boolean;
+  canManageAdmins: boolean;
+  canViewPII: boolean;
+  canViewReports: boolean;
+  canViewShareholderRegister: boolean;
+}
+
+export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
+  Admin: {
+    canManageShareholders: true,
+    canManageTransactions: true,
+    canManageShareClasses: true,
+    canManageProjects: true,
+    canManageDividends: true,
+    canManageSettings: true,
+    canManageAdmins: true,
+    canViewPII: true,
+    canViewReports: true,
+    canViewShareholderRegister: true,
+  },
+  Viewer: {
+    canManageShareholders: false,
+    canManageTransactions: false,
+    canManageShareClasses: false,
+    canManageProjects: false,
+    canManageDividends: false,
+    canManageSettings: false,
+    canManageAdmins: false,
+    canViewPII: true,
+    canViewReports: true,
+    canViewShareholderRegister: true,
+  },
+  'GDPR Viewer': {
+    canManageShareholders: false,
+    canManageTransactions: false,
+    canManageShareClasses: false,
+    canManageProjects: false,
+    canManageDividends: false,
+    canManageSettings: false,
+    canManageAdmins: false,
+    canViewPII: false,
+    canViewReports: true,
+    canViewShareholderRegister: false,
+  },
+  'GDPR Admin': {
+    canManageShareholders: false,
+    canManageTransactions: false,
+    canManageShareClasses: true,
+    canManageProjects: true,
+    canManageDividends: true,
+    canManageSettings: true,
+    canManageAdmins: false,
+    canViewPII: false,
+    canViewReports: true,
+    canViewShareholderRegister: false,
+  },
+};
+
+export type CoopPermissionKey = keyof CoopPermissions;
 
 // ============================================================================
 // User Types

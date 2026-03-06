@@ -19,7 +19,9 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CoopGuard } from '../../common/guards/coop.guard';
 import { SubscriptionGuard } from '../../common/guards/subscription.guard';
+import { PermissionGuard } from '../../common/guards/permission.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermission } from '../../common/decorators/permissions.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { CoopsService } from '../coops/coops.service';
 import { AuditService } from '../audit/audit.service';
@@ -44,10 +46,11 @@ import { UpdateProjectDto } from '../projects/dto/update-project.dto';
 import { CreateDividendPeriodDto } from '../dividends/dto/create-dividend-period.dto';
 import { UpdateCoopDto } from '../coops/dto/update-coop.dto';
 import { UpdateBrandingDto } from '../coops/dto/update-branding.dto';
+import { maskShareholderPII, maskShareholderListPII } from '../../common/utils/mask-pii';
 
 @ApiTags('admin')
 @Controller('admin/coops/:coopId')
-@UseGuards(JwtAuthGuard, RolesGuard, CoopGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, CoopGuard, SubscriptionGuard, PermissionGuard)
 @Roles('SYSTEM_ADMIN', 'COOP_ADMIN')
 @ApiBearerAuth()
 export class AdminController {
@@ -69,12 +72,14 @@ export class AdminController {
   // ==================== COOP SETTINGS ====================
 
   @Get('settings')
+  @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Get coop settings (excludes secrets)' })
   async getSettings(@Param('coopId') coopId: string) {
     return this.coopsService.getSettings(coopId);
   }
 
   @Put('settings')
+  @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Update coop settings' })
   async updateSettings(
     @Param('coopId') coopId: string,
@@ -89,6 +94,7 @@ export class AdminController {
   }
 
   @Put('branding')
+  @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Update coop branding' })
   async updateBranding(
     @Param('coopId') coopId: string,
@@ -99,6 +105,7 @@ export class AdminController {
   }
 
   @Post('logo')
+  @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Upload coop logo' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -118,6 +125,7 @@ export class AdminController {
   }
 
   @Delete('logo')
+  @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Remove coop logo' })
   async removeLogo(@Param('coopId') coopId: string) {
     await this.coopsService.removeLogo(coopId);
@@ -182,28 +190,37 @@ export class AdminController {
   // ==================== SHAREHOLDERS ====================
 
   @Get('shareholders')
+  @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Get all shareholders' })
   async getShareholders(
     @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
     @Query('page') page?: number,
     @Query('pageSize') pageSize?: number,
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('type') type?: string,
   ) {
-    return this.shareholdersService.findAll(coopId, { page, pageSize, search, status, type });
+    const result = await this.shareholdersService.findAll(coopId, { page, pageSize, search, status, type });
+    const canViewPII = user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
+    return canViewPII ? result : maskShareholderListPII(result);
   }
 
   @Get('shareholders/:id')
+  @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Get shareholder by ID' })
   async getShareholder(
     @Param('coopId') coopId: string,
     @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
   ) {
-    return this.shareholdersService.findById(id, coopId);
+    const result = await this.shareholdersService.findById(id, coopId);
+    const canViewPII = user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
+    return canViewPII ? result : maskShareholderPII(result);
   }
 
   @Post('shareholders')
+  @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Create a new shareholder' })
   async createShareholder(
     @Param('coopId') coopId: string,
@@ -214,6 +231,7 @@ export class AdminController {
   }
 
   @Put('shareholders/:id')
+  @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Update a shareholder' })
   async updateShareholder(
     @Param('coopId') coopId: string,
@@ -227,12 +245,14 @@ export class AdminController {
   // ==================== SHARE CLASSES ====================
 
   @Get('share-classes')
+  @RequirePermission('canManageShareClasses')
   @ApiOperation({ summary: 'Get all share classes' })
   async getShareClasses(@Param('coopId') coopId: string) {
     return this.shareClassesService.findAll(coopId);
   }
 
   @Post('share-classes')
+  @RequirePermission('canManageShareClasses')
   @ApiOperation({ summary: 'Create a new share class' })
   async createShareClass(
     @Param('coopId') coopId: string,
@@ -242,6 +262,7 @@ export class AdminController {
   }
 
   @Put('share-classes/:id')
+  @RequirePermission('canManageShareClasses')
   @ApiOperation({ summary: 'Update a share class' })
   async updateShareClass(
     @Param('coopId') coopId: string,
@@ -254,12 +275,14 @@ export class AdminController {
   // ==================== PROJECTS ====================
 
   @Get('projects')
+  @RequirePermission('canManageProjects')
   @ApiOperation({ summary: 'Get all projects' })
   async getProjects(@Param('coopId') coopId: string) {
     return this.projectsService.findAll(coopId);
   }
 
   @Post('projects')
+  @RequirePermission('canManageProjects')
   @ApiOperation({ summary: 'Create a new project' })
   async createProject(
     @Param('coopId') coopId: string,
@@ -269,6 +292,7 @@ export class AdminController {
   }
 
   @Put('projects/:id')
+  @RequirePermission('canManageProjects')
   @ApiOperation({ summary: 'Update a project' })
   async updateProject(
     @Param('coopId') coopId: string,
@@ -279,6 +303,7 @@ export class AdminController {
   }
 
   @Delete('projects/:id')
+  @RequirePermission('canManageProjects')
   @ApiOperation({ summary: 'Delete a project' })
   async deleteProject(
     @Param('coopId') coopId: string,
@@ -288,6 +313,7 @@ export class AdminController {
   }
 
   @Post('projects/import')
+  @RequirePermission('canManageProjects')
   @ApiOperation({ summary: 'Import projects from CSV' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -308,6 +334,7 @@ export class AdminController {
   }
 
   @Post('share-classes/import')
+  @RequirePermission('canManageShareClasses')
   @ApiOperation({ summary: 'Import share classes from CSV' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -330,6 +357,7 @@ export class AdminController {
   // ==================== TRANSACTIONS ====================
 
   @Get('transactions')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Get all transactions' })
   async getTransactions(
     @Param('coopId') coopId: string,
@@ -343,6 +371,7 @@ export class AdminController {
   }
 
   @Put('transactions/:id/approve')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Approve a transaction' })
   async approveTransaction(
     @Param('id') id: string,
@@ -352,6 +381,7 @@ export class AdminController {
   }
 
   @Put('transactions/:id/reject')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Reject a transaction' })
   async rejectTransaction(
     @Param('id') id: string,
@@ -362,6 +392,7 @@ export class AdminController {
   }
 
   @Post('transfers')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Create an admin-initiated transfer' })
   async createTransfer(
     @Param('coopId') coopId: string,
@@ -381,6 +412,7 @@ export class AdminController {
   }
 
   @Post('shareholders/:shareholderId/purchase')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Create a purchase on behalf of a shareholder' })
   async createPurchase(
     @Param('coopId') coopId: string,
@@ -395,6 +427,7 @@ export class AdminController {
   }
 
   @Post('shareholders/:shareholderId/sell')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Create a sale on behalf of a shareholder' })
   async createSale(
     @Param('coopId') coopId: string,
@@ -409,6 +442,7 @@ export class AdminController {
   }
 
   @Get('transactions/:id/payment-details')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Get payment details for a transaction (IBAN, amount, OGM for QR code)' })
   async getPaymentDetails(
     @Param('coopId') coopId: string,
@@ -418,6 +452,7 @@ export class AdminController {
   }
 
   @Put('transactions/:id/complete')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Mark an approved transaction as completed' })
   async completeTransaction(
     @Param('id') id: string,
@@ -429,12 +464,14 @@ export class AdminController {
   // ==================== BANK IMPORT ====================
 
   @Get('bank-imports')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Get all bank imports' })
   async getBankImports(@Param('coopId') coopId: string) {
     return this.bankImportService.getImports(coopId);
   }
 
   @Post('bank-import')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Import bank transactions from CSV' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -461,6 +498,7 @@ export class AdminController {
   }
 
   @Get('bank-transactions')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Get bank transactions' })
   async getBankTransactions(
     @Param('coopId') coopId: string,
@@ -471,6 +509,7 @@ export class AdminController {
   }
 
   @Post('bank-transactions/:id/match')
+  @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Manually match a bank transaction to a payment' })
   async matchBankTransaction(
     @Param('id') id: string,
@@ -483,18 +522,21 @@ export class AdminController {
   // ==================== DIVIDENDS ====================
 
   @Get('dividends')
+  @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Get all dividend periods' })
   async getDividendPeriods(@Param('coopId') coopId: string) {
     return this.dividendsService.findAll(coopId);
   }
 
   @Get('dividends/:id')
+  @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Get dividend period details' })
   async getDividendPeriod(@Param('id') id: string) {
     return this.dividendsService.findById(id);
   }
 
   @Post('dividends')
+  @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Create a new dividend period' })
   async createDividendPeriod(
     @Param('coopId') coopId: string,
@@ -504,12 +546,14 @@ export class AdminController {
   }
 
   @Post('dividends/:id/calculate')
+  @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Calculate dividends for a period' })
   async calculateDividends(@Param('id') id: string) {
     return this.dividendsService.calculate(id);
   }
 
   @Post('dividends/:id/mark-paid')
+  @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Mark dividend period as paid' })
   async markDividendsPaid(
     @Param('id') id: string,
@@ -519,6 +563,7 @@ export class AdminController {
   }
 
   @Get('dividends/:id/export')
+  @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Export dividend payouts as CSV for bank transfer' })
   async exportDividends(
     @Param('id') id: string,
@@ -577,6 +622,7 @@ export class AdminController {
   // ==================== REPORTS ====================
 
   @Get('reports/annual-overview')
+  @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Get annual overview report data' })
   async getAnnualOverview(
     @Param('coopId') coopId: string,
@@ -587,6 +633,7 @@ export class AdminController {
   }
 
   @Get('reports/capital-statement')
+  @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Get capital statement report data' })
   async getCapitalStatement(
     @Param('coopId') coopId: string,
@@ -600,6 +647,7 @@ export class AdminController {
   }
 
   @Get('reports/shareholder-register')
+  @RequirePermission('canViewShareholderRegister')
   @ApiOperation({ summary: 'Get shareholder register report data' })
   async getShareholderRegister(
     @Param('coopId') coopId: string,
@@ -609,6 +657,7 @@ export class AdminController {
   }
 
   @Get('reports/dividend-summary')
+  @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Get dividend summary report data' })
   async getDividendSummary(
     @Param('coopId') coopId: string,
@@ -619,6 +668,7 @@ export class AdminController {
   }
 
   @Get('reports/project-investment')
+  @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Get project investment report data' })
   async getProjectInvestment(
     @Param('coopId') coopId: string,
@@ -628,6 +678,7 @@ export class AdminController {
   }
 
   @Get('reports/:type/csv')
+  @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Export report as CSV' })
   async exportReportCsv(
     @Param('coopId') coopId: string,
@@ -642,6 +693,7 @@ export class AdminController {
   }
 
   @Get('reports/:type/pdf')
+  @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Export report as PDF' })
   async exportReportPdf(
     @Param('coopId') coopId: string,
@@ -658,6 +710,7 @@ export class AdminController {
   // ==================== DOCUMENTS ====================
 
   @Post('shareholders/:shareholderId/certificate')
+  @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Generate share certificate for a shareholder' })
   async generateCertificate(
     @Param('shareholderId') shareholderId: string,
@@ -667,6 +720,7 @@ export class AdminController {
   }
 
   @Post('shareholders/:shareholderId/dividend-statement/:dividendPayoutId')
+  @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Generate dividend statement for a shareholder' })
   async generateDividendStatement(
     @Param('shareholderId') shareholderId: string,

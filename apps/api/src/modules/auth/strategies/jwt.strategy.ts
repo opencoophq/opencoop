@@ -13,7 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; email: string; role: string; type?: string; coopIds?: string[] }) {
+  async validate(payload: { sub: string; email: string; role: string; type?: string; coopIds?: string[]; coopPermissions?: Record<string, any> }) {
     // Reject MFA-pending tokens on normal routes
     if (payload.type === 'mfa-pending') {
       throw new UnauthorizedException('MFA verification required');
@@ -24,6 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: payload.email,
       role: payload.role,
       coopIds: payload.coopIds,
+      coopPermissions: payload.coopPermissions,
     };
   }
 }
