@@ -29,9 +29,9 @@ test.describe('Sell shares', () => {
 
     // Verify either success or an error about exceeding available shares
     // (prior test runs may have created pending sell requests)
-    const success = page.getByText('Uw verkoopverzoek is ingediend');
-    const error = page.getByRole('alert');
-    await expect(success.or(error)).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.getByRole('alert').first(),
+    ).toBeVisible({ timeout: 10_000 });
 
     // Close dialog
     const closeBtn = page.getByRole('button', { name: 'Bevestigen' });
