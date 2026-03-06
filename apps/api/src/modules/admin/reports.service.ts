@@ -556,8 +556,12 @@ export class ReportsService {
   // 5. PROJECT INVESTMENT
   // --------------------------------------------------------------------------
 
-  async getProjectInvestment(coopId: string, projectId?: string): Promise<ProjectInvestment> {
-    const projectFilter = projectId ? { id: projectId } : {};
+  async getProjectInvestment(coopId: string, projectId?: string, projectIds?: string[]): Promise<ProjectInvestment> {
+    const projectFilter = projectIds?.length
+      ? { id: { in: projectIds } }
+      : projectId
+        ? { id: projectId }
+        : {};
 
     const projects = await this.prisma.project.findMany({
       where: { coopId, ...projectFilter },
@@ -725,7 +729,8 @@ export class ReportsService {
       }
 
       case 'project-investment': {
-        const data = await this.getProjectInvestment(coopId, params.projectId);
+        const ids = params.projectIds ? params.projectIds.split(',') : undefined;
+        const data = await this.getProjectInvestment(coopId, params.projectId, ids);
         const headers = ['Project', 'Type', 'Total Capital', 'Shareholders', 'Share Count', 'Percentage'];
         const rows = data.projects.map((p) => [
           p.name,
@@ -831,7 +836,8 @@ export class ReportsService {
       }
 
       case 'project-investment': {
-        const data = await this.getProjectInvestment(coopId, params.projectId);
+        const ids = params.projectIds ? params.projectIds.split(',') : undefined;
+        const data = await this.getProjectInvestment(coopId, params.projectId, ids);
         const totalCapital = data.projects.reduce((sum, p) => sum + p.totalCapital, 0);
         element = React.createElement(ProjectInvestmentReport, {
           coopName: coop.name,
