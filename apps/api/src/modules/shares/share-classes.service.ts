@@ -35,12 +35,24 @@ export class ShareClassesService {
       throw new ConflictException('Share class code already exists');
     }
 
-    return this.prisma.shareClass.create({
+    const shareClass = await this.prisma.shareClass.create({
       data: {
         ...dto,
         coopId,
       },
     });
+
+    // Auto-link to default channel
+    const defaultChannel = await this.prisma.channel.findFirst({
+      where: { coopId, isDefault: true },
+    });
+    if (defaultChannel) {
+      await this.prisma.channelShareClass.create({
+        data: { channelId: defaultChannel.id, shareClassId: shareClass.id },
+      });
+    }
+
+    return shareClass;
   }
 
   async importCsv(
@@ -89,7 +101,7 @@ export class ShareClassesService {
         ? parseFloat(dividendRateStr.replace(',', '.')) / 100
         : null;
 
-      await this.prisma.shareClass.create({
+      const shareClass = await this.prisma.shareClass.create({
         data: {
           coopId,
           name,
@@ -104,6 +116,17 @@ export class ShareClassesService {
               : null,
         },
       });
+
+      // Auto-link to default channel
+      const defaultChannel = await this.prisma.channel.findFirst({
+        where: { coopId, isDefault: true },
+      });
+      if (defaultChannel) {
+        await this.prisma.channelShareClass.create({
+          data: { channelId: defaultChannel.id, shareClassId: shareClass.id },
+        });
+      }
+
       imported++;
     }
 
