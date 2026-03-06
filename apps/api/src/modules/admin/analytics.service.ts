@@ -237,16 +237,22 @@ export class AnalyticsService {
   async getCapitalByProject(coopId: string): Promise<CapitalByProject[]> {
     const rows = await this.prisma.$queryRaw<CapitalByProjectRow[]>(Prisma.sql`
       SELECT
-        s."projectId"         AS project_id,
-        p.name                AS project_name,
-        SUM(s.quantity * s."purchasePricePerShare")::text AS total_capital,
-        COUNT(s.id)::text     AS share_count
-      FROM shares s
+        s."projectId"                  AS project_id,
+        p.name                         AS project_name,
+        SUM(CASE WHEN t.type = 'PURCHASE' THEN t."totalAmount"
+                 WHEN t.type = 'SALE'     THEN -t."totalAmount"
+                 ELSE 0 END)::text     AS total_capital,
+        SUM(CASE WHEN t.type = 'PURCHASE' THEN t.quantity
+                 WHEN t.type = 'SALE'     THEN -t.quantity
+                 ELSE 0 END)::text     AS share_count
+      FROM transactions t
+      INNER JOIN shares s ON s.id = t."shareId"
       LEFT JOIN projects p
         ON p.id = s."projectId"
         AND p."coopId" = ${coopId}
-      WHERE s."coopId" = ${coopId}
-        AND s.status = 'ACTIVE'
+      WHERE t."coopId" = ${coopId}
+        AND t.status = 'COMPLETED'
+        AND t.type IN ('PURCHASE', 'SALE')
       GROUP BY s."projectId", p.name
       ORDER BY total_capital DESC
     `);
