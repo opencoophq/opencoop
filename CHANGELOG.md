@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.73] - 2026-04-06
+
+### Fixed
+- **PDF/CSV exports respect project filter** — exporting now includes only the selected projects, not all
+- **Project type labels translated** — "SOLAR" and "WIND" now show as localized labels (e.g. "Zonne-energie", "Windenergie" in Dutch) in reports and PDFs
+
 ## [0.1.72] - 2026-04-06
 
 ### Added
