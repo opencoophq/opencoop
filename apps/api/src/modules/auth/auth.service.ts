@@ -191,10 +191,28 @@ export class AuthService {
         },
       });
 
+      // Create default roles for the new coop
+      const defaultRoles = [
+        { name: 'Admin', permissions: { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
+        { name: 'Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
+        { name: 'GDPR Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
+        { name: 'GDPR Admin', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
+      ];
+      const roles = await Promise.all(
+        defaultRoles.map((r) =>
+          tx.coopRole.create({
+            data: { coopId: coop.id, name: r.name, permissions: r.permissions, isDefault: true },
+          }),
+        ),
+      );
+
+      const adminRole = roles.find((r) => r.name === 'Admin')!;
+
       await tx.coopAdmin.create({
         data: {
           userId: user.id,
           coopId: coop.id,
+          roleId: adminRole.id,
         },
       });
 
