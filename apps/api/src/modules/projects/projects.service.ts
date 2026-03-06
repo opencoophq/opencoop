@@ -40,7 +40,7 @@ export class ProjectsService {
 
     const { startDate, endDate, ...rest } = createProjectDto;
 
-    return this.prisma.project.create({
+    const project = await this.prisma.project.create({
       data: {
         ...rest,
         coopId,
@@ -48,6 +48,18 @@ export class ProjectsService {
         endDate: endDate ? new Date(endDate) : null,
       },
     });
+
+    // Auto-link to default channel
+    const defaultChannel = await this.prisma.channel.findFirst({
+      where: { coopId, isDefault: true },
+    });
+    if (defaultChannel) {
+      await this.prisma.channelProject.create({
+        data: { channelId: defaultChannel.id, projectId: project.id },
+      });
+    }
+
+    return project;
   }
 
   async update(id: string, coopId: string, updateProjectDto: UpdateProjectDto) {
@@ -113,7 +125,7 @@ export class ProjectsService {
       const projectType =
         type?.toUpperCase() === 'WIND' ? 'WIND' : 'SOLAR';
 
-      await this.prisma.project.create({
+      const project = await this.prisma.project.create({
         data: {
           coopId,
           name,
@@ -127,6 +139,17 @@ export class ProjectsService {
           endDate: endDate ? new Date(endDate) : null,
         },
       });
+
+      // Auto-link to default channel
+      const defaultChannel = await this.prisma.channel.findFirst({
+        where: { coopId, isDefault: true },
+      });
+      if (defaultChannel) {
+        await this.prisma.channelProject.create({
+          data: { channelId: defaultChannel.id, projectId: project.id },
+        });
+      }
+
       imported++;
     }
 
