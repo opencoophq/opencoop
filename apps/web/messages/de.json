@@ -1412,7 +1412,8 @@
     "types": {
       "individual": "Einzelperson",
       "company": "Unternehmen",
-      "minor": "Minderjährig"
+      "minor": "Minderjährig",
+      "exits": "Austritte"
     },
     "transactionTypes": {
       "purchases": "Käufe",
