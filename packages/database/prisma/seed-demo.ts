@@ -135,12 +135,32 @@ async function main() {
   }
   console.log(`\n  Coop: ${coop.name} (slug: ${coop.slug})`);
 
+  // Create default roles for the coop
+  const defaultRoles = [
+    { name: 'Admin', permissions: { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
+    { name: 'Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
+    { name: 'GDPR Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
+    { name: 'GDPR Admin', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
+  ];
+
+  for (const role of defaultRoles) {
+    await prisma.coopRole.upsert({
+      where: { coopId_name: { coopId: coop.id, name: role.name } },
+      update: { permissions: role.permissions },
+      create: { coopId: coop.id, name: role.name, permissions: role.permissions, isDefault: true },
+    });
+  }
+  const adminRole = await prisma.coopRole.findUniqueOrThrow({
+    where: { coopId_name: { coopId: coop.id, name: 'Admin' } },
+  });
+  console.log('  Default roles created');
+
   // Link both admin users to the coop
   for (const user of [adminUser, coopAdminUser]) {
     await prisma.coopAdmin.upsert({
       where: { userId_coopId: { userId: user.id, coopId: coop.id } },
-      update: {},
-      create: { userId: user.id, coopId: coop.id },
+      update: { roleId: adminRole.id },
+      create: { userId: user.id, coopId: coop.id, roleId: adminRole.id },
     });
   }
   console.log('  Admins linked to coop');
