@@ -750,6 +750,10 @@
       "acceptInvitation": "Accepter l'invitation",
       "invitationAccepted": "Invitation acceptée ! Redirection en cours...",
       "goToDashboard": "Aller au tableau de bord",
+      "customPermissions": "Permissions personnalisées",
+      "customPermissionsDescription": "Remplacer les permissions du rôle pour {name}. Cliquez sur une permission pour l'activer/désactiver.",
+      "overridden": "personnalisé",
+      "overrideHint": "Cliquez sur une permission pour l'activer/désactiver indépendamment du rôle. Cliquez à nouveau pour revenir au défaut du rôle.",
       "roles": {
         "title": "Rôles",
         "createRole": "Créer un rôle",

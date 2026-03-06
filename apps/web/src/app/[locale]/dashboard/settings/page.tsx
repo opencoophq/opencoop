@@ -37,6 +37,8 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [nameMessage, setNameMessage] = useState('');
+  const [nameError, setNameError] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -60,17 +62,19 @@ export default function SettingsPage() {
   }, []);
 
   const handleNameSave = async () => {
+    setNameError('');
+    setNameMessage('');
     try {
-      await api('/auth/me', { method: 'PUT', body: { name: name || null } });
+      await api('/auth/me', { method: 'PUT', body: { name: name.trim() || undefined } });
       const userData = localStorage.getItem('user');
       if (userData) {
         const user = JSON.parse(userData);
-        user.name = name || null;
+        user.name = name.trim() || null;
         localStorage.setItem('user', JSON.stringify(user));
       }
-      setMessage(t('common.savedSuccessfully'));
+      setNameMessage(t('common.savedSuccessfully'));
     } catch {
-      setError(t('errors.generic'));
+      setNameError(t('errors.generic'));
     }
   };
 
@@ -127,6 +131,16 @@ export default function SettingsPage() {
             <CardTitle>{t('settings.displayName')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {nameMessage && (
+              <Alert>
+                <AlertDescription>{nameMessage}</AlertDescription>
+              </Alert>
+            )}
+            {nameError && (
+              <Alert variant="destructive">
+                <AlertDescription>{nameError}</AlertDescription>
+              </Alert>
+            )}
             <div>
               <Label>{t('settings.displayName')}</Label>
               <Input

@@ -750,6 +750,10 @@
       "acceptInvitation": "Uitnodiging accepteren",
       "invitationAccepted": "Uitnodiging geaccepteerd! U wordt doorgestuurd...",
       "goToDashboard": "Ga naar dashboard",
+      "customPermissions": "Aangepaste rechten",
+      "customPermissionsDescription": "Overschrijf rolrechten voor {name}. Klik op een recht om het aan/uit te schakelen.",
+      "overridden": "aangepast",
+      "overrideHint": "Klik op een recht om het onafhankelijk van de rol aan/uit te schakelen. Klik opnieuw om terug te keren naar de standaard van de rol.",
       "roles": {
         "title": "Rollen",
         "createRole": "Rol aanmaken",

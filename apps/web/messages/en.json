@@ -750,6 +750,10 @@
       "acceptInvitation": "Accept invitation",
       "invitationAccepted": "Invitation accepted! Redirecting...",
       "goToDashboard": "Go to dashboard",
+      "customPermissions": "Custom permissions",
+      "customPermissionsDescription": "Override role permissions for {name}. Click a permission to toggle it. Overridden permissions are marked.",
+      "overridden": "custom",
+      "overrideHint": "Click a permission to toggle it on/off independently of the role. Click again to revert to the role default.",
       "roles": {
         "title": "Roles",
         "createRole": "Create role",

@@ -87,6 +87,17 @@ export class CoopAdminsController {
     return this.coopAdminsService.updateAdminRole(coopId, adminId, roleId);
   }
 
+  @Put(':adminId/permissions')
+  @RequirePermission('canManageAdmins')
+  @ApiOperation({ summary: 'Set per-user permission overrides' })
+  updatePermissionOverrides(
+    @Param('coopId') coopId: string,
+    @Param('adminId') adminId: string,
+    @Body('permissionOverrides') overrides: Record<string, boolean> | null,
+  ) {
+    return this.coopAdminsService.updateAdminPermissionOverrides(coopId, adminId, overrides);
+  }
+
   @Delete(':adminId')
   @RequirePermission('canManageAdmins')
   @ApiOperation({ summary: 'Remove an admin' })

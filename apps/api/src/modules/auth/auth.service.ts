@@ -65,7 +65,7 @@ export class AuthService {
     preferredLanguage: string;
     emailVerified: Date | null;
     mfaEnabled?: boolean;
-    coopAdminOf?: { coopId: string; role: { permissions: any } }[];
+    coopAdminOf?: { coopId: string; permissionOverrides?: any; role: { permissions: any } }[];
   }) {
     return this.issueJwtForUser(user);
   }
@@ -580,7 +580,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { coopAdminOf: { select: { coopId: true, role: { select: { permissions: true } } } } },
+      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, role: { select: { permissions: true } } } } },
     });
     if (!user || !user.mfaEnabled || !user.mfaSecret) {
       throw new UnauthorizedException('MFA not configured');
@@ -619,13 +619,20 @@ export class AuthService {
       throw new BadRequestException('Provide either code or recoveryCode');
     }
 
-    // Issue full JWT
+    // Issue full JWT with permissions
     const coopIds = user.coopAdminOf.map((ca) => ca.coopId);
+    const coopPermissions: Record<string, any> = {};
+    for (const ca of user.coopAdminOf) {
+      const basePermissions = (ca.role.permissions ?? {}) as Record<string, boolean>;
+      const overrides = (ca.permissionOverrides ?? {}) as Record<string, boolean>;
+      coopPermissions[ca.coopId] = { ...basePermissions, ...overrides };
+    }
     const jwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
       ...(coopIds.length > 0 && { coopIds }),
+      ...(Object.keys(coopPermissions).length > 0 && { coopPermissions }),
     };
 
     return {
@@ -700,7 +707,7 @@ export class AuthService {
     // 1. Check if user already linked by provider ID
     let user = await this.prisma.user.findFirst({
       where: { [providerIdField]: data.providerId },
-      include: { coopAdminOf: { select: { coopId: true, role: { select: { permissions: true } } } } },
+      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, role: { select: { permissions: true } } } } },
     });
 
     if (user) {
@@ -713,7 +720,7 @@ export class AuthService {
     // 2. Check if user exists by email
     user = await this.prisma.user.findUnique({
       where: { email: data.email.toLowerCase() },
-      include: { coopAdminOf: { select: { coopId: true, role: { select: { permissions: true } } } } },
+      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, role: { select: { permissions: true } } } } },
     });
 
     if (user) {
@@ -1346,12 +1353,14 @@ export class AuthService {
     preferredLanguage: string;
     emailVerified: Date | null;
     mfaEnabled?: boolean;
-    coopAdminOf?: { coopId: string; role: { permissions: any } }[];
+    coopAdminOf?: { coopId: string; permissionOverrides?: any; role: { permissions: any } }[];
   }) {
     const coopIds = (user.coopAdminOf ?? []).map((ca) => ca.coopId);
     const coopPermissions: Record<string, any> = {};
     for (const ca of user.coopAdminOf ?? []) {
-      coopPermissions[ca.coopId] = ca.role.permissions;
+      const basePermissions = ca.role.permissions ?? {};
+      const overrides = (ca.permissionOverrides as Record<string, boolean>) ?? {};
+      coopPermissions[ca.coopId] = { ...basePermissions, ...overrides };
     }
 
     // If MFA is enabled, issue a short-lived mfa-pending token
