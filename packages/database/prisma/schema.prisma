@@ -157,6 +157,8 @@ model Coop {
 
   // Relations
   admins           CoopAdmin[]
+  roles            CoopRole[]
+  adminInvitations AdminInvitation[]
   shareholders     Shareholder[]
   shareClasses     ShareClass[]
   projects         Project[]
@@ -253,13 +255,49 @@ model CoopAdmin {
   id        String   @id @default(cuid())
   userId    String
   coopId    String
+  roleId    String
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coop Coop @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coop Coop     @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  role CoopRole @relation(fields: [roleId], references: [id])
 
   @@unique([userId, coopId])
   @@map("coop_admins")
+}
+
+model CoopRole {
+  id          String   @id @default(cuid())
+  coopId      String
+  name        String
+  permissions Json
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  coop        Coop              @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  coopAdmins  CoopAdmin[]
+  invitations AdminInvitation[]
+
+  @@unique([coopId, name])
+  @@map("coop_roles")
+}
+
+model AdminInvitation {
+  id        String   @id @default(cuid())
+  coopId    String
+  email     String
+  roleId    String
+  token     String   @unique
+  expiresAt DateTime
+  accepted  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  coop Coop     @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  role CoopRole @relation(fields: [roleId], references: [id])
+
+  @@unique([coopId, email])
+  @@map("admin_invitations")
 }
 
 // ============================================================================

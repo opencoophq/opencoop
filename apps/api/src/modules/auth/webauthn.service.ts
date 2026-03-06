@@ -133,7 +133,7 @@ export class WebAuthnService {
       include: {
         user: {
           include: {
-            coopAdminOf: { select: { coopId: true } },
+            coopAdminOf: { select: { coopId: true, role: { select: { permissions: true } } } },
           },
         },
       },

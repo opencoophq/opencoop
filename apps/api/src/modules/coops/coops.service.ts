@@ -514,10 +514,19 @@ export class CoopsService {
       throw new NotFoundException('User not found');
     }
 
+    // Find the Admin default role for this coop
+    const adminRole = await this.prisma.coopRole.findFirst({
+      where: { coopId, name: 'Admin', isDefault: true },
+    });
+    if (!adminRole) {
+      throw new NotFoundException('Admin role not found for this cooperative');
+    }
+
     return this.prisma.coopAdmin.create({
       data: {
         coopId,
         userId,
+        roleId: adminRole.id,
       },
     });
   }

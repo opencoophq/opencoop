@@ -36,7 +36,7 @@ export class AuthService {
       where: { email: email.toLowerCase() },
       include: {
         coopAdminOf: {
-          select: { coopId: true },
+          select: { coopId: true, role: { select: { permissions: true } } },
         },
       },
     });
@@ -65,7 +65,7 @@ export class AuthService {
     preferredLanguage: string;
     emailVerified: Date | null;
     mfaEnabled?: boolean;
-    coopAdminOf?: { coopId: string }[];
+    coopAdminOf?: { coopId: string; role: { permissions: any } }[];
   }) {
     return this.issueJwtForUser(user);
   }
@@ -191,10 +191,28 @@ export class AuthService {
         },
       });
 
+      // Create default roles for the new coop
+      const defaultRoles = [
+        { name: 'Admin', permissions: { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
+        { name: 'Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
+        { name: 'GDPR Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
+        { name: 'GDPR Admin', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
+      ];
+      const roles = await Promise.all(
+        defaultRoles.map((r) =>
+          tx.coopRole.create({
+            data: { coopId: coop.id, name: r.name, permissions: r.permissions, isDefault: true },
+          }),
+        ),
+      );
+
+      const adminRole = roles.find((r) => r.name === 'Admin')!;
+
       await tx.coopAdmin.create({
         data: {
           userId: user.id,
           coopId: coop.id,
+          roleId: adminRole.id,
         },
       });
 
@@ -206,11 +224,14 @@ export class AuthService {
       console.error('Failed to send verification email:', err.message);
     });
 
+    // New coop creator gets full Admin permissions
+    const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true };
     const payload = {
       sub: result.user.id,
       email: result.user.email,
       role: result.user.role,
       coopIds: [result.coop.id],
+      coopPermissions: { [result.coop.id]: adminPermissions },
     };
 
     return {
@@ -346,6 +367,9 @@ export class AuthService {
                 trialEndsAt: true,
                 logoUrl: true,
               },
+            },
+            role: {
+              select: { name: true, permissions: true },
             },
           },
         },
@@ -556,7 +580,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { coopAdminOf: { select: { coopId: true } } },
+      include: { coopAdminOf: { select: { coopId: true, role: { select: { permissions: true } } } } },
     });
     if (!user || !user.mfaEnabled || !user.mfaSecret) {
       throw new UnauthorizedException('MFA not configured');
@@ -676,7 +700,7 @@ export class AuthService {
     // 1. Check if user already linked by provider ID
     let user = await this.prisma.user.findFirst({
       where: { [providerIdField]: data.providerId },
-      include: { coopAdminOf: { select: { coopId: true } } },
+      include: { coopAdminOf: { select: { coopId: true, role: { select: { permissions: true } } } } },
     });
 
     if (user) {
@@ -689,7 +713,7 @@ export class AuthService {
     // 2. Check if user exists by email
     user = await this.prisma.user.findUnique({
       where: { email: data.email.toLowerCase() },
-      include: { coopAdminOf: { select: { coopId: true } } },
+      include: { coopAdminOf: { select: { coopId: true, role: { select: { permissions: true } } } } },
     });
 
     if (user) {
@@ -1003,7 +1027,7 @@ export class AuthService {
         user: {
           include: {
             coopAdminOf: {
-              select: { coopId: true },
+              select: { coopId: true, role: { select: { permissions: true } } },
             },
           },
         },
@@ -1322,9 +1346,13 @@ export class AuthService {
     preferredLanguage: string;
     emailVerified: Date | null;
     mfaEnabled?: boolean;
-    coopAdminOf?: { coopId: string }[];
+    coopAdminOf?: { coopId: string; role: { permissions: any } }[];
   }) {
     const coopIds = (user.coopAdminOf ?? []).map((ca) => ca.coopId);
+    const coopPermissions: Record<string, any> = {};
+    for (const ca of user.coopAdminOf ?? []) {
+      coopPermissions[ca.coopId] = ca.role.permissions;
+    }
 
     // If MFA is enabled, issue a short-lived mfa-pending token
     if (user.mfaEnabled) {
@@ -1343,6 +1371,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       ...(coopIds.length > 0 && { coopIds }),
+      ...(Object.keys(coopPermissions).length > 0 && { coopPermissions }),
     };
 
     return {
