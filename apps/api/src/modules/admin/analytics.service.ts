@@ -114,13 +114,13 @@ export class AnalyticsService {
   }
 
   /**
-   * Fill all empty buckets between the last data point and the current period
-   * so the chart has no gaps.
+   * Fill ALL gaps in a timeline — both between data points and up to the
+   * current period. Uses the previous point to carry forward running totals.
    */
-  private padToNow<T extends { date: string }>(
+  private fillGaps<T extends { date: string }>(
     points: T[],
     period: string,
-    makeEmpty: (date: string) => T,
+    makeFill: (date: string, prev: T | null) => T,
   ): T[] {
     if (points.length === 0) return points;
 
@@ -135,16 +135,22 @@ export class AnalyticsService {
       currentBucket = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
     }
 
-    const lastDate = new Date(points[points.length - 1].date);
-    const next = new Date(lastDate);
-    while (true) {
-      if (period === 'year') next.setUTCFullYear(next.getUTCFullYear() + 1);
-      else if (period === 'quarter') next.setUTCMonth(next.getUTCMonth() + 3);
-      else next.setUTCMonth(next.getUTCMonth() + 1);
-      if (next > currentBucket) break;
-      points.push(makeEmpty(next.toISOString()));
+    const existing = new Map<string, T>();
+    for (const p of points) existing.set(p.date, p);
+
+    const result: T[] = [];
+    const cursor = new Date(points[0].date);
+    let prev: T | null = null;
+    while (cursor <= currentBucket) {
+      const key = cursor.toISOString();
+      const point = existing.get(key) ?? makeFill(key, prev);
+      result.push(point);
+      prev = point;
+      if (period === 'year') cursor.setUTCFullYear(cursor.getUTCFullYear() + 1);
+      else if (period === 'quarter') cursor.setUTCMonth(cursor.getUTCMonth() + 3);
+      else cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     }
-    return points;
+    return result;
   }
 
   // -------------------------------------------------------------------------
@@ -217,9 +223,9 @@ export class AnalyticsService {
       };
     });
 
-    return this.padToNow(points, period, (date) => ({
+    return this.fillGaps(points, period, (date, prev) => ({
       date,
-      totalCapital: runningTotal,
+      totalCapital: prev?.totalCapital ?? runningTotal,
       netChange: 0,
     }));
   }
@@ -397,13 +403,13 @@ export class AnalyticsService {
       };
     });
 
-    return this.padToNow(points, period, (date) => ({
+    return this.fillGaps(points, period, (date, prev) => ({
       date,
       individual: 0,
       company: 0,
       minor: 0,
       exits: 0,
-      cumulative,
+      cumulative: prev?.cumulative ?? cumulative,
     }));
   }
 
@@ -447,7 +453,7 @@ export class AnalyticsService {
           ORDER BY bucket ASC
         `);
 
-    const timeline: TransactionSummaryPoint[] = this.padToNow(
+    const timeline: TransactionSummaryPoint[] = this.fillGaps(
       rows.map((row) => ({
         date: row.bucket.toISOString(),
         purchases: Number(row.purchases) || 0,

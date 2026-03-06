@@ -214,12 +214,16 @@ export class ReportsService {
     }
     const projectKeys = Array.from(projectMap.keys()).sort();
 
-    // Generate month buckets
+    // Generate month buckets — cap at the current month (don't show future)
+    const capNow = new Date();
+    const currentMonthEnd = new Date(Date.UTC(capNow.getFullYear(), capNow.getMonth() + 1, 1));
+    const cappedEnd = rangeEnd < currentMonthEnd ? rangeEnd : currentMonthEnd;
+
     const buckets: Date[] = [];
     const cursor = new Date(rangeStart);
     cursor.setUTCDate(1);
     cursor.setUTCHours(0, 0, 0, 0);
-    while (cursor < rangeEnd) {
+    while (cursor < cappedEnd) {
       buckets.push(new Date(cursor));
       cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     }
@@ -260,6 +264,9 @@ export class ReportsService {
   async getAnnualOverview(coopId: string, year: number): Promise<AnnualOverview> {
     const yearStart = new Date(`${year}-01-01T00:00:00.000Z`);
     const yearEnd = new Date(`${year + 1}-01-01T00:00:00.000Z`);
+    // For the current/future year, cap at now so we don't show future data
+    const now = new Date();
+    const effectiveEnd = yearEnd < now ? yearEnd : now;
 
     const [
       capitalStart,
@@ -274,33 +281,33 @@ export class ReportsService {
       // Capital at the start of the year
       this.computeCapitalAtDate(coopId, yearStart),
 
-      // Capital at the end of the year
-      this.computeCapitalAtDate(coopId, yearEnd),
+      // Capital at end of year (or now, if year hasn't ended)
+      this.computeCapitalAtDate(coopId, effectiveEnd),
 
       // Active shareholders with at least one share purchased before year start
       this.countShareholdersWithSharesBefore(coopId, yearStart),
 
-      // Active shareholders with at least one share purchased before year end
-      this.countShareholdersWithSharesBefore(coopId, yearEnd),
+      // Active shareholders with at least one share purchased before year end (or now)
+      this.countShareholdersWithSharesBefore(coopId, effectiveEnd),
 
-      // Sum of COMPLETED PURCHASE transactions in the year
+      // Sum of COMPLETED PURCHASE transactions in the year (up to now if current year)
       this.prisma.transaction.aggregate({
         where: {
           coopId,
           type: 'PURCHASE',
           status: 'COMPLETED',
-          createdAt: { gte: yearStart, lt: yearEnd },
+          createdAt: { gte: yearStart, lt: effectiveEnd },
         },
         _sum: { totalAmount: true },
       }),
 
-      // Sum of COMPLETED SALE transactions in the year
+      // Sum of COMPLETED SALE transactions in the year (up to now if current year)
       this.prisma.transaction.aggregate({
         where: {
           coopId,
           type: 'SALE',
           status: 'COMPLETED',
-          createdAt: { gte: yearStart, lt: yearEnd },
+          createdAt: { gte: yearStart, lt: effectiveEnd },
         },
         _sum: { totalAmount: true },
       }),
@@ -330,27 +337,31 @@ export class ReportsService {
       ? dividendPeriod.payouts.reduce((sum, p) => sum + p.netAmount.toNumber(), 0)
       : 0;
 
-    // Per-share-class breakdown at year end
-    const activeSharesAtYearEnd = await this.prisma.share.findMany({
+    // Per-share-class breakdown using transactions for accurate historical capital
+    const shareClassTxns = await this.prisma.transaction.findMany({
       where: {
         coopId,
-        status: 'ACTIVE',
-        purchaseDate: { lt: yearEnd },
+        status: 'COMPLETED',
+        type: { in: ['PURCHASE', 'SALE'] },
+        createdAt: { lt: effectiveEnd },
       },
       select: {
-        shareClassId: true,
+        type: true,
         quantity: true,
-        purchasePricePerShare: true,
+        totalAmount: true,
+        share: { select: { shareClassId: true } },
       },
     });
 
     const shareClassBreakdown: ShareClassBreakdown[] = shareClasses.map((sc) => {
-      const classShares = activeSharesAtYearEnd.filter((s) => s.shareClassId === sc.id);
-      const shares = classShares.reduce((sum, s) => sum + s.quantity, 0);
-      const capital = classShares.reduce(
-        (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(),
-        0,
-      );
+      const classTxns = shareClassTxns.filter((t) => t.share?.shareClassId === sc.id);
+      const shares = classTxns.reduce((sum, t) => {
+        return sum + (t.type === 'PURCHASE' ? t.quantity : -t.quantity);
+      }, 0);
+      const capital = classTxns.reduce((sum, t) => {
+        const amount = t.totalAmount.toNumber();
+        return sum + (t.type === 'PURCHASE' ? amount : -amount);
+      }, 0);
       return { name: sc.name, code: sc.code, shares, capital };
     });
 
