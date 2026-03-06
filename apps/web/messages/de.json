@@ -1427,6 +1427,10 @@
     },
     "projectInvestment": {
       "noProjects": "Keine Projekte gefunden.",
+      "noSelection": "Keine Projekte ausgewählt",
+      "allProjects": "Alle Projekte",
+      "nSelected": "{count} Projekte ausgewählt",
+      "selectAll": "Alle auswählen",
       "project": "Projekt",
       "type": "Typ",
       "capital": "Kapital",
@@ -1435,7 +1439,7 @@
       "percentage": "%",
       "distribution": "Kapitalverteilung",
       "details": "Projektdetails",
-      "searchPlaceholder": "Projekte nach Name filtern..."
+      "searchPlaceholder": "Projekte suchen..."
     }
   },
   "feedback": {

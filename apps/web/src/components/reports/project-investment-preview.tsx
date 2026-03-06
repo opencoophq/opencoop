@@ -1,17 +1,20 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { Input } from '@/components/ui/input';
-import { ReportFilters } from './report-filters';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ExportButtons } from './export-buttons';
 import { ChartActionBar } from '@/components/charts/chart-action-bar';
 import { CopyTableButton } from './copy-table-button';
+import { ChevronDown, Search } from 'lucide-react';
 
 const COLORS = [
   'hsl(221, 83%, 53%)',
@@ -54,45 +57,139 @@ export function ProjectInvestmentPreview() {
   const { locale } = useLocale();
   const [data, setData] = useState<ProjectInvestment | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string> | null>(null);
   const [search, setSearch] = useState('');
   const chartRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
 
-  const generate = () => {
+  useEffect(() => {
     if (!selectedCoop) return;
     setLoading(true);
+    setSelectedIds(null);
     api<ProjectInvestment>(`/admin/coops/${selectedCoop.id}/reports/project-investment`)
       .then(setData)
       .catch(() => setData(null))
       .finally(() => setLoading(false));
+  }, [selectedCoop?.id]);
+
+  // When search changes, auto-select matching projects
+  useEffect(() => {
+    if (!data || !search) return;
+    const matching = new Set(
+      data.projects
+        .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+        .map((p) => p.id),
+    );
+    if (matching.size > 0) {
+      setSelectedIds(matching);
+    }
+  }, [search]);
+
+  const allProjects = data?.projects ?? [];
+  const filteredProjects =
+    selectedIds === null
+      ? allProjects
+      : allProjects.filter((p) => selectedIds.has(p.id));
+  const totalCapital = filteredProjects.reduce((sum, p) => sum + p.totalCapital, 0);
+
+  const toggleProject = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev ?? allProjects.map((p) => p.id));
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
 
-  const filteredProjects = data?.projects.filter(
+  const selectAll = () => setSelectedIds(null);
+
+  const filterLabel = () => {
+    if (selectedIds === null || selectedIds.size === allProjects.length) {
+      return t('projectInvestment.allProjects');
+    }
+    if (selectedIds.size === 0) return t('projectInvestment.noSelection');
+    if (selectedIds.size === 1) {
+      return allProjects.find((p) => selectedIds.has(p.id))?.name ?? '';
+    }
+    return t('projectInvestment.nSelected', { count: selectedIds.size });
+  };
+
+  // Projects visible in the dropdown (filtered by search text)
+  const dropdownProjects = allProjects.filter(
     (p) => !search || p.name.toLowerCase().includes(search.toLowerCase()),
-  ) ?? [];
-  const totalCapital = filteredProjects.reduce((sum, p) => sum + p.totalCapital, 0);
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <ReportFilters type="none" onGenerate={generate} loading={loading} />
+        {allProjects.length > 1 && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="justify-between min-w-[200px] max-w-xs">
+                <span className="truncate">{filterLabel()}</span>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-0" align="start">
+              <div className="p-2 border-b">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={t('projectInvestment.searchPlaceholder')}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-8 h-9"
+                  />
+                </div>
+              </div>
+              <div className="p-1 border-b">
+                <button
+                  className="w-full text-left px-2 py-1 text-xs text-primary hover:underline"
+                  onClick={() => { selectAll(); setSearch(''); }}
+                >
+                  {t('projectInvestment.selectAll')}
+                </button>
+              </div>
+              <div className="max-h-[240px] overflow-auto p-1">
+                {dropdownProjects.map((p) => {
+                  const checked = selectedIds === null || selectedIds.has(p.id);
+                  return (
+                    <label
+                      key={p.id}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggleProject(p.id)}
+                      />
+                      <span className="text-sm truncate">{p.name}</span>
+                    </label>
+                  );
+                })}
+                {dropdownProjects.length === 0 && (
+                  <p className="text-sm text-muted-foreground px-2 py-4 text-center">
+                    {t('projectInvestment.noProjects')}
+                  </p>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
         <ExportButtons reportType="project-investment" params={{}} disabled={!data} pdfSupported />
       </div>
 
-      {data && (
-        data.projects.length === 0 ? (
+      {loading && (
+        <p className="text-sm text-muted-foreground">{t('generating')}</p>
+      )}
+
+      {data && !loading && (
+        filteredProjects.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('projectInvestment.noProjects')}</p>
         ) : (
           <div className="space-y-4">
-            {data.projects.length > 3 && (
-              <Input
-                placeholder={t('projectInvestment.searchPlaceholder')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="max-w-xs"
-              />
-            )}
-
             {/* Donut chart */}
             {filteredProjects.length > 1 && (
               <div>

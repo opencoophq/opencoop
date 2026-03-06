@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
@@ -58,14 +58,14 @@ export function CapitalStatementPreview() {
   const tableRef = useRef<HTMLTableElement>(null);
   const areaChartRef = useRef<HTMLDivElement>(null);
 
-  const generate = () => {
+  useEffect(() => {
     if (!selectedCoop) return;
     setLoading(true);
     api<CapitalStatement>(`/admin/coops/${selectedCoop.id}/reports/capital-statement?from=${from}&to=${to}`)
       .then(setData)
       .catch(() => setData(null))
       .finally(() => setLoading(false));
-  };
+  }, [selectedCoop?.id, from, to]);
 
   const typeLabel = (type: string) => {
     const map: Record<string, string> = {
@@ -80,7 +80,7 @@ export function CapitalStatementPreview() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <ReportFilters type="dateRange" from={from} to={to} onFromChange={setFrom} onToChange={setTo} onGenerate={generate} loading={loading} />
+        <ReportFilters type="dateRange" from={from} to={to} onFromChange={setFrom} onToChange={setTo} />
         <div className="flex items-center gap-2">
           <CopyTableButton tableRef={tableRef} />
           <ExportButtons reportType="capital-statement" params={{ from, to }} disabled={!data} pdfSupported />
