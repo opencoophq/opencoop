@@ -53,6 +53,7 @@ interface ProjectInvestment {
 
 export function ProjectInvestmentPreview() {
   const t = useTranslations('reports');
+  const tp = useTranslations('admin.projects');
   const { selectedCoop } = useAdmin();
   const { locale } = useLocale();
   const [data, setData] = useState<ProjectInvestment | null>(null);
@@ -178,7 +179,12 @@ export function ProjectInvestmentPreview() {
             </PopoverContent>
           </Popover>
         )}
-        <ExportButtons reportType="project-investment" params={{}} disabled={!data} pdfSupported />
+        <ExportButtons
+          reportType="project-investment"
+          params={selectedIds !== null ? { projectIds: [...selectedIds].join(',') } : {}}
+          disabled={!data}
+          pdfSupported
+        />
       </div>
 
       {loading && (
@@ -259,7 +265,7 @@ export function ProjectInvestmentPreview() {
                     {filteredProjects.map((p) => (
                       <tr key={p.id} className="border-t">
                         <td className="px-3 py-2 font-medium">{p.name}</td>
-                        <td className="px-3 py-2">{p.type}</td>
+                        <td className="px-3 py-2">{tp(p.type.toLowerCase())}</td>
                         <td className="px-3 py-2 text-right">{formatCurrency(p.totalCapital, locale)}</td>
                         <td className="px-3 py-2 text-right">{p.shareholderCount}</td>
                         <td className="px-3 py-2 text-right">{p.shareCount}</td>

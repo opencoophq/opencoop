@@ -124,6 +124,13 @@ export const ProjectInvestmentReport: React.FC<ProjectInvestmentReportProps> = (
     generated: 'Generated on',
   };
 
+  const typeLabels: Record<string, string> = locale === 'nl'
+    ? { SOLAR: 'Zonne-energie', WIND: 'Windenergie' }
+    : locale === 'fr'
+      ? { SOLAR: 'Solaire', WIND: 'Éolien' }
+      : locale === 'de'
+        ? { SOLAR: 'Solar', WIND: 'Wind' }
+        : { SOLAR: 'Solar', WIND: 'Wind' };
   const fmtLocale = locale === 'nl' ? 'nl-BE' : 'en-US';
   const fmt = (n: number) =>
     new Intl.NumberFormat(fmtLocale, { style: 'currency', currency: 'EUR' }).format(n);
@@ -169,7 +176,7 @@ export const ProjectInvestmentReport: React.FC<ProjectInvestmentReportProps> = (
             {projects.map((p, i) => (
               <View key={i} style={styles.tableRow}>
                 <Text style={styles.colName}>{p.name}</Text>
-                <Text style={styles.colType}>{p.type}</Text>
+                <Text style={styles.colType}>{typeLabels[p.type] ?? p.type}</Text>
                 <Text style={styles.colCapital}>{fmt(p.totalCapital)}</Text>
                 <Text style={styles.colShareholders}>{fmtNum(p.shareholderCount)}</Text>
                 <Text style={styles.colShares}>{fmtNum(p.shareCount)}</Text>
