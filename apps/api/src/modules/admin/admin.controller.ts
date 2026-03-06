@@ -246,21 +246,13 @@ export class AdminController {
       _sum: { quantity: true },
     });
 
-    // Get average share price to calculate total capital
-    const shareClasses = await this.prisma.shareClass.findMany({
-      where: { coopId },
-      select: { id: true, pricePerShare: true },
-    });
-
     const shares = await this.prisma.share.findMany({
       where: { coopId, status: 'ACTIVE' },
-      select: { quantity: true, shareClassId: true },
+      select: { quantity: true, purchasePricePerShare: true },
     });
 
     const totalCapital = shares.reduce((sum, share) => {
-      const shareClass = shareClasses.find((sc) => sc.id === share.shareClassId);
-      const price = shareClass?.pricePerShare?.toNumber() || 0;
-      return sum + share.quantity * price;
+      return sum + share.quantity * share.purchasePricePerShare.toNumber();
     }, 0);
 
     return {
