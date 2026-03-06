@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.77] - 2026-03-06
+
+### Fixed
+- **Dashboard charts extend to current month** — capital timeline and shareholder growth charts no longer stop at the last month with activity; they now always include the current month
+
 ## [0.1.76] - 2026-03-06
 
 ### Added
