@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.1.72] - 2026-04-06
+
+### Added
+- **Auto-load reports** — all reports load automatically when the tab is selected, no more "Generate" button
+- **Multi-select project filter** — project investment report has a dropdown with checkboxes; typing auto-selects matching projects, manual toggle for individual projects
+
 ## [0.1.71] - 2026-04-06
 
 ### Added
