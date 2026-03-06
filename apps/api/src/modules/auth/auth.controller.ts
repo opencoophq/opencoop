@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { WebAuthnService } from './webauthn.service';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AppleAuthGuard } from './guards/apple-auth.guard';
+import { CoopAdminsService } from '../coop-admins/coop-admins.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -27,6 +28,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly webAuthnService: WebAuthnService,
+    private readonly coopAdminsService: CoopAdminsService,
   ) {}
 
   @Public()
@@ -424,5 +426,24 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Successfully joined the waitlist' })
   async joinWaitlist(@Body() waitlistDto: WaitlistDto) {
     return this.authService.joinWaitlist(waitlistDto);
+  }
+
+  // ==================== ADMIN INVITATIONS ====================
+
+  @Public()
+  @Get('invitation/:token')
+  @ApiOperation({ summary: 'Get invitation details by token' })
+  async getInvitation(@Param('token') token: string) {
+    return this.coopAdminsService.getInvitationByToken(token);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('accept-invitation')
+  @ApiOperation({ summary: 'Accept an admin invitation (requires auth)' })
+  async acceptInvitation(
+    @Body('token') token: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.coopAdminsService.acceptInvitation(token, user.id);
   }
 }
