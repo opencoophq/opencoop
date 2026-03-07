@@ -318,16 +318,26 @@ export default function SharesPage() {
                       <Badge variant={statusVariant(reg.status)}>{t(`transactions.statuses.${reg.status}`)}</Badge>
                     </TableCell>
                     <TableCell>
-                      {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openSellDialog(reg.id)}
-                        >
-                          <TrendingDown className="h-4 w-4 mr-1" />
-                          {t('shares.sellBack')}
-                        </Button>
-                      )}
+                      {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && (() => {
+                        const holdingMonths = shareholder?.coop?.minimumHoldingPeriod || 0;
+                        const minDate = new Date(reg.registerDate);
+                        minDate.setMonth(minDate.getMonth() + holdingMonths);
+                        const canSell = holdingMonths === 0 || new Date() >= minDate;
+                        return canSell ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openSellDialog(reg.id)}
+                          >
+                            <TrendingDown className="h-4 w-4 mr-1" />
+                            {t('shares.sellBack')}
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            {t('shares.reasonMinHoldingPeriod', { months: holdingMonths })}
+                          </span>
+                        );
+                      })()}
                       {reg.status === 'PENDING_PAYMENT' && (
                         <Button
                           variant="ghost"
