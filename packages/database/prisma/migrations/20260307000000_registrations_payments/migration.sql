@@ -82,7 +82,10 @@ SELECT
     t.quantity,
     t."pricePerShare",
     t."totalAmount",
-    COALESCE(s."purchaseDate", t."createdAt"),
+    CASE
+        WHEN t.type IN ('SALE', 'TRANSFER_OUT') THEN t."createdAt"
+        ELSE COALESCE(s."purchaseDate", t."createdAt")
+    END,
     s."certificateNumber",
     CASE WHEN t.type = 'TRANSFER_IN' THEN t."fromShareholderId" END,
     CASE WHEN t.type = 'TRANSFER_OUT' THEN t."toShareholderId" END,
@@ -135,12 +138,18 @@ ALTER TABLE "payments"
 
 -- 4d: Populate new columns from old data
 -- registrationId = transaction id (we reused transaction IDs as registration IDs)
--- bankDate = share.purchaseDate or payment.createdAt
+-- bankDate: for BUY = share.purchaseDate, for SELL = payment.createdAt
 UPDATE "payments" p
 SET
     "registrationId" = t.id,
-    "bankDate" = COALESCE(s."purchaseDate", p."createdAt"),
-    "matchedAt" = COALESCE(s."purchaseDate", p."createdAt")
+    "bankDate" = CASE
+        WHEN t.type IN ('SALE', 'TRANSFER_OUT') THEN p."createdAt"
+        ELSE COALESCE(s."purchaseDate", p."createdAt")
+    END,
+    "matchedAt" = CASE
+        WHEN t.type IN ('SALE', 'TRANSFER_OUT') THEN p."createdAt"
+        ELSE COALESCE(s."purchaseDate", p."createdAt")
+    END
 FROM transactions t
 LEFT JOIN shares s ON s.id = t."shareId"
 WHERE p."transactionId" = t.id;
