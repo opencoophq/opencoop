@@ -6,5 +6,5 @@ export default async function CoopPage({
   params: Promise<{ locale: string; coopSlug: string }>;
 }) {
   const { locale, coopSlug } = await params;
-  redirect(`/${locale}/${coopSlug}/default`);
+  redirect(`/${locale}/${coopSlug}/login`);
 }
