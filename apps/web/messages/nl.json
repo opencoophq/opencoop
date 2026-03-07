@@ -284,6 +284,7 @@
     "processedAt": "Verwerkt op",
     "pending": "In behandeling",
     "rejectReason": "Reden van afwijzing",
+    "typeLabel": "Type",
     "types": {
       "BUY": "Aankoop",
       "SELL": "Verkoop"

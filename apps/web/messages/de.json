@@ -284,6 +284,7 @@
     "processedAt": "Bearbeitet am",
     "pending": "Ausstehend",
     "rejectReason": "Ablehnungsgrund",
+    "typeLabel": "Typ",
     "types": {
       "BUY": "Kauf",
       "SELL": "Verkauf"

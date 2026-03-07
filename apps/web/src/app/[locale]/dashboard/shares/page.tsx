@@ -315,7 +315,7 @@ export default function SharesPage() {
                       {new Date(reg.registerDate).toLocaleDateString(locale)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant(reg.status)}>{reg.status}</Badge>
+                      <Badge variant={statusVariant(reg.status)}>{t(`transactions.statuses.${reg.status}`)}</Badge>
                     </TableCell>
                     <TableCell>
                       {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && (

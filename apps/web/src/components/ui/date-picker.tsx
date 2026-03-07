@@ -107,7 +107,7 @@ export function DatePicker({
           onSelect={handleSelect}
           locale={dateLocale}
           captionLayout="dropdown"
-          startMonth={new Date(2000, 0)}
+          startMonth={new Date(1920, 0)}
           endMonth={new Date(2100, 11)}
           showOutsideDays
           classNames={{

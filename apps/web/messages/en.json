@@ -284,6 +284,7 @@
     "processedAt": "Processed At",
     "pending": "Pending",
     "rejectReason": "Rejection Reason",
+    "typeLabel": "Type",
     "types": {
       "BUY": "Purchase",
       "SELL": "Sale"
