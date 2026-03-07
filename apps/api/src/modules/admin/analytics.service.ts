@@ -95,6 +95,8 @@ export class AnalyticsService {
   private getDateRange(period: string): Date | null {
     const now = new Date();
     switch (period) {
+      case 'day':
+        return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
       case 'month':
         return new Date(now.getFullYear() - 1, now.getMonth(), 1);
       case 'quarter':
@@ -107,6 +109,7 @@ export class AnalyticsService {
   }
 
   private getTrunc(period: string): string {
+    if (period === 'day') return 'day';
     return period === 'quarter' ? 'quarter' : period === 'year' ? 'year' : 'month';
   }
 
@@ -123,7 +126,9 @@ export class AnalyticsService {
 
     const now = new Date();
     let currentBucket: Date;
-    if (period === 'year') {
+    if (period === 'day') {
+      currentBucket = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    } else if (period === 'year') {
       currentBucket = new Date(Date.UTC(now.getFullYear(), 0, 1));
     } else if (period === 'quarter') {
       const q = Math.floor(now.getMonth() / 3) * 3;
@@ -147,7 +152,8 @@ export class AnalyticsService {
       const point = existing.get(key) ?? makeFill(key, prev);
       result.push(point);
       prev = point;
-      if (period === 'year') cursor.setUTCFullYear(cursor.getUTCFullYear() + 1);
+      if (period === 'day') cursor.setUTCDate(cursor.getUTCDate() + 1);
+      else if (period === 'year') cursor.setUTCFullYear(cursor.getUTCFullYear() + 1);
       else if (period === 'quarter') cursor.setUTCMonth(cursor.getUTCMonth() + 3);
       else cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     }
@@ -160,7 +166,7 @@ export class AnalyticsService {
 
   async getCapitalTimeline(
     coopId: string,
-    period: 'month' | 'quarter' | 'year' | 'all',
+    period: 'day' | 'month' | 'quarter' | 'year' | 'all',
   ): Promise<CapitalTimelinePoint[]> {
     const since = this.getDateRange(period);
     const trunc = this.getTrunc(period);
@@ -270,7 +276,7 @@ export class AnalyticsService {
 
   async getShareholderGrowth(
     coopId: string,
-    period: 'month' | 'quarter' | 'year' | 'all',
+    period: 'day' | 'month' | 'quarter' | 'year' | 'all',
   ): Promise<ShareholderGrowthPoint[]> {
     const since = this.getDateRange(period);
     const trunc = this.getTrunc(period);
@@ -421,7 +427,7 @@ export class AnalyticsService {
 
   async getTransactionSummary(
     coopId: string,
-    period: 'month' | 'quarter' | 'year' | 'all',
+    period: 'day' | 'month' | 'quarter' | 'year' | 'all',
   ): Promise<TransactionSummaryResult> {
     const since = this.getDateRange(period);
     const trunc = this.getTrunc(period);

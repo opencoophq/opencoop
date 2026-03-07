@@ -14,7 +14,7 @@ import { CapitalByProjectChart } from '@/components/charts/capital-by-project-ch
 import { ShareholderGrowthChart } from '@/components/charts/shareholder-growth-chart';
 import { TransactionActivityChart } from '@/components/charts/transaction-activity-chart';
 
-export type Period = 'month' | 'quarter' | 'year' | 'all';
+export type Period = 'day' | 'month' | 'quarter' | 'year' | 'all';
 
 interface Stats {
   totalShareholders: number;
@@ -103,6 +103,7 @@ export default function AdminPage() {
         <h2 className="text-lg font-semibold">{t('analytics.charts')}</h2>
         <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
           <TabsList className="h-8">
+            <TabsTrigger value="day" className="text-xs px-2 py-1">{t('analytics.periods.day')}</TabsTrigger>
             <TabsTrigger value="month" className="text-xs px-2 py-1">{t('analytics.periods.month')}</TabsTrigger>
             <TabsTrigger value="quarter" className="text-xs px-2 py-1">{t('analytics.periods.quarter')}</TabsTrigger>
             <TabsTrigger value="year" className="text-xs px-2 py-1">{t('analytics.periods.year')}</TabsTrigger>

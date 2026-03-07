@@ -1404,6 +1404,7 @@
     "cumulative": "Cumulative",
     "noData": "No data available yet",
     "periods": {
+      "day": "Daily",
       "month": "Monthly",
       "quarter": "Quarterly",
       "year": "Yearly",
