@@ -365,7 +365,7 @@ export default function ShareholderDetailPage() {
   };
 
   const openSellDialog = () => {
-    const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE') || [];
+    const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED') || [];
     setSellRegistrationId(activeRegs[0]?.id || '');
     setSellQuantity(1);
     setSellResult(null);
@@ -405,7 +405,7 @@ export default function ShareholderDetailPage() {
 
   const selectedShareClass = shareClasses.find((sc) => sc.id === buyShareClassId);
   const buyTotal = (selectedShareClass?.pricePerShare || 0) * buyQuantity;
-  const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE') || [];
+  const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED') || [];
   const selectedSellReg = shareholder?.registrations.find((r) => r.id === sellRegistrationId);
 
   if (loading) {
