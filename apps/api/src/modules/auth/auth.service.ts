@@ -1001,14 +1001,33 @@ export class AuthService {
     const coopSlug = requestMagicLinkDto.coopSlug;
     const successMessage = { message: 'If an account exists, a login link has been sent' };
 
-    // Find user by email
-    const user = await this.prisma.user.findUnique({
+    // Find user by email, or auto-create if a shareholder record exists
+    let user = await this.prisma.user.findUnique({
       where: { email },
     });
 
-    // Always return success to prevent email enumeration
     if (!user) {
-      return successMessage;
+      // Check if a shareholder exists with this email — auto-create a user account
+      const shareholder = await this.prisma.shareholder.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' }, userId: null },
+      });
+
+      if (!shareholder) {
+        return successMessage;
+      }
+
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          name: `${shareholder.firstName} ${shareholder.lastName}`,
+          role: 'SHAREHOLDER',
+          preferredLanguage: 'nl',
+          emailVerified: new Date(),
+        },
+      });
+
+      // Link this and any other orphan shareholders with the same email
+      await this.linkOrphanShareholders(user.id, email);
     }
 
     // Rate limiting: max 3 unused tokens per user in 15 minutes
