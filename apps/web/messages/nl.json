@@ -283,17 +283,15 @@
     "pending": "In behandeling",
     "rejectReason": "Reden van afwijzing",
     "types": {
-      "PURCHASE": "Aankoop",
-      "SALE": "Verkoop",
-      "TRANSFER_IN": "Ontvangen overdracht",
-      "TRANSFER_OUT": "Uitgaande overdracht"
+      "BUY": "Aankoop",
+      "SELL": "Verkoop"
     },
     "statuses": {
       "PENDING": "In behandeling",
-      "AWAITING_PAYMENT": "Wacht op betaling",
-      "APPROVED": "Goedgekeurd",
+      "PENDING_PAYMENT": "Wacht op betaling",
+      "ACTIVE": "Actief",
       "COMPLETED": "Voltooid",
-      "REJECTED": "Afgewezen"
+      "CANCELLED": "Geannuleerd"
     }
   },
   "payments": {
@@ -1416,9 +1414,8 @@
       "exits": "Uitstappen"
     },
     "transactionTypes": {
-      "purchases": "Aankopen",
-      "sales": "Verkopen",
-      "transfers": "Overdrachten"
+      "buys": "Aankopen",
+      "sells": "Verkopen"
     }
   },
   "reports": {
@@ -1450,10 +1447,8 @@
       "projectInvestment": "Projectinvestering"
     },
     "types": {
-      "purchase": "Aankoop",
-      "sale": "Verkoop",
-      "transferIn": "Overdracht in",
-      "transferOut": "Overdracht uit"
+      "buy": "Aankoop",
+      "sell": "Verkoop"
     },
     "shareholderTypes": {
       "individual": "Particulier",

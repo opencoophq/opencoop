@@ -28,9 +28,9 @@ export default function TransactionsPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const profile = await api<{ shareholders: Array<{ transactions: TransactionData[] }> }>('/auth/me');
-        if (profile.shareholders?.[0]?.transactions) {
-          setTransactions(profile.shareholders[0].transactions);
+        const profile = await api<{ shareholders: Array<{ registrations: TransactionData[] }> }>('/auth/me');
+        if (profile.shareholders?.[0]?.registrations) {
+          setTransactions(profile.shareholders[0].registrations);
         }
       } catch {
         // ignore
@@ -43,10 +43,8 @@ export default function TransactionsPage() {
 
   const typeColor = (type: string) => {
     switch (type) {
-      case 'PURCHASE': return 'default';
-      case 'SALE': return 'destructive';
-      case 'TRANSFER_IN': return 'secondary';
-      case 'TRANSFER_OUT': return 'outline';
+      case 'BUY': return 'default';
+      case 'SELL': return 'destructive';
       default: return 'secondary';
     }
   };
@@ -54,9 +52,9 @@ export default function TransactionsPage() {
   const statusColor = (status: string) => {
     switch (status) {
       case 'COMPLETED': return 'default';
-      case 'APPROVED': return 'default';
+      case 'ACTIVE': return 'default';
       case 'PENDING': return 'secondary';
-      case 'REJECTED': return 'destructive';
+      case 'CANCELLED': return 'destructive';
       default: return 'outline';
     }
   };

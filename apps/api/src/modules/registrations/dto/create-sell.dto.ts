@@ -1,10 +1,10 @@
 import { IsString, IsInt, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateSaleDto {
-  @ApiProperty({ description: 'Share to sell' })
+export class CreateSellDto {
+  @ApiProperty({ description: 'Buy registration to sell shares from' })
   @IsString()
-  shareId: string;
+  registrationId: string;
 
   @ApiProperty({ description: 'Number of shares to sell', minimum: 1 })
   @IsInt()

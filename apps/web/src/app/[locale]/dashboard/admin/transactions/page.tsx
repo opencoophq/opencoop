@@ -89,7 +89,7 @@ export default function AdminTransactionsPage() {
     if (statusFilter !== 'all') params.set('status', statusFilter);
     try {
       const result = await api<{ items: TransactionRow[] }>(
-        `/admin/coops/${selectedCoop.id}/transactions?${params}`,
+        `/admin/coops/${selectedCoop.id}/registrations?${params}`,
       );
       setTransactions(result.items || []);
     } catch {
@@ -105,7 +105,7 @@ export default function AdminTransactionsPage() {
 
   const handleApprove = async (id: string) => {
     if (!selectedCoop) return;
-    await api(`/admin/coops/${selectedCoop.id}/transactions/${id}/approve`, { method: 'PUT' });
+    await api(`/admin/coops/${selectedCoop.id}/registrations/${id}/approve`, { method: 'PUT' });
     loadData();
   };
 
@@ -117,7 +117,7 @@ export default function AdminTransactionsPage() {
 
   const handleReject = async () => {
     if (!selectedCoop || !rejectTxId || !rejectReason.trim()) return;
-    await api(`/admin/coops/${selectedCoop.id}/transactions/${rejectTxId}/reject`, {
+    await api(`/admin/coops/${selectedCoop.id}/registrations/${rejectTxId}/reject`, {
       method: 'PUT',
       body: { reason: rejectReason.trim() },
     });
@@ -129,7 +129,7 @@ export default function AdminTransactionsPage() {
     if (!selectedCoop) return;
     try {
       const details = await api<PaymentDetails>(
-        `/admin/coops/${selectedCoop.id}/transactions/${txId}/payment-details`,
+        `/admin/coops/${selectedCoop.id}/registrations/${txId}/payment-details`,
       );
       setPaymentDetails(details);
       setPaymentTxId(txId);
@@ -144,7 +144,7 @@ export default function AdminTransactionsPage() {
     if (!selectedCoop || !paymentTxId) return;
     setCompleting(true);
     try {
-      await api(`/admin/coops/${selectedCoop.id}/transactions/${paymentTxId}/complete`, {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${paymentTxId}/complete`, {
         method: 'PUT',
       });
       setPaymentOpen(false);
@@ -162,8 +162,8 @@ export default function AdminTransactionsPage() {
       : `${sh.firstName || ''} ${sh.lastName || ''}`.trim();
 
   const canShowPayment = (tx: TransactionRow) => {
-    if (tx.type === 'PURCHASE' && ['PENDING', 'AWAITING_PAYMENT', 'APPROVED'].includes(tx.status)) return true;
-    if (tx.type === 'SALE' && tx.status === 'APPROVED') return true;
+    if (tx.type === 'BUY' && ['PENDING', 'PENDING_PAYMENT'].includes(tx.status)) return true;
+    if (tx.type === 'SELL' && tx.status === 'PENDING_PAYMENT') return true;
     return false;
   };
 
@@ -182,10 +182,10 @@ export default function AdminTransactionsPage() {
               <SelectContent>
                 <SelectItem value="all">{t('common.all')}</SelectItem>
                 <SelectItem value="PENDING">{t('transactions.statuses.PENDING')}</SelectItem>
-                <SelectItem value="AWAITING_PAYMENT">{t('transactions.statuses.AWAITING_PAYMENT')}</SelectItem>
-                <SelectItem value="APPROVED">{t('transactions.statuses.APPROVED')}</SelectItem>
+                <SelectItem value="PENDING_PAYMENT">{t('transactions.statuses.PENDING_PAYMENT')}</SelectItem>
+                <SelectItem value="ACTIVE">{t('transactions.statuses.ACTIVE')}</SelectItem>
                 <SelectItem value="COMPLETED">{t('transactions.statuses.COMPLETED')}</SelectItem>
-                <SelectItem value="REJECTED">{t('transactions.statuses.REJECTED')}</SelectItem>
+                <SelectItem value="CANCELLED">{t('transactions.statuses.CANCELLED')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -224,11 +224,11 @@ export default function AdminTransactionsPage() {
                     <TableCell>
                       <Badge
                         variant={
-                          tx.status === 'COMPLETED'
+                          tx.status === 'COMPLETED' || tx.status === 'ACTIVE'
                             ? 'default'
                             : tx.status === 'PENDING'
                               ? 'secondary'
-                              : tx.status === 'REJECTED'
+                              : tx.status === 'CANCELLED'
                                 ? 'destructive'
                                 : 'outline'
                         }
@@ -253,9 +253,9 @@ export default function AdminTransactionsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => showPaymentDetails(tx.id, tx.status)}
-                            title={tx.type === 'SALE' ? t('admin.transactions.payRefund') : t('admin.transactions.paymentInfo')}
+                            title={tx.type === 'SELL' ? t('admin.transactions.payRefund') : t('admin.transactions.paymentInfo')}
                           >
-                            {tx.type === 'SALE' ? (
+                            {tx.type === 'SELL' ? (
                               <CreditCard className="h-4 w-4 text-blue-600" />
                             ) : (
                               <QrCode className="h-4 w-4 text-blue-600" />
@@ -327,7 +327,7 @@ export default function AdminTransactionsPage() {
                 )}
               </div>
               <DialogFooter>
-                {(paymentTxStatus === 'APPROVED' || paymentTxStatus === 'AWAITING_PAYMENT') && (
+                {paymentTxStatus === 'PENDING_PAYMENT' && (
                   <Button onClick={handleComplete} disabled={completing}>
                     {completing ? t('common.loading') : t('admin.transactions.markComplete')}
                   </Button>

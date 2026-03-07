@@ -159,12 +159,12 @@ export class ProjectsService {
   async delete(id: string, coopId: string) {
     const project = await this.findById(id, coopId);
 
-    const sharesUsingProject = await this.prisma.share.count({
+    const registrationsUsingProject = await this.prisma.registration.count({
       where: { projectId: project.id },
     });
 
-    if (sharesUsingProject > 0) {
-      throw new BadRequestException('Cannot delete project with associated shares');
+    if (registrationsUsingProject > 0) {
+      throw new BadRequestException('Cannot delete project with associated registrations');
     }
 
     await this.prisma.project.delete({ where: { id } });

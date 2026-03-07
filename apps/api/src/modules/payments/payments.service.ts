@@ -1,77 +1,105 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { generateOgmCode } from '@opencoop/shared';
 
 @Injectable()
 export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
-  async createForTransaction(transactionId: string, coopId: string, amount: number) {
-    const coop = await this.prisma.coop.findUnique({
-      where: { id: coopId },
-      select: { ogmPrefix: true },
-    });
-
-    if (!coop) {
-      throw new NotFoundException('Cooperative not found');
-    }
-
-    // Generate unique OGM code
-    const lastPayment = await this.prisma.payment.findFirst({
-      where: { coopId },
-      orderBy: { createdAt: 'desc' },
-      select: { ogmCode: true },
-    });
-
-    let sequence = 1;
-    if (lastPayment?.ogmCode) {
-      const raw = lastPayment.ogmCode.replace(/[+/]/g, '');
-      sequence = parseInt(raw.slice(3, 10), 10) + 1;
-    }
-
-    const ogmCode = generateOgmCode(coop.ogmPrefix, sequence);
-
-    return this.prisma.payment.create({
-      data: {
-        coopId,
-        transactionId,
-        method: 'BANK_TRANSFER',
-        amount,
-        ogmCode,
-      },
+  async findByRegistration(registrationId: string) {
+    return this.prisma.payment.findMany({
+      where: { registrationId },
+      orderBy: { bankDate: 'asc' },
     });
   }
 
   async findByOgmCode(ogmCode: string) {
-    return this.prisma.payment.findUnique({
+    return this.prisma.registration.findUnique({
       where: { ogmCode },
-      include: { transaction: true },
+      include: {
+        payments: true,
+        shareholder: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            companyName: true,
+          },
+        },
+      },
     });
   }
 
-  async updateStatus(id: string, status: 'PENDING' | 'MATCHED' | 'CONFIRMED' | 'FAILED') {
-    return this.prisma.payment.update({
-      where: { id },
-      data: { status },
+  async addPayment(data: {
+    registrationId: string;
+    coopId: string;
+    amount: number;
+    bankDate: Date;
+    bankTransactionId?: string;
+    matchedByUserId?: string;
+  }) {
+    const registration = await this.prisma.registration.findUnique({
+      where: { id: data.registrationId },
+      include: { payments: true },
     });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        registrationId: data.registrationId,
+        coopId: data.coopId,
+        amount: data.amount,
+        bankDate: data.bankDate,
+        bankTransactionId: data.bankTransactionId || null,
+        matchedByUserId: data.matchedByUserId || null,
+        matchedAt: new Date(),
+      },
+    });
+
+    // Update registration status based on cumulative payments
+    const totalPaid = registration.payments.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0,
+    ) + data.amount;
+
+    const totalAmount = Number(registration.totalAmount);
+
+    if (totalPaid >= totalAmount) {
+      await this.prisma.registration.update({
+        where: { id: data.registrationId },
+        data: { status: 'COMPLETED' },
+      });
+    } else if (registration.status === 'PENDING_PAYMENT') {
+      // First payment received — mark as ACTIVE (payments in progress)
+      await this.prisma.registration.update({
+        where: { id: data.registrationId },
+        data: { status: 'ACTIVE' },
+      });
+    }
+
+    return payment;
   }
 
   async findPendingByCoopId(coopId: string) {
-    return this.prisma.payment.findMany({
-      where: { coopId, status: 'PENDING' },
+    return this.prisma.registration.findMany({
+      where: {
+        coopId,
+        status: { in: ['PENDING_PAYMENT', 'ACTIVE'] },
+        type: 'BUY',
+      },
       include: {
-        transaction: {
-          include: {
-            shareholder: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                companyName: true,
-              },
-            },
+        shareholder: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            companyName: true,
           },
         },
+        shareClass: true,
+        payments: { orderBy: { bankDate: 'asc' } },
       },
       orderBy: { createdAt: 'desc' },
     });

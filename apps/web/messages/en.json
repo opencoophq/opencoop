@@ -283,17 +283,15 @@
     "pending": "Pending",
     "rejectReason": "Rejection Reason",
     "types": {
-      "PURCHASE": "Purchase",
-      "SALE": "Sale",
-      "TRANSFER_IN": "Transfer In",
-      "TRANSFER_OUT": "Transfer Out"
+      "BUY": "Purchase",
+      "SELL": "Sale"
     },
     "statuses": {
       "PENDING": "Pending",
-      "AWAITING_PAYMENT": "Awaiting Payment",
-      "APPROVED": "Approved",
+      "PENDING_PAYMENT": "Awaiting Payment",
+      "ACTIVE": "Active",
       "COMPLETED": "Completed",
-      "REJECTED": "Rejected"
+      "CANCELLED": "Cancelled"
     }
   },
   "payments": {
@@ -1416,9 +1414,8 @@
       "exits": "Exits"
     },
     "transactionTypes": {
-      "purchases": "Purchases",
-      "sales": "Sales",
-      "transfers": "Transfers"
+      "buys": "Purchases",
+      "sells": "Sales"
     }
   },
   "reports": {
@@ -1450,10 +1447,8 @@
       "projectInvestment": "Project Investment"
     },
     "types": {
-      "purchase": "Purchase",
-      "sale": "Sale",
-      "transferIn": "Transfer In",
-      "transferOut": "Transfer Out"
+      "buy": "Purchase",
+      "sell": "Sale"
     },
     "shareholderTypes": {
       "individual": "Individual",

@@ -146,27 +146,34 @@ export class DividendsService {
       throw new BadRequestException('Cannot recalculate paid dividend periods');
     }
 
-    // Get all active shares owned before ex-dividend date
-    const eligibleShares = await this.prisma.share.findMany({
+    // Get all completed buy registrations with payments before ex-dividend date
+    const eligibleRegistrations = await this.prisma.registration.findMany({
       where: {
         coopId: period.coopId,
-        status: 'ACTIVE',
-        paymentDate: {
-          lt: period.exDividendDate,
+        type: 'BUY',
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+        payments: {
+          some: {
+            bankDate: { lt: period.exDividendDate },
+          },
         },
       },
       include: {
         shareholder: true,
         shareClass: true,
+        payments: {
+          where: { bankDate: { lt: period.exDividendDate } },
+          select: { amount: true },
+        },
       },
     });
 
     // Group by shareholder
-    const shareholderShares = new Map<string, typeof eligibleShares>();
-    for (const share of eligibleShares) {
-      const existing = shareholderShares.get(share.shareholderId) || [];
-      existing.push(share);
-      shareholderShares.set(share.shareholderId, existing);
+    const shareholderRegistrations = new Map<string, typeof eligibleRegistrations>();
+    for (const reg of eligibleRegistrations) {
+      const existing = shareholderRegistrations.get(reg.shareholderId) || [];
+      existing.push(reg);
+      shareholderRegistrations.set(reg.shareholderId, existing);
     }
 
     // Delete existing payouts for recalculation
@@ -191,7 +198,7 @@ export class DividendsService {
         dividendAmount: number;
       }>;
     }> = [];
-    for (const [shareholderId, shares] of shareholderShares) {
+    for (const [shareholderId, registrations] of shareholderRegistrations) {
       const calculationDetails: Array<{
         shareClassId: string;
         shareClassName: string;
@@ -203,12 +210,21 @@ export class DividendsService {
       }> = [];
       let totalGross = 0;
 
-      for (const share of shares) {
-        const dividendRate = share.shareClass.dividendRateOverride
-          ? Number(share.shareClass.dividendRateOverride)
+      for (const reg of registrations) {
+        const dividendRate = reg.shareClass.dividendRateOverride
+          ? Number(reg.shareClass.dividendRateOverride)
           : Number(period.dividendRate);
 
-        const shareValue = share.quantity * Number(share.purchasePricePerShare);
+        // Compute vested shares from payments made before ex-dividend date
+        const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
+        const pricePerShare = Number(reg.pricePerShare);
+        const vestedQuantity = pricePerShare > 0
+          ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity)
+          : 0;
+
+        if (vestedQuantity <= 0) continue;
+
+        const shareValue = vestedQuantity * pricePerShare;
         const dividend = calculateDividend(
           shareValue,
           dividendRate,
@@ -218,21 +234,17 @@ export class DividendsService {
         totalGross += dividend.gross;
 
         calculationDetails.push({
-          shareClassId: share.shareClassId,
-          shareClassName: share.shareClass.name,
-          quantity: share.quantity,
-          pricePerShare: Number(share.purchasePricePerShare),
+          shareClassId: reg.shareClassId,
+          shareClassName: reg.shareClass.name,
+          quantity: vestedQuantity,
+          pricePerShare,
           totalValue: shareValue,
           dividendRate,
           dividendAmount: dividend.gross,
         });
       }
 
-      const totalDividend = calculateDividend(
-        totalGross / Number(period.dividendRate), // Reverse calculate principal for total
-        Number(period.dividendRate),
-        Number(period.withholdingTaxRate),
-      );
+      if (calculationDetails.length === 0) continue;
 
       // Actually use the sum
       const sumGross = calculationDetails.reduce((sum, d) => sum + d.dividendAmount, 0);

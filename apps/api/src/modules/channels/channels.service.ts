@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ShareholdersService } from '../shareholders/shareholders.service';
-import { TransactionsService } from '../transactions/transactions.service';
+import { RegistrationsService } from '../registrations/registrations.service';
 import { CreateChannelDto } from './dto/create-channel.dto';
 import { UpdateChannelDto } from './dto/update-channel.dto';
 import { PublicRegisterDto } from '../coops/dto/public-register.dto';
@@ -25,7 +25,7 @@ export class ChannelsService {
     private prisma: PrismaService,
     private auditService: AuditService,
     private shareholdersService: ShareholdersService,
-    private transactionsService: TransactionsService,
+    private registrationsService: RegistrationsService,
   ) {}
 
   async findAll(coopId: string) {
@@ -453,26 +453,19 @@ export class ChannelsService {
       });
     }
 
-    // 6. Create transaction via TransactionsService
-    const transaction = await this.transactionsService.createPurchase({
+    // 6. Create registration via RegistrationsService
+    const registration = await this.registrationsService.createBuy({
       coopId: coop.id,
       shareholderId,
       shareClassId: dto.shareClassId,
       quantity: dto.quantity,
       projectId: dto.projectId,
+      channelId: channel.id,
     });
 
-    // Set channelId on the transaction
-    if (transaction) {
-      await this.prisma.transaction.update({
-        where: { id: transaction.id },
-        data: { channelId: channel.id },
-      });
-    }
-
     return {
-      transactionId: transaction!.id,
-      ogmCode: transaction?.payment?.ogmCode ?? null,
+      registrationId: registration.id,
+      ogmCode: registration.ogmCode ?? null,
       shareholderId,
     };
   }
