@@ -2,6 +2,20 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.2.4] - 2026-03-07
+
+### Fixed
+- **Dashboard shows 0 shares** — overview now counts both ACTIVE and COMPLETED registrations
+- **Status badges in English** — shares page now shows translated status (e.g., "Voltooid") instead of raw "COMPLETED"
+- **"transactions.type" literal** — transaction column header now uses a dedicated translation key instead of resolving to an object
+- **Email sender name** — magic link emails now show the coop name (e.g., "Bronsgroen") as sender instead of generic "OpenCoop"
+- **Date picker range** — year dropdown now starts at 1920 instead of 2000, allowing selection of older birth dates
+
+## [0.2.3] - 2026-03-07
+
+### Fixed
+- **Coop-branded magic link emails** — magic link email subject, heading, body and button text now show the coop name and use the coop's brand color instead of generic OpenCoop branding
+
 ## [0.2.2] - 2026-03-07
 
 ### Added
