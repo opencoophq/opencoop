@@ -81,10 +81,12 @@ export default function AdminTransactionsPage() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectTxId, setRejectTxId] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [error, setError] = useState('');
 
   const loadData = useCallback(async () => {
     if (!selectedCoop) return;
     setLoading(true);
+    setError('');
     const params = new URLSearchParams();
     if (statusFilter !== 'all') params.set('status', statusFilter);
     try {
@@ -93,11 +95,11 @@ export default function AdminTransactionsPage() {
       );
       setTransactions(result.items || []);
     } catch {
-      // ignore
+      setError(t('common.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [selectedCoop, statusFilter]);
+  }, [selectedCoop, statusFilter, t]);
 
   useEffect(() => {
     loadData();
@@ -105,8 +107,12 @@ export default function AdminTransactionsPage() {
 
   const handleApprove = async (id: string) => {
     if (!selectedCoop) return;
-    await api(`/admin/coops/${selectedCoop.id}/registrations/${id}/approve`, { method: 'PUT' });
-    loadData();
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${id}/approve`, { method: 'PUT' });
+      loadData();
+    } catch {
+      setError(t('common.actionError'));
+    }
   };
 
   const openRejectDialog = (id: string) => {
@@ -117,12 +123,16 @@ export default function AdminTransactionsPage() {
 
   const handleReject = async () => {
     if (!selectedCoop || !rejectTxId || !rejectReason.trim()) return;
-    await api(`/admin/coops/${selectedCoop.id}/registrations/${rejectTxId}/reject`, {
-      method: 'PUT',
-      body: { reason: rejectReason.trim() },
-    });
-    setRejectOpen(false);
-    loadData();
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${rejectTxId}/reject`, {
+        method: 'PUT',
+        body: { reason: rejectReason.trim() },
+      });
+      setRejectOpen(false);
+      loadData();
+    } catch {
+      setError(t('common.actionError'));
+    }
   };
 
   const showPaymentDetails = async (txId: string, txStatus: string) => {
@@ -136,7 +146,7 @@ export default function AdminTransactionsPage() {
       setPaymentTxStatus(txStatus);
       setPaymentOpen(true);
     } catch {
-      // ignore
+      setError(t('common.actionError'));
     }
   };
 
@@ -150,7 +160,7 @@ export default function AdminTransactionsPage() {
       setPaymentOpen(false);
       loadData();
     } catch {
-      // ignore
+      setError(t('common.actionError'));
     } finally {
       setCompleting(false);
     }
@@ -172,6 +182,11 @@ export default function AdminTransactionsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">{t('transactions.title')}</h1>
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardContent className="pt-6">
           <div className="mb-4">

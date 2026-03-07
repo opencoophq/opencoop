@@ -24,6 +24,8 @@
   "common": {
     "loading": "Chargement...",
     "error": "Une erreur est survenue",
+    "loadError": "Échec du chargement des données",
+    "actionError": "Action échouée. Veuillez réessayer.",
     "success": "Succès",
     "save": "Enregistrer",
     "cancel": "Annuler",

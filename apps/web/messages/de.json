@@ -24,6 +24,8 @@
   "common": {
     "loading": "Wird geladen...",
     "error": "Ein Fehler ist aufgetreten",
+    "loadError": "Laden der Daten fehlgeschlagen",
+    "actionError": "Aktion fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "success": "Erfolgreich",
     "save": "Speichern",
     "cancel": "Abbrechen",

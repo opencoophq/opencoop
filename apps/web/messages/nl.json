@@ -24,6 +24,8 @@
   "common": {
     "loading": "Laden...",
     "error": "Er is een fout opgetreden",
+    "loadError": "Laden van gegevens mislukt",
+    "actionError": "Actie mislukt. Probeer het opnieuw.",
     "success": "Succes",
     "save": "Opslaan",
     "cancel": "Annuleren",

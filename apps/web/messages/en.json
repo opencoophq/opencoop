@@ -24,6 +24,8 @@
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
+    "loadError": "Failed to load data",
+    "actionError": "Action failed. Please try again.",
     "success": "Success",
     "save": "Save",
     "cancel": "Cancel",

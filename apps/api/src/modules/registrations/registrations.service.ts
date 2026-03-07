@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { generateOgmCode } from '@opencoop/shared';
+import { generateOgmCode, computeTotalPaid, computeVestedShares } from '@opencoop/shared';
 
 @Injectable()
 export class RegistrationsService {
@@ -64,9 +64,13 @@ export class RegistrationsService {
     };
   }
 
-  async findById(id: string) {
-    const registration = await this.prisma.registration.findUnique({
-      where: { id },
+  // C4: Added coopId for tenant isolation
+  async findById(id: string, coopId?: string) {
+    const where: Record<string, unknown> = { id };
+    if (coopId) where.coopId = coopId;
+
+    const registration = await this.prisma.registration.findFirst({
+      where,
       include: {
         shareholder: true,
         shareClass: true,
@@ -114,24 +118,41 @@ export class RegistrationsService {
     });
 
     return registrations.map((reg) => {
-      const totalPaid = reg.payments.reduce(
-        (sum, p) => sum + Number(p.amount),
-        0,
-      );
+      const totalPaid = computeTotalPaid(reg.payments);
       const pricePerShare = Number(reg.pricePerShare);
-      const sharesOwned = Math.min(
-        Math.floor(totalPaid / pricePerShare),
-        reg.quantity,
-      );
+      const vestedShares = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
 
+      // C3: Subtract completed sells linked to this BUY
       return {
         ...reg,
         totalPaid,
-        sharesOwned,
-        sharesRemaining: reg.quantity - sharesOwned,
+        sharesOwned: vestedShares,
+        sharesRemaining: reg.quantity - vestedShares,
         fullyPaid: totalPaid >= Number(reg.totalAmount),
       };
     });
+  }
+
+  /**
+   * Compute available shares for a BUY registration, accounting for
+   * both pending and completed sells/transfers.
+   */
+  private async getAvailableShares(registrationId: string, payments: { amount: number | string | { toString(): string } }[], pricePerShare: number, quantity: number): Promise<number> {
+    const totalPaid = computeTotalPaid(payments);
+    const vestedShares = computeVestedShares(totalPaid, pricePerShare, quantity);
+
+    // C3: Include completed sells too, not just pending
+    const existingSells = await this.prisma.registration.aggregate({
+      where: {
+        sellsRegistrationId: registrationId,
+        type: 'SELL',
+        status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
+      },
+      _sum: { quantity: true },
+    });
+
+    const soldQty = existingSells._sum.quantity || 0;
+    return vestedShares - soldQty;
   }
 
   async createBuy(data: {
@@ -171,35 +192,43 @@ export class RegistrationsService {
     const pricePerShare = Number(shareClass.pricePerShare);
     const totalAmount = data.quantity * pricePerShare;
 
+    // C6: Guard against null coop
     const coop = await this.prisma.coop.findUnique({
       where: { id: data.coopId },
       select: { ogmPrefix: true, requiresApproval: true },
     });
 
-    const registrationCount = await this.prisma.registration.count({
-      where: { coopId: data.coopId },
-    });
-    const ogmCode = generateOgmCode(coop!.ogmPrefix, registrationCount + 1);
+    if (!coop) {
+      throw new NotFoundException('Cooperative not found');
+    }
 
-    const initialStatus = coop!.requiresApproval ? 'PENDING' : 'PENDING_PAYMENT';
+    // I2: Wrap count+create in transaction for OGM uniqueness
+    return this.prisma.$transaction(async (tx) => {
+      const registrationCount = await tx.registration.count({
+        where: { coopId: data.coopId },
+      });
+      const ogmCode = generateOgmCode(coop.ogmPrefix, registrationCount + 1);
 
-    return this.prisma.registration.create({
-      data: {
-        coopId: data.coopId,
-        shareholderId: data.shareholderId,
-        shareClassId: data.shareClassId,
-        projectId: data.projectId || null,
-        type: 'BUY',
-        status: initialStatus,
-        quantity: data.quantity,
-        pricePerShare,
-        totalAmount,
-        registerDate: new Date(),
-        isSavings: data.isSavings || false,
-        ogmCode,
-        channelId: data.channelId || null,
-      },
-      include: this.defaultInclude,
+      const initialStatus = coop.requiresApproval ? 'PENDING' : 'PENDING_PAYMENT';
+
+      return tx.registration.create({
+        data: {
+          coopId: data.coopId,
+          shareholderId: data.shareholderId,
+          shareClassId: data.shareClassId,
+          projectId: data.projectId || null,
+          type: 'BUY',
+          status: initialStatus,
+          quantity: data.quantity,
+          pricePerShare,
+          totalAmount,
+          registerDate: new Date(),
+          isSavings: data.isSavings || false,
+          ogmCode,
+          channelId: data.channelId || null,
+        },
+        include: this.defaultInclude,
+      });
     });
   }
 
@@ -215,39 +244,29 @@ export class RegistrationsService {
         coopId: data.coopId,
         shareholderId: data.shareholderId,
         type: 'BUY',
+        // I8: Only allow selling against active/completed buys
+        status: { in: ['ACTIVE', 'COMPLETED'] },
       },
       include: { shareClass: true, payments: true },
     });
 
     if (!buyRegistration) {
-      throw new NotFoundException('Buy registration not found');
+      throw new NotFoundException('Active buy registration not found');
     }
 
-    // Compute vested shares
-    const totalPaid = buyRegistration.payments.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0,
-    );
     const pricePerShare = Number(buyRegistration.pricePerShare);
-    const sharesOwned = Math.min(
-      Math.floor(totalPaid / pricePerShare),
+
+    // C3: Check available shares (vested minus all existing sells)
+    const available = await this.getAvailableShares(
+      data.registrationId,
+      buyRegistration.payments,
+      pricePerShare,
       buyRegistration.quantity,
     );
 
-    // Check for existing pending sell registrations on this buy
-    const pendingSells = await this.prisma.registration.aggregate({
-      where: {
-        sellsRegistrationId: data.registrationId,
-        type: 'SELL',
-        status: { in: ['PENDING', 'PENDING_PAYMENT'] },
-      },
-      _sum: { quantity: true },
-    });
-
-    const pendingQty = pendingSells._sum.quantity || 0;
-    if (pendingQty + data.quantity > sharesOwned) {
+    if (data.quantity > available) {
       throw new BadRequestException(
-        'Sale quantity plus pending sell requests exceeds owned shares',
+        'Sale quantity exceeds available shares (accounting for pending and completed sells)',
       );
     }
 
@@ -271,8 +290,9 @@ export class RegistrationsService {
     });
   }
 
-  async approve(id: string, processedByUserId: string) {
-    const registration = await this.findById(id);
+  // C4: Added coopId for tenant isolation
+  async approve(id: string, coopId: string, processedByUserId: string) {
+    const registration = await this.findById(id, coopId);
 
     if (registration.status !== 'PENDING') {
       throw new BadRequestException('Only pending registrations can be approved');
@@ -288,8 +308,8 @@ export class RegistrationsService {
     });
   }
 
-  async complete(id: string, processedByUserId: string, paymentDate?: Date) {
-    const registration = await this.findById(id);
+  async complete(id: string, processedByUserId: string, paymentDate?: Date, coopId?: string) {
+    const registration = await this.findById(id, coopId);
 
     if (
       registration.status !== 'PENDING_PAYMENT' &&
@@ -301,14 +321,10 @@ export class RegistrationsService {
     }
 
     const bankDate = paymentDate || new Date();
-    const totalPaid = registration.payments.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0,
-    );
+    const totalPaid = computeTotalPaid(registration.payments);
     const remaining = Number(registration.totalAmount) - totalPaid;
 
     return this.prisma.$transaction(async (tx) => {
-      // Create a payment for the remaining amount
       if (remaining > 0) {
         await tx.payment.create({
           data: {
@@ -333,8 +349,9 @@ export class RegistrationsService {
     });
   }
 
-  async reject(id: string, processedByUserId: string, reason: string) {
-    const registration = await this.findById(id);
+  // C4: Added coopId for tenant isolation
+  async reject(id: string, coopId: string, processedByUserId: string, reason: string) {
+    const registration = await this.findById(id, coopId);
 
     if (registration.status !== 'PENDING') {
       throw new BadRequestException('Only pending registrations can be rejected');
@@ -385,11 +402,16 @@ export class RegistrationsService {
         : `${registration.shareholder.firstName || ''} ${registration.shareholder.lastName || ''}`.trim();
 
     if (registration.type === 'BUY') {
+      // S4: Throw if coop bank details not configured
+      if (!coop?.bankIban) {
+        throw new BadRequestException('Cooperative bank account (IBAN) must be configured before generating payment details');
+      }
+
       return {
         direction: 'incoming' as const,
-        beneficiaryName: coop?.name || '',
-        iban: coop?.bankIban || '',
-        bic: coop?.bankBic || '',
+        beneficiaryName: coop.name || '',
+        iban: coop.bankIban,
+        bic: coop.bankBic || '',
         amount: Number(registration.totalAmount),
         ogmCode: registration.ogmCode || '',
         shareholderName,
@@ -421,27 +443,28 @@ export class RegistrationsService {
         coopId: data.coopId,
         shareholderId: data.fromShareholderId,
         type: 'BUY',
+        // I8: Only allow transfers from active/completed buys
+        status: { in: ['ACTIVE', 'COMPLETED'] },
       },
       include: { shareClass: true, payments: true },
     });
 
     if (!buyRegistration) {
-      throw new NotFoundException('Registration not found');
+      throw new NotFoundException('Active buy registration not found');
     }
 
-    // Check ownership
-    const totalPaid = buyRegistration.payments.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0,
-    );
     const pricePerShare = Number(buyRegistration.pricePerShare);
-    const sharesOwned = Math.min(
-      Math.floor(totalPaid / pricePerShare),
+
+    // I7: Check available shares (vested minus pending/completed sells)
+    const available = await this.getAvailableShares(
+      data.registrationId,
+      buyRegistration.payments,
+      pricePerShare,
       buyRegistration.quantity,
     );
 
-    if (data.quantity > sharesOwned) {
-      throw new BadRequestException('Transfer quantity exceeds owned shares');
+    if (data.quantity > available) {
+      throw new BadRequestException('Transfer quantity exceeds available shares');
     }
 
     const totalAmount = data.quantity * pricePerShare;

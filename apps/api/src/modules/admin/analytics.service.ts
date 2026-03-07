@@ -31,18 +31,16 @@ export interface ShareholderGrowthPoint {
 
 export interface TransactionSummaryPoint {
   date: string;
-  purchases: number;
-  sales: number;
-  transfers: number;
+  buys: number;
+  sells: number;
   volume: number;
 }
 
 export interface TransactionSummaryResult {
   timeline: TransactionSummaryPoint[];
   totals: {
-    purchases: number;
-    sales: number;
-    transfers: number;
+    buys: number;
+    sells: number;
     volume: number;
   };
 }
@@ -77,9 +75,8 @@ interface ExitRow {
 
 interface TransactionSummaryRow {
   bucket: Date;
-  purchases: string;
-  sales: string;
-  transfers: string;
+  buys: string;
+  sells: string;
   volume: string;
 }
 
@@ -425,14 +422,14 @@ export class AnalyticsService {
     const since = this.getDateRange(period);
     const trunc = this.getTrunc(period);
 
+    // S3: Exclude transfer registrations from volume to avoid double-counting
     const rows = since
       ? await this.prisma.$queryRaw<TransactionSummaryRow[]>(Prisma.sql`
           SELECT
             date_trunc(${trunc}, r."createdAt") AS bucket,
-            COUNT(*) FILTER (WHERE r.type = 'BUY' AND r."fromShareholderId" IS NULL)::text AS purchases,
-            COUNT(*) FILTER (WHERE r.type = 'SELL' AND r."toShareholderId" IS NULL)::text  AS sales,
-            COUNT(*) FILTER (WHERE r.type = 'BUY' AND r."fromShareholderId" IS NOT NULL)::text AS transfers,
-            COALESCE(SUM(r."totalAmount"), 0)::text AS volume
+            COUNT(*) FILTER (WHERE r.type = 'BUY' AND r."fromShareholderId" IS NULL)::text AS buys,
+            COUNT(*) FILTER (WHERE r.type = 'SELL' AND r."toShareholderId" IS NULL)::text  AS sells,
+            COALESCE(SUM(r."totalAmount") FILTER (WHERE r."fromShareholderId" IS NULL AND r."toShareholderId" IS NULL), 0)::text AS volume
           FROM registrations r
           WHERE r."coopId" = ${coopId}
             AND r.status IN ('ACTIVE', 'COMPLETED')
@@ -443,10 +440,9 @@ export class AnalyticsService {
       : await this.prisma.$queryRaw<TransactionSummaryRow[]>(Prisma.sql`
           SELECT
             date_trunc(${trunc}, r."createdAt") AS bucket,
-            COUNT(*) FILTER (WHERE r.type = 'BUY' AND r."fromShareholderId" IS NULL)::text AS purchases,
-            COUNT(*) FILTER (WHERE r.type = 'SELL' AND r."toShareholderId" IS NULL)::text  AS sales,
-            COUNT(*) FILTER (WHERE r.type = 'BUY' AND r."fromShareholderId" IS NOT NULL)::text AS transfers,
-            COALESCE(SUM(r."totalAmount"), 0)::text AS volume
+            COUNT(*) FILTER (WHERE r.type = 'BUY' AND r."fromShareholderId" IS NULL)::text AS buys,
+            COUNT(*) FILTER (WHERE r.type = 'SELL' AND r."toShareholderId" IS NULL)::text  AS sells,
+            COALESCE(SUM(r."totalAmount") FILTER (WHERE r."fromShareholderId" IS NULL AND r."toShareholderId" IS NULL), 0)::text AS volume
           FROM registrations r
           WHERE r."coopId" = ${coopId}
             AND r.status IN ('ACTIVE', 'COMPLETED')
@@ -457,23 +453,21 @@ export class AnalyticsService {
     const timeline: TransactionSummaryPoint[] = this.fillGaps(
       rows.map((row) => ({
         date: row.bucket.toISOString(),
-        purchases: Number(row.purchases) || 0,
-        sales: Number(row.sales) || 0,
-        transfers: Number(row.transfers) || 0,
+        buys: Number(row.buys) || 0,
+        sells: Number(row.sells) || 0,
         volume: Number(row.volume) || 0,
       })),
       period,
-      (date) => ({ date, purchases: 0, sales: 0, transfers: 0, volume: 0 }),
+      (date) => ({ date, buys: 0, sells: 0, volume: 0 }),
     );
 
     const totals = timeline.reduce(
       (acc, point) => ({
-        purchases: acc.purchases + point.purchases,
-        sales: acc.sales + point.sales,
-        transfers: acc.transfers + point.transfers,
+        buys: acc.buys + point.buys,
+        sells: acc.sells + point.sells,
         volume: acc.volume + point.volume,
       }),
-      { purchases: 0, sales: 0, transfers: 0, volume: 0 },
+      { buys: 0, sells: 0, volume: 0 },
     );
 
     return { timeline, totals };
