@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.2.2] - 2026-03-07
+
+### Added
+- **Auto-create user accounts for shareholders** — when an existing shareholder requests a magic link login but has no user account, one is automatically created and linked. Enables imported shareholders to self-service login.
+
 ## [0.2.1] - 2026-03-07
 
 ### Fixed
