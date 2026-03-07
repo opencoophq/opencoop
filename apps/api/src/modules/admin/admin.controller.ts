@@ -660,8 +660,8 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Query('period') period?: string,
   ) {
-    const validPeriod = ['month', 'quarter', 'year', 'all'].includes(period || '')
-      ? (period as 'month' | 'quarter' | 'year' | 'all')
+    const validPeriod = ['day', 'month', 'quarter', 'year', 'all'].includes(period || '')
+      ? (period as 'day' | 'month' | 'quarter' | 'year' | 'all')
       : 'month';
     return this.analyticsService.getCapitalTimeline(coopId, validPeriod);
   }
@@ -678,8 +678,8 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Query('period') period?: string,
   ) {
-    const validPeriod = ['month', 'quarter', 'year', 'all'].includes(period || '')
-      ? (period as 'month' | 'quarter' | 'year' | 'all')
+    const validPeriod = ['day', 'month', 'quarter', 'year', 'all'].includes(period || '')
+      ? (period as 'day' | 'month' | 'quarter' | 'year' | 'all')
       : 'month';
     return this.analyticsService.getShareholderGrowth(coopId, validPeriod);
   }
@@ -690,8 +690,8 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Query('period') period?: string,
   ) {
-    const validPeriod = ['month', 'quarter', 'year', 'all'].includes(period || '')
-      ? (period as 'month' | 'quarter' | 'year' | 'all')
+    const validPeriod = ['day', 'month', 'quarter', 'year', 'all'].includes(period || '')
+      ? (period as 'day' | 'month' | 'quarter' | 'year' | 'all')
       : 'month';
     return this.analyticsService.getTransactionSummary(coopId, validPeriod);
   }

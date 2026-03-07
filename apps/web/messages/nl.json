@@ -1404,6 +1404,7 @@
     "cumulative": "Cumulatief",
     "noData": "Nog geen gegevens beschikbaar",
     "periods": {
+      "day": "Dagelijks",
       "month": "Maandelijks",
       "quarter": "Kwartaal",
       "year": "Jaarlijks",

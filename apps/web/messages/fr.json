@@ -1404,6 +1404,7 @@
     "cumulative": "Cumulatif",
     "noData": "Aucune donnée disponible",
     "periods": {
+      "day": "Journalier",
       "month": "Mensuel",
       "quarter": "Trimestriel",
       "year": "Annuel",

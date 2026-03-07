@@ -24,7 +24,7 @@ interface DataPoint {
   netChange: number;
 }
 
-type Period = 'month' | 'quarter' | 'year' | 'all';
+type Period = 'day' | 'month' | 'quarter' | 'year' | 'all';
 
 interface Props {
   period: Period;
@@ -53,6 +53,7 @@ export function CapitalTimelineChart({ period }: Props) {
       const q = Math.ceil((d.getMonth() + 1) / 3);
       return `Q${q} ${d.getFullYear()}`;
     }
+    if (period === 'day') return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
     return d.toLocaleDateString(locale, { month: 'short', year: '2-digit' });
   };
 
