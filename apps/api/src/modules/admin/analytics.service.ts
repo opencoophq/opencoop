@@ -132,6 +132,10 @@ export class AnalyticsService {
       currentBucket = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
     }
 
+    // Extend to the last data point if it's beyond the current period
+    const lastPointBucket = new Date(points[points.length - 1].date);
+    if (lastPointBucket > currentBucket) currentBucket = lastPointBucket;
+
     const existing = new Map<string, T>();
     for (const p of points) existing.set(p.date, p);
 
