@@ -1,12 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { format, type Locale } from 'date-fns';
+import { format, parse, isValid, type Locale } from 'date-fns';
 import { nl, enGB, enUS, de, fr } from 'date-fns/locale';
 import { DayPicker, getDefaultClassNames } from 'react-day-picker';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useLocale, LocaleCode } from '@/contexts/locale-context';
 
@@ -51,6 +51,7 @@ export function DatePicker({
 }: DatePickerProps) {
   const { locale } = useLocale();
   const [open, setOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState('');
 
   const dateLocale = localeMap[locale] || nl;
   const dateFormat = dateFormatMap[locale] || 'dd/MM/yyyy';
@@ -66,15 +67,17 @@ export function DatePicker({
     }
   }, [value]);
 
-  // Format date for display
-  const displayValue = React.useMemo(() => {
-    if (!selectedDate || isNaN(selectedDate.getTime())) return '';
-    return format(selectedDate, dateFormat, { locale: dateLocale });
+  // Sync input value when external value changes
+  React.useEffect(() => {
+    if (selectedDate && !isNaN(selectedDate.getTime())) {
+      setInputValue(format(selectedDate, dateFormat, { locale: dateLocale }));
+    } else {
+      setInputValue('');
+    }
   }, [selectedDate, dateFormat, dateLocale]);
 
   const handleSelect = (date: Date | undefined) => {
     if (date) {
-      // Convert to ISO string (YYYY-MM-DD)
       const isoDate = format(date, 'yyyy-MM-dd');
       onChange?.(isoDate);
     } else {
@@ -83,22 +86,43 @@ export function DatePicker({
     setOpen(false);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const text = e.target.value;
+    setInputValue(text);
+    const parsed = parse(text, dateFormat, new Date());
+    if (isValid(parsed) && parsed.getFullYear() >= 1920 && parsed.getFullYear() <= 2100) {
+      onChange?.(format(parsed, 'yyyy-MM-dd'));
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Reset input to last valid value on blur
+    if (selectedDate && !isNaN(selectedDate.getTime())) {
+      setInputValue(format(selectedDate, dateFormat, { locale: dateLocale }));
+    }
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
+      <div className={cn('relative', className)}>
+        <Input
+          value={inputValue}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          placeholder={placeholder}
           disabled={disabled}
-          className={cn(
-            'w-full justify-start text-left font-normal',
-            !value && 'text-muted-foreground',
-            className
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {displayValue || placeholder}
-        </Button>
-      </PopoverTrigger>
+          className="pr-10"
+        />
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <CalendarIcon className="h-4 w-4" />
+          </button>
+        </PopoverTrigger>
+      </div>
       <PopoverContent className="w-auto p-0" align="start">
         <DayPicker
           mode="single"
