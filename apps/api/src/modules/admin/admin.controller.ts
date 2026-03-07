@@ -448,21 +448,23 @@ export class AdminController {
   @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Approve a registration' })
   async approveRegistration(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.registrationsService.approve(id, user.id);
+    return this.registrationsService.approve(id, coopId, user.id);
   }
 
   @Put('registrations/:id/reject')
   @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Reject a registration' })
   async rejectRegistration(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
     @Body('reason') reason: string,
   ) {
-    return this.registrationsService.reject(id, user.id, reason);
+    return this.registrationsService.reject(id, coopId, user.id, reason);
   }
 
   @Post('transfers')
@@ -529,10 +531,11 @@ export class AdminController {
   @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Mark a registration as completed' })
   async completeRegistration(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.registrationsService.complete(id, user.id);
+    return this.registrationsService.complete(id, user.id, undefined, coopId);
   }
 
   // ==================== BANK IMPORT ====================

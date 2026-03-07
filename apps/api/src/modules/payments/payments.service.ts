@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { computeTotalPaid } from '@opencoop/shared';
 
 @Injectable()
 export class PaymentsService {
@@ -46,6 +47,13 @@ export class PaymentsService {
       throw new NotFoundException('Registration not found');
     }
 
+    // I6: Only allow payments on PENDING_PAYMENT or ACTIVE registrations
+    if (!['PENDING_PAYMENT', 'ACTIVE'].includes(registration.status)) {
+      throw new BadRequestException(
+        `Cannot add payment to registration with status ${registration.status}`,
+      );
+    }
+
     const payment = await this.prisma.payment.create({
       data: {
         registrationId: data.registrationId,
@@ -59,11 +67,7 @@ export class PaymentsService {
     });
 
     // Update registration status based on cumulative payments
-    const totalPaid = registration.payments.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0,
-    ) + data.amount;
-
+    const totalPaid = computeTotalPaid(registration.payments) + data.amount;
     const totalAmount = Number(registration.totalAmount);
 
     if (totalPaid >= totalAmount) {
@@ -82,7 +86,7 @@ export class PaymentsService {
     return payment;
   }
 
-  async findPendingByCoopId(coopId: string) {
+  async findPendingRegistrationsByCoopId(coopId: string) {
     return this.prisma.registration.findMany({
       where: {
         coopId,

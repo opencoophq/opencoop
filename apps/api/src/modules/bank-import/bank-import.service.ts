@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
+import { computeTotalPaid } from '@opencoop/shared';
 
 @Injectable()
 export class BankImportService {
@@ -66,10 +67,14 @@ export class BankImportService {
 
     let matchedCount = 0;
     let unmatchedCount = 0;
+    let skippedCount = 0;
 
     for (const line of dataLines) {
       const fields = line.split(';').map((f) => f.trim().replace(/^"|"$/g, ''));
-      if (fields.length < 4) continue;
+      if (fields.length < 4) {
+        skippedCount++;
+        continue;
+      }
 
       // Generic CSV: date;amount;counterparty;reference
       const [dateStr, amountStr, counterparty, reference] = fields;
@@ -77,7 +82,28 @@ export class BankImportService {
       const date = new Date(dateStr);
       const amount = parseFloat(amountStr.replace(',', '.'));
 
-      if (isNaN(date.getTime()) || isNaN(amount)) continue;
+      if (isNaN(date.getTime()) || isNaN(amount)) {
+        skippedCount++;
+        continue;
+      }
+
+      // S7b: Skip negative amounts (debit transactions)
+      if (amount <= 0) {
+        await this.prisma.bankTransaction.create({
+          data: {
+            coopId,
+            bankImportId: bankImport.id,
+            date,
+            amount,
+            counterparty: counterparty || null,
+            ogmCode: null,
+            referenceText: reference || null,
+            matchStatus: 'UNMATCHED',
+          },
+        });
+        unmatchedCount++;
+        continue;
+      }
 
       // Extract OGM code from reference (pattern: +++XXX/XXXX/XXXXX+++)
       const ogmMatch = reference?.match(/\+\+\+\d{3}\/\d{4}\/\d{5}\+\+\+/);
@@ -99,49 +125,57 @@ export class BankImportService {
           matchStatus = 'AUTO_MATCHED';
           matchedCount++;
 
-          // Create a bank transaction first so we can link the payment to it
-          const bankTx = await this.prisma.bankTransaction.create({
-            data: {
-              coopId,
-              bankImportId: bankImport.id,
-              date,
-              amount,
-              counterparty: counterparty || null,
-              ogmCode,
-              referenceText: reference || null,
-              matchStatus,
-            },
+          // I1: Wrap entire auto-match in a transaction
+          await this.prisma.$transaction(async (tx) => {
+            const bankTx = await tx.bankTransaction.create({
+              data: {
+                coopId,
+                bankImportId: bankImport.id,
+                date,
+                amount,
+                counterparty: counterparty || null,
+                ogmCode,
+                referenceText: reference || null,
+                matchStatus,
+              },
+            });
+
+            await tx.payment.create({
+              data: {
+                registrationId: registration.id,
+                coopId,
+                amount,
+                bankDate: date,
+                bankTransactionId: bankTx.id,
+                matchedByUserId: importedById,
+                matchedAt: new Date(),
+              },
+            });
+
+            // Check if fully paid and auto-complete
+            const allPayments = await tx.payment.findMany({
+              where: { registrationId: registration.id },
+              select: { amount: true },
+            });
+            const totalPaid = computeTotalPaid(allPayments);
+
+            if (totalPaid >= Number(registration.totalAmount)) {
+              await tx.registration.update({
+                where: { id: registration.id },
+                data: {
+                  status: 'COMPLETED',
+                  processedAt: new Date(),
+                },
+              });
+            } else if (registration.status === 'PENDING_PAYMENT') {
+              await tx.registration.update({
+                where: { id: registration.id },
+                data: { status: 'ACTIVE' },
+              });
+            }
           });
 
-          // Create a Payment record linked to this registration and bank transaction
-          await this.prisma.payment.create({
-            data: {
-              registrationId: registration.id,
-              coopId,
-              amount,
-              bankDate: date,
-              bankTransactionId: bankTx.id,
-              matchedByUserId: importedById,
-              matchedAt: new Date(),
-            },
-          });
-
-          // Auto-complete the registration if fully paid
-          const allPayments = await this.prisma.payment.findMany({
-            where: { registrationId: registration.id },
-            select: { amount: true },
-          });
-          const totalPaid = allPayments.reduce((s, p) => s + Number(p.amount), 0);
-
-          if (totalPaid >= Number(registration.totalAmount)) {
-            await this.registrationsService.complete(
-              registration.id,
-              importedById,
-              date,
-            );
-          }
-
-          continue; // bankTransaction already created above
+          continue;
         } else {
           unmatchedCount++;
         }
@@ -163,7 +197,7 @@ export class BankImportService {
       });
     }
 
-    // Update import counts
+    // S7: Include skipped count in response
     return this.prisma.bankImport.update({
       where: { id: bankImport.id },
       data: { matchedCount, unmatchedCount },
@@ -191,47 +225,53 @@ export class BankImportService {
       throw new NotFoundException('Registration not found');
     }
 
-    // Create a Payment record linked to this registration and bank transaction
-    const payment = await this.prisma.payment.create({
-      data: {
-        registrationId,
-        coopId: registration.coopId,
-        amount: Number(bankTx.amount),
-        bankDate: bankTx.date,
-        bankTransactionId,
-        matchedByUserId: userId,
-        matchedAt: new Date(),
-      },
-    });
-
-    // Update bank transaction match status
-    await this.prisma.bankTransaction.update({
-      where: { id: bankTransactionId },
-      data: {
-        matchStatus: 'MANUAL_MATCHED',
-      },
-    });
-
-    // Auto-complete the registration if fully paid
-    if (
-      registration.status === 'PENDING_PAYMENT' ||
-      registration.status === 'ACTIVE'
-    ) {
-      const allPayments = await this.prisma.payment.findMany({
-        where: { registrationId },
-        select: { amount: true },
+    // I1: Wrap manual match in a transaction
+    return this.prisma.$transaction(async (tx) => {
+      await tx.payment.create({
+        data: {
+          registrationId,
+          coopId: registration.coopId,
+          amount: Number(bankTx.amount),
+          bankDate: bankTx.date,
+          bankTransactionId,
+          matchedByUserId: userId,
+          matchedAt: new Date(),
+        },
       });
-      const totalPaid = allPayments.reduce((s, p) => s + Number(p.amount), 0);
 
-      if (totalPaid >= Number(registration.totalAmount)) {
-        await this.registrationsService.complete(
-          registration.id,
-          userId,
-          bankTx.date,
-        );
+      await tx.bankTransaction.update({
+        where: { id: bankTransactionId },
+        data: { matchStatus: 'MANUAL_MATCHED' },
+      });
+
+      // Auto-complete if fully paid
+      if (
+        registration.status === 'PENDING_PAYMENT' ||
+        registration.status === 'ACTIVE'
+      ) {
+        const allPayments = await tx.payment.findMany({
+          where: { registrationId },
+          select: { amount: true },
+        });
+        const totalPaid = computeTotalPaid(allPayments);
+
+        if (totalPaid >= Number(registration.totalAmount)) {
+          await tx.registration.update({
+            where: { id: registrationId },
+            data: {
+              status: 'COMPLETED',
+              processedAt: new Date(),
+            },
+          });
+        } else if (registration.status === 'PENDING_PAYMENT') {
+          await tx.registration.update({
+            where: { id: registrationId },
+            data: { status: 'ACTIVE' },
+          });
+        }
       }
-    }
 
-    return { success: true };
+      return { success: true };
+    });
   }
 }

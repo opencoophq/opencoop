@@ -166,13 +166,13 @@ export class ShareholderActionsController {
       throw new BadRequestException('Bank account (IBAN) is required before selling shares');
     }
 
-    // Verify the buy registration belongs to this shareholder and check holding period
+    // Verify the buy registration belongs to this shareholder, is active, and check holding period
     const buyRegistration = await this.prisma.registration.findFirst({
-      where: { id: dto.registrationId, shareholderId, type: 'BUY' },
+      where: { id: dto.registrationId, shareholderId, type: 'BUY', status: { in: ['ACTIVE', 'COMPLETED'] } },
     });
 
     if (!buyRegistration) {
-      throw new NotFoundException('Registration not found');
+      throw new NotFoundException('Active buy registration not found');
     }
 
     // Check minimum holding period
@@ -338,7 +338,7 @@ export class ShareholderActionsController {
     return this.documentsService.generateDividendStatement(shareholderId, dividendPayoutId, locale);
   }
 
-  @Post('purchase')
+  @Post('buy')
   @ApiOperation({ summary: 'Purchase shares (shareholder self-service)' })
   async purchaseRequest(
     @Param('shareholderId') shareholderId: string,

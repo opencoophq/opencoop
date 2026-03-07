@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { ShareCertificate, DividendStatement } from '@opencoop/pdf-templates';
@@ -41,6 +41,12 @@ export class DocumentsService {
     const vestedQuantity = pricePerShare > 0
       ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity)
       : 0;
+
+    // S5: Don't generate certificate for 0 vested shares
+    if (vestedQuantity <= 0) {
+      throw new BadRequestException('No vested shares to certify — payment required first');
+    }
+
     const totalValue = vestedQuantity * pricePerShare;
 
     const shareholderName =

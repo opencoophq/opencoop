@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
 import { CoopsService } from '../coops/coops.service';
+import { computeTotalPaid, computeVestedShares } from '@opencoop/shared';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -469,8 +470,29 @@ export class AuthService {
     const isLegacyUser = !user.emailVerified && !user.emailVerifyToken;
     const emailVerified = !!user.emailVerified || isLegacyUser;
 
+    // C5: Compute sharesOwned for each BUY registration so frontend doesn't fall back to quantity
+    const shareholdersWithComputed = safeUser.shareholders.map((s) => ({
+      ...s,
+      registrations: s.registrations.map((reg) => {
+        if (reg.payments) {
+          const totalPaid = computeTotalPaid(reg.payments);
+          const pricePerShare = Number(reg.pricePerShare);
+          const sharesOwned = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
+          return {
+            ...reg,
+            totalPaid,
+            sharesOwned,
+            sharesRemaining: reg.quantity - sharesOwned,
+            fullyPaid: totalPaid >= Number(reg.totalAmount),
+          };
+        }
+        return reg;
+      }),
+    }));
+
     return {
       ...safeUser,
+      shareholders: shareholdersWithComputed,
       emailVerified,
       hasPassword: !!passwordHash,
       googleLinked: !!user.googleId,

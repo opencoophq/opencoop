@@ -407,6 +407,7 @@ export class ReportsService {
 
     const openingBalance = await this.computeCapitalAtDate(coopId, fromDate);
 
+    // I3: Use actual payments for movements, consistent with computeCapitalAtDate
     const registrations = await this.prisma.registration.findMany({
       where: {
         coopId,
@@ -425,18 +426,22 @@ export class ReportsService {
         shareClass: {
           select: { name: true },
         },
+        payments: { select: { amount: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
 
-    const movements: CapitalMovement[] = registrations.map((reg) => ({
-      date: reg.createdAt,
-      type: reg.type,
-      shareholderName: this.getShareholderName(reg.shareholder),
-      shareClass: reg.shareClass?.name ?? '',
-      quantity: reg.quantity,
-      amount: Number(reg.totalAmount),
-    }));
+    const movements: CapitalMovement[] = registrations.map((reg) => {
+      const paidAmount = reg.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      return {
+        date: reg.createdAt,
+        type: reg.type,
+        shareholderName: this.getShareholderName(reg.shareholder),
+        shareClass: reg.shareClass?.name ?? '',
+        quantity: reg.quantity,
+        amount: paidAmount,
+      };
+    });
 
     // BUYs add capital, SELLs subtract it
     const netMovement = movements.reduce((sum, m) => {
@@ -487,7 +492,12 @@ export class ReportsService {
     });
 
     const entries: ShareholderRegisterEntry[] = shareholders.map((sh) => {
-      const shareCount = sh.registrations.reduce((sum, r) => sum + r.quantity, 0);
+      // I9: Use vested shares (from payments) not raw registered quantity
+      const shareCount = sh.registrations.reduce((sum, r) => {
+        const paid = r.payments.reduce((pSum, p) => pSum + Number(p.amount), 0);
+        const pps = Number(r.pricePerShare);
+        return sum + (pps > 0 ? Math.min(Math.floor(paid / pps), r.quantity) : 0);
+      }, 0);
       const totalValue = sh.registrations.reduce(
         (sum, r) => sum + r.payments.reduce((pSum, p) => pSum + Number(p.amount), 0),
         0,
