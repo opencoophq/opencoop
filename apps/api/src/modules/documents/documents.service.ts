@@ -16,9 +16,12 @@ export class DocumentsService {
       where: { id: shareholderId },
       include: {
         coop: true,
-        shares: {
-          where: { status: 'ACTIVE' },
-          include: { shareClass: true },
+        registrations: {
+          where: { type: 'BUY', status: { in: ['ACTIVE', 'COMPLETED'] } },
+          include: {
+            shareClass: true,
+            payments: { select: { amount: true } },
+          },
         },
       },
     });
@@ -27,13 +30,18 @@ export class DocumentsService {
       throw new NotFoundException('Shareholder not found');
     }
 
-    if (shareholder.shares.length === 0) {
-      throw new NotFoundException('No active shares found');
+    if (shareholder.registrations.length === 0) {
+      throw new NotFoundException('No active registrations found');
     }
 
-    // Use first active share for certificate
-    const share = shareholder.shares[0];
-    const totalValue = share.quantity * Number(share.purchasePricePerShare);
+    // Use first completed buy registration for certificate
+    const reg = shareholder.registrations[0];
+    const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
+    const pricePerShare = Number(reg.pricePerShare);
+    const vestedQuantity = pricePerShare > 0
+      ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity)
+      : 0;
+    const totalValue = vestedQuantity * pricePerShare;
 
     const shareholderName =
       shareholder.type === 'COMPANY'
@@ -51,12 +59,12 @@ export class DocumentsService {
         ? (isEncrypted(shareholder.nationalId) ? decryptField(shareholder.nationalId) : shareholder.nationalId)
         : undefined,
       companyId: shareholder.companyId || undefined,
-      shareClassName: share.shareClass.name,
-      shareClassCode: share.shareClass.code,
-      quantity: share.quantity,
-      pricePerShare: Number(share.purchasePricePerShare),
+      shareClassName: reg.shareClass.name,
+      shareClassCode: reg.shareClass.code,
+      quantity: vestedQuantity,
+      pricePerShare,
       totalValue,
-      purchaseDate: share.purchaseDate.toISOString().split('T')[0],
+      purchaseDate: reg.registerDate.toISOString().split('T')[0],
       issueDate: new Date().toISOString().split('T')[0],
       locale: locale || 'nl',
     });
@@ -82,9 +90,9 @@ export class DocumentsService {
       },
     });
 
-    // Update share certificate number
-    await this.prisma.share.update({
-      where: { id: share.id },
+    // Update registration certificate number
+    await this.prisma.registration.update({
+      where: { id: reg.id },
       data: { certificateNumber: certNumber },
     });
 

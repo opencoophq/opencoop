@@ -64,7 +64,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [verificationResent, setVerificationResent] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminStats, setAdminStats] = useState<{
-    pendingTransactions: number;
+    pendingRegistrations: number;
     pendingShareholders: number;
     unmatchedBankTransactions: number;
   } | null>(null);
@@ -149,7 +149,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { href: '/dashboard/admin', label: t('common.overview'), icon: <LayoutDashboard className="h-4 w-4" /> },
         hasPermission('canManageShareholders') && { href: '/dashboard/admin/shareholders', label: t('admin.shareholders.title'), icon: <Users className="h-4 w-4" />, badge: adminStats?.pendingShareholders },
         hasPermission('canManageShareClasses') && { href: '/dashboard/admin/share-classes', label: t('admin.shareClasses.title'), icon: <FileText className="h-4 w-4" /> },
-        hasPermission('canManageTransactions') && { href: '/dashboard/admin/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" />, badge: adminStats?.pendingTransactions },
+        hasPermission('canManageTransactions') && { href: '/dashboard/admin/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" />, badge: adminStats?.pendingRegistrations },
         hasPermission('canManageProjects') && { href: '/dashboard/admin/projects', label: t('admin.projects.title'), icon: <Building2 className="h-4 w-4" /> },
         hasPermission('canManageDividends') && { href: '/dashboard/admin/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
         hasPermission('canManageTransactions') && { href: '/dashboard/admin/bank-import', label: t('admin.bankImport.title'), icon: <Upload className="h-4 w-4" />, badge: adminStats?.unmatchedBankTransactions },

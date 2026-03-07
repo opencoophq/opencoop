@@ -403,14 +403,12 @@ export class AuthService {
                 },
               },
             },
-            shares: {
+            registrations: {
               include: {
                 shareClass: true,
                 project: true,
+                payments: { orderBy: { bankDate: 'asc' } },
               },
-            },
-            transactions: {
-              orderBy: { createdAt: 'desc' },
             },
             dividendPayouts: {
               include: {

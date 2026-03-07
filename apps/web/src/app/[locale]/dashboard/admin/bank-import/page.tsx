@@ -25,12 +25,12 @@ interface MatchedShareholder {
   lastName?: string;
 }
 
-interface MatchedTransaction {
+interface MatchedRegistration {
   shareholder?: MatchedShareholder;
 }
 
 interface MatchedPayment {
-  transaction?: MatchedTransaction;
+  registration?: MatchedRegistration;
 }
 
 interface BankTx {
@@ -134,7 +134,7 @@ export default function BankImportPage() {
               </TableHeader>
               <TableBody>
                 {transactions.map((tx) => {
-                  const shareholder = tx.matchedPayment?.transaction?.shareholder;
+                  const shareholder = tx.matchedPayment?.registration?.shareholder;
                   const matchedName = shareholder
                     ? `${shareholder.firstName || ''} ${shareholder.lastName || ''}`.trim()
                     : null;

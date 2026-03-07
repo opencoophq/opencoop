@@ -14,7 +14,7 @@ import { CoopsModule } from './modules/coops/coops.module';
 import { ShareholdersModule } from './modules/shareholders/shareholders.module';
 import { SharesModule } from './modules/shares/shares.module';
 import { ProjectsModule } from './modules/projects/projects.module';
-import { TransactionsModule } from './modules/transactions/transactions.module';
+import { RegistrationsModule } from './modules/registrations/registrations.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { BankImportModule } from './modules/bank-import/bank-import.module';
 import { DividendsModule } from './modules/dividends/dividends.module';
@@ -55,7 +55,7 @@ import { LlmsModule } from './modules/llms/llms.module';
     ShareholdersModule,
     SharesModule,
     ProjectsModule,
-    TransactionsModule,
+    RegistrationsModule,
     PaymentsModule,
     BankImportModule,
     DividendsModule,

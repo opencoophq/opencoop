@@ -18,7 +18,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { TransactionsService } from '../transactions/transactions.service';
+import { RegistrationsService } from '../registrations/registrations.service';
 import { IsString, IsInt, IsOptional, Min, ValidateNested, IsObject, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AddressDto } from './dto/create-shareholder.dto';
@@ -41,7 +41,7 @@ class PurchaseRequestDto {
 
 class SellRequestDto {
   @IsString()
-  shareId: string;
+  registrationId: string;
 
   @IsInt()
   @Min(1)
@@ -131,7 +131,7 @@ export class ShareholderActionsController {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
-    private transactionsService: TransactionsService,
+    private registrationsService: RegistrationsService,
     private documentsService: DocumentsService,
   ) {}
 
@@ -166,24 +166,20 @@ export class ShareholderActionsController {
       throw new BadRequestException('Bank account (IBAN) is required before selling shares');
     }
 
-    // Verify share belongs to shareholder
-    const share = await this.prisma.share.findFirst({
-      where: { id: dto.shareId, shareholderId },
+    // Verify the buy registration belongs to this shareholder and check holding period
+    const buyRegistration = await this.prisma.registration.findFirst({
+      where: { id: dto.registrationId, shareholderId, type: 'BUY' },
     });
 
-    if (!share) {
-      throw new NotFoundException('Share not found');
-    }
-
-    if (share.status !== 'ACTIVE') {
-      throw new BadRequestException('Only active shares can be sold');
+    if (!buyRegistration) {
+      throw new NotFoundException('Registration not found');
     }
 
     // Check minimum holding period
     const holdingMonths = shareholder.coop.minimumHoldingPeriod;
     if (holdingMonths > 0) {
-      const purchaseDate = new Date(share.purchaseDate);
-      const minDate = new Date(purchaseDate);
+      const registerDate = new Date(buyRegistration.registerDate);
+      const minDate = new Date(registerDate);
       minDate.setMonth(minDate.getMonth() + holdingMonths);
       if (new Date() < minDate) {
         throw new BadRequestException(
@@ -192,10 +188,10 @@ export class ShareholderActionsController {
       }
     }
 
-    return this.transactionsService.createSale({
+    return this.registrationsService.createSell({
       coopId: shareholder.coopId,
       shareholderId,
-      shareId: dto.shareId,
+      registrationId: dto.registrationId,
       quantity: dto.quantity,
     });
   }
@@ -351,7 +347,7 @@ export class ShareholderActionsController {
   ) {
     const shareholder = await this.verifyShareholder(shareholderId, user.id);
 
-    const transaction = await this.transactionsService.createPurchase({
+    const registration = await this.registrationsService.createBuy({
       coopId: shareholder.coopId,
       shareholderId,
       shareClassId: dto.shareClassId,
@@ -360,18 +356,18 @@ export class ShareholderActionsController {
     });
 
     // Return payment details so frontend can show QR code
-    if (transaction) {
-      const paymentDetails = await this.transactionsService.getPaymentDetails(
-        transaction.id,
+    if (registration) {
+      const paymentDetails = await this.registrationsService.getPaymentDetails(
+        registration.id,
         shareholder.coopId,
       );
       return {
-        transaction,
+        registration,
         paymentDetails,
       };
     }
 
-    return { transaction };
+    return { registration };
   }
 
   @Get('share-classes')
@@ -395,13 +391,13 @@ export class ShareholderActionsController {
     });
   }
 
-  @Get('transactions')
-  @ApiOperation({ summary: 'Get shareholder transactions' })
-  async getTransactions(
+  @Get('registrations')
+  @ApiOperation({ summary: 'Get shareholder registrations' })
+  async getRegistrations(
     @Param('shareholderId') shareholderId: string,
     @CurrentUser() user: CurrentUserData,
   ) {
     await this.verifyShareholder(shareholderId, user.id);
-    return this.transactionsService.findByShareholder(shareholderId);
+    return this.registrationsService.findByShareholder(shareholderId);
   }
 }

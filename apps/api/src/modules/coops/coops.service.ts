@@ -5,7 +5,7 @@ import { UpdateCoopDto } from './dto/update-coop.dto';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { PublicRegisterDto } from './dto/public-register.dto';
 import { ShareholdersService } from '../shareholders/shareholders.service';
-import { TransactionsService } from '../transactions/transactions.service';
+import { RegistrationsService } from '../registrations/registrations.service';
 import { AuditService } from '../audit/audit.service';
 import sharp from 'sharp';
 import * as path from 'path';
@@ -20,7 +20,7 @@ export class CoopsService {
   constructor(
     private prisma: PrismaService,
     private shareholdersService: ShareholdersService,
-    private transactionsService: TransactionsService,
+    private registrationsService: RegistrationsService,
     private auditService: AuditService,
   ) {}
 
@@ -48,11 +48,14 @@ export class CoopsService {
             shareholders: true,
           },
         },
-        shares: {
-          where: { status: 'ACTIVE' },
+        registrations: {
+          where: { type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
           select: {
             quantity: true,
-            purchasePricePerShare: true,
+            pricePerShare: true,
+            payments: {
+              select: { amount: true },
+            },
           },
         },
         subscription: {
@@ -65,8 +68,9 @@ export class CoopsService {
     });
 
     return coops.map((coop) => {
-      const totalCapital = coop.shares.reduce((sum, share) => {
-        return sum + share.quantity * share.purchasePricePerShare.toNumber();
+      const totalCapital = coop.registrations.reduce((sum, reg) => {
+        const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
+        return sum + totalPaid;
       }, 0);
 
       const defaultChannel = coop.channels[0];
@@ -203,21 +207,21 @@ export class CoopsService {
 
     const projectIds = coop.projects.map((p) => p.id);
 
-    const shareStats = await this.prisma.share.groupBy({
+    const regStats = await this.prisma.registration.groupBy({
       by: ['projectId'],
       where: {
         projectId: { in: projectIds },
-        status: 'ACTIVE',
+        type: 'BUY',
+        status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
       },
       _sum: { quantity: true },
-      _count: { shareholderId: true },
     });
 
     // Get distinct shareholder counts per project
     const shareholderCounts = await Promise.all(
       projectIds.map(async (projectId) => {
-        const count = await this.prisma.share.findMany({
-          where: { projectId, status: 'ACTIVE' },
+        const count = await this.prisma.registration.findMany({
+          where: { projectId, type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
           select: { shareholderId: true },
           distinct: ['shareholderId'],
         });
@@ -225,22 +229,22 @@ export class CoopsService {
       }),
     );
 
-    // Get capital raised per project
+    // Get capital raised per project (sum of payments)
     const capitalByProject = await Promise.all(
       projectIds.map(async (projectId) => {
-        const shares = await this.prisma.share.findMany({
-          where: { projectId, status: 'ACTIVE' },
-          select: { quantity: true, purchasePricePerShare: true },
+        const registrations = await this.prisma.registration.findMany({
+          where: { projectId, type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+          include: { payments: { select: { amount: true } } },
         });
-        const capital = shares.reduce(
-          (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(),
+        const capital = registrations.reduce(
+          (sum, reg) => sum + reg.payments.reduce((s, p) => s + Number(p.amount), 0),
           0,
         );
         return { projectId, capital };
       }),
     );
 
-    const statsMap = new Map(shareStats.map((s) => [s.projectId, s]));
+    const statsMap = new Map(regStats.map((s) => [s.projectId, s]));
     const shareholderMap = new Map(shareholderCounts.map((s) => [s.projectId, s.count]));
     const capitalMap = new Map(capitalByProject.map((c) => [c.projectId, c.capital]));
 
@@ -272,24 +276,29 @@ export class CoopsService {
 
     const coopId = coop.id;
 
-    // Query all active shares across the entire coop (including unassigned)
-    const activeShares = await this.prisma.share.findMany({
-      where: { coopId, status: 'ACTIVE' },
+    // Query all buy registrations across the entire coop
+    const buyRegistrations = await this.prisma.registration.findMany({
+      where: { coopId, type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
       select: {
         shareholderId: true,
         quantity: true,
-        purchasePricePerShare: true,
+        pricePerShare: true,
+        payments: { select: { amount: true } },
       },
     });
 
     const uniqueShareholders = new Set(
-      activeShares.map((s) => s.shareholderId),
+      buyRegistrations.map((r) => r.shareholderId),
     ).size;
-    const totalCapital = activeShares.reduce(
-      (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(),
+    const totalCapital = buyRegistrations.reduce(
+      (sum, r) => sum + r.payments.reduce((s, p) => s + Number(p.amount), 0),
       0,
     );
-    const totalShares = activeShares.reduce((sum, s) => sum + s.quantity, 0);
+    const totalShares = buyRegistrations.reduce((sum, r) => {
+      const totalPaid = r.payments.reduce((s, p) => s + Number(p.amount), 0);
+      const pricePerShare = Number(r.pricePerShare);
+      return sum + (pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), r.quantity) : 0);
+    }, 0);
 
     const projectCount = await this.prisma.project.count({
       where: { coopId, isActive: true },
@@ -622,7 +631,7 @@ export class CoopsService {
       shareholderId = newShareholder.id;
     }
 
-    const transaction = await this.transactionsService.createPurchase({
+    const registration = await this.registrationsService.createBuy({
       coopId: coop.id,
       shareholderId,
       shareClassId: dto.shareClassId,
@@ -631,8 +640,8 @@ export class CoopsService {
     });
 
     return {
-      transactionId: transaction!.id,
-      ogmCode: transaction?.payment?.ogmCode ?? null,
+      registrationId: registration.id,
+      ogmCode: registration.ogmCode ?? null,
       shareholderId,
     };
   }

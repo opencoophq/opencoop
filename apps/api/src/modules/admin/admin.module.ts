@@ -6,8 +6,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { ShareholdersModule } from '../shareholders/shareholders.module';
 import { SharesModule } from '../shares/shares.module';
 import { ProjectsModule } from '../projects/projects.module';
-import { TransactionsModule } from '../transactions/transactions.module';
-import { PaymentsModule } from '../payments/payments.module';
+import { RegistrationsModule } from '../registrations/registrations.module';
 import { BankImportModule } from '../bank-import/bank-import.module';
 import { DividendsModule } from '../dividends/dividends.module';
 import { DocumentsModule } from '../documents/documents.module';
@@ -24,8 +23,7 @@ import { BillingModule } from '../billing/billing.module';
     ShareholdersModule,
     SharesModule,
     ProjectsModule,
-    TransactionsModule,
-    PaymentsModule,
+    RegistrationsModule,
     BankImportModule,
     DividendsModule,
     DocumentsModule,

@@ -20,18 +20,16 @@ import {
 
 interface DataPoint {
   date: string;
-  purchases: number;
-  sales: number;
-  transfers: number;
+  buys: number;
+  sells: number;
   volume: number;
 }
 
 interface SummaryResult {
   timeline: DataPoint[];
   totals: {
-    purchases: number;
-    sales: number;
-    transfers: number;
+    buys: number;
+    sells: number;
     volume: number;
   };
 }
@@ -108,9 +106,8 @@ export function TransactionActivityChart({ period }: Props) {
               <Legend
                 formatter={(value) => <span className="text-xs">{value}</span>}
               />
-              <Bar dataKey="purchases" name={t('transactionTypes.purchases')} fill="hsl(142, 71%, 45%)" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="sales" name={t('transactionTypes.sales')} fill="hsl(350, 89%, 60%)" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="transfers" name={t('transactionTypes.transfers')} fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="buys" name={t('transactionTypes.buys')} fill="hsl(142, 71%, 45%)" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="sells" name={t('transactionTypes.sells')} fill="hsl(350, 89%, 60%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

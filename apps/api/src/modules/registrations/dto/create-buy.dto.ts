@@ -1,7 +1,7 @@
-import { IsString, IsInt, IsOptional, Min } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsBoolean, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreatePurchaseDto {
+export class CreateBuyDto {
   @ApiProperty({ description: 'Share class to purchase' })
   @IsString()
   shareClassId: string;
@@ -15,4 +15,9 @@ export class CreatePurchaseDto {
   @IsOptional()
   @IsString()
   projectId?: string;
+
+  @ApiProperty({ required: false, description: 'Whether this is a savings share (monthly installments)' })
+  @IsOptional()
+  @IsBoolean()
+  isSavings?: boolean;
 }

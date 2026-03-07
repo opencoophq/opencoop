@@ -140,37 +140,37 @@ export class ReportsService {
   }
 
   private async computeCapitalAtDate(coopId: string, before: Date): Promise<number> {
-    // Use transactions for historical accuracy: shares that were later sold
-    // must still count for dates when they were active.
+    // Use registrations + payments for historical accuracy: capital that was
+    // later sold must still count for dates when it was active.
     const [result] = await this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
-      SELECT COALESCE(SUM(
-        CASE WHEN type = 'PURCHASE' THEN "totalAmount"
-             WHEN type = 'SALE'     THEN -"totalAmount"
-             ELSE 0 END
-      ), 0)::text AS total
-      FROM transactions
-      WHERE "coopId" = ${coopId}
-        AND status = 'COMPLETED'
-        AND type IN ('PURCHASE', 'SALE')
-        AND "createdAt" < ${before}
+      SELECT COALESCE(
+        SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END),
+        0
+      )::text AS total
+      FROM payments p
+      JOIN registrations r ON r.id = p."registrationId"
+      WHERE r."coopId" = ${coopId}
+        AND r.status IN ('ACTIVE', 'COMPLETED')
+        AND p."bankDate" < ${before}
     `);
     return Number(result.total) || 0;
   }
 
   /**
-   * Count active shareholders who had at least one active share purchased before `before`.
-   * Uses the earliest share purchaseDate as the effective join date (not shareholder.createdAt,
-   * which reflects when the DB record was inserted and may differ from actual membership start).
+   * Count active shareholders who had at least one active/completed BUY registration
+   * registered before `before`. Uses the earliest registerDate as the effective join
+   * date (not shareholder.createdAt, which reflects when the DB record was inserted).
    */
   private async countShareholdersWithSharesBefore(coopId: string, before: Date): Promise<number> {
     const result = await this.prisma.shareholder.count({
       where: {
         coopId,
         status: 'ACTIVE',
-        shares: {
+        registrations: {
           some: {
-            status: 'ACTIVE',
-            purchaseDate: { lt: before },
+            type: 'BUY',
+            status: { in: ['ACTIVE', 'COMPLETED'] },
+            registerDate: { lt: before },
           },
         },
       },
@@ -187,29 +187,30 @@ export class ReportsService {
     rangeStart: Date,
     rangeEnd: Date,
   ): Promise<CapitalTimelineBucket[]> {
-    // Use transactions for historical accuracy — shares that were later sold
-    // must still count for months when they were active.
-    const txns = await this.prisma.transaction.findMany({
+    // Use registrations + payments for historical accuracy — capital that was
+    // later sold must still count for months when it was active.
+    const regs = await this.prisma.registration.findMany({
       where: {
         coopId,
-        status: 'COMPLETED',
-        type: { in: ['PURCHASE', 'SALE'] },
-        createdAt: { lt: rangeEnd },
+        status: { in: ['ACTIVE', 'COMPLETED'] },
       },
       select: {
+        id: true,
         type: true,
         totalAmount: true,
         createdAt: true,
-        share: { select: { projectId: true, project: { select: { name: true } } } },
+        projectId: true,
+        project: { select: { name: true } },
+        payments: { select: { amount: true, bankDate: true } },
       },
     });
 
     // Collect unique projects
     const projectMap = new Map<string, string>();
-    for (const t of txns) {
-      const key = t.share?.projectId ?? '__unassigned__';
+    for (const r of regs) {
+      const key = r.projectId ?? '__unassigned__';
       if (!projectMap.has(key)) {
-        projectMap.set(key, t.share?.project?.name ?? 'Unassigned');
+        projectMap.set(key, r.project?.name ?? 'Unassigned');
       }
     }
     const projectKeys = Array.from(projectMap.keys()).sort();
@@ -228,22 +229,29 @@ export class ReportsService {
       cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     }
 
+    // Flatten registrations into individual payment events with project info
+    const paymentEvents: { projectKey: string; bankDate: Date; signedAmount: number }[] = [];
+    for (const r of regs) {
+      const key = r.projectId ?? '__unassigned__';
+      const sign = r.type === 'BUY' ? 1 : -1;
+      for (const p of r.payments) {
+        paymentEvents.push({
+          projectKey: key,
+          bankDate: p.bankDate,
+          signedAmount: sign * Number(p.amount),
+        });
+      }
+    }
+
     // For each bucket, compute cumulative capital per project
     return buckets.map((bucketDate) => {
       const cutoff = new Date(bucketDate);
       cutoff.setUTCMonth(cutoff.getUTCMonth() + 1);
 
       const projects: ProjectCapitalPoint[] = projectKeys.map((key) => {
-        const capital = txns
-          .filter(
-            (t) =>
-              (t.share?.projectId ?? '__unassigned__') === key &&
-              t.createdAt < cutoff,
-          )
-          .reduce((sum, t) => {
-            const amount = t.totalAmount.toNumber();
-            return sum + (t.type === 'PURCHASE' ? amount : -amount);
-          }, 0);
+        const capital = paymentEvents
+          .filter((e) => e.projectKey === key && e.bankDate < cutoff)
+          .reduce((sum, e) => sum + e.signedAmount, 0);
 
         return {
           projectId: key === '__unassigned__' ? null : key,
@@ -290,27 +298,29 @@ export class ReportsService {
       // Active shareholders with at least one share purchased before year end (or now)
       this.countShareholdersWithSharesBefore(coopId, effectiveEnd),
 
-      // Sum of COMPLETED PURCHASE transactions in the year (up to now if current year)
-      this.prisma.transaction.aggregate({
-        where: {
-          coopId,
-          type: 'PURCHASE',
-          status: 'COMPLETED',
-          createdAt: { gte: yearStart, lt: effectiveEnd },
-        },
-        _sum: { totalAmount: true },
-      }),
+      // Sum of BUY payments in the year (up to now if current year)
+      this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
+        SELECT COALESCE(SUM(p.amount), 0)::text AS total
+        FROM payments p
+        JOIN registrations r ON r.id = p."registrationId"
+        WHERE r."coopId" = ${coopId}
+          AND r.type = 'BUY'
+          AND r.status IN ('ACTIVE', 'COMPLETED')
+          AND p."bankDate" >= ${yearStart}
+          AND p."bankDate" < ${effectiveEnd}
+      `),
 
-      // Sum of COMPLETED SALE transactions in the year (up to now if current year)
-      this.prisma.transaction.aggregate({
-        where: {
-          coopId,
-          type: 'SALE',
-          status: 'COMPLETED',
-          createdAt: { gte: yearStart, lt: effectiveEnd },
-        },
-        _sum: { totalAmount: true },
-      }),
+      // Sum of SELL payments in the year (up to now if current year)
+      this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
+        SELECT COALESCE(SUM(p.amount), 0)::text AS total
+        FROM payments p
+        JOIN registrations r ON r.id = p."registrationId"
+        WHERE r."coopId" = ${coopId}
+          AND r.type = 'SELL'
+          AND r.status = 'COMPLETED'
+          AND p."bankDate" >= ${yearStart}
+          AND p."bankDate" < ${effectiveEnd}
+      `),
 
       // Dividend period matching the year (with payouts for totals)
       this.prisma.dividendPeriod.findFirst({
@@ -337,30 +347,31 @@ export class ReportsService {
       ? dividendPeriod.payouts.reduce((sum, p) => sum + p.netAmount.toNumber(), 0)
       : 0;
 
-    // Per-share-class breakdown using transactions for accurate historical capital
-    const shareClassTxns = await this.prisma.transaction.findMany({
+    // Per-share-class breakdown using registrations + payments for accurate historical capital
+    const shareClassRegs = await this.prisma.registration.findMany({
       where: {
         coopId,
-        status: 'COMPLETED',
-        type: { in: ['PURCHASE', 'SALE'] },
-        createdAt: { lt: effectiveEnd },
+        status: { in: ['ACTIVE', 'COMPLETED'] },
       },
       select: {
         type: true,
         quantity: true,
-        totalAmount: true,
-        share: { select: { shareClassId: true } },
+        shareClassId: true,
+        payments: {
+          where: { bankDate: { lt: effectiveEnd } },
+          select: { amount: true },
+        },
       },
     });
 
     const shareClassBreakdown: ShareClassBreakdown[] = shareClasses.map((sc) => {
-      const classTxns = shareClassTxns.filter((t) => t.share?.shareClassId === sc.id);
-      const shares = classTxns.reduce((sum, t) => {
-        return sum + (t.type === 'PURCHASE' ? t.quantity : -t.quantity);
+      const classRegs = shareClassRegs.filter((r) => r.shareClassId === sc.id);
+      const shares = classRegs.reduce((sum, r) => {
+        return sum + (r.type === 'BUY' ? r.quantity : -r.quantity);
       }, 0);
-      const capital = classTxns.reduce((sum, t) => {
-        const amount = t.totalAmount.toNumber();
-        return sum + (t.type === 'PURCHASE' ? amount : -amount);
+      const capital = classRegs.reduce((sum, r) => {
+        const paidAmount = r.payments.reduce((pSum, p) => pSum + Number(p.amount), 0);
+        return sum + (r.type === 'BUY' ? paidAmount : -paidAmount);
       }, 0);
       return { name: sc.name, code: sc.code, shares, capital };
     });
@@ -374,8 +385,8 @@ export class ReportsService {
       capitalEnd,
       shareholdersStart,
       shareholdersEnd,
-      totalPurchases: purchasesAgg._sum.totalAmount?.toNumber() ?? 0,
-      totalSales: salesAgg._sum.totalAmount?.toNumber() ?? 0,
+      totalPurchases: Number(purchasesAgg[0]?.total) || 0,
+      totalSales: Number(salesAgg[0]?.total) || 0,
       totalDividendsGross,
       totalDividendsNet,
       shareClassBreakdown,
@@ -396,10 +407,10 @@ export class ReportsService {
 
     const openingBalance = await this.computeCapitalAtDate(coopId, fromDate);
 
-    const transactions = await this.prisma.transaction.findMany({
+    const registrations = await this.prisma.registration.findMany({
       where: {
         coopId,
-        status: 'COMPLETED',
+        status: { in: ['ACTIVE', 'COMPLETED'] },
         createdAt: { gte: fromDate, lte: toDateEnd },
       },
       include: {
@@ -411,30 +422,26 @@ export class ReportsService {
             companyName: true,
           },
         },
-        share: {
-          include: {
-            shareClass: {
-              select: { name: true },
-            },
-          },
+        shareClass: {
+          select: { name: true },
         },
       },
       orderBy: { createdAt: 'asc' },
     });
 
-    const movements: CapitalMovement[] = transactions.map((tx) => ({
-      date: tx.createdAt,
-      type: tx.type,
-      shareholderName: this.getShareholderName(tx.shareholder),
-      shareClass: tx.share?.shareClass?.name ?? '',
-      quantity: tx.quantity,
-      amount: tx.totalAmount.toNumber(),
+    const movements: CapitalMovement[] = registrations.map((reg) => ({
+      date: reg.createdAt,
+      type: reg.type,
+      shareholderName: this.getShareholderName(reg.shareholder),
+      shareClass: reg.shareClass?.name ?? '',
+      quantity: reg.quantity,
+      amount: Number(reg.totalAmount),
     }));
 
-    // Purchases add capital, sales/transfers-out subtract it
+    // BUYs add capital, SELLs subtract it
     const netMovement = movements.reduce((sum, m) => {
-      if (m.type === 'PURCHASE' || m.type === 'TRANSFER_IN') return sum + m.amount;
-      if (m.type === 'SALE' || m.type === 'TRANSFER_OUT') return sum - m.amount;
+      if (m.type === 'BUY') return sum + m.amount;
+      if (m.type === 'SELL') return sum - m.amount;
       return sum;
     }, 0);
 
@@ -462,15 +469,17 @@ export class ReportsService {
         status: 'ACTIVE',
       },
       include: {
-        shares: {
+        registrations: {
           where: {
-            status: 'ACTIVE',
-            ...(cutoff ? { purchaseDate: { lte: cutoff } } : {}),
+            type: 'BUY',
+            status: { in: ['ACTIVE', 'COMPLETED'] },
+            ...(cutoff ? { registerDate: { lte: cutoff } } : {}),
           },
           select: {
             quantity: true,
-            purchasePricePerShare: true,
-            purchaseDate: true,
+            pricePerShare: true,
+            registerDate: true,
+            payments: { select: { amount: true } },
           },
         },
       },
@@ -478,19 +487,19 @@ export class ReportsService {
     });
 
     const entries: ShareholderRegisterEntry[] = shareholders.map((sh) => {
-      const shareCount = sh.shares.reduce((sum, s) => sum + s.quantity, 0);
-      const totalValue = sh.shares.reduce(
-        (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(),
+      const shareCount = sh.registrations.reduce((sum, r) => sum + r.quantity, 0);
+      const totalValue = sh.registrations.reduce(
+        (sum, r) => sum + r.payments.reduce((pSum, p) => pSum + Number(p.amount), 0),
         0,
       );
 
-      // Use earliest share purchaseDate as join date (not shareholder.createdAt
+      // Use earliest registration registerDate as join date (not shareholder.createdAt
       // which reflects DB record insertion time, not actual membership start)
       const joinDate =
-        sh.shares.length > 0
-          ? sh.shares.reduce(
-              (earliest, s) => (s.purchaseDate < earliest ? s.purchaseDate : earliest),
-              sh.shares[0].purchaseDate,
+        sh.registrations.length > 0
+          ? sh.registrations.reduce(
+              (earliest, r) => (r.registerDate < earliest ? r.registerDate : earliest),
+              sh.registrations[0].registerDate,
             )
           : sh.createdAt;
 
@@ -584,40 +593,44 @@ export class ReportsService {
     const projects = await this.prisma.project.findMany({
       where: { coopId, ...projectFilter },
       include: {
-        shares: {
-          where: { status: 'ACTIVE' },
+        registrations: {
+          where: {
+            type: 'BUY',
+            status: { in: ['ACTIVE', 'COMPLETED'] },
+          },
           select: {
             shareholderId: true,
             quantity: true,
-            purchasePricePerShare: true,
+            payments: { select: { amount: true } },
           },
         },
       },
       orderBy: { name: 'asc' },
     });
 
-    // Also fetch shares with no project assigned
-    const unassignedShares = await this.prisma.share.findMany({
-      where: { coopId, status: 'ACTIVE', projectId: null },
-      select: { shareholderId: true, quantity: true, purchasePricePerShare: true },
+    // Also fetch registrations with no project assigned
+    const unassignedRegs = await this.prisma.registration.findMany({
+      where: { coopId, type: 'BUY', status: { in: ['ACTIVE', 'COMPLETED'] }, projectId: null },
+      select: {
+        shareholderId: true,
+        quantity: true,
+        payments: { select: { amount: true } },
+      },
     });
 
+    // Helper to compute capital from registrations with nested payments
+    const regCapital = (regs: { payments: { amount: unknown }[] }[]) =>
+      regs.reduce((sum, r) => sum + r.payments.reduce((pSum, p) => pSum + Number(p.amount), 0), 0);
+
     // Total active capital across all projects + unassigned for percentage calculation
-    const assignedCapital = projects.reduce((sum, p) => {
-      return sum + p.shares.reduce((pSum, s) => pSum + s.quantity * s.purchasePricePerShare.toNumber(), 0);
-    }, 0);
-    const unassignedCapital = unassignedShares.reduce(
-      (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(), 0,
-    );
+    const assignedCapital = projects.reduce((sum, p) => sum + regCapital(p.registrations), 0);
+    const unassignedCapital = regCapital(unassignedRegs);
     const totalCapitalAll = assignedCapital + unassignedCapital;
 
     const entries: ProjectInvestmentEntry[] = projects.map((p) => {
-      const totalCapital = p.shares.reduce(
-        (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(),
-        0,
-      );
-      const shareCount = p.shares.reduce((sum, s) => sum + s.quantity, 0);
-      const uniqueShareholders = new Set(p.shares.map((s) => s.shareholderId)).size;
+      const totalCapital = regCapital(p.registrations);
+      const shareCount = p.registrations.reduce((sum, r) => sum + r.quantity, 0);
+      const uniqueShareholders = new Set(p.registrations.map((r) => r.shareholderId)).size;
       const percentage =
         totalCapitalAll > 0 ? (totalCapital / totalCapitalAll) * 100 : 0;
 
@@ -632,10 +645,10 @@ export class ReportsService {
       };
     });
 
-    // Add unassigned entry if there are shares without a project
-    if (unassignedShares.length > 0 && !projectId) {
-      const unassignedShareCount = unassignedShares.reduce((sum, s) => sum + s.quantity, 0);
-      const unassignedShareholders = new Set(unassignedShares.map((s) => s.shareholderId)).size;
+    // Add unassigned entry if there are registrations without a project
+    if (unassignedRegs.length > 0 && !projectId) {
+      const unassignedShareCount = unassignedRegs.reduce((sum, r) => sum + r.quantity, 0);
+      const unassignedShareholders = new Set(unassignedRegs.map((r) => r.shareholderId)).size;
       const percentage = totalCapitalAll > 0 ? (unassignedCapital / totalCapitalAll) * 100 : 0;
       entries.push({
         id: 'unassigned',

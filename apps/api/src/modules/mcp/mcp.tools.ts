@@ -106,30 +106,31 @@ export class McpTools {
 
     const projectIds = coop.projects.map((p) => p.id);
 
-    const shareStats = await this.prisma.share.groupBy({
+    const regStats = await this.prisma.registration.groupBy({
       by: ['projectId'],
       where: {
         projectId: { in: projectIds },
-        status: 'ACTIVE',
+        type: 'BUY',
+        status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
       },
       _sum: { quantity: true },
     });
 
     const capitalByProject = await Promise.all(
       projectIds.map(async (projectId) => {
-        const shares = await this.prisma.share.findMany({
-          where: { projectId, status: 'ACTIVE' },
-          select: { quantity: true, purchasePricePerShare: true },
+        const registrations = await this.prisma.registration.findMany({
+          where: { projectId, type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+          include: { payments: { select: { amount: true } } },
         });
-        const capital = shares.reduce(
-          (sum, s) => sum + s.quantity * s.purchasePricePerShare.toNumber(),
+        const capital = registrations.reduce(
+          (sum, reg) => sum + reg.payments.reduce((s, p) => s + Number(p.amount), 0),
           0,
         );
         return { projectId, capital };
       }),
     );
 
-    const statsMap = new Map(shareStats.map((s) => [s.projectId, s]));
+    const statsMap = new Map(regStats.map((s) => [s.projectId, s]));
     const capitalMap = new Map(capitalByProject.map((c) => [c.projectId, c.capital]));
 
     const projects = coop.projects.map((project) => ({
