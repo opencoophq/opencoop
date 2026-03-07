@@ -31,18 +31,16 @@ export interface ShareholderGrowthPoint {
 
 export interface TransactionSummaryPoint {
   date: string;
-  purchases: number;
-  sales: number;
-  transfers: number;
+  buys: number;
+  sells: number;
   volume: number;
 }
 
 export interface TransactionSummaryResult {
   timeline: TransactionSummaryPoint[];
   totals: {
-    purchases: number;
-    sales: number;
-    transfers: number;
+    buys: number;
+    sells: number;
     volume: number;
   };
 }
@@ -77,9 +75,8 @@ interface ExitRow {
 
 interface TransactionSummaryRow {
   bucket: Date;
-  purchases: string;
-  sales: string;
-  transfers: string;
+  buys: string;
+  sells: string;
   volume: string;
 }
 
@@ -164,32 +161,28 @@ export class AnalyticsService {
     const since = this.getDateRange(period);
     const trunc = this.getTrunc(period);
 
-    // Use completed transactions: PURCHASE adds capital, SALE subtracts it.
+    // Use completed registrations + payments: BUY adds capital, SELL subtracts it.
     const rows = since
       ? await this.prisma.$queryRaw<CapitalTimelineRow[]>(Prisma.sql`
           SELECT
-            date_trunc(${trunc}, "createdAt") AS bucket,
-            SUM(CASE WHEN type = 'PURCHASE' THEN "totalAmount"
-                     WHEN type = 'SALE'     THEN -"totalAmount"
-                     ELSE 0 END)::text AS net_change
-          FROM transactions
-          WHERE "coopId" = ${coopId}
-            AND status = 'COMPLETED'
-            AND type IN ('PURCHASE', 'SALE')
-            AND "createdAt" >= ${since}
+            date_trunc(${trunc}, p."bankDate") AS bucket,
+            SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END)::text AS net_change
+          FROM payments p
+          JOIN registrations r ON r.id = p."registrationId"
+          WHERE r."coopId" = ${coopId}
+            AND r.status IN ('ACTIVE', 'COMPLETED')
+            AND p."bankDate" >= ${since}
           GROUP BY bucket
           ORDER BY bucket ASC
         `)
       : await this.prisma.$queryRaw<CapitalTimelineRow[]>(Prisma.sql`
           SELECT
-            date_trunc(${trunc}, "createdAt") AS bucket,
-            SUM(CASE WHEN type = 'PURCHASE' THEN "totalAmount"
-                     WHEN type = 'SALE'     THEN -"totalAmount"
-                     ELSE 0 END)::text AS net_change
-          FROM transactions
-          WHERE "coopId" = ${coopId}
-            AND status = 'COMPLETED'
-            AND type IN ('PURCHASE', 'SALE')
+            date_trunc(${trunc}, p."bankDate") AS bucket,
+            SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END)::text AS net_change
+          FROM payments p
+          JOIN registrations r ON r.id = p."registrationId"
+          WHERE r."coopId" = ${coopId}
+            AND r.status IN ('ACTIVE', 'COMPLETED')
           GROUP BY bucket
           ORDER BY bucket ASC
         `);
@@ -199,16 +192,15 @@ export class AnalyticsService {
     let runningTotal = 0;
     if (since) {
       const [pre] = await this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
-        SELECT COALESCE(SUM(
-          CASE WHEN type = 'PURCHASE' THEN "totalAmount"
-               WHEN type = 'SALE'     THEN -"totalAmount"
-               ELSE 0 END
-        ), 0)::text AS total
-        FROM transactions
-        WHERE "coopId" = ${coopId}
-          AND status = 'COMPLETED'
-          AND type IN ('PURCHASE', 'SALE')
-          AND "createdAt" < ${since}
+        SELECT COALESCE(
+          SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END),
+          0
+        )::text AS total
+        FROM payments p
+        JOIN registrations r ON r.id = p."registrationId"
+        WHERE r."coopId" = ${coopId}
+          AND r.status IN ('ACTIVE', 'COMPLETED')
+          AND p."bankDate" < ${since}
       `);
       runningTotal = Number(pre.total) || 0;
     }
@@ -237,23 +229,20 @@ export class AnalyticsService {
   async getCapitalByProject(coopId: string): Promise<CapitalByProject[]> {
     const rows = await this.prisma.$queryRaw<CapitalByProjectRow[]>(Prisma.sql`
       SELECT
-        s."projectId"                  AS project_id,
-        p.name                         AS project_name,
-        SUM(CASE WHEN t.type = 'PURCHASE' THEN t."totalAmount"
-                 WHEN t.type = 'SALE'     THEN -t."totalAmount"
-                 ELSE 0 END)::text     AS total_capital,
-        SUM(CASE WHEN t.type = 'PURCHASE' THEN t.quantity
-                 WHEN t.type = 'SALE'     THEN -t.quantity
+        r."projectId"                  AS project_id,
+        proj.name                      AS project_name,
+        COALESCE(SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END), 0)::text AS total_capital,
+        SUM(CASE WHEN r.type = 'BUY' THEN r.quantity
+                 WHEN r.type = 'SELL' THEN -r.quantity
                  ELSE 0 END)::text     AS share_count
-      FROM transactions t
-      INNER JOIN shares s ON s.id = t."shareId"
-      LEFT JOIN projects p
-        ON p.id = s."projectId"
-        AND p."coopId" = ${coopId}
-      WHERE t."coopId" = ${coopId}
-        AND t.status = 'COMPLETED'
-        AND t.type IN ('PURCHASE', 'SALE')
-      GROUP BY s."projectId", p.name
+      FROM registrations r
+      LEFT JOIN payments p ON p."registrationId" = r.id
+      LEFT JOIN projects proj
+        ON proj.id = r."projectId"
+        AND proj."coopId" = ${coopId}
+      WHERE r."coopId" = ${coopId}
+        AND r.status IN ('ACTIVE', 'COMPLETED')
+      GROUP BY r."projectId", proj.name
       ORDER BY total_capital DESC
     `);
 
@@ -282,36 +271,38 @@ export class AnalyticsService {
     const since = this.getDateRange(period);
     const trunc = this.getTrunc(period);
 
-    // Joins: earliest share purchaseDate per shareholder (all shareholders,
+    // Joins: earliest BUY registerDate per shareholder (all shareholders,
     // not just ACTIVE — otherwise we'd miss people who joined then left).
     const joinRows = since
       ? await this.prisma.$queryRaw<ShareholderGrowthRow[]>(Prisma.sql`
           SELECT
-            date_trunc(${trunc}, first_share_date) AS bucket,
+            date_trunc(${trunc}, first_reg_date) AS bucket,
             COUNT(*) FILTER (WHERE type = 'INDIVIDUAL')::text AS individual,
             COUNT(*) FILTER (WHERE type = 'COMPANY')::text    AS company,
             COUNT(*) FILTER (WHERE type = 'MINOR')::text      AS minor
           FROM (
-            SELECT sh.id, sh.type, MIN(s."purchaseDate") AS first_share_date
+            SELECT sh.id, sh.type, MIN(r."registerDate") AS first_reg_date
             FROM shareholders sh
-            INNER JOIN shares s ON s."shareholderId" = sh.id
+            INNER JOIN registrations r ON r."shareholderId" = sh.id
+              AND r.type = 'BUY' AND r.status IN ('ACTIVE', 'COMPLETED')
             WHERE sh."coopId" = ${coopId}
             GROUP BY sh.id, sh.type
           ) sub
-          WHERE first_share_date >= ${since}
+          WHERE first_reg_date >= ${since}
           GROUP BY bucket
           ORDER BY bucket ASC
         `)
       : await this.prisma.$queryRaw<ShareholderGrowthRow[]>(Prisma.sql`
           SELECT
-            date_trunc(${trunc}, first_share_date) AS bucket,
+            date_trunc(${trunc}, first_reg_date) AS bucket,
             COUNT(*) FILTER (WHERE type = 'INDIVIDUAL')::text AS individual,
             COUNT(*) FILTER (WHERE type = 'COMPANY')::text    AS company,
             COUNT(*) FILTER (WHERE type = 'MINOR')::text      AS minor
           FROM (
-            SELECT sh.id, sh.type, MIN(s."purchaseDate") AS first_share_date
+            SELECT sh.id, sh.type, MIN(r."registerDate") AS first_reg_date
             FROM shareholders sh
-            INNER JOIN shares s ON s."shareholderId" = sh.id
+            INNER JOIN registrations r ON r."shareholderId" = sh.id
+              AND r.type = 'BUY' AND r.status IN ('ACTIVE', 'COMPLETED')
             WHERE sh."coopId" = ${coopId}
             GROUP BY sh.id, sh.type
           ) sub
@@ -319,17 +310,17 @@ export class AnalyticsService {
           ORDER BY bucket ASC
         `);
 
-    // Exits: INACTIVE shareholders bucketed by their last completed SALE date.
+    // Exits: INACTIVE shareholders bucketed by their last completed SELL date.
     const exitRows = since
       ? await this.prisma.$queryRaw<ExitRow[]>(Prisma.sql`
           SELECT
             date_trunc(${trunc}, exit_date) AS bucket,
             COUNT(*)::text AS exits
           FROM (
-            SELECT sh.id, MAX(t."createdAt") AS exit_date
+            SELECT sh.id, MAX(r."createdAt") AS exit_date
             FROM shareholders sh
-            INNER JOIN transactions t ON t."shareholderId" = sh.id
-              AND t.type = 'SALE' AND t.status = 'COMPLETED'
+            INNER JOIN registrations r ON r."shareholderId" = sh.id
+              AND r.type = 'SELL' AND r.status = 'COMPLETED'
             WHERE sh."coopId" = ${coopId}
               AND sh.status = 'INACTIVE'
             GROUP BY sh.id
@@ -343,10 +334,10 @@ export class AnalyticsService {
             date_trunc(${trunc}, exit_date) AS bucket,
             COUNT(*)::text AS exits
           FROM (
-            SELECT sh.id, MAX(t."createdAt") AS exit_date
+            SELECT sh.id, MAX(r."createdAt") AS exit_date
             FROM shareholders sh
-            INNER JOIN transactions t ON t."shareholderId" = sh.id
-              AND t.type = 'SALE' AND t.status = 'COMPLETED'
+            INNER JOIN registrations r ON r."shareholderId" = sh.id
+              AND r.type = 'SELL' AND r.status = 'COMPLETED'
             WHERE sh."coopId" = ${coopId}
               AND sh.status = 'INACTIVE'
             GROUP BY sh.id
@@ -378,18 +369,19 @@ export class AnalyticsService {
       const [preJoins] = await this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
         SELECT COUNT(DISTINCT sh.id)::text AS total
         FROM shareholders sh
-        INNER JOIN shares s ON s."shareholderId" = sh.id
+        INNER JOIN registrations r ON r."shareholderId" = sh.id
+          AND r.type = 'BUY' AND r.status IN ('ACTIVE', 'COMPLETED')
         WHERE sh."coopId" = ${coopId}
-          AND (SELECT MIN(s2."purchaseDate") FROM shares s2 WHERE s2."shareholderId" = sh.id) < ${since}
+          AND (SELECT MIN(r2."registerDate") FROM registrations r2 WHERE r2."shareholderId" = sh.id AND r2.type = 'BUY' AND r2.status IN ('ACTIVE', 'COMPLETED')) < ${since}
       `);
       const [preExits] = await this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
         SELECT COUNT(DISTINCT sh.id)::text AS total
         FROM shareholders sh
-        INNER JOIN transactions t ON t."shareholderId" = sh.id
-          AND t.type = 'SALE' AND t.status = 'COMPLETED'
+        INNER JOIN registrations r ON r."shareholderId" = sh.id
+          AND r.type = 'SELL' AND r.status = 'COMPLETED'
         WHERE sh."coopId" = ${coopId}
           AND sh.status = 'INACTIVE'
-          AND (SELECT MAX(t2."createdAt") FROM transactions t2 WHERE t2."shareholderId" = sh.id AND t2.type = 'SALE' AND t2.status = 'COMPLETED') < ${since}
+          AND (SELECT MAX(r2."createdAt") FROM registrations r2 WHERE r2."shareholderId" = sh.id AND r2.type = 'SELL' AND r2.status = 'COMPLETED') < ${since}
       `);
       cumulative = (Number(preJoins.total) || 0) - (Number(preExits.total) || 0);
     }
@@ -430,31 +422,30 @@ export class AnalyticsService {
     const since = this.getDateRange(period);
     const trunc = this.getTrunc(period);
 
+    // S3: Exclude transfer registrations from volume to avoid double-counting
     const rows = since
       ? await this.prisma.$queryRaw<TransactionSummaryRow[]>(Prisma.sql`
           SELECT
-            date_trunc(${trunc}, "createdAt") AS bucket,
-            COUNT(*) FILTER (WHERE type = 'PURCHASE')::text                    AS purchases,
-            COUNT(*) FILTER (WHERE type = 'SALE')::text                        AS sales,
-            COUNT(*) FILTER (WHERE type = 'TRANSFER_IN')::text                 AS transfers,
-            COALESCE(SUM("totalAmount") FILTER (WHERE type != 'TRANSFER_OUT'), 0)::text AS volume
-          FROM transactions
-          WHERE "coopId" = ${coopId}
-            AND status = 'COMPLETED'
-            AND "createdAt" >= ${since}
+            date_trunc(${trunc}, r."createdAt") AS bucket,
+            COUNT(*) FILTER (WHERE r.type = 'BUY' AND r."fromShareholderId" IS NULL)::text AS buys,
+            COUNT(*) FILTER (WHERE r.type = 'SELL' AND r."toShareholderId" IS NULL)::text  AS sells,
+            COALESCE(SUM(r."totalAmount") FILTER (WHERE r."fromShareholderId" IS NULL AND r."toShareholderId" IS NULL), 0)::text AS volume
+          FROM registrations r
+          WHERE r."coopId" = ${coopId}
+            AND r.status IN ('ACTIVE', 'COMPLETED')
+            AND r."createdAt" >= ${since}
           GROUP BY bucket
           ORDER BY bucket ASC
         `)
       : await this.prisma.$queryRaw<TransactionSummaryRow[]>(Prisma.sql`
           SELECT
-            date_trunc(${trunc}, "createdAt") AS bucket,
-            COUNT(*) FILTER (WHERE type = 'PURCHASE')::text                    AS purchases,
-            COUNT(*) FILTER (WHERE type = 'SALE')::text                        AS sales,
-            COUNT(*) FILTER (WHERE type = 'TRANSFER_IN')::text                 AS transfers,
-            COALESCE(SUM("totalAmount") FILTER (WHERE type != 'TRANSFER_OUT'), 0)::text AS volume
-          FROM transactions
-          WHERE "coopId" = ${coopId}
-            AND status = 'COMPLETED'
+            date_trunc(${trunc}, r."createdAt") AS bucket,
+            COUNT(*) FILTER (WHERE r.type = 'BUY' AND r."fromShareholderId" IS NULL)::text AS buys,
+            COUNT(*) FILTER (WHERE r.type = 'SELL' AND r."toShareholderId" IS NULL)::text  AS sells,
+            COALESCE(SUM(r."totalAmount") FILTER (WHERE r."fromShareholderId" IS NULL AND r."toShareholderId" IS NULL), 0)::text AS volume
+          FROM registrations r
+          WHERE r."coopId" = ${coopId}
+            AND r.status IN ('ACTIVE', 'COMPLETED')
           GROUP BY bucket
           ORDER BY bucket ASC
         `);
@@ -462,23 +453,21 @@ export class AnalyticsService {
     const timeline: TransactionSummaryPoint[] = this.fillGaps(
       rows.map((row) => ({
         date: row.bucket.toISOString(),
-        purchases: Number(row.purchases) || 0,
-        sales: Number(row.sales) || 0,
-        transfers: Number(row.transfers) || 0,
+        buys: Number(row.buys) || 0,
+        sells: Number(row.sells) || 0,
         volume: Number(row.volume) || 0,
       })),
       period,
-      (date) => ({ date, purchases: 0, sales: 0, transfers: 0, volume: 0 }),
+      (date) => ({ date, buys: 0, sells: 0, volume: 0 }),
     );
 
     const totals = timeline.reduce(
       (acc, point) => ({
-        purchases: acc.purchases + point.purchases,
-        sales: acc.sales + point.sales,
-        transfers: acc.transfers + point.transfers,
+        buys: acc.buys + point.buys,
+        sells: acc.sells + point.sells,
         volume: acc.volume + point.volume,
       }),
-      { purchases: 0, sales: 0, transfers: 0, volume: 0 },
+      { buys: 0, sells: 0, volume: 0 },
     );
 
     return { timeline, totals };

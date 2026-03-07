@@ -24,6 +24,8 @@
   "common": {
     "loading": "Wird geladen...",
     "error": "Ein Fehler ist aufgetreten",
+    "loadError": "Laden der Daten fehlgeschlagen",
+    "actionError": "Aktion fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "success": "Erfolgreich",
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -283,17 +285,15 @@
     "pending": "Ausstehend",
     "rejectReason": "Ablehnungsgrund",
     "types": {
-      "PURCHASE": "Kauf",
-      "SALE": "Verkauf",
-      "TRANSFER_IN": "Eingehende Übertragung",
-      "TRANSFER_OUT": "Ausgehende Übertragung"
+      "BUY": "Kauf",
+      "SELL": "Verkauf"
     },
     "statuses": {
       "PENDING": "Ausstehend",
-      "AWAITING_PAYMENT": "Zahlung ausstehend",
-      "APPROVED": "Genehmigt",
+      "PENDING_PAYMENT": "Zahlung ausstehend",
+      "ACTIVE": "Aktiv",
       "COMPLETED": "Abgeschlossen",
-      "REJECTED": "Abgelehnt"
+      "CANCELLED": "Storniert"
     }
   },
   "payments": {
@@ -1416,9 +1416,8 @@
       "exits": "Austritte"
     },
     "transactionTypes": {
-      "purchases": "Käufe",
-      "sales": "Verkäufe",
-      "transfers": "Übertragungen"
+      "buys": "Käufe",
+      "sells": "Verkäufe"
     }
   },
   "reports": {
@@ -1450,10 +1449,8 @@
       "projectInvestment": "Projektinvestition"
     },
     "types": {
-      "purchase": "Kauf",
-      "sale": "Verkauf",
-      "transferIn": "Übertragung ein",
-      "transferOut": "Übertragung aus"
+      "buy": "Kauf",
+      "sell": "Verkauf"
     },
     "shareholderTypes": {
       "individual": "Einzelperson",

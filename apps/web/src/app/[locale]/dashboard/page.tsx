@@ -14,7 +14,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     totalShares: 0,
     totalValue: 0,
-    pendingTransactions: 0,
+    pendingRegistrations: 0,
     totalDividends: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -26,7 +26,7 @@ export default function DashboardPage() {
           shareholderCoops: Array<{ id: string }>;
           shareholders: Array<{
             id: string;
-            shares: Array<{ quantity: number; purchasePricePerShare: number; status: string }>;
+            registrations: Array<{ sharesOwned: number; quantity: number; pricePerShare: number; status: string }>;
           }>;
         }>('/auth/me');
 
@@ -35,11 +35,12 @@ export default function DashboardPage() {
 
         if (profile.shareholders) {
           for (const sh of profile.shareholders) {
-            if (sh.shares) {
-              for (const share of sh.shares) {
-                if (share.status === 'ACTIVE') {
-                  totalShares += share.quantity;
-                  totalValue += share.quantity * Number(share.purchasePricePerShare);
+            if (sh.registrations) {
+              for (const reg of sh.registrations) {
+                if (reg.status === 'ACTIVE') {
+                  const qty = reg.sharesOwned ?? reg.quantity;
+                  totalShares += qty;
+                  totalValue += qty * Number(reg.pricePerShare);
                 }
               }
             }
@@ -49,7 +50,7 @@ export default function DashboardPage() {
         setStats({
           totalShares,
           totalValue,
-          pendingTransactions: 0,
+          pendingRegistrations: 0,
           totalDividends: 0,
         });
       } catch {
@@ -74,7 +75,7 @@ export default function DashboardPage() {
     },
     {
       title: t('transactions.pending'),
-      value: stats.pendingTransactions.toString(),
+      value: stats.pendingRegistrations.toString(),
       icon: <ArrowLeftRight className="h-5 w-5 text-orange-600" />,
     },
     {

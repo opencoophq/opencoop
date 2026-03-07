@@ -84,7 +84,7 @@ export default function DocumentsPage() {
   const typeLabel = (type: string) => {
     const labels: Record<string, string> = {
       SHARE_CERTIFICATE: t('common.certificate'),
-      PURCHASE_STATEMENT: t('transactions.types.PURCHASE'),
+      PURCHASE_STATEMENT: t('transactions.types.BUY'),
       DIVIDEND_STATEMENT: t('dividends.statement'),
       TRANSACTION_REPORT: t('transactions.title'),
     };

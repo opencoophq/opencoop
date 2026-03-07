@@ -63,9 +63,9 @@ export class ShareholdersService {
         skip,
         take: pageSize,
         include: {
-          shares: {
-            where: { status: 'ACTIVE' },
-            include: { shareClass: true },
+          registrations: {
+            where: { type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+            include: { shareClass: true, payments: true },
           },
           beneficialOwners: true,
         },
@@ -87,17 +87,15 @@ export class ShareholdersService {
     const shareholder = await this.prisma.shareholder.findFirst({
       where: { id, coopId },
       include: {
-        shares: {
+        registrations: {
+          orderBy: { createdAt: 'desc' },
           include: {
             shareClass: true,
             project: true,
+            payments: { orderBy: { bankDate: 'asc' } },
           },
         },
         beneficialOwners: true,
-        transactions: {
-          orderBy: { createdAt: 'desc' },
-          include: { payment: true },
-        },
         documents: {
           orderBy: { generatedAt: 'desc' },
         },

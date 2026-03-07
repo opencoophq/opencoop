@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
-import { Users, FileText, TrendingUp, ArrowLeftRight, CreditCard, UserCheck } from 'lucide-react';
+import { Users, TrendingUp, ArrowLeftRight, UserCheck } from 'lucide-react';
 import { CapitalTimelineChart } from '@/components/charts/capital-timeline-chart';
 import { CapitalByProjectChart } from '@/components/charts/capital-by-project-chart';
 import { ShareholderGrowthChart } from '@/components/charts/shareholder-growth-chart';
@@ -19,10 +19,8 @@ export type Period = 'month' | 'quarter' | 'year' | 'all';
 interface Stats {
   totalShareholders: number;
   activeShareholders: number;
-  totalShares: number;
   totalCapital: number;
-  pendingTransactions: number;
-  pendingPayments: number;
+  pendingRegistrations: number;
 }
 
 export default function AdminPage() {
@@ -67,24 +65,14 @@ export default function AdminPage() {
           icon: <UserCheck className="h-5 w-5 text-green-600" />,
         },
         {
-          title: t('shares.totalShares'),
-          value: stats.totalShares,
-          icon: <FileText className="h-5 w-5 text-indigo-600" />,
-        },
-        {
           title: t('admin.totalCapital'),
           value: formatCurrency(stats.totalCapital, locale),
           icon: <TrendingUp className="h-5 w-5 text-emerald-600" />,
         },
         {
           title: t('transactions.pending'),
-          value: stats.pendingTransactions,
+          value: stats.pendingRegistrations,
           icon: <ArrowLeftRight className="h-5 w-5 text-orange-600" />,
-        },
-        {
-          title: t('payments.pending'),
-          value: stats.pendingPayments,
-          icon: <CreditCard className="h-5 w-5 text-red-600" />,
         },
       ]
     : [];
