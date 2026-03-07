@@ -2,6 +2,19 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.2.0] - 2026-03-07
+
+### Changed
+- **Registration/Payment data model** — replaced Share + Transaction tables with a unified Registration + Payment model. Registrations are a ledger of BUY/SELL intents; Payments track actual bank activity. Data-preserving SQL migration converts all existing data in-place.
+
+### Added
+- **Daily chart filter** — admin dashboard charts now have a "Dagelijks" (Daily) period showing the last 90 days with daily granularity
+
+### Fixed
+- **SELL payment dates** — migration correctly uses payment creation date for SELL transactions instead of the original share purchase date
+- **Timeline chart future dates** — timeline chart now includes future-dated payments instead of cutting off at the current month
+- **COMPLETED status in shares page** — shares page and sell dialogs now correctly show COMPLETED registrations
+
 ## [0.1.78] - 2026-03-06
 
 ### Fixed
