@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.2.1] - 2026-03-07
+
+### Fixed
+- **Coop login page centered** — coop-branded login page is now properly centered on screen instead of being stuck to the left
+- **Coop root URL redirects to login** — `/{coopSlug}` now shows the login page instead of a combined login/register/share-classes landing page
+- **Logged-in users redirected** — visiting coop login while already authenticated redirects to dashboard
+
 ## [0.2.0] - 2026-03-07
 
 ### Changed
