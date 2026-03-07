@@ -111,7 +111,7 @@ export function CoopRegisterContent({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isRegisteringNew, setIsRegisteringNew] = useState(false);
   const [result, setResult] = useState<{
-    transactionId: string;
+    registrationId: string;
     ogmCode?: string;
     giftCode?: string;
   } | null>(null);
@@ -418,7 +418,7 @@ export function CoopRegisterContent({
 
       const data = await response.json();
       setResult({
-        transactionId: data.transactionId,
+        registrationId: data.registrationId,
         ogmCode: data.ogmCode,
       });
       setStep(totalSteps);
@@ -1045,7 +1045,7 @@ export function CoopRegisterContent({
 
         {result && (
           <p className="text-sm text-muted-foreground mt-4 text-center">
-            Transaction ID: {result.transactionId}
+            Registration ID: {result.registrationId}
           </p>
         )}
       </CardContent>

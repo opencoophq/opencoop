@@ -69,10 +69,8 @@ export function CapitalStatementPreview() {
 
   const typeLabel = (type: string) => {
     const map: Record<string, string> = {
-      PURCHASE: t('types.purchase'),
-      SALE: t('types.sale'),
-      TRANSFER_IN: t('types.transferIn'),
-      TRANSFER_OUT: t('types.transferOut'),
+      BUY: t('types.buy'),
+      SELL: t('types.sell'),
     };
     return map[type] || type;
   };

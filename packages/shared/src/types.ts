@@ -360,63 +360,59 @@ export interface UpdateProjectRequest {
 }
 
 // ============================================================================
-// Share Types
+// Registration Types
 // ============================================================================
 
-export type ShareStatus = 'PENDING' | 'ACTIVE' | 'SOLD' | 'TRANSFERRED';
+export type RegistrationType = 'BUY' | 'SELL';
+export type RegistrationStatus = 'PENDING' | 'PENDING_PAYMENT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
-export interface ShareDto {
+export interface RegistrationDto {
   id: string;
   coopId: string;
   shareholderId: string;
   shareClassId: string;
   projectId?: string;
-  quantity: number;
-  purchasePricePerShare: number;
-  purchaseDate: string;
-  status: ShareStatus;
-  certificateNumber?: string;
-  shareClass?: ShareClassDto;
-  project?: ProjectDto;
-}
-
-export interface PurchaseSharesRequest {
-  shareClassId: string;
-  projectId?: string;
-  quantity: number;
-}
-
-// ============================================================================
-// Transaction Types
-// ============================================================================
-
-export type TransactionType = 'PURCHASE' | 'SALE' | 'TRANSFER_IN' | 'TRANSFER_OUT';
-export type TransactionStatus = 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED';
-
-export interface TransactionDto {
-  id: string;
-  coopId: string;
-  type: TransactionType;
-  status: TransactionStatus;
-  shareholderId: string;
-  shareId?: string;
+  type: RegistrationType;
+  status: RegistrationStatus;
   quantity: number;
   pricePerShare: number;
   totalAmount: number;
+  registerDate: string;
+  isSavings: boolean;
+  ogmCode?: string;
+  certificateNumber?: string;
   fromShareholderId?: string;
   toShareholderId?: string;
   processedAt?: string;
   rejectionReason?: string;
   createdAt: string;
   shareholder?: ShareholderDto;
-  share?: ShareDto;
-  payment?: PaymentDto;
+  shareClass?: ShareClassDto;
+  project?: ProjectDto;
+  payments?: PaymentDto[];
+  // Derived fields (computed by API)
+  totalPaid?: number;
+  sharesOwned?: number;
+  sharesRemaining?: number;
+  fullyPaid?: boolean;
+}
+
+export interface CreateBuyRequest {
+  shareClassId: string;
+  projectId?: string;
+  quantity: number;
+  isSavings?: boolean;
+}
+
+export interface CreateSellRequest {
+  registrationId: string;
+  quantity: number;
 }
 
 export interface CreateTransferRequest {
   fromShareholderId: string;
   toShareholderId: string;
-  shareId: string;
+  registrationId: string;
   quantity: number;
 }
 
@@ -424,19 +420,15 @@ export interface CreateTransferRequest {
 // Payment Types
 // ============================================================================
 
-export type PaymentMethod = 'BANK_TRANSFER' | 'MOLLIE' | 'STRIPE';
-export type PaymentStatus = 'PENDING' | 'MATCHED' | 'CONFIRMED' | 'FAILED';
-
 export interface PaymentDto {
   id: string;
+  registrationId: string;
   coopId: string;
-  transactionId: string;
-  method: PaymentMethod;
-  status: PaymentStatus;
   amount: number;
-  currency: string;
-  ogmCode?: string;
-  externalReference?: string;
+  bankDate: string;
+  bankTransactionId?: string;
+  matchedByUserId?: string;
+  matchedAt?: string;
   createdAt: string;
 }
 
@@ -475,11 +467,10 @@ export interface BankTransactionDto {
   ogmCode?: string;
   referenceText?: string;
   matchStatus: BankTransactionMatchStatus;
-  matchedPaymentId?: string;
 }
 
 export interface MatchBankTransactionRequest {
-  paymentId: string;
+  registrationId: string;
 }
 
 // ============================================================================
@@ -544,18 +535,17 @@ export interface ShareRegistrationRequest {
   shareClassId: string;
   projectId?: string;
   quantity: number;
-  paymentMethod: PaymentMethod;
+  isSavings?: boolean;
   createAccount?: boolean;
   accountEmail?: string;
   accountPassword?: string;
 }
 
 export interface ShareRegistrationResponse {
-  transactionId: string;
-  paymentId: string;
-  status: TransactionStatus;
+  registrationId: string;
+  status: RegistrationStatus;
+  ogmCode?: string;
   bankTransferDetails?: BankTransferDetails;
-  paymentRedirectUrl?: string;
 }
 
 // ============================================================================

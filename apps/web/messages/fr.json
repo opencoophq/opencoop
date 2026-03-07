@@ -24,6 +24,8 @@
   "common": {
     "loading": "Chargement...",
     "error": "Une erreur est survenue",
+    "loadError": "Échec du chargement des données",
+    "actionError": "Action échouée. Veuillez réessayer.",
     "success": "Succès",
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -283,17 +285,15 @@
     "pending": "En attente",
     "rejectReason": "Motif du rejet",
     "types": {
-      "PURCHASE": "Achat",
-      "SALE": "Vente",
-      "TRANSFER_IN": "Transfert entrant",
-      "TRANSFER_OUT": "Transfert sortant"
+      "BUY": "Achat",
+      "SELL": "Vente"
     },
     "statuses": {
       "PENDING": "En attente",
-      "AWAITING_PAYMENT": "En attente de paiement",
-      "APPROVED": "Approuvée",
+      "PENDING_PAYMENT": "En attente de paiement",
+      "ACTIVE": "Actif",
       "COMPLETED": "Terminée",
-      "REJECTED": "Rejetée"
+      "CANCELLED": "Annulée"
     }
   },
   "payments": {
@@ -1416,9 +1416,8 @@
       "exits": "Sorties"
     },
     "transactionTypes": {
-      "purchases": "Achats",
-      "sales": "Ventes",
-      "transfers": "Transferts"
+      "buys": "Achats",
+      "sells": "Ventes"
     }
   },
   "reports": {
@@ -1450,10 +1449,8 @@
       "projectInvestment": "Investissement par projet"
     },
     "types": {
-      "purchase": "Achat",
-      "sale": "Vente",
-      "transferIn": "Transfert entrant",
-      "transferOut": "Transfert sortant"
+      "buy": "Achat",
+      "sell": "Vente"
     },
     "shareholderTypes": {
       "individual": "Particulier",

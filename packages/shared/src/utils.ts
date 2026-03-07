@@ -1,4 +1,20 @@
 /**
+ * Compute total paid from a list of payments.
+ */
+export function computeTotalPaid(payments: { amount: number | string | { toString(): string } }[]): number {
+  return payments.reduce((sum, p) => sum + Number(p.amount), 0);
+}
+
+/**
+ * Compute vested (owned) shares from total paid, price per share, and registered quantity.
+ * Returns 0 if pricePerShare is zero or invalid.
+ */
+export function computeVestedShares(totalPaid: number, pricePerShare: number, quantity: number): number {
+  if (!pricePerShare || pricePerShare <= 0 || isNaN(pricePerShare)) return 0;
+  return Math.min(Math.floor(totalPaid / pricePerShare), quantity);
+}
+
+/**
  * Format a number as currency (EUR by default)
  */
 export function formatCurrency(amount: number, locale = 'nl-BE', currency = 'EUR'): string {

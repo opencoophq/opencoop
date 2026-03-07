@@ -24,13 +24,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { TrendingDown, QrCode } from 'lucide-react';
 
-interface ShareData {
+interface RegistrationData {
   id: string;
   quantity: number;
-  purchasePricePerShare: number;
-  purchaseDate: string;
-  paymentDate?: string;
+  sharesOwned: number;
+  pricePerShare: number;
+  registerDate: string;
   status: string;
+  ogmCode?: string;
   shareClass: { name: string; code: string };
   project?: { name: string } | null;
 }
@@ -39,7 +40,7 @@ interface ShareholderData {
   id: string;
   bankIban?: string;
   bankBic?: string;
-  shares: ShareData[];
+  registrations: RegistrationData[];
   coop?: {
     minimumHoldingPeriod?: number;
     name?: string;
@@ -66,25 +67,18 @@ interface PaymentDetailsData {
   ogmCode: string;
 }
 
-interface TransactionData {
-  id: string;
-  type: string;
-  status: string;
-  totalAmount: number;
-  shareId?: string;
-  payment?: { ogmCode?: string };
-}
+// TransactionData no longer needed — registrations contain all necessary info
 
 export default function SharesPage() {
   const t = useTranslations();
   const { locale } = useLocale();
-  const [shares, setShares] = useState<ShareData[]>([]);
+  const [registrations, setRegistrations] = useState<RegistrationData[]>([]);
   const [shareholder, setShareholder] = useState<ShareholderData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Sell dialog state
   const [sellOpen, setSellOpen] = useState(false);
-  const [sellShareId, setSellShareId] = useState('');
+  const [sellRegistrationId, setSellRegistrationId] = useState('');
   const [sellQuantity, setSellQuantity] = useState(1);
   const [sellLoading, setSellLoading] = useState(false);
   const [sellSuccess, setSellSuccess] = useState(false);
@@ -100,12 +94,9 @@ export default function SharesPage() {
   const [buyError, setBuyError] = useState('');
   const [buyPaymentDetails, setBuyPaymentDetails] = useState<PaymentDetailsData | null>(null);
 
-  // Payment QR dialog for AWAITING_PAYMENT shares
+  // Payment QR dialog for PENDING_PAYMENT registrations
   const [paymentQrOpen, setPaymentQrOpen] = useState(false);
   const [paymentQrDetails, setPaymentQrDetails] = useState<PaymentDetailsData | null>(null);
-
-  // Transactions (for AWAITING_PAYMENT lookup)
-  const [transactions, setTransactions] = useState<TransactionData[]>([]);
 
   // Bank details dialog for when IBAN is missing
   const [bankOpen, setBankOpen] = useState(false);
@@ -120,20 +111,16 @@ export default function SharesPage() {
         if (profile.shareholders?.[0]) {
           const sh = profile.shareholders[0];
           setShareholder(sh);
-          setShares(sh.shares || []);
+          // Only show BUY registrations that are ACTIVE or PENDING_PAYMENT
+          const buyRegs = (sh.registrations || []).filter(
+            (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT',
+          );
+          setRegistrations(buyRegs);
 
           // Load share classes for buy dialog
           try {
             const sc = await api<ShareClassData[]>(`/shareholders/${sh.id}/share-classes`);
             setShareClasses(sc || []);
-          } catch {
-            // ignore
-          }
-
-          // Load transactions for AWAITING_PAYMENT QR display
-          try {
-            const txs = await api<TransactionData[]>(`/shareholders/${sh.id}/transactions`);
-            setTransactions(txs || []);
           } catch {
             // ignore
           }
@@ -150,14 +137,15 @@ export default function SharesPage() {
   const statusVariant = (status: string) => {
     switch (status) {
       case 'ACTIVE': return 'default' as const;
+      case 'COMPLETED': return 'default' as const;
       case 'PENDING': return 'secondary' as const;
-      case 'AWAITING_PAYMENT': return 'outline' as const;
-      case 'SOLD': return 'destructive' as const;
+      case 'PENDING_PAYMENT': return 'outline' as const;
+      case 'CANCELLED': return 'destructive' as const;
       default: return 'outline' as const;
     }
   };
 
-  const openSellDialog = (shareId: string) => {
+  const openSellDialog = (registrationId: string) => {
     if (!shareholder?.bankIban) {
       // Prompt to add bank details first
       setBankIban(shareholder?.bankIban || '');
@@ -165,13 +153,11 @@ export default function SharesPage() {
       setBankOpen(true);
       return;
     }
-    const share = shares.find((s) => s.id === shareId);
-    setSellShareId(shareId);
+    setSellRegistrationId(registrationId);
     setSellQuantity(1);
     setSellSuccess(false);
     setSellError('');
     setSellOpen(true);
-    if (share) setSellQuantity(1);
   };
 
   const handleSaveBankDetails = async () => {
@@ -197,9 +183,9 @@ export default function SharesPage() {
     setBuyError('');
     try {
       const result = await api<{
-        transaction: TransactionData;
+        registration: { id: string };
         paymentDetails?: PaymentDetailsData;
-      }>(`/shareholders/${shareholder.id}/purchase`, {
+      }>(`/shareholders/${shareholder.id}/buy`, {
         method: 'POST',
         body: { shareClassId: buyShareClassId, quantity: buyQuantity },
       });
@@ -207,12 +193,15 @@ export default function SharesPage() {
       if (result.paymentDetails) {
         setBuyPaymentDetails(result.paymentDetails);
       }
-      // Reload shares
+      // Reload registrations
       const profile = await api<{ shareholders: ShareholderData[] }>('/auth/me');
       if (profile.shareholders?.[0]) {
         const sh = profile.shareholders[0];
         setShareholder(sh);
-        setShares(sh.shares || []);
+        const buyRegs = (sh.registrations || []).filter(
+          (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT',
+        );
+        setRegistrations(buyRegs);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.error');
@@ -223,21 +212,24 @@ export default function SharesPage() {
   };
 
   const handleSell = async () => {
-    if (!shareholder || !sellShareId) return;
+    if (!shareholder || !sellRegistrationId) return;
     setSellLoading(true);
     setSellError('');
     try {
       await api(`/shareholders/${shareholder.id}/sell-request`, {
         method: 'POST',
-        body: { shareId: sellShareId, quantity: sellQuantity },
+        body: { registrationId: sellRegistrationId, quantity: sellQuantity },
       });
       setSellSuccess(true);
-      // Reload shares
+      // Reload registrations
       const profile = await api<{ shareholders: ShareholderData[] }>('/auth/me');
       if (profile.shareholders?.[0]) {
         const sh = profile.shareholders[0];
         setShareholder(sh);
-        setShares(sh.shares || []);
+        const buyRegs = (sh.registrations || []).filter(
+          (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT',
+        );
+        setRegistrations(buyRegs);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.error');
@@ -247,22 +239,19 @@ export default function SharesPage() {
     }
   };
 
-  const showPaymentForShare = (shareId: string) => {
-    const tx = transactions.find(
-      (tx) => tx.shareId === shareId && tx.status === 'AWAITING_PAYMENT' && tx.type === 'PURCHASE'
-    );
-    if (!tx || !shareholder?.coop) return;
+  const showPaymentForRegistration = (reg: RegistrationData) => {
+    if (!shareholder?.coop) return;
     setPaymentQrDetails({
       beneficiaryName: shareholder.coop.name || '',
       iban: shareholder.coop.bankIban || '',
       bic: shareholder.coop.bankBic || '',
-      amount: Number(tx.totalAmount),
-      ogmCode: tx.payment?.ogmCode || '',
+      amount: reg.quantity * Number(reg.pricePerShare),
+      ogmCode: reg.ogmCode || '',
     });
     setPaymentQrOpen(true);
   };
 
-  const selectedSellShare = shares.find((s) => s.id === sellShareId);
+  const selectedSellReg = registrations.find((r) => r.id === sellRegistrationId);
 
   if (loading) {
     return (
@@ -292,7 +281,7 @@ export default function SharesPage() {
           )}
         </CardHeader>
         <CardContent>
-          {shares.length === 0 ? (
+          {registrations.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
           ) : (
             <Table>
@@ -309,41 +298,41 @@ export default function SharesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shares.map((share) => (
-                  <TableRow key={share.id}>
+                {registrations.map((reg) => (
+                  <TableRow key={reg.id}>
                     <TableCell className="font-medium">
-                      {share.shareClass.name} ({share.shareClass.code})
+                      {reg.shareClass.name} ({reg.shareClass.code})
                     </TableCell>
-                    <TableCell>{share.project?.name || '-'}</TableCell>
-                    <TableCell className="text-right">{share.quantity}</TableCell>
+                    <TableCell>{reg.project?.name || '-'}</TableCell>
+                    <TableCell className="text-right">{reg.sharesOwned ?? reg.quantity}</TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(Number(share.purchasePricePerShare), locale)}
+                      {formatCurrency(Number(reg.pricePerShare), locale)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(share.quantity * Number(share.purchasePricePerShare), locale)}
+                      {formatCurrency((reg.sharesOwned ?? reg.quantity) * Number(reg.pricePerShare), locale)}
                     </TableCell>
                     <TableCell>
-                      {new Date(share.paymentDate || share.purchaseDate).toLocaleDateString(locale)}
+                      {new Date(reg.registerDate).toLocaleDateString(locale)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant(share.status)}>{share.status}</Badge>
+                      <Badge variant={statusVariant(reg.status)}>{reg.status}</Badge>
                     </TableCell>
                     <TableCell>
-                      {share.status === 'ACTIVE' && (
+                      {reg.status === 'ACTIVE' && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => openSellDialog(share.id)}
+                          onClick={() => openSellDialog(reg.id)}
                         >
                           <TrendingDown className="h-4 w-4 mr-1" />
                           {t('shares.sellBack')}
                         </Button>
                       )}
-                      {share.status === 'AWAITING_PAYMENT' && (
+                      {reg.status === 'PENDING_PAYMENT' && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => showPaymentForShare(share.id)}
+                          onClick={() => showPaymentForRegistration(reg)}
                         >
                           <QrCode className="h-4 w-4 mr-1" />
                           {t('shares.awaitingPayment')}
@@ -500,7 +489,7 @@ export default function SharesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment QR Dialog for AWAITING_PAYMENT shares */}
+      {/* Payment QR Dialog for PENDING_PAYMENT registrations */}
       <Dialog open={paymentQrOpen} onOpenChange={setPaymentQrOpen}>
         <DialogContent>
           <DialogHeader>
@@ -578,12 +567,12 @@ export default function SharesPage() {
                   <AlertDescription>{sellError}</AlertDescription>
                 </Alert>
               )}
-              {selectedSellShare && (
+              {selectedSellReg && (
                 <>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium">{selectedSellShare.shareClass.name}</p>
+                    <p className="text-sm font-medium">{selectedSellReg.shareClass.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {t('shares.sellPrice')}: {formatCurrency(Number(selectedSellShare.purchasePricePerShare), locale)}
+                      {t('shares.sellPrice')}: {formatCurrency(Number(selectedSellReg.pricePerShare), locale)}
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -591,19 +580,19 @@ export default function SharesPage() {
                     <Input
                       type="number"
                       min={1}
-                      max={selectedSellShare.quantity}
+                      max={selectedSellReg.sharesOwned ?? selectedSellReg.quantity}
                       value={sellQuantity}
-                      onChange={(e) => setSellQuantity(Math.max(1, Math.min(selectedSellShare.quantity, parseInt(e.target.value) || 1)))}
+                      onChange={(e) => setSellQuantity(Math.max(1, Math.min(selectedSellReg.sharesOwned ?? selectedSellReg.quantity, parseInt(e.target.value) || 1)))}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {t('shares.maxQuantity', { max: selectedSellShare.quantity })}
+                      {t('shares.maxQuantity', { max: selectedSellReg.sharesOwned ?? selectedSellReg.quantity })}
                     </p>
                   </div>
                   <div className="border-t pt-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">{t('shares.totalRefund')}</span>
                       <span className="font-bold">
-                        {formatCurrency(sellQuantity * Number(selectedSellShare.purchasePricePerShare), locale)}
+                        {formatCurrency(sellQuantity * Number(selectedSellReg.pricePerShare), locale)}
                       </span>
                     </div>
                     {shareholder?.bankIban && (

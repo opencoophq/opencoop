@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { TransactionsModule } from '../transactions/transactions.module';
+import { RegistrationsModule } from '../registrations/registrations.module';
 import { BankImportService } from './bank-import.service';
 
 @Module({
-  imports: [TransactionsModule],
+  imports: [RegistrationsModule],
   providers: [BankImportService],
   exports: [BankImportService],
 })

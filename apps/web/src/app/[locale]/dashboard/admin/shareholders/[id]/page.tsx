@@ -57,9 +57,15 @@ interface Project {
   name: string;
 }
 
-interface Share {
+interface Registration {
   id: string;
+  type: string;
   quantity: number;
+  sharesOwned: number;
+  pricePerShare: number;
+  registerDate: string;
+  status: string;
+  createdAt: string;
   shareClass: {
     name: string;
     pricePerShare: number;
@@ -67,18 +73,6 @@ interface Share {
   project?: {
     name: string;
   };
-  purchaseDate: string;
-  paymentDate?: string;
-  status: string;
-}
-
-interface Transaction {
-  id: string;
-  type: string;
-  quantity: number;
-  pricePerShare: number;
-  status: string;
-  createdAt: string;
 }
 
 interface ShareholderDetail {
@@ -105,8 +99,7 @@ interface ShareholderDetail {
     city?: string;
     country?: string;
   };
-  shares: Share[];
-  transactions: Transaction[];
+  registrations: Registration[];
   createdAt: string;
 }
 
@@ -178,7 +171,7 @@ export default function ShareholderDetailPage() {
 
   // Sell dialog state
   const [sellOpen, setSellOpen] = useState(false);
-  const [sellShareId, setSellShareId] = useState('');
+  const [sellRegistrationId, setSellRegistrationId] = useState('');
   const [sellQuantity, setSellQuantity] = useState(1);
   const [sellLoading, setSellLoading] = useState(false);
   const [sellResult, setSellResult] = useState<PaymentDetails | null>(null);
@@ -303,7 +296,7 @@ export default function ShareholderDetailPage() {
 
   const handleApprove = async (txId: string) => {
     if (!selectedCoop) return;
-    await api(`/admin/coops/${selectedCoop.id}/transactions/${txId}/approve`, { method: 'PUT' });
+    await api(`/admin/coops/${selectedCoop.id}/registrations/${txId}/approve`, { method: 'PUT' });
     reloadShareholder();
   };
 
@@ -315,7 +308,7 @@ export default function ShareholderDetailPage() {
 
   const handleReject = async () => {
     if (!selectedCoop || !rejectTxId || !rejectReason.trim()) return;
-    await api(`/admin/coops/${selectedCoop.id}/transactions/${rejectTxId}/reject`, {
+    await api(`/admin/coops/${selectedCoop.id}/registrations/${rejectTxId}/reject`, {
       method: 'PUT',
       body: { reason: rejectReason.trim() },
     });
@@ -346,8 +339,8 @@ export default function ShareholderDetailPage() {
     if (!selectedCoop || !buyShareClassId) return;
     setBuyLoading(true);
     try {
-      const tx = await api<{ id: string }>(
-        `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}/purchase`,
+      const reg = await api<{ id: string }>(
+        `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}/buy`,
         {
           method: 'POST',
           body: {
@@ -359,7 +352,7 @@ export default function ShareholderDetailPage() {
       );
       // Get payment details for QR code
       const details = await api<PaymentDetails>(
-        `/admin/coops/${selectedCoop.id}/transactions/${tx.id}/payment-details`,
+        `/admin/coops/${selectedCoop.id}/registrations/${reg.id}/payment-details`,
       );
       setBuyResult(details);
       reloadShareholder();
@@ -372,27 +365,27 @@ export default function ShareholderDetailPage() {
   };
 
   const openSellDialog = () => {
-    const activeShares = shareholder?.shares.filter((s) => s.status === 'ACTIVE') || [];
-    setSellShareId(activeShares[0]?.id || '');
+    const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE') || [];
+    setSellRegistrationId(activeRegs[0]?.id || '');
     setSellQuantity(1);
     setSellResult(null);
     setSellOpen(true);
   };
 
   const handleSell = async () => {
-    if (!selectedCoop || !sellShareId) return;
+    if (!selectedCoop || !sellRegistrationId) return;
     setSellLoading(true);
     try {
-      const tx = await api<{ id: string }>(
+      const reg = await api<{ id: string }>(
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}/sell`,
         {
           method: 'POST',
-          body: { shareId: sellShareId, quantity: sellQuantity },
+          body: { registrationId: sellRegistrationId, quantity: sellQuantity },
         },
       );
       // Get payment details for QR code
       const details = await api<PaymentDetails>(
-        `/admin/coops/${selectedCoop.id}/transactions/${tx.id}/payment-details`,
+        `/admin/coops/${selectedCoop.id}/registrations/${reg.id}/payment-details`,
       );
       setSellResult(details);
       reloadShareholder();
@@ -412,8 +405,8 @@ export default function ShareholderDetailPage() {
 
   const selectedShareClass = shareClasses.find((sc) => sc.id === buyShareClassId);
   const buyTotal = (selectedShareClass?.pricePerShare || 0) * buyQuantity;
-  const activeShares = shareholder?.shares.filter((s) => s.status === 'ACTIVE') || [];
-  const selectedSellShare = shareholder?.shares.find((s) => s.id === sellShareId);
+  const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE') || [];
+  const selectedSellReg = shareholder?.registrations.find((r) => r.id === sellRegistrationId);
 
   if (loading) {
     return (
@@ -467,7 +460,7 @@ export default function ShareholderDetailPage() {
             <ShoppingCart className="h-4 w-4 mr-2" />
             {t('shares.buyMore')}
           </Button>
-          <Button variant="outline" onClick={openSellDialog} disabled={activeShares.length === 0}>
+          <Button variant="outline" onClick={openSellDialog} disabled={activeRegs.length === 0}>
             <TrendingDown className="h-4 w-4 mr-2" />
             {t('shares.sellShares')}
           </Button>
@@ -631,7 +624,7 @@ export default function ShareholderDetailPage() {
           <CardTitle>{t('admin.shareholderDetail.shareholdings')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {shareholder.shares.filter((s) => s.status === 'ACTIVE').length === 0 ? (
+          {shareholder.registrations.filter((r) => r.status === 'ACTIVE').length === 0 ? (
             <p className="text-muted-foreground">{t('common.noResults')}</p>
           ) : (
             <Table>
@@ -647,23 +640,23 @@ export default function ShareholderDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shareholder.shares
-                  .filter((share) => share.status === 'ACTIVE')
-                  .map((share) => (
-                  <TableRow key={share.id}>
-                    <TableCell>{share.shareClass.name}</TableCell>
-                    <TableCell>{share.project?.name || '-'}</TableCell>
-                    <TableCell className="text-right">{share.quantity}</TableCell>
+                {shareholder.registrations
+                  .filter((reg) => reg.status === 'ACTIVE')
+                  .map((reg) => (
+                  <TableRow key={reg.id}>
+                    <TableCell>{reg.shareClass.name}</TableCell>
+                    <TableCell>{reg.project?.name || '-'}</TableCell>
+                    <TableCell className="text-right">{reg.sharesOwned ?? reg.quantity}</TableCell>
                     <TableCell className="text-right">
-                      {fmtCurrency(share.shareClass.pricePerShare)}
+                      {fmtCurrency(reg.shareClass.pricePerShare)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmtCurrency(share.quantity * share.shareClass.pricePerShare)}
+                      {fmtCurrency((reg.sharesOwned ?? reg.quantity) * reg.shareClass.pricePerShare)}
                     </TableCell>
-                    <TableCell>{formatDate(share.paymentDate || share.purchaseDate)}</TableCell>
+                    <TableCell>{formatDate(reg.registerDate)}</TableCell>
                     <TableCell>
-                      <Badge variant={share.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                        {t(`shares.status.${share.status.toLowerCase()}`)}
+                      <Badge variant={reg.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                        {reg.status}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -674,13 +667,13 @@ export default function ShareholderDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Transaction History */}
+      {/* Registration History */}
       <Card>
         <CardHeader>
           <CardTitle>{t('admin.shareholderDetail.transactionHistory')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {shareholder.transactions.length === 0 ? (
+          {shareholder.registrations.length === 0 ? (
             <p className="text-muted-foreground">{t('transactions.noTransactions')}</p>
           ) : (
             <Table>
@@ -696,41 +689,41 @@ export default function ShareholderDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shareholder.transactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>{formatDate(transaction.createdAt)}</TableCell>
+                {shareholder.registrations.map((reg) => (
+                  <TableRow key={reg.id}>
+                    <TableCell>{formatDate(reg.createdAt)}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {t(`transactions.types.${transaction.type}`)}
+                        {t(`transactions.types.${reg.type}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">{transaction.quantity}</TableCell>
+                    <TableCell className="text-right">{reg.quantity}</TableCell>
                     <TableCell className="text-right">
-                      {fmtCurrency(transaction.pricePerShare)}
+                      {fmtCurrency(reg.pricePerShare)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmtCurrency(transaction.quantity * transaction.pricePerShare)}
+                      {fmtCurrency(reg.quantity * reg.pricePerShare)}
                     </TableCell>
                     <TableCell>
                       <Badge
                         variant={
-                          transaction.status === 'COMPLETED'
+                          reg.status === 'COMPLETED' || reg.status === 'ACTIVE'
                             ? 'default'
-                            : transaction.status === 'REJECTED'
+                            : reg.status === 'CANCELLED'
                               ? 'destructive'
                               : 'secondary'
                         }
                       >
-                        {t(`transactions.statuses.${transaction.status}`)}
+                        {t(`transactions.statuses.${reg.status}`)}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {transaction.status === 'PENDING' && (
+                      {reg.status === 'PENDING' && (
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleApprove(transaction.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => handleApprove(reg.id)}>
                             <Check className="h-4 w-4 text-green-600" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => openRejectDialog(transaction.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => openRejectDialog(reg.id)}>
                             <X className="h-4 w-4 text-red-600" />
                           </Button>
                         </div>
@@ -963,14 +956,14 @@ export default function ShareholderDetailPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>{t('shares.shareClass')}</Label>
-                <Select value={sellShareId} onValueChange={(v) => { setSellShareId(v); setSellQuantity(1); }}>
+                <Select value={sellRegistrationId} onValueChange={(v) => { setSellRegistrationId(v); setSellQuantity(1); }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {activeShares.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.shareClass.name} - {s.quantity} {t('shares.quantity').toLowerCase()} ({fmtCurrency(s.shareClass.pricePerShare)}/{t('shares.perUnit')})
+                    {activeRegs.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.shareClass.name} - {r.sharesOwned ?? r.quantity} {t('shares.quantity').toLowerCase()} ({fmtCurrency(r.shareClass.pricePerShare)}/{t('shares.perUnit')})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -981,22 +974,22 @@ export default function ShareholderDetailPage() {
                 <Input
                   type="number"
                   min={1}
-                  max={selectedSellShare?.quantity || 1}
+                  max={selectedSellReg?.sharesOwned ?? selectedSellReg?.quantity ?? 1}
                   value={sellQuantity}
-                  onChange={(e) => setSellQuantity(Math.max(1, Math.min(selectedSellShare?.quantity || 1, parseInt(e.target.value) || 1)))}
+                  onChange={(e) => setSellQuantity(Math.max(1, Math.min(selectedSellReg?.sharesOwned ?? selectedSellReg?.quantity ?? 1, parseInt(e.target.value) || 1)))}
                 />
-                {selectedSellShare && (
+                {selectedSellReg && (
                   <p className="text-xs text-muted-foreground">
-                    {t('shares.maxQuantity', { max: selectedSellShare.quantity })}
+                    {t('shares.maxQuantity', { max: selectedSellReg.sharesOwned ?? selectedSellReg.quantity })}
                   </p>
                 )}
               </div>
-              {selectedSellShare && (
+              {selectedSellReg && (
                 <div className="border-t pt-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t('shares.totalRefund')}</span>
                     <span className="font-bold">
-                      {fmtCurrency(sellQuantity * selectedSellShare.shareClass.pricePerShare)}
+                      {fmtCurrency(sellQuantity * selectedSellReg.shareClass.pricePerShare)}
                     </span>
                   </div>
                 </div>
@@ -1005,7 +998,7 @@ export default function ShareholderDetailPage() {
                 <Button variant="outline" onClick={() => setSellOpen(false)}>
                   {t('common.cancel')}
                 </Button>
-                <Button onClick={handleSell} disabled={sellLoading || !sellShareId}>
+                <Button onClick={handleSell} disabled={sellLoading || !sellRegistrationId}>
                   {sellLoading ? t('common.loading') : t('shares.confirmSell')}
                 </Button>
               </DialogFooter>

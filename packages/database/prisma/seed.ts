@@ -364,149 +364,74 @@ async function main() {
   console.log(`    ${lucasShareholder.firstName} ${lucasShareholder.lastName} (MINOR)`);
 
   // ---------------------------------------------------------------------------
-  // 6. SHARES, TRANSACTIONS & PAYMENTS
+  // 6. REGISTRATIONS & PAYMENTS
   // ---------------------------------------------------------------------------
 
-  // Check if we already seeded transactions (idempotency)
-  const existingTxCount = await prisma.transaction.count({ where: { coopId: coop.id } });
-  if (existingTxCount > 0) {
-    console.log('\n  Transactions already exist — skipping shares/transactions/payments');
+  // Check if we already seeded registrations (idempotency)
+  const existingRegCount = await prisma.registration.count({ where: { coopId: coop.id } });
+  if (existingRegCount > 0) {
+    console.log('\n  Registrations already exist — skipping');
   } else {
-    console.log('\n  Creating shares, transactions & payments...');
+    console.log('\n  Creating registrations & payments...');
 
     const ogmPrefix = coop.ogmPrefix;
 
-    // Define all purchase records
-    const purchases = [
-      {
-        shareholder: janShareholder,
-        shareClass: shareClassA,
-        project: solarProject,
-        qty: 4,
-        date: new Date('2024-04-01'),
-        status: 'COMPLETED' as const,
-        paymentStatus: 'CONFIRMED' as const,
-      },
-      {
-        shareholder: janShareholder,
-        shareClass: shareClassB,
-        project: windProject,
-        qty: 2,
-        date: new Date('2024-07-15'),
-        status: 'COMPLETED' as const,
-        paymentStatus: 'CONFIRMED' as const,
-      },
-      {
-        shareholder: elsShareholder,
-        shareClass: shareClassA,
-        project: solarProject,
-        qty: 2,
-        date: new Date('2024-05-10'),
-        status: 'COMPLETED' as const,
-        paymentStatus: 'CONFIRMED' as const,
-      },
-      {
-        shareholder: bakkerijShareholder,
-        shareClass: shareClassA,
-        project: solarProject,
-        qty: 10,
-        date: new Date('2024-04-20'),
-        status: 'COMPLETED' as const,
-        paymentStatus: 'CONFIRMED' as const,
-      },
-      {
-        shareholder: bakkerijShareholder,
-        shareClass: shareClassB,
-        project: windProject,
-        qty: 4,
-        date: new Date('2024-08-01'),
-        status: 'COMPLETED' as const,
-        paymentStatus: 'CONFIRMED' as const,
-      },
-      {
-        shareholder: marcShareholder,
-        shareClass: shareClassA,
-        project: solarProject,
-        qty: 2,
-        date: new Date('2024-06-05'),
-        status: 'COMPLETED' as const,
-        paymentStatus: 'CONFIRMED' as const,
-      },
-      {
-        shareholder: sophieShareholder,
-        shareClass: shareClassA,
-        project: solarProject,
-        qty: 1,
-        date: new Date('2025-01-20'),
-        status: 'PENDING' as const,
-        paymentStatus: 'PENDING' as const,
-      },
-      {
-        shareholder: lucasShareholder,
-        shareClass: shareClassA,
-        project: solarProject,
-        qty: 1,
-        date: new Date('2024-09-10'),
-        status: 'COMPLETED' as const,
-        paymentStatus: 'CONFIRMED' as const,
-      },
+    const buys = [
+      { shareholder: janShareholder, shareClass: shareClassA, project: solarProject, qty: 4, date: new Date('2024-04-01'), completed: true },
+      { shareholder: janShareholder, shareClass: shareClassB, project: windProject, qty: 2, date: new Date('2024-07-15'), completed: true },
+      { shareholder: elsShareholder, shareClass: shareClassA, project: solarProject, qty: 2, date: new Date('2024-05-10'), completed: true },
+      { shareholder: bakkerijShareholder, shareClass: shareClassA, project: solarProject, qty: 10, date: new Date('2024-04-20'), completed: true },
+      { shareholder: bakkerijShareholder, shareClass: shareClassB, project: windProject, qty: 4, date: new Date('2024-08-01'), completed: true },
+      { shareholder: marcShareholder, shareClass: shareClassA, project: solarProject, qty: 2, date: new Date('2024-06-05'), completed: true },
+      { shareholder: sophieShareholder, shareClass: shareClassA, project: solarProject, qty: 1, date: new Date('2025-01-20'), completed: false },
+      { shareholder: lucasShareholder, shareClass: shareClassA, project: solarProject, qty: 1, date: new Date('2024-09-10'), completed: true },
     ];
 
     await prisma.$transaction(async (tx) => {
-      for (let i = 0; i < purchases.length; i++) {
-        const p = purchases[i];
-        const pricePerShare = Number(p.shareClass.pricePerShare);
-        const totalAmount = p.qty * pricePerShare;
-        const isCompleted = p.status === 'COMPLETED';
+      for (let i = 0; i < buys.length; i++) {
+        const b = buys[i];
+        const pricePerShare = Number(b.shareClass.pricePerShare);
+        const totalAmount = b.qty * pricePerShare;
 
-        const share = await tx.share.create({
+        const registration = await tx.registration.create({
           data: {
             coopId: coop!.id,
-            shareholderId: p.shareholder.id,
-            shareClassId: p.shareClass.id,
-            projectId: p.project.id,
-            quantity: p.qty,
-            purchasePricePerShare: pricePerShare,
-            purchaseDate: p.date,
-            status: isCompleted ? 'ACTIVE' : 'PENDING',
-            certificateNumber: isCompleted
-              ? `${coop!.slug.toUpperCase()}-${p.shareClass.code}-${String(i + 1).padStart(4, '0')}`
-              : null,
-          },
-        });
-
-        const transaction = await tx.transaction.create({
-          data: {
-            coopId: coop!.id,
-            type: 'PURCHASE',
-            status: p.status,
-            shareholderId: p.shareholder.id,
-            shareId: share.id,
-            quantity: p.qty,
-            pricePerShare: pricePerShare,
-            totalAmount: totalAmount,
-            processedByUserId: isCompleted ? coopAdminUser.id : null,
-            processedAt: isCompleted ? p.date : null,
-            createdAt: p.date,
-          },
-        });
-
-        await tx.payment.create({
-          data: {
-            coopId: coop!.id,
-            transactionId: transaction.id,
-            method: 'BANK_TRANSFER',
-            status: p.paymentStatus,
-            amount: totalAmount,
-            currency: 'EUR',
+            shareholderId: b.shareholder.id,
+            shareClassId: b.shareClass.id,
+            projectId: b.project.id,
+            type: 'BUY',
+            status: b.completed ? 'COMPLETED' : 'PENDING',
+            quantity: b.qty,
+            pricePerShare,
+            totalAmount,
+            registerDate: b.date,
             ogmCode: generateOgmCode(ogmPrefix, i + 1),
-            createdAt: p.date,
+            certificateNumber: b.completed
+              ? `${coop!.slug.toUpperCase()}-${b.shareClass.code}-${String(i + 1).padStart(4, '0')}`
+              : null,
+            processedByUserId: b.completed ? coopAdminUser.id : null,
+            processedAt: b.completed ? b.date : null,
+            createdAt: b.date,
           },
         });
+
+        // Create payment for completed registrations
+        if (b.completed) {
+          await tx.payment.create({
+            data: {
+              registrationId: registration.id,
+              coopId: coop!.id,
+              amount: totalAmount,
+              bankDate: b.date,
+              matchedAt: b.date,
+              createdAt: b.date,
+            },
+          });
+        }
       }
     });
 
-    console.log(`  Created ${purchases.length} shares, transactions & payments`);
+    console.log(`  Created ${buys.length} registrations & payments`);
   }
 
   // ---------------------------------------------------------------------------
@@ -549,40 +474,46 @@ async function main() {
       lucasShareholder,
     ];
 
-    const activeShares = await prisma.share.findMany({
+    const activeRegistrations = await prisma.registration.findMany({
       where: {
         coopId: coop.id,
-        status: 'ACTIVE',
+        type: 'BUY',
+        status: { in: ['ACTIVE', 'COMPLETED'] },
         shareholderId: { in: activeShareholders.map((s) => s.id) },
       },
-      include: { shareClass: true },
+      include: { shareClass: true, payments: true },
     });
 
-    // Group shares by shareholder
-    const sharesByShareholder = new Map<string, typeof activeShares>();
-    for (const share of activeShares) {
-      const existing = sharesByShareholder.get(share.shareholderId) || [];
-      existing.push(share);
-      sharesByShareholder.set(share.shareholderId, existing);
+    // Group registrations by shareholder
+    const regsByShareholder = new Map<string, typeof activeRegistrations>();
+    for (const reg of activeRegistrations) {
+      const existing = regsByShareholder.get(reg.shareholderId) || [];
+      existing.push(reg);
+      regsByShareholder.set(reg.shareholderId, existing);
     }
 
     for (const shareholder of activeShareholders) {
-      const shares = sharesByShareholder.get(shareholder.id) || [];
-      if (shares.length === 0) continue;
+      const regs = regsByShareholder.get(shareholder.id) || [];
+      if (regs.length === 0) continue;
 
       let grossAmount = new Prisma.Decimal(0);
       const breakdown: { shareClass: string; shares: number; value: string; gross: string }[] = [];
 
-      for (const share of shares) {
-        const rate = share.shareClass.dividendRateOverride
-          ? Number(share.shareClass.dividendRateOverride)
+      for (const reg of regs) {
+        const totalPaid = reg.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const pricePerShare = Number(reg.pricePerShare);
+        const sharesOwned = Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity);
+        if (sharesOwned === 0) continue;
+
+        const rate = reg.shareClass.dividendRateOverride
+          ? Number(reg.shareClass.dividendRateOverride)
           : dividendRate;
-        const value = share.quantity * Number(share.purchasePricePerShare);
+        const value = sharesOwned * pricePerShare;
         const gross = value * rate;
         grossAmount = grossAmount.add(new Prisma.Decimal(gross));
         breakdown.push({
-          shareClass: share.shareClass.code,
-          shares: share.quantity,
+          shareClass: reg.shareClass.code,
+          shares: sharesOwned,
           value: value.toFixed(2),
           gross: gross.toFixed(2),
         });

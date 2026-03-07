@@ -103,21 +103,21 @@ export class SystemController {
       this.prisma.shareholder.count({ where: { status: 'ACTIVE' } }),
     ]);
 
-    // Calculate total capital across all coops
-    const shares = await this.prisma.share.findMany({
-      where: { status: 'ACTIVE' },
-      select: {
-        quantity: true,
-        shareClass: {
-          select: { pricePerShare: true },
+    // Calculate total capital across all coops (sum of payments on buy registrations)
+    const payments = await this.prisma.payment.findMany({
+      where: {
+        registration: {
+          type: 'BUY',
+          status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
         },
       },
+      select: { amount: true },
     });
 
-    const totalCapital = shares.reduce((sum, share) => {
-      const price = share.shareClass?.pricePerShare?.toNumber() || 0;
-      return sum + share.quantity * price;
-    }, 0);
+    const totalCapital = payments.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0,
+    );
 
     return {
       totalCoops,

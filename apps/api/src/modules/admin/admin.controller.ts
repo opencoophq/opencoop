@@ -32,14 +32,14 @@ import { ReportsService } from './reports.service';
 import { ShareholdersService } from '../shareholders/shareholders.service';
 import { ShareClassesService } from '../shares/share-classes.service';
 import { ProjectsService } from '../projects/projects.service';
-import { TransactionsService } from '../transactions/transactions.service';
+import { RegistrationsService } from '../registrations/registrations.service';
 import { BankImportService } from '../bank-import/bank-import.service';
 import { DividendsService } from '../dividends/dividends.service';
 import { DocumentsService } from '../documents/documents.service';
 import { CreateShareholderDto } from '../shareholders/dto/create-shareholder.dto';
 import { UpdateShareholderDto } from '../shareholders/dto/update-shareholder.dto';
-import { CreatePurchaseDto } from '../transactions/dto/create-purchase.dto';
-import { CreateSaleDto } from '../transactions/dto/create-sale.dto';
+import { CreateBuyDto } from '../registrations/dto/create-buy.dto';
+import { CreateSellDto } from '../registrations/dto/create-sell.dto';
 import { CreateShareClassDto } from '../shares/dto/create-share-class.dto';
 import { UpdateShareClassDto } from '../shares/dto/update-share-class.dto';
 import { CreateProjectDto } from '../projects/dto/create-project.dto';
@@ -67,7 +67,7 @@ export class AdminController {
     private shareholdersService: ShareholdersService,
     private shareClassesService: ShareClassesService,
     private projectsService: ProjectsService,
-    private transactionsService: TransactionsService,
+    private registrationsService: RegistrationsService,
     private bankImportService: BankImportService,
     private dividendsService: DividendsService,
     private documentsService: DocumentsService,
@@ -227,47 +227,35 @@ export class AdminController {
     const [
       totalShareholders,
       activeShareholders,
-      totalShares,
-      pendingTransactions,
-      pendingPayments,
+      pendingRegistrations,
       pendingShareholders,
       unmatchedBankTransactions,
     ] = await Promise.all([
       this.prisma.shareholder.count({ where: { coopId } }),
       this.prisma.shareholder.count({ where: { coopId, status: 'ACTIVE' } }),
-      this.prisma.share.count({ where: { coopId, status: 'ACTIVE' } }),
-      this.prisma.transaction.count({ where: { coopId, status: 'PENDING' } }),
-      this.prisma.payment.count({ where: { coopId, status: 'PENDING' } }),
+      this.prisma.registration.count({ where: { coopId, status: 'PENDING' } }),
       this.prisma.shareholder.count({ where: { coopId, status: 'PENDING' } }),
       this.prisma.bankTransaction.count({ where: { coopId, matchStatus: 'UNMATCHED' } }),
     ]);
 
-    const capitalResult = await this.prisma.share.aggregate({
-      where: { coopId, status: 'ACTIVE' },
-      _sum: { quantity: true },
-    });
-
-    // Use transaction log for capital — same source of truth as reports/charts
+    // Use payments + registrations for capital — same source of truth as reports/charts
     const [capitalRow] = await this.prisma.$queryRaw<[{ total: string }]>(Prisma.sql`
-      SELECT COALESCE(SUM(
-        CASE WHEN type = 'PURCHASE' THEN "totalAmount"
-             WHEN type = 'SALE'     THEN -"totalAmount"
-             ELSE 0 END
-      ), 0)::text AS total
-      FROM transactions
-      WHERE "coopId" = ${coopId}
-        AND status = 'COMPLETED'
-        AND type IN ('PURCHASE', 'SALE')
+      SELECT COALESCE(
+        SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END),
+        0
+      )::text AS total
+      FROM payments p
+      JOIN registrations r ON r.id = p."registrationId"
+      WHERE r."coopId" = ${coopId}
+        AND r.status IN ('ACTIVE', 'COMPLETED')
     `);
     const totalCapital = Number(capitalRow.total) || 0;
 
     return {
       totalShareholders,
       activeShareholders,
-      totalShares: capitalResult._sum.quantity || 0,
       totalCapital,
-      pendingTransactions,
-      pendingPayments,
+      pendingRegistrations,
       pendingShareholders,
       unmatchedBankTransactions,
     };
@@ -440,41 +428,43 @@ export class AdminController {
     return this.shareClassesService.importCsv(coopId, csvContent);
   }
 
-  // ==================== TRANSACTIONS ====================
+  // ==================== REGISTRATIONS ====================
 
-  @Get('transactions')
+  @Get('registrations')
   @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Get all transactions' })
-  async getTransactions(
+  @ApiOperation({ summary: 'Get all registrations' })
+  async getRegistrations(
     @Param('coopId') coopId: string,
     @Query('page') page?: number,
     @Query('pageSize') pageSize?: number,
-    @Query('status') status?: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED',
+    @Query('status') status?: 'PENDING' | 'PENDING_PAYMENT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED',
     @Query('type') type?: string,
     @Query('shareholderId') shareholderId?: string,
   ) {
-    return this.transactionsService.findAll(coopId, { page, pageSize, status, type, shareholderId });
+    return this.registrationsService.findAll(coopId, { page, pageSize, status, type, shareholderId });
   }
 
-  @Put('transactions/:id/approve')
+  @Put('registrations/:id/approve')
   @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Approve a transaction' })
-  async approveTransaction(
+  @ApiOperation({ summary: 'Approve a registration' })
+  async approveRegistration(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.transactionsService.approve(id, user.id);
+    return this.registrationsService.approve(id, coopId, user.id);
   }
 
-  @Put('transactions/:id/reject')
+  @Put('registrations/:id/reject')
   @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Reject a transaction' })
-  async rejectTransaction(
+  @ApiOperation({ summary: 'Reject a registration' })
+  async rejectRegistration(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
     @Body('reason') reason: string,
   ) {
-    return this.transactionsService.reject(id, user.id, reason);
+    return this.registrationsService.reject(id, coopId, user.id, reason);
   }
 
   @Post('transfers')
@@ -486,65 +476,66 @@ export class AdminController {
     @Body() transferDto: {
       fromShareholderId: string;
       toShareholderId: string;
-      shareId: string;
+      registrationId: string;
       quantity: number;
     },
   ) {
-    return this.transactionsService.createTransfer({
+    return this.registrationsService.createTransfer({
       coopId,
       ...transferDto,
       processedByUserId: user.id,
     });
   }
 
-  @Post('shareholders/:shareholderId/purchase')
+  @Post('shareholders/:shareholderId/buy')
   @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Create a purchase on behalf of a shareholder' })
-  async createPurchase(
+  @ApiOperation({ summary: 'Create a buy registration on behalf of a shareholder' })
+  async createBuy(
     @Param('coopId') coopId: string,
     @Param('shareholderId') shareholderId: string,
-    @Body() createPurchaseDto: CreatePurchaseDto,
+    @Body() createBuyDto: CreateBuyDto,
   ) {
-    return this.transactionsService.createPurchase({
+    return this.registrationsService.createBuy({
       coopId,
       shareholderId,
-      ...createPurchaseDto,
+      ...createBuyDto,
     });
   }
 
   @Post('shareholders/:shareholderId/sell')
   @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Create a sale on behalf of a shareholder' })
-  async createSale(
+  @ApiOperation({ summary: 'Create a sell registration on behalf of a shareholder' })
+  async createSell(
     @Param('coopId') coopId: string,
     @Param('shareholderId') shareholderId: string,
-    @Body() createSaleDto: CreateSaleDto,
+    @Body() createSellDto: CreateSellDto,
   ) {
-    return this.transactionsService.createSale({
+    return this.registrationsService.createSell({
       coopId,
       shareholderId,
-      ...createSaleDto,
+      ...createSellDto,
     });
   }
 
-  @Get('transactions/:id/payment-details')
+  @Get('registrations/:id/payment-details')
   @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Get payment details for a transaction (IBAN, amount, OGM for QR code)' })
+  @ApiOperation({ summary: 'Get payment details for a registration (IBAN, amount, OGM for QR code)' })
   async getPaymentDetails(
     @Param('coopId') coopId: string,
     @Param('id') id: string,
   ) {
-    return this.transactionsService.getPaymentDetails(id, coopId);
+    return this.registrationsService.getPaymentDetails(id, coopId);
   }
 
-  @Put('transactions/:id/complete')
+  @Put('registrations/:id/complete')
   @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Mark an approved transaction as completed' })
-  async completeTransaction(
+  @ApiOperation({ summary: 'Mark a registration as completed' })
+  async completeRegistration(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.transactionsService.complete(id, user.id);
+    return this.registrationsService.complete(id, user.id, undefined, coopId);
   }
 
   // ==================== BANK IMPORT ====================
