@@ -78,7 +78,7 @@ export default function TransactionsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('transactions.type')}</TableHead>
+                  <TableHead>{t('transactions.typeLabel')}</TableHead>
                   <TableHead>{t('common.date')}</TableHead>
                   <TableHead className="text-right">{t('shares.quantity')}</TableHead>
                   <TableHead className="text-right">{t('common.amount')}</TableHead>

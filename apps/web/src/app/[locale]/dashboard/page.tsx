@@ -37,7 +37,7 @@ export default function DashboardPage() {
           for (const sh of profile.shareholders) {
             if (sh.registrations) {
               for (const reg of sh.registrations) {
-                if (reg.status === 'ACTIVE') {
+                if (reg.status === 'ACTIVE' || reg.status === 'COMPLETED') {
                   const qty = reg.sharesOwned ?? reg.quantity;
                   totalShares += qty;
                   totalValue += qty * Number(reg.pricePerShare);

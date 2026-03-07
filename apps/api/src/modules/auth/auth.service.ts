@@ -1084,6 +1084,7 @@ export class AuthService {
     await this.emailService.sendPlatformEmail({
       to: email,
       subject: t.subject,
+      senderName: coopName !== 'OpenCoop' ? coopName : undefined,
       html: `
         <!DOCTYPE html>
         <html>
