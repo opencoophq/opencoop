@@ -1065,7 +1065,21 @@ export class AuthService {
       ? `${baseUrl}/${coopSlug}/magic-link?token=${token}`
       : `${baseUrl}/magic-link?token=${token}`;
 
-    const t = this.getMagicLinkContent(user.preferredLanguage);
+    // Fetch coop branding for the email
+    let coopName = 'OpenCoop';
+    let brandColor = '#1e40af';
+    if (coopSlug) {
+      const channel = await this.prisma.channel.findFirst({
+        where: { coop: { slug: coopSlug }, isDefault: true },
+        include: { coop: { select: { name: true } } },
+      });
+      if (channel) {
+        coopName = channel.coop.name;
+        brandColor = channel.primaryColor;
+      }
+    }
+
+    const t = this.getMagicLinkContent(user.preferredLanguage, coopName);
 
     await this.emailService.sendPlatformEmail({
       to: email,
@@ -1073,13 +1087,13 @@ export class AuthService {
       html: `
         <!DOCTYPE html>
         <html>
-        <head><meta charset="utf-8"><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; } h1 { color: #1e40af; }</style></head>
+        <head><meta charset="utf-8"><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; } h1 { color: ${brandColor}; }</style></head>
         <body>
           <h1>${t.heading}</h1>
           <p>${t.body}</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="${magicLinkUrl}"
-               style="background-color: #1e40af; color: white; padding: 12px 24px;
+               style="background-color: ${brandColor}; color: white; padding: 12px 24px;
                       text-decoration: none; border-radius: 6px; display: inline-block;">
               ${t.button}
             </a>
@@ -1363,43 +1377,43 @@ export class AuthService {
     }
   }
 
-  private getMagicLinkContent(lang?: string) {
+  private getMagicLinkContent(lang?: string, coopName = 'OpenCoop') {
     switch (lang) {
       case 'fr':
         return {
           subject: 'Votre lien de connexion',
-          heading: 'Connexion à OpenCoop',
+          heading: `Connexion à ${coopName}`,
           body: 'Cliquez sur le bouton ci-dessous pour vous connecter :',
           button: 'Se connecter',
           expiry: 'Ce lien expire dans 15 minutes. Si vous n\'avez pas demandé ce lien, vous pouvez ignorer cet e-mail.',
-          footer: 'Cet e-mail a été envoyé par OpenCoop.',
+          footer: `Cet e-mail a été envoyé par ${coopName}.`,
         };
       case 'de':
         return {
           subject: 'Ihr Login-Link',
-          heading: 'Bei OpenCoop anmelden',
+          heading: `Bei ${coopName} anmelden`,
           body: 'Klicken Sie auf die Schaltfläche unten, um sich anzumelden:',
           button: 'Anmelden',
           expiry: 'Dieser Link ist 15 Minuten gültig. Wenn Sie diesen Link nicht angefordert haben, können Sie diese E-Mail ignorieren.',
-          footer: 'Diese E-Mail wurde von OpenCoop gesendet.',
+          footer: `Diese E-Mail wurde von ${coopName} gesendet.`,
         };
       case 'en':
         return {
           subject: 'Your Login Link',
-          heading: 'Login to OpenCoop',
+          heading: `Login to ${coopName}`,
           body: 'Click the button below to log in:',
           button: 'Log In',
           expiry: 'This link expires in 15 minutes. If you didn\'t request this, you can safely ignore this email.',
-          footer: 'This email was sent by OpenCoop.',
+          footer: `This email was sent by ${coopName}.`,
         };
       default: // nl
         return {
           subject: 'Je inloglink',
-          heading: 'Inloggen bij OpenCoop',
+          heading: `Inloggen bij ${coopName}`,
           body: 'Klik op de knop hieronder om in te loggen:',
           button: 'Inloggen',
           expiry: 'Deze link is 15 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.',
-          footer: 'Deze e-mail is verzonden door OpenCoop.',
+          footer: `Deze e-mail is verzonden door ${coopName}.`,
         };
     }
   }
