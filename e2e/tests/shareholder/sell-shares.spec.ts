@@ -7,8 +7,8 @@ test.describe('Sell shares', () => {
     // Wait for shares table to load
     await expect(page.getByRole('heading', { name: 'Aandelen', exact: true })).toBeVisible({ timeout: 10_000 });
 
-    // Find a row with ACTIVE status badge and click the "Verkopen" button on that row
-    const activeRow = page.locator('tr').filter({ hasText: 'ACTIVE' }).first();
+    // Find a row with COMPLETED status badge (fully paid shares) and click the "Verkopen" button
+    const activeRow = page.locator('tr').filter({ hasText: 'COMPLETED' }).first();
     await expect(activeRow).toBeVisible({ timeout: 10_000 });
 
     await activeRow.getByRole('button', { name: 'Verkopen' }).click();

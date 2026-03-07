@@ -111,9 +111,9 @@ export default function SharesPage() {
         if (profile.shareholders?.[0]) {
           const sh = profile.shareholders[0];
           setShareholder(sh);
-          // Only show BUY registrations that are ACTIVE or PENDING_PAYMENT
+          // Show BUY registrations that represent owned or in-progress shares
           const buyRegs = (sh.registrations || []).filter(
-            (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT',
+            (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED',
           );
           setRegistrations(buyRegs);
 
@@ -199,7 +199,7 @@ export default function SharesPage() {
         const sh = profile.shareholders[0];
         setShareholder(sh);
         const buyRegs = (sh.registrations || []).filter(
-          (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT',
+          (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED',
         );
         setRegistrations(buyRegs);
       }
@@ -227,7 +227,7 @@ export default function SharesPage() {
         const sh = profile.shareholders[0];
         setShareholder(sh);
         const buyRegs = (sh.registrations || []).filter(
-          (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT',
+          (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED',
         );
         setRegistrations(buyRegs);
       }
@@ -318,7 +318,7 @@ export default function SharesPage() {
                       <Badge variant={statusVariant(reg.status)}>{reg.status}</Badge>
                     </TableCell>
                     <TableCell>
-                      {reg.status === 'ACTIVE' && (
+                      {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && (
                         <Button
                           variant="ghost"
                           size="sm"
