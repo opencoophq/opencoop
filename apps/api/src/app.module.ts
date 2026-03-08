@@ -30,6 +30,7 @@ import { HealthModule } from './modules/health/health.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CoopAdminsModule } from './modules/coop-admins/coop-admins.module';
 import { McpTools } from './modules/mcp/mcp.tools';
+import { PontoModule } from './modules/ponto/ponto.module';
 import { LlmsModule } from './modules/llms/llms.module';
 
 @Module({
@@ -58,6 +59,7 @@ import { LlmsModule } from './modules/llms/llms.module';
     RegistrationsModule,
     PaymentsModule,
     BankImportModule,
+    PontoModule,
     DividendsModule,
     DocumentsModule,
     EmailModule,
