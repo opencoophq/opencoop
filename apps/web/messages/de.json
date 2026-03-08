@@ -1569,5 +1569,20 @@
     "changes": "Änderungen",
     "system": "System",
     "masked": "(sensibel)"
+  },
+  "gift": {
+    "claimTitle": "Geschenkgutschein Einlösen",
+    "enterCode": "Geben Sie Ihren Geschenkcode ein",
+    "validate": "Code Validieren",
+    "invalidCode": "Ungültiger oder bereits eingelöster Geschenkcode.",
+    "rateLimited": "Zu viele Versuche. Bitte versuchen Sie es in 15 Minuten erneut.",
+    "giftDetails": "Geschenkdetails",
+    "claimShares": "Anteile Einlösen",
+    "yourDetails": "Ihre Daten",
+    "successTitle": "Anteile Eingelöst!",
+    "successMessage": "Willkommen! Ihre Anteile wurden erfolgreich registriert.",
+    "codePlaceholder": "XXXX-XXXX",
+    "shares": "Anteile",
+    "value": "Wert"
   }
 }
