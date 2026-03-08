@@ -1,3 +1,14 @@
+// Mock @react-pdf/renderer before any imports (pulled in via PaymentsService chain)
+jest.mock('@react-pdf/renderer', () => ({
+  StyleSheet: { create: (s: unknown) => s },
+  Document: 'Document',
+  Page: 'Page',
+  View: 'View',
+  Text: 'Text',
+  Image: 'Image',
+  renderToBuffer: jest.fn(),
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PontoService } from './ponto.service';
