@@ -18,7 +18,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency } from '@opencoop/shared';
 import { DatePicker } from '@/components/ui/date-picker';
 import { EpcQrCode } from '@/components/epc-qr-code';
-import { Gift, UserPlus } from 'lucide-react';
+import { Gift, UserPlus, LogIn } from 'lucide-react';
+import { EmailFirstLogin } from '@/components/auth/email-first-login';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { resolveLogoUrl } from '@/lib/api';
 
@@ -113,6 +114,7 @@ export function CoopRegisterContent({
   const [allShareholders, setAllShareholders] = useState<ExistingShareholder[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isRegisteringNew, setIsRegisteringNew] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
   const [result, setResult] = useState<{
     registrationId: string;
     ogmCode?: string;
@@ -122,13 +124,27 @@ export function CoopRegisterContent({
   // Determine if user has existing shareholders (short flow) or is new (long flow)
   const hasExistingShareholders = allShareholders.length > 0 && !isRegisteringNew;
 
-  // Always 3 steps now
-  const steps = [
+  // Step labels depend on whether user is logged in
+  // Logged in: Details → Order → Payment (3 steps)
+  // Not logged in: Welcome → Details → Order → Payment (4 steps)
+  const stepsForLoggedIn = [
     t('registration.steps.details'),
     t('registration.steps.order'),
-    t('registration.steps.confirm'),
+    t('registration.steps.payment'),
   ];
-  const totalSteps = 3;
+  const stepsForNewUser = [
+    t('registration.steps.welcome'),
+    t('registration.steps.details'),
+    t('registration.steps.order'),
+    t('registration.steps.payment'),
+  ];
+  const steps = isLoggedIn ? stepsForLoggedIn : stepsForNewUser;
+  const totalSteps = steps.length;
+
+  // Map logical step names to step numbers
+  const STEP = isLoggedIn
+    ? { DETAILS: 1, ORDER: 2, PAYMENT: 3 }
+    : { WELCOME: 1, DETAILS: 2, ORDER: 3, PAYMENT: 4 };
 
   const form = useForm<RegistrationForm>({
     resolver: zodResolver(registrationSchema),
@@ -329,15 +345,74 @@ export function CoopRegisterContent({
     }
   };
 
-  // Navigate to next step
-  const nextStep = () => setStep(step + 1);
-  const prevStep = () => setStep(step - 1);
+  // Handle successful login from the welcome step's inline login form
+  const handleLoginSuccess = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || !coop) return;
+
+    try {
+      const meResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (meResponse.ok) {
+        const meData = await meResponse.json();
+        setIsLoggedIn(true);
+
+        const shareholdersForCoop: ExistingShareholder[] = (meData.shareholders || [])
+          .filter((s: { coop: { id: string } }) => s.coop.id === coop.id)
+          .map((s: {
+            id: string;
+            type: 'INDIVIDUAL' | 'COMPANY' | 'MINOR';
+            firstName?: string;
+            lastName?: string;
+            birthDate?: string;
+            companyName?: string;
+            companyId?: string;
+            vatNumber?: string;
+            email?: string;
+            phone?: string;
+            address?: { street?: string; number?: string; postalCode?: string; city?: string; country?: string } | null;
+          }) => ({
+            id: s.id,
+            type: s.type,
+            firstName: s.firstName,
+            lastName: s.lastName,
+            birthDate: s.birthDate,
+            companyName: s.companyName,
+            companyId: s.companyId,
+            vatNumber: s.vatNumber,
+            email: s.email,
+            phone: s.phone,
+            street: s.address?.street,
+            number: s.address?.number,
+            postalCode: s.address?.postalCode,
+            city: s.address?.city,
+            country: s.address?.country,
+          }));
+        setAllShareholders(shareholdersForCoop);
+
+        if (shareholdersForCoop.length > 0) {
+          setSelectedShareholder(shareholdersForCoop[0]);
+          prefillFormWithShareholder(shareholdersForCoop[0]);
+        } else if (meData.email) {
+          form.setValue('email', meData.email);
+        }
+
+        // Jump to Details step (step 1 for logged-in users, since isLoggedIn is now true)
+        setStep(1);
+      }
+    } catch {
+      setIsLoggedIn(true);
+      setStep(1);
+    }
+  };
 
   // Validate step 1 fields before navigating to step 2
   const handleStep1Next = async () => {
     if (hasExistingShareholders) {
       // Existing shareholder selected — no form validation needed
-      nextStep();
+      setStep(STEP.ORDER);
       return;
     }
 
@@ -353,7 +428,7 @@ export function CoopRegisterContent({
 
     const result = await form.trigger(fieldsToValidate);
     if (result) {
-      nextStep();
+      setStep(STEP.ORDER);
     }
   };
 
@@ -424,7 +499,7 @@ export function CoopRegisterContent({
         registrationId: data.registrationId,
         ogmCode: data.ogmCode,
       });
-      setStep(totalSteps);
+      setStep(STEP.PAYMENT);
     } catch (error) {
       console.error('Registration failed:', error);
       alert(error instanceof Error ? error.message : 'Registration failed');
@@ -775,6 +850,85 @@ export function CoopRegisterContent({
   );
 
   // ============================================================================
+  // WELCOME STEP (new vs existing user gate)
+  // ============================================================================
+  const renderWelcomeStep = () => (
+    <div className="space-y-4">
+      {!showLoginForm ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* I'm new */}
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setStep(STEP.DETAILS)}
+          >
+            <CardContent className="pt-6 text-center space-y-3">
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
+                style={{ backgroundColor: `${coop.primaryColor}15`, color: coop.primaryColor }}
+              >
+                <UserPlus className="h-7 w-7" />
+              </div>
+              <h3 className="font-semibold text-lg">
+                {t('registration.welcome.newTitle')}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {t('registration.welcome.newDescription')}
+              </p>
+              <Button
+                className="w-full"
+                style={{ backgroundColor: coop.primaryColor }}
+              >
+                {t('common.next')}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* I have an account */}
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setShowLoginForm(true)}
+          >
+            <CardContent className="pt-6 text-center space-y-3">
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto">
+                <LogIn className="h-7 w-7 text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold text-lg">
+                {t('registration.welcome.existingTitle')}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {t('registration.welcome.existingDescription')}
+              </p>
+              <Button variant="outline" className="w-full">
+                {t('auth.login')}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="max-w-md mx-auto space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowLoginForm(false)}
+          >
+            &larr; {t('common.back')}
+          </Button>
+          <EmailFirstLogin
+            coop={{
+              name: coop.name,
+              logoUrl: coop.logoUrl,
+              primaryColor: coop.primaryColor,
+              secondaryColor: coop.secondaryColor || coop.primaryColor,
+              slug: coopSlug,
+            }}
+            onLoginSuccess={handleLoginSuccess}
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  // ============================================================================
   // STEP 2: ORDER (shares + payment + summary + terms)
   // ============================================================================
   const renderStep2Order = () => (
@@ -851,30 +1005,6 @@ export function CoopRegisterContent({
           </div>
         )}
 
-        {/* Payment method */}
-        <div className="border-t pt-4 space-y-4">
-          <h4 className="font-medium">{t('registration.choosePaymentMethod')}</h4>
-          <RadioGroup
-            value={form.watch('paymentMethod')}
-            onValueChange={(value) =>
-              form.setValue(
-                'paymentMethod',
-                value as 'BANK_TRANSFER' | 'MOLLIE' | 'STRIPE'
-              )
-            }
-            className="space-y-3"
-          >
-            <div className="flex items-center space-x-3 border rounded-lg p-4">
-              <RadioGroupItem value="BANK_TRANSFER" id="bank" />
-              <Label htmlFor="bank" className="flex-1 cursor-pointer">
-                <span className="font-medium">
-                  {t('payments.method.bankTransfer')}
-                </span>
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
-
         {/* Order summary */}
         <div className="bg-muted p-4 rounded-lg space-y-2">
           <h4 className="font-medium">{t('registration.orderSummary')}</h4>
@@ -934,7 +1064,7 @@ export function CoopRegisterContent({
         </div>
 
         <div className="flex gap-4 mt-6">
-          <Button type="button" variant="outline" onClick={prevStep}>
+          <Button type="button" variant="outline" onClick={() => setStep(STEP.DETAILS)}>
             {t('common.back')}
           </Button>
           <Button
@@ -1059,16 +1189,19 @@ export function CoopRegisterContent({
   // RENDER CURRENT STEP
   // ============================================================================
   const renderStep = () => {
-    switch (step) {
-      case 1:
-        return hasExistingShareholders ? renderStep1ExistingUser() : renderStep1NewUser();
-      case 2:
-        return renderStep2Order();
-      case 3:
-        return renderStep3Confirmation();
-      default:
-        return null;
+    if (!isLoggedIn && step === STEP.WELCOME) {
+      return renderWelcomeStep();
     }
+    if (step === STEP.DETAILS) {
+      return hasExistingShareholders ? renderStep1ExistingUser() : renderStep1NewUser();
+    }
+    if (step === STEP.ORDER) {
+      return renderStep2Order();
+    }
+    if (step === STEP.PAYMENT) {
+      return renderStep3Confirmation();
+    }
+    return null;
   };
 
   return (
