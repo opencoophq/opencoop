@@ -2,6 +2,19 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.3.2] - 2026-03-08
+
+### Added
+- **ESLint CI integration** — `next lint` runs in CI pipeline to catch lint errors before deploy
+- **E2E test expansion** — 10 new Playwright tests: public registration (individual, company, existing user), admin dashboard/settings/transactions/share-classes, shareholder transactions/settings
+- **Public Playwright project** — new `public` project for unauthenticated E2E test scenarios
+- **Demo coop seeding in CI** — E2E tests now seed demo coop data for channel-dependent tests
+
+### Fixed
+- **Flaky admin E2E tests** — tests now search shareholders by email instead of clicking by name (handles paginated data)
+- **Duplicate test files** — removed stale `.js`/`.d.ts` compiled test files that caused double execution
+- **Invalid ESLint disable comments** — removed `@typescript-eslint/no-explicit-any` disables in report preview files (rule not loaded)
+
 ## [0.3.1] - 2026-03-08
 
 ### Added
