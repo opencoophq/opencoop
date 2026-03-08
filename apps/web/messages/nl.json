@@ -1592,12 +1592,21 @@
     "actions": {
       "CREATE": "Aangemaakt",
       "UPDATE": "Gewijzigd",
-      "DELETE": "Verwijderd"
+      "DELETE": "Verwijderd",
+      "LOGIN": "Inloggen",
+      "LOGIN_FAILED": "Inloggen Mislukt",
+      "REGISTER": "Registratie",
+      "MFA_VERIFY": "MFA Geverifieerd",
+      "MFA_VERIFY_FAILED": "MFA Mislukt",
+      "PASSWORD_CHANGE": "Wachtwoord Gewijzigd",
+      "PASSWORD_RESET": "Wachtwoord Hersteld"
     },
     "entity": "Entiteit",
     "changes": "Wijzigingen",
     "system": "Systeem",
-    "masked": "(gevoelig)"
+    "masked": "(gevoelig)",
+    "ip": "IP-adres",
+    "userAgent": "User Agent"
   },
   "gift": {
     "claimTitle": "Cadeaubon Inwisselen",

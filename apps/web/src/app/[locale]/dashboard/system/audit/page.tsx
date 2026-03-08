@@ -39,6 +39,7 @@ interface AuditLogEntry {
   changes: AuditChange[];
   actorId: string | null;
   ipAddress: string | null;
+  userAgent: string | null;
   createdAt: string;
   actor: { id: string; email: string; name: string | null } | null;
   coop: { id: string; name: string; slug: string } | null;
@@ -52,7 +53,7 @@ interface AuditLogResponse {
   totalPages: number;
 }
 
-const ENTITY_OPTIONS = ['All', 'Shareholder', 'User', 'Coop'] as const;
+const ENTITY_OPTIONS = ['All', 'Auth', 'Shareholder', 'User', 'Coop', 'Channel', 'ShareClass', 'Project', 'DividendPeriod'] as const;
 
 function formatValue(val: unknown): string {
   if (val === null || val === undefined) return '-';
@@ -109,8 +110,13 @@ export default function SystemAuditPage() {
   const actionVariant = (action: string) => {
     switch (action) {
       case 'CREATE':
+      case 'LOGIN':
+      case 'REGISTER':
+      case 'MFA_VERIFY':
         return 'default';
       case 'DELETE':
+      case 'LOGIN_FAILED':
+      case 'MFA_VERIFY_FAILED':
         return 'destructive';
       default:
         return 'secondary';
@@ -166,6 +172,8 @@ export default function SystemAuditPage() {
                     <TableHead>{t('audit.action')}</TableHead>
                     <TableHead className="min-w-[300px]">{t('audit.changes')}</TableHead>
                     <TableHead>{t('audit.changedBy')}</TableHead>
+                    <TableHead>{t('audit.ip')}</TableHead>
+                    <TableHead>{t('audit.userAgent')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -211,6 +219,10 @@ export default function SystemAuditPage() {
                         </TableCell>
                         <TableCell>
                           {entry.actor?.email ?? t('audit.system')}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono">{entry.ipAddress ?? '\u2014'}</TableCell>
+                        <TableCell className="text-xs max-w-[200px] truncate" title={entry.userAgent ?? ''}>
+                          {entry.userAgent ?? '\u2014'}
                         </TableCell>
                       </TableRow>
                     );

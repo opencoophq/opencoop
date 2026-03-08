@@ -195,6 +195,7 @@ export class SystemController {
     @Query('entity') entity?: string,
     @Query('entityId') entityId?: string,
     @Query('actorId') actorId?: string,
+    @Query('action') action?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
@@ -203,6 +204,7 @@ export class SystemController {
       entity,
       entityId,
       actorId,
+      action,
       page: Number(page) || 1,
       limit: Number(limit) || 50,
     });
