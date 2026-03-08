@@ -108,19 +108,21 @@ function maskIban(iban: string): string {
   return `${iban.slice(0, 4)} **** **** ${iban.slice(-4)}`;
 }
 
-function formatRelativeTime(dateString: string): string {
+function formatRelativeTime(dateString: string, locale: string): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  const diffMinutes = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
 
-  if (diffMinutes < 1) return 'just now';
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 30) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+
+  if (diffDay > 0) return rtf.format(-diffDay, 'day');
+  if (diffHr > 0) return rtf.format(-diffHr, 'hour');
+  if (diffMin > 0) return rtf.format(-diffMin, 'minute');
+  return rtf.format(-diffSec, 'second');
 }
 
 function getDaysUntilExpiry(dateString: string): number {
@@ -328,6 +330,7 @@ export default function AdminSettingsPage() {
     try {
       const { authorizationUrl } = await api<{ authorizationUrl: string }>(
         `/admin/coops/${selectedCoop.id}/ponto/reauthorize`,
+        { method: 'POST' },
       );
       window.location.href = authorizationUrl;
     } catch {
@@ -539,7 +542,7 @@ export default function AdminSettingsPage() {
               <CardTitle>{t('admin.settings.bankConnection')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!connection && (
+              {(!connection || connection.status === 'REVOKED' || connection.status === 'PENDING') && (
                 <>
                   <p className="text-sm text-muted-foreground">
                     {t('admin.settings.bankConnectionDescription')}
@@ -573,7 +576,7 @@ export default function AdminSettingsPage() {
                   <p className="text-xs text-muted-foreground">
                     {t('admin.settings.lastSync')}:{' '}
                     {connection.lastSyncAt
-                      ? formatRelativeTime(connection.lastSyncAt)
+                      ? formatRelativeTime(connection.lastSyncAt, intlLocale)
                       : t('admin.settings.never')}
                   </p>
 
