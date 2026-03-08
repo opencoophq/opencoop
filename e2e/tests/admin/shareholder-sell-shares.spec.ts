@@ -3,8 +3,6 @@ import { test, expect } from '@playwright/test';
 test.describe('Sell shares for shareholder', () => {
   test('can sell shares via admin dialog', async ({ page }) => {
     await page.goto('/nl/dashboard/admin/shareholders');
-    // Wait for the table to load
-    await expect(page.locator('table')).toBeVisible({ timeout: 10_000 });
     // Use the search box to find Jan Peeters by email (name may have changed from prior test runs)
     await page.getByPlaceholder('Zoeken').fill('jan.peeters@email.be');
     // Wait for the filtered results to appear

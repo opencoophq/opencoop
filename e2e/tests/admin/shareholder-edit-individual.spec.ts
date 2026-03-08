@@ -3,7 +3,10 @@ import { test, expect } from '@playwright/test';
 test.describe('Edit Individual Shareholder', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nl/dashboard/admin/shareholders');
-    await page.getByText('Jan Peeters').click();
+    // Search for the shareholder by email (name may not be on page 1)
+    await page.getByPlaceholder('Zoeken').fill('jan.peeters@email.be');
+    await expect(page.getByRole('cell', { name: 'jan.peeters@email.be' })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('row').filter({ hasText: 'jan.peeters@email.be' }).getByRole('link').click();
     await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
   });
 
