@@ -20,12 +20,15 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Gift, UserPlus } from 'lucide-react';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
+import { resolveLogoUrl } from '@/lib/api';
 
 interface CoopPublicInfo {
   id: string;
   slug: string;
   name: string;
   primaryColor: string;
+  secondaryColor?: string;
+  logoUrl?: string | null;
   bankName?: string;
   bankIban?: string;
   bankBic?: string;
@@ -1071,13 +1074,37 @@ export function CoopRegisterContent({
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header
-        className="py-6"
-        style={{ backgroundColor: coop.primaryColor }}
-      >
-        <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold text-white">{coop.name}</h1>
-          <p className="text-white/80">{t('registration.title')}</p>
+      <header className="bg-white border-b shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            {coop.logoUrl ? (
+              <img
+                src={resolveLogoUrl(coop.logoUrl)!}
+                alt={coop.name}
+                className="h-10 object-contain"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: coop.primaryColor }}
+              >
+                <span className="text-white font-bold text-lg">
+                  {coop.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <div>
+              <h1
+                className="text-xl font-bold"
+                style={{ color: coop.primaryColor }}
+              >
+                {coop.name}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {t('registration.title')}
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
