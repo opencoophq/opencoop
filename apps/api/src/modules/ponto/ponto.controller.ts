@@ -39,16 +39,27 @@ export class PontoController {
   async handleCallback(
     @Query('code') code: string,
     @Query('state') state: string,
+    @Query('error') error: string,
     @Res() res: Response,
   ) {
-    if (!code || !state) {
-      throw new BadRequestException('Missing code or state parameter');
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+
+    if (error) {
+      this.logger.warn(`Ponto OAuth error: ${error}`);
+      return res.redirect(`${frontendUrl}/dashboard/admin/settings?ponto=error&reason=${error}`);
     }
 
-    const coopId = await this.pontoService.handleCallbackByState(code, state);
+    if (!code || !state) {
+      return res.redirect(`${frontendUrl}/dashboard/admin/settings?ponto=error&reason=missing_params`);
+    }
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
-    res.redirect(`${frontendUrl}/dashboard/admin/settings?ponto=connected`);
+    try {
+      await this.pontoService.handleCallbackByState(code, state);
+      res.redirect(`${frontendUrl}/dashboard/admin/settings?ponto=connected`);
+    } catch (err) {
+      this.logger.error(`Ponto OAuth callback failed: ${err.message}`);
+      res.redirect(`${frontendUrl}/dashboard/admin/settings?ponto=error`);
+    }
   }
 
   // ==================== Webhook ====================
