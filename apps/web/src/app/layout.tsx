@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
+import Script from 'next/script';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -40,6 +41,11 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
         </ThemeProvider>
+        <Script
+          defer
+          src="https://analytics.armlab.com/script.js"
+          data-website-id="67514e30-e65b-47ca-94d8-028362de7cb8"
+        />
       </body>
     </html>
   );
