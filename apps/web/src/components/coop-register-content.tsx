@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -64,6 +63,44 @@ interface ExistingShareholder {
   postalCode?: string;
   city?: string;
   country?: string;
+}
+
+function mapShareholdersFromApi(
+  shareholders: Array<{
+    id: string;
+    type: 'INDIVIDUAL' | 'COMPANY' | 'MINOR';
+    firstName?: string;
+    lastName?: string;
+    birthDate?: string;
+    companyName?: string;
+    companyId?: string;
+    vatNumber?: string;
+    email?: string;
+    phone?: string;
+    address?: { street?: string; number?: string; postalCode?: string; city?: string; country?: string } | null;
+    coop: { id: string };
+  }>,
+  coopId: string
+): ExistingShareholder[] {
+  return shareholders
+    .filter((s) => s.coop.id === coopId)
+    .map((s) => ({
+      id: s.id,
+      type: s.type,
+      firstName: s.firstName,
+      lastName: s.lastName,
+      birthDate: s.birthDate,
+      companyName: s.companyName,
+      companyId: s.companyId,
+      vatNumber: s.vatNumber,
+      email: s.email,
+      phone: s.phone,
+      street: s.address?.street,
+      number: s.address?.number,
+      postalCode: s.address?.postalCode,
+      city: s.address?.city,
+      country: s.address?.country,
+    }));
 }
 
 const registrationSchema = z.object({
@@ -143,8 +180,8 @@ export function CoopRegisterContent({
 
   // Map logical step names to step numbers
   const STEP = isLoggedIn
-    ? { DETAILS: 1, ORDER: 2, PAYMENT: 3 }
-    : { WELCOME: 1, DETAILS: 2, ORDER: 3, PAYMENT: 4 };
+    ? ({ DETAILS: 1, ORDER: 2, PAYMENT: 3 } as const)
+    : ({ WELCOME: 1, DETAILS: 2, ORDER: 3, PAYMENT: 4 } as const);
 
   const form = useForm<RegistrationForm>({
     resolver: zodResolver(registrationSchema),
@@ -210,37 +247,7 @@ export function CoopRegisterContent({
               setIsLoggedIn(true);
 
               // Filter shareholders for this coop and flatten the address JSON
-              const shareholdersForCoop: ExistingShareholder[] = (meData.shareholders || [])
-                .filter((s: { coop: { id: string } }) => s.coop.id === coopData.id)
-                .map((s: {
-                  id: string;
-                  type: 'INDIVIDUAL' | 'COMPANY' | 'MINOR';
-                  firstName?: string;
-                  lastName?: string;
-                  birthDate?: string;
-                  companyName?: string;
-                  companyId?: string;
-                  vatNumber?: string;
-                  email?: string;
-                  phone?: string;
-                  address?: { street?: string; number?: string; postalCode?: string; city?: string; country?: string } | null;
-                }) => ({
-                  id: s.id,
-                  type: s.type,
-                  firstName: s.firstName,
-                  lastName: s.lastName,
-                  birthDate: s.birthDate,
-                  companyName: s.companyName,
-                  companyId: s.companyId,
-                  vatNumber: s.vatNumber,
-                  email: s.email,
-                  phone: s.phone,
-                  street: s.address?.street,
-                  number: s.address?.number,
-                  postalCode: s.address?.postalCode,
-                  city: s.address?.city,
-                  country: s.address?.country,
-                }));
+              const shareholdersForCoop = mapShareholdersFromApi(meData.shareholders || [], coopData.id);
               setAllShareholders(shareholdersForCoop);
 
               // If shareholderId provided, pre-select that shareholder
@@ -359,37 +366,7 @@ export function CoopRegisterContent({
         const meData = await meResponse.json();
         setIsLoggedIn(true);
 
-        const shareholdersForCoop: ExistingShareholder[] = (meData.shareholders || [])
-          .filter((s: { coop: { id: string } }) => s.coop.id === coop.id)
-          .map((s: {
-            id: string;
-            type: 'INDIVIDUAL' | 'COMPANY' | 'MINOR';
-            firstName?: string;
-            lastName?: string;
-            birthDate?: string;
-            companyName?: string;
-            companyId?: string;
-            vatNumber?: string;
-            email?: string;
-            phone?: string;
-            address?: { street?: string; number?: string; postalCode?: string; city?: string; country?: string } | null;
-          }) => ({
-            id: s.id,
-            type: s.type,
-            firstName: s.firstName,
-            lastName: s.lastName,
-            birthDate: s.birthDate,
-            companyName: s.companyName,
-            companyId: s.companyId,
-            vatNumber: s.vatNumber,
-            email: s.email,
-            phone: s.phone,
-            street: s.address?.street,
-            number: s.address?.number,
-            postalCode: s.address?.postalCode,
-            city: s.address?.city,
-            country: s.address?.country,
-          }));
+        const shareholdersForCoop = mapShareholdersFromApi(meData.shareholders || [], coop.id);
         setAllShareholders(shareholdersForCoop);
 
         if (shareholdersForCoop.length > 0) {
@@ -837,13 +814,17 @@ export function CoopRegisterContent({
     {/* "Already a member? Log in" link for non-logged-in users */}
     {!isLoggedIn && (
       <p className="text-center text-sm text-muted-foreground mt-4">
-        <Link
-          href={`/${locale}/${coopSlug}/${channelSlug}/login`}
+        <button
+          type="button"
+          onClick={() => {
+            setShowLoginForm(true);
+            setStep(STEP.WELCOME!);
+          }}
           className="underline hover:no-underline"
           style={{ color: coop.primaryColor }}
         >
           {t('registration.alreadyMember')}
-        </Link>
+        </button>
       </p>
     )}
     </>
