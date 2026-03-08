@@ -582,7 +582,14 @@
       "missingBankDetails": "Les coordonnées bancaires (IBAN/BIC) sont manquantes. Veuillez d'abord mettre à jour les coordonnées bancaires de l'actionnaire.",
       "markComplete": "Marquer comme terminé",
       "bankDetailsRequired": "Un compte bancaire (IBAN) est requis pour recevoir les remboursements lors de la vente d'actions.",
-      "refundToIban": "Le remboursement sera envoyé à"
+      "refundToIban": "Le remboursement sera envoyé à",
+      "unmatchedPayments": "Paiements non associés",
+      "noUnmatchedPayments": "Aucun paiement non associé.",
+      "matchToRegistration": "Associer à une inscription",
+      "selectRegistration": "Sélectionnez une inscription pour associer ce paiement",
+      "matched": "Paiement associé avec succès.",
+      "counterparty": "Contrepartie",
+      "reference": "Référence"
     },
     "shareClasses": {
       "title": "Classes de parts",
