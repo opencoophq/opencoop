@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.3.3] - 2026-03-08
+
+### Added
+- **Admin audit logging** — comprehensive audit trail for all auth events (login, register, MFA, password reset) and admin CRUD actions (channels, share classes, projects, dividends, logo uploads)
+- **IP + user-agent tracking** — all audit log entries now capture IP address and user-agent string for security investigations
+- **Auth activity in system audit page** — system admins can filter audit logs by Auth entity to see all login attempts, including failed ones with the attempted email
+- **New audit entity filters** — audit log page supports filtering by Auth, Channel, ShareClass, Project, and DividendPeriod entities
+
 ## [0.3.2] - 2026-03-08
 
 ### Added
