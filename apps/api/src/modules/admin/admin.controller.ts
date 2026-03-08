@@ -586,15 +586,30 @@ export class AdminController {
     return this.bankImportService.getTransactions(coopId, bankImportId, matchStatus);
   }
 
+  @Get('bank-transactions/unmatched')
+  @RequirePermission('canManageTransactions')
+  @ApiOperation({ summary: 'Get unmatched Ponto bank transactions' })
+  async getUnmatchedBankTransactions(@Param('coopId') coopId: string) {
+    return this.prisma.bankTransaction.findMany({
+      where: {
+        coopId,
+        matchStatus: 'UNMATCHED',
+        pontoTransactionId: { not: null },
+        amount: { gt: 0 },
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+
   @Post('bank-transactions/:id/match')
   @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Manually match a bank transaction to a payment' })
+  @ApiOperation({ summary: 'Manually match a bank transaction to a registration' })
   async matchBankTransaction(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
-    @Body('paymentId') paymentId: string,
+    @Body('registrationId') registrationId: string,
   ) {
-    return this.bankImportService.manualMatch(id, paymentId, user.id);
+    return this.bankImportService.manualMatch(id, registrationId, user.id);
   }
 
   // ==================== DIVIDENDS ====================

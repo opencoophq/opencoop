@@ -582,7 +582,14 @@
       "missingBankDetails": "Bankgegevens (IBAN/BIC) ontbreken. Werk eerst de bankgegevens van de aandeelhouder bij.",
       "markComplete": "Markeer als voltooid",
       "bankDetailsRequired": "Een bankrekening (IBAN) is vereist om terugbetalingen te ontvangen bij het verkopen van aandelen.",
-      "refundToIban": "Terugbetaling wordt verstuurd naar"
+      "refundToIban": "Terugbetaling wordt verstuurd naar",
+      "unmatchedPayments": "Niet-gekoppelde betalingen",
+      "noUnmatchedPayments": "Geen niet-gekoppelde betalingen.",
+      "matchToRegistration": "Koppelen aan registratie",
+      "selectRegistration": "Selecteer een registratie om deze betaling aan te koppelen",
+      "matched": "Betaling succesvol gekoppeld.",
+      "counterparty": "Tegenpartij",
+      "reference": "Referentie"
     },
     "shareClasses": {
       "title": "Aandelenklassen",

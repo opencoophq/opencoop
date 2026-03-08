@@ -582,7 +582,14 @@
       "missingBankDetails": "Bankdaten (IBAN/BIC) fehlen. Bitte aktualisieren Sie zuerst die Bankdaten des Aktionärs.",
       "markComplete": "Als abgeschlossen markieren",
       "bankDetailsRequired": "Ein Bankkonto (IBAN) ist erforderlich, um Rückerstattungen beim Verkauf von Aktien zu erhalten.",
-      "refundToIban": "Rückerstattung wird gesendet an"
+      "refundToIban": "Rückerstattung wird gesendet an",
+      "unmatchedPayments": "Nicht zugeordnete Zahlungen",
+      "noUnmatchedPayments": "Keine nicht zugeordneten Zahlungen.",
+      "matchToRegistration": "Registrierung zuordnen",
+      "selectRegistration": "Wählen Sie eine Registrierung, um diese Zahlung zuzuordnen",
+      "matched": "Zahlung erfolgreich zugeordnet.",
+      "counterparty": "Gegenpartei",
+      "reference": "Referenz"
     },
     "shareClasses": {
       "title": "Anteilsklassen",

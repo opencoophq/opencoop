@@ -582,7 +582,14 @@
       "missingBankDetails": "Bank details (IBAN/BIC) are missing. Please update the shareholder's bank details first.",
       "markComplete": "Mark Complete",
       "bankDetailsRequired": "A bank account (IBAN) is required to receive refunds when selling shares.",
-      "refundToIban": "Refund will be sent to"
+      "refundToIban": "Refund will be sent to",
+      "unmatchedPayments": "Unmatched Payments",
+      "noUnmatchedPayments": "No unmatched payments.",
+      "matchToRegistration": "Match to Registration",
+      "selectRegistration": "Select a registration to match this payment to",
+      "matched": "Payment matched successfully.",
+      "counterparty": "Counterparty",
+      "reference": "Reference"
     },
     "shareClasses": {
       "title": "Share Classes",
