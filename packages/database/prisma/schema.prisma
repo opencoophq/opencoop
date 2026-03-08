@@ -112,8 +112,8 @@ model Coop {
   requiresApproval     Boolean @default(true)
   ogmPrefix            String  @unique // Unique prefix for OGM codes (e.g., "001")
   minimumHoldingPeriod Int     @default(0) // months, 0 = no restriction
-  pontoEnabled        Boolean @default(false)
-  autoMatchPayments   Boolean @default(true)
+  pontoEnabled         Boolean @default(false)
+  autoMatchPayments    Boolean @default(true)
 
   // Email configuration (encrypted in production)
   emailEnabled     Boolean @default(true)
@@ -797,8 +797,8 @@ model PontoConnection {
   coopId              String                @unique
   coop                Coop                  @relation(fields: [coopId], references: [id], onDelete: Cascade)
 
-  accessToken         String
-  refreshToken        String
+  accessToken         String // AES-256-GCM encrypted
+  refreshToken        String // AES-256-GCM encrypted
   tokenExpiresAt      DateTime
 
   pontoAccountId      String?
