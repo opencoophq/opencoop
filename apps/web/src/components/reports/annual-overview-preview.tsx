@@ -177,7 +177,6 @@ export function AnnualOverviewPreview() {
                         fontSize={11}
                       />
                       <Tooltip
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         formatter={(value: any, name: any) => [
                           formatCurrency(Number(value) || 0, locale),
                           projectLabels.get(String(name)) ?? name,
