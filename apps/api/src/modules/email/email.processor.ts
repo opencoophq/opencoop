@@ -341,6 +341,20 @@ export class EmailProcessor {
           Als ${d.minorFirstName} nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
         </p>
       `,
+      'gift-certificate': (d, cn) => `
+        <h1>Your Gift Certificate</h1>
+        <p>Dear ${d.buyerName},</p>
+        <p>Thank you for purchasing a gift certificate at ${cn}!</p>
+        <p>Your payment has been received and the gift certificate is attached to this email.</p>
+        <ul>
+          <li>Share Class: ${d.shareClassName}</li>
+          <li>Quantity: ${d.quantity}</li>
+          <li>Total Value: €${(d.totalValue as number).toFixed(2)}</li>
+        </ul>
+        <p>Gift code: <strong>${d.giftCode}</strong></p>
+        <p>Share this certificate with the recipient. They can use the code or QR code to claim their shares.</p>
+        <p>Thank you for being a shareholder of ${cn}!</p>
+      `,
     };
 
     const template = templates[templateKey];
