@@ -445,6 +445,7 @@
     "giftCode": "Code cadeau",
     "giftCertificate": "Bon cadeau",
     "giftShareWith": "Partagez ce code ou QR avec le destinataire",
+    "giftPaymentNote": "Vous recevrez le chèque-cadeau par e-mail dès que votre paiement sera traité.",
     "claimGift": "Utiliser le bon cadeau",
     "enterGiftCode": "Saisissez votre code cadeau",
     "claimDescription": "Saisissez le code de votre bon cadeau pour réclamer vos parts.",

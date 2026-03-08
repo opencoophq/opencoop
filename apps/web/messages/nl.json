@@ -445,6 +445,7 @@
     "giftCode": "Cadeaucode",
     "giftCertificate": "Cadeaubon",
     "giftShareWith": "Deel deze code of QR met de ontvanger",
+    "giftPaymentNote": "U ontvangt de cadeaubon per e-mail zodra uw betaling is verwerkt.",
     "claimGift": "Cadeaubon inwisselen",
     "enterGiftCode": "Voer je cadeaucode in",
     "claimDescription": "Voer de code van je cadeaubon in om je aandelen te claimen.",
