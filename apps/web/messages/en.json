@@ -404,16 +404,22 @@
       "giftDescription": "I am purchasing shares as a gift for someone"
     },
     "steps": {
+      "welcome": "Welcome",
       "details": "Details",
       "order": "Order",
-      "confirm": "Confirmation"
+      "payment": "Payment"
+    },
+    "welcome": {
+      "newTitle": "I'm new",
+      "newDescription": "Register as a new shareholder",
+      "existingTitle": "I already have an account",
+      "existingDescription": "Log in to buy shares faster"
     },
     "scanToPay": "Scan with your banking app to pay",
     "selectShareClass": "Select share class",
     "selectProject": "Select project (optional)",
     "enterQuantity": "Enter quantity",
     "reviewOrder": "Review your order",
-    "choosePaymentMethod": "Choose payment method",
     "createAccount": "Create account",
     "existingAccount": "I already have an account",
     "termsAndConditions": "terms and conditions",
