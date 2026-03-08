@@ -449,7 +449,7 @@ export class RegistrationsService {
     toShareholderId: string;
     registrationId: string;
     quantity: number;
-    processedByUserId: string;
+    processedByUserId?: string;
   }) {
     const buyRegistration = await this.prisma.registration.findFirst({
       where: {
