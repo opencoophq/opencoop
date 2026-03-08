@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.2.8] - 2026-03-08
+
+### Added
+- **Gift certificates** — buyers can purchase shares as a gift. When payment clears, a gift code (XXXX-XXXX) is generated, a PDF certificate with QR code is created, and emailed to the buyer. Recipients claim their shares at `/{coop}/{channel}/claim` by entering the code and their personal details. Shares transfer from buyer to recipient via a TRANSFER registration.
+- **Gift claim page** — public page where recipients enter their gift code, see the gift details (share class, quantity, value), fill in shareholder information, and claim their shares.
+- **Rate limiting on gift endpoints** — validation and claim endpoints are limited to 5 requests per IP per 15 minutes.
+
 ## [0.2.7] - 2026-03-08
 
 ### Changed
