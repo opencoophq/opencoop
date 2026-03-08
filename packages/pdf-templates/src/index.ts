@@ -10,3 +10,5 @@ export { CapitalStatementReport } from './templates/capital-statement-report';
 export type { CapitalStatementReportProps } from './templates/capital-statement-report';
 export { ProjectInvestmentReport } from './templates/project-investment-report';
 export type { ProjectInvestmentReportProps } from './templates/project-investment-report';
+export { GiftCertificate } from './templates/gift-certificate';
+export type { GiftCertificateProps } from './templates/gift-certificate';
