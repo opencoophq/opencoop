@@ -121,11 +121,11 @@ const registrationSchema = z.object({
   postalCode: z.string().min(1).optional().or(z.literal('')),
   city: z.string().min(1).optional().or(z.literal('')),
   country: z.string().optional(),
-  shareClassId: z.string().min(1),
+  shareClassId: z.string().min(1).optional().or(z.literal('')),
   projectId: z.string().optional(),
-  quantity: z.number().min(1),
-  paymentMethod: z.enum(['BANK_TRANSFER', 'MOLLIE', 'STRIPE']),
-  acceptTerms: z.literal(true),
+  quantity: z.number().min(1).optional(),
+  paymentMethod: z.enum(['BANK_TRANSFER', 'MOLLIE', 'STRIPE']).optional(),
+  acceptTerms: z.literal(true).optional(),
 });
 
 type RegistrationForm = z.infer<typeof registrationSchema>;
@@ -197,7 +197,7 @@ export function CoopRegisterContent({
 
   const watchBeneficiaryType = form.watch('beneficiaryType');
   const watchShareClassId = form.watch('shareClassId');
-  const watchQuantity = form.watch('quantity');
+  const watchQuantity = form.watch('quantity') ?? 1;
 
   const selectedShareClass = coop?.shareClasses.find(
     (sc) => sc.id === watchShareClassId
