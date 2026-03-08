@@ -409,6 +409,9 @@ export class AuthService {
                 shareClass: true,
                 project: true,
                 payments: { orderBy: { bankDate: 'asc' } },
+                giftClaimedByShareholder: {
+                  select: { id: true, firstName: true, lastName: true },
+                },
               },
             },
             dividendPayouts: {

@@ -305,6 +305,44 @@ export class ShareholderActionsController {
     fs.createReadStream(doc.filePath).pipe(res);
   }
 
+  @Get('gift-certificate/:registrationId')
+  @ApiOperation({ summary: 'Download gift certificate PDF (shareholder self-service)' })
+  async downloadGiftCertificate(
+    @Param('shareholderId') shareholderId: string,
+    @Param('registrationId') registrationId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Res() res: Response,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+
+    const registration = await this.prisma.registration.findFirst({
+      where: { id: registrationId, shareholderId, isGift: true },
+    });
+
+    if (!registration || !registration.giftCode) {
+      throw new NotFoundException('Gift certificate not found');
+    }
+
+    const filePath = path.join(
+      process.env.UPLOAD_DIR || './uploads',
+      'gift-certificates',
+      `${registrationId}.pdf`,
+    );
+
+    if (!fs.existsSync(filePath)) {
+      // Regenerate if file was lost
+      await this.documentsService.generateGiftCertificatePdf(registrationId);
+    }
+
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('Gift certificate file not found');
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="gift-certificate-${registration.giftCode}.pdf"`);
+    fs.createReadStream(filePath).pipe(res);
+  }
+
   @Post('generate-certificate')
   @ApiOperation({ summary: 'Generate share certificate (shareholder self-service)' })
   async generateCertificate(

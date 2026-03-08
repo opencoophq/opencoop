@@ -22,7 +22,7 @@ import { api } from '@/lib/api';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatIban } from '@opencoop/shared';
-import { TrendingDown, QrCode } from 'lucide-react';
+import { TrendingDown, QrCode, Gift, Download } from 'lucide-react';
 
 interface RegistrationData {
   id: string;
@@ -32,6 +32,10 @@ interface RegistrationData {
   registerDate: string;
   status: string;
   ogmCode?: string;
+  isGift?: boolean;
+  giftCode?: string;
+  giftClaimedAt?: string;
+  giftClaimedByShareholder?: { id: string; firstName: string; lastName: string } | null;
   shareClass: { name: string; code: string };
   project?: { name: string } | null;
 }
@@ -315,10 +319,49 @@ export default function SharesPage() {
                       {new Date(reg.registerDate).toLocaleDateString(locale)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant(reg.status)}>{t(`transactions.statuses.${reg.status}`)}</Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant={statusVariant(reg.status)}>{t(`transactions.statuses.${reg.status}`)}</Badge>
+                        {reg.isGift && (
+                          <Badge variant="outline" className="gap-1 text-amber-700 border-amber-300 bg-amber-50">
+                            <Gift className="h-3 w-3" />
+                            {reg.giftClaimedAt
+                              ? t('gift.badge.claimed', { name: `${reg.giftClaimedByShareholder?.firstName || ''} ${reg.giftClaimedByShareholder?.lastName || ''}`.trim() })
+                              : reg.giftCode
+                                ? t('gift.badge.awaitingClaim')
+                                : t('gift.badge.awaitingPayment')
+                            }
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && (() => {
+                      {reg.isGift && reg.giftCode && !reg.giftClaimedAt && shareholder && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const res = await fetch(
+                              `${process.env.NEXT_PUBLIC_API_URL || ''}/shareholders/${shareholder.id}/gift-certificate/${reg.id}`,
+                              {
+                                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                              },
+                            );
+                            if (res.ok) {
+                              const blob = await res.blob();
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `gift-certificate-${reg.giftCode}.pdf`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          {t('gift.downloadCertificate')}
+                        </Button>
+                      )}
+                      {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && !reg.isGift && (() => {
                         const holdingMonths = shareholder?.coop?.minimumHoldingPeriod || 0;
                         const minDate = new Date(reg.registerDate);
                         minDate.setMonth(minDate.getMonth() + holdingMonths);

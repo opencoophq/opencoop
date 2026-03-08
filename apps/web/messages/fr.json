@@ -1583,6 +1583,12 @@
     "successMessage": "Bienvenue! Vos parts ont été enregistrées avec succès.",
     "codePlaceholder": "XXXX-XXXX",
     "shares": "parts",
-    "value": "Valeur"
+    "value": "Valeur",
+    "badge": {
+      "awaitingPayment": "Cadeau — en attente de paiement",
+      "awaitingClaim": "Cadeau — en attente de réclamation",
+      "claimed": "Cadeau — réclamé par {name}"
+    },
+    "downloadCertificate": "Télécharger le certificat"
   }
 }

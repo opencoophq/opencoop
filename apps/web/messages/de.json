@@ -1583,6 +1583,12 @@
     "successMessage": "Willkommen! Ihre Anteile wurden erfolgreich registriert.",
     "codePlaceholder": "XXXX-XXXX",
     "shares": "Anteile",
-    "value": "Wert"
+    "value": "Wert",
+    "badge": {
+      "awaitingPayment": "Geschenk — warten auf Zahlung",
+      "awaitingClaim": "Geschenk — warten auf Einlösung",
+      "claimed": "Geschenk — eingelöst von {name}"
+    },
+    "downloadCertificate": "Zertifikat herunterladen"
   }
 }
