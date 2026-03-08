@@ -461,6 +461,7 @@ export class ChannelsService {
       quantity: dto.quantity,
       projectId: dto.projectId,
       channelId: channel.id,
+      isGift: dto.isGift,
     });
 
     return {

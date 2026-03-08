@@ -68,6 +68,7 @@ export class BankImportService {
     let matchedCount = 0;
     let unmatchedCount = 0;
     let skippedCount = 0;
+    const completedGiftRegistrationIds: string[] = [];
 
     for (const line of dataLines) {
       const fields = line.split(';').map((f) => f.trim().replace(/^"|"$/g, ''));
@@ -167,6 +168,11 @@ export class BankImportService {
                   processedAt: new Date(),
                 },
               });
+
+              // Track gift registrations that need code generation
+              if (registration.isGift) {
+                completedGiftRegistrationIds.push(registration.id);
+              }
             } else if (registration.status === 'PENDING_PAYMENT') {
               await tx.registration.update({
                 where: { id: registration.id },
@@ -195,6 +201,11 @@ export class BankImportService {
           matchStatus,
         },
       });
+    }
+
+    // Generate gift codes for completed gift registrations
+    for (const regId of completedGiftRegistrationIds) {
+      await this.registrationsService.onRegistrationCompleted(regId);
     }
 
     // S7: Include skipped count in response
@@ -226,7 +237,7 @@ export class BankImportService {
     }
 
     // I1: Wrap manual match in a transaction
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.payment.create({
         data: {
           registrationId,
@@ -245,6 +256,7 @@ export class BankImportService {
       });
 
       // Auto-complete if fully paid
+      let isCompleted = false;
       if (
         registration.status === 'PENDING_PAYMENT' ||
         registration.status === 'ACTIVE'
@@ -263,6 +275,7 @@ export class BankImportService {
               processedAt: new Date(),
             },
           });
+          isCompleted = true;
         } else if (registration.status === 'PENDING_PAYMENT') {
           await tx.registration.update({
             where: { id: registrationId },
@@ -271,7 +284,13 @@ export class BankImportService {
         }
       }
 
-      return { success: true };
+      return { success: true, isCompleted };
     });
+
+    if (result.isCompleted) {
+      await this.registrationsService.onRegistrationCompleted(registrationId);
+    }
+
+    return { success: true };
   }
 }

@@ -163,6 +163,7 @@ export class RegistrationsService {
     projectId?: string;
     isSavings?: boolean;
     channelId?: string;
+    isGift?: boolean;
   }) {
     const shareClass = await this.prisma.shareClass.findFirst({
       where: { id: data.shareClassId, coopId: data.coopId, isActive: true },
@@ -224,6 +225,7 @@ export class RegistrationsService {
           totalAmount,
           registerDate: new Date(),
           isSavings: data.isSavings || false,
+          isGift: data.isGift || false,
           ogmCode,
           channelId: data.channelId || null,
         },
@@ -324,7 +326,7 @@ export class RegistrationsService {
     const totalPaid = computeTotalPaid(registration.payments);
     const remaining = Number(registration.totalAmount) - totalPaid;
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       if (remaining > 0) {
         await tx.payment.create({
           data: {
@@ -347,6 +349,11 @@ export class RegistrationsService {
         },
       });
     });
+
+    // Generate gift code if this is a gift registration
+    await this.onRegistrationCompleted(id);
+
+    return result;
   }
 
   // C4: Added coopId for tenant isolation
@@ -536,5 +543,53 @@ export class RegistrationsService {
 
       return transferIn;
     });
+  }
+
+  /**
+   * Generate a unique gift code in format XXXX-XXXX.
+   * Uses 30-char alphabet (A-Z, 2-9, excluding ambiguous 0/O/I/1/L).
+   */
+  private async generateGiftCode(): Promise<string> {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const maxAttempts = 10;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      let code = '';
+      for (let i = 0; i < 8; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+      code = code.slice(0, 4) + '-' + code.slice(4);
+
+      const existing = await this.prisma.registration.findUnique({
+        where: { giftCode: code },
+      });
+      if (!existing) return code;
+    }
+
+    throw new Error('Failed to generate unique gift code after 10 attempts');
+  }
+
+  /**
+   * Called after a registration transitions to COMPLETED.
+   * If it's a gift registration without a code, generates one.
+   * Returns the generated gift code or null.
+   */
+  async onRegistrationCompleted(registrationId: string): Promise<string | null> {
+    const registration = await this.prisma.registration.findUnique({
+      where: { id: registrationId },
+    });
+
+    if (!registration || !registration.isGift || registration.giftCode) {
+      return null;
+    }
+
+    const giftCode = await this.generateGiftCode();
+
+    await this.prisma.registration.update({
+      where: { id: registrationId },
+      data: { giftCode },
+    });
+
+    return giftCode;
   }
 }

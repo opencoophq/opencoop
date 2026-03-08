@@ -7,6 +7,7 @@ import {
   IsDateString,
   ValidateNested,
   IsObject,
+  IsBoolean,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -88,4 +89,9 @@ export class PublicRegisterDto {
   @IsOptional()
   @IsString()
   projectId?: string;
+
+  @ApiProperty({ required: false, description: 'Whether this is a gift purchase' })
+  @IsOptional()
+  @IsBoolean()
+  isGift?: boolean;
 }
