@@ -882,6 +882,9 @@
       "emailStatus": "E-mail",
       "emailEnabled": "Ingeschakeld",
       "emailDisabled": "Uitgeschakeld",
+      "pontoStatus": "Ponto",
+      "pontoEnabled": "Ingeschakeld",
+      "pontoDisabled": "Uitgeschakeld",
       "plan": "Abonnement",
       "subscriptionStatus": "Abonnementsstatus"
     },

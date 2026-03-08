@@ -882,6 +882,9 @@
       "emailStatus": "E-mail",
       "emailEnabled": "Activé",
       "emailDisabled": "Désactivé",
+      "pontoStatus": "Ponto",
+      "pontoEnabled": "Activé",
+      "pontoDisabled": "Désactivé",
       "plan": "Abonnement",
       "subscriptionStatus": "Statut d'abonnement"
     },
