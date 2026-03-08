@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.2.9] - 2026-03-08
+
+### Added
+- **Gift badge on buyer dashboard** — gift registrations show an amber badge with status (awaiting payment / awaiting claim / claimed by [name])
+- **Gift certificate download** — buyers can download the gift certificate PDF from their shares page while the gift is unclaimed
+- **Gift claim recipient info** — `/auth/me` now returns the claimed-by shareholder name for gift registrations
+
 ## [0.2.8] - 2026-03-08
 
 ### Added
