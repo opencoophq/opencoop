@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.2.7] - 2026-03-08
+
+### Changed
+- **Registration flow redesign** — replaced dark colored header with a light/white header showing the coop logo. Registration now uses 4 steps for new users (Welcome → Details → Order → Payment) and 3 steps for logged-in users (skipping the welcome gate).
+
+### Added
+- **Welcome gate** — new users see "I'm new" and "I already have an account" cards as their first step. The login card embeds an inline email-first login so returning shareholders can authenticate without leaving the registration page.
+- **Smart beneficiary filtering** — when a logged-in user registers someone else, "for myself" is hidden. Gift flow skips email collection for logged-in buyers.
+
+### Fixed
+- **Native date picker** — replaced custom date picker with native `<input type="date">` and enforced holding period in share sell UI
+
 ## [0.2.4] - 2026-03-07
 
 ### Fixed
