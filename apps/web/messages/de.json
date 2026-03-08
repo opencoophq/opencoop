@@ -445,6 +445,7 @@
     "giftCode": "Geschenkcode",
     "giftCertificate": "Geschenkgutschein",
     "giftShareWith": "Teilen Sie diesen Code oder QR mit dem Empfänger",
+    "giftPaymentNote": "Sie erhalten den Geschenkgutschein per E-Mail, sobald Ihre Zahlung eingegangen ist.",
     "claimGift": "Geschenkgutschein einlösen",
     "enterGiftCode": "Geben Sie Ihren Geschenkcode ein",
     "claimDescription": "Geben Sie den Code Ihres Geschenkgutscheins ein, um Ihre Anteile zu beanspruchen.",

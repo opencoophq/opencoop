@@ -445,6 +445,7 @@
     "giftCode": "Gift code",
     "giftCertificate": "Gift Certificate",
     "giftShareWith": "Share this code or QR with the recipient",
+    "giftPaymentNote": "You'll receive the gift certificate by email once your payment clears.",
     "claimGift": "Claim Gift Certificate",
     "enterGiftCode": "Enter your gift code",
     "claimDescription": "Enter the code from your gift certificate to claim your shares.",

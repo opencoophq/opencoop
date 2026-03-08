@@ -438,6 +438,7 @@ export function CoopRegisterContent({
           shareClassId: values.shareClassId,
           quantity: values.quantity,
           projectId: values.projectId,
+          isGift: values.beneficiaryType === 'gift',
         };
       } else {
         const beneficiaryToType: Record<string, string> = {
@@ -466,6 +467,7 @@ export function CoopRegisterContent({
           shareClassId: values.shareClassId,
           quantity: values.quantity,
           projectId: values.projectId,
+          isGift: values.beneficiaryType === 'gift',
         };
       }
 
@@ -1172,6 +1174,14 @@ export function CoopRegisterContent({
             )}
           </div>
         </div>
+
+        {form.getValues('beneficiaryType') === 'gift' && (
+          <div className="mt-6 p-4 rounded-lg border bg-amber-50 border-amber-200">
+            <p className="text-sm text-amber-800 font-medium">
+              {t('registration.giftPaymentNote')}
+            </p>
+          </div>
+        )}
 
         {result && (
           <p className="text-sm text-muted-foreground mt-4 text-center">
