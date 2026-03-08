@@ -74,6 +74,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://opencoop:opencoop@localhost:5433/opencoop_test
 
+      - name: Seed demo coop
+        run: pnpm --filter @opencoop/database exec tsx prisma/seed-demo.ts
+        env:
+          DATABASE_URL: postgresql://opencoop:opencoop@localhost:5433/opencoop_test
+
       - name: Install Playwright (Chromium only)
         run: cd e2e && npm install && npx playwright install chromium --with-deps
 
