@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.2.10] - 2026-03-08
+
+### Fixed
+- **Gift claim page validation** — fixed Zod schema blocking gift code validation by making step-2 fields optional (same fix as registration form)
+- **Gift claim FK error** — claim endpoint was passing shareholder ID as user ID for `processedByUserId`, causing foreign key constraint violation
+- **Registration form per-step validation** — made step-3 schema fields optional so `trigger()` works correctly per step
+
 ## [0.2.9] - 2026-03-08
 
 ### Added
