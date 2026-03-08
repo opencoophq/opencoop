@@ -373,6 +373,7 @@ model Shareholder {
   dividendPayouts  DividendPayout[]
   documents        ShareholderDocument[]
   upgradeToken     MinorUpgradeToken?
+  claimedGifts     Registration[]     @relation("GiftClaimedBy")
 
   // Unique email per coop (null emails allowed for minors - PostgreSQL allows multiple nulls)
   @@unique([coopId, email])
@@ -521,6 +522,13 @@ model Registration {
 
   // OGM for payment matching
   ogmCode           String?            @unique
+
+  // Gift certificate
+  isGift                     Boolean    @default(false)
+  giftCode                   String?    @unique
+  giftClaimedAt              DateTime?
+  giftClaimedByShareholderId String?
+  giftClaimedByShareholder   Shareholder? @relation("GiftClaimedBy", fields: [giftClaimedByShareholderId], references: [id])
 
   // Relations
   coop              Coop               @relation(fields: [coopId], references: [id], onDelete: Cascade)
