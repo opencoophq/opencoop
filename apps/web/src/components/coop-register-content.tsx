@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,14 +17,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency } from '@opencoop/shared';
 import { DatePicker } from '@/components/ui/date-picker';
 import { EpcQrCode } from '@/components/epc-qr-code';
-import { Gift, UserPlus } from 'lucide-react';
+import { Gift, UserPlus, LogIn } from 'lucide-react';
+import { EmailFirstLogin } from '@/components/auth/email-first-login';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
+import { resolveLogoUrl } from '@/lib/api';
 
 interface CoopPublicInfo {
   id: string;
   slug: string;
   name: string;
   primaryColor: string;
+  secondaryColor?: string;
+  logoUrl?: string | null;
   bankName?: string;
   bankIban?: string;
   bankBic?: string;
@@ -62,22 +65,62 @@ interface ExistingShareholder {
   country?: string;
 }
 
+function mapShareholdersFromApi(
+  shareholders: Array<{
+    id: string;
+    type: 'INDIVIDUAL' | 'COMPANY' | 'MINOR';
+    firstName?: string;
+    lastName?: string;
+    birthDate?: string;
+    companyName?: string;
+    companyId?: string;
+    vatNumber?: string;
+    email?: string;
+    phone?: string;
+    address?: { street?: string; number?: string; postalCode?: string; city?: string; country?: string } | null;
+    coop: { id: string };
+  }>,
+  coopId: string
+): ExistingShareholder[] {
+  return shareholders
+    .filter((s) => s.coop.id === coopId)
+    .map((s) => ({
+      id: s.id,
+      type: s.type,
+      firstName: s.firstName,
+      lastName: s.lastName,
+      birthDate: s.birthDate,
+      companyName: s.companyName,
+      companyId: s.companyId,
+      vatNumber: s.vatNumber,
+      email: s.email,
+      phone: s.phone,
+      street: s.address?.street,
+      number: s.address?.number,
+      postalCode: s.address?.postalCode,
+      city: s.address?.city,
+      country: s.address?.country,
+    }));
+}
+
+// Schema is intentionally lenient — per-step validation in handleStep1Next
+// enforces which fields are required based on beneficiary type and login state.
 const registrationSchema = z.object({
   shareholderId: z.string().optional(),
   beneficiaryType: z.enum(['self', 'family', 'company', 'gift']),
-  firstName: z.string().min(1).optional(),
-  lastName: z.string().min(1).optional(),
+  firstName: z.string().min(1).optional().or(z.literal('')),
+  lastName: z.string().min(1).optional().or(z.literal('')),
   birthDate: z.string().optional(),
   companyName: z.string().optional(),
   companyId: z.string().optional(),
   vatNumber: z.string().optional(),
-  email: z.string().email(),
+  email: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
-  street: z.string().min(1),
-  number: z.string().min(1),
-  postalCode: z.string().min(1),
-  city: z.string().min(1),
-  country: z.string().min(1),
+  street: z.string().min(1).optional().or(z.literal('')),
+  number: z.string().min(1).optional().or(z.literal('')),
+  postalCode: z.string().min(1).optional().or(z.literal('')),
+  city: z.string().min(1).optional().or(z.literal('')),
+  country: z.string().optional(),
   shareClassId: z.string().min(1),
   projectId: z.string().optional(),
   quantity: z.number().min(1),
@@ -110,6 +153,7 @@ export function CoopRegisterContent({
   const [allShareholders, setAllShareholders] = useState<ExistingShareholder[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isRegisteringNew, setIsRegisteringNew] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
   const [result, setResult] = useState<{
     registrationId: string;
     ogmCode?: string;
@@ -119,13 +163,27 @@ export function CoopRegisterContent({
   // Determine if user has existing shareholders (short flow) or is new (long flow)
   const hasExistingShareholders = allShareholders.length > 0 && !isRegisteringNew;
 
-  // Always 3 steps now
-  const steps = [
+  // Step labels depend on whether user is logged in
+  // Logged in: Details → Order → Payment (3 steps)
+  // Not logged in: Welcome → Details → Order → Payment (4 steps)
+  const stepsForLoggedIn = [
     t('registration.steps.details'),
     t('registration.steps.order'),
-    t('registration.steps.confirm'),
+    t('registration.steps.payment'),
   ];
-  const totalSteps = 3;
+  const stepsForNewUser = [
+    t('registration.steps.welcome'),
+    t('registration.steps.details'),
+    t('registration.steps.order'),
+    t('registration.steps.payment'),
+  ];
+  const steps = isLoggedIn ? stepsForLoggedIn : stepsForNewUser;
+  const totalSteps = steps.length;
+
+  // Map logical step names to step numbers
+  const STEP = isLoggedIn
+    ? ({ DETAILS: 1, ORDER: 2, PAYMENT: 3 } as const)
+    : ({ WELCOME: 1, DETAILS: 2, ORDER: 3, PAYMENT: 4 } as const);
 
   const form = useForm<RegistrationForm>({
     resolver: zodResolver(registrationSchema),
@@ -191,37 +249,7 @@ export function CoopRegisterContent({
               setIsLoggedIn(true);
 
               // Filter shareholders for this coop and flatten the address JSON
-              const shareholdersForCoop: ExistingShareholder[] = (meData.shareholders || [])
-                .filter((s: { coop: { id: string } }) => s.coop.id === coopData.id)
-                .map((s: {
-                  id: string;
-                  type: 'INDIVIDUAL' | 'COMPANY' | 'MINOR';
-                  firstName?: string;
-                  lastName?: string;
-                  birthDate?: string;
-                  companyName?: string;
-                  companyId?: string;
-                  vatNumber?: string;
-                  email?: string;
-                  phone?: string;
-                  address?: { street?: string; number?: string; postalCode?: string; city?: string; country?: string } | null;
-                }) => ({
-                  id: s.id,
-                  type: s.type,
-                  firstName: s.firstName,
-                  lastName: s.lastName,
-                  birthDate: s.birthDate,
-                  companyName: s.companyName,
-                  companyId: s.companyId,
-                  vatNumber: s.vatNumber,
-                  email: s.email,
-                  phone: s.phone,
-                  street: s.address?.street,
-                  number: s.address?.number,
-                  postalCode: s.address?.postalCode,
-                  city: s.address?.city,
-                  country: s.address?.country,
-                }));
+              const shareholdersForCoop = mapShareholdersFromApi(meData.shareholders || [], coopData.id);
               setAllShareholders(shareholdersForCoop);
 
               // If shareholderId provided, pre-select that shareholder
@@ -310,7 +338,7 @@ export function CoopRegisterContent({
       // Preserve preselected share class and project across reset
       const { shareClassId, projectId } = form.getValues();
       form.reset({
-        beneficiaryType: 'self',
+        beneficiaryType: 'family',
         paymentMethod: 'BANK_TRANSFER',
         quantity: 1,
         country: 'Belgium',
@@ -326,31 +354,64 @@ export function CoopRegisterContent({
     }
   };
 
-  // Navigate to next step
-  const nextStep = () => setStep(step + 1);
-  const prevStep = () => setStep(step - 1);
+  // Handle successful login from the welcome step's inline login form
+  const handleLoginSuccess = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || !coop) return;
+
+    try {
+      const meResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (meResponse.ok) {
+        const meData = await meResponse.json();
+        setIsLoggedIn(true);
+
+        const shareholdersForCoop = mapShareholdersFromApi(meData.shareholders || [], coop.id);
+        setAllShareholders(shareholdersForCoop);
+
+        if (shareholdersForCoop.length > 0) {
+          setSelectedShareholder(shareholdersForCoop[0]);
+          prefillFormWithShareholder(shareholdersForCoop[0]);
+        } else if (meData.email) {
+          form.setValue('email', meData.email);
+        }
+
+        // Jump to Details step (step 1 for logged-in users, since isLoggedIn is now true)
+        setStep(1);
+      }
+    } catch {
+      setIsLoggedIn(true);
+      setStep(1);
+    }
+  };
 
   // Validate step 1 fields before navigating to step 2
   const handleStep1Next = async () => {
     if (hasExistingShareholders) {
       // Existing shareholder selected — no form validation needed
-      nextStep();
+      setStep(STEP.ORDER);
       return;
     }
 
     // Validate required fields based on beneficiary type
     let fieldsToValidate: (keyof RegistrationForm)[];
     if (watchBeneficiaryType === 'gift') {
-      fieldsToValidate = ['email'];
+      fieldsToValidate = isLoggedIn ? [] : ['email'];
     } else if (watchBeneficiaryType === 'company') {
       fieldsToValidate = ['companyName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
     } else {
       fieldsToValidate = ['firstName', 'lastName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
     }
 
+    if (fieldsToValidate.length === 0) {
+      setStep(STEP.ORDER);
+      return;
+    }
     const result = await form.trigger(fieldsToValidate);
     if (result) {
-      nextStep();
+      setStep(STEP.ORDER);
     }
   };
 
@@ -363,11 +424,17 @@ export function CoopRegisterContent({
     try {
       const values = form.getValues();
 
+      // Logged-in gift buyer: use their first shareholder profile as the buyer
+      const effectiveShareholderId =
+        values.shareholderId ||
+        (isLoggedIn && values.beneficiaryType === 'gift' && allShareholders[0]?.id) ||
+        null;
+
       // Build payload based on whether we have an existing shareholder
       let payload: Record<string, unknown>;
-      if (values.shareholderId) {
+      if (effectiveShareholderId) {
         payload = {
-          shareholderId: values.shareholderId,
+          shareholderId: effectiveShareholderId,
           shareClassId: values.shareClassId,
           quantity: values.quantity,
           projectId: values.projectId,
@@ -421,7 +488,7 @@ export function CoopRegisterContent({
         registrationId: data.registrationId,
         ogmCode: data.ogmCode,
       });
-      setStep(totalSteps);
+      setStep(STEP.PAYMENT);
     } catch (error) {
       console.error('Registration failed:', error);
       alert(error instanceof Error ? error.message : 'Registration failed');
@@ -567,7 +634,9 @@ export function CoopRegisterContent({
           }
           className="space-y-3"
         >
-          {(['self', 'family', 'company', 'gift'] as const).map((type) => (
+          {(['self', 'family', 'company', 'gift'] as const)
+            .filter((type) => !(isRegisteringNew && type === 'self'))
+            .map((type) => (
             <div
               key={type}
               className="flex items-start space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-accent"
@@ -614,7 +683,7 @@ export function CoopRegisterContent({
           )}
 
           {watchBeneficiaryType === 'gift' ? (
-            /* Gift flow: explanation + buyer email only */
+            /* Gift flow: explanation + buyer email (only if not logged in) */
             <>
               <div className="flex items-start gap-3 bg-muted/50 p-4 rounded-md">
                 <Gift className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
@@ -622,10 +691,12 @@ export function CoopRegisterContent({
                   {t('registration.giftExplanation')}
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label>{t('registration.giftBuyerEmail')} *</Label>
-                <Input type="email" {...form.register('email')} />
-              </div>
+              {!isLoggedIn && (
+                <div className="space-y-2">
+                  <Label>{t('registration.giftBuyerEmail')} *</Label>
+                  <Input type="email" {...form.register('email')} />
+                </div>
+              )}
             </>
           ) : watchBeneficiaryType === 'company' ? (
             <>
@@ -759,16 +830,99 @@ export function CoopRegisterContent({
     {/* "Already a member? Log in" link for non-logged-in users */}
     {!isLoggedIn && (
       <p className="text-center text-sm text-muted-foreground mt-4">
-        <Link
-          href={`/${locale}/${coopSlug}/${channelSlug}/login`}
+        <button
+          type="button"
+          onClick={() => {
+            setShowLoginForm(true);
+            setStep(STEP.WELCOME!);
+          }}
           className="underline hover:no-underline"
           style={{ color: coop.primaryColor }}
         >
           {t('registration.alreadyMember')}
-        </Link>
+        </button>
       </p>
     )}
     </>
+  );
+
+  // ============================================================================
+  // WELCOME STEP (new vs existing user gate)
+  // ============================================================================
+  const renderWelcomeStep = () => (
+    <div className="space-y-4">
+      {!showLoginForm ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* I'm new */}
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setStep(STEP.DETAILS)}
+          >
+            <CardContent className="pt-6 text-center space-y-3">
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
+                style={{ backgroundColor: `${coop.primaryColor}15`, color: coop.primaryColor }}
+              >
+                <UserPlus className="h-7 w-7" />
+              </div>
+              <h3 className="font-semibold text-lg">
+                {t('registration.welcome.newTitle')}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {t('registration.welcome.newDescription')}
+              </p>
+              <Button
+                className="w-full"
+                style={{ backgroundColor: coop.primaryColor }}
+              >
+                {t('common.next')}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* I have an account */}
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setShowLoginForm(true)}
+          >
+            <CardContent className="pt-6 text-center space-y-3">
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto">
+                <LogIn className="h-7 w-7 text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold text-lg">
+                {t('registration.welcome.existingTitle')}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {t('registration.welcome.existingDescription')}
+              </p>
+              <Button variant="outline" className="w-full">
+                {t('auth.login')}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="max-w-md mx-auto space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowLoginForm(false)}
+          >
+            &larr; {t('common.back')}
+          </Button>
+          <EmailFirstLogin
+            coop={{
+              name: coop.name,
+              logoUrl: coop.logoUrl,
+              primaryColor: coop.primaryColor,
+              secondaryColor: coop.secondaryColor || coop.primaryColor,
+              slug: coopSlug,
+            }}
+            onLoginSuccess={handleLoginSuccess}
+          />
+        </div>
+      )}
+    </div>
   );
 
   // ============================================================================
@@ -848,30 +1002,6 @@ export function CoopRegisterContent({
           </div>
         )}
 
-        {/* Payment method */}
-        <div className="border-t pt-4 space-y-4">
-          <h4 className="font-medium">{t('registration.choosePaymentMethod')}</h4>
-          <RadioGroup
-            value={form.watch('paymentMethod')}
-            onValueChange={(value) =>
-              form.setValue(
-                'paymentMethod',
-                value as 'BANK_TRANSFER' | 'MOLLIE' | 'STRIPE'
-              )
-            }
-            className="space-y-3"
-          >
-            <div className="flex items-center space-x-3 border rounded-lg p-4">
-              <RadioGroupItem value="BANK_TRANSFER" id="bank" />
-              <Label htmlFor="bank" className="flex-1 cursor-pointer">
-                <span className="font-medium">
-                  {t('payments.method.bankTransfer')}
-                </span>
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
-
         {/* Order summary */}
         <div className="bg-muted p-4 rounded-lg space-y-2">
           <h4 className="font-medium">{t('registration.orderSummary')}</h4>
@@ -931,7 +1061,7 @@ export function CoopRegisterContent({
         </div>
 
         <div className="flex gap-4 mt-6">
-          <Button type="button" variant="outline" onClick={prevStep}>
+          <Button type="button" variant="outline" onClick={() => setStep(STEP.DETAILS)}>
             {t('common.back')}
           </Button>
           <Button
@@ -1056,40 +1186,65 @@ export function CoopRegisterContent({
   // RENDER CURRENT STEP
   // ============================================================================
   const renderStep = () => {
-    switch (step) {
-      case 1:
-        return hasExistingShareholders ? renderStep1ExistingUser() : renderStep1NewUser();
-      case 2:
-        return renderStep2Order();
-      case 3:
-        return renderStep3Confirmation();
-      default:
-        return null;
+    if (!isLoggedIn && step === STEP.WELCOME) {
+      return renderWelcomeStep();
     }
+    if (step === STEP.DETAILS) {
+      return hasExistingShareholders ? renderStep1ExistingUser() : renderStep1NewUser();
+    }
+    if (step === STEP.ORDER) {
+      return renderStep2Order();
+    }
+    if (step === STEP.PAYMENT) {
+      return renderStep3Confirmation();
+    }
+    return null;
   };
 
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header
-        className="py-6"
-        style={{ backgroundColor: coop.primaryColor }}
-      >
-        <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold text-white">{coop.name}</h1>
-          <p className="text-white/80">{t('registration.title')}</p>
+      <header className="bg-white border-b shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            {coop.logoUrl ? (
+              <img
+                src={resolveLogoUrl(coop.logoUrl)!}
+                alt={coop.name}
+                className="h-10 object-contain"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: coop.primaryColor }}
+              >
+                <span className="text-white font-bold text-lg">
+                  {coop.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <div>
+              <h1
+                className="text-xl font-bold"
+                style={{ color: coop.primaryColor }}
+              >
+                {coop.name}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {t('registration.title')}
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
       {/* Steps indicator */}
       {renderStepIndicator()}
 
-      {/* Form */}
+      {/* Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
-          <form onSubmit={(e) => e.preventDefault()}>
-            {renderStep()}
-          </form>
+          {renderStep()}
         </div>
       </main>
     </div>
