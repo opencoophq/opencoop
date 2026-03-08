@@ -30,4 +30,9 @@ export class CreateCoopDto {
   @IsOptional()
   @IsBoolean()
   emailEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  pontoEnabled?: boolean;
 }

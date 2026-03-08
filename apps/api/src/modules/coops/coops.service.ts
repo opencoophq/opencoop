@@ -327,6 +327,8 @@ export class CoopsService {
         bankIban: true,
         bankBic: true,
         emailEnabled: true,
+        pontoEnabled: true,
+        autoMatchPayments: true,
         emailProvider: true,
         smtpHost: true,
         smtpPort: true,
