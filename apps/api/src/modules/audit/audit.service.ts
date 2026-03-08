@@ -25,10 +25,11 @@ export class AuditService {
     coopId?: string;
     entity: string;
     entityId: string;
-    action: 'CREATE' | 'UPDATE' | 'DELETE';
+    action: string;
     changes: Change[];
     actorId?: string;
     ipAddress?: string;
+    userAgent?: string;
   }) {
     if (params.changes.length === 0 && params.action === 'UPDATE') return;
 
@@ -47,6 +48,7 @@ export class AuditService {
         changes: maskedChanges as unknown as Prisma.InputJsonValue,
         actorId: params.actorId ?? null,
         ipAddress: params.ipAddress ?? null,
+        userAgent: params.userAgent ?? null,
       },
     });
   }
@@ -154,6 +156,7 @@ export class AuditService {
       entity?: string;
       entityId?: string;
       actorId?: string;
+      action?: string;
       page?: number;
       limit?: number;
     } = {},
@@ -167,6 +170,7 @@ export class AuditService {
     if (params.entity) where.entity = params.entity;
     if (params.entityId) where.entityId = params.entityId;
     if (params.actorId) where.actorId = params.actorId;
+    if (params.action) where.action = params.action;
 
     const [items, total] = await Promise.all([
       this.prisma.auditLog.findMany({
