@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { renderToBuffer } from '@react-pdf/renderer';
-import { ShareCertificate, DividendStatement } from '@opencoop/pdf-templates';
+import { ShareCertificate, DividendStatement, GiftCertificate } from '@opencoop/pdf-templates';
 import React from 'react';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -110,6 +110,60 @@ export class DocumentsService {
       where: { shareholderId },
       orderBy: { generatedAt: 'desc' },
     });
+  }
+
+  async generateGiftCertificatePdf(registrationId: string, locale?: string): Promise<string> {
+    const registration = await this.prisma.registration.findUnique({
+      where: { id: registrationId },
+      include: {
+        coop: true,
+        shareClass: true,
+        shareholder: true,
+        channel: true,
+      },
+    });
+
+    if (!registration || !registration.giftCode) {
+      throw new NotFoundException('Gift registration not found');
+    }
+
+    const channelSlug = registration.channel?.slug || 'default';
+    const domain = process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+    const claimUrl = `${domain}/${registration.coop.slug}/${channelSlug}/claim?code=${registration.giftCode}`;
+
+    // Generate QR code as data URL
+    const QRCode = await import('qrcode');
+    const qrCodeDataUrl = await QRCode.toDataURL(claimUrl, { width: 300 });
+
+    const logoUrl = registration.channel?.logoUrl
+      ? `${process.env.API_URL || 'http://localhost:3001'}${registration.channel.logoUrl}`
+      : undefined;
+
+    const element = React.createElement(GiftCertificate, {
+      coopName: registration.coop.name,
+      primaryColor: registration.channel?.primaryColor || '#1e40af',
+      logoUrl,
+      shareClassName: registration.shareClass.name,
+      quantity: registration.quantity,
+      totalValue: Number(registration.totalAmount),
+      giftCode: registration.giftCode,
+      claimUrl,
+      qrCodeDataUrl,
+      locale: locale || 'nl',
+    });
+
+    const buffer = await renderToBuffer(element as any);
+
+    // Save to disk
+    const dir = path.join(process.env.UPLOAD_DIR || './uploads', 'gift-certificates');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const filePath = path.join(dir, `${registrationId}.pdf`);
+    fs.writeFileSync(filePath, buffer);
+
+    return filePath;
   }
 
   async generateDividendStatement(shareholderId: string, dividendPayoutId: string, locale?: string) {

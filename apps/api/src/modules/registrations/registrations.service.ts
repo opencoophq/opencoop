@@ -1,10 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { generateOgmCode, computeTotalPaid, computeVestedShares } from '@opencoop/shared';
+import { DocumentsService } from '../documents/documents.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class RegistrationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => DocumentsService))
+    private documentsService: DocumentsService,
+    private emailService: EmailService,
+  ) {}
 
   private readonly defaultInclude = {
     shareholder: {
@@ -571,12 +578,18 @@ export class RegistrationsService {
 
   /**
    * Called after a registration transitions to COMPLETED.
-   * If it's a gift registration without a code, generates one.
+   * If it's a gift registration without a code, generates one,
+   * then generates a gift certificate PDF and emails it to the buyer.
    * Returns the generated gift code or null.
    */
   async onRegistrationCompleted(registrationId: string): Promise<string | null> {
     const registration = await this.prisma.registration.findUnique({
       where: { id: registrationId },
+      include: {
+        shareholder: true,
+        shareClass: true,
+        coop: true,
+      },
     });
 
     if (!registration || !registration.isGift || registration.giftCode) {
@@ -589,6 +602,32 @@ export class RegistrationsService {
       where: { id: registrationId },
       data: { giftCode },
     });
+
+    // Generate PDF and send email to buyer
+    try {
+      const pdfPath = await this.documentsService.generateGiftCertificatePdf(registrationId);
+
+      const buyerEmail = registration.shareholder.email;
+      if (buyerEmail) {
+        const buyerName =
+          registration.shareholder.type === 'COMPANY'
+            ? registration.shareholder.companyName || ''
+            : `${registration.shareholder.firstName || ''} ${registration.shareholder.lastName || ''}`.trim();
+
+        await this.emailService.sendGiftCertificate(registration.coopId, buyerEmail, {
+          buyerName,
+          coopName: registration.coop.name,
+          shareClassName: registration.shareClass.name,
+          quantity: registration.quantity,
+          totalValue: Number(registration.totalAmount),
+          giftCode,
+          certificatePath: pdfPath,
+        });
+      }
+    } catch (error) {
+      // Log but don't fail — gift code is already saved
+      console.error('Failed to generate/send gift certificate:', error);
+    }
 
     return giftCode;
   }

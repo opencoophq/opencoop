@@ -277,4 +277,27 @@ export class EmailService {
       templateData: data,
     });
   }
+
+  async sendGiftCertificate(
+    coopId: string,
+    to: string,
+    data: {
+      buyerName: string;
+      coopName: string;
+      shareClassName: string;
+      quantity: number;
+      totalValue: number;
+      giftCode: string;
+      certificatePath: string;
+    },
+  ) {
+    return this.send({
+      coopId,
+      to,
+      subject: `${data.coopName} — Your gift certificate`,
+      templateKey: 'gift-certificate',
+      templateData: data,
+      attachments: [{ filename: 'gift-certificate.pdf', path: data.certificatePath }],
+    });
+  }
 }
