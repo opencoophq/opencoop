@@ -257,6 +257,7 @@ export class PontoService {
   ): Promise<void> {
     const connection = await this.prisma.pontoConnection.findFirst({
       where: { pontoAccountId, status: 'ACTIVE' },
+      include: { coop: true },
     });
 
     if (!connection) {
@@ -264,10 +265,6 @@ export class PontoService {
         `No active Ponto connection found for account ${pontoAccountId}`,
       );
     }
-
-    const coop = await this.prisma.coop.findUnique({
-      where: { id: connection.coopId },
-    });
 
     const accessToken = await this.pontoClient.getValidAccessToken(connection.id);
     const transactions = await this.pontoClient.getUpdatedTransactions(
@@ -283,7 +280,7 @@ export class PontoService {
         `(${transactions.length} total) for coop ${connection.coopId}`,
     );
 
-    const autoMatch = coop?.autoMatchPayments ?? true;
+    const autoMatch = connection.coop?.autoMatchPayments ?? true;
 
     for (const txn of incoming) {
       await this.processTransaction(txn, connection.coopId, autoMatch);
@@ -306,7 +303,7 @@ export class PontoService {
     autoMatch: boolean,
   ): Promise<void> {
     // Deduplication: skip if we've already seen this Ponto transaction
-    const existing = await this.prisma.bankTransaction.findFirst({
+    const existing = await this.prisma.bankTransaction.findUnique({
       where: { pontoTransactionId: txn.id },
     });
     if (existing) {
@@ -317,7 +314,7 @@ export class PontoService {
     // Extract OGM code from structured remittance information
     let ogmCode: string | null = null;
     if (txn.remittanceInformationType === 'structured') {
-      ogmCode = txn.remittanceInformation.replace(/[+/\s]/g, '');
+      ogmCode = txn.remittanceInformation.replace(/\D/g, '');
       // Validate it looks like a 12-digit OGM
       if (!/^\d{12}$/.test(ogmCode)) {
         ogmCode = null;
@@ -325,7 +322,16 @@ export class PontoService {
     }
 
     // Try to match to a registration
-    let registration: any = null;
+    let registration: {
+      id: string;
+      coopId: string;
+      shareholder: {
+        id: string;
+        firstName: string | null;
+        lastName: string | null;
+        email: string | null;
+      };
+    } | null = null;
     if (ogmCode) {
       registration = await this.prisma.registration.findFirst({
         where: {

@@ -59,6 +59,7 @@ describe('PontoService', () => {
     },
     bankTransaction: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
     },
     registration: {
@@ -348,7 +349,7 @@ describe('PontoService', () => {
     };
 
     it('should skip duplicate transactions', async () => {
-      mockPrisma.bankTransaction.findFirst.mockResolvedValue({
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue({
         id: 'existing-bt',
       });
 
@@ -358,7 +359,7 @@ describe('PontoService', () => {
     });
 
     it('should auto-match structured OGM and create payment', async () => {
-      mockPrisma.bankTransaction.findFirst.mockResolvedValue(null); // no duplicate
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null); // no duplicate
       const mockRegistration = {
         id: 'reg-1',
         coopId: 'coop-1',
@@ -407,7 +408,7 @@ describe('PontoService', () => {
     });
 
     it('should mark unmatched when no registration found', async () => {
-      mockPrisma.bankTransaction.findFirst.mockResolvedValue(null);
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
       mockPrisma.registration.findFirst.mockResolvedValue(null);
 
       const createdBankTxn = {
@@ -433,7 +434,7 @@ describe('PontoService', () => {
     });
 
     it('should not create payment when autoMatch is false even if matched', async () => {
-      mockPrisma.bankTransaction.findFirst.mockResolvedValue(null);
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
       mockPrisma.registration.findFirst.mockResolvedValue({
         id: 'reg-1',
         coopId: 'coop-1',
@@ -473,10 +474,7 @@ describe('PontoService', () => {
         coopId: 'coop-1',
         pontoAccountId: 'acc-1',
         status: 'ACTIVE',
-      });
-      mockPrisma.coop.findUnique.mockResolvedValue({
-        id: 'coop-1',
-        autoMatchPayments: true,
+        coop: { id: 'coop-1', autoMatchPayments: true },
       });
       mockPontoClient.getValidAccessToken.mockResolvedValue('valid-token');
       mockPontoClient.getUpdatedTransactions.mockResolvedValue([
@@ -528,6 +526,131 @@ describe('PontoService', () => {
       await expect(
         service.processNewTransactions('sync-1', 'acc-1'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // reauthorize
+  // -----------------------------------------------------------------------
+
+  describe('reauthorize', () => {
+    it('should delete expired connection, revoke token, and initiate new connection', async () => {
+      // First call: reauthorize looks up existing connection
+      mockPrisma.pontoConnection.findUnique.mockResolvedValueOnce({
+        id: 'conn-expired',
+        coopId: 'coop-1',
+        accessToken: 'encrypted:old-token',
+        status: 'EXPIRED',
+      });
+      mockPontoClient.revokeToken.mockResolvedValue(undefined);
+      mockPrisma.pontoConnection.delete.mockResolvedValue({});
+
+      // Second call: initiateConnection looks up coop
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        id: 'coop-1',
+        pontoEnabled: true,
+      });
+      // Third call: initiateConnection checks for existing connection (now gone)
+      mockPrisma.pontoConnection.findUnique.mockResolvedValueOnce(null);
+      mockPrisma.pontoConnection.create.mockResolvedValue({
+        id: 'conn-new',
+        status: 'PENDING',
+      });
+      mockPontoClient.generateAuthorizationUrl.mockReturnValue(
+        'https://ponto.example.com/auth?state=reauth',
+      );
+
+      const result = await service.reauthorize('coop-1');
+
+      // Old connection should be deleted
+      expect(mockPrisma.pontoConnection.delete).toHaveBeenCalledWith({
+        where: { id: 'conn-expired' },
+      });
+      // Token should be revoked
+      expect(mockPontoClient.revokeToken).toHaveBeenCalledWith('old-token');
+      // Should return new authorization URL
+      expect(result).toEqual({
+        authorizationUrl: 'https://ponto.example.com/auth?state=reauth',
+      });
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // handleCallbackByState
+  // -----------------------------------------------------------------------
+
+  describe('handleCallbackByState', () => {
+    it('should find matching PENDING connection by state and handle callback', async () => {
+      mockPrisma.pontoConnection.findMany.mockResolvedValue([
+        {
+          id: 'conn-wrong',
+          coopId: 'coop-2',
+          accessToken: 'encrypted:verifier-wrong',
+          refreshToken: 'encrypted:other-state',
+          status: 'PENDING',
+        },
+        {
+          id: 'conn-match',
+          coopId: 'coop-1',
+          accessToken: 'encrypted:verifier-correct',
+          refreshToken: 'encrypted:matching-state',
+          status: 'PENDING',
+        },
+      ]);
+
+      // Mock handleCallback internals
+      mockPontoClient.exchangeAuthorizationCode.mockResolvedValue({
+        accessToken: 'new-access',
+        refreshToken: 'new-refresh',
+        expiresIn: 1800,
+      });
+      mockPontoClient.getAccounts.mockResolvedValue([
+        {
+          id: 'acc-1',
+          iban: 'BE68539007547034',
+          currency: 'EUR',
+          description: 'Current',
+          financialInstitutionName: 'KBC',
+        },
+      ]);
+      mockPrisma.pontoConnection.update.mockResolvedValue({
+        id: 'conn-match',
+        status: 'ACTIVE',
+      });
+
+      const coopId = await service.handleCallbackByState(
+        'auth-code',
+        'matching-state',
+      );
+
+      expect(coopId).toBe('coop-1');
+      expect(mockPontoClient.exchangeAuthorizationCode).toHaveBeenCalledWith(
+        'auth-code',
+        'verifier-correct',
+        expect.any(String),
+      );
+      expect(mockPrisma.pontoConnection.update).toHaveBeenCalledWith({
+        where: { id: 'conn-match' },
+        data: expect.objectContaining({
+          status: 'ACTIVE',
+        }),
+      });
+    });
+
+    it('should throw BadRequestException when no matching state found', async () => {
+      mockPrisma.pontoConnection.findMany.mockResolvedValue([
+        {
+          id: 'conn-1',
+          coopId: 'coop-1',
+          accessToken: 'encrypted:verifier',
+          refreshToken: 'encrypted:some-state',
+          status: 'PENDING',
+        },
+      ]);
+
+      await expect(
+        service.handleCallbackByState('auth-code', 'non-matching-state'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
