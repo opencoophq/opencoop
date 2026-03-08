@@ -71,12 +71,30 @@ export class AuthService {
     return this.issueJwtForUser(user);
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, ip?: string, userAgent?: string) {
     const user = await this.validateUser(loginDto.email, loginDto.password);
 
     if (!user) {
+      await this.auditService.log({
+        entity: 'Auth',
+        entityId: loginDto.email,
+        action: 'LOGIN_FAILED',
+        changes: [{ field: 'method', oldValue: null, newValue: 'password' }],
+        ipAddress: ip,
+        userAgent,
+      });
       throw new UnauthorizedException('Invalid email or password');
     }
+
+    await this.auditService.log({
+      entity: 'Auth',
+      entityId: user.id,
+      action: 'LOGIN',
+      changes: [{ field: 'method', oldValue: null, newValue: 'password' }],
+      actorId: user.id,
+      ipAddress: ip,
+      userAgent,
+    });
 
     this.linkOrphanShareholders(user.id, user.email).catch((err) =>
       console.error('Failed to link orphan shareholders:', err.message),
@@ -85,7 +103,7 @@ export class AuthService {
     return this.issueJwtForUser(user);
   }
 
-  async register(registerDto: RegisterDto) {
+  async register(registerDto: RegisterDto, ip?: string, userAgent?: string) {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email.toLowerCase() },
     });
@@ -106,6 +124,16 @@ export class AuthService {
         emailVerifyToken: hashToken(emailVerifyToken),
         emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       },
+    });
+
+    await this.auditService.log({
+      entity: 'Auth',
+      entityId: user.id,
+      action: 'REGISTER',
+      changes: [{ field: 'email', oldValue: null, newValue: registerDto.email }],
+      actorId: user.id,
+      ipAddress: ip,
+      userAgent,
     });
 
     // Send verification email (non-blocking)
@@ -310,7 +338,7 @@ export class AuthService {
     return { message: 'If an account exists, a password reset email has been sent' };
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+  async resetPassword(resetPasswordDto: ResetPasswordDto, ip?: string, userAgent?: string) {
     const user = await this.prisma.user.findFirst({
       where: {
         passwordResetToken: hashToken(resetPasswordDto.token),
@@ -333,6 +361,16 @@ export class AuthService {
         passwordResetToken: null,
         passwordResetExpires: null,
       },
+    });
+
+    await this.auditService.log({
+      entity: 'Auth',
+      entityId: user.id,
+      action: 'PASSWORD_RESET',
+      changes: [{ field: 'passwordHash', oldValue: '***', newValue: '***' }],
+      actorId: user.id,
+      ipAddress: ip,
+      userAgent,
     });
 
     return { message: 'Password reset successfully' };
@@ -512,7 +550,7 @@ export class AuthService {
     return this.usersService.updatePreferences(userId, data);
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async changePassword(userId: string, currentPassword: string, newPassword: string, ip?: string, userAgent?: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -541,6 +579,8 @@ export class AuthService {
       action: 'UPDATE',
       changes: [{ field: 'passwordHash', oldValue: '***', newValue: '***' }],
       actorId: userId,
+      ipAddress: ip,
+      userAgent,
     });
 
     return { message: 'Password changed successfully' };
@@ -615,7 +655,7 @@ export class AuthService {
     return { recoveryCodes: plain };
   }
 
-  async mfaVerify(mfaToken: string, code?: string, recoveryCode?: string) {
+  async mfaVerify(mfaToken: string, code?: string, recoveryCode?: string, ip?: string, userAgent?: string) {
     let payload: { sub: string; type: string };
     try {
       payload = this.jwtService.verify(mfaToken);
@@ -640,6 +680,15 @@ export class AuthService {
       const hashedInput = hashRecoveryCode(recoveryCode);
       const idx = user.mfaRecoveryCodes.indexOf(hashedInput);
       if (idx === -1) {
+        await this.auditService.log({
+          entity: 'Auth',
+          entityId: user.id,
+          action: 'MFA_VERIFY_FAILED',
+          changes: [{ field: 'method', oldValue: null, newValue: 'recovery-code' }],
+          actorId: user.id,
+          ipAddress: ip,
+          userAgent,
+        });
         throw new BadRequestException('Invalid recovery code');
       }
       // Remove used recovery code
@@ -662,11 +711,30 @@ export class AuthService {
 
       const delta = totp.validate({ token: code, window: 1 });
       if (delta === null) {
+        await this.auditService.log({
+          entity: 'Auth',
+          entityId: user.id,
+          action: 'MFA_VERIFY_FAILED',
+          changes: [{ field: 'method', oldValue: null, newValue: 'totp' }],
+          actorId: user.id,
+          ipAddress: ip,
+          userAgent,
+        });
         throw new BadRequestException('Invalid verification code');
       }
     } else {
       throw new BadRequestException('Provide either code or recoveryCode');
     }
+
+    await this.auditService.log({
+      entity: 'Auth',
+      entityId: user.id,
+      action: 'MFA_VERIFY',
+      changes: [{ field: 'method', oldValue: null, newValue: recoveryCode ? 'recovery-code' : 'totp' }],
+      actorId: user.id,
+      ipAddress: ip,
+      userAgent,
+    });
 
     // Issue full JWT with permissions
     const coopIds = user.coopAdminOf.map((ca) => ca.coopId);
@@ -750,7 +818,7 @@ export class AuthService {
   // OAUTH (GOOGLE / APPLE)
   // ============================================================================
 
-  async handleOAuthLogin(provider: 'google' | 'apple', data: { providerId: string; email: string; name?: string }) {
+  async handleOAuthLogin(provider: 'google' | 'apple', data: { providerId: string; email: string; name?: string }, ip?: string, userAgent?: string) {
     const providerIdField = provider === 'google' ? 'googleId' : 'appleId';
 
     // 1. Check if user already linked by provider ID
@@ -763,6 +831,15 @@ export class AuthService {
       this.linkOrphanShareholders(user.id, user.email).catch((err) =>
         console.error('Failed to link orphan shareholders:', err.message),
       );
+      await this.auditService.log({
+        entity: 'Auth',
+        entityId: user.id,
+        action: 'LOGIN',
+        changes: [{ field: 'method', oldValue: null, newValue: provider }],
+        actorId: user.id,
+        ipAddress: ip,
+        userAgent,
+      });
       return this.issueJwtForUser(user);
     }
 
@@ -781,6 +858,15 @@ export class AuthService {
       this.linkOrphanShareholders(user.id, user.email).catch((err) =>
         console.error('Failed to link orphan shareholders:', err.message),
       );
+      await this.auditService.log({
+        entity: 'Auth',
+        entityId: user.id,
+        action: 'LOGIN',
+        changes: [{ field: 'method', oldValue: null, newValue: provider }],
+        actorId: user.id,
+        ipAddress: ip,
+        userAgent,
+      });
       return this.issueJwtForUser(user);
     }
 
@@ -797,6 +883,16 @@ export class AuthService {
     this.linkOrphanShareholders(newUser.id, newUser.email).catch((err) =>
       console.error('Failed to link orphan shareholders:', err.message),
     );
+
+    await this.auditService.log({
+      entity: 'Auth',
+      entityId: newUser.id,
+      action: 'LOGIN',
+      changes: [{ field: 'method', oldValue: null, newValue: provider }],
+      actorId: newUser.id,
+      ipAddress: ip,
+      userAgent,
+    });
 
     return this.issueJwtForUser({
       ...newUser,
@@ -1112,7 +1208,7 @@ export class AuthService {
     return successMessage;
   }
 
-  async verifyMagicLink(verifyMagicLinkDto: VerifyMagicLinkDto) {
+  async verifyMagicLink(verifyMagicLinkDto: VerifyMagicLinkDto, ip?: string, userAgent?: string) {
     const { token } = verifyMagicLinkDto;
 
     // Find and validate token
@@ -1159,6 +1255,16 @@ export class AuthService {
     this.linkOrphanShareholders(magicLinkToken.user.id, magicLinkToken.user.email).catch((err) =>
       console.error('Failed to link orphan shareholders:', err.message),
     );
+
+    await this.auditService.log({
+      entity: 'Auth',
+      entityId: magicLinkToken.user.id,
+      action: 'LOGIN',
+      changes: [{ field: 'method', oldValue: null, newValue: 'magic-link' }],
+      actorId: magicLinkToken.user.id,
+      ipAddress: ip,
+      userAgent,
+    });
 
     return this.issueJwtForUser(magicLinkToken.user);
   }
