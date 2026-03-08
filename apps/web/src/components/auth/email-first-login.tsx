@@ -27,6 +27,7 @@ interface CoopBranding {
 
 interface EmailFirstLoginProps {
   coop?: CoopBranding;
+  onLoginSuccess?: () => void;
 }
 
 type LoginStep = 'email' | 'method' | 'magic-link-sent' | 'password' | 'mfa';
@@ -42,7 +43,7 @@ const passwordSchema = z.object({
 type EmailForm = z.infer<typeof emailSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 
-export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
+export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) {
   const t = useTranslations();
   const router = useRouter();
   const [step, setStep] = useState<LoginStep>('email');
@@ -130,7 +131,11 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
 
       localStorage.setItem('accessToken', result.accessToken);
       localStorage.setItem('user', JSON.stringify(result.user));
-      router.push('/dashboard');
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth.loginError'));
     } finally {
@@ -221,7 +226,11 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
                 onSuccess={(result) => {
                   localStorage.setItem('accessToken', result.accessToken);
                   localStorage.setItem('user', JSON.stringify(result.user));
-                  router.push('/dashboard');
+                  if (onLoginSuccess) {
+                    onLoginSuccess();
+                  } else {
+                    router.push('/dashboard');
+                  }
                 }}
                 onMfaRequired={(token) => {
                   setMfaToken(token);
@@ -415,7 +424,11 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
               onSuccess={(result) => {
                 localStorage.setItem('accessToken', result.accessToken);
                 localStorage.setItem('user', JSON.stringify(result.user));
-                router.push('/dashboard');
+                if (onLoginSuccess) {
+                  onLoginSuccess();
+                } else {
+                  router.push('/dashboard');
+                }
               }}
               onBack={() => {
                 setStep('method');
@@ -426,7 +439,7 @@ export function EmailFirstLogin({ coop }: EmailFirstLoginProps) {
           )}
 
           {/* Register Link */}
-          {step !== 'magic-link-sent' && step !== 'mfa' && (
+          {!onLoginSuccess && step !== 'magic-link-sent' && step !== 'mfa' && (
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">{t('registration.createAccount')} </span>
               <Link href={registerUrl} className="text-primary hover:underline">
