@@ -404,9 +404,16 @@
       "giftDescription": "Ik koop aandelen als cadeau voor iemand"
     },
     "steps": {
+      "welcome": "Welkom",
       "details": "Gegevens",
       "order": "Bestelling",
-      "confirm": "Bevestiging"
+      "payment": "Betaling"
+    },
+    "welcome": {
+      "newTitle": "Ik ben nieuw",
+      "newDescription": "Registreer als nieuwe aandeelhouder",
+      "existingTitle": "Ik heb al een account",
+      "existingDescription": "Log in om sneller aandelen te kopen"
     },
     "scanToPay": "Scan met je bankapp om te betalen",
     "selectShareClass": "Selecteer aandelenklasse",

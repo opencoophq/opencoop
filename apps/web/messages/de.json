@@ -404,9 +404,16 @@
       "giftDescription": "Ich erwerbe Anteile als Geschenk für jemanden"
     },
     "steps": {
+      "welcome": "Willkommen",
       "details": "Angaben",
       "order": "Bestellung",
-      "confirm": "Bestätigung"
+      "payment": "Zahlung"
+    },
+    "welcome": {
+      "newTitle": "Ich bin neu",
+      "newDescription": "Als neuer Aktionär registrieren",
+      "existingTitle": "Ich habe bereits ein Konto",
+      "existingDescription": "Melden Sie sich an, um schneller Aktien zu kaufen"
     },
     "scanToPay": "Mit Banking-App scannen zum Bezahlen",
     "selectShareClass": "Anteilsklasse auswählen",
