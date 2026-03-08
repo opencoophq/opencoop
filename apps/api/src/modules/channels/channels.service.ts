@@ -11,6 +11,7 @@ import { RegistrationsService } from '../registrations/registrations.service';
 import { CreateChannelDto } from './dto/create-channel.dto';
 import { UpdateChannelDto } from './dto/update-channel.dto';
 import { PublicRegisterDto } from '../coops/dto/public-register.dto';
+import { ClaimGiftDto } from './dto/claim-gift.dto';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -468,6 +469,99 @@ export class ChannelsService {
       registrationId: registration.id,
       ogmCode: registration.ogmCode ?? null,
       shareholderId,
+    };
+  }
+
+  async validateGiftCode(coopSlug: string, channelSlug: string, code: string) {
+    const coop = await this.prisma.coop.findUnique({
+      where: { slug: coopSlug },
+    });
+
+    if (!coop) {
+      return { valid: false };
+    }
+
+    const registration = await this.prisma.registration.findUnique({
+      where: { giftCode: code },
+      include: { shareClass: true },
+    });
+
+    if (
+      !registration ||
+      registration.coopId !== coop.id ||
+      registration.status !== 'COMPLETED' ||
+      !registration.isGift ||
+      registration.giftClaimedAt
+    ) {
+      return { valid: false };
+    }
+
+    return {
+      valid: true,
+      coopName: coop.name,
+      shareClassName: registration.shareClass.name,
+      quantity: registration.quantity,
+      totalValue: Number(registration.totalAmount),
+    };
+  }
+
+  async claimGift(coopSlug: string, channelSlug: string, dto: ClaimGiftDto) {
+    const coop = await this.prisma.coop.findUnique({
+      where: { slug: coopSlug },
+    });
+
+    if (!coop) {
+      throw new NotFoundException('Cooperative not found');
+    }
+
+    const registration = await this.prisma.registration.findUnique({
+      where: { giftCode: dto.giftCode },
+      include: { shareClass: true },
+    });
+
+    if (
+      !registration ||
+      registration.coopId !== coop.id ||
+      registration.status !== 'COMPLETED' ||
+      !registration.isGift ||
+      registration.giftClaimedAt
+    ) {
+      throw new BadRequestException('Invalid or already claimed gift code');
+    }
+
+    // Create recipient shareholder
+    const recipientShareholder = await this.shareholdersService.create(coop.id, {
+      type: 'INDIVIDUAL',
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      birthDate: dto.birthDate,
+      email: dto.email,
+      phone: dto.phone,
+      address: dto.address,
+    });
+
+    // Transfer shares: buyer → recipient
+    await this.registrationsService.createTransfer({
+      coopId: coop.id,
+      fromShareholderId: registration.shareholderId,
+      toShareholderId: recipientShareholder.id,
+      registrationId: registration.id,
+      quantity: registration.quantity,
+      processedByUserId: registration.shareholderId,
+    });
+
+    // Mark gift as claimed
+    await this.prisma.registration.update({
+      where: { id: registration.id },
+      data: {
+        giftClaimedAt: new Date(),
+        giftClaimedByShareholderId: recipientShareholder.id,
+      },
+    });
+
+    return {
+      success: true,
+      shareholderId: recipientShareholder.id,
     };
   }
 }
