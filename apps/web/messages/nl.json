@@ -1583,6 +1583,12 @@
     "successMessage": "Welkom! Uw aandelen zijn succesvol geregistreerd.",
     "codePlaceholder": "XXXX-XXXX",
     "shares": "aandelen",
-    "value": "Waarde"
+    "value": "Waarde",
+    "badge": {
+      "awaitingPayment": "Cadeau — wacht op betaling",
+      "awaitingClaim": "Cadeau — wacht op claim",
+      "claimed": "Cadeau — geclaimed door {name}"
+    },
+    "downloadCertificate": "Download cadeaubon"
   }
 }

@@ -1583,6 +1583,12 @@
     "successMessage": "Welcome! Your shares have been registered successfully.",
     "codePlaceholder": "XXXX-XXXX",
     "shares": "shares",
-    "value": "Value"
+    "value": "Value",
+    "badge": {
+      "awaitingPayment": "Gift — awaiting payment",
+      "awaitingClaim": "Gift — awaiting claim",
+      "claimed": "Gift — claimed by {name}"
+    },
+    "downloadCertificate": "Download certificate"
   }
 }
