@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.3.1] - 2026-03-08
+
+### Added
+- **Umami analytics** — self-hosted privacy-friendly pageview analytics via analytics.armlab.com
+
 ## [0.3.0] - 2026-03-08
 
 ### Added
