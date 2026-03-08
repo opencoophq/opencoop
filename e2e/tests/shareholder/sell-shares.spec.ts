@@ -8,7 +8,8 @@ test.describe('Sell shares', () => {
     await expect(page.getByRole('heading', { name: 'Aandelen', exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Find a row with COMPLETED status badge (fully paid shares) and click the "Verkopen" button
-    const activeRow = page.locator('tr').filter({ hasText: 'COMPLETED' }).first();
+    // Status is translated to Dutch ("Voltooid") since the user's preferred language is nl
+    const activeRow = page.locator('tr').filter({ hasText: 'Voltooid' }).first();
     await expect(activeRow).toBeVisible({ timeout: 10_000 });
 
     await activeRow.getByRole('button', { name: 'Verkopen' }).click();
