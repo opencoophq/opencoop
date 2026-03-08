@@ -776,6 +776,7 @@ model AuditLog {
   changes   Json                 // [{ field, oldValue, newValue }]
   actorId   String?
   ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
 
   coop      Coop?    @relation(fields: [coopId], references: [id])
