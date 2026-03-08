@@ -1592,12 +1592,21 @@
     "actions": {
       "CREATE": "Créé",
       "UPDATE": "Modifié",
-      "DELETE": "Supprimé"
+      "DELETE": "Supprimé",
+      "LOGIN": "Connexion",
+      "LOGIN_FAILED": "Échec Connexion",
+      "REGISTER": "Inscription",
+      "MFA_VERIFY": "MFA Vérifié",
+      "MFA_VERIFY_FAILED": "MFA Échoué",
+      "PASSWORD_CHANGE": "Mot de Passe Modifié",
+      "PASSWORD_RESET": "Mot de Passe Réinitialisé"
     },
     "entity": "Entité",
     "changes": "Modifications",
     "system": "Système",
-    "masked": "(sensible)"
+    "masked": "(sensible)",
+    "ip": "Adresse IP",
+    "userAgent": "Agent Utilisateur"
   },
   "gift": {
     "claimTitle": "Réclamer le Chèque-cadeau",

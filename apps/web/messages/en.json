@@ -1592,12 +1592,21 @@
     "actions": {
       "CREATE": "Created",
       "UPDATE": "Updated",
-      "DELETE": "Deleted"
+      "DELETE": "Deleted",
+      "LOGIN": "Login",
+      "LOGIN_FAILED": "Login Failed",
+      "REGISTER": "Register",
+      "MFA_VERIFY": "MFA Verified",
+      "MFA_VERIFY_FAILED": "MFA Failed",
+      "PASSWORD_CHANGE": "Password Changed",
+      "PASSWORD_RESET": "Password Reset"
     },
     "entity": "Entity",
     "changes": "Changes",
     "system": "System",
-    "masked": "(sensitive)"
+    "masked": "(sensitive)",
+    "ip": "IP Address",
+    "userAgent": "User Agent"
   },
   "gift": {
     "claimTitle": "Claim Gift Certificate",

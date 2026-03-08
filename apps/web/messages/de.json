@@ -1592,12 +1592,21 @@
     "actions": {
       "CREATE": "Erstellt",
       "UPDATE": "Geändert",
-      "DELETE": "Gelöscht"
+      "DELETE": "Gelöscht",
+      "LOGIN": "Anmeldung",
+      "LOGIN_FAILED": "Anmeldung Fehlgeschlagen",
+      "REGISTER": "Registrierung",
+      "MFA_VERIFY": "MFA Verifiziert",
+      "MFA_VERIFY_FAILED": "MFA Fehlgeschlagen",
+      "PASSWORD_CHANGE": "Passwort Geändert",
+      "PASSWORD_RESET": "Passwort Zurückgesetzt"
     },
     "entity": "Entität",
     "changes": "Änderungen",
     "system": "System",
-    "masked": "(sensibel)"
+    "masked": "(sensibel)",
+    "ip": "IP-Adresse",
+    "userAgent": "User Agent"
   },
   "gift": {
     "claimTitle": "Geschenkgutschein Einlösen",
