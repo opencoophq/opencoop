@@ -38,6 +38,7 @@ interface Coop {
   name: string;
   slug: string;
   emailEnabled: boolean;
+  pontoEnabled: boolean;
   plan: string;
   trialEndsAt: string | null;
   subscriptionStatus: string | null;
@@ -50,6 +51,7 @@ const coopSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
   emailEnabled: z.boolean(),
+  pontoEnabled: z.boolean(),
 });
 
 type CoopForm = z.infer<typeof coopSchema>;
@@ -72,6 +74,7 @@ export default function CoopsManagementPage() {
       name: '',
       slug: '',
       emailEnabled: true,
+      pontoEnabled: false,
     },
   });
 
@@ -97,6 +100,7 @@ export default function CoopsManagementPage() {
       name: '',
       slug: '',
       emailEnabled: true,
+      pontoEnabled: false,
     });
     setDialogOpen(true);
   };
@@ -107,6 +111,7 @@ export default function CoopsManagementPage() {
       name: coop.name,
       slug: coop.slug,
       emailEnabled: coop.emailEnabled,
+      pontoEnabled: coop.pontoEnabled,
     });
     setDialogOpen(true);
   };
@@ -182,6 +187,7 @@ export default function CoopsManagementPage() {
                   <TableHead>{t('system.coops.plan')}</TableHead>
                   <TableHead>{t('system.coops.subscriptionStatus')}</TableHead>
                   <TableHead>{t('system.coops.emailStatus')}</TableHead>
+                  <TableHead>{t('system.coops.pontoStatus')}</TableHead>
                   <TableHead className="text-right">{t('system.coops.shareholders')}</TableHead>
                   <TableHead className="text-right">{t('system.coops.totalCapital')}</TableHead>
                   <TableHead>{t('system.coops.createdAt')}</TableHead>
@@ -218,6 +224,13 @@ export default function CoopsManagementPage() {
                         {coop.emailEnabled
                           ? t('system.coops.emailEnabled')
                           : t('system.coops.emailDisabled')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={coop.pontoEnabled ? 'default' : 'secondary'}>
+                        {coop.pontoEnabled
+                          ? t('system.coops.pontoEnabled')
+                          : t('system.coops.pontoDisabled')}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{coop.shareholdersCount}</TableCell>
@@ -275,6 +288,14 @@ export default function CoopsManagementPage() {
                 onCheckedChange={(c) => form.setValue('emailEnabled', !!c)}
               />
               <Label>{t('system.coops.emailEnabled')}</Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={form.watch('pontoEnabled')}
+                onCheckedChange={(c) => form.setValue('pontoEnabled', !!c)}
+              />
+              <Label>{t('system.coops.pontoEnabled')}</Label>
             </div>
 
             <DialogFooter>

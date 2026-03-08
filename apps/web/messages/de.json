@@ -582,7 +582,14 @@
       "missingBankDetails": "Bankdaten (IBAN/BIC) fehlen. Bitte aktualisieren Sie zuerst die Bankdaten des Aktionärs.",
       "markComplete": "Als abgeschlossen markieren",
       "bankDetailsRequired": "Ein Bankkonto (IBAN) ist erforderlich, um Rückerstattungen beim Verkauf von Aktien zu erhalten.",
-      "refundToIban": "Rückerstattung wird gesendet an"
+      "refundToIban": "Rückerstattung wird gesendet an",
+      "unmatchedPayments": "Nicht zugeordnete Zahlungen",
+      "noUnmatchedPayments": "Keine nicht zugeordneten Zahlungen.",
+      "matchToRegistration": "Registrierung zuordnen",
+      "selectRegistration": "Wählen Sie eine Registrierung, um diese Zahlung zuzuordnen",
+      "matched": "Zahlung erfolgreich zugeordnet.",
+      "counterparty": "Gegenpartei",
+      "reference": "Referenz"
     },
     "shareClasses": {
       "title": "Anteilsklassen",
@@ -734,7 +741,26 @@
       "graphClientSecret": "Clientgeheimnis",
       "graphClientSecretPlaceholder": "Leer lassen, um aktuelles beizubehalten",
       "graphTenantId": "Mandanten-ID",
-      "graphFromEmail": "Absender-E-Mail"
+      "graphFromEmail": "Absender-E-Mail",
+      "bankConnection": "Bankverbindung",
+      "bankConnectionDescription": "Verbinden Sie Ihr Bankkonto, um Zahlungen von Aktionären automatisch zu erkennen und zu registrieren.",
+      "connectBankAccount": "Bankkonto verbinden",
+      "disconnectBankAccount": "Bankkonto trennen",
+      "reauthorize": "Erneut autorisieren",
+      "connected": "Verbunden",
+      "expired": "Abgelaufen",
+      "lastSync": "Letzte Synchronisation",
+      "never": "Nie",
+      "autoMatchPayments": "Übereinstimmende Zahlungen automatisch registrieren",
+      "autoMatchDescription": "Wenn aktiviert, werden Zahlungen, die einem OGM-Code entsprechen, automatisch ohne Bestätigung des Administrators registriert.",
+      "connectionExpiring": "Ihre Bankverbindung läuft in {days} Tagen ab. Autorisieren Sie erneut, um die automatische Zahlungszuordnung fortzusetzen.",
+      "connectionExpired": "Ihre Bankverbindung ist abgelaufen. Autorisieren Sie erneut, um die automatische Zahlungszuordnung fortzusetzen.",
+      "pontoConnected": "Bankkonto erfolgreich verbunden.",
+      "pontoError": "Verbindung zum Bankkonto fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "confirmDisconnect": "Sind Sie sicher, dass Sie Ihr Bankkonto trennen möchten? Die automatische Zahlungszuordnung wird gestoppt.",
+      "disconnected": "Bankkonto getrennt.",
+      "connecting": "Verbinden...",
+      "disconnecting": "Trennen..."
     },
     "branding": {
       "title": "Branding-Einstellungen",
@@ -882,6 +908,9 @@
       "emailStatus": "E-Mail",
       "emailEnabled": "Aktiviert",
       "emailDisabled": "Deaktiviert",
+      "pontoStatus": "Ponto",
+      "pontoEnabled": "Aktiviert",
+      "pontoDisabled": "Deaktiviert",
       "plan": "Plan",
       "subscriptionStatus": "Abonnementstatus"
     },

@@ -87,6 +87,13 @@ enum SubscriptionStatus {
   INCOMPLETE
 }
 
+enum PontoConnectionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
 // ============================================================================
 // MULTI-TENANCY: COOPS
 // ============================================================================
@@ -105,6 +112,8 @@ model Coop {
   requiresApproval     Boolean @default(true)
   ogmPrefix            String  @unique // Unique prefix for OGM codes (e.g., "001")
   minimumHoldingPeriod Int     @default(0) // months, 0 = no restriction
+  pontoEnabled         Boolean @default(false)
+  autoMatchPayments    Boolean @default(true)
 
   // Email configuration (encrypted in production)
   emailEnabled     Boolean @default(true)
@@ -139,6 +148,7 @@ model Coop {
   dividendPeriods  DividendPeriod[]
   emailLogs        EmailLog[]
   subscription     Subscription?
+  pontoConnection  PontoConnection?
   auditLogs        AuditLog[]
 
   @@map("coops")
@@ -600,16 +610,17 @@ model BankImport {
 model BankTransaction {
   id           String                     @id @default(cuid())
   coopId       String
-  bankImportId String
+  bankImportId String?
   date         DateTime
   amount       Decimal                    @db.Decimal(12, 2)
   counterparty String?
   ogmCode      String?
   referenceText String?
+  pontoTransactionId  String? @unique
   matchStatus  BankTransactionMatchStatus @default(UNMATCHED)
 
   coop           Coop        @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  bankImport     BankImport  @relation(fields: [bankImportId], references: [id], onDelete: Cascade)
+  bankImport     BankImport? @relation(fields: [bankImportId], references: [id], onDelete: Cascade)
   matchedPayment Payment?
 
   @@map("bank_transactions")
@@ -775,4 +786,33 @@ model AuditLog {
   @@index([actorId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================================================
+// PONTO BANK CONNECTIONS
+// ============================================================================
+
+model PontoConnection {
+  id                  String                @id @default(cuid())
+  coopId              String                @unique
+  coop                Coop                  @relation(fields: [coopId], references: [id], onDelete: Cascade)
+
+  accessToken         String // AES-256-GCM encrypted
+  refreshToken        String // AES-256-GCM encrypted
+  tokenExpiresAt      DateTime
+
+  pontoAccountId      String?
+  pontoOrganizationId String?
+  iban                String?
+  bankName            String?
+
+  status              PontoConnectionStatus @default(PENDING)
+  lastSyncAt          DateTime?
+  authExpiresAt       DateTime?
+  expiryNotifiedAt    DateTime?
+
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@map("ponto_connections")
 }
