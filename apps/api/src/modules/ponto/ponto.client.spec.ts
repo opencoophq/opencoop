@@ -3,6 +3,15 @@ import { PontoClient, PontoTokens } from './ponto.client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // ---------------------------------------------------------------------------
+// Mocks
+// ---------------------------------------------------------------------------
+
+jest.mock('../../common/crypto/field-encryption', () => ({
+  encryptField: jest.fn((v: string) => `encrypted:${v}`),
+  decryptField: jest.fn((v: string) => v.replace('encrypted:', '')),
+}));
+
+// ---------------------------------------------------------------------------
 // Environment
 // ---------------------------------------------------------------------------
 
@@ -54,7 +63,7 @@ describe('PontoClient', () => {
       expect(url).toContain('client_id=test-client-id');
       expect(url).toContain('redirect_uri=' + encodeURIComponent('https://example.com/callback'));
       expect(url).toContain('response_type=code');
-      expect(url).toContain('scope=ai');
+      expect(url).toContain('scope=ai+offline_access');
       expect(url).toContain('code_challenge=test-code-challenge');
       expect(url).toContain('code_challenge_method=S256');
       expect(url).toContain('state=test-state-123');
@@ -217,6 +226,71 @@ describe('PontoClient', () => {
         currency: 'EUR',
         description: 'Current Account',
         financialInstitutionName: 'KBC',
+      });
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // getValidAccessToken
+  // -----------------------------------------------------------------------
+
+  describe('getValidAccessToken', () => {
+    it('should return decrypted access token when token is still valid', async () => {
+      const futureDate = new Date(Date.now() + 10 * 60 * 1000); // 10 min in the future
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue({
+        id: 'conn-1',
+        accessToken: 'encrypted:my-access-token',
+        refreshToken: 'encrypted:my-refresh-token',
+        tokenExpiresAt: futureDate,
+      });
+
+      const refreshSpy = jest
+        .spyOn(client, 'refreshAccessToken')
+        .mockResolvedValue({
+          accessToken: 'should-not-be-used',
+          refreshToken: 'should-not-be-used',
+          expiresIn: 1800,
+        });
+
+      const result = await client.getValidAccessToken('conn-1');
+
+      expect(result).toBe('my-access-token');
+      expect(refreshSpy).not.toHaveBeenCalled();
+      expect(mockPrisma.pontoConnection.update).not.toHaveBeenCalled();
+    });
+
+    it('should refresh and persist new tokens when token is expired', async () => {
+      const pastDate = new Date(Date.now() - 10 * 60 * 1000); // 10 min in the past
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue({
+        id: 'conn-1',
+        accessToken: 'encrypted:old-access',
+        refreshToken: 'encrypted:old-refresh',
+        tokenExpiresAt: pastDate,
+      });
+
+      const newTokens: PontoTokens = {
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+        expiresIn: 1800,
+      };
+
+      const refreshSpy = jest
+        .spyOn(client, 'refreshAccessToken')
+        .mockResolvedValue(newTokens);
+
+      mockPrisma.pontoConnection.update.mockResolvedValue({});
+
+      const result = await client.getValidAccessToken('conn-1');
+
+      expect(result).toBe('new-access-token');
+      expect(refreshSpy).toHaveBeenCalledWith('old-refresh');
+      expect(mockPrisma.pontoConnection.update).toHaveBeenCalledWith({
+        where: { id: 'conn-1' },
+        data: {
+          accessToken: 'encrypted:new-access-token',
+          refreshToken: 'encrypted:new-refresh-token',
+          tokenExpiresAt: expect.any(Date),
+        },
       });
     });
   });

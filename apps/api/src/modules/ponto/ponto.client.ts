@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as https from 'https';
 import * as fs from 'fs';
+import { Agent } from 'undici';
 import { PrismaService } from '../../prisma/prisma.service';
 import { encryptField, decryptField } from '../../common/crypto/field-encryption';
 
@@ -44,7 +44,7 @@ export class PontoClient {
   private readonly logger = new Logger(PontoClient.name);
   private readonly apiBase = 'https://api.ibanity.com/ponto-connect';
   private readonly authBase: string;
-  private readonly agent: https.Agent | undefined;
+  private readonly dispatcher: Agent | undefined;
 
   constructor(private readonly prisma: PrismaService) {
     // Determine auth base URL
@@ -53,22 +53,24 @@ export class PontoClient {
         ? 'https://sandbox-authorization.myponto.com'
         : 'https://authorization.myponto.com';
 
-    // Build mTLS agent if cert paths are available
+    // Build mTLS dispatcher if cert paths are available
     try {
       const certPath = process.env.PONTO_CERT_PATH;
       const keyPath = process.env.PONTO_KEY_PATH;
       if (certPath && keyPath) {
-        this.agent = new https.Agent({
-          cert: fs.readFileSync(certPath),
-          key: fs.readFileSync(keyPath),
-          passphrase: process.env.PONTO_KEY_PASSPHRASE,
+        this.dispatcher = new Agent({
+          connect: {
+            cert: fs.readFileSync(certPath),
+            key: fs.readFileSync(keyPath),
+            passphrase: process.env.PONTO_KEY_PASSPHRASE,
+          },
         });
-        this.logger.log('mTLS agent initialized');
+        this.logger.log('mTLS dispatcher initialized');
       } else {
         this.logger.warn('PONTO_CERT_PATH / PONTO_KEY_PATH not set; mTLS disabled');
       }
     } catch (err) {
-      this.logger.warn('Failed to initialize mTLS agent', (err as Error).message);
+      this.logger.warn('Failed to initialize mTLS dispatcher', (err as Error).message);
     }
   }
 
@@ -84,7 +86,7 @@ export class PontoClient {
       client_id: process.env.PONTO_CLIENT_ID!,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'ai',
+      scope: 'ai offline_access',
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       state,
@@ -339,15 +341,11 @@ export class PontoClient {
       body: options.body,
     };
 
-    // Node.js native fetch doesn't support https.Agent directly.
-    // In production, mTLS is handled at the infra level or via a custom undici agent.
-    // For now we pass the agent via the Node.js-specific option if available.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (this.agent) {
-      (fetchOptions as any).agent = this.agent;
+    if (this.dispatcher) {
+      fetchOptions.dispatcher = this.dispatcher;
     }
 
-    const res = await fetch(url, fetchOptions);
+    const res = await fetch(url, fetchOptions as RequestInit);
 
     if (!res.ok) {
       const text = await res.text();
