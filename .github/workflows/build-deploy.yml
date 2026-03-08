@@ -56,6 +56,9 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
+      - name: Lint
+        run: pnpm --filter @opencoop/web exec next lint
+
       - name: Build API & Web
         run: pnpm build
         env:

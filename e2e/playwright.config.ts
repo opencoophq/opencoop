@@ -25,6 +25,15 @@ export default defineConfig({
       testMatch: /global-setup\.ts/,
     },
     {
+      name: 'public',
+      testMatch: /tests\/public\/.*/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: { cookies: [], origins: [] },
+      },
+      dependencies: ['setup'],
+    },
+    {
       name: 'admin',
       testMatch: /tests\/admin\/.*/,
       use: {

@@ -2,9 +2,11 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Edit Company Shareholder', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to shareholders list and click the company shareholder
+    // Navigate to shareholders list and search for the company shareholder by email
     await page.goto('/nl/dashboard/admin/shareholders');
-    await page.getByText('Bakkerij Janssens BVBA').click();
+    await page.getByPlaceholder('Zoeken').fill('info@bakkerijjanssens.be');
+    await expect(page.getByRole('cell', { name: 'info@bakkerijjanssens.be' })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('row').filter({ hasText: 'info@bakkerijjanssens.be' }).getByRole('link').click();
     await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
   });
 

@@ -3,7 +3,10 @@ import { test, expect } from '@playwright/test';
 test.describe('Shareholder detail view', () => {
   test('displays individual shareholder details', async ({ page }) => {
     await page.goto('/nl/dashboard/admin/shareholders');
-    await page.getByText('Jan Peeters').click();
+    // Search for the shareholder by email (name may not be on page 1)
+    await page.getByPlaceholder('Zoeken').fill('jan.peeters@email.be');
+    await expect(page.getByRole('cell', { name: 'jan.peeters@email.be' })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('row').filter({ hasText: 'jan.peeters@email.be' }).getByRole('link').click();
     await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
 
     // Verify personal info fields are populated
@@ -32,7 +35,10 @@ test.describe('Shareholder detail view', () => {
 
   test('displays company shareholder details', async ({ page }) => {
     await page.goto('/nl/dashboard/admin/shareholders');
-    await page.getByText('Bakkerij Janssens BVBA').click();
+    // Search for the shareholder by email (name may not be on page 1)
+    await page.getByPlaceholder('Zoeken').fill('info@bakkerijjanssens.be');
+    await expect(page.getByRole('cell', { name: 'info@bakkerijjanssens.be' })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('row').filter({ hasText: 'info@bakkerijjanssens.be' }).getByRole('link').click();
     await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
 
     // Verify company name field is populated
@@ -52,7 +58,10 @@ test.describe('Shareholder detail view', () => {
 
   test('shows back button that returns to list', async ({ page }) => {
     await page.goto('/nl/dashboard/admin/shareholders');
-    await page.getByText('Jan Peeters').click();
+    // Search for the shareholder by email (name may not be on page 1)
+    await page.getByPlaceholder('Zoeken').fill('jan.peeters@email.be');
+    await expect(page.getByRole('cell', { name: 'jan.peeters@email.be' })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('row').filter({ hasText: 'jan.peeters@email.be' }).getByRole('link').click();
     await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
 
     // Click back button
