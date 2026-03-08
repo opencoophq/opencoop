@@ -23,10 +23,10 @@ interface ChannelPublicInfo {
 
 const claimSchema = z.object({
   giftCode: z.string().min(1),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
   birthDate: z.string().optional(),
-  email: z.string().email(),
+  email: z.string().email().optional(),
   phone: z.string().optional(),
   street: z.string().optional(),
   number: z.string().optional(),
@@ -123,6 +123,13 @@ export default function ChannelClaimGiftPage() {
   };
 
   const onSubmit = async (values: ClaimForm) => {
+    // Manual validation for required step-2 fields
+    if (!values.firstName || !values.lastName || !values.email) {
+      if (!values.firstName) form.setError('firstName', { message: t('common.required') });
+      if (!values.lastName) form.setError('lastName', { message: t('common.required') });
+      if (!values.email) form.setError('email', { message: t('common.required') });
+      return;
+    }
     setSubmitting(true);
     setError(null);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
