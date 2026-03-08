@@ -1569,5 +1569,20 @@
     "changes": "Wijzigingen",
     "system": "Systeem",
     "masked": "(gevoelig)"
+  },
+  "gift": {
+    "claimTitle": "Cadeaubon Inwisselen",
+    "enterCode": "Voer uw cadeaucode in",
+    "validate": "Code Valideren",
+    "invalidCode": "Ongeldige of reeds ingewisselde cadeaucode.",
+    "rateLimited": "Te veel pogingen. Probeer het over 15 minuten opnieuw.",
+    "giftDetails": "Cadeaudetails",
+    "claimShares": "Claim Uw Aandelen",
+    "yourDetails": "Uw Gegevens",
+    "successTitle": "Aandelen Geclaimed!",
+    "successMessage": "Welkom! Uw aandelen zijn succesvol geregistreerd.",
+    "codePlaceholder": "XXXX-XXXX",
+    "shares": "aandelen",
+    "value": "Waarde"
   }
 }

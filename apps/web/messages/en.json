@@ -1569,5 +1569,20 @@
     "changes": "Changes",
     "system": "System",
     "masked": "(sensitive)"
+  },
+  "gift": {
+    "claimTitle": "Claim Gift Certificate",
+    "enterCode": "Enter your gift code",
+    "validate": "Validate Code",
+    "invalidCode": "Invalid or already claimed gift code.",
+    "rateLimited": "Too many attempts. Please try again in 15 minutes.",
+    "giftDetails": "Gift Details",
+    "claimShares": "Claim Your Shares",
+    "yourDetails": "Your Details",
+    "successTitle": "Shares Claimed!",
+    "successMessage": "Welcome! Your shares have been registered successfully.",
+    "codePlaceholder": "XXXX-XXXX",
+    "shares": "shares",
+    "value": "Value"
   }
 }

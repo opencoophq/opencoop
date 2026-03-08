@@ -1569,5 +1569,20 @@
     "changes": "Modifications",
     "system": "Système",
     "masked": "(sensible)"
+  },
+  "gift": {
+    "claimTitle": "Réclamer le Chèque-cadeau",
+    "enterCode": "Entrez votre code cadeau",
+    "validate": "Valider le Code",
+    "invalidCode": "Code cadeau invalide ou déjà réclamé.",
+    "rateLimited": "Trop de tentatives. Veuillez réessayer dans 15 minutes.",
+    "giftDetails": "Détails du Cadeau",
+    "claimShares": "Réclamez Vos Parts",
+    "yourDetails": "Vos Coordonnées",
+    "successTitle": "Parts Réclamées!",
+    "successMessage": "Bienvenue! Vos parts ont été enregistrées avec succès.",
+    "codePlaceholder": "XXXX-XXXX",
+    "shares": "parts",
+    "value": "Valeur"
   }
 }
