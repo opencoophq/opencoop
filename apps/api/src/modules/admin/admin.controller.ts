@@ -7,12 +7,13 @@ import {
   Body,
   Param,
   Query,
+  Req,
   Res,
   UseGuards,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -89,6 +90,7 @@ export class AdminController {
   async updateSettings(
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() updateCoopDto: UpdateCoopDto,
   ) {
     // Only SYSTEM_ADMIN can toggle emailEnabled / pontoEnabled
@@ -96,7 +98,7 @@ export class AdminController {
       delete updateCoopDto.emailEnabled;
       delete updateCoopDto.pontoEnabled;
     }
-    return this.coopsService.update(coopId, updateCoopDto, user.id);
+    return this.coopsService.update(coopId, updateCoopDto, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Put('branding')
@@ -105,9 +107,10 @@ export class AdminController {
   async updateBranding(
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() updateBrandingDto: UpdateBrandingDto,
   ) {
-    return this.coopsService.updateBranding(coopId, updateBrandingDto, user.id);
+    return this.coopsService.updateBranding(coopId, updateBrandingDto, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Post('logo')
@@ -125,16 +128,22 @@ export class AdminController {
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
   async uploadLogo(
     @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.coopsService.uploadLogo(coopId, file);
+    return this.coopsService.uploadLogo(coopId, file, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Delete('logo')
   @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Remove coop logo' })
-  async removeLogo(@Param('coopId') coopId: string) {
-    await this.coopsService.removeLogo(coopId);
+  async removeLogo(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+  ) {
+    await this.coopsService.removeLogo(coopId, user.id, req.ip, req.headers['user-agent']);
     return { success: true };
   }
 
@@ -163,9 +172,10 @@ export class AdminController {
   async createChannel(
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() dto: CreateChannelDto,
   ) {
-    return this.channelsService.create(coopId, dto, user.id);
+    return this.channelsService.create(coopId, dto, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Put('channels/:channelId')
@@ -175,9 +185,10 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('channelId') channelId: string,
     @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() dto: UpdateChannelDto,
   ) {
-    return this.channelsService.update(channelId, coopId, dto, user.id);
+    return this.channelsService.update(channelId, coopId, dto, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Delete('channels/:channelId')
@@ -300,9 +311,10 @@ export class AdminController {
   async createShareholder(
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() createShareholderDto: CreateShareholderDto,
   ) {
-    return this.shareholdersService.create(coopId, createShareholderDto, user.id);
+    return this.shareholdersService.create(coopId, createShareholderDto, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Put('shareholders/:id')
@@ -312,9 +324,10 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() updateShareholderDto: UpdateShareholderDto,
   ) {
-    return this.shareholdersService.update(id, coopId, updateShareholderDto, user.id);
+    return this.shareholdersService.update(id, coopId, updateShareholderDto, user.id, req.ip, req.headers['user-agent']);
   }
 
   // ==================== SHARE CLASSES ====================
@@ -331,9 +344,11 @@ export class AdminController {
   @ApiOperation({ summary: 'Create a new share class' })
   async createShareClass(
     @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() createShareClassDto: CreateShareClassDto,
   ) {
-    return this.shareClassesService.create(coopId, createShareClassDto);
+    return this.shareClassesService.create(coopId, createShareClassDto, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Put('share-classes/:id')
@@ -342,9 +357,11 @@ export class AdminController {
   async updateShareClass(
     @Param('coopId') coopId: string,
     @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() updateShareClassDto: UpdateShareClassDto,
   ) {
-    return this.shareClassesService.update(id, coopId, updateShareClassDto);
+    return this.shareClassesService.update(id, coopId, updateShareClassDto, user.id, req.ip, req.headers['user-agent']);
   }
 
   // ==================== PROJECTS ====================
@@ -361,9 +378,11 @@ export class AdminController {
   @ApiOperation({ summary: 'Create a new project' })
   async createProject(
     @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() createProjectDto: CreateProjectDto,
   ) {
-    return this.projectsService.create(coopId, createProjectDto);
+    return this.projectsService.create(coopId, createProjectDto, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Put('projects/:id')
@@ -372,9 +391,11 @@ export class AdminController {
   async updateProject(
     @Param('coopId') coopId: string,
     @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() updateProjectDto: UpdateProjectDto,
   ) {
-    return this.projectsService.update(id, coopId, updateProjectDto);
+    return this.projectsService.update(id, coopId, updateProjectDto, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Delete('projects/:id')
@@ -383,8 +404,10 @@ export class AdminController {
   async deleteProject(
     @Param('coopId') coopId: string,
     @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
   ) {
-    return this.projectsService.delete(id, coopId);
+    return this.projectsService.delete(id, coopId, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Post('projects/import')
@@ -633,16 +656,22 @@ export class AdminController {
   @ApiOperation({ summary: 'Create a new dividend period' })
   async createDividendPeriod(
     @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body() createDividendPeriodDto: CreateDividendPeriodDto,
   ) {
-    return this.dividendsService.create(coopId, createDividendPeriodDto);
+    return this.dividendsService.create(coopId, createDividendPeriodDto, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Post('dividends/:id/calculate')
   @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Calculate dividends for a period' })
-  async calculateDividends(@Param('id') id: string) {
-    return this.dividendsService.calculate(id);
+  async calculateDividends(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+  ) {
+    return this.dividendsService.calculate(id, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Post('dividends/:id/mark-paid')
@@ -650,9 +679,11 @@ export class AdminController {
   @ApiOperation({ summary: 'Mark dividend period as paid' })
   async markDividendsPaid(
     @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
     @Body('paymentReference') paymentReference?: string,
   ) {
-    return this.dividendsService.markAsPaid(id, paymentReference);
+    return this.dividendsService.markAsPaid(id, paymentReference, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Get('dividends/:id/export')

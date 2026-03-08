@@ -168,7 +168,7 @@ export class ChannelsService {
     };
   }
 
-  async create(coopId: string, dto: CreateChannelDto, actorId?: string) {
+  async create(coopId: string, dto: CreateChannelDto, actorId?: string, ip?: string, userAgent?: string) {
     // Validate slug uniqueness within coop
     const existing = await this.prisma.channel.findFirst({
       where: { coopId, slug: dto.slug },
@@ -208,12 +208,14 @@ export class ChannelsService {
       action: 'CREATE',
       changes: [{ field: 'channel', oldValue: null, newValue: dto.name }],
       actorId,
+      ipAddress: ip,
+      userAgent,
     });
 
     return channel;
   }
 
-  async update(id: string, coopId: string, dto: UpdateChannelDto, actorId?: string) {
+  async update(id: string, coopId: string, dto: UpdateChannelDto, actorId?: string, ip?: string, userAgent?: string) {
     const channel = await this.prisma.channel.findFirst({
       where: { id, coopId },
     });
@@ -277,6 +279,8 @@ export class ChannelsService {
         action: 'UPDATE',
         changes,
         actorId,
+        ipAddress: ip,
+        userAgent,
       });
     }
 

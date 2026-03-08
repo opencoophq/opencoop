@@ -406,7 +406,7 @@ export class CoopsService {
     return nextPrefix.toString().padStart(3, '0');
   }
 
-  async update(id: string, updateCoopDto: UpdateCoopDto, actorId?: string) {
+  async update(id: string, updateCoopDto: UpdateCoopDto, actorId?: string, ip?: string, userAgent?: string) {
     const coop = await this.prisma.coop.findUnique({ where: { id } });
     if (!coop) {
       throw new NotFoundException('Cooperative not found');
@@ -446,13 +446,15 @@ export class CoopsService {
         action: 'UPDATE',
         changes,
         actorId,
+        ipAddress: ip,
+        userAgent,
       });
     }
 
     return updated;
   }
 
-  async updateBranding(id: string, updateBrandingDto: UpdateBrandingDto, actorId?: string) {
+  async updateBranding(id: string, updateBrandingDto: UpdateBrandingDto, actorId?: string, ip?: string, userAgent?: string) {
     const channel = await this.prisma.channel.findFirst({
       where: { coopId: id, isDefault: true },
     });
@@ -476,13 +478,15 @@ export class CoopsService {
         action: 'UPDATE',
         changes,
         actorId,
+        ipAddress: ip,
+        userAgent,
       });
     }
 
     return updated;
   }
 
-  async uploadLogo(coopId: string, file: Express.Multer.File): Promise<{ logoUrl: string }> {
+  async uploadLogo(coopId: string, file: Express.Multer.File, actorId?: string, ip?: string, userAgent?: string): Promise<{ logoUrl: string }> {
     const channel = await this.prisma.channel.findFirst({
       where: { coopId, isDefault: true },
     });
@@ -511,20 +515,34 @@ export class CoopsService {
       .toFile(filePath);
 
     const logoUrl = `/uploads/logos/${filename}`;
+    const oldLogoUrl = channel.logoUrl;
 
     await this.prisma.channel.update({
       where: { id: channel.id },
       data: { logoUrl },
     });
 
+    await this.auditService.log({
+      coopId,
+      entity: 'Coop',
+      entityId: coopId,
+      action: 'UPDATE',
+      changes: [{ field: 'logoUrl', oldValue: oldLogoUrl, newValue: logoUrl }],
+      actorId,
+      ipAddress: ip,
+      userAgent,
+    });
+
     return { logoUrl };
   }
 
-  async removeLogo(coopId: string): Promise<void> {
+  async removeLogo(coopId: string, actorId?: string, ip?: string, userAgent?: string): Promise<void> {
     const channel = await this.prisma.channel.findFirst({
       where: { coopId, isDefault: true },
     });
     if (!channel) throw new NotFoundException('Default channel not found');
+
+    const oldLogoUrl = channel.logoUrl;
 
     // Delete the file if it exists
     const filePath = path.join(UPLOAD_DIR, 'logos', `${channel.id}.webp`);
@@ -536,6 +554,19 @@ export class CoopsService {
       where: { id: channel.id },
       data: { logoUrl: null },
     });
+
+    if (oldLogoUrl) {
+      await this.auditService.log({
+        coopId,
+        entity: 'Coop',
+        entityId: coopId,
+        action: 'UPDATE',
+        changes: [{ field: 'logoUrl', oldValue: oldLogoUrl, newValue: null }],
+        actorId,
+        ipAddress: ip,
+        userAgent,
+      });
+    }
   }
 
   async getAdmins(coopId: string) {

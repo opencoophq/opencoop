@@ -115,7 +115,7 @@ export class ShareholdersService {
     return this.decryptShareholder(shareholder);
   }
 
-  async create(coopId: string, dto: CreateShareholderDto, actorId?: string) {
+  async create(coopId: string, dto: CreateShareholderDto, actorId?: string, ip?: string, userAgent?: string) {
     if (dto.email) {
       const existing = await this.prisma.shareholder.findFirst({
         where: { coopId, email: dto.email.toLowerCase() },
@@ -161,12 +161,14 @@ export class ShareholdersService {
       action: 'CREATE',
       changes: [{ field: '_created', oldValue: null, newValue: dto.type }],
       actorId,
+      ipAddress: ip,
+      userAgent,
     });
 
     return this.decryptShareholder(created);
   }
 
-  async update(id: string, coopId: string, dto: UpdateShareholderDto, actorId?: string) {
+  async update(id: string, coopId: string, dto: UpdateShareholderDto, actorId?: string, ip?: string, userAgent?: string) {
     const existing = await this.findById(id, coopId);
 
     if (dto.email && dto.email.toLowerCase() !== existing.email?.toLowerCase()) {
@@ -217,6 +219,8 @@ export class ShareholdersService {
         action: 'UPDATE',
         changes,
         actorId,
+        ipAddress: ip,
+        userAgent,
       });
     }
 
