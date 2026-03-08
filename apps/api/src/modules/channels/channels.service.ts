@@ -540,14 +540,13 @@ export class ChannelsService {
       address: dto.address,
     });
 
-    // Transfer shares: buyer → recipient
+    // Transfer shares: buyer → recipient (no processedByUserId — self-service gift claim)
     await this.registrationsService.createTransfer({
       coopId: coop.id,
       fromShareholderId: registration.shareholderId,
       toShareholderId: recipientShareholder.id,
       registrationId: registration.id,
       quantity: registration.quantity,
-      processedByUserId: registration.shareholderId,
     });
 
     // Mark gift as claimed
