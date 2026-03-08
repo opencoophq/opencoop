@@ -1,6 +1,7 @@
 import { Controller, Post, Put, Body, Get, Query, UseGuards, Delete, Param, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -21,6 +22,7 @@ import { WebAuthnService } from './webauthn.service';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AppleAuthGuard } from './guards/apple-auth.guard';
 import { CoopAdminsService } from '../coop-admins/coop-admins.service';
+import { AuditService } from '../audit/audit.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -29,6 +31,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly webAuthnService: WebAuthnService,
     private readonly coopAdminsService: CoopAdminsService,
+    private readonly auditService: AuditService,
   ) {}
 
   @Public()
@@ -37,8 +40,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async register(@Body() registerDto: RegisterDto, @Req() req: Request) {
+    return this.authService.register(registerDto, req.ip, req.headers['user-agent']);
   }
 
   @Public()
@@ -57,8 +60,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Req() req: Request) {
+    return this.authService.login(loginDto, req.ip, req.headers['user-agent']);
   }
 
   @Public()
@@ -76,8 +79,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Reset password with token' })
   @ApiResponse({ status: 200, description: 'Password reset successful' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    return this.authService.resetPassword(resetPasswordDto);
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto, @Req() req: Request) {
+    return this.authService.resetPassword(resetPasswordDto, req.ip, req.headers['user-agent']);
   }
 
   @Public()
@@ -129,11 +132,14 @@ export class AuthController {
   async changePassword(
     @CurrentUser() user: CurrentUserData,
     @Body() changePasswordDto: ChangePasswordDto,
+    @Req() req: Request,
   ) {
     return this.authService.changePassword(
       user.id,
       changePasswordDto.currentPassword,
       changePasswordDto.newPassword,
+      req.ip,
+      req.headers['user-agent'],
     );
   }
 
@@ -172,8 +178,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify magic link token and login' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 400, description: 'Invalid, expired, or already used token' })
-  async verifyMagicLink(@Body() verifyMagicLinkDto: VerifyMagicLinkDto) {
-    return this.authService.verifyMagicLink(verifyMagicLinkDto);
+  async verifyMagicLink(@Body() verifyMagicLinkDto: VerifyMagicLinkDto, @Req() req: Request) {
+    return this.authService.verifyMagicLink(verifyMagicLinkDto, req.ip, req.headers['user-agent']);
   }
 
   // ============================================================================
@@ -206,8 +212,8 @@ export class AuthController {
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: 'Verify TOTP or recovery code during login' })
   @ApiResponse({ status: 200, description: 'Login successful' })
-  async mfaVerify(@Body() dto: MfaVerifyDto) {
-    return this.authService.mfaVerify(dto.mfaToken, dto.code, dto.recoveryCode);
+  async mfaVerify(@Body() dto: MfaVerifyDto, @Req() req: Request) {
+    return this.authService.mfaVerify(dto.mfaToken, dto.code, dto.recoveryCode, req.ip, req.headers['user-agent']);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -274,8 +280,17 @@ export class AuthController {
   @Post('webauthn/authenticate-verify')
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: 'Verify WebAuthn authentication response' })
-  async webauthnAuthenticateVerify(@Body() body: { response: Record<string, unknown> }) {
+  async webauthnAuthenticateVerify(@Body() body: { response: Record<string, unknown> }, @Req() req: Request) {
     const user = await this.webAuthnService.verifyAuthentication(body.response as any);
+    await this.auditService.log({
+      entity: 'Auth',
+      entityId: user.id,
+      action: 'LOGIN',
+      changes: [{ field: 'method', oldValue: null, newValue: 'passkey' }],
+      actorId: user.id,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     return this.authService.issueJwtForUserPublic(user);
   }
 
@@ -355,7 +370,7 @@ export class AuthController {
       providerId: googleId,
       email,
       name,
-    });
+    }, req.ip, req.headers['user-agent']);
 
     if ('requiresMfa' in result && result.requiresMfa) {
       return res.redirect(`${frontendUrl}/oauth-callback?mfaToken=${result.mfaToken}`);
@@ -409,7 +424,7 @@ export class AuthController {
       providerId: appleId,
       email,
       name,
-    });
+    }, req.ip, req.headers['user-agent']);
 
     if ('requiresMfa' in result && result.requiresMfa) {
       return res.redirect(`${frontendUrl}/oauth-callback?mfaToken=${result.mfaToken}`);
