@@ -2,6 +2,17 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.3.0] - 2026-03-08
+
+### Added
+- **Ponto Connect integration** — automatic bank payment reconciliation via PSD2 Open Banking. Coop admins connect their bank account through OAuth, and incoming payments are automatically matched to registrations using OGM codes.
+- **Webhook-driven transaction processing** — Ponto webhooks trigger Bull queue jobs that fetch new transactions and create payments for matching registrations.
+- **Bank connection management** — admin settings page with connect/disconnect/reauthorize flow, auto-match toggle, and connection health status.
+- **Unmatched payments tab** — transactions page shows unmatched bank payments with manual match dialog to link payments to registrations.
+- **System admin Ponto controls** — system admins can enable/disable Ponto per coop.
+- **Connection health monitoring** — daily cron checks for PSD2 90-day re-authorization expiry with warning emails 7 days before.
+- **Encrypted token storage** — OAuth tokens stored with AES-256-GCM encryption at rest.
+
 ## [0.2.10] - 2026-03-08
 
 ### Fixed
