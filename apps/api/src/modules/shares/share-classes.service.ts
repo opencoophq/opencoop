@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateShareClassDto } from './dto/create-share-class.dto';
 import { UpdateShareClassDto } from './dto/update-share-class.dto';
 
 @Injectable()
 export class ShareClassesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private auditService: AuditService) {}
 
   async findAll(coopId: string) {
     return this.prisma.shareClass.findMany({
@@ -26,7 +27,7 @@ export class ShareClassesService {
     return shareClass;
   }
 
-  async create(coopId: string, dto: CreateShareClassDto) {
+  async create(coopId: string, dto: CreateShareClassDto, actorId?: string, ip?: string, userAgent?: string) {
     const existing = await this.prisma.shareClass.findFirst({
       where: { coopId, code: dto.code },
     });
@@ -51,6 +52,17 @@ export class ShareClassesService {
         data: { channelId: defaultChannel.id, shareClassId: shareClass.id },
       });
     }
+
+    await this.auditService.log({
+      coopId,
+      entity: 'ShareClass',
+      entityId: shareClass.id,
+      action: 'CREATE',
+      changes: [{ field: 'name', oldValue: null, newValue: dto.name }],
+      actorId,
+      ipAddress: ip,
+      userAgent,
+    });
 
     return shareClass;
   }
@@ -133,8 +145,8 @@ export class ShareClassesService {
     return { imported, skipped };
   }
 
-  async update(id: string, coopId: string, dto: UpdateShareClassDto) {
-    await this.findById(id, coopId);
+  async update(id: string, coopId: string, dto: UpdateShareClassDto, actorId?: string, ip?: string, userAgent?: string) {
+    const old = await this.findById(id, coopId);
 
     if (dto.code) {
       const existing = await this.prisma.shareClass.findFirst({
@@ -145,9 +157,28 @@ export class ShareClassesService {
       }
     }
 
-    return this.prisma.shareClass.update({
+    const updated = await this.prisma.shareClass.update({
       where: { id },
       data: dto,
     });
+
+    const changes = this.auditService.diff(
+      old as unknown as Record<string, unknown>,
+      dto as Record<string, unknown>,
+    );
+    if (changes.length > 0) {
+      await this.auditService.log({
+        coopId,
+        entity: 'ShareClass',
+        entityId: id,
+        action: 'UPDATE',
+        changes,
+        actorId,
+        ipAddress: ip,
+        userAgent,
+      });
+    }
+
+    return updated;
   }
 }

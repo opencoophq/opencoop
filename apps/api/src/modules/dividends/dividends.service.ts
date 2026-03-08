@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateDividendPeriodDto } from './dto/create-dividend-period.dto';
 import { calculateDividend } from '@opencoop/shared';
 
 @Injectable()
 export class DividendsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private auditService: AuditService) {}
 
   async findAll(coopId: string) {
     const periods = await this.prisma.dividendPeriod.findMany({
@@ -103,7 +104,7 @@ export class DividendsService {
     };
   }
 
-  async create(coopId: string, dto: CreateDividendPeriodDto) {
+  async create(coopId: string, dto: CreateDividendPeriodDto, actorId?: string, ip?: string, userAgent?: string) {
     // Check if period for year already exists
     const existing = await this.prisma.dividendPeriod.findFirst({
       where: {
@@ -120,7 +121,7 @@ export class DividendsService {
     const dividendRateDecimal = dto.dividendRate / 100;
     const withholdingTaxRateDecimal = dto.withholdingTaxRate ? dto.withholdingTaxRate / 100 : 0.30;
 
-    return this.prisma.dividendPeriod.create({
+    const period = await this.prisma.dividendPeriod.create({
       data: {
         coopId,
         name: dto.name,
@@ -131,9 +132,22 @@ export class DividendsService {
         paymentDate: dto.paymentDate ? new Date(dto.paymentDate) : null,
       },
     });
+
+    await this.auditService.log({
+      coopId,
+      entity: 'DividendPeriod',
+      entityId: period.id,
+      action: 'CREATE',
+      changes: [{ field: 'year', oldValue: null, newValue: dto.year }],
+      actorId,
+      ipAddress: ip,
+      userAgent,
+    });
+
+    return period;
   }
 
-  async calculate(periodId: string) {
+  async calculate(periodId: string, actorId?: string, ip?: string, userAgent?: string) {
     const period = await this.prisma.dividendPeriod.findUnique({
       where: { id: periodId },
     });
@@ -279,10 +293,24 @@ export class DividendsService {
       data: { status: 'CALCULATED' },
     });
 
+    await this.auditService.log({
+      coopId: period.coopId,
+      entity: 'DividendPeriod',
+      entityId: periodId,
+      action: 'UPDATE',
+      changes: [
+        { field: 'status', oldValue: period.status, newValue: 'CALCULATED' },
+        { field: 'payoutCount', oldValue: null, newValue: payouts.length },
+      ],
+      actorId,
+      ipAddress: ip,
+      userAgent,
+    });
+
     return this.findById(periodId);
   }
 
-  async markAsPaid(periodId: string, paymentReference?: string) {
+  async markAsPaid(periodId: string, paymentReference?: string, actorId?: string, ip?: string, userAgent?: string) {
     const period = await this.prisma.dividendPeriod.findUnique({
       where: { id: periodId },
     });
@@ -310,6 +338,20 @@ export class DividendsService {
     await this.prisma.dividendPeriod.update({
       where: { id: periodId },
       data: { status: 'PAID' },
+    });
+
+    await this.auditService.log({
+      coopId: period.coopId,
+      entity: 'DividendPeriod',
+      entityId: periodId,
+      action: 'UPDATE',
+      changes: [
+        { field: 'status', oldValue: period.status, newValue: 'PAID' },
+        ...(paymentReference ? [{ field: 'paymentReference', oldValue: null, newValue: paymentReference }] : []),
+      ],
+      actorId,
+      ipAddress: ip,
+      userAgent,
     });
 
     return this.findById(periodId);

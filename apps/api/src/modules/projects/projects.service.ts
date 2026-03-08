@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private auditService: AuditService) {}
 
   async findAll(coopId: string) {
     return this.prisma.project.findMany({
@@ -26,7 +27,7 @@ export class ProjectsService {
     return project;
   }
 
-  async create(coopId: string, createProjectDto: CreateProjectDto) {
+  async create(coopId: string, createProjectDto: CreateProjectDto, actorId?: string, ip?: string, userAgent?: string) {
     const existing = await this.prisma.project.findFirst({
       where: {
         coopId,
@@ -59,10 +60,21 @@ export class ProjectsService {
       });
     }
 
+    await this.auditService.log({
+      coopId,
+      entity: 'Project',
+      entityId: project.id,
+      action: 'CREATE',
+      changes: [{ field: 'name', oldValue: null, newValue: createProjectDto.name }],
+      actorId,
+      ipAddress: ip,
+      userAgent,
+    });
+
     return project;
   }
 
-  async update(id: string, coopId: string, updateProjectDto: UpdateProjectDto) {
+  async update(id: string, coopId: string, updateProjectDto: UpdateProjectDto, actorId?: string, ip?: string, userAgent?: string) {
     const project = await this.findById(id, coopId);
 
     if (updateProjectDto.name && updateProjectDto.name !== project.name) {
@@ -81,7 +93,7 @@ export class ProjectsService {
 
     const { startDate, endDate, ...rest } = updateProjectDto;
 
-    return this.prisma.project.update({
+    const updated = await this.prisma.project.update({
       where: { id },
       data: {
         ...rest,
@@ -89,6 +101,25 @@ export class ProjectsService {
         ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
       },
     });
+
+    const changes = this.auditService.diff(
+      project as unknown as Record<string, unknown>,
+      updateProjectDto as Record<string, unknown>,
+    );
+    if (changes.length > 0) {
+      await this.auditService.log({
+        coopId,
+        entity: 'Project',
+        entityId: id,
+        action: 'UPDATE',
+        changes,
+        actorId,
+        ipAddress: ip,
+        userAgent,
+      });
+    }
+
+    return updated;
   }
 
   async importCsv(
@@ -156,7 +187,7 @@ export class ProjectsService {
     return { imported, skipped };
   }
 
-  async delete(id: string, coopId: string) {
+  async delete(id: string, coopId: string, actorId?: string, ip?: string, userAgent?: string) {
     const project = await this.findById(id, coopId);
 
     const registrationsUsingProject = await this.prisma.registration.count({
@@ -168,6 +199,18 @@ export class ProjectsService {
     }
 
     await this.prisma.project.delete({ where: { id } });
+
+    await this.auditService.log({
+      coopId,
+      entity: 'Project',
+      entityId: id,
+      action: 'DELETE',
+      changes: [{ field: 'name', oldValue: project.name, newValue: null }],
+      actorId,
+      ipAddress: ip,
+      userAgent,
+    });
+
     return { message: 'Project deleted' };
   }
 }
