@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RegistrationsService } from '../registrations/registrations.service';
 import { computeTotalPaid } from '@opencoop/shared';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private registrationsService: RegistrationsService,
+  ) {}
 
   async findByRegistration(registrationId: string) {
     return this.prisma.payment.findMany({
@@ -75,6 +79,9 @@ export class PaymentsService {
         where: { id: data.registrationId },
         data: { status: 'COMPLETED' },
       });
+
+      // Generate gift code if applicable
+      await this.registrationsService.onRegistrationCompleted(data.registrationId);
     } else if (registration.status === 'PENDING_PAYMENT') {
       // First payment received — mark as ACTIVE (payments in progress)
       await this.prisma.registration.update({
