@@ -582,7 +582,14 @@
       "missingBankDetails": "Bankgegevens (IBAN/BIC) ontbreken. Werk eerst de bankgegevens van de aandeelhouder bij.",
       "markComplete": "Markeer als voltooid",
       "bankDetailsRequired": "Een bankrekening (IBAN) is vereist om terugbetalingen te ontvangen bij het verkopen van aandelen.",
-      "refundToIban": "Terugbetaling wordt verstuurd naar"
+      "refundToIban": "Terugbetaling wordt verstuurd naar",
+      "unmatchedPayments": "Niet-gekoppelde betalingen",
+      "noUnmatchedPayments": "Geen niet-gekoppelde betalingen.",
+      "matchToRegistration": "Koppelen aan registratie",
+      "selectRegistration": "Selecteer een registratie om deze betaling aan te koppelen",
+      "matched": "Betaling succesvol gekoppeld.",
+      "counterparty": "Tegenpartij",
+      "reference": "Referentie"
     },
     "shareClasses": {
       "title": "Aandelenklassen",
@@ -734,7 +741,26 @@
       "graphClientSecret": "Clientgeheim",
       "graphClientSecretPlaceholder": "Laat leeg om huidig te behouden",
       "graphTenantId": "Tenant-ID",
-      "graphFromEmail": "Afzender e-mail"
+      "graphFromEmail": "Afzender e-mail",
+      "bankConnection": "Bankverbinding",
+      "bankConnectionDescription": "Verbind uw bankrekening om automatisch betalingen van aandeelhouders te detecteren en te registreren.",
+      "connectBankAccount": "Bankrekening verbinden",
+      "disconnectBankAccount": "Bankrekening ontkoppelen",
+      "reauthorize": "Opnieuw autoriseren",
+      "connected": "Verbonden",
+      "expired": "Verlopen",
+      "lastSync": "Laatste synchronisatie",
+      "never": "Nooit",
+      "autoMatchPayments": "Overeenkomende betalingen automatisch registreren",
+      "autoMatchDescription": "Indien ingeschakeld worden betalingen die overeenkomen met een OGM-code automatisch geregistreerd zonder bevestiging van de beheerder.",
+      "connectionExpiring": "Uw bankverbinding verloopt over {days} dagen. Autoriseer opnieuw om automatische betalingsmatching voort te zetten.",
+      "connectionExpired": "Uw bankverbinding is verlopen. Autoriseer opnieuw om automatische betalingsmatching te hervatten.",
+      "pontoConnected": "Bankrekening succesvol verbonden.",
+      "pontoError": "Verbinding met bankrekening mislukt. Probeer het opnieuw.",
+      "confirmDisconnect": "Weet u zeker dat u uw bankrekening wilt ontkoppelen? Automatische betalingsmatching wordt gestopt.",
+      "disconnected": "Bankrekening ontkoppeld.",
+      "connecting": "Verbinden...",
+      "disconnecting": "Ontkoppelen..."
     },
     "branding": {
       "title": "Huisstijl instellingen",
@@ -882,6 +908,9 @@
       "emailStatus": "E-mail",
       "emailEnabled": "Ingeschakeld",
       "emailDisabled": "Uitgeschakeld",
+      "pontoStatus": "Ponto",
+      "pontoEnabled": "Ingeschakeld",
+      "pontoDisabled": "Uitgeschakeld",
       "plan": "Abonnement",
       "subscriptionStatus": "Abonnementsstatus"
     },

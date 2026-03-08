@@ -582,7 +582,14 @@
       "missingBankDetails": "Les coordonnées bancaires (IBAN/BIC) sont manquantes. Veuillez d'abord mettre à jour les coordonnées bancaires de l'actionnaire.",
       "markComplete": "Marquer comme terminé",
       "bankDetailsRequired": "Un compte bancaire (IBAN) est requis pour recevoir les remboursements lors de la vente d'actions.",
-      "refundToIban": "Le remboursement sera envoyé à"
+      "refundToIban": "Le remboursement sera envoyé à",
+      "unmatchedPayments": "Paiements non associés",
+      "noUnmatchedPayments": "Aucun paiement non associé.",
+      "matchToRegistration": "Associer à une inscription",
+      "selectRegistration": "Sélectionnez une inscription pour associer ce paiement",
+      "matched": "Paiement associé avec succès.",
+      "counterparty": "Contrepartie",
+      "reference": "Référence"
     },
     "shareClasses": {
       "title": "Classes de parts",
@@ -734,7 +741,26 @@
       "graphClientSecret": "Secret client",
       "graphClientSecretPlaceholder": "Laisser vide pour conserver l'actuel",
       "graphTenantId": "ID du locataire",
-      "graphFromEmail": "E-mail d'expédition"
+      "graphFromEmail": "E-mail d'expédition",
+      "bankConnection": "Connexion bancaire",
+      "bankConnectionDescription": "Connectez votre compte bancaire pour détecter et enregistrer automatiquement les paiements des actionnaires.",
+      "connectBankAccount": "Connecter le compte bancaire",
+      "disconnectBankAccount": "Déconnecter le compte bancaire",
+      "reauthorize": "Ré-autoriser",
+      "connected": "Connecté",
+      "expired": "Expiré",
+      "lastSync": "Dernière synchronisation",
+      "never": "Jamais",
+      "autoMatchPayments": "Enregistrer automatiquement les paiements correspondants",
+      "autoMatchDescription": "Lorsque activé, les paiements correspondant à un code OGM seront automatiquement enregistrés sans confirmation de l'administrateur.",
+      "connectionExpiring": "Votre connexion bancaire expire dans {days} jours. Ré-autorisez pour continuer la correspondance automatique des paiements.",
+      "connectionExpired": "Votre connexion bancaire a expiré. Ré-autorisez pour reprendre la correspondance automatique des paiements.",
+      "pontoConnected": "Compte bancaire connecté avec succès.",
+      "pontoError": "Échec de la connexion du compte bancaire. Veuillez réessayer.",
+      "confirmDisconnect": "Êtes-vous sûr de vouloir déconnecter votre compte bancaire ? La correspondance automatique des paiements sera arrêtée.",
+      "disconnected": "Compte bancaire déconnecté.",
+      "connecting": "Connexion en cours...",
+      "disconnecting": "Déconnexion en cours..."
     },
     "branding": {
       "title": "Paramètres d'image de marque",
@@ -882,6 +908,9 @@
       "emailStatus": "E-mail",
       "emailEnabled": "Activé",
       "emailDisabled": "Désactivé",
+      "pontoStatus": "Ponto",
+      "pontoEnabled": "Activé",
+      "pontoDisabled": "Désactivé",
       "plan": "Abonnement",
       "subscriptionStatus": "Statut d'abonnement"
     },

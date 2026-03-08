@@ -1,14 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslations, useLocale as useIntlLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { useAdmin } from '@/contexts/admin-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -25,6 +35,7 @@ import {
   Check,
   Layers,
   ChevronRight,
+  Landmark,
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
@@ -70,16 +81,61 @@ interface SettingsResponse {
   graphFromEmail: string | null;
 }
 
+interface PontoConnection {
+  id: string;
+  status: string;
+  iban: string | null;
+  bankName: string | null;
+  lastSyncAt: string | null;
+  authExpiresAt: string | null;
+  createdAt: string;
+}
+
+interface PontoStatus {
+  pontoEnabled: boolean;
+  autoMatchPayments: boolean;
+  connection: PontoConnection | null;
+}
+
 function toEmailProvider(value: string | null): EmailProvider {
   if (value === 'smtp') return 'smtp';
   if (value === 'graph') return 'graph';
   return 'platform';
 }
 
+function maskIban(iban: string): string {
+  if (!iban || iban.length < 8) return iban || '';
+  return `${iban.slice(0, 4)} **** **** ${iban.slice(-4)}`;
+}
+
+function formatRelativeTime(dateString: string, locale: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+
+  if (diffDay > 0) return rtf.format(-diffDay, 'day');
+  if (diffHr > 0) return rtf.format(-diffHr, 'hour');
+  if (diffMin > 0) return rtf.format(-diffMin, 'minute');
+  return rtf.format(-diffSec, 'second');
+}
+
+function getDaysUntilExpiry(dateString: string): number {
+  const expiry = new Date(dateString);
+  const now = new Date();
+  return Math.ceil((expiry.getTime() - now.getTime()) / 86400000);
+}
+
 export default function AdminSettingsPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
   const intlLocale = useIntlLocale();
+  const searchParams = useSearchParams();
 
   // Settings form state
   const [form, setForm] = useState<FormState>({
@@ -110,6 +166,11 @@ export default function AdminSettingsPage() {
   // Shareholder links state
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
+  // Ponto state
+  const [pontoStatus, setPontoStatus] = useState<PontoStatus | null>(null);
+  const [pontoLoading, setPontoLoading] = useState(false);
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
@@ -122,12 +183,38 @@ export default function AdminSettingsPage() {
     }
   }, []);
 
+  const showMessage = useCallback((msg: string) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(''), 3000);
+  }, []);
+
+  // Handle ?ponto=connected or ?ponto=error query params
+  useEffect(() => {
+    const pontoParam = searchParams.get('ponto');
+    if (pontoParam === 'connected') {
+      showMessage(t('admin.settings.pontoConnected'));
+      // Clean URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('ponto');
+      window.history.replaceState({}, '', url.toString());
+    } else if (pontoParam === 'error') {
+      setError(t('admin.settings.pontoError'));
+      const url = new URL(window.location.href);
+      url.searchParams.delete('ponto');
+      url.searchParams.delete('reason');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams, showMessage, t]);
+
   useEffect(() => {
     if (!selectedCoop) return;
     setLoading(true);
 
-    api<SettingsResponse>(`/admin/coops/${selectedCoop.id}/settings`)
-      .then((settings) => {
+    Promise.all([
+      api<SettingsResponse>(`/admin/coops/${selectedCoop.id}/settings`),
+      api<PontoStatus>(`/admin/coops/${selectedCoop.id}/ponto/status`).catch(() => null),
+    ])
+      .then(([settings, ponto]) => {
         setForm({
           name: settings.name || '',
           requiresApproval: settings.requiresApproval,
@@ -148,17 +235,15 @@ export default function AdminSettingsPage() {
           graphTenantId: settings.graphTenantId || '',
           graphFromEmail: settings.graphFromEmail || '',
         });
+        if (ponto) {
+          setPontoStatus(ponto);
+        }
       })
       .catch(() => {
         setError(t('admin.settings.error'));
       })
       .finally(() => setLoading(false));
   }, [selectedCoop, t]);
-
-  const showMessage = (msg: string) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(''), 3000);
-  };
 
   const handleSave = async () => {
     if (!selectedCoop) return;
@@ -207,6 +292,68 @@ export default function AdminSettingsPage() {
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
+  // Ponto handlers
+  const handlePontoConnect = async () => {
+    if (!selectedCoop) return;
+    setPontoLoading(true);
+    try {
+      const { authorizationUrl } = await api<{ authorizationUrl: string }>(
+        `/admin/coops/${selectedCoop.id}/ponto/connect`,
+      );
+      window.location.href = authorizationUrl;
+    } catch {
+      setError(t('admin.settings.pontoError'));
+      setPontoLoading(false);
+    }
+  };
+
+  const handlePontoDisconnect = async () => {
+    if (!selectedCoop) return;
+    setPontoLoading(true);
+    setShowDisconnectDialog(false);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/ponto/disconnect`, { method: 'POST' });
+      setPontoStatus((prev) =>
+        prev ? { ...prev, connection: null } : prev,
+      );
+      showMessage(t('admin.settings.disconnected'));
+    } catch {
+      setError(t('admin.settings.pontoError'));
+    } finally {
+      setPontoLoading(false);
+    }
+  };
+
+  const handlePontoReauthorize = async () => {
+    if (!selectedCoop) return;
+    setPontoLoading(true);
+    try {
+      const { authorizationUrl } = await api<{ authorizationUrl: string }>(
+        `/admin/coops/${selectedCoop.id}/ponto/reauthorize`,
+        { method: 'POST' },
+      );
+      window.location.href = authorizationUrl;
+    } catch {
+      setError(t('admin.settings.pontoError'));
+      setPontoLoading(false);
+    }
+  };
+
+  const handleAutoMatchToggle = async (checked: boolean) => {
+    if (!selectedCoop) return;
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/ponto/settings`, {
+        method: 'PUT',
+        body: { autoMatchPayments: checked },
+      });
+      setPontoStatus((prev) =>
+        prev ? { ...prev, autoMatchPayments: checked } : prev,
+      );
+    } catch {
+      setError(t('admin.settings.error'));
+    }
+  };
+
   if (!selectedCoop) return <p className="text-muted-foreground">{t('admin.selectCoop')}</p>;
 
   if (loading) {
@@ -227,6 +374,15 @@ export default function AdminSettingsPage() {
     { key: 'loginLink', url: `${coopBasePath}/login` },
   ];
 
+  // Ponto expiry calculations
+  const connection = pontoStatus?.connection;
+  const isExpired = connection?.status === 'EXPIRED';
+  const daysUntilExpiry =
+    connection?.authExpiresAt && !isExpired
+      ? getDaysUntilExpiry(connection.authExpiresAt)
+      : null;
+  const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold mb-6">{t('common.settings')}</h1>
@@ -238,6 +394,22 @@ export default function AdminSettingsPage() {
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Ponto expiry/expired banner */}
+      {pontoStatus?.pontoEnabled && isExpired && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{t('admin.settings.connectionExpired')}</AlertDescription>
+        </Alert>
+      )}
+      {pontoStatus?.pontoEnabled && isExpiringSoon && (
+        <Alert className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {t('admin.settings.connectionExpiring', { days: daysUntilExpiry })}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -361,6 +533,112 @@ export default function AdminSettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Bank Connection (Ponto) */}
+        {pontoStatus?.pontoEnabled && (
+          <Card>
+            <CardHeader className="flex flex-row items-center space-y-0">
+              <Landmark className="h-5 w-5 text-muted-foreground mr-2" />
+              <CardTitle>{t('admin.settings.bankConnection')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(!connection || connection.status === 'REVOKED' || connection.status === 'PENDING') && (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {t('admin.settings.bankConnectionDescription')}
+                  </p>
+                  <Button onClick={handlePontoConnect} disabled={pontoLoading}>
+                    {pontoLoading
+                      ? t('admin.settings.connecting')
+                      : t('admin.settings.connectBankAccount')}
+                  </Button>
+                </>
+              )}
+
+              {connection && connection.status === 'ACTIVE' && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      {connection.iban && (
+                        <p className="text-sm font-medium font-mono">
+                          {maskIban(connection.iban)}
+                        </p>
+                      )}
+                      {connection.bankName && (
+                        <p className="text-sm text-muted-foreground">{connection.bankName}</p>
+                      )}
+                    </div>
+                    <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100">
+                      {t('admin.settings.connected')}
+                    </Badge>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    {t('admin.settings.lastSync')}:{' '}
+                    {connection.lastSyncAt
+                      ? formatRelativeTime(connection.lastSyncAt, intlLocale)
+                      : t('admin.settings.never')}
+                  </p>
+
+                  <div className="flex items-start gap-3 rounded-md border p-3">
+                    <Checkbox
+                      id="autoMatch"
+                      checked={pontoStatus.autoMatchPayments}
+                      onCheckedChange={(checked) => handleAutoMatchToggle(!!checked)}
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="autoMatch" className="cursor-pointer">
+                        {t('admin.settings.autoMatchPayments')}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t('admin.settings.autoMatchDescription')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDisconnectDialog(true)}
+                    disabled={pontoLoading}
+                  >
+                    {pontoLoading
+                      ? t('admin.settings.disconnecting')
+                      : t('admin.settings.disconnectBankAccount')}
+                  </Button>
+                </>
+              )}
+
+              {connection && connection.status === 'EXPIRED' && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      {connection.iban && (
+                        <p className="text-sm font-medium font-mono">
+                          {maskIban(connection.iban)}
+                        </p>
+                      )}
+                      {connection.bankName && (
+                        <p className="text-sm text-muted-foreground">{connection.bankName}</p>
+                      )}
+                    </div>
+                    <Badge variant="destructive">{t('admin.settings.expired')}</Badge>
+                  </div>
+
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>{t('admin.settings.connectionExpired')}</AlertDescription>
+                  </Alert>
+
+                  <Button onClick={handlePontoReauthorize} disabled={pontoLoading}>
+                    {pontoLoading
+                      ? t('admin.settings.connecting')
+                      : t('admin.settings.reauthorize')}
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Email Settings */}
         <Card>
@@ -517,6 +795,24 @@ export default function AdminSettingsPage() {
 
         <Button onClick={handleSave}>{t('common.save')}</Button>
       </div>
+
+      {/* Disconnect confirmation dialog */}
+      <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.settings.disconnectBankAccount')}</DialogTitle>
+            <DialogDescription>{t('admin.settings.confirmDisconnect')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDisconnectDialog(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handlePontoDisconnect}>
+              {t('admin.settings.disconnectBankAccount')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
