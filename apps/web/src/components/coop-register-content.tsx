@@ -103,22 +103,24 @@ function mapShareholdersFromApi(
     }));
 }
 
+// Schema is intentionally lenient — per-step validation in handleStep1Next
+// enforces which fields are required based on beneficiary type and login state.
 const registrationSchema = z.object({
   shareholderId: z.string().optional(),
   beneficiaryType: z.enum(['self', 'family', 'company', 'gift']),
-  firstName: z.string().min(1).optional(),
-  lastName: z.string().min(1).optional(),
+  firstName: z.string().min(1).optional().or(z.literal('')),
+  lastName: z.string().min(1).optional().or(z.literal('')),
   birthDate: z.string().optional(),
   companyName: z.string().optional(),
   companyId: z.string().optional(),
   vatNumber: z.string().optional(),
-  email: z.string().email(),
+  email: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
-  street: z.string().min(1),
-  number: z.string().min(1),
-  postalCode: z.string().min(1),
-  city: z.string().min(1),
-  country: z.string().min(1),
+  street: z.string().min(1).optional().or(z.literal('')),
+  number: z.string().min(1).optional().or(z.literal('')),
+  postalCode: z.string().min(1).optional().or(z.literal('')),
+  city: z.string().min(1).optional().or(z.literal('')),
+  country: z.string().optional(),
   shareClassId: z.string().min(1),
   projectId: z.string().optional(),
   quantity: z.number().min(1),
@@ -336,7 +338,7 @@ export function CoopRegisterContent({
       // Preserve preselected share class and project across reset
       const { shareClassId, projectId } = form.getValues();
       form.reset({
-        beneficiaryType: 'self',
+        beneficiaryType: 'family',
         paymentMethod: 'BANK_TRANSFER',
         quantity: 1,
         country: 'Belgium',
@@ -396,13 +398,17 @@ export function CoopRegisterContent({
     // Validate required fields based on beneficiary type
     let fieldsToValidate: (keyof RegistrationForm)[];
     if (watchBeneficiaryType === 'gift') {
-      fieldsToValidate = ['email'];
+      fieldsToValidate = isLoggedIn ? [] : ['email'];
     } else if (watchBeneficiaryType === 'company') {
       fieldsToValidate = ['companyName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
     } else {
       fieldsToValidate = ['firstName', 'lastName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
     }
 
+    if (fieldsToValidate.length === 0) {
+      setStep(STEP.ORDER);
+      return;
+    }
     const result = await form.trigger(fieldsToValidate);
     if (result) {
       setStep(STEP.ORDER);
@@ -418,11 +424,17 @@ export function CoopRegisterContent({
     try {
       const values = form.getValues();
 
+      // Logged-in gift buyer: use their first shareholder profile as the buyer
+      const effectiveShareholderId =
+        values.shareholderId ||
+        (isLoggedIn && values.beneficiaryType === 'gift' && allShareholders[0]?.id) ||
+        null;
+
       // Build payload based on whether we have an existing shareholder
       let payload: Record<string, unknown>;
-      if (values.shareholderId) {
+      if (effectiveShareholderId) {
         payload = {
-          shareholderId: values.shareholderId,
+          shareholderId: effectiveShareholderId,
           shareClassId: values.shareClassId,
           quantity: values.quantity,
           projectId: values.projectId,
@@ -622,7 +634,9 @@ export function CoopRegisterContent({
           }
           className="space-y-3"
         >
-          {(['self', 'family', 'company', 'gift'] as const).map((type) => (
+          {(['self', 'family', 'company', 'gift'] as const)
+            .filter((type) => !(isRegisteringNew && type === 'self'))
+            .map((type) => (
             <div
               key={type}
               className="flex items-start space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-accent"
@@ -669,7 +683,7 @@ export function CoopRegisterContent({
           )}
 
           {watchBeneficiaryType === 'gift' ? (
-            /* Gift flow: explanation + buyer email only */
+            /* Gift flow: explanation + buyer email (only if not logged in) */
             <>
               <div className="flex items-start gap-3 bg-muted/50 p-4 rounded-md">
                 <Gift className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
@@ -677,10 +691,12 @@ export function CoopRegisterContent({
                   {t('registration.giftExplanation')}
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label>{t('registration.giftBuyerEmail')} *</Label>
-                <Input type="email" {...form.register('email')} />
-              </div>
+              {!isLoggedIn && (
+                <div className="space-y-2">
+                  <Label>{t('registration.giftBuyerEmail')} *</Label>
+                  <Input type="email" {...form.register('email')} />
+                </div>
+              )}
             </>
           ) : watchBeneficiaryType === 'company' ? (
             <>
@@ -1225,12 +1241,10 @@ export function CoopRegisterContent({
       {/* Steps indicator */}
       {renderStepIndicator()}
 
-      {/* Form */}
+      {/* Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
-          <form onSubmit={(e) => e.preventDefault()}>
-            {renderStep()}
-          </form>
+          {renderStep()}
         </div>
       </main>
     </div>
