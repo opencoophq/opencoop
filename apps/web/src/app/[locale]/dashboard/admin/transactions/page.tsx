@@ -97,6 +97,7 @@ export default function AdminTransactionsPage() {
   const [rejectTxId, setRejectTxId] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Unmatched payments state
   const [unmatchedTxs, setUnmatchedTxs] = useState<UnmatchedTransaction[]>([]);
@@ -241,6 +242,7 @@ export default function AdminTransactionsPage() {
         body: { registrationId },
       });
       setMatchOpen(false);
+      setSuccessMessage(t('admin.transactions.matched'));
       // Refresh unmatched list
       loadUnmatched();
     } catch {
@@ -277,6 +279,11 @@ export default function AdminTransactionsPage() {
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {successMessage && (
+        <Alert className="mb-4">
+          <AlertDescription>{successMessage}</AlertDescription>
         </Alert>
       )}
 
