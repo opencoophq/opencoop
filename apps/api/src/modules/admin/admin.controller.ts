@@ -91,9 +91,10 @@ export class AdminController {
     @CurrentUser() user: CurrentUserData,
     @Body() updateCoopDto: UpdateCoopDto,
   ) {
-    // Only SYSTEM_ADMIN can toggle emailEnabled
+    // Only SYSTEM_ADMIN can toggle emailEnabled / pontoEnabled
     if (user.role !== 'SYSTEM_ADMIN') {
       delete updateCoopDto.emailEnabled;
+      delete updateCoopDto.pontoEnabled;
     }
     return this.coopsService.update(coopId, updateCoopDto, user.id);
   }

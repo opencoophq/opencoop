@@ -39,6 +39,11 @@ export class UpdateCoopDto {
   @IsBoolean()
   emailEnabled?: boolean;
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  pontoEnabled?: boolean;
+
   @ApiProperty({ required: false, description: 'Email provider: null (platform), "smtp", or "graph"' })
   @IsOptional()
   @IsIn([null, 'smtp', 'graph'])
