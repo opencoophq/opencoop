@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsArray, MinLength, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateConversationDto {
@@ -8,7 +8,7 @@ export class CreateConversationDto {
   subject: string;
 
   @ApiProperty({ enum: ['BROADCAST', 'DIRECT'], example: 'BROADCAST' })
-  @IsString()
+  @IsIn(['BROADCAST', 'DIRECT'])
   type: 'BROADCAST' | 'DIRECT';
 
   @ApiProperty({ example: 'Beste leden, ...' })

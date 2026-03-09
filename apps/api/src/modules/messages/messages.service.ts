@@ -167,29 +167,33 @@ export class MessagesService {
       throw new NotFoundException('Conversation not found');
     }
 
-    const message = await this.prisma.message.create({
-      data: {
-        conversationId,
-        senderType: 'ADMIN',
-        senderId: userId,
-        body: dto.body,
-      },
-    });
-
-    if (dto.existingDocumentIds?.length) {
-      await this.prisma.messageAttachment.createMany({
-        data: dto.existingDocumentIds.map((docId) => ({
-          messageId: message.id,
-          type: 'EXISTING_DOCUMENT',
-          shareholderDocumentId: docId,
-          fileName: '',
-        })),
+    const message = await this.prisma.$transaction(async (tx) => {
+      const msg = await tx.message.create({
+        data: {
+          conversationId,
+          senderType: 'ADMIN',
+          senderId: userId,
+          body: dto.body,
+        },
       });
-    }
 
-    await this.prisma.conversation.update({
-      where: { id: conversationId },
-      data: { updatedAt: new Date() },
+      if (dto.existingDocumentIds?.length) {
+        await tx.messageAttachment.createMany({
+          data: dto.existingDocumentIds.map((docId) => ({
+            messageId: msg.id,
+            type: 'EXISTING_DOCUMENT',
+            shareholderDocumentId: docId,
+            fileName: '',
+          })),
+        });
+      }
+
+      await tx.conversation.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() },
+      });
+
+      return msg;
     });
 
     await this.notifyParticipants(conversationId, coopId);
