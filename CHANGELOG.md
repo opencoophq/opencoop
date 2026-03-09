@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.3.6] - 2026-03-09
+
+### Fixed
+- **Date picker locale** — replaced native `<input type="date">` (which uses OS locale) with a proper calendar popover that respects the user's app locale setting
+- **Dividend period default date** — ex-dividend date now defaults to December 31 of the selected year when creating a new dividend period
+
 ## [0.3.5] - 2026-03-09
 
 ### Changed
