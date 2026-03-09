@@ -6,9 +6,10 @@ import { AuthModule } from '../auth/auth.module';
 import { EmailModule } from '../email/email.module';
 import { RegistrationsModule } from '../registrations/registrations.module';
 import { DocumentsModule } from '../documents/documents.module';
+import { MessagesModule } from '../messages/messages.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule), EmailModule, RegistrationsModule, DocumentsModule],
+  imports: [forwardRef(() => AuthModule), EmailModule, RegistrationsModule, DocumentsModule, MessagesModule],
   controllers: [ShareholderActionsController],
   providers: [ShareholdersService, BirthdaySchedulerService],
   exports: [ShareholdersService],

@@ -1631,5 +1631,34 @@
       "claimed": "Geschenk — eingelöst von {name}"
     },
     "downloadCertificate": "Zertifikat herunterladen"
+  },
+  "messages": {
+    "title": "Posteingang",
+    "newConversation": "Neue Nachricht",
+    "noConversations": "Noch keine Nachrichten.",
+    "send": "Senden",
+    "subject": "Betreff",
+    "body": "Nachricht",
+    "allShareholders": "Alle Anteilseigner",
+    "specificShareholder": "Bestimmter Anteilseigner",
+    "broadcast": "Rundschreiben",
+    "direct": "Direkt",
+    "unread": "Ungelesen",
+    "read": "Gelesen",
+    "participants": "Teilnehmer",
+    "attachments": "Anhänge",
+    "attachFile": "Datei anhängen",
+    "selectShareholder": "Anteilseigner auswählen",
+    "messageSent": "Nachricht erfolgreich gesendet",
+    "replyPlaceholder": "Schreiben Sie Ihre Antwort...",
+    "startConversation": "Neue Nachricht",
+    "subjectPlaceholder": "Betreff Ihrer Nachricht",
+    "bodyPlaceholder": "Schreiben Sie Ihre Nachricht...",
+    "backToInbox": "Zurück zum Posteingang",
+    "sentBy": "Gesendet von",
+    "admin": "Administrator",
+    "you": "Sie",
+    "recipient": "Empfänger",
+    "from": "Von"
   }
 }

@@ -13,6 +13,7 @@ import { DocumentsModule } from '../documents/documents.module';
 import { CoopsModule } from '../coops/coops.module';
 import { ChannelsModule } from '../channels/channels.module';
 import { BillingModule } from '../billing/billing.module';
+import { MessagesModule } from '../messages/messages.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { BillingModule } from '../billing/billing.module';
     BankImportModule,
     DividendsModule,
     DocumentsModule,
+    MessagesModule,
   ],
   controllers: [AdminController],
   providers: [AnalyticsService, ReportsService],
