@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.4.0] - 2026-03-09
+
+### Added
+- **Messaging inbox** — bank-style messaging system for coop-shareholder communication
+  - Coop admins can send broadcasts (all shareholders) or direct messages to individuals
+  - Shareholders can start conversations and reply to messages
+  - Document attachments — upload files or reference existing documents; uploads also appear in shareholder's Documents page
+  - Email notifications via existing Bull queue for both shareholders and admins
+  - Unread message badge in shareholder sidebar navigation
+  - Full i18n support (EN, NL, FR, DE)
+- **New permission** `canManageMessages` for admin role configuration
+
 ## [0.3.7] - 2026-03-09
 
 ### Fixed
