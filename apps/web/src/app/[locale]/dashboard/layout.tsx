@@ -69,6 +69,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     unmatchedBankTransactions: number;
   } | null>(null);
   const [shareholderCoop, setShareholderCoop] = useState<{ name: string; logoUrl?: string } | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -88,6 +89,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         emailVerified?: boolean;
         adminCoops?: typeof adminCoops;
         shareholderCoops?: Array<{ name: string; logoUrl?: string }>;
+        shareholders?: Array<{ id: string }>;
       }>('/auth/me')
         .then((data) => {
           setEmailVerified(data.emailVerified ?? true);
@@ -101,6 +103,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
           if (data.shareholderCoops?.length) {
             setShareholderCoop(data.shareholderCoops[0]);
+          }
+
+          // Fetch unread message count for shareholder inbox badge
+          if (data.shareholders?.[0]) {
+            api<{ count: number }>(`/shareholders/${data.shareholders[0].id}/unread-count`)
+              .then((res) => setUnreadCount(res.count))
+              .catch(() => {});
           }
         })
         .catch(() => {});
@@ -140,6 +149,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" /> },
     { href: '/dashboard/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
     { href: '/dashboard/documents', label: t('common.documents'), icon: <FileDown className="h-4 w-4" /> },
+    { href: '/dashboard/inbox', label: t('messages.title'), icon: <MailIcon className="h-4 w-4" />, badge: unreadCount },
     { href: '/dashboard/personal-data', label: t('personalData.title'), icon: <UserCog className="h-4 w-4" /> },
     { href: '/dashboard/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
   ];
@@ -152,6 +162,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         hasPermission('canManageTransactions') && { href: '/dashboard/admin/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" />, badge: adminStats?.pendingRegistrations },
         hasPermission('canManageProjects') && { href: '/dashboard/admin/projects', label: t('admin.projects.title'), icon: <Building2 className="h-4 w-4" /> },
         hasPermission('canManageDividends') && { href: '/dashboard/admin/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
+        hasPermission('canManageMessages') && { href: '/dashboard/admin/messages', label: t('messages.title'), icon: <MailIcon className="h-4 w-4" /> },
         hasPermission('canManageTransactions') && { href: '/dashboard/admin/bank-import', label: t('admin.bankImport.title'), icon: <Upload className="h-4 w-4" />, badge: adminStats?.unmatchedBankTransactions },
         hasPermission('canViewReports') && { href: '/dashboard/admin/reports', label: t('reports.title'), icon: <BarChart3 className="h-4 w-4" /> },
         hasPermission('canManageSettings') && { href: '/dashboard/admin/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
