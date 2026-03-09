@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.3.7] - 2026-03-09
+
+### Fixed
+- **Birthdate picker navigation** — birthdate fields now show year/month dropdowns for quick navigation (1920-present) instead of requiring month-by-month clicking
+- **E2E registration test** — updated test to work with new calendar popover date picker
+
 ## [0.3.6] - 2026-03-09
 
 ### Fixed
