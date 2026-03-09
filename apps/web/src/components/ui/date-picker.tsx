@@ -31,6 +31,10 @@ interface DatePickerProps {
   disabled?: boolean;
   className?: string;
   defaultMonth?: Date;
+  /** Enable dropdown navigation for month/year (useful for birthdates). Requires fromYear+toYear. */
+  captionLayout?: 'label' | 'dropdown' | 'dropdown-months' | 'dropdown-years';
+  fromYear?: number;
+  toYear?: number;
 }
 
 export function DatePicker({
@@ -40,6 +44,9 @@ export function DatePicker({
   disabled = false,
   className,
   defaultMonth,
+  captionLayout,
+  fromYear,
+  toYear,
 }: DatePickerProps) {
   const { locale } = useLocale();
   const [open, setOpen] = React.useState(false);
@@ -85,6 +92,9 @@ export function DatePicker({
           onSelect={handleSelect}
           defaultMonth={selected || defaultMonth}
           locale={dateFnsLocale}
+          captionLayout={captionLayout}
+          fromYear={fromYear}
+          toYear={toYear}
           className="p-3"
           classNames={{
             months: 'flex flex-col sm:flex-row gap-2',
@@ -107,6 +117,10 @@ export function DatePicker({
             today: 'bg-accent text-accent-foreground',
             outside: 'text-muted-foreground opacity-50',
             disabled: 'text-muted-foreground opacity-50',
+            dropdown_root: 'relative inline-flex items-center',
+            dropdown:
+              'appearance-none border border-input rounded-md bg-background px-2 py-1 text-sm font-medium cursor-pointer',
+            dropdowns: 'flex gap-2 justify-center',
           }}
         />
       </PopoverContent>

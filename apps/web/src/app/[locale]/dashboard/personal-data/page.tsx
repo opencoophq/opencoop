@@ -226,6 +226,9 @@ export default function PersonalDataPage() {
                     <DatePicker
                       value={form.watch('birthDate')}
                       onChange={(value) => form.setValue('birthDate', value || '')}
+                      captionLayout="dropdown"
+                      fromYear={1920}
+                      toYear={new Date().getFullYear()}
                     />
                   </div>
                 </>

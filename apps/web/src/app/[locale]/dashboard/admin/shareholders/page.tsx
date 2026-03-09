@@ -534,6 +534,9 @@ export default function ShareholdersPage() {
                   <DatePicker
                     value={form.watch('birthDate')}
                     onChange={(value) => form.setValue('birthDate', value || '')}
+                    captionLayout="dropdown"
+                    fromYear={1920}
+                    toYear={new Date().getFullYear()}
                   />
                   {form.formState.errors.birthDate && (
                     <p className="text-sm text-destructive">{form.formState.errors.birthDate.message}</p>

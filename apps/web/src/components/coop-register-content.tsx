@@ -765,6 +765,9 @@ export function CoopRegisterContent({
                   value={form.watch('birthDate')}
                   onChange={(value) => form.setValue('birthDate', value || '')}
                   placeholder={t('shareholder.fields.birthDate')}
+                  captionLayout="dropdown"
+                  fromYear={1920}
+                  toYear={new Date().getFullYear()}
                 />
               </div>
 

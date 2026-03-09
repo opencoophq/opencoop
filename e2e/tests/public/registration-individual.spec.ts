@@ -25,7 +25,13 @@ test.describe('Public registration - Individual', () => {
     await expect(page.locator('input[name="firstName"]')).toBeVisible({ timeout: 10_000 });
     await page.locator('input[name="firstName"]').fill('Test');
     await page.locator('input[name="lastName"]').fill('Registratie');
-    await page.locator('input[type="date"]').fill('1990-01-15');
+    // Open the date picker calendar (birthdate uses dropdown navigation)
+    await page.getByRole('button', { name: /datum|date|pick/i }).first().click();
+    // Select year 1990 and month January from dropdowns
+    await page.getByLabel('Choose the Year').selectOption('1990');
+    await page.getByLabel('Choose the Month').selectOption('0');
+    // Click day 15
+    await page.getByRole('gridcell', { name: '15', exact: true }).click();
     await page.locator('input[name="email"]').fill(uniqueEmail);
     await page.locator('input[name="street"]').fill('Teststraat');
     await page.locator('input[name="number"]').fill('1');
