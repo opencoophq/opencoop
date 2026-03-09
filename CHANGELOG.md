@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.3.5] - 2026-03-09
+
+### Changed
+- **Pricing page yearly display** — yearly plans now show monthly-equivalent price (€33/mo, €75/mo) with annual total in subtitle, matching common SaaS pricing patterns for better conversion
+
 ## [0.3.4] - 2026-03-09
 
 ### Fixed
