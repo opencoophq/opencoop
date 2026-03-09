@@ -1631,5 +1631,34 @@
       "claimed": "Gift — claimed by {name}"
     },
     "downloadCertificate": "Download certificate"
+  },
+  "messages": {
+    "title": "Inbox",
+    "newConversation": "New Message",
+    "noConversations": "No messages yet.",
+    "send": "Send",
+    "subject": "Subject",
+    "body": "Message",
+    "allShareholders": "All shareholders",
+    "specificShareholder": "Specific shareholder",
+    "broadcast": "Broadcast",
+    "direct": "Direct",
+    "unread": "Unread",
+    "read": "Read",
+    "participants": "Participants",
+    "attachments": "Attachments",
+    "attachFile": "Attach file",
+    "selectShareholder": "Select shareholder",
+    "messageSent": "Message sent successfully",
+    "replyPlaceholder": "Write your reply...",
+    "startConversation": "New Message",
+    "subjectPlaceholder": "Subject of your message",
+    "bodyPlaceholder": "Write your message...",
+    "backToInbox": "Back to inbox",
+    "sentBy": "Sent by",
+    "admin": "Admin",
+    "you": "You",
+    "recipient": "Recipient",
+    "from": "From"
   }
 }
