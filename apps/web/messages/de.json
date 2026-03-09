@@ -1305,6 +1305,7 @@
       "perYear": "/Jahr",
       "billedMonthly": "Monatliche Abrechnung",
       "billedYearly": "Jährliche Abrechnung",
+      "billedYearlyAt": "€{total} jährlich abgerechnet",
       "freeTrial": "30 Tage kostenlose Testphase inklusive"
     },
     "free": {
@@ -1319,6 +1320,7 @@
       "description": "Für Genossenschaften, die von Tabellen wegkommen wollen",
       "priceMonthly": "39",
       "priceYearly": "399",
+      "priceYearlyPerMonth": "33",
       "cta": "Jetzt starten"
     },
     "professional": {
@@ -1327,6 +1329,7 @@
       "description": "Für Genossenschaften mit aktiven Anteilsoperationen",
       "priceMonthly": "89",
       "priceYearly": "899",
+      "priceYearlyPerMonth": "75",
       "cta": "Jetzt starten"
     },
     "features": {

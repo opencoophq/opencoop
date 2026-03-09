@@ -1305,6 +1305,7 @@
       "perYear": "/jaar",
       "billedMonthly": "Maandelijks gefactureerd",
       "billedYearly": "Jaarlijks gefactureerd",
+      "billedYearlyAt": "€{total} per jaar gefactureerd",
       "freeTrial": "30 dagen gratis proefperiode inbegrepen"
     },
     "free": {
@@ -1319,6 +1320,7 @@
       "description": "Voor coöperaties die af willen van spreadsheets",
       "priceMonthly": "39",
       "priceYearly": "399",
+      "priceYearlyPerMonth": "33",
       "cta": "Aan de slag"
     },
     "professional": {
@@ -1327,6 +1329,7 @@
       "description": "Voor coöperaties met actieve aandelenoperaties",
       "priceMonthly": "89",
       "priceYearly": "899",
+      "priceYearlyPerMonth": "75",
       "cta": "Aan de slag"
     },
     "features": {
