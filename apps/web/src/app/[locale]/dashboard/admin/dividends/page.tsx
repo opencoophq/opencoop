@@ -108,11 +108,22 @@ export default function DividendsListPage() {
     fetchPeriods();
   }, [fetchPeriods]);
 
+  const yearValue = form.watch('year');
+
+  // Default exDividendDate to Dec 31 of selected year
+  useEffect(() => {
+    const year = Number(yearValue);
+    if (year >= 2000 && year <= 2100) {
+      form.setValue('exDividendDate', `${year}-12-31`);
+    }
+  }, [yearValue, form]);
+
   const openCreateDialog = () => {
+    const year = new Date().getFullYear();
     form.reset({
       name: '',
-      year: new Date().getFullYear(),
-      exDividendDate: '',
+      year,
+      exDividendDate: `${year}-12-31`,
       paymentDate: '',
       dividendRate: 0,
     });
