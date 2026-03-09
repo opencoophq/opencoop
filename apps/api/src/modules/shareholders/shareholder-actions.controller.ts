@@ -528,7 +528,8 @@ export class ShareholderActionsController {
     if (attachment.type === 'UPLOADED_FILE' && attachment.filePath) {
       const fullPath = path.join(process.env.UPLOAD_DIR || 'uploads', attachment.filePath);
       if (!fs.existsSync(fullPath)) throw new NotFoundException('File not found');
-      res.setHeader('Content-Disposition', `attachment; filename="${attachment.fileName}"`);
+      const safeFilename = path.basename(attachment.fileName).replace(/["\r\n]/g, '_');
+      res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
       if (attachment.mimeType) res.setHeader('Content-Type', attachment.mimeType);
       fs.createReadStream(fullPath).pipe(res);
     } else {

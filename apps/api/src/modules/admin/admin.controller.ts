@@ -927,7 +927,7 @@ export class AdminController {
 
   @Post('conversations/:conversationId/messages/:messageId/attachments')
   @RequirePermission('canManageMessages')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload attachment to a message' })
   async uploadMessageAttachment(
