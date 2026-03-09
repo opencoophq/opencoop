@@ -435,6 +435,7 @@ export class AuthService {
                 slug: true,
                 bankIban: true,
                 bankBic: true,
+                minimumHoldingPeriod: true,
                 channels: {
                   where: { isDefault: true },
                   select: { logoUrl: true },
