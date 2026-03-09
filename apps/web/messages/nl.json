@@ -1631,5 +1631,34 @@
       "claimed": "Cadeau — geclaimed door {name}"
     },
     "downloadCertificate": "Download cadeaubon"
+  },
+  "messages": {
+    "title": "Postvak",
+    "newConversation": "Nieuw bericht",
+    "noConversations": "Nog geen berichten.",
+    "send": "Verzenden",
+    "subject": "Onderwerp",
+    "body": "Bericht",
+    "allShareholders": "Alle aandeelhouders",
+    "specificShareholder": "Specifieke aandeelhouder",
+    "broadcast": "Groepsbericht",
+    "direct": "Direct",
+    "unread": "Ongelezen",
+    "read": "Gelezen",
+    "participants": "Deelnemers",
+    "attachments": "Bijlagen",
+    "attachFile": "Bestand bijvoegen",
+    "selectShareholder": "Aandeelhouder selecteren",
+    "messageSent": "Bericht succesvol verzonden",
+    "replyPlaceholder": "Schrijf uw antwoord...",
+    "startConversation": "Nieuw bericht",
+    "subjectPlaceholder": "Onderwerp van uw bericht",
+    "bodyPlaceholder": "Schrijf uw bericht...",
+    "backToInbox": "Terug naar postvak",
+    "sentBy": "Verzonden door",
+    "admin": "Beheerder",
+    "you": "U",
+    "recipient": "Ontvanger",
+    "from": "Van"
   }
 }

@@ -1631,5 +1631,34 @@
       "claimed": "Cadeau — réclamé par {name}"
     },
     "downloadCertificate": "Télécharger le certificat"
+  },
+  "messages": {
+    "title": "Boîte de réception",
+    "newConversation": "Nouveau message",
+    "noConversations": "Aucun message pour le moment.",
+    "send": "Envoyer",
+    "subject": "Sujet",
+    "body": "Message",
+    "allShareholders": "Tous les coopérateurs",
+    "specificShareholder": "Coopérateur spécifique",
+    "broadcast": "Diffusion",
+    "direct": "Direct",
+    "unread": "Non lu",
+    "read": "Lu",
+    "participants": "Participants",
+    "attachments": "Pièces jointes",
+    "attachFile": "Joindre un fichier",
+    "selectShareholder": "Sélectionner un coopérateur",
+    "messageSent": "Message envoyé avec succès",
+    "replyPlaceholder": "Écrivez votre réponse...",
+    "startConversation": "Nouveau message",
+    "subjectPlaceholder": "Sujet de votre message",
+    "bodyPlaceholder": "Écrivez votre message...",
+    "backToInbox": "Retour à la boîte de réception",
+    "sentBy": "Envoyé par",
+    "admin": "Administrateur",
+    "you": "Vous",
+    "recipient": "Destinataire",
+    "from": "De"
   }
 }
