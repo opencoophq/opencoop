@@ -19,6 +19,9 @@ import { CurrentUser, CurrentUserData } from '../../common/decorators/current-us
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { RegistrationsService } from '../registrations/registrations.service';
+import { MessagesService } from '../messages/messages.service';
+import { CreateMessageDto } from '../messages/dto/create-message.dto';
+import { CreateShareholderConversationDto } from '../messages/dto/create-shareholder-conversation.dto';
 import { IsString, IsInt, IsOptional, Min, ValidateNested, IsObject, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AddressDto } from './dto/create-shareholder.dto';
@@ -133,12 +136,13 @@ export class ShareholderActionsController {
     private auditService: AuditService,
     private registrationsService: RegistrationsService,
     private documentsService: DocumentsService,
+    private messagesService: MessagesService,
   ) {}
 
   private async verifyShareholder(shareholderId: string, userId: string) {
     const shareholder = await this.prisma.shareholder.findUnique({
       where: { id: shareholderId },
-      include: { coop: { select: { minimumHoldingPeriod: true } } },
+      include: { coop: { select: { id: true, minimumHoldingPeriod: true } } },
     });
 
     if (!shareholder) {
@@ -437,5 +441,98 @@ export class ShareholderActionsController {
   ) {
     await this.verifyShareholder(shareholderId, user.id);
     return this.registrationsService.findByShareholder(shareholderId);
+  }
+
+  // ==================== MESSAGES ====================
+
+  @Get('conversations')
+  @ApiOperation({ summary: 'List conversations for this shareholder' })
+  async listConversations(
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+    return this.messagesService.findAllForShareholder(shareholderId);
+  }
+
+  @Post('conversations')
+  @ApiOperation({ summary: 'Start a new conversation with the coop' })
+  async createConversation(
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: CreateShareholderConversationDto,
+  ) {
+    const shareholder = await this.verifyShareholder(shareholderId, user.id);
+    return this.messagesService.createShareholderConversation(
+      shareholderId, shareholder.coop.id, dto.subject, dto.body, user.id,
+    );
+  }
+
+  @Get('conversations/:conversationId')
+  @ApiOperation({ summary: 'Read a conversation (marks as read)' })
+  async getConversation(
+    @Param('shareholderId') shareholderId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+    return this.messagesService.findByIdForShareholder(conversationId, shareholderId);
+  }
+
+  @Post('conversations/:conversationId/messages')
+  @ApiOperation({ summary: 'Reply to a conversation' })
+  async replyToConversation(
+    @Param('shareholderId') shareholderId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: CreateMessageDto,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+    return this.messagesService.addShareholderReply(conversationId, shareholderId, dto.body);
+  }
+
+  @Get('unread-count')
+  @ApiOperation({ summary: 'Get unread conversation count for badge' })
+  async getUnreadCount(
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+    return { count: await this.messagesService.getUnreadCount(shareholderId) };
+  }
+
+  @Get('conversations/:conversationId/attachments/:attachmentId')
+  @ApiOperation({ summary: 'Download a message attachment' })
+  async downloadAttachment(
+    @Param('shareholderId') shareholderId: string,
+    @Param('conversationId') conversationId: string,
+    @Param('attachmentId') attachmentId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Res() res: Response,
+  ) {
+    await this.verifyShareholder(shareholderId, user.id);
+
+    const participant = await this.prisma.conversationParticipant.findUnique({
+      where: { conversationId_shareholderId: { conversationId, shareholderId } },
+    });
+    if (!participant) throw new NotFoundException('Conversation not found');
+
+    const attachment = await this.prisma.messageAttachment.findUnique({
+      where: { id: attachmentId },
+      include: { message: true },
+    });
+    if (!attachment || attachment.message.conversationId !== conversationId) {
+      throw new NotFoundException('Attachment not found');
+    }
+
+    if (attachment.type === 'UPLOADED_FILE' && attachment.filePath) {
+      const fullPath = path.join(process.env.UPLOAD_DIR || 'uploads', attachment.filePath);
+      if (!fs.existsSync(fullPath)) throw new NotFoundException('File not found');
+      res.setHeader('Content-Disposition', `attachment; filename="${attachment.fileName}"`);
+      if (attachment.mimeType) res.setHeader('Content-Type', attachment.mimeType);
+      fs.createReadStream(fullPath).pipe(res);
+    } else {
+      throw new BadRequestException('Use document download endpoint for existing documents');
+    }
   }
 }
