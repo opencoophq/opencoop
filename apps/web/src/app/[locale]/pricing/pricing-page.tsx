@@ -217,14 +217,16 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
               <div className="mb-8">
                 <div className="flex items-baseline gap-1">
                   <span className="text-5xl font-extrabold tracking-tight">
-                    &euro;{yearly ? t('essentials.priceYearly') : t('essentials.priceMonthly')}
+                    &euro;{yearly ? t('essentials.priceYearlyPerMonth') : t('essentials.priceMonthly')}
                   </span>
                   <span className="text-muted-foreground text-lg">
-                    {yearly ? t('billing.perYear') : t('billing.perMonth')}
+                    {t('billing.perMonth')}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {yearly ? t('billing.billedYearly') : t('billing.billedMonthly')}
+                  {yearly
+                    ? t('billing.billedYearlyAt', { total: t('essentials.priceYearly') })
+                    : t('billing.billedMonthly')}
                 </p>
                 <p className="text-sm text-primary font-medium mt-1">{t('billing.freeTrial')}</p>
               </div>
@@ -274,14 +276,16 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
               <div className="mb-8">
                 <div className="flex items-baseline gap-1">
                   <span className="text-5xl font-extrabold tracking-tight">
-                    &euro;{yearly ? t('professional.priceYearly') : t('professional.priceMonthly')}
+                    &euro;{yearly ? t('professional.priceYearlyPerMonth') : t('professional.priceMonthly')}
                   </span>
                   <span className="text-muted-foreground text-lg">
-                    {yearly ? t('billing.perYear') : t('billing.perMonth')}
+                    {t('billing.perMonth')}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {yearly ? t('billing.billedYearly') : t('billing.billedMonthly')}
+                  {yearly
+                    ? t('billing.billedYearlyAt', { total: t('professional.priceYearly') })
+                    : t('billing.billedMonthly')}
                 </p>
                 <p className="text-sm text-primary font-medium mt-1">{t('billing.freeTrial')}</p>
               </div>

@@ -1305,6 +1305,7 @@
       "perYear": "/year",
       "billedMonthly": "Billed monthly",
       "billedYearly": "Billed yearly",
+      "billedYearlyAt": "€{total} billed yearly",
       "freeTrial": "30-day free trial included"
     },
     "free": {
@@ -1319,6 +1320,7 @@
       "description": "For cooperatives getting off spreadsheets",
       "priceMonthly": "39",
       "priceYearly": "399",
+      "priceYearlyPerMonth": "33",
       "cta": "Get started"
     },
     "professional": {
@@ -1327,6 +1329,7 @@
       "description": "For cooperatives with active share operations",
       "priceMonthly": "89",
       "priceYearly": "899",
+      "priceYearlyPerMonth": "75",
       "cta": "Get started"
     },
     "features": {

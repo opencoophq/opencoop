@@ -1305,6 +1305,7 @@
       "perYear": "/an",
       "billedMonthly": "Facturé mensuellement",
       "billedYearly": "Facturé annuellement",
+      "billedYearlyAt": "€{total} facturé annuellement",
       "freeTrial": "Essai gratuit de 30 jours inclus"
     },
     "free": {
@@ -1319,6 +1320,7 @@
       "description": "Pour les coopératives qui veulent quitter les tableurs",
       "priceMonthly": "39",
       "priceYearly": "399",
+      "priceYearlyPerMonth": "33",
       "cta": "Commencer"
     },
     "professional": {
@@ -1327,6 +1329,7 @@
       "description": "Pour les coopératives avec des opérations de parts actives",
       "priceMonthly": "89",
       "priceYearly": "899",
+      "priceYearlyPerMonth": "75",
       "cta": "Commencer"
     },
     "features": {
