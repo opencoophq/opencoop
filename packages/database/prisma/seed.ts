@@ -116,10 +116,10 @@ async function main() {
 
   // Create default roles for the coop
   const defaultRoles = [
-    { name: 'Admin', permissions: { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
-    { name: 'Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
-    { name: 'GDPR Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
-    { name: 'GDPR Admin', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
+    { name: 'Admin', permissions: { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageMessages: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
+    { name: 'Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageMessages: false, canManageSettings: false, canManageAdmins: false, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
+    { name: 'GDPR Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageMessages: false, canManageSettings: false, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
+    { name: 'GDPR Admin', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageMessages: true, canManageSettings: true, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
   ];
 
   for (const role of defaultRoles) {
