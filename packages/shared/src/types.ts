@@ -80,6 +80,7 @@ export interface CoopPermissions {
   canManageShareClasses: boolean;
   canManageProjects: boolean;
   canManageDividends: boolean;
+  canManageMessages: boolean;
   canManageSettings: boolean;
   canManageAdmins: boolean;
   canViewPII: boolean;
@@ -94,6 +95,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canManageShareClasses: true,
     canManageProjects: true,
     canManageDividends: true,
+    canManageMessages: true,
     canManageSettings: true,
     canManageAdmins: true,
     canViewPII: true,
@@ -106,6 +108,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canManageShareClasses: false,
     canManageProjects: false,
     canManageDividends: false,
+    canManageMessages: false,
     canManageSettings: false,
     canManageAdmins: false,
     canViewPII: true,
@@ -118,6 +121,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canManageShareClasses: false,
     canManageProjects: false,
     canManageDividends: false,
+    canManageMessages: false,
     canManageSettings: false,
     canManageAdmins: false,
     canViewPII: false,
@@ -130,6 +134,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canManageShareClasses: true,
     canManageProjects: true,
     canManageDividends: true,
+    canManageMessages: true,
     canManageSettings: true,
     canManageAdmins: false,
     canViewPII: false,
@@ -556,7 +561,8 @@ export type DocumentType =
   | 'SHARE_CERTIFICATE'
   | 'PURCHASE_STATEMENT'
   | 'DIVIDEND_STATEMENT'
-  | 'TRANSACTION_REPORT';
+  | 'TRANSACTION_REPORT'
+  | 'CORRESPONDENCE';
 
 export interface DocumentDto {
   id: string;

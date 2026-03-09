@@ -52,6 +52,9 @@ import { maskShareholderPII, maskShareholderListPII } from '../../common/utils/m
 import { ChannelsService } from '../channels/channels.service';
 import { CreateChannelDto } from '../channels/dto/create-channel.dto';
 import { UpdateChannelDto } from '../channels/dto/update-channel.dto';
+import { MessagesService } from '../messages/messages.service';
+import { CreateConversationDto } from '../messages/dto/create-conversation.dto';
+import { CreateMessageDto } from '../messages/dto/create-message.dto';
 
 @ApiTags('admin')
 @Controller('admin/coops/:coopId')
@@ -73,6 +76,7 @@ export class AdminController {
     private dividendsService: DividendsService,
     private documentsService: DocumentsService,
     private channelsService: ChannelsService,
+    private messagesService: MessagesService,
   ) {}
 
   // ==================== COOP SETTINGS ====================
@@ -871,5 +875,67 @@ export class AdminController {
       page: Number(page) || 1,
       limit: Number(limit) || 50,
     });
+  }
+
+  // ==================== MESSAGES ====================
+
+  @Get('conversations')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'List all conversations for this coop' })
+  async listConversations(
+    @Param('coopId') coopId: string,
+    @Query('page') page?: number,
+  ) {
+    return this.messagesService.findAllForCoop(coopId, Number(page) || 1);
+  }
+
+  @Post('conversations')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'Create a new conversation (broadcast or direct)' })
+  async createConversation(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+    @Body() dto: CreateConversationDto,
+  ) {
+    return this.messagesService.createConversation(
+      coopId, dto, user.id, req.ip, req.headers['user-agent'] as string,
+    );
+  }
+
+  @Get('conversations/:conversationId')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'Get conversation detail with messages' })
+  async getConversation(
+    @Param('coopId') coopId: string,
+    @Param('conversationId') conversationId: string,
+  ) {
+    return this.messagesService.findByIdForAdmin(conversationId, coopId);
+  }
+
+  @Post('conversations/:conversationId/messages')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'Reply to a conversation' })
+  async replyToConversation(
+    @Param('coopId') coopId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: CreateMessageDto,
+  ) {
+    return this.messagesService.addAdminReply(conversationId, coopId, dto, user.id);
+  }
+
+  @Post('conversations/:conversationId/messages/:messageId/attachments')
+  @RequirePermission('canManageMessages')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload attachment to a message' })
+  async uploadMessageAttachment(
+    @Param('coopId') coopId: string,
+    @Param('conversationId') conversationId: string,
+    @Param('messageId') messageId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.messagesService.addUploadedAttachment(conversationId, coopId, messageId, file);
   }
 }
