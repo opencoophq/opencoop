@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.3.4] - 2026-03-09
+
+### Fixed
+- **Share sell button showing when holding period not met** — the `/auth/me` endpoint was missing `minimumHoldingPeriod` in the shareholder's coop data, causing the frontend to always show the sell button regardless of the configured holding period (e.g. 60 months for Bronsgroen)
+
 ## [0.3.3] - 2026-03-08
 
 ### Added
