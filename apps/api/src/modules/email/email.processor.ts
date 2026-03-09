@@ -355,6 +355,32 @@ export class EmailProcessor {
         <p>Share this certificate with the recipient. They can use the code or QR code to claim their shares.</p>
         <p>Thank you for being a shareholder of ${cn}!</p>
       `,
+      'message-notification': (d, cn) => `
+        <h1>Nieuw bericht van ${cn}</h1>
+        <p>Beste ${d.shareholderName},</p>
+        <p>U heeft een nieuw bericht ontvangen van ${cn}.</p>
+        <p><strong>Onderwerp:</strong> ${d.messageSubject}</p>
+        <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+          ${d.messagePreview}...
+        </blockquote>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${d.inboxUrl}"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Bekijk het bericht
+          </a>
+        </p>
+      `,
+      'admin-message-notification': (d, cn) => `
+        <h1>Nieuw bericht ontvangen</h1>
+        <p>Beste ${d.adminName},</p>
+        <p>Er is een nieuw bericht ontvangen in ${cn}.</p>
+        <p><strong>Onderwerp:</strong> ${d.messageSubject}</p>
+        <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+          ${d.messagePreview}...
+        </blockquote>
+        <p>Log in op het dashboard om het bericht te bekijken en te beantwoorden.</p>
+      `,
     };
 
     const template = templates[templateKey];

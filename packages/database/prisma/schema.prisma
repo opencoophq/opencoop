@@ -65,6 +65,7 @@ enum DocumentType {
   PURCHASE_STATEMENT
   DIVIDEND_STATEMENT
   TRANSACTION_REPORT
+  CORRESPONDENCE
 }
 
 enum CoopPlan {
@@ -147,6 +148,7 @@ model Coop {
   bankTransactions BankTransaction[]
   dividendPeriods  DividendPeriod[]
   emailLogs        EmailLog[]
+  conversations    Conversation[]
   subscription     Subscription?
   pontoConnection  PontoConnection?
   auditLogs        AuditLog[]
@@ -239,6 +241,7 @@ model User {
   magicLinkTokens        MagicLinkToken[]
   webAuthnCredentials    WebAuthnCredential[]
   auditLogs              AuditLog[]
+  conversationsCreated   Conversation[]        @relation("ConversationCreatedBy")
 
   @@map("users")
 }
@@ -384,6 +387,7 @@ model Shareholder {
   documents        ShareholderDocument[]
   upgradeToken     MinorUpgradeToken?
   claimedGifts     Registration[]     @relation("GiftClaimedBy")
+  conversationParticipants ConversationParticipant[]
 
   // Unique email per coop (null emails allowed for minors - PostgreSQL allows multiple nulls)
   @@unique([coopId, email])
@@ -693,6 +697,80 @@ model EmailLog {
   coop Coop @relation(fields: [coopId], references: [id], onDelete: Cascade)
 
   @@map("email_logs")
+}
+
+// ============================================================================
+// MESSAGING
+// ============================================================================
+
+enum ConversationType {
+  BROADCAST
+  DIRECT
+}
+
+model Conversation {
+  id        String           @id @default(cuid())
+  coopId    String
+  subject   String
+  type      ConversationType
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  createdById String
+
+  coop         Coop                      @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  createdBy    User                      @relation("ConversationCreatedBy", fields: [createdById], references: [id])
+  messages     Message[]
+  participants ConversationParticipant[]
+
+  @@index([coopId])
+  @@index([createdById])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String    @id @default(cuid())
+  conversationId String
+  shareholderId  String
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  shareholder  Shareholder  @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, shareholderId])
+  @@index([shareholderId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderType     String   // "ADMIN" | "SHAREHOLDER"
+  senderId       String   // userId (for admin) or shareholderId (for shareholder)
+  body           String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  attachments  MessageAttachment[]
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id        String  @id @default(cuid())
+  messageId String
+  type      String  // "UPLOADED_FILE" | "EXISTING_DOCUMENT"
+  filePath  String?
+  fileName  String
+  mimeType  String?
+
+  shareholderDocumentId String?
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("message_attachments")
 }
 
 // ============================================================================
