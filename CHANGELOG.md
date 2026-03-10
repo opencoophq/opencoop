@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.5.0] - 2026-03-10
+
+### Added
+- **Platform terms & conditions** — coop admins must accept T&C during onboarding; acceptance is versioned and timestamped on the user record
+- **Privacy policy acceptance** — shareholders must accept the OpenCoop privacy policy when registering via a public channel; versioned and stored on the registration record
+- **Cooperative terms acceptance** — shareholders accept coop-specific terms (when a channel has a `termsUrl`); conditionally shown and stored on registration
+- **Static legal pages** — `/terms` and `/privacy` pages with full i18n support (EN, NL, FR, DE)
+- **Version-stamped legal consent** — `TERMS_VERSION` and `PRIVACY_VERSION` constants in shared package, set server-side (never from client)
+
+### Fixed
+- **E2E registration tests** — updated to handle conditional coop terms checkbox and new required privacy checkbox
+
 ## [0.4.0] - 2026-03-09
 
 ### Added
