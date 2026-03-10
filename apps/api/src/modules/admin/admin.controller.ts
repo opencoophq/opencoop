@@ -105,6 +105,17 @@ export class AdminController {
     return this.coopsService.update(coopId, updateCoopDto, user.id, req.ip, req.headers['user-agent']);
   }
 
+  @Post('api-key/regenerate')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Generate or regenerate API key for external integrations' })
+  async regenerateApiKey(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+  ) {
+    return this.coopsService.regenerateApiKey(coopId, user.id, req.ip, req.headers['user-agent']);
+  }
+
   @Put('branding')
   @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Update coop branding' })
