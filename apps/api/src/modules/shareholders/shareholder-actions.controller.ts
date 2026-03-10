@@ -358,6 +358,28 @@ export class ShareholderActionsController {
     return this.documentsService.generateCertificate(shareholderId, locale);
   }
 
+  @Post('generate-certificate/:registrationId')
+  @ApiOperation({ summary: 'Generate share certificate for a specific registration (shareholder self-service)' })
+  async generateCertificateForRegistration(
+    @Param('shareholderId') shareholderId: string,
+    @Param('registrationId') registrationId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body('locale') locale?: string,
+  ) {
+    const shareholder = await this.verifyShareholder(shareholderId, user.id);
+
+    // Verify the registration belongs to this shareholder
+    const registration = await this.prisma.registration.findFirst({
+      where: { id: registrationId, shareholderId },
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    return this.documentsService.generateCertificateForRegistration(registrationId, shareholder.coopId, locale);
+  }
+
   @Post('generate-dividend-statement/:dividendPayoutId')
   @ApiOperation({ summary: 'Generate dividend statement (shareholder self-service)' })
   async generateDividendStatement(
