@@ -659,7 +659,7 @@ export default function ShareholderDetailPage() {
                     <TableCell>{formatDate(reg.registerDate)}</TableCell>
                     <TableCell>
                       <Badge variant={reg.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                        {reg.status}
+                        {t(`transactions.statuses.${reg.status}`)}
                       </Badge>
                     </TableCell>
                   </TableRow>
