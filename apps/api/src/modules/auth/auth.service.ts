@@ -538,6 +538,11 @@ export class AuthService {
       }),
     }));
 
+    // Sort shareholders: INDIVIDUAL first, then COMPANY, then MINOR
+    // This ensures dashboard pages (which use shareholders[0]) show the user's own record
+    const typePriority = { INDIVIDUAL: 0, COMPANY: 1, MINOR: 2 };
+    shareholdersWithComputed.sort((a, b) => (typePriority[a.type] ?? 9) - (typePriority[b.type] ?? 9));
+
     return {
       ...safeUser,
       shareholders: shareholdersWithComputed,
