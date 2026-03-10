@@ -42,6 +42,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -101,6 +102,8 @@ interface ShareholderDetail {
   };
   registrations: Registration[];
   createdAt: string;
+  isEcoPowerClient?: boolean;
+  ecoPowerId?: string;
 }
 
 interface PaymentDetails {
@@ -181,6 +184,11 @@ export default function ShareholderDetailPage() {
   const [rejectTxId, setRejectTxId] = useState('');
   const [rejectReason, setRejectReason] = useState('');
 
+  // Ecopower state
+  const [ecoPowerEnabled, setEcoPowerEnabled] = useState(false);
+  const [isEcoPowerClient, setIsEcoPowerClient] = useState(false);
+  const [ecoPowerId, setEcoPowerId] = useState('');
+
   // Audit log state
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -198,7 +206,14 @@ export default function ShareholderDetailPage() {
       const data = await api<ShareholderDetail>(
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
       );
+      // Fetch coop settings for Ecopower integration status
+      const settings = await api<{ ecoPowerEnabled: boolean }>(
+        `/admin/coops/${selectedCoop.id}/settings`,
+      );
+      setEcoPowerEnabled(settings.ecoPowerEnabled || false);
       setShareholder(data);
+      setIsEcoPowerClient(data.isEcoPowerClient || false);
+      setEcoPowerId(data.ecoPowerId || '');
       const addr = data.address || {};
       form.reset({
         firstName: data.firstName || '',
@@ -275,6 +290,11 @@ export default function ShareholderDetailPage() {
           city: city || '',
           country: country || '',
         };
+      }
+
+      if (ecoPowerEnabled) {
+        body.isEcoPowerClient = isEcoPowerClient;
+        body.ecoPowerId = ecoPowerId || null;
       }
 
       const updated = await api<ShareholderDetail>(
@@ -620,6 +640,33 @@ export default function ShareholderDetailPage() {
           </Button>
         </div>
       </form>
+
+      {/* Ecopower Integration */}
+      {ecoPowerEnabled && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('ecopower.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={isEcoPowerClient}
+                onCheckedChange={(c) => setIsEcoPowerClient(!!c)}
+              />
+              <Label>{t('ecopower.client')}</Label>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('ecopower.ecoPowerId')}</Label>
+              <Input
+                value={ecoPowerId}
+                onChange={(e) => setEcoPowerId(e.target.value)}
+                placeholder={t('ecopower.ecoPowerIdPlaceholder')}
+                disabled={!isEcoPowerClient}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Shareholdings */}
       <Card>
