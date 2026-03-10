@@ -51,6 +51,7 @@ interface ShareholderRow {
   email?: string;
   createdAt: string;
   registrations: Array<{ quantity: number; sharesOwned: number; status: string; registerDate: string }>;
+  isEcoPowerClient?: boolean;
 }
 
 interface PaginatedResponse {
@@ -131,6 +132,8 @@ export default function ShareholdersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [ecoPowerEnabled, setEcoPowerEnabled] = useState(false);
+  const [ecoPowerClientFilter, setEcoPowerClientFilter] = useState('all');
 
   // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
@@ -175,6 +178,7 @@ export default function ShareholdersPage() {
     if (search) params.set('search', search);
     if (statusFilter !== 'all') params.set('status', statusFilter);
     if (typeFilter !== 'all') params.set('type', typeFilter);
+    if (ecoPowerClientFilter !== 'all') params.set('ecoPowerClient', ecoPowerClientFilter);
 
     try {
       const result = await api<PaginatedResponse>(
@@ -186,11 +190,18 @@ export default function ShareholdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCoop, page, search, statusFilter, typeFilter]);
+  }, [selectedCoop, page, search, statusFilter, typeFilter, ecoPowerClientFilter]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!selectedCoop) return;
+    api<{ ecoPowerEnabled: boolean }>(`/admin/coops/${selectedCoop.id}/settings`)
+      .then((settings) => setEcoPowerEnabled(settings.ecoPowerEnabled || false))
+      .catch(() => {});
+  }, [selectedCoop]);
 
   const getName = (sh: ShareholderRow) =>
     sh.type === 'COMPANY'
@@ -352,6 +363,23 @@ export default function ShareholdersPage() {
                 <SelectItem value="MINOR">{t('shareholder.types.MINOR')}</SelectItem>
               </SelectContent>
             </Select>
+            {ecoPowerEnabled && (
+              <Select
+                value={ecoPowerClientFilter}
+                onValueChange={(v) => {
+                  setEcoPowerClientFilter(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder={t('ecopower.filterEcoPowerClient')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="true">{t('ecopower.filterEcoPowerClient')}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {loading ? (
@@ -370,6 +398,7 @@ export default function ShareholdersPage() {
                     <TableHead>{t('common.email')}</TableHead>
                     <TableHead className="text-right">{t('shares.title')}</TableHead>
                     <TableHead>{t('common.status')}</TableHead>
+                    {ecoPowerEnabled && <TableHead>{t('ecopower.client')}</TableHead>}
                     <TableHead>{t('shareholder.memberSince')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -402,6 +431,15 @@ export default function ShareholdersPage() {
                           {t(`shareholder.statuses.${sh.status}`)}
                         </Badge>
                       </TableCell>
+                      {ecoPowerEnabled && (
+                        <TableCell>
+                          {sh.isEcoPowerClient && (
+                            <Badge className="bg-green-100 text-green-800 border-green-200">
+                              Ecopower
+                            </Badge>
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell>{new Date(memberSince(sh)).toLocaleDateString(locale)}</TableCell>
                     </TableRow>
                   ))}
