@@ -18,11 +18,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { api } from '@/lib/api';
+import { api, apiFetch } from '@/lib/api';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatIban } from '@opencoop/shared';
-import { TrendingDown, QrCode, Gift, Download } from 'lucide-react';
+import { TrendingDown, QrCode, Gift, Download, FileDown } from 'lucide-react';
 
 interface RegistrationData {
   id: string;
@@ -108,6 +108,9 @@ export default function SharesPage() {
   const [bankBic, setBankBic] = useState('');
   const [bankLoading, setBankLoading] = useState(false);
 
+  // Certificate generation state
+  const [generatingCertFor, setGeneratingCertFor] = useState<string | null>(null);
+
   useEffect(() => {
     async function loadShares() {
       try {
@@ -146,6 +149,33 @@ export default function SharesPage() {
       case 'PENDING_PAYMENT': return 'outline' as const;
       case 'CANCELLED': return 'destructive' as const;
       default: return 'outline' as const;
+    }
+  };
+
+  const handleGenerateCertificate = async (regId: string) => {
+    if (!shareholder) return;
+    setGeneratingCertFor(regId);
+    try {
+      const doc = await api<{ id: string; filePath: string }>(
+        `/shareholders/${shareholder.id}/generate-certificate/${regId}`,
+        { method: 'POST', body: { locale: locale.split('-')[0] } },
+      );
+      const response = await apiFetch(
+        `/shareholders/${shareholder.id}/documents/${doc.id}/download`,
+      );
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.filePath.split('/').pop() || 'certificate.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch {
+      // ignore — download may fail if file not ready
+    } finally {
+      setGeneratingCertFor(null);
     }
   };
 
@@ -359,6 +389,17 @@ export default function SharesPage() {
                         >
                           <Download className="h-4 w-4 mr-1" />
                           {t('gift.downloadCertificate')}
+                        </Button>
+                      )}
+                      {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && !reg.isGift && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleGenerateCertificate(reg.id)}
+                          disabled={generatingCertFor === reg.id}
+                        >
+                          <FileDown className="h-4 w-4 mr-1" />
+                          {t('common.certificate')}
                         </Button>
                       )}
                       {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && !reg.isGift && (() => {
