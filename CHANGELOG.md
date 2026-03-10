@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.6] - 2026-03-10
+
+### Fixed
+- **Security: open redirect in OAuth callbacks** — validate `state.redirect` starts with `/` and has no `//` to prevent redirect to external domains
+- **Security: Swagger docs production exposure** — restored `NODE_ENV !== 'production'` guard on Swagger setup
+- **Security: permission guard bypass** — old JWTs missing `coopPermissions` claim now get `ForbiddenException` instead of full access
+- **Admin: canManageMessages permission** — added to admin UI and role defaults
+- **E2E: flaky sell-shares test** — added bankIban to seed data
+
+### Changed
+- `.gitignore` updated to block stale build artifacts, PII exports, and `.claire/` directory
+
 ## [0.7.3] - 2026-03-10
 
 ### Fixed
