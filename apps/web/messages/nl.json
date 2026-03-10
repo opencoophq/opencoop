@@ -761,7 +761,21 @@
       "confirmDisconnect": "Weet u zeker dat u uw bankrekening wilt ontkoppelen? Automatische betalingsmatching wordt gestopt.",
       "disconnected": "Bankrekening ontkoppeld.",
       "connecting": "Verbinden...",
-      "disconnecting": "Ontkoppelen..."
+      "disconnecting": "Ontkoppelen...",
+      "coopInfo": "Coöperatie-informatie",
+      "legalForm": "Rechtsvorm",
+      "foundedDate": "Oprichtingsdatum",
+      "certificateSignatory": "Ondertekenaar certificaten",
+      "coopPhone": "Telefoon",
+      "coopEmail": "E-mail",
+      "coopWebsite": "Website",
+      "vatNumber": "BTW-nummer",
+      "coopAddress": "Adres",
+      "addressStreet": "Straat",
+      "addressNumber": "Nummer",
+      "addressPostalCode": "Postcode",
+      "addressCity": "Stad",
+      "addressCountry": "Land"
     },
     "branding": {
       "title": "Huisstijl instellingen",

@@ -11,6 +11,58 @@ import { decryptField, isEncrypted } from '../../common/crypto';
 export class DocumentsService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Format a coop's coopAddress JSON into a single-line string.
+   */
+  private formatCoopAddress(coopAddress: unknown): string | undefined {
+    if (!coopAddress || typeof coopAddress !== 'object') return undefined;
+    const a = coopAddress as Record<string, string>;
+    const parts = [
+      [a.street, a.number].filter(Boolean).join(' '),
+      a.postalCode,
+      a.city,
+      a.country,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : undefined;
+  }
+
+  /**
+   * Extract the shareholder's city from the address JSON.
+   */
+  private getShareholderCity(address: unknown): string | undefined {
+    if (!address || typeof address !== 'object') return undefined;
+    return (address as Record<string, string>).city || undefined;
+  }
+
+  /**
+   * Build the common certificate props from coop + shareholder data.
+   */
+  private buildCertificateCoopProps(coop: {
+    legalForm?: string | null;
+    foundedDate?: string | null;
+    certificateSignatory?: string | null;
+    coopAddress?: unknown;
+    coopPhone?: string | null;
+    coopEmail?: string | null;
+    coopWebsite?: string | null;
+    vatNumber?: string | null;
+    bankIban?: string | null;
+    bankBic?: string | null;
+  }) {
+    return {
+      legalForm: coop.legalForm || undefined,
+      foundedDate: coop.foundedDate || undefined,
+      certificateSignatory: coop.certificateSignatory || undefined,
+      coopAddress: this.formatCoopAddress(coop.coopAddress),
+      coopPhone: coop.coopPhone || undefined,
+      coopEmail: coop.coopEmail || undefined,
+      coopWebsite: coop.coopWebsite || undefined,
+      vatNumber: coop.vatNumber || undefined,
+      bankIban: coop.bankIban || undefined,
+      bankBic: coop.bankBic || undefined,
+    };
+  }
+
   async generateCertificate(shareholderId: string, locale?: string) {
     const shareholder = await this.prisma.shareholder.findUnique({
       where: { id: shareholderId },
@@ -38,9 +90,16 @@ export class DocumentsService {
     const reg = shareholder.registrations[0];
     const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
     const pricePerShare = Number(reg.pricePerShare);
-    const vestedQuantity = pricePerShare > 0
-      ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity)
-      : 0;
+    let vestedQuantity: number;
+
+    // For imported registrations without payments, use full quantity
+    if (reg.payments.length === 0) {
+      vestedQuantity = reg.quantity;
+    } else {
+      vestedQuantity = pricePerShare > 0
+        ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity)
+        : 0;
+    }
 
     // S5: Don't generate certificate for 0 vested shares
     if (vestedQuantity <= 0) {
@@ -73,6 +132,9 @@ export class DocumentsService {
       purchaseDate: reg.registerDate.toISOString().split('T')[0],
       issueDate: new Date().toISOString().split('T')[0],
       locale: locale || 'nl',
+      shareholderCity: this.getShareholderCity(shareholder.address),
+      memberNumber: shareholder.memberNumber || undefined,
+      ...this.buildCertificateCoopProps(shareholder.coop),
     });
 
     const buffer = await renderToBuffer(element as any);
@@ -91,6 +153,108 @@ export class DocumentsService {
     const doc = await this.prisma.shareholderDocument.create({
       data: {
         shareholderId,
+        type: 'SHARE_CERTIFICATE',
+        filePath,
+      },
+    });
+
+    // Update registration certificate number
+    await this.prisma.registration.update({
+      where: { id: reg.id },
+      data: { certificateNumber: certNumber },
+    });
+
+    return doc;
+  }
+
+  async generateCertificateForRegistration(registrationId: string, coopId: string, locale?: string) {
+    const reg = await this.prisma.registration.findUnique({
+      where: { id: registrationId, coopId },
+      include: {
+        shareholder: {
+          include: { coop: true },
+        },
+        shareClass: true,
+        payments: { select: { amount: true } },
+      },
+    });
+
+    if (!reg) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    if (reg.type !== 'BUY' || !['ACTIVE', 'COMPLETED'].includes(reg.status)) {
+      throw new BadRequestException(
+        'Certificate can only be generated for BUY registrations with ACTIVE or COMPLETED status',
+      );
+    }
+
+    const shareholder = reg.shareholder;
+    const coop = shareholder.coop;
+    const pricePerShare = Number(reg.pricePerShare);
+    let vestedQuantity: number;
+
+    // For imported registrations without payments (e.g., Bronsgroen), use full quantity
+    if (reg.payments.length === 0) {
+      vestedQuantity = reg.quantity;
+    } else {
+      const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
+      vestedQuantity = pricePerShare > 0
+        ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity)
+        : 0;
+    }
+
+    if (vestedQuantity <= 0) {
+      throw new BadRequestException('No vested shares to certify — payment required first');
+    }
+
+    const totalValue = vestedQuantity * pricePerShare;
+
+    const shareholderName =
+      shareholder.type === 'COMPANY'
+        ? shareholder.companyName || ''
+        : `${shareholder.firstName || ''} ${shareholder.lastName || ''}`.trim();
+
+    const certNumber = `${coop.slug.toUpperCase()}-${Date.now()}`;
+
+    const element = React.createElement(ShareCertificate, {
+      certificateNumber: certNumber,
+      coopName: coop.name,
+      shareholderName,
+      shareholderType: shareholder.type,
+      nationalId: shareholder.nationalId
+        ? (isEncrypted(shareholder.nationalId) ? decryptField(shareholder.nationalId) : shareholder.nationalId)
+        : undefined,
+      companyId: shareholder.companyId || undefined,
+      shareClassName: reg.shareClass.name,
+      shareClassCode: reg.shareClass.code,
+      quantity: vestedQuantity,
+      pricePerShare,
+      totalValue,
+      purchaseDate: reg.registerDate.toISOString().split('T')[0],
+      issueDate: new Date().toISOString().split('T')[0],
+      locale: locale || 'nl',
+      shareholderCity: this.getShareholderCity(shareholder.address),
+      memberNumber: shareholder.memberNumber || undefined,
+      ...this.buildCertificateCoopProps(coop),
+    });
+
+    const buffer = await renderToBuffer(element as any);
+
+    // Save file
+    const uploadDir = process.env.UPLOAD_DIR || './uploads';
+    const dir = path.join(uploadDir, 'certificates');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const filePath = path.join(dir, `${certNumber}.pdf`);
+    fs.writeFileSync(filePath, buffer);
+
+    // Create document record
+    const doc = await this.prisma.shareholderDocument.create({
+      data: {
+        shareholderId: shareholder.id,
         type: 'SHARE_CERTIFICATE',
         filePath,
       },

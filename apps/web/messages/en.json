@@ -761,7 +761,21 @@
       "confirmDisconnect": "Are you sure you want to disconnect your bank account? Automatic payment matching will stop.",
       "disconnected": "Bank account disconnected.",
       "connecting": "Connecting...",
-      "disconnecting": "Disconnecting..."
+      "disconnecting": "Disconnecting...",
+      "coopInfo": "Coop Information",
+      "legalForm": "Legal Form",
+      "foundedDate": "Founded Date",
+      "certificateSignatory": "Certificate Signatory",
+      "coopPhone": "Phone",
+      "coopEmail": "Email",
+      "coopWebsite": "Website",
+      "vatNumber": "VAT Number",
+      "coopAddress": "Address",
+      "addressStreet": "Street",
+      "addressNumber": "Number",
+      "addressPostalCode": "Postal Code",
+      "addressCity": "City",
+      "addressCountry": "Country"
     },
     "branding": {
       "title": "Branding Settings",
