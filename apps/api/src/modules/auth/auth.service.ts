@@ -146,23 +146,11 @@ export class AuthService {
       console.error('Failed to link orphan shareholders:', err.message),
     );
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    };
-
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        preferredLanguage: user.preferredLanguage,
-        emailVerified: false,
-      },
-    };
+    return this.issueJwtForUser({
+      ...user,
+      emailVerified: null,
+      coopAdminOf: [],
+    });
   }
 
   async onboard(onboardingDto: OnboardingDto) {
@@ -271,24 +259,23 @@ export class AuthService {
 
     // New coop creator gets full Admin permissions
     const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true };
-    const payload = {
-      sub: result.user.id,
+
+    const tokenResult = await this.issueJwtForUser({
+      id: result.user.id,
       email: result.user.email,
+      name: result.user.name,
       role: result.user.role,
-      coopIds: [result.coop.id],
-      coopPermissions: { [result.coop.id]: adminPermissions },
-    };
+      preferredLanguage: result.user.preferredLanguage,
+      emailVerified: null,
+      coopAdminOf: [{
+        coopId: result.coop.id,
+        permissionOverrides: null,
+        role: { permissions: adminPermissions },
+      }],
+    });
 
     return {
-      accessToken: this.jwtService.sign(payload),
-      user: {
-        id: result.user.id,
-        email: result.user.email,
-        name: result.user.name,
-        role: result.user.role,
-        preferredLanguage: result.user.preferredLanguage,
-        emailVerified: false,
-      },
+      ...tokenResult,
       coop: {
         id: result.coop.id,
         name: result.coop.name,
@@ -743,33 +730,8 @@ export class AuthService {
       userAgent,
     });
 
-    // Issue full JWT with permissions
-    const coopIds = user.coopAdminOf.map((ca) => ca.coopId);
-    const coopPermissions: Record<string, any> = {};
-    for (const ca of user.coopAdminOf) {
-      const basePermissions = (ca.role.permissions ?? {}) as Record<string, boolean>;
-      const overrides = (ca.permissionOverrides ?? {}) as Record<string, boolean>;
-      coopPermissions[ca.coopId] = { ...basePermissions, ...overrides };
-    }
-    const jwtPayload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      ...(coopIds.length > 0 && { coopIds }),
-      ...(Object.keys(coopPermissions).length > 0 && { coopPermissions }),
-    };
-
-    return {
-      accessToken: this.jwtService.sign(jwtPayload),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        preferredLanguage: user.preferredLanguage,
-        emailVerified: !!user.emailVerified,
-      },
-    };
+    // Issue full JWT with permissions and refresh token
+    return this.issueJwtForUser(user);
   }
 
   async mfaDisable(userId: string, password: string) {
@@ -1043,23 +1005,14 @@ export class AuthService {
       return user;
     });
 
-    // Generate JWT for the new user
-    const payload = {
-      sub: result.id,
-      email: result.email,
-      role: result.role,
-    };
+    const tokenResult = await this.issueJwtForUser({
+      ...result,
+      emailVerified: new Date(),
+      coopAdminOf: [],
+    });
 
     return {
-      accessToken: this.jwtService.sign(payload),
-      user: {
-        id: result.id,
-        email: result.email,
-        name: result.name,
-        role: result.role,
-        preferredLanguage: result.preferredLanguage,
-        emailVerified: true,
-      },
+      ...tokenResult,
       message: 'Account created successfully. You can now manage your shares.',
     };
   }
@@ -1546,7 +1499,53 @@ export class AuthService {
     });
   }
 
-  private issueJwtForUser(user: {
+  async refreshAccessToken(refreshToken: string) {
+    const tokenHash = hashToken(refreshToken);
+    const storedToken = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: {
+        user: {
+          include: {
+            coopAdminOf: { include: { role: true } },
+          },
+        },
+      },
+    });
+
+    if (!storedToken || storedToken.revokedAt || storedToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const user = storedToken.user;
+    const coopIds = user.coopAdminOf.map((ca) => ca.coopId);
+    const coopPermissions: Record<string, any> = {};
+    for (const ca of user.coopAdminOf) {
+      const basePermissions = (ca.role.permissions ?? {}) as Record<string, boolean>;
+      const overrides = ((ca.permissionOverrides ?? {}) as Record<string, boolean>);
+      coopPermissions[ca.coopId] = { ...basePermissions, ...overrides };
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      ...(coopIds.length > 0 && { coopIds }),
+      ...(Object.keys(coopPermissions).length > 0 && { coopPermissions }),
+    };
+
+    return {
+      accessToken: this.jwtService.sign(payload, { expiresIn: '15m' }),
+    };
+  }
+
+  async revokeRefreshTokens(userId: string) {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  private async issueJwtForUser(user: {
     id: string;
     email: string;
     name: string | null;
@@ -1584,8 +1583,22 @@ export class AuthService {
       ...(Object.keys(coopPermissions).length > 0 && { coopPermissions }),
     };
 
+    // Generate refresh token
+    const rawRefreshToken = randomBytes(32).toString('hex');
+    const refreshTokenHash = hashToken(rawRefreshToken);
+    const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+    await this.prisma.refreshToken.create({
+      data: {
+        tokenHash: refreshTokenHash,
+        userId: user.id,
+        expiresAt: refreshExpiresAt,
+      },
+    });
+
     return {
-      accessToken: this.jwtService.sign(payload),
+      accessToken: this.jwtService.sign(payload, { expiresIn: '15m' }),
+      refreshToken: rawRefreshToken,
       user: {
         id: user.id,
         email: user.email,

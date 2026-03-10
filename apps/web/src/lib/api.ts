@@ -10,38 +10,96 @@ export function resolveLogoUrl(logoUrl: string | null | undefined): string | nul
   return `${API_URL}${logoUrl}`;
 }
 
-export async function api<T = unknown>(
-  path: string,
-  options: FetchOptions = {},
-): Promise<T> {
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+// Prevent concurrent refresh requests
+let refreshPromise: Promise<boolean> | null = null;
 
-  const { body, headers: customHeaders, ...rest } = options;
-  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+async function tryRefreshToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
 
+  refreshPromise = (async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return false;
+
+    try {
+      const response = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      localStorage.setItem('accessToken', data.accessToken);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+function clearAuthAndRedirect() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  window.location.href = '/login';
+}
+
+function buildHeaders(
+  customHeaders: Record<string, string> | undefined,
+  isFormData: boolean,
+): Record<string, string> {
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-    ...((customHeaders as Record<string, string>) || {}),
+    ...(customHeaders || {}),
   };
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  return headers;
+}
+
+function buildBody(body: unknown, isFormData: boolean): BodyInit | undefined {
+  if (isFormData) return body as FormData;
+  if (body) return JSON.stringify(body);
+  return undefined;
+}
+
+export async function api<T = unknown>(
+  path: string,
+  options: FetchOptions = {},
+): Promise<T> {
+  const { body, headers: customHeaders, ...rest } = options;
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
+  let response = await fetch(`${API_URL}${path}`, {
     ...rest,
-    headers,
-    body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
+    headers: buildHeaders(customHeaders as Record<string, string>, isFormData),
+    body: buildBody(body, isFormData),
   });
 
-  if (response.status === 401) {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  // On 401, attempt token refresh and retry once
+  if (response.status === 401 && typeof window !== 'undefined') {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      response = await fetch(`${API_URL}${path}`, {
+        ...rest,
+        headers: buildHeaders(customHeaders as Record<string, string>, isFormData),
+        body: buildBody(body, isFormData),
+      });
     }
-    throw new Error('Unauthorized');
+
+    if (response.status === 401) {
+      clearAuthAndRedirect();
+      throw new Error('Unauthorized');
+    }
   }
 
   if (!response.ok) {
@@ -69,34 +127,30 @@ export async function apiFetch(
   path: string,
   options: FetchOptions = {},
 ): Promise<Response> {
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-
   const { body, headers: customHeaders, ...rest } = options;
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
-  const headers: Record<string, string> = {
-    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-    ...((customHeaders as Record<string, string>) || {}),
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_URL}${path}`, {
+  let response = await fetch(`${API_URL}${path}`, {
     ...rest,
-    headers,
-    body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
+    headers: buildHeaders(customHeaders as Record<string, string>, isFormData),
+    body: buildBody(body, isFormData),
   });
 
-  if (response.status === 401) {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  // On 401, attempt token refresh and retry once
+  if (response.status === 401 && typeof window !== 'undefined') {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      response = await fetch(`${API_URL}${path}`, {
+        ...rest,
+        headers: buildHeaders(customHeaders as Record<string, string>, isFormData),
+        body: buildBody(body, isFormData),
+      });
     }
-    throw new Error('Unauthorized');
+
+    if (response.status === 401) {
+      clearAuthAndRedirect();
+      throw new Error('Unauthorized');
+    }
   }
 
   if (!response.ok) {
