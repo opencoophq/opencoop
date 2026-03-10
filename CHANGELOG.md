@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.6.2] - 2026-03-10
+
+### Added
+- **Share purchase confirmation email** — automatically sends payment details (IBAN, BIC, OGM code, amount) to shareholders after registration when status is PENDING_PAYMENT
+- **Resend payment email endpoint** — admins can resend the payment info email for any registration
+
 ## [0.6.1] - 2026-03-10
 
 ### Fixed
