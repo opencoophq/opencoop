@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.0] - 2026-03-10
+
+### Added
+- **Redesigned share certificate** — Bronsgroen-style layout with coop name, legal form, signatory, table with name+city, member number, shares, amount, registration date
+- **Coop info fields** — legalForm, foundedDate, certificateSignatory, address, phone, email, website, VAT number, logo URL (admin settings)
+- **Shareholder member number** — vennotennummer field on shareholder model
+- **Per-registration certificate generation** — button in admin shareholder detail to generate certificate for individual transactions
+- **FR/DE certificate translations** — certificate PDF template now supports all 4 languages
+
+### Fixed
+- **Tenant isolation** on new certificate endpoint — validates registrationId belongs to the coop
+
 ## [0.6.2] - 2026-03-10
 
 ### Added
