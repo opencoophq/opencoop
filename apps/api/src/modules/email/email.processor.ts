@@ -238,7 +238,13 @@ export class EmailProcessor {
           <li>Quantity: ${d.quantity}</li>
           <li>Total Amount: €${(d.totalAmount as number).toFixed(2)}</li>
         </ul>
-        ${d.ogmCode ? `<p>Please use the following structured communication for your bank transfer: <strong>${d.ogmCode}</strong></p>` : ''}
+        ${d.bankIban || d.ogmCode ? `
+        <h2>Payment Details</h2>
+        ${d.bankIban ? `<p>IBAN: <strong>${d.bankIban}</strong></p>` : ''}
+        ${d.bankBic ? `<p>BIC: <strong>${d.bankBic}</strong></p>` : ''}
+        ${d.ogmCode ? `<p>Structured communication: <strong>${d.ogmCode}</strong></p>` : ''}
+        <p>Amount: <strong>€${(d.totalAmount as number).toFixed(2)}</strong></p>
+        ` : ''}
         <p>Thank you for investing in ${cn}!</p>
       `,
       'payment-confirmed': (d, cn) => `
