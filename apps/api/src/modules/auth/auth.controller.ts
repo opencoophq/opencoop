@@ -24,6 +24,10 @@ import { AppleAuthGuard } from './guards/apple-auth.guard';
 import { CoopAdminsService } from '../coop-admins/coop-admins.service';
 import { AuditService } from '../audit/audit.service';
 
+function isSafeRedirectPath(path: string): boolean {
+  return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//');
+}
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -348,7 +352,7 @@ export class AuthController {
     try {
       if (req.query.state) {
         const state = JSON.parse(req.query.state);
-        if (state.mode === 'prefill' && state.redirect) {
+        if (state.mode === 'prefill' && state.redirect && isSafeRedirectPath(state.redirect)) {
           const { email, name } = req.user;
           const [firstName, ...rest] = (name || '').split(' ');
           const lastName = rest.join(' ');
@@ -404,7 +408,7 @@ export class AuthController {
       const rawState = req.body?.state || req.query?.state;
       if (rawState) {
         const state = JSON.parse(rawState);
-        if (state.mode === 'prefill' && state.redirect) {
+        if (state.mode === 'prefill' && state.redirect && isSafeRedirectPath(state.redirect)) {
           const { email, firstName, lastName } = req.user;
           const params = new URLSearchParams({
             prefill: '1',
