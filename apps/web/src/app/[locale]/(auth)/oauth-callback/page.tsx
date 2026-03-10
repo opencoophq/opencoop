@@ -28,6 +28,9 @@ export default function OAuthCallbackPage() {
         const result = JSON.parse(decodeURIComponent(dataParam));
         if (result.accessToken && result.user) {
           localStorage.setItem('accessToken', result.accessToken);
+          if (result.refreshToken) {
+            localStorage.setItem('refreshToken', result.refreshToken);
+          }
           localStorage.setItem('user', JSON.stringify(result.user));
           router.push('/dashboard');
           return;
@@ -51,6 +54,7 @@ export default function OAuthCallbackPage() {
             mfaToken={mfaToken}
             onSuccess={(result) => {
               localStorage.setItem('accessToken', result.accessToken);
+              if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
               localStorage.setItem('user', JSON.stringify(result.user));
               router.push('/dashboard');
             }}

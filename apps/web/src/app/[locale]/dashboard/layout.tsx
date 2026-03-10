@@ -129,7 +129,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }, [selectedCoop]);
 
   const handleLogout = () => {
+    api('/auth/logout', { method: 'POST' }).catch(() => {});
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     router.push('/login');
   };

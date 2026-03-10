@@ -54,9 +54,13 @@ export default function InviteAcceptPage() {
       });
       setStatus('success');
       // Refresh the JWT to include new coop permissions
-      const meData = await api<{ accessToken?: string }>('/auth/refresh');
-      if (meData?.accessToken) {
-        localStorage.setItem('accessToken', meData.accessToken);
+      const storedRefreshToken = localStorage.getItem('refreshToken');
+      if (storedRefreshToken) {
+        const refreshData = await api<{ accessToken: string }>('/auth/refresh', {
+          method: 'POST',
+          body: { refreshToken: storedRefreshToken },
+        });
+        localStorage.setItem('accessToken', refreshData.accessToken);
       }
       setTimeout(() => router.push('/dashboard/admin'), 2000);
     } catch (err: any) {
