@@ -94,4 +94,14 @@ export class PublicRegisterDto {
   @IsOptional()
   @IsBoolean()
   isGift?: boolean;
+
+  // === Terms & privacy acceptance ===
+  @ApiProperty({ required: false, description: 'Whether coop terms were accepted' })
+  @IsOptional()
+  @IsBoolean()
+  coopTermsAccepted?: boolean;
+
+  @ApiProperty({ description: 'Whether privacy policy was accepted' })
+  @IsBoolean()
+  privacyAccepted: boolean;
 }

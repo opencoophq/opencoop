@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/routing';
+import { useRouter, Link } from '@/i18n/routing';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Check, ArrowRight, ArrowLeft, Loader2, Mail } from 'lucide-react';
 
@@ -27,6 +28,7 @@ function slugify(value: string): string {
 
 export default function OnboardingPage() {
   const t = useTranslations('onboarding');
+  const tLegal = useTranslations('legal');
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -44,6 +46,7 @@ export default function OnboardingPage() {
       email: z.string().min(1, t('validation.emailRequired')).email(t('validation.emailInvalid')),
       password: z.string().min(8, t('validation.passwordMin')),
       confirmPassword: z.string(),
+      acceptTerms: z.literal(true, { message: t('validation.acceptTerms') }),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: t('validation.passwordMismatch'),
@@ -63,7 +66,7 @@ export default function OnboardingPage() {
 
   const accountForm = useForm<AccountForm>({
     resolver: zodResolver(accountSchema),
-    defaultValues: { email: '', password: '', confirmPassword: '' },
+    defaultValues: { email: '', password: '', confirmPassword: '', acceptTerms: undefined as never },
   });
 
   const coopForm = useForm<CoopForm>({
@@ -95,6 +98,7 @@ export default function OnboardingPage() {
           coopSlug: data.coopSlug,
           plan,
           ...(!isFree && { billingPeriod: billing }),
+          termsAccepted: accountValues.acceptTerms === true,
         }),
       });
 
@@ -222,6 +226,30 @@ export default function OnboardingPage() {
                   </p>
                 )}
               </div>
+
+              <div className="flex items-start space-x-2 mt-4">
+                <Checkbox
+                  id="acceptTerms"
+                  checked={accountForm.watch('acceptTerms') || false}
+                  onCheckedChange={(checked) =>
+                    accountForm.setValue('acceptTerms', checked === true ? true : undefined as never, { shouldValidate: true })
+                  }
+                />
+                <Label htmlFor="acceptTerms" className="text-sm leading-5">
+                  {tLegal.rich('acceptTermsAndConditions', {
+                    link: (chunks) => (
+                      <Link href="/terms" target="_blank" className="underline hover:no-underline text-primary">
+                        {chunks}
+                      </Link>
+                    ),
+                  })}
+                </Label>
+              </div>
+              {accountForm.formState.errors.acceptTerms && (
+                <p className="text-sm text-destructive mt-1">
+                  {accountForm.formState.errors.acceptTerms.message}
+                </p>
+              )}
 
               <Button type="submit" className="w-full">
                 {t('steps.cooperative')}
