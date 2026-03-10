@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.7] - 2026-03-10
+
+### Fixed
+- **Dashboard: parent sees only minor's shares** — sort shareholders by type priority (INDIVIDUAL > COMPANY > MINOR) so the parent's own record always appears first
+- **Data fix script** — `fix-minor-shareholder.ts` corrects minor shareholders that share a userId with their parent
+
 ## [0.7.6] - 2026-03-10
 
 ### Fixed
