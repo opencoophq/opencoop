@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.6.0] - 2026-03-10
+
+### Added
+- **Ecopower shareholder integration** — track which shareholders are Ecopower energy clients and enforce minimum shareholding requirements
+  - Coop settings: enable/disable Ecopower integration, configure threshold type (euro or shares) and minimum value
+  - Shareholder fields: Ecopower client flag and optional Ecopower ID
+  - Exit guard: prevents Ecopower clients from selling shares below the configured minimum threshold (enforced on sales and transfers)
+  - External API with API key authentication for batch querying shareholders and updating Ecopower client status (rate limited at 60 req/min per key)
+  - API key management: generate/regenerate keys with bcrypt hashing (plaintext shown once, never stored)
+  - Ecopower column and filter on shareholder list page
+  - Full i18n support (EN, NL, FR, DE)
+
 ## [0.5.2] - 2026-03-10
 
 ### Fixed
