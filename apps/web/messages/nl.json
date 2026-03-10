@@ -550,6 +550,27 @@
         "addOwner": "Begunstigde toevoegen",
         "removeOwner": "Verwijderen",
         "ownershipPercentage": "Eigendom %"
+      },
+      "import": {
+        "title": "Aandeelhouders importeren",
+        "description": "Upload een CSV- of Excel-bestand om aandeelhouders in bulk te importeren.",
+        "button": "Importeren",
+        "uploadFile": "Bestand uploaden",
+        "selectFile": "Selecteer een CSV- of Excel-bestand",
+        "supportedFormats": "Ondersteunde formaten: .csv, .xlsx",
+        "preview": "Voorbeeld",
+        "previewDescription": "Controleer de gegevens voor het importeren. Corrigeer eventuele fouten en probeer opnieuw.",
+        "validRows": "Geldige rijen",
+        "invalidRows": "Ongeldige rijen",
+        "totalRows": "Totaal rijen",
+        "row": "Rij",
+        "errors": "Fouten",
+        "confirm": "{count} aandeelhouders importeren",
+        "importing": "Importeren...",
+        "success": "{count} aandeelhouders succesvol geïmporteerd.",
+        "noValidRows": "Geen geldige rijen gevonden. Corrigeer de fouten en probeer opnieuw.",
+        "downloadTemplate": "Sjabloon downloaden",
+        "dryRunning": "Valideren..."
       }
     },
     "shareholderDetail": {
