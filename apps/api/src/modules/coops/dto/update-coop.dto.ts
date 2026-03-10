@@ -101,6 +101,7 @@ export class UpdateCoopDto {
 
   @ApiProperty({ required: false, enum: EcoPowerThresholdType })
   @IsOptional()
+  @ValidateIf((o) => o.ecoPowerMinThresholdType !== null)
   @IsEnum(EcoPowerThresholdType)
   ecoPowerMinThresholdType?: EcoPowerThresholdType | null;
 
