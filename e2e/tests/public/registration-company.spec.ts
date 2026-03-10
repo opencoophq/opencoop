@@ -34,8 +34,8 @@ test.describe('Public registration - Company', () => {
     await page.waitForSelector('[role="option"]', { timeout: 5_000 });
     await page.locator('[role="option"]').first().click();
 
-    // Accept terms
-    await page.locator('#terms').click();
+    // Accept privacy policy (coop terms checkbox only shown when channel has termsUrl)
+    await page.locator('#privacy').click();
 
     // Complete registration
     await page.getByRole('button', { name: 'Registratie voltooien' }).click();
