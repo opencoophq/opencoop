@@ -101,6 +101,7 @@ export function CoopMagicLinkContent({
 
         // Store token and user data
         localStorage.setItem('accessToken', result.accessToken);
+        localStorage.setItem('refreshToken', result.refreshToken);
         localStorage.setItem('user', JSON.stringify(result.user));
 
         setState('success');

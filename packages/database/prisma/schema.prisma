@@ -269,6 +269,7 @@ model User {
   webAuthnCredentials    WebAuthnCredential[]
   auditLogs              AuditLog[]
   conversationsCreated   Conversation[]        @relation("ConversationCreatedBy")
+  refreshTokens          RefreshToken[]
 
   @@map("users")
 }
@@ -290,6 +291,20 @@ model WebAuthnCredential {
 
   @@index([userId])
   @@map("webauthn_credentials")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model MagicLinkToken {
