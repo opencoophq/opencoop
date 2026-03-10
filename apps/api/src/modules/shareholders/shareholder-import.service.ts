@@ -284,7 +284,7 @@ export class ShareholderImportService {
       return result;
     }
 
-    // Create shareholders in a transaction
+    // Create shareholders and audit log in a single transaction
     await this.prisma.$transaction(async (tx) => {
       for (const item of validRows) {
         const row = item.data;
@@ -320,28 +320,29 @@ export class ShareholderImportService {
             address: address ? JSON.parse(JSON.stringify(address)) : undefined,
           },
         });
-
-        result.created++;
       }
+
+      await tx.auditLog.create({
+        data: {
+          coopId,
+          entity: 'Shareholder',
+          entityId: coopId,
+          action: 'BULK_IMPORT',
+          changes: [
+            {
+              field: '_bulk_import',
+              oldValue: null,
+              newValue: `Imported ${validRows.length} shareholders from ${file.originalname}`,
+            },
+          ],
+          actorId,
+          ipAddress: ip || null,
+          userAgent: userAgent || null,
+        },
+      });
     });
 
-    // Audit log
-    await this.auditService.log({
-      coopId,
-      entity: 'Shareholder',
-      entityId: coopId,
-      action: 'BULK_IMPORT',
-      changes: [
-        {
-          field: '_bulk_import',
-          oldValue: null,
-          newValue: `Imported ${result.created} shareholders from ${file.originalname}`,
-        },
-      ],
-      actorId,
-      ipAddress: ip,
-      userAgent,
-    });
+    result.created = validRows.length;
 
     return result;
   }

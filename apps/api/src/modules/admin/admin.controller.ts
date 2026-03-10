@@ -314,6 +314,17 @@ export class AdminController {
     return canViewPII ? result : maskShareholderListPII(result);
   }
 
+  @Get('shareholders/import/template')
+  @RequirePermission('canManageShareholders')
+  @ApiOperation({ summary: 'Download CSV import template' })
+  async getImportTemplate(@Res() res: Response) {
+    const columns = this.shareholderImportService.getTemplateColumns();
+    const csv = columns.join(',') + '\n';
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="shareholders-import-template.csv"');
+    res.send(csv);
+  }
+
   @Get('shareholders/:id')
   @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Get shareholder by ID' })
@@ -351,7 +362,18 @@ export class AdminController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const allowed = [
+        'text/csv',
+        'text/plain',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+      ];
+      cb(null, allowed.includes(file.mimetype));
+    },
+  }))
   async importShareholders(
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
@@ -360,9 +382,9 @@ export class AdminController {
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('No file uploaded. Accepted formats: .csv, .xlsx');
     }
-    const isDryRun = dryRun !== 'false';
+    const isDryRun = dryRun?.toLowerCase() !== 'false';
     return this.shareholderImportService.importShareholders(
       coopId,
       file,
@@ -371,17 +393,6 @@ export class AdminController {
       req.ip,
       req.headers['user-agent'],
     );
-  }
-
-  @Get('shareholders/import/template')
-  @RequirePermission('canManageShareholders')
-  @ApiOperation({ summary: 'Download CSV import template' })
-  async getImportTemplate(@Res() res: Response) {
-    const columns = this.shareholderImportService.getTemplateColumns();
-    const csv = columns.join(',') + '\n';
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="shareholders-import-template.csv"');
-    res.send(csv);
   }
 
   @Put('shareholders/:id')
