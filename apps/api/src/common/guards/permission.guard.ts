@@ -28,9 +28,8 @@ export class PermissionGuard implements CanActivate {
 
     const permissions: CoopPermissions | undefined = user.coopPermissions?.[coopId];
 
-    // Backwards compat: old JWTs without coopPermissions default to full access
     if (!user.coopPermissions) {
-      return true;
+      throw new ForbiddenException('Session expired — please log in again');
     }
 
     if (!permissions) {
