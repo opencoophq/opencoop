@@ -47,9 +47,7 @@ export default function OnboardingPage() {
       email: z.string().min(1, t('validation.emailRequired')).email(t('validation.emailInvalid')),
       password: z.string().min(8, t('validation.passwordMin')),
       confirmPassword: z.string(),
-      acceptTerms: z.literal(true, {
-        errorMap: () => ({ message: t('validation.acceptTerms') }),
-      }),
+      acceptTerms: z.literal(true, { message: t('validation.acceptTerms') }),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: t('validation.passwordMismatch'),
