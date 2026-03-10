@@ -329,8 +329,8 @@ export class RegistrationsService {
       });
     });
 
-    // Send payment info email (only if shareholder has email, coop has email enabled, and payment is expected)
-    if (shareholder.email && coop.emailEnabled && registration.status === 'PENDING_PAYMENT') {
+    // Send payment info email (only if shareholder has email and coop has email enabled)
+    if (shareholder.email && coop.emailEnabled) {
       const shareholderName = shareholder.companyName
         || [shareholder.firstName, shareholder.lastName].filter(Boolean).join(' ');
 
