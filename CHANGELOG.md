@@ -2,6 +2,20 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.9] - 2026-03-10
+
+### Added
+- **Shareholder bulk import** — import shareholders from CSV or Excel (.xlsx) files via the admin dashboard
+  - Two-step flow: dry-run validation first, then commit on confirmation
+  - Validates required fields per shareholder type (INDIVIDUAL, COMPANY, MINOR)
+  - Email uniqueness checks (per-coop), date format validation, 5000 row limit
+  - Encrypts nationalId fields before storage
+  - CSV template download for easy onboarding
+  - Frontend import dialog with file upload, preview stats, and per-row error details
+  - i18n support in all 4 languages (EN, NL, FR, DE)
+  - MIME type validation on file upload
+  - Audit log written atomically inside the same database transaction
+
 ## [0.7.8] - 2026-03-10
 
 ### Added
