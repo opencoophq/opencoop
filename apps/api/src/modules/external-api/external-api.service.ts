@@ -67,6 +67,74 @@ export class ExternalApiService {
     });
   }
 
+  async searchByName(coopId: string, name: string) {
+    const terms = name.trim().split(/\s+/);
+    if (terms.length === 0) return [];
+
+    const shareholders = await this.prisma.shareholder.findMany({
+      where: {
+        coopId,
+        AND: terms.map((term) => ({
+          OR: [
+            { firstName: { contains: term, mode: 'insensitive' as const } },
+            { lastName: { contains: term, mode: 'insensitive' as const } },
+          ],
+        })),
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        companyName: true,
+        type: true,
+        isEcoPowerClient: true,
+        ecoPowerId: true,
+        registrations: {
+          where: { status: { in: ['ACTIVE', 'COMPLETED', 'PENDING_PAYMENT'] } },
+          select: {
+            type: true,
+            quantity: true,
+            pricePerShare: true,
+            status: true,
+            payments: { select: { amount: true } },
+          },
+        },
+      },
+    });
+
+    return shareholders.map((sh) => {
+      let totalShares = 0;
+      let totalShareValue = 0;
+
+      for (const reg of sh.registrations) {
+        const pricePerShare = Number(reg.pricePerShare);
+        if (reg.type === 'BUY') {
+          const paid = computeTotalPaid(reg.payments);
+          const vested = computeVestedShares(paid, pricePerShare, reg.quantity);
+          totalShares += vested;
+          totalShareValue += vested * pricePerShare;
+        } else if (reg.type === 'SELL') {
+          totalShares -= reg.quantity;
+          totalShareValue -= reg.quantity * pricePerShare;
+        }
+      }
+
+      return {
+        id: sh.id,
+        email: sh.email,
+        firstName: sh.firstName,
+        lastName: sh.lastName,
+        companyName: sh.companyName,
+        type: sh.type,
+        totalShares: Math.max(0, totalShares),
+        totalShareValue: Math.max(0, totalShareValue),
+        isEcoPowerClient: sh.isEcoPowerClient,
+        ecoPowerId: sh.ecoPowerId,
+      };
+    });
+  }
+
   async updateEcoPowerStatus(
     coopId: string,
     updates: { email: string; isEcoPowerClient: boolean; ecoPowerId?: string }[],
