@@ -54,8 +54,8 @@ test.describe('Public registration - Individual', () => {
     const quantityInput = page.locator('input[type="number"]');
     await expect(quantityInput).toBeVisible();
 
-    // Accept terms checkbox
-    await page.locator('#terms').click();
+    // Accept privacy policy (coop terms checkbox only shown when channel has termsUrl)
+    await page.locator('#privacy').click();
 
     // Click "Registratie voltooien"
     await page.getByRole('button', { name: 'Registratie voltooien' }).click();
