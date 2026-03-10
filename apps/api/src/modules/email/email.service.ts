@@ -108,6 +108,8 @@ export class EmailService {
       quantity: number;
       totalAmount: number;
       ogmCode?: string;
+      bankIban?: string;
+      bankBic?: string;
     },
   ) {
     return this.send({
