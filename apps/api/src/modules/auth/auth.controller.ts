@@ -13,6 +13,7 @@ import { ValidateUpgradeTokenDto, UpgradeToAdultDto } from './dto/upgrade-to-adu
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { WaitlistDto } from './dto/waitlist.dto';
 import { MfaEnableDto, MfaVerifyDto, MfaDisableDto } from './dto/mfa.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -66,6 +67,26 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto, @Req() req: Request) {
     return this.authService.login(loginDto, req.ip, req.headers['user-agent']);
+  }
+
+  @Public()
+  @Post('refresh')
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  @ApiResponse({ status: 200, description: 'New access token issued' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.refreshAccessToken(refreshTokenDto.refreshToken);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout and revoke all refresh tokens' })
+  @ApiResponse({ status: 200, description: 'Logged out successfully' })
+  async logout(@CurrentUser() user: CurrentUserData) {
+    await this.authService.revokeRefreshTokens(user.id);
+    return { message: 'Logged out successfully' };
   }
 
   @Public()

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Fingerprint } from 'lucide-react';
 
 interface PasskeyLoginButtonProps {
-  onSuccess: (result: { accessToken: string; user: Record<string, unknown> }) => void;
+  onSuccess: (result: { accessToken: string; refreshToken?: string; user: Record<string, unknown> }) => void;
   onMfaRequired?: (mfaToken: string) => void;
   onError?: (error: string) => void;
   brandColor?: string;

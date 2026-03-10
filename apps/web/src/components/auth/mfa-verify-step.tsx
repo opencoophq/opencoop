@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface MfaVerifyStepProps {
   mfaToken: string;
-  onSuccess: (result: { accessToken: string; user: Record<string, unknown> }) => void;
+  onSuccess: (result: { accessToken: string; refreshToken?: string; user: Record<string, unknown> }) => void;
   onBack?: () => void;
   brandColor?: string;
 }

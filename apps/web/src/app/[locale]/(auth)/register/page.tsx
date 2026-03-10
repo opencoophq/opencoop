@@ -59,6 +59,7 @@ export default function RegisterPage() {
       }
 
       localStorage.setItem('accessToken', result.accessToken);
+      localStorage.setItem('refreshToken', result.refreshToken);
       localStorage.setItem('user', JSON.stringify(result.user));
       router.push('/dashboard');
     } catch (err) {
