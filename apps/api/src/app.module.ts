@@ -32,6 +32,7 @@ import { CoopAdminsModule } from './modules/coop-admins/coop-admins.module';
 import { McpTools } from './modules/mcp/mcp.tools';
 import { PontoModule } from './modules/ponto/ponto.module';
 import { LlmsModule } from './modules/llms/llms.module';
+import { ExternalApiModule } from './modules/external-api/external-api.module';
 
 @Module({
   imports: [
@@ -85,6 +86,7 @@ import { LlmsModule } from './modules/llms/llms.module';
       },
     }),
     LlmsModule,
+    ExternalApiModule,
   ],
   providers: [
     {

@@ -60,6 +60,9 @@ interface FormState {
   graphClientSecret: string;
   graphTenantId: string;
   graphFromEmail: string;
+  ecoPowerEnabled: boolean;
+  ecoPowerMinThresholdType: string;
+  ecoPowerMinThreshold: string;
 }
 
 interface SettingsResponse {
@@ -79,6 +82,10 @@ interface SettingsResponse {
   graphClientId: string | null;
   graphTenantId: string | null;
   graphFromEmail: string | null;
+  ecoPowerEnabled: boolean;
+  ecoPowerMinThresholdType: string | null;
+  ecoPowerMinThreshold: number | null;
+  apiKeyPrefix: string | null;
 }
 
 interface PontoConnection {
@@ -157,6 +164,9 @@ export default function AdminSettingsPage() {
     graphClientSecret: '',
     graphTenantId: '',
     graphFromEmail: '',
+    ecoPowerEnabled: false,
+    ecoPowerMinThresholdType: 'EURO',
+    ecoPowerMinThreshold: '',
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -170,6 +180,13 @@ export default function AdminSettingsPage() {
   const [pontoStatus, setPontoStatus] = useState<PontoStatus | null>(null);
   const [pontoLoading, setPontoLoading] = useState(false);
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
+
+  // Ecopower API key state
+  const [apiKeyPrefix, setApiKeyPrefix] = useState<string | null>(null);
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
+  const [newApiKey, setNewApiKey] = useState('');
+  const [apiKeyCopied, setApiKeyCopied] = useState(false);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -234,7 +251,11 @@ export default function AdminSettingsPage() {
           graphClientSecret: '',
           graphTenantId: settings.graphTenantId || '',
           graphFromEmail: settings.graphFromEmail || '',
+          ecoPowerEnabled: settings.ecoPowerEnabled || false,
+          ecoPowerMinThresholdType: settings.ecoPowerMinThresholdType || 'EURO',
+          ecoPowerMinThreshold: settings.ecoPowerMinThreshold?.toString() || '',
         });
+        setApiKeyPrefix(settings.apiKeyPrefix || null);
         if (ponto) {
           setPontoStatus(ponto);
         }
@@ -258,6 +279,9 @@ export default function AdminSettingsPage() {
         bankBic: form.bankBic,
         termsUrl: form.termsUrl,
         emailProvider: form.emailProvider === 'platform' ? null : form.emailProvider,
+        ecoPowerEnabled: form.ecoPowerEnabled,
+        ecoPowerMinThresholdType: form.ecoPowerEnabled ? form.ecoPowerMinThresholdType : null,
+        ecoPowerMinThreshold: form.ecoPowerEnabled ? (parseFloat(form.ecoPowerMinThreshold) || null) : null,
       };
 
       if (isSystemAdmin) {
@@ -349,6 +373,22 @@ export default function AdminSettingsPage() {
       setPontoStatus((prev) =>
         prev ? { ...prev, autoMatchPayments: checked } : prev,
       );
+    } catch {
+      setError(t('admin.settings.error'));
+    }
+  };
+
+  const handleRegenerateApiKey = async () => {
+    if (!selectedCoop) return;
+    setShowRegenerateConfirm(false);
+    try {
+      const { apiKey } = await api<{ apiKey: string }>(
+        `/admin/coops/${selectedCoop.id}/api-key/regenerate`,
+        { method: 'POST' },
+      );
+      setNewApiKey(apiKey);
+      setShowApiKeyDialog(true);
+      setApiKeyPrefix(apiKey.substring(0, 8));
     } catch {
       setError(t('admin.settings.error'));
     }
@@ -640,6 +680,75 @@ export default function AdminSettingsPage() {
           </Card>
         )}
 
+        {/* Ecopower Integration */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('ecopower.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t('ecopower.description')}</p>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={form.ecoPowerEnabled}
+                onCheckedChange={(c) => setForm({ ...form, ecoPowerEnabled: !!c })}
+              />
+              <Label>{t('ecopower.enabled')}</Label>
+            </div>
+
+            {form.ecoPowerEnabled && (
+              <div className="space-y-4 pl-6 border-l-2 border-muted">
+                <div>
+                  <Label>{t('ecopower.thresholdType')}</Label>
+                  <Select
+                    value={form.ecoPowerMinThresholdType}
+                    onValueChange={(v) => setForm({ ...form, ecoPowerMinThresholdType: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EURO">{t('ecopower.thresholdTypeEuro')}</SelectItem>
+                      <SelectItem value="SHARES">{t('ecopower.thresholdTypeShares')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{t('ecopower.thresholdValue')}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form.ecoPowerMinThreshold}
+                    onChange={(e) => setForm({ ...form, ecoPowerMinThreshold: e.target.value })}
+                    placeholder={
+                      form.ecoPowerMinThresholdType === 'EURO'
+                        ? t('ecopower.thresholdValueHintEuro')
+                        : t('ecopower.thresholdValueHintShares')
+                    }
+                  />
+                </div>
+
+                {/* API Key Section */}
+                <div className="pt-4 border-t">
+                  <Label className="text-base font-semibold">{t('ecopower.apiKey')}</Label>
+                  <p className="text-sm text-muted-foreground mt-1">{t('ecopower.apiKeyDescription')}</p>
+                  {apiKeyPrefix ? (
+                    <p className="text-sm font-mono mt-2">{apiKeyPrefix}{'••••••••••••••••'}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-2">{t('ecopower.noApiKey')}</p>
+                  )}
+                  <Button
+                    variant="outline"
+                    className="mt-2"
+                    onClick={() => apiKeyPrefix ? setShowRegenerateConfirm(true) : handleRegenerateApiKey()}
+                  >
+                    {t('ecopower.regenerateApiKey')}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Email Settings */}
         <Card>
           <CardHeader>
@@ -795,6 +904,70 @@ export default function AdminSettingsPage() {
 
         <Button onClick={handleSave}>{t('common.save')}</Button>
       </div>
+
+      {/* API Key Regenerate Confirmation */}
+      <Dialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('ecopower.regenerateApiKey')}</DialogTitle>
+            <DialogDescription>{t('ecopower.regenerateConfirm')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRegenerateConfirm(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleRegenerateApiKey}>
+              {t('ecopower.regenerateApiKey')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New API Key Display */}
+      <Dialog
+        open={showApiKeyDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowApiKeyDialog(false);
+            setNewApiKey('');
+            setApiKeyCopied(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('ecopower.apiKey')}</DialogTitle>
+            <DialogDescription>{t('ecopower.apiKeyCopied')}</DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+            <code className="text-sm flex-1 break-all">{newApiKey}</code>
+            <button
+              onClick={async () => {
+                await navigator.clipboard.writeText(newApiKey);
+                setApiKeyCopied(true);
+              }}
+              className="shrink-0 rounded-md p-1.5 hover:bg-background transition-colors"
+            >
+              {apiKeyCopied ? (
+                <Check className="h-4 w-4 text-green-600" />
+              ) : (
+                <Copy className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setShowApiKeyDialog(false);
+                setNewApiKey('');
+                setApiKeyCopied(false);
+              }}
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Disconnect confirmation dialog */}
       <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>

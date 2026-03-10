@@ -11,6 +11,8 @@ import { PRIVACY_VERSION } from '@opencoop/shared';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 const LOGO_MAX_SIZE = 512;
@@ -330,6 +332,10 @@ export class CoopsService {
         emailEnabled: true,
         pontoEnabled: true,
         autoMatchPayments: true,
+        ecoPowerEnabled: true,
+        ecoPowerMinThresholdType: true,
+        ecoPowerMinThreshold: true,
+        apiKeyPrefix: true,
         emailProvider: true,
         smtpHost: true,
         smtpPort: true,
@@ -686,5 +692,48 @@ export class CoopsService {
       ogmCode: registration.ogmCode ?? null,
       shareholderId,
     };
+  }
+
+  async regenerateApiKey(coopId: string, actorId?: string, ip?: string, userAgent?: string) {
+    const coop = await this.prisma.coop.findUnique({ where: { id: coopId } });
+    if (!coop) throw new NotFoundException('Cooperative not found');
+
+    const rawKey = randomBytes(32).toString('hex');
+    const prefix = rawKey.substring(0, 8);
+    const hash = await bcrypt.hash(rawKey, 10);
+
+    await this.prisma.coop.update({
+      where: { id: coopId },
+      data: { apiKeyHash: hash, apiKeyPrefix: prefix },
+    });
+
+    await this.auditService.log({
+      coopId,
+      entity: 'Coop',
+      entityId: coopId,
+      action: 'UPDATE',
+      changes: [{ field: 'apiKey', oldValue: coop.apiKeyHash ? '(regenerated)' : '(none)', newValue: '(new key)' }],
+      actorId,
+      ipAddress: ip,
+      userAgent,
+    });
+
+    return { apiKey: rawKey, prefix };
+  }
+
+  async findByApiKey(rawKey: string) {
+    // Use the key prefix (first 8 chars) to narrow down candidates before bcrypt compare
+    const prefix = rawKey.substring(0, 8);
+    const candidates = await this.prisma.coop.findMany({
+      where: { apiKeyPrefix: prefix },
+      select: { id: true, apiKeyHash: true, ecoPowerEnabled: true, ecoPowerMinThresholdType: true, ecoPowerMinThreshold: true },
+    });
+
+    for (const coop of candidates) {
+      if (coop.apiKeyHash && await bcrypt.compare(rawKey, coop.apiKeyHash)) {
+        return coop;
+      }
+    }
+    return null;
   }
 }
