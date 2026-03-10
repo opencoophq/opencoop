@@ -33,6 +33,7 @@ export class ShareholdersService {
       search?: string;
       status?: string;
       type?: string;
+      ecoPowerClient?: string;
     } = {},
   ) {
     const page = Number(params.page) || 1;
@@ -48,6 +49,7 @@ export class ShareholdersService {
     if (type) {
       where.type = type;
     }
+    if (params.ecoPowerClient === 'true') where.isEcoPowerClient = true;
     if (search) {
       where.OR = [
         { firstName: { contains: search, mode: 'insensitive' } },

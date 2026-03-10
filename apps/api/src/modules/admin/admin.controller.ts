@@ -301,8 +301,9 @@ export class AdminController {
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('type') type?: string,
+    @Query('ecoPowerClient') ecoPowerClient?: string,
   ) {
-    const result = await this.shareholdersService.findAll(coopId, { page, pageSize, search, status, type });
+    const result = await this.shareholdersService.findAll(coopId, { page, pageSize, search, status, type, ecoPowerClient });
     const canViewPII = user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
     return canViewPII ? result : maskShareholderListPII(result);
   }
