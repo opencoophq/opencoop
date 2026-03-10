@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.3] - 2026-03-10
+
+### Fixed
+- **Ecopower card on shareholder detail** — squash merge also lost the Ecopower client checkbox and ID field on the shareholder detail page
+
 ## [0.7.2] - 2026-03-10
 
 ### Fixed
