@@ -15,7 +15,7 @@ test.describe('Sell shares', () => {
     await activeRow.getByRole('button', { name: 'Verkopen' }).click();
 
     // Verify sell dialog opens
-    await expect(page.getByRole('heading', { name: 'Aandelen verkopen' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Aandelen verkopen' })).toBeVisible({ timeout: 5_000 });
 
     // Verify quantity input is visible and defaults to 1
     const quantityInput = page.locator('input[type="number"]');
