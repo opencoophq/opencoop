@@ -21,6 +21,9 @@ describe('ShareholderImportService', () => {
         findMany: jest.fn(),
         create: jest.fn(),
       },
+      auditLog: {
+        create: jest.fn(),
+      },
       $transaction: jest.fn((fn) => fn(prismaService)),
     } as unknown as PrismaService;
 
@@ -213,10 +216,12 @@ describe('ShareholderImportService', () => {
       expect(result.dryRun).toBe(false);
       expect(result.created).toBe(1);
       expect(prismaService.shareholder.create).toHaveBeenCalledTimes(1);
-      expect(auditService.log).toHaveBeenCalledWith(
+      expect((prismaService as any).auditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          coopId: 'coop-1',
-          action: 'BULK_IMPORT',
+          data: expect.objectContaining({
+            coopId: 'coop-1',
+            action: 'BULK_IMPORT',
+          }),
         }),
       );
     });
