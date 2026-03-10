@@ -162,6 +162,87 @@ export class RegistrationsService {
     return vestedShares - soldQty;
   }
 
+  /**
+   * Check if a share sale would drop an Ecopower client below the minimum threshold.
+   * Throws BadRequestException if the sale would violate the Ecopower minimum.
+   */
+  private async checkEcoPowerThreshold(
+    coopId: string,
+    shareholderId: string,
+    saleQuantity: number,
+    salePricePerShare: number,
+  ) {
+    const shareholder = await this.prisma.shareholder.findUnique({
+      where: { id: shareholderId },
+      select: { isEcoPowerClient: true },
+    });
+
+    if (!shareholder?.isEcoPowerClient) return;
+
+    const coop = await this.prisma.coop.findUnique({
+      where: { id: coopId },
+      select: { ecoPowerEnabled: true, ecoPowerMinThresholdType: true, ecoPowerMinThreshold: true },
+    });
+
+    if (!coop?.ecoPowerEnabled || !coop.ecoPowerMinThreshold) return;
+
+    const threshold = Number(coop.ecoPowerMinThreshold);
+
+    // Calculate current portfolio
+    // BUY registrations: ACTIVE, COMPLETED, PENDING_PAYMENT (shares the shareholder owns)
+    // SELL registrations: PENDING, ACTIVE, COMPLETED (shares already committed to selling)
+    const registrations = await this.prisma.registration.findMany({
+      where: {
+        coopId,
+        shareholderId,
+        OR: [
+          { type: 'BUY', status: { in: ['ACTIVE', 'COMPLETED', 'PENDING_PAYMENT'] } },
+          { type: 'SELL', status: { in: ['PENDING', 'ACTIVE', 'COMPLETED'] } },
+        ],
+      },
+      select: {
+        type: true,
+        quantity: true,
+        pricePerShare: true,
+        payments: { select: { amount: true } },
+      },
+    });
+
+    let currentShares = 0;
+    let currentValue = 0;
+
+    for (const reg of registrations) {
+      const price = Number(reg.pricePerShare);
+      if (reg.type === 'BUY') {
+        const paid = computeTotalPaid(reg.payments);
+        const vested = computeVestedShares(paid, price, reg.quantity);
+        currentShares += vested;
+        currentValue += vested * price;
+      } else if (reg.type === 'SELL') {
+        currentShares -= reg.quantity;
+        currentValue -= reg.quantity * price;
+      }
+    }
+
+    const saleValue = saleQuantity * salePricePerShare;
+    const projectedShares = currentShares - saleQuantity;
+    const projectedValue = currentValue - saleValue;
+
+    if (coop.ecoPowerMinThresholdType === 'EURO' && projectedValue < threshold) {
+      throw new BadRequestException(
+        `Cannot sell: shareholder is an Ecopower client and must maintain at least €${threshold}. ` +
+        `Current: €${currentValue.toFixed(2)}, after sale: €${projectedValue.toFixed(2)}.`,
+      );
+    }
+
+    if (coop.ecoPowerMinThresholdType === 'SHARES' && projectedShares < threshold) {
+      throw new BadRequestException(
+        `Cannot sell: shareholder is an Ecopower client and must maintain at least ${threshold} shares. ` +
+        `Current: ${currentShares}, after sale: ${projectedShares}.`,
+      );
+    }
+  }
+
   async createBuy(data: {
     coopId: string;
     shareholderId: string;
@@ -286,6 +367,9 @@ export class RegistrationsService {
         'Sale quantity exceeds available shares (accounting for pending and completed sells)',
       );
     }
+
+    // Ecopower exit guard
+    await this.checkEcoPowerThreshold(data.coopId, data.shareholderId, data.quantity, pricePerShare);
 
     const totalAmount = data.quantity * pricePerShare;
 
@@ -488,6 +572,9 @@ export class RegistrationsService {
     if (data.quantity > available) {
       throw new BadRequestException('Transfer quantity exceeds available shares');
     }
+
+    // Ecopower exit guard (applies to from-shareholder only)
+    await this.checkEcoPowerThreshold(data.coopId, data.fromShareholderId, data.quantity, pricePerShare);
 
     const totalAmount = data.quantity * pricePerShare;
     const now = new Date();
