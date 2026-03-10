@@ -42,8 +42,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown } from 'lucide-react';
+import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface ShareClass {
@@ -102,8 +101,6 @@ interface ShareholderDetail {
   };
   registrations: Registration[];
   createdAt: string;
-  isEcoPowerClient?: boolean;
-  ecoPowerId?: string;
 }
 
 interface PaymentDetails {
@@ -162,6 +159,9 @@ export default function ShareholderDetailPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Certificate generation state
+  const [generatingCertFor, setGeneratingCertFor] = useState<string | null>(null);
+
   // Buy dialog state
   const [buyOpen, setBuyOpen] = useState(false);
   const [shareClasses, setShareClasses] = useState<ShareClass[]>([]);
@@ -184,11 +184,6 @@ export default function ShareholderDetailPage() {
   const [rejectTxId, setRejectTxId] = useState('');
   const [rejectReason, setRejectReason] = useState('');
 
-  // Ecopower state
-  const [ecoPowerEnabled, setEcoPowerEnabled] = useState(false);
-  const [isEcoPowerClient, setIsEcoPowerClient] = useState(false);
-  const [ecoPowerId, setEcoPowerId] = useState('');
-
   // Audit log state
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -206,14 +201,7 @@ export default function ShareholderDetailPage() {
       const data = await api<ShareholderDetail>(
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
       );
-      // Fetch coop settings for Ecopower integration status
-      const settings = await api<{ ecoPowerEnabled: boolean }>(
-        `/admin/coops/${selectedCoop.id}/settings`,
-      );
-      setEcoPowerEnabled(settings.ecoPowerEnabled || false);
       setShareholder(data);
-      setIsEcoPowerClient(data.isEcoPowerClient || false);
-      setEcoPowerId(data.ecoPowerId || '');
       const addr = data.address || {};
       form.reset({
         firstName: data.firstName || '',
@@ -292,11 +280,6 @@ export default function ShareholderDetailPage() {
         };
       }
 
-      if (ecoPowerEnabled) {
-        body.isEcoPowerClient = isEcoPowerClient;
-        body.ecoPowerId = ecoPowerId || null;
-      }
-
       const updated = await api<ShareholderDetail>(
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
         { method: 'PUT', body },
@@ -334,6 +317,22 @@ export default function ShareholderDetailPage() {
     });
     setRejectOpen(false);
     reloadShareholder();
+  };
+
+  const handleGenerateCertificate = async (regId: string) => {
+    if (!selectedCoop) return;
+    setGeneratingCertFor(regId);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${regId}/certificate`, {
+        method: 'POST',
+      });
+      setSuccess(t('personalData.generateCertificate') + ' ✓');
+      reloadShareholder();
+    } catch {
+      setError(t('common.error'));
+    } finally {
+      setGeneratingCertFor(null);
+    }
   };
 
   const openBuyDialog = async () => {
@@ -641,33 +640,6 @@ export default function ShareholderDetailPage() {
         </div>
       </form>
 
-      {/* Ecopower Integration */}
-      {ecoPowerEnabled && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('ecopower.title')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={isEcoPowerClient}
-                onCheckedChange={(c) => setIsEcoPowerClient(!!c)}
-              />
-              <Label>{t('ecopower.client')}</Label>
-            </div>
-            <div className="space-y-2">
-              <Label>{t('ecopower.ecoPowerId')}</Label>
-              <Input
-                value={ecoPowerId}
-                onChange={(e) => setEcoPowerId(e.target.value)}
-                placeholder={t('ecopower.ecoPowerIdPlaceholder')}
-                disabled={!isEcoPowerClient}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Shareholdings */}
       <Card>
         <CardHeader>
@@ -768,16 +740,29 @@ export default function ShareholderDetailPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {reg.status === 'PENDING' && (
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleApprove(reg.id)}>
-                            <Check className="h-4 w-4 text-green-600" />
+                      <div className="flex gap-1">
+                        {reg.status === 'PENDING' && (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => handleApprove(reg.id)}>
+                              <Check className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => openRejectDialog(reg.id)}>
+                              <X className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </>
+                        )}
+                        {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && reg.type === 'BUY' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleGenerateCertificate(reg.id)}
+                            disabled={generatingCertFor === reg.id}
+                          >
+                            <FileDown className="h-4 w-4 mr-1" />
+                            {t('common.certificate')}
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => openRejectDialog(reg.id)}>
-                            <X className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
