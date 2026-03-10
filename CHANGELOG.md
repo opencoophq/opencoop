@@ -2,10 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
-## [0.5.1] - 2026-03-10
+## [0.5.2] - 2026-03-10
 
 ### Fixed
 - **Shareholdings not showing for COMPLETED registrations** — admin shareholder detail and shareholders list only filtered for ACTIVE status, missing COMPLETED registrations (affected Bronsgroen imports)
+- **Raw status string in shareholdings table** — status column showed "COMPLETED" instead of translated "Voltooid"
 
 ## [0.5.0] - 2026-03-10
 
