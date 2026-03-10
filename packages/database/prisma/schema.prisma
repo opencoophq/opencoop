@@ -231,6 +231,10 @@ model User {
   googleId         String?   @unique
   appleId          String?   @unique
 
+  // Terms acceptance
+  termsAcceptedAt  DateTime?
+  termsVersion     String?
+
   // Relations
   coopAdminOf            CoopAdmin[]
   shareholders           Shareholder[]         @relation("UserShareholder")
@@ -543,6 +547,12 @@ model Registration {
   giftClaimedAt              DateTime?
   giftClaimedByShareholderId String?
   giftClaimedByShareholder   Shareholder? @relation("GiftClaimedBy", fields: [giftClaimedByShareholderId], references: [id])
+
+  // Terms & privacy acceptance
+  coopTermsAcceptedAt DateTime?
+  coopTermsVersion    String?   // termsUrl at time of acceptance
+  privacyAcceptedAt   DateTime?
+  privacyVersion      String?
 
   // Relations
   coop              Coop               @relation(fields: [coopId], references: [id], onDelete: Cascade)

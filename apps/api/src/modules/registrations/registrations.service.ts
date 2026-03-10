@@ -171,6 +171,10 @@ export class RegistrationsService {
     isSavings?: boolean;
     channelId?: string;
     isGift?: boolean;
+    coopTermsAcceptedAt?: Date;
+    coopTermsVersion?: string;
+    privacyAcceptedAt?: Date;
+    privacyVersion?: string;
   }) {
     const shareClass = await this.prisma.shareClass.findFirst({
       where: { id: data.shareClassId, coopId: data.coopId, isActive: true },
@@ -235,6 +239,10 @@ export class RegistrationsService {
           isGift: data.isGift || false,
           ogmCode,
           channelId: data.channelId || null,
+          coopTermsAcceptedAt: data.coopTermsAcceptedAt || null,
+          coopTermsVersion: data.coopTermsVersion || null,
+          privacyAcceptedAt: data.privacyAcceptedAt || null,
+          privacyVersion: data.privacyVersion || null,
         },
         include: this.defaultInclude,
       });

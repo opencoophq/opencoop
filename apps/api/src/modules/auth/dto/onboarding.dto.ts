@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, MaxLength, Matches, IsIn, IsOptional } from 'class-validator';
+import { IsEmail, IsString, IsBoolean, MinLength, MaxLength, Matches, IsIn, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class OnboardingDto {
@@ -49,4 +49,8 @@ export class OnboardingDto {
   @IsOptional()
   @IsString()
   preferredLanguage?: string;
+
+  @ApiProperty({ example: true, description: 'Must accept platform terms and conditions' })
+  @IsBoolean()
+  termsAccepted: boolean;
 }

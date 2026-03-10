@@ -7,6 +7,7 @@ import { PublicRegisterDto } from './dto/public-register.dto';
 import { ShareholdersService } from '../shareholders/shareholders.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { AuditService } from '../audit/audit.service';
+import { PRIVACY_VERSION } from '@opencoop/shared';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -629,6 +630,10 @@ export class CoopsService {
   }
 
   async publicRegister(slug: string, dto: PublicRegisterDto) {
+    if (!dto.privacyAccepted) {
+      throw new BadRequestException('You must accept the privacy policy');
+    }
+
     const coop = await this.findBySlug(slug);
 
     let shareholderId: string;
@@ -672,6 +677,8 @@ export class CoopsService {
       shareClassId: dto.shareClassId,
       quantity: dto.quantity,
       projectId: dto.projectId,
+      privacyAcceptedAt: new Date(),
+      privacyVersion: PRIVACY_VERSION,
     });
 
     return {
