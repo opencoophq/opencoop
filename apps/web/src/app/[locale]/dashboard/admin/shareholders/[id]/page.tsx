@@ -43,7 +43,7 @@ import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, apiFetch } from '@/lib/api';
 
 interface ShareClass {
   id: string;
@@ -323,11 +323,30 @@ export default function ShareholderDetailPage() {
     if (!selectedCoop) return;
     setGeneratingCertFor(regId);
     try {
-      await api(`/admin/coops/${selectedCoop.id}/registrations/${regId}/certificate`, {
-        method: 'POST',
-      });
+      const doc = await api<{ id: string; filePath: string }>(
+        `/admin/coops/${selectedCoop.id}/registrations/${regId}/certificate`,
+        { method: 'POST' },
+      );
       setSuccess(t('personalData.generateCertificate') + ' ✓');
       reloadShareholder();
+
+      // Immediately download the generated certificate
+      try {
+        const response = await apiFetch(
+          `/admin/coops/${selectedCoop.id}/documents/${doc.id}/download`,
+        );
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.filePath.split('/').pop() || 'certificate.pdf';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      } catch {
+        // Certificate was generated successfully, but download failed — not critical
+      }
     } catch {
       setError(t('common.error'));
     } finally {

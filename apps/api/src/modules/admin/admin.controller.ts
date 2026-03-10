@@ -12,7 +12,10 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  NotFoundException,
 } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Request, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -877,6 +880,33 @@ export class AdminController {
     @Query('locale') locale?: string,
   ) {
     return this.documentsService.generateDividendStatement(shareholderId, dividendPayoutId, locale);
+  }
+
+  @Get('documents/:documentId/download')
+  @RequirePermission('canManageShareholders')
+  @ApiOperation({ summary: 'Download a document by ID (admin)' })
+  async downloadDocument(
+    @Param('coopId') coopId: string,
+    @Param('documentId') documentId: string,
+    @Res() res: Response,
+  ) {
+    const doc = await this.prisma.shareholderDocument.findFirst({
+      where: { id: documentId },
+      include: { shareholder: { select: { coopId: true } } },
+    });
+
+    if (!doc || doc.shareholder.coopId !== coopId) {
+      throw new NotFoundException('Document not found');
+    }
+
+    if (!fs.existsSync(doc.filePath)) {
+      throw new NotFoundException('Document file not found');
+    }
+
+    const fileName = path.basename(doc.filePath);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    fs.createReadStream(doc.filePath).pipe(res);
   }
 
   // ==================== AUDIT LOGS ====================
