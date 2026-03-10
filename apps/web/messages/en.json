@@ -852,6 +852,7 @@
       "canManageShareClasses": "Manage share classes",
       "canManageProjects": "Manage projects",
       "canManageDividends": "Manage dividends",
+      "canManageMessages": "Manage messages",
       "canManageSettings": "Manage settings",
       "canManageAdmins": "Manage team",
       "canViewPII": "View personal information",

@@ -134,7 +134,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canManageShareClasses: true,
     canManageProjects: true,
     canManageDividends: true,
-    canManageMessages: true,
+    canManageMessages: false,
     canManageSettings: true,
     canManageAdmins: false,
     canViewPII: false,
