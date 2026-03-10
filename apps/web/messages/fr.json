@@ -761,7 +761,21 @@
       "confirmDisconnect": "Êtes-vous sûr de vouloir déconnecter votre compte bancaire ? La correspondance automatique des paiements sera arrêtée.",
       "disconnected": "Compte bancaire déconnecté.",
       "connecting": "Connexion en cours...",
-      "disconnecting": "Déconnexion en cours..."
+      "disconnecting": "Déconnexion en cours...",
+      "coopInfo": "Informations de la coopérative",
+      "legalForm": "Forme juridique",
+      "foundedDate": "Date de fondation",
+      "certificateSignatory": "Signataire des certificats",
+      "coopPhone": "Téléphone",
+      "coopEmail": "E-mail",
+      "coopWebsite": "Site web",
+      "vatNumber": "Numéro de TVA",
+      "coopAddress": "Adresse",
+      "addressStreet": "Rue",
+      "addressNumber": "Numéro",
+      "addressPostalCode": "Code postal",
+      "addressCity": "Ville",
+      "addressCountry": "Pays"
     },
     "branding": {
       "title": "Paramètres d'image de marque",

@@ -345,6 +345,15 @@ export class CoopsService {
         graphTenantId: true,
         graphFromEmail: true,
         // Secrets (smtpPass, graphClientSecret) intentionally excluded
+        // Coop info
+        legalForm: true,
+        foundedDate: true,
+        certificateSignatory: true,
+        coopAddress: true,
+        coopPhone: true,
+        coopEmail: true,
+        coopWebsite: true,
+        vatNumber: true,
       },
     });
 

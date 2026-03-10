@@ -146,6 +146,17 @@ model Coop {
   bankIban    String?
   bankBic     String?
 
+  // Coop info (used in certificates, public pages)
+  legalForm             String?  // e.g. "Coöperatieve vennootschap met sociaal oogmerk"
+  foundedDate           String?  // e.g. "29 maart 2012"
+  certificateSignatory  String?  // Name of the board member who signs certificates
+  coopAddress           Json?    // { street, number, postalCode, city, country }
+  coopPhone             String?
+  coopEmail             String?
+  coopWebsite           String?
+  vatNumber             String?
+  logoUrl               String?
+
   // Relations
   channels         Channel[]
   admins           CoopAdmin[]
@@ -386,6 +397,8 @@ model Shareholder {
 
   // Channel tracking
   channelId          String?
+
+  memberNumber  Int?  // Sequential member number (vennotennummer)
 
   // Minor email reminder tracking (for reminding parents to set email before 18)
   emailReminderSentAt DateTime?

@@ -761,7 +761,21 @@
       "confirmDisconnect": "Sind Sie sicher, dass Sie Ihr Bankkonto trennen möchten? Die automatische Zahlungszuordnung wird gestoppt.",
       "disconnected": "Bankkonto getrennt.",
       "connecting": "Verbinden...",
-      "disconnecting": "Trennen..."
+      "disconnecting": "Trennen...",
+      "coopInfo": "Genossenschaftsinformationen",
+      "legalForm": "Rechtsform",
+      "foundedDate": "Gründungsdatum",
+      "certificateSignatory": "Zertifikatsunterzeichner",
+      "coopPhone": "Telefon",
+      "coopEmail": "E-Mail",
+      "coopWebsite": "Webseite",
+      "vatNumber": "USt-IdNr.",
+      "coopAddress": "Adresse",
+      "addressStreet": "Straße",
+      "addressNumber": "Nummer",
+      "addressPostalCode": "Postleitzahl",
+      "addressCity": "Stadt",
+      "addressCountry": "Land"
     },
     "branding": {
       "title": "Branding-Einstellungen",

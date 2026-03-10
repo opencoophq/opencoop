@@ -36,10 +36,19 @@ import {
   Layers,
   ChevronRight,
   Landmark,
+  Building2,
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
 type EmailProvider = 'platform' | 'smtp' | 'graph';
+
+interface CoopAddress {
+  street?: string;
+  number?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+}
 
 interface FormState {
   name: string;
@@ -63,6 +72,18 @@ interface FormState {
   ecoPowerEnabled: boolean;
   ecoPowerMinThresholdType: string;
   ecoPowerMinThreshold: string;
+  legalForm: string;
+  foundedDate: string;
+  certificateSignatory: string;
+  coopPhone: string;
+  coopEmail: string;
+  coopWebsite: string;
+  vatNumber: string;
+  coopAddressStreet: string;
+  coopAddressNumber: string;
+  coopAddressPostalCode: string;
+  coopAddressCity: string;
+  coopAddressCountry: string;
 }
 
 interface SettingsResponse {
@@ -86,6 +107,14 @@ interface SettingsResponse {
   ecoPowerMinThresholdType: string | null;
   ecoPowerMinThreshold: number | null;
   apiKeyPrefix: string | null;
+  legalForm: string | null;
+  foundedDate: string | null;
+  certificateSignatory: string | null;
+  coopAddress: CoopAddress | null;
+  coopPhone: string | null;
+  coopEmail: string | null;
+  coopWebsite: string | null;
+  vatNumber: string | null;
 }
 
 interface PontoConnection {
@@ -167,6 +196,18 @@ export default function AdminSettingsPage() {
     ecoPowerEnabled: false,
     ecoPowerMinThresholdType: 'EURO',
     ecoPowerMinThreshold: '',
+    legalForm: '',
+    foundedDate: '',
+    certificateSignatory: '',
+    coopPhone: '',
+    coopEmail: '',
+    coopWebsite: '',
+    vatNumber: '',
+    coopAddressStreet: '',
+    coopAddressNumber: '',
+    coopAddressPostalCode: '',
+    coopAddressCity: '',
+    coopAddressCountry: '',
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -254,6 +295,18 @@ export default function AdminSettingsPage() {
           ecoPowerEnabled: settings.ecoPowerEnabled || false,
           ecoPowerMinThresholdType: settings.ecoPowerMinThresholdType || 'EURO',
           ecoPowerMinThreshold: settings.ecoPowerMinThreshold?.toString() || '',
+          legalForm: settings.legalForm || '',
+          foundedDate: settings.foundedDate || '',
+          certificateSignatory: settings.certificateSignatory || '',
+          coopPhone: settings.coopPhone || '',
+          coopEmail: settings.coopEmail || '',
+          coopWebsite: settings.coopWebsite || '',
+          vatNumber: settings.vatNumber || '',
+          coopAddressStreet: (settings.coopAddress as CoopAddress)?.street || '',
+          coopAddressNumber: (settings.coopAddress as CoopAddress)?.number || '',
+          coopAddressPostalCode: (settings.coopAddress as CoopAddress)?.postalCode || '',
+          coopAddressCity: (settings.coopAddress as CoopAddress)?.city || '',
+          coopAddressCountry: (settings.coopAddress as CoopAddress)?.country || '',
         });
         setApiKeyPrefix(settings.apiKeyPrefix || null);
         if (ponto) {
@@ -282,6 +335,22 @@ export default function AdminSettingsPage() {
         ecoPowerEnabled: form.ecoPowerEnabled,
         ecoPowerMinThresholdType: form.ecoPowerEnabled ? form.ecoPowerMinThresholdType : null,
         ecoPowerMinThreshold: form.ecoPowerEnabled ? (parseFloat(form.ecoPowerMinThreshold) || null) : null,
+        legalForm: form.legalForm || null,
+        foundedDate: form.foundedDate || null,
+        certificateSignatory: form.certificateSignatory || null,
+        coopPhone: form.coopPhone || null,
+        coopEmail: form.coopEmail || null,
+        coopWebsite: form.coopWebsite || null,
+        vatNumber: form.vatNumber || null,
+        coopAddress: (form.coopAddressStreet || form.coopAddressNumber || form.coopAddressPostalCode || form.coopAddressCity || form.coopAddressCountry)
+          ? {
+              street: form.coopAddressStreet || '',
+              number: form.coopAddressNumber || '',
+              postalCode: form.coopAddressPostalCode || '',
+              city: form.coopAddressCity || '',
+              country: form.coopAddressCountry || '',
+            }
+          : null,
       };
 
       if (isSystemAdmin) {
@@ -539,6 +608,111 @@ export default function AdminSettingsPage() {
                 min={0}
                 value={form.minimumHoldingPeriod}
                 onChange={(e) => setForm({ ...form, minimumHoldingPeriod: e.target.value })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Coop Information */}
+        <Card>
+          <CardHeader className="flex flex-row items-center space-y-0">
+            <Building2 className="h-5 w-5 text-muted-foreground mr-2" />
+            <CardTitle>{t('admin.settings.coopInfo')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>{t('admin.settings.legalForm')}</Label>
+              <Input
+                value={form.legalForm}
+                onChange={(e) => setForm({ ...form, legalForm: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>{t('admin.settings.foundedDate')}</Label>
+              <Input
+                value={form.foundedDate}
+                onChange={(e) => setForm({ ...form, foundedDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>{t('admin.settings.certificateSignatory')}</Label>
+              <Input
+                value={form.certificateSignatory}
+                onChange={(e) => setForm({ ...form, certificateSignatory: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>{t('admin.settings.vatNumber')}</Label>
+              <Input
+                value={form.vatNumber}
+                onChange={(e) => setForm({ ...form, vatNumber: e.target.value })}
+                placeholder="BE0123.456.789"
+              />
+            </div>
+            <div>
+              <Label>{t('admin.settings.coopPhone')}</Label>
+              <Input
+                value={form.coopPhone}
+                onChange={(e) => setForm({ ...form, coopPhone: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>{t('admin.settings.coopEmail')}</Label>
+              <Input
+                type="email"
+                value={form.coopEmail}
+                onChange={(e) => setForm({ ...form, coopEmail: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>{t('admin.settings.coopWebsite')}</Label>
+              <Input
+                value={form.coopWebsite}
+                onChange={(e) => setForm({ ...form, coopWebsite: e.target.value })}
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="pt-2">
+              <Label className="text-base font-semibold">{t('admin.settings.coopAddress')}</Label>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
+                <Label>{t('admin.settings.addressStreet')}</Label>
+                <Input
+                  value={form.coopAddressStreet}
+                  onChange={(e) => setForm({ ...form, coopAddressStreet: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>{t('admin.settings.addressNumber')}</Label>
+                <Input
+                  value={form.coopAddressNumber}
+                  onChange={(e) => setForm({ ...form, coopAddressNumber: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label>{t('admin.settings.addressPostalCode')}</Label>
+                <Input
+                  value={form.coopAddressPostalCode}
+                  onChange={(e) => setForm({ ...form, coopAddressPostalCode: e.target.value })}
+                />
+              </div>
+              <div className="col-span-2">
+                <Label>{t('admin.settings.addressCity')}</Label>
+                <Input
+                  value={form.coopAddressCity}
+                  onChange={(e) => setForm({ ...form, coopAddressCity: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>{t('admin.settings.addressCountry')}</Label>
+              <Input
+                value={form.coopAddressCountry}
+                onChange={(e) => setForm({ ...form, coopAddressCountry: e.target.value })}
               />
             </div>
           </CardContent>
