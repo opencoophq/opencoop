@@ -167,9 +167,9 @@ export class DocumentsService {
     return doc;
   }
 
-  async generateCertificateForRegistration(registrationId: string, locale?: string) {
+  async generateCertificateForRegistration(registrationId: string, coopId: string, locale?: string) {
     const reg = await this.prisma.registration.findUnique({
-      where: { id: registrationId },
+      where: { id: registrationId, coopId },
       include: {
         shareholder: {
           include: { coop: true },

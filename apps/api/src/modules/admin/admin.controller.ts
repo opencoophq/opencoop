@@ -851,10 +851,11 @@ export class AdminController {
   @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Generate share certificate for a specific registration' })
   async generateCertificateForRegistration(
+    @Param('coopId') coopId: string,
     @Param('registrationId') registrationId: string,
     @Query('locale') locale?: string,
   ) {
-    return this.documentsService.generateCertificateForRegistration(registrationId, locale);
+    return this.documentsService.generateCertificateForRegistration(registrationId, coopId, locale);
   }
 
   @Post('shareholders/:shareholderId/dividend-statement/:dividendPayoutId')
