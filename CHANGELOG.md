@@ -2,6 +2,17 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.8] - 2026-03-10
+
+### Added
+- **Token refresh mechanism** — JWT access tokens now expire after 15 minutes and are silently refreshed using 30-day refresh tokens, eliminating session loss on page navigation
+- **Logout endpoint** — `POST /auth/logout` revokes all refresh tokens server-side
+- **Refresh token model** — new `RefreshToken` database table with hashed tokens, expiry, and soft revocation
+
+### Changed
+- **Frontend API client** — on 401, automatically attempts token refresh and retries the original request before redirecting to login (singleton pattern prevents concurrent refresh races)
+- **All auth flows** — login, register, onboarding, magic link, OAuth, passkey, MFA, and invite accept now issue and store refresh tokens
+
 ## [0.7.7] - 2026-03-10
 
 ### Fixed
