@@ -119,6 +119,85 @@ describe('ExternalApiService', () => {
     });
   });
 
+  describe('searchByName', () => {
+    it('should return empty array when no matches', async () => {
+      mockPrisma.shareholder.findMany.mockResolvedValue([]);
+
+      const results = await service.searchByName('coop1', 'Unknown Person');
+
+      expect(results).toEqual([]);
+      expect(mockPrisma.shareholder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            coopId: 'coop1',
+            AND: [
+              { OR: [{ firstName: { contains: 'Unknown', mode: 'insensitive' } }, { lastName: { contains: 'Unknown', mode: 'insensitive' } }] },
+              { OR: [{ firstName: { contains: 'Person', mode: 'insensitive' } }, { lastName: { contains: 'Person', mode: 'insensitive' } }] },
+            ],
+          },
+        }),
+      );
+    });
+
+    it('should return shareholder data with share totals', async () => {
+      mockPrisma.shareholder.findMany.mockResolvedValue([
+        {
+          id: 'sh1',
+          email: 'jan@test.com',
+          firstName: 'Jan',
+          lastName: 'Peeters',
+          companyName: null,
+          type: 'INDIVIDUAL',
+          isEcoPowerClient: false,
+          ecoPowerId: null,
+          registrations: [
+            {
+              type: 'BUY',
+              quantity: 5,
+              pricePerShare: 25,
+              status: 'COMPLETED',
+              payments: [{ amount: 125 }],
+            },
+          ],
+        },
+      ]);
+
+      const results = await service.searchByName('coop1', 'Jan Peeters');
+
+      expect(results).toEqual([
+        {
+          id: 'sh1',
+          email: 'jan@test.com',
+          firstName: 'Jan',
+          lastName: 'Peeters',
+          companyName: null,
+          type: 'INDIVIDUAL',
+          totalShares: 5,
+          totalShareValue: 125,
+          isEcoPowerClient: false,
+          ecoPowerId: null,
+        },
+      ]);
+    });
+
+    it('should handle single-word name search', async () => {
+      mockPrisma.shareholder.findMany.mockResolvedValue([]);
+
+      await service.searchByName('coop1', 'Peeters');
+
+      expect(mockPrisma.shareholder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            coopId: 'coop1',
+            AND: [
+              { OR: [{ firstName: { contains: 'Peeters', mode: 'insensitive' } }, { lastName: { contains: 'Peeters', mode: 'insensitive' } }] },
+            ],
+          },
+        }),
+      );
+    });
+  });
+
   describe('updateEcoPowerStatus', () => {
     it('should return not found for unknown emails', async () => {
       mockPrisma.shareholder.findFirst.mockResolvedValue(null);
