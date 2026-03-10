@@ -243,6 +243,8 @@ async function main() {
       phone: '+32 479 12 34 56',
       nationalId: '85031512345',
       birthDate: new Date('1985-03-15'),
+      bankIban: 'BE71096123456769',
+      bankBic: 'GKCCBEBB',
       address: address('Gent'),
     },
   });
