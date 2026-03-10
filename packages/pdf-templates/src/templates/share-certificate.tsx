@@ -200,6 +200,32 @@ const translations = {
     dividendNote:
       'Your dividend will be deposited into your account after the decision of the General Meeting.',
   },
+  fr: {
+    title: 'Certificat d\'actions',
+    name: 'Nom',
+    memberNumber: 'Numéro de membre',
+    numberOfShares: 'Nombre d\'actions',
+    amount: 'Montant',
+    registrationDate: 'Date d\'inscription au registre des actionnaires',
+    signatureLabel: 'Pour le conseil d\'administration :',
+    registerNote: (coopName: string) =>
+      `Les actionnaires sont inscrits au registre de ${coopName} après leur versement.`,
+    dividendNote:
+      'Votre dividende sera versé sur votre compte après la décision de l\'Assemblée Générale.',
+  },
+  de: {
+    title: 'Anteilsschein',
+    name: 'Name',
+    memberNumber: 'Mitgliedsnummer',
+    numberOfShares: 'Anzahl Anteile',
+    amount: 'Betrag',
+    registrationDate: 'Datum der Eintragung im Gesellschafterregister',
+    signatureLabel: 'Für den Vorstand:',
+    registerNote: (coopName: string) =>
+      `Anteilseigner werden nach ihrer Einzahlung im Register von ${coopName} eingetragen.`,
+    dividendNote:
+      'Ihre Dividende wird nach Beschluss der Generalversammlung auf Ihr Konto überwiesen.',
+  },
 };
 
 export const ShareCertificate: React.FC<ShareCertificateProps> = ({
@@ -224,7 +250,7 @@ export const ShareCertificate: React.FC<ShareCertificateProps> = ({
   locale = 'nl',
 }) => {
   const t = translations[locale as keyof typeof translations] || translations.nl;
-  const fmtLocale = locale === 'nl' ? 'nl-BE' : 'en-US';
+  const fmtLocale = locale === 'nl' ? 'nl-BE' : locale === 'fr' ? 'fr-BE' : locale === 'de' ? 'de-DE' : 'en-US';
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat(fmtLocale, { style: 'currency', currency: 'EUR' }).format(amount);
