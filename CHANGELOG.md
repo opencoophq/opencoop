@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.2] - 2026-03-10
+
+### Fixed
+- **API key generation endpoint missing** — squash merge of Ecopower PR lost the `POST api-key/regenerate` admin endpoint
+- **Ecopower shareholder filter missing** — squash merge also lost the `ecoPowerClient` query parameter on the shareholders list
+
 ## [0.7.1] - 2026-03-10
 
 ### Fixed
