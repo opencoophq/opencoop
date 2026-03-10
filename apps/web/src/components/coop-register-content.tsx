@@ -126,6 +126,7 @@ const registrationSchema = z.object({
   quantity: z.number().min(1).optional(),
   paymentMethod: z.enum(['BANK_TRANSFER', 'MOLLIE', 'STRIPE']).optional(),
   acceptTerms: z.literal(true).optional(),
+  acceptPrivacy: z.literal(true).optional(),
 });
 
 type RegistrationForm = z.infer<typeof registrationSchema>;
@@ -416,8 +417,9 @@ export function CoopRegisterContent({
   };
 
   const onSubmit = async () => {
-    const valid = await form.trigger(['shareClassId', 'quantity', 'acceptTerms']);
+    const valid = await form.trigger(['shareClassId', 'quantity', 'acceptTerms', 'acceptPrivacy']);
     if (!valid) return;
+    if (!form.getValues('acceptPrivacy')) return;
 
     setSubmitting(true);
 
@@ -439,6 +441,8 @@ export function CoopRegisterContent({
           quantity: values.quantity,
           projectId: values.projectId,
           isGift: values.beneficiaryType === 'gift',
+          coopTermsAccepted: values.acceptTerms === true,
+          privacyAccepted: values.acceptPrivacy === true,
         };
       } else {
         const beneficiaryToType: Record<string, string> = {
@@ -468,6 +472,8 @@ export function CoopRegisterContent({
           quantity: values.quantity,
           projectId: values.projectId,
           isGift: values.beneficiaryType === 'gift',
+          coopTermsAccepted: values.acceptTerms === true,
+          privacyAccepted: values.acceptPrivacy === true,
         };
       }
 
@@ -1065,6 +1071,29 @@ export function CoopRegisterContent({
           </Label>
         </div>
 
+        {/* Privacy Policy */}
+        <div className="flex items-start space-x-2 mt-2">
+          <Checkbox
+            id="privacy"
+            checked={form.watch('acceptPrivacy') || false}
+            onCheckedChange={(checked) =>
+              form.setValue('acceptPrivacy', checked === true ? true : undefined as never)
+            }
+          />
+          <Label htmlFor="privacy" className="text-sm">
+            {t('registration.acceptPrivacyPrefix')}{' '}
+            <a
+              href={`/${locale}/privacy`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:no-underline"
+              style={{ color: coop.primaryColor }}
+            >
+              {t('registration.privacyPolicy')}
+            </a>
+          </Label>
+        </div>
+
         <div className="flex gap-4 mt-6">
           <Button type="button" variant="outline" onClick={() => setStep(STEP.DETAILS)}>
             {t('common.back')}
@@ -1073,7 +1102,13 @@ export function CoopRegisterContent({
             type="button"
             className="flex-1"
             style={{ backgroundColor: coop.primaryColor }}
-            disabled={!form.watch('acceptTerms') || !watchShareClassId || watchQuantity < 1 || submitting}
+            disabled={
+              (coop.termsUrl && !form.watch('acceptTerms')) ||
+              !form.watch('acceptPrivacy') ||
+              !watchShareClassId ||
+              watchQuantity < 1 ||
+              submitting
+            }
             onClick={onSubmit}
           >
             {submitting ? t('common.loading') : t('registration.completeRegistration')}
