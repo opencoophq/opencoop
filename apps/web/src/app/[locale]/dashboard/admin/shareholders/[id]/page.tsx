@@ -627,7 +627,7 @@ export default function ShareholderDetailPage() {
           <CardTitle>{t('admin.shareholderDetail.shareholdings')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {shareholder.registrations.filter((r) => r.status === 'ACTIVE').length === 0 ? (
+          {shareholder.registrations.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED').length === 0 ? (
             <p className="text-muted-foreground">{t('common.noResults')}</p>
           ) : (
             <Table>
@@ -644,7 +644,7 @@ export default function ShareholderDetailPage() {
               </TableHeader>
               <TableBody>
                 {shareholder.registrations
-                  .filter((reg) => reg.status === 'ACTIVE')
+                  .filter((reg) => reg.status === 'ACTIVE' || reg.status === 'COMPLETED')
                   .map((reg) => (
                   <TableRow key={reg.id}>
                     <TableCell>{reg.shareClass.name}</TableCell>

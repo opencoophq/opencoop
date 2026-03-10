@@ -198,7 +198,7 @@ export default function ShareholdersPage() {
       : `${sh.firstName || ''} ${sh.lastName || ''}`.trim();
 
   const activeShares = (sh: ShareholderRow) =>
-    sh.registrations?.filter((r) => r.status === 'ACTIVE').reduce((sum, r) => sum + (r.sharesOwned ?? r.quantity), 0) || 0;
+    sh.registrations?.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED').reduce((sum, r) => sum + (r.sharesOwned ?? r.quantity), 0) || 0;
 
   const memberSince = (sh: ShareholderRow) => {
     const dates = sh.registrations?.map((r) => r.registerDate).filter(Boolean) || [];
