@@ -330,7 +330,6 @@ export default function AdminSettingsPage() {
         bankName: form.bankName,
         bankIban: form.bankIban,
         bankBic: form.bankBic,
-        termsUrl: form.termsUrl,
         emailProvider: form.emailProvider === 'platform' ? null : form.emailProvider,
         ecoPowerEnabled: form.ecoPowerEnabled,
         ecoPowerMinThresholdType: form.ecoPowerEnabled ? form.ecoPowerMinThresholdType : null,
