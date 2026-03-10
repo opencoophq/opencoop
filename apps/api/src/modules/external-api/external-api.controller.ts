@@ -8,7 +8,7 @@ import { QueryShareholdersDto } from './dto/query-shareholders.dto';
 import { UpdateEcoPowerDto } from './dto/update-ecopower.dto';
 
 @ApiTags('external')
-@Controller('api/external')
+@Controller('external')
 @UseGuards(ApiKeyGuard, ApiKeyThrottleGuard)
 @ApiBearerAuth()
 @SkipThrottle()
