@@ -23,6 +23,7 @@
 | `apps/api/src/modules/external-api/dto/query-shareholders.dto.ts` | DTO for batch query |
 | `apps/api/src/modules/external-api/dto/update-ecopower.dto.ts` | DTO for batch ecopower update |
 | `apps/api/src/common/guards/api-key.guard.ts` | Guard: resolves coop from hashed API key |
+| `apps/api/src/modules/external-api/api-key-throttle.guard.ts` | Custom throttle guard keyed by coop ID instead of IP |
 | `apps/api/src/modules/external-api/external-api.service.spec.ts` | Tests for external API service |
 
 ### Modified files
@@ -119,11 +120,14 @@ In `apps/api/src/modules/coops/dto/update-coop.dto.ts`, add these imports to the
 IsNumber, IsEnum
 ```
 
-Add import:
+Add imports:
 
 ```typescript
 import { EcoPowerThresholdType } from '@opencoop/database';
+import { ValidateIf } from 'class-validator';
 ```
+
+(Add `IsNumber, IsEnum` to the existing `class-validator` import, and `ValidateIf` if not already present.)
 
 Add these fields at the end of the class (before the closing `}`):
 
@@ -140,9 +144,12 @@ Add these fields at the end of the class (before the closing `}`):
 
   @ApiProperty({ required: false, description: 'Minimum threshold value (euro amount or share count)' })
   @IsOptional()
+  @ValidateIf((o) => o.ecoPowerMinThreshold !== null)
   @IsNumber()
   ecoPowerMinThreshold?: number | null;
 ```
+
+**Note:** `@ValidateIf` is needed because `@IsNumber()` rejects `null`. When disabling Ecopower, the frontend sends `null` to clear the threshold.
 
 - [ ] **Step 2: Add Ecopower fields to getSettings select**
 
@@ -507,24 +514,50 @@ export class UpdateEcoPowerDto {
 }
 ```
 
-- [ ] **Step 4: Create external API controller**
+- [ ] **Step 4: Create per-API-key throttle guard**
 
-Create `apps/api/src/modules/external-api/external-api.controller.ts`:
+Create `apps/api/src/modules/external-api/api-key-throttle.guard.ts`:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
+
+/**
+ * Custom throttle guard that uses the coop ID (from API key) as the throttle key
+ * instead of the request IP. This ensures rate limiting is per-API-key, not per-IP.
+ * Limit: 60 requests per minute per API key.
+ */
+@Injectable()
+export class ApiKeyThrottleGuard extends ThrottlerGuard {
+  protected async getTracker(req: Record<string, any>): Promise<string> {
+    return req.coop?.id || req.ip;
+  }
+
+  protected getThrottlerToken(): string {
+    return 'api-key';
+  }
+}
+```
+
+- [ ] **Step 5: Create external API controller**
+
+Create `apps/api/src/modules/external-api/external-api.controller.ts` (uses `ApiKeyThrottleGuard` from step 4):
 
 ```typescript
 import { Controller, Post, Patch, Body, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
+import { ApiKeyThrottleGuard } from './api-key-throttle.guard';
 import { ExternalApiService } from './external-api.service';
 import { QueryShareholdersDto } from './dto/query-shareholders.dto';
 import { UpdateEcoPowerDto } from './dto/update-ecopower.dto';
 
 @ApiTags('external')
 @Controller('api/external')
-@UseGuards(ApiKeyGuard)
+@UseGuards(ApiKeyGuard, ApiKeyThrottleGuard)
 @ApiBearerAuth()
-@Throttle({ default: { ttl: 60000, limit: 60 } })
+@SkipThrottle() // Skip the global IP-based throttle; ApiKeyThrottleGuard handles per-key throttling
 export class ExternalApiController {
   constructor(private externalApiService: ExternalApiService) {}
 
@@ -557,13 +590,14 @@ Create `apps/api/src/modules/external-api/external-api.module.ts`:
 import { Module } from '@nestjs/common';
 import { ExternalApiController } from './external-api.controller';
 import { ExternalApiService } from './external-api.service';
+import { ApiKeyThrottleGuard } from './api-key-throttle.guard';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { CoopsModule } from '../coops/coops.module';
 
 @Module({
   imports: [PrismaModule, CoopsModule],
   controllers: [ExternalApiController],
-  providers: [ExternalApiService],
+  providers: [ExternalApiService, ApiKeyThrottleGuard],
 })
 export class ExternalApiModule {}
 ```
@@ -586,7 +620,7 @@ Check that `apps/api/src/modules/coops/coops.module.ts` exports `CoopsService`. 
 
 ```bash
 git add apps/api/src/modules/external-api/ apps/api/src/app.module.ts apps/api/src/modules/coops/coops.module.ts
-git commit -m "feat(api): add external API module with batch query and Ecopower update endpoints"
+git commit -m "feat(api): add external API module with batch query, Ecopower update, and per-key throttling"
 ```
 
 ---
