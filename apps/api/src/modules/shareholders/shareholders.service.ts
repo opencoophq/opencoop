@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateShareholderDto } from './dto/create-shareholder.dto';
@@ -181,6 +181,14 @@ export class ShareholdersService {
       });
       if (emailTaken) {
         throw new ConflictException('A shareholder with this email already exists in this cooperative');
+      }
+    }
+
+    // Reject Ecopower fields if the feature is disabled for this coop
+    if (dto.isEcoPowerClient !== undefined || dto.ecoPowerId !== undefined) {
+      const coop = await this.prisma.coop.findUnique({ where: { id: coopId }, select: { ecoPowerEnabled: true } });
+      if (!coop?.ecoPowerEnabled) {
+        throw new BadRequestException('Ecopower integration is not enabled for this cooperative');
       }
     }
 
