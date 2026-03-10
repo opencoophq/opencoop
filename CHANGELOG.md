@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.1] - 2026-03-10
+
+### Fixed
+- **Settings save failing** — `termsUrl` (a Channel field) was sent to the coop update endpoint, rejected by `forbidNonWhitelisted` validation
+- **Ecopower null enum validation** — sending `ecoPowerMinThresholdType: null` when Ecopower is disabled now passes validation
+- **Payment email timing** — send payment confirmation email regardless of registration status
+
 ## [0.7.0] - 2026-03-10
 
 ### Added
