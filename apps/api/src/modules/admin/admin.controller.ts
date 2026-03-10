@@ -847,6 +847,16 @@ export class AdminController {
     return this.documentsService.generateCertificate(shareholderId, locale);
   }
 
+  @Post('registrations/:registrationId/resend-payment-email')
+  @RequirePermission('canManageShareholders')
+  @ApiOperation({ summary: 'Resend payment info email for a registration' })
+  async resendPaymentEmail(
+    @Param('coopId') coopId: string,
+    @Param('registrationId') registrationId: string,
+  ) {
+    return this.registrationsService.resendPaymentEmail(registrationId, coopId);
+  }
+
   @Post('registrations/:registrationId/certificate')
   @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Generate share certificate for a specific registration' })

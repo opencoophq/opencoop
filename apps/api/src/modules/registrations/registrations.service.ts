@@ -288,7 +288,7 @@ export class RegistrationsService {
     // C6: Guard against null coop
     const coop = await this.prisma.coop.findUnique({
       where: { id: data.coopId },
-      select: { ogmPrefix: true, requiresApproval: true },
+      select: { ogmPrefix: true, requiresApproval: true, emailEnabled: true, bankIban: true, bankBic: true },
     });
 
     if (!coop) {
@@ -296,7 +296,7 @@ export class RegistrationsService {
     }
 
     // I2: Wrap count+create in transaction for OGM uniqueness
-    return this.prisma.$transaction(async (tx) => {
+    const registration = await this.prisma.$transaction(async (tx) => {
       const registrationCount = await tx.registration.count({
         where: { coopId: data.coopId },
       });
@@ -327,6 +327,62 @@ export class RegistrationsService {
         },
         include: this.defaultInclude,
       });
+    });
+
+    // Send payment info email (only if shareholder has email, coop has email enabled, and payment is expected)
+    if (shareholder.email && coop.emailEnabled && registration.status === 'PENDING_PAYMENT') {
+      const shareholderName = shareholder.companyName
+        || [shareholder.firstName, shareholder.lastName].filter(Boolean).join(' ');
+
+      this.emailService.sendSharePurchaseConfirmation(data.coopId, shareholder.email, {
+        shareholderName,
+        shareClassName: shareClass.name,
+        quantity: data.quantity,
+        totalAmount,
+        ogmCode: registration.ogmCode ?? undefined,
+        bankIban: coop.bankIban ?? undefined,
+        bankBic: coop.bankBic ?? undefined,
+      }).catch((err) => {
+        console.error('Failed to send share purchase confirmation email:', err);
+      });
+    }
+
+    return registration;
+  }
+
+  async resendPaymentEmail(registrationId: string, coopId: string) {
+    const registration = await this.prisma.registration.findFirst({
+      where: { id: registrationId, coopId },
+      include: {
+        shareholder: { select: { firstName: true, lastName: true, companyName: true, email: true } },
+        shareClass: { select: { name: true } },
+      },
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    if (!registration.shareholder.email) {
+      throw new BadRequestException('Shareholder has no email address');
+    }
+
+    const coop = await this.prisma.coop.findUnique({
+      where: { id: coopId },
+      select: { bankIban: true, bankBic: true },
+    });
+
+    const shareholderName = registration.shareholder.companyName
+      || [registration.shareholder.firstName, registration.shareholder.lastName].filter(Boolean).join(' ');
+
+    return this.emailService.sendSharePurchaseConfirmation(coopId, registration.shareholder.email, {
+      shareholderName,
+      shareClassName: registration.shareClass.name,
+      quantity: registration.quantity,
+      totalAmount: Number(registration.totalAmount),
+      ogmCode: registration.ogmCode ?? undefined,
+      bankIban: coop?.bankIban ?? undefined,
+      bankBic: coop?.bankBic ?? undefined,
     });
   }
 
