@@ -105,17 +105,6 @@ export class AdminController {
     return this.coopsService.update(coopId, updateCoopDto, user.id, req.ip, req.headers['user-agent']);
   }
 
-  @Post('api-key/regenerate')
-  @RequirePermission('canManageSettings')
-  @ApiOperation({ summary: 'Generate or regenerate API key for external integrations' })
-  async regenerateApiKey(
-    @Param('coopId') coopId: string,
-    @CurrentUser() user: CurrentUserData,
-    @Req() req: Request,
-  ) {
-    return this.coopsService.regenerateApiKey(coopId, user.id, req.ip, req.headers['user-agent']);
-  }
-
   @Put('branding')
   @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Update coop branding' })
@@ -301,9 +290,8 @@ export class AdminController {
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('type') type?: string,
-    @Query('ecoPowerClient') ecoPowerClient?: string,
   ) {
-    const result = await this.shareholdersService.findAll(coopId, { page, pageSize, search, status, type, ecoPowerClient });
+    const result = await this.shareholdersService.findAll(coopId, { page, pageSize, search, status, type });
     const canViewPII = user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
     return canViewPII ? result : maskShareholderListPII(result);
   }
@@ -857,6 +845,16 @@ export class AdminController {
     @Query('locale') locale?: string,
   ) {
     return this.documentsService.generateCertificate(shareholderId, locale);
+  }
+
+  @Post('registrations/:registrationId/certificate')
+  @RequirePermission('canManageShareholders')
+  @ApiOperation({ summary: 'Generate share certificate for a specific registration' })
+  async generateCertificateForRegistration(
+    @Param('registrationId') registrationId: string,
+    @Query('locale') locale?: string,
+  ) {
+    return this.documentsService.generateCertificateForRegistration(registrationId, locale);
   }
 
   @Post('shareholders/:shareholderId/dividend-statement/:dividendPayoutId')

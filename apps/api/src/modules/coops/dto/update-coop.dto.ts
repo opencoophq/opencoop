@@ -109,4 +109,43 @@ export class UpdateCoopDto {
   @ValidateIf((o) => o.ecoPowerMinThreshold !== null)
   @IsNumber()
   ecoPowerMinThreshold?: number | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  legalForm?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  foundedDate?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  certificateSignatory?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  coopPhone?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  coopEmail?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  coopWebsite?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  vatNumber?: string;
+
+  @ApiProperty({ required: false, description: 'Coop address as JSON: { street, number, postalCode, city, country }' })
+  @IsOptional()
+  coopAddress?: Record<string, string> | null;
 }
