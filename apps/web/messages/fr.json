@@ -550,6 +550,27 @@
         "addOwner": "Ajouter un bénéficiaire",
         "removeOwner": "Supprimer",
         "ownershipPercentage": "Propriété %"
+      },
+      "import": {
+        "title": "Importer des actionnaires",
+        "description": "Téléchargez un fichier CSV ou Excel pour importer des actionnaires en masse.",
+        "button": "Importer",
+        "uploadFile": "Télécharger le fichier",
+        "selectFile": "Sélectionnez un fichier CSV ou Excel",
+        "supportedFormats": "Formats pris en charge : .csv, .xlsx",
+        "preview": "Aperçu",
+        "previewDescription": "Vérifiez les données avant l'importation. Corrigez les erreurs et réessayez.",
+        "validRows": "Lignes valides",
+        "invalidRows": "Lignes invalides",
+        "totalRows": "Total des lignes",
+        "row": "Ligne",
+        "errors": "Erreurs",
+        "confirm": "Importer {count} actionnaires",
+        "importing": "Importation...",
+        "success": "{count} actionnaires importés avec succès.",
+        "noValidRows": "Aucune ligne valide trouvée. Corrigez les erreurs et réessayez.",
+        "downloadTemplate": "Télécharger le modèle",
+        "dryRunning": "Validation..."
       }
     },
     "shareholderDetail": {

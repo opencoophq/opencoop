@@ -550,6 +550,27 @@
         "addOwner": "Add Owner",
         "removeOwner": "Remove",
         "ownershipPercentage": "Ownership %"
+      },
+      "import": {
+        "title": "Import Shareholders",
+        "description": "Upload a CSV or Excel file to import shareholders in bulk.",
+        "button": "Import",
+        "uploadFile": "Upload File",
+        "selectFile": "Select a CSV or Excel file",
+        "supportedFormats": "Supported formats: .csv, .xlsx",
+        "preview": "Preview",
+        "previewDescription": "Review the data before importing. Fix any errors and try again.",
+        "validRows": "Valid rows",
+        "invalidRows": "Invalid rows",
+        "totalRows": "Total rows",
+        "row": "Row",
+        "errors": "Errors",
+        "confirm": "Import {count} shareholders",
+        "importing": "Importing...",
+        "success": "Successfully imported {count} shareholders.",
+        "noValidRows": "No valid rows found. Please fix the errors and try again.",
+        "downloadTemplate": "Download template",
+        "dryRunning": "Validating..."
       }
     },
     "shareholderDetail": {

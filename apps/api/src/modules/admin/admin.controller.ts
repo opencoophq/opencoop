@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   UploadedFile,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -34,6 +35,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AnalyticsService } from './analytics.service';
 import { ReportsService } from './reports.service';
 import { ShareholdersService } from '../shareholders/shareholders.service';
+import { ShareholderImportService } from '../shareholders/shareholder-import.service';
 import { ShareClassesService } from '../shares/share-classes.service';
 import { ProjectsService } from '../projects/projects.service';
 import { RegistrationsService } from '../registrations/registrations.service';
@@ -72,6 +74,7 @@ export class AdminController {
     private analyticsService: AnalyticsService,
     private reportsService: ReportsService,
     private shareholdersService: ShareholdersService,
+    private shareholderImportService: ShareholderImportService,
     private shareClassesService: ShareClassesService,
     private projectsService: ProjectsService,
     private registrationsService: RegistrationsService,
@@ -334,6 +337,51 @@ export class AdminController {
     @Body() createShareholderDto: CreateShareholderDto,
   ) {
     return this.shareholdersService.create(coopId, createShareholderDto, user.id, req.ip, req.headers['user-agent']);
+  }
+
+  @Post('shareholders/import')
+  @RequirePermission('canManageShareholders')
+  @ApiOperation({ summary: 'Import shareholders from CSV or Excel file' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async importShareholders(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+    @Query('dryRun') dryRun?: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    const isDryRun = dryRun !== 'false';
+    return this.shareholderImportService.importShareholders(
+      coopId,
+      file,
+      isDryRun,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  @Get('shareholders/import/template')
+  @RequirePermission('canManageShareholders')
+  @ApiOperation({ summary: 'Download CSV import template' })
+  async getImportTemplate(@Res() res: Response) {
+    const columns = this.shareholderImportService.getTemplateColumns();
+    const csv = columns.join(',') + '\n';
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="shareholders-import-template.csv"');
+    res.send(csv);
   }
 
   @Put('shareholders/:id')

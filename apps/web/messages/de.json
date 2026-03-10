@@ -550,6 +550,27 @@
         "addOwner": "Berechtigten hinzufügen",
         "removeOwner": "Entfernen",
         "ownershipPercentage": "Eigentum %"
+      },
+      "import": {
+        "title": "Aktionäre importieren",
+        "description": "Laden Sie eine CSV- oder Excel-Datei hoch, um Aktionäre in großen Mengen zu importieren.",
+        "button": "Importieren",
+        "uploadFile": "Datei hochladen",
+        "selectFile": "Wählen Sie eine CSV- oder Excel-Datei",
+        "supportedFormats": "Unterstützte Formate: .csv, .xlsx",
+        "preview": "Vorschau",
+        "previewDescription": "Überprüfen Sie die Daten vor dem Import. Beheben Sie Fehler und versuchen Sie es erneut.",
+        "validRows": "Gültige Zeilen",
+        "invalidRows": "Ungültige Zeilen",
+        "totalRows": "Zeilen gesamt",
+        "row": "Zeile",
+        "errors": "Fehler",
+        "confirm": "{count} Aktionäre importieren",
+        "importing": "Importieren...",
+        "success": "{count} Aktionäre erfolgreich importiert.",
+        "noValidRows": "Keine gültigen Zeilen gefunden. Beheben Sie die Fehler und versuchen Sie es erneut.",
+        "downloadTemplate": "Vorlage herunterladen",
+        "dryRunning": "Validieren..."
       }
     },
     "shareholderDetail": {
