@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
 import { CoopsService } from '../coops/coops.service';
-import { computeTotalPaid, computeVestedShares } from '@opencoop/shared';
+import { computeTotalPaid, computeVestedShares, TERMS_VERSION } from '@opencoop/shared';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -166,6 +166,10 @@ export class AuthService {
   }
 
   async onboard(onboardingDto: OnboardingDto) {
+    if (!onboardingDto.termsAccepted) {
+      throw new BadRequestException('You must accept the terms and conditions');
+    }
+
     const email = onboardingDto.email.toLowerCase();
 
     // Check email uniqueness
@@ -204,6 +208,8 @@ export class AuthService {
           passwordHash,
           role: 'COOP_ADMIN',
           preferredLanguage: onboardingDto.preferredLanguage || 'nl',
+          termsAcceptedAt: new Date(),
+          termsVersion: TERMS_VERSION,
           emailVerifyToken: hashToken(emailVerifyToken),
           emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         },
