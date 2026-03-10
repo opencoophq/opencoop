@@ -1042,34 +1042,30 @@ export function CoopRegisterContent({
           </div>
         </div>
 
-        {/* Terms */}
-        <div className="flex items-start space-x-2">
-          <Checkbox
-            id="terms"
-            checked={form.watch('acceptTerms') || false}
-            onCheckedChange={(checked) =>
-              form.setValue('acceptTerms', checked === true ? true : undefined as never)
-            }
-          />
-          <Label htmlFor="terms" className="text-sm">
-            {coop.termsUrl ? (
-              <>
-                {t('registration.acceptTermsPrefix')}{' '}
-                <a
-                  href={coop.termsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:no-underline"
-                  style={{ color: coop.primaryColor }}
-                >
-                  {t('registration.termsAndConditions')}
-                </a>
-              </>
-            ) : (
-              t('registration.acceptTerms')
-            )}
-          </Label>
-        </div>
+        {/* Coop Terms (only shown when coop has a terms URL) */}
+        {coop.termsUrl && (
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="terms"
+              checked={form.watch('acceptTerms') || false}
+              onCheckedChange={(checked) =>
+                form.setValue('acceptTerms', checked === true ? true : undefined as never)
+              }
+            />
+            <Label htmlFor="terms" className="text-sm">
+              {t('registration.acceptTermsPrefix')}{' '}
+              <a
+                href={coop.termsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:no-underline"
+                style={{ color: coop.primaryColor }}
+              >
+                {t('registration.termsAndConditions')}
+              </a>
+            </Label>
+          </div>
+        )}
 
         {/* Privacy Policy */}
         <div className="flex items-start space-x-2 mt-2">
