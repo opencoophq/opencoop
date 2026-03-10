@@ -29,7 +29,7 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger API docs (disabled in production)
+  // Swagger API docs (dev/staging only)
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('OpenCoop API')
@@ -39,7 +39,6 @@ async function bootstrap() {
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('docs', app, document);
-    console.log(`Swagger docs: http://localhost:${process.env.API_PORT || process.env.PORT || 3001}/docs`);
   }
 
   const port = process.env.API_PORT || process.env.PORT || 3001;
