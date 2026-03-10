@@ -39,7 +39,18 @@ import {
 } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import { api } from '@/lib/api';
-import { Search, Plus, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
+import {
+  Search,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  Upload,
+  Download,
+  AlertCircle,
+  CheckCircle2,
+} from 'lucide-react';
 
 interface ShareholderRow {
   id: string;
@@ -60,6 +71,16 @@ interface PaginatedResponse {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+interface ImportResult {
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  created: number;
+  skipped: number;
+  errors: Array<{ row: number; errors: string[] }>;
+  dryRun: boolean;
 }
 
 const beneficialOwnerSchema = z.object({
@@ -140,6 +161,15 @@ export default function ShareholdersPage() {
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
+
+  // Import dialog state
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<ImportResult | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [importStep, setImportStep] = useState<'upload' | 'preview' | 'done'>('upload');
 
   const form = useForm<CreateShareholderForm>({
     resolver: zodResolver(createShareholderSchema),
@@ -296,16 +326,100 @@ export default function ShareholdersPage() {
     }
   };
 
+  const openImportDialog = () => {
+    setImportFile(null);
+    setImportPreview(null);
+    setImportError(null);
+    setImportSuccess(null);
+    setImportStep('upload');
+    setImportOpen(true);
+  };
+
+  const handleImportFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedCoop) return;
+
+    setImportFile(file);
+    setImportLoading(true);
+    setImportError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const result = await api<ImportResult>(
+        `/admin/coops/${selectedCoop.id}/shareholders/import?dryRun=true`,
+        { method: 'POST', body: formData },
+      );
+
+      setImportPreview(result);
+      setImportStep('preview');
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!importFile || !selectedCoop) return;
+
+    setImportLoading(true);
+    setImportError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const result = await api<ImportResult>(
+        `/admin/coops/${selectedCoop.id}/shareholders/import?dryRun=false`,
+        { method: 'POST', body: formData },
+      );
+
+      setImportSuccess(t('admin.shareholders.import.success', { count: result.created }));
+      setImportStep('done');
+      loadData();
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    if (!selectedCoop) return;
+    try {
+      const response = await apiFetch(
+        `/admin/coops/${selectedCoop.id}/shareholders/import/template`,
+      );
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'shareholders-import-template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // ignore
+    }
+  };
+
   if (!selectedCoop) return <p className="text-muted-foreground">{t('admin.selectCoop')}</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{t('admin.shareholders.title')}</h1>
-        <Button onClick={openCreateDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('admin.shareholders.add')}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={openImportDialog}>
+            <Upload className="h-4 w-4 mr-2" />
+            {t('admin.shareholders.import.button')}
+          </Button>
+          <Button onClick={openCreateDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('admin.shareholders.add')}
+          </Button>
+        </div>
       </div>
 
       {createSuccess && (
@@ -476,6 +590,151 @@ export default function ShareholdersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Import Shareholders Dialog */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('admin.shareholders.import.title')}</DialogTitle>
+            <DialogDescription>{t('admin.shareholders.import.description')}</DialogDescription>
+          </DialogHeader>
+
+          {importStep === 'upload' && (
+            <div className="space-y-4">
+              <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-3">
+                  {t('admin.shareholders.import.selectFile')}
+                </p>
+                <Input
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleImportFileSelect}
+                  className="max-w-xs mx-auto"
+                  id="import-upload"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  {t('admin.shareholders.import.supportedFormats')}
+                </p>
+              </div>
+
+              {importLoading && (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-2" />
+                  <span className="text-sm text-muted-foreground">
+                    {t('admin.shareholders.import.dryRunning')}
+                  </span>
+                </div>
+              )}
+
+              {importError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{importError}</AlertDescription>
+                </Alert>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {t('admin.shareholders.import.downloadTemplate')}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {importStep === 'preview' && importPreview && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-4 pb-4 text-center">
+                    <p className="text-2xl font-bold">{importPreview.totalRows}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('admin.shareholders.import.totalRows')}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 pb-4 text-center">
+                    <p className="text-2xl font-bold text-green-600">{importPreview.validRows}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('admin.shareholders.import.validRows')}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 pb-4 text-center">
+                    <p className="text-2xl font-bold text-red-600">{importPreview.invalidRows}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('admin.shareholders.import.invalidRows')}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {importPreview.errors.length > 0 && (
+                <div className="border rounded-lg max-h-48 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">{t('admin.shareholders.import.row')}</TableHead>
+                        <TableHead>{t('admin.shareholders.import.errors')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {importPreview.errors.map((err) => (
+                        <TableRow key={err.row}>
+                          <TableCell className="font-mono text-sm">{err.row}</TableCell>
+                          <TableCell>
+                            <ul className="text-sm text-destructive list-disc pl-4">
+                              {err.errors.map((e, i) => (
+                                <li key={i}>{e}</li>
+                              ))}
+                            </ul>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {importError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{importError}</AlertDescription>
+                </Alert>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setImportStep('upload')}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  onClick={handleImportConfirm}
+                  disabled={importLoading || importPreview.validRows === 0}
+                >
+                  {importLoading
+                    ? t('admin.shareholders.import.importing')
+                    : t('admin.shareholders.import.confirm', { count: importPreview.validRows })}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {importStep === 'done' && (
+            <div className="space-y-4 text-center py-4">
+              <CheckCircle2 className="h-12 w-12 mx-auto text-green-600" />
+              <p className="text-lg font-medium">{importSuccess}</p>
+              <DialogFooter>
+                <Button onClick={() => setImportOpen(false)}>
+                  {t('common.confirm')}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Create Shareholder Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
