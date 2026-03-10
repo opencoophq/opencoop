@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.6.1] - 2026-03-10
+
+### Fixed
+- **Personal data form not saving phone/IBAN correctly** — bank account (IBAN/BIC) fields were silently dropped when cleared due to falsy check; empty optional fields (phone, etc.) stored as empty strings instead of null
+
 ## [0.6.0] - 2026-03-10
 
 ### Added

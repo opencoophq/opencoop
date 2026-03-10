@@ -111,12 +111,14 @@ export default function PersonalDataPage() {
     setSuccess(null);
 
     try {
-      const { street, houseNumber, postalCode, city, country, bankIban, bankBic, birthDate, ...rest } = data;
+      const { street, houseNumber, postalCode, city, country, birthDate, ...rest } = data;
 
-      const body: Record<string, unknown> = { ...rest };
+      // Convert empty strings to null for optional fields
+      const body: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(rest)) {
+        body[key] = value === '' ? null : value;
+      }
 
-      if (bankIban) body.bankIban = bankIban;
-      if (bankBic) body.bankBic = bankBic;
       if (birthDate) body.birthDate = birthDate;
 
       if (street || houseNumber || postalCode || city || country) {
