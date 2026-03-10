@@ -12,6 +12,7 @@ import { CreateChannelDto } from './dto/create-channel.dto';
 import { UpdateChannelDto } from './dto/update-channel.dto';
 import { PublicRegisterDto } from '../coops/dto/public-register.dto';
 import { ClaimGiftDto } from './dto/claim-gift.dto';
+import { PRIVACY_VERSION } from '@opencoop/shared';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -402,6 +403,15 @@ export class ChannelsService {
       throw new NotFoundException('Channel not found');
     }
 
+    // Validate terms acceptance
+    if (channel.termsUrl && !dto.coopTermsAccepted) {
+      throw new BadRequestException('You must accept the cooperative terms and conditions');
+    }
+
+    if (!dto.privacyAccepted) {
+      throw new BadRequestException('You must accept the privacy policy');
+    }
+
     // 3. Verify shareClassId is linked to this channel
     const isShareClassLinked = channel.shareClasses.some(
       (cs) => cs.shareClassId === dto.shareClassId,
@@ -459,6 +469,7 @@ export class ChannelsService {
     }
 
     // 6. Create registration via RegistrationsService
+    const now = new Date();
     const registration = await this.registrationsService.createBuy({
       coopId: coop.id,
       shareholderId,
@@ -467,6 +478,12 @@ export class ChannelsService {
       projectId: dto.projectId,
       channelId: channel.id,
       isGift: dto.isGift,
+      ...(dto.coopTermsAccepted && channel.termsUrl && {
+        coopTermsAcceptedAt: now,
+        coopTermsVersion: channel.termsUrl,
+      }),
+      privacyAcceptedAt: now,
+      privacyVersion: PRIVACY_VERSION,
     });
 
     return {
