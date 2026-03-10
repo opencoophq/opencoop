@@ -27,6 +27,7 @@ const PERMISSION_KEYS = [
   'canManageShareClasses',
   'canManageProjects',
   'canManageDividends',
+  'canManageMessages',
   'canManageSettings',
   'canManageAdmins',
   'canViewPII',
@@ -42,6 +43,7 @@ interface Permissions {
   canManageShareClasses: boolean;
   canManageProjects: boolean;
   canManageDividends: boolean;
+  canManageMessages: boolean;
   canManageSettings: boolean;
   canManageAdmins: boolean;
   canViewPII: boolean;
@@ -63,6 +65,7 @@ const DEFAULT_PERMISSIONS: Permissions = {
   canManageShareClasses: false,
   canManageProjects: false,
   canManageDividends: false,
+  canManageMessages: false,
   canManageSettings: false,
   canManageAdmins: false,
   canViewPII: false,
