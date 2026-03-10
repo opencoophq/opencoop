@@ -1,5 +1,6 @@
-import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, MaxLength } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, MaxLength, IsNumber, IsEnum, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { EcoPowerThresholdType } from '@opencoop/database';
 
 export class UpdateCoopDto {
   @ApiProperty({ required: false })
@@ -92,4 +93,20 @@ export class UpdateCoopDto {
   @IsOptional()
   @IsString()
   graphFromEmail?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  ecoPowerEnabled?: boolean;
+
+  @ApiProperty({ required: false, enum: EcoPowerThresholdType })
+  @IsOptional()
+  @IsEnum(EcoPowerThresholdType)
+  ecoPowerMinThresholdType?: EcoPowerThresholdType | null;
+
+  @ApiProperty({ required: false, description: 'Minimum threshold value (euro amount or share count)' })
+  @IsOptional()
+  @ValidateIf((o) => o.ecoPowerMinThreshold !== null)
+  @IsNumber()
+  ecoPowerMinThreshold?: number | null;
 }
