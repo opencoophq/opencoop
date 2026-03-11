@@ -387,6 +387,21 @@ export class EmailProcessor {
         </blockquote>
         <p>Log in op het dashboard om het bericht te bekijken en te beantwoorden.</p>
       `,
+      'referral-success': (d, cn) => `
+        <h1>Iemand heeft je uitnodiging aanvaard!</h1>
+        <p>Beste ${d.referrerName},</p>
+        <p><strong>${d.referredName}</strong> heeft zich via jouw persoonlijke link aangemeld als coöperant bij ${cn}.</p>
+        <p>Bedankt om ${cn} te helpen groeien! Deel je link gerust verder om meer mensen te bereiken.</p>
+        ${d.dashboardUrl ? `
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${d.dashboardUrl}"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Bekijk je doorverwijzingen
+          </a>
+        </p>
+        ` : ''}
+      `,
     };
 
     const template = templates[templateKey];
