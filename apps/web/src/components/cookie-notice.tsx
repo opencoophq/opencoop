@@ -26,8 +26,8 @@ export function CookieNotice() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6">
-      <div className="mx-auto max-w-3xl rounded-lg border bg-background/95 backdrop-blur-sm shadow-lg p-4 flex items-center gap-3 sm:gap-4">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 pointer-events-none">
+      <div className="pointer-events-auto mx-auto max-w-3xl rounded-lg border bg-background/95 backdrop-blur-sm shadow-lg p-4 flex items-center gap-3 sm:gap-4">
         <Cookie className="h-5 w-5 shrink-0 text-muted-foreground" />
         <p className="flex-1 text-sm text-muted-foreground">
           {t('banner')}{' '}
