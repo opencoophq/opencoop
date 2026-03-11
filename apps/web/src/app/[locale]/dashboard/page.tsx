@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
 import { FileText, ArrowLeftRight, Coins, TrendingUp } from 'lucide-react';
+import { ReferralCard } from '@/components/referral-card';
 
 export default function DashboardPage() {
   const t = useTranslations();
@@ -18,6 +19,8 @@ export default function DashboardPage() {
     totalDividends: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [shareholderId, setShareholderId] = useState<string | null>(null);
+  const [coopName, setCoopName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     async function loadData() {
@@ -26,6 +29,7 @@ export default function DashboardPage() {
           shareholderCoops: Array<{ id: string }>;
           shareholders: Array<{
             id: string;
+            coop?: { name?: string };
             registrations: Array<{ sharesOwned: number; quantity: number; pricePerShare: number; status: string }>;
           }>;
         }>('/auth/me');
@@ -34,6 +38,10 @@ export default function DashboardPage() {
         let totalValue = 0;
 
         if (profile.shareholders) {
+          if (profile.shareholders[0]) {
+            setShareholderId(profile.shareholders[0].id);
+            setCoopName(profile.shareholders[0].coop?.name);
+          }
           for (const sh of profile.shareholders) {
             if (sh.registrations) {
               for (const reg of sh.registrations) {
@@ -111,6 +119,13 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Referral Card */}
+      {shareholderId && (
+        <div className="mt-6">
+          <ReferralCard shareholderId={shareholderId} coopName={coopName} />
+        </div>
+      )}
     </div>
   );
 }

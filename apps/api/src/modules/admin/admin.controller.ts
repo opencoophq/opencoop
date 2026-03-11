@@ -821,6 +821,12 @@ export class AdminController {
     return this.analyticsService.getTransactionSummary(coopId, validPeriod);
   }
 
+  @Get('analytics/referrals')
+  @ApiOperation({ summary: 'Get referral analytics data' })
+  async getReferralAnalytics(@Param('coopId') coopId: string) {
+    return this.analyticsService.getReferralAnalytics(coopId);
+  }
+
   // ==================== REPORTS ====================
 
   @Get('reports/annual-overview')

@@ -145,6 +145,7 @@ export function CoopRegisterContent({
   const preselectedClass = searchParams.get('class');
   const preselectedProject = searchParams.get('project');
   const preselectedShareholderId = searchParams.get('shareholderId');
+  const referralCode = searchParams.get('ref');
 
   const [coop, setCoop] = useState<CoopPublicInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -160,6 +161,7 @@ export function CoopRegisterContent({
     ogmCode?: string;
     giftCode?: string;
   } | null>(null);
+  const [referrerName, setReferrerName] = useState<string | null>(null);
 
   // Determine if user has existing shareholders (short flow) or is new (long flow)
   const hasExistingShareholders = allShareholders.length > 0 && !isRegisteringNew;
@@ -219,6 +221,21 @@ export function CoopRegisterContent({
         }
         const coopData = await coopResponse.json();
         setCoop(coopData);
+
+        // Look up referrer name if referral code is present
+        if (referralCode) {
+          try {
+            const refResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/referrer/${encodeURIComponent(referralCode)}`
+            );
+            if (refResponse.ok) {
+              const refData = await refResponse.json();
+              setReferrerName(refData.name);
+            }
+          } catch {
+            // Invalid referral code — continue without banner
+          }
+        }
 
         // Pre-select share class if provided
         if (preselectedClass) {
@@ -287,7 +304,7 @@ export function CoopRegisterContent({
     }
 
     fetchData();
-  }, [coopSlug, channelSlug, preselectedClass, preselectedProject, preselectedShareholderId, form]);
+  }, [coopSlug, channelSlug, preselectedClass, preselectedProject, preselectedShareholderId, referralCode, form]);
 
   // Read OAuth prefill params from URL (after redirect back from Google/Apple)
   useEffect(() => {
@@ -443,6 +460,7 @@ export function CoopRegisterContent({
           isGift: values.beneficiaryType === 'gift',
           coopTermsAccepted: values.acceptTerms === true,
           privacyAccepted: values.acceptPrivacy === true,
+          ...(referralCode ? { referralCode } : {}),
         };
       } else {
         const beneficiaryToType: Record<string, string> = {
@@ -474,6 +492,7 @@ export function CoopRegisterContent({
           isGift: values.beneficiaryType === 'gift',
           coopTermsAccepted: values.acceptTerms === true,
           privacyAccepted: values.acceptPrivacy === true,
+          ...(referralCode ? { referralCode } : {}),
         };
       }
 
@@ -1284,6 +1303,18 @@ export function CoopRegisterContent({
 
       {/* Steps indicator */}
       {renderStepIndicator()}
+
+      {/* Referral banner */}
+      {referrerName && (
+        <div className="bg-green-50 border-b border-green-200">
+          <div className="container mx-auto px-4 py-3 flex items-center gap-2 max-w-2xl">
+            <UserPlus className="h-4 w-4 text-green-700 flex-shrink-0" />
+            <p className="text-sm text-green-800 font-medium">
+              {t('referral.invitedBy', { name: referrerName })}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <main className="container mx-auto px-4 py-8">

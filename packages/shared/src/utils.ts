@@ -193,6 +193,21 @@ export function validateIban(iban: string): boolean {
 }
 
 /**
+ * Generate a unique referral code in the format BRG-XXXXX.
+ * Uses crypto-safe random alphanumeric characters (uppercase + digits).
+ */
+export function generateReferralCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous: 0/O, 1/I
+  let code = '';
+  const bytes = new Uint8Array(5);
+  globalThis.crypto.getRandomValues(bytes);
+  for (let i = 0; i < 5; i++) {
+    code += chars[bytes[i] % chars.length];
+  }
+  return `BRG-${code}`;
+}
+
+/**
  * Generate an EPC QR code payload (European Payments Council, version 002).
  * This creates the text content for a SEPA Credit Transfer QR code.
  *

@@ -428,6 +428,18 @@ export class ChannelsService {
       }
     }
 
+    // Resolve referral code to referring shareholder
+    let referralShareholderId: string | null = null;
+    if (dto.referralCode) {
+      const referrer = await this.prisma.shareholder.findFirst({
+        where: { referralCode: dto.referralCode, coopId: coop.id, status: 'ACTIVE' },
+        select: { id: true },
+      });
+      if (referrer) {
+        referralShareholderId = referrer.id;
+      }
+    }
+
     // 5. Create shareholder / find existing
     let shareholderId: string;
 
@@ -468,6 +480,19 @@ export class ChannelsService {
       });
     }
 
+    // Block self-referral
+    if (referralShareholderId === shareholderId) {
+      referralShareholderId = null;
+    }
+
+    // Set referredByShareholderId on new shareholder (only if not already set)
+    if (referralShareholderId && !dto.shareholderId) {
+      await this.prisma.shareholder.update({
+        where: { id: shareholderId },
+        data: { referredByShareholderId: referralShareholderId },
+      });
+    }
+
     // 6. Create registration via RegistrationsService
     const now = new Date();
     const registration = await this.registrationsService.createBuy({
@@ -477,6 +502,7 @@ export class ChannelsService {
       quantity: dto.quantity,
       projectId: dto.projectId,
       channelId: channel.id,
+      referralShareholderId,
       isGift: dto.isGift,
       ...(dto.coopTermsAccepted && channel.termsUrl && {
         coopTermsAcceptedAt: now,

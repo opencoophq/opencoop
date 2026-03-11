@@ -4,6 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { CreateShareholderDto } from './dto/create-shareholder.dto';
 import { UpdateShareholderDto } from './dto/update-shareholder.dto';
 import { encryptField, decryptField, isEncrypted } from '../../common/crypto';
+import { generateReferralCode } from '@opencoop/shared';
 
 @Injectable()
 export class ShareholdersService {
@@ -136,6 +137,17 @@ export class ShareholdersService {
       nationalId: bo.nationalId ? encryptField(bo.nationalId) : bo.nationalId,
     }));
 
+    // Generate unique referral code (retry on collision)
+    let referralCode: string | null = null;
+    for (let i = 0; i < 5; i++) {
+      const candidate = generateReferralCode();
+      const existing = await this.prisma.shareholder.findFirst({ where: { referralCode: candidate } });
+      if (!existing) {
+        referralCode = candidate;
+        break;
+      }
+    }
+
     const created = await this.prisma.shareholder.create({
       data: {
         ...rest,
@@ -144,6 +156,7 @@ export class ShareholdersService {
         email: rest.email?.toLowerCase(),
         birthDate: birthDate ? new Date(birthDate) : null,
         status: 'ACTIVE',
+        referralCode,
         address: address ? JSON.parse(JSON.stringify(address)) : undefined,
         beneficialOwners: encryptedBeneficialOwners?.length
           ? {

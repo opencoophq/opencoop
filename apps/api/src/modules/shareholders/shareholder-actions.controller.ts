@@ -558,4 +558,45 @@ export class ShareholderActionsController {
       throw new BadRequestException('Use document download endpoint for existing documents');
     }
   }
+
+  @Get('referral-stats')
+  @ApiOperation({ summary: 'Get referral stats for this shareholder (self-service)' })
+  async getReferralStats(
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    const shareholder = await this.verifyShareholder(shareholderId, user.id);
+
+    const referrals = await this.prisma.shareholder.findMany({
+      where: { referredByShareholderId: shareholderId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const coopSlug = await this.prisma.coop.findUnique({
+      where: { id: shareholder.coopId },
+      select: { slug: true },
+    });
+
+    return {
+      referralCode: shareholder.referralCode,
+      referralLink: coopSlug
+        ? `https://opencoop.be/nl/${coopSlug.slug}/default/register?ref=${shareholder.referralCode}`
+        : null,
+      totalReferred: referrals.length,
+      convertedReferred: referrals.filter((r) => r.status === 'ACTIVE').length,
+      referrals: referrals.map((r) => ({
+        firstName: r.firstName,
+        lastInitial: r.lastName ? `${r.lastName.charAt(0)}.` : null,
+        status: r.status,
+        registeredAt: r.createdAt,
+      })),
+    };
+  }
 }

@@ -482,4 +482,72 @@ export class AnalyticsService {
 
     return { timeline, totals };
   }
+
+  async getReferralAnalytics(coopId: string) {
+    // Total referrals (shareholders with referredByShareholderId set)
+    const totalReferrals = await this.prisma.shareholder.count({
+      where: { coopId, referredByShareholderId: { not: null } },
+    });
+
+    const convertedReferrals = await this.prisma.shareholder.count({
+      where: { coopId, referredByShareholderId: { not: null }, status: 'ACTIVE' },
+    });
+
+    // Capital from referred shareholders
+    const referredRegistrations = await this.prisma.registration.findMany({
+      where: {
+        coopId,
+        referralShareholderId: { not: null },
+        type: 'BUY',
+        status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
+      },
+      select: {
+        quantity: true,
+        pricePerShare: true,
+        payments: { select: { amount: true } },
+      },
+    });
+
+    const sharesFromReferrals = referredRegistrations.reduce((sum, r) => sum + r.quantity, 0);
+    const capitalFromReferrals = referredRegistrations.reduce(
+      (sum, r) => sum + r.payments.reduce((s, p) => s + Number(p.amount), 0),
+      0,
+    );
+
+    // Top referrers leaderboard
+    const topReferrers = await this.prisma.shareholder.findMany({
+      where: {
+        coopId,
+        referrals: { some: {} },
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        companyName: true,
+        referralCode: true,
+        _count: { select: { referrals: true } },
+        referrals: {
+          select: { status: true },
+        },
+      },
+      orderBy: { referrals: { _count: 'desc' } },
+      take: 10,
+    });
+
+    return {
+      totalReferrals,
+      convertedReferrals,
+      conversionRate: totalReferrals > 0 ? convertedReferrals / totalReferrals : 0,
+      sharesFromReferrals,
+      capitalFromReferrals,
+      topReferrers: topReferrers.map((r) => ({
+        id: r.id,
+        name: r.companyName || [r.firstName, r.lastName].filter(Boolean).join(' '),
+        referralCode: r.referralCode,
+        totalReferred: r._count.referrals,
+        convertedReferred: r.referrals.filter((ref) => ref.status === 'ACTIVE').length,
+      })),
+    };
+  }
 }
