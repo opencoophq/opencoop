@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { usePathname, useRouter } from '@/i18n/routing';
+import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { Building2, Globe } from 'lucide-react';
 
 const locales = [
@@ -13,6 +13,7 @@ const locales = [
 
 export function MarketingFooter() {
   const t = useTranslations('landing');
+  const tLegal = useTranslations('legal');
   const pathname = usePathname();
   const router = useRouter();
 
@@ -30,6 +31,18 @@ export function MarketingFooter() {
           </div>
           <span className="hidden sm:inline">&middot;</span>
           <span>{t('footer.license')}</span>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link href="/terms" className="hover:text-foreground transition-colors underline-offset-2 hover:underline">
+            {tLegal('termsTitle')}
+          </Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link href="/privacy" className="hover:text-foreground transition-colors underline-offset-2 hover:underline">
+            {tLegal('privacyTitle')}
+          </Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link href="/dpa" className="hover:text-foreground transition-colors underline-offset-2 hover:underline">
+            {tLegal('dpaTitle')}
+          </Link>
         </div>
 
         <div className="flex items-center gap-2">
