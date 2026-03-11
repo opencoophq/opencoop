@@ -644,12 +644,39 @@ export class CoopsService {
     });
   }
 
+  async lookupReferrer(slug: string, code: string) {
+    const coop = await this.findBySlug(slug);
+    const referrer = await this.prisma.shareholder.findFirst({
+      where: { referralCode: code, coopId: coop.id, status: 'ACTIVE' },
+      select: { firstName: true, lastName: true, companyName: true },
+    });
+    if (!referrer) {
+      throw new NotFoundException('Referral code not found');
+    }
+    const displayName = referrer.companyName
+      || [referrer.firstName, referrer.lastName ? `${referrer.lastName.charAt(0)}.` : ''].filter(Boolean).join(' ');
+    return { name: displayName };
+  }
+
   async publicRegister(slug: string, dto: PublicRegisterDto) {
     if (!dto.privacyAccepted) {
       throw new BadRequestException('You must accept the privacy policy');
     }
 
     const coop = await this.findBySlug(slug);
+
+    // Resolve referral code to referring shareholder
+    let referralShareholderId: string | null = null;
+    if (dto.referralCode) {
+      const referrer = await this.prisma.shareholder.findFirst({
+        where: { referralCode: dto.referralCode, coopId: coop.id, status: 'ACTIVE' },
+        select: { id: true, email: true },
+      });
+      if (referrer) {
+        referralShareholderId = referrer.id;
+      }
+      // Invalid code: silently ignored, registration proceeds without attribution
+    }
 
     let shareholderId: string;
 
@@ -686,12 +713,26 @@ export class CoopsService {
       shareholderId = newShareholder.id;
     }
 
+    // Block self-referral
+    if (referralShareholderId === shareholderId) {
+      referralShareholderId = null;
+    }
+
+    // Set referredByShareholderId on new shareholder (only if not already set - first referrer wins)
+    if (referralShareholderId && !dto.shareholderId) {
+      await this.prisma.shareholder.update({
+        where: { id: shareholderId },
+        data: { referredByShareholderId: referralShareholderId },
+      });
+    }
+
     const registration = await this.registrationsService.createBuy({
       coopId: coop.id,
       shareholderId,
       shareClassId: dto.shareClassId,
       quantity: dto.quantity,
       projectId: dto.projectId,
+      referralShareholderId,
       privacyAcceptedAt: new Date(),
       privacyVersion: PRIVACY_VERSION,
     });

@@ -422,6 +422,12 @@ model Shareholder {
   isEcoPowerClient Boolean @default(false)
   ecoPowerId       String?
 
+  // Referral system
+  referralCode            String?       @unique // 8-char alphanumeric (e.g., BRG-A7K2M), generated when status becomes ACTIVE
+  referredByShareholderId String?                // Who referred this shareholder (first referrer, lifetime attribution)
+  referredByShareholder   Shareholder?  @relation("ReferredBy", fields: [referredByShareholderId], references: [id], onDelete: SetNull)
+  referrals               Shareholder[] @relation("ReferredBy") // People this shareholder referred
+
   // Relations
   coop             Coop               @relation(fields: [coopId], references: [id], onDelete: Cascade)
   channel          Channel?           @relation(fields: [channelId], references: [id], onDelete: SetNull)
@@ -429,6 +435,7 @@ model Shareholder {
   registeredBy     User?              @relation("RegisteredBy", fields: [registeredByUserId], references: [id], onDelete: SetNull)
   beneficialOwners BeneficialOwner[]
   registrations    Registration[]     @relation("ShareholderRegistrations")
+  referralRegistrations Registration[] @relation("ReferralRegistration") // Registrations attributed to this referrer
   transfersIn      Registration[]     @relation("TransferIn")
   transfersOut     Registration[]     @relation("TransferOut")
   dividendPayouts  DividendPayout[]
@@ -591,6 +598,10 @@ model Registration {
   giftClaimedAt              DateTime?
   giftClaimedByShareholderId String?
   giftClaimedByShareholder   Shareholder? @relation("GiftClaimedBy", fields: [giftClaimedByShareholderId], references: [id])
+
+  // Referral attribution (per-transaction, preserved even if shareholder.referredBy changes)
+  referralShareholderId      String?
+  referralShareholder        Shareholder? @relation("ReferralRegistration", fields: [referralShareholderId], references: [id], onDelete: SetNull)
 
   // Terms & privacy acceptance
   coopTermsAcceptedAt DateTime?

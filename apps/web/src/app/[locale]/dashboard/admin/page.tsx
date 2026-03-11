@@ -8,11 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
-import { Users, TrendingUp, ArrowLeftRight, UserCheck } from 'lucide-react';
+import { Users, TrendingUp, ArrowLeftRight, UserCheck, UserPlus } from 'lucide-react';
 import { CapitalTimelineChart } from '@/components/charts/capital-timeline-chart';
 import { CapitalByProjectChart } from '@/components/charts/capital-by-project-chart';
 import { ShareholderGrowthChart } from '@/components/charts/shareholder-growth-chart';
 import { TransactionActivityChart } from '@/components/charts/transaction-activity-chart';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export type Period = 'day' | 'month' | 'quarter' | 'year' | 'all';
 
@@ -23,6 +24,21 @@ interface Stats {
   pendingRegistrations: number;
 }
 
+interface ReferralAnalytics {
+  totalReferrals: number;
+  convertedReferrals: number;
+  conversionRate: number;
+  sharesFromReferrals: number;
+  capitalFromReferrals: number;
+  topReferrers: Array<{
+    id: string;
+    name: string;
+    referralCode: string;
+    totalReferred: number;
+    convertedReferred: number;
+  }>;
+}
+
 export default function AdminPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
@@ -30,12 +46,19 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>('month');
+  const [referralStats, setReferralStats] = useState<ReferralAnalytics | null>(null);
 
   useEffect(() => {
     if (!selectedCoop) return;
     setLoading(true);
-    api<Stats>(`/admin/coops/${selectedCoop.id}/stats`)
-      .then(setStats)
+    Promise.all([
+      api<Stats>(`/admin/coops/${selectedCoop.id}/stats`),
+      api<ReferralAnalytics>(`/admin/coops/${selectedCoop.id}/analytics/referrals`).catch(() => null),
+    ])
+      .then(([statsData, referralData]) => {
+        setStats(statsData);
+        setReferralStats(referralData);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [selectedCoop]);
@@ -117,6 +140,93 @@ export default function AdminPage() {
         <ShareholderGrowthChart period={period} />
         <TransactionActivityChart period={period} />
       </div>
+
+      {/* Referral Analytics */}
+      {referralStats && (referralStats.totalReferrals > 0 || referralStats.topReferrers.length > 0) && (
+        <>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-green-600" />
+            {t('referral.admin.title')}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {t('referral.admin.totalReferrals')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{referralStats.totalReferrals}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {t('referral.admin.convertedReferrals')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{referralStats.convertedReferrals}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {t('referral.admin.conversionRate')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {(referralStats.conversionRate * 100).toFixed(1)}%
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {t('referral.admin.capitalFromReferrals')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(referralStats.capitalFromReferrals, locale)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Leaderboard */}
+          {referralStats.topReferrers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">{t('referral.admin.leaderboard')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('referral.admin.name')}</TableHead>
+                      <TableHead>{t('referral.admin.code')}</TableHead>
+                      <TableHead className="text-right">{t('referral.admin.referred')}</TableHead>
+                      <TableHead className="text-right">{t('referral.admin.convertedReferrals')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {referralStats.topReferrers.map((referrer) => (
+                      <TableRow key={referrer.id}>
+                        <TableCell className="font-medium">{referrer.name}</TableCell>
+                        <TableCell className="font-mono text-xs">{referrer.referralCode}</TableCell>
+                        <TableCell className="text-right">{referrer.totalReferred}</TableCell>
+                        <TableCell className="text-right">{referrer.convertedReferred}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   );
 }

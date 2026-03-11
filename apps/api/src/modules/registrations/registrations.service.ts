@@ -251,6 +251,7 @@ export class RegistrationsService {
     projectId?: string;
     isSavings?: boolean;
     channelId?: string;
+    referralShareholderId?: string | null;
     isGift?: boolean;
     coopTermsAcceptedAt?: Date;
     coopTermsVersion?: string;
@@ -320,6 +321,7 @@ export class RegistrationsService {
           isGift: data.isGift || false,
           ogmCode,
           channelId: data.channelId || null,
+          referralShareholderId: data.referralShareholderId || null,
           coopTermsAcceptedAt: data.coopTermsAcceptedAt || null,
           coopTermsVersion: data.coopTermsVersion || null,
           privacyAcceptedAt: data.privacyAcceptedAt || null,

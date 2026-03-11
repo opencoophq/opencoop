@@ -95,6 +95,12 @@ export class PublicRegisterDto {
   @IsBoolean()
   isGift?: boolean;
 
+  // === Referral ===
+  @ApiProperty({ required: false, description: 'Referral code of the referring cooperator (e.g., BRG-A7K2M)' })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
+
   // === Terms & privacy acceptance ===
   @ApiProperty({ required: false, description: 'Whether coop terms were accepted' })
   @IsOptional()
