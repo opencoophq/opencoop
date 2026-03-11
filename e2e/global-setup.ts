@@ -21,6 +21,9 @@ setup('authenticate as admin', async ({ page }) => {
   // Wait for the coop context to load (admin page should be accessible)
   await page.waitForTimeout(2_000);
 
+  // Dismiss cookie notice so it doesn't block E2E interactions
+  await page.evaluate(() => localStorage.setItem('opencoop-cookie-notice-dismissed', '1'));
+
   // Save auth state
   await page.context().storageState({ path: '.auth/admin.json' });
 });
@@ -38,6 +41,9 @@ setup('authenticate as shareholder', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
   await page.waitForTimeout(2_000);
+
+  // Dismiss cookie notice so it doesn't block E2E interactions
+  await page.evaluate(() => localStorage.setItem('opencoop-cookie-notice-dismissed', '1'));
 
   await page.context().storageState({ path: '.auth/shareholder.json' });
 });

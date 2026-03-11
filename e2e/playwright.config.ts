@@ -29,7 +29,17 @@ export default defineConfig({
       testMatch: /tests\/public\/.*/,
       use: {
         ...devices['Desktop Chrome'],
-        storageState: { cookies: [], origins: [] },
+        storageState: {
+          cookies: [],
+          origins: [
+            {
+              origin: 'http://localhost:3002',
+              localStorage: [
+                { name: 'opencoop-cookie-notice-dismissed', value: '1' },
+              ],
+            },
+          ],
+        },
       },
       dependencies: ['setup'],
     },
