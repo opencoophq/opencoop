@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.10] - 2026-03-11
+
+### Added
+- **Data Processing Agreement (DPA)** — new `/dpa` page with full GDPR Article 28 compliant DPA content in 4 languages (EN, NL, FR, DE), covering sub-processors, data retention, breach notification, audit rights
+- **Cookie notice banner** — informational cookie banner for essential cookies, dismissible via localStorage, all 4 languages
+- **Legal footer links** — Terms & Conditions, Privacy Policy, and DPA links added to marketing footer
+
 ## [0.7.9] - 2026-03-10
 
 ### Added
