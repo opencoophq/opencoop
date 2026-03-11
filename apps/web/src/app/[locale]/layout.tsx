@@ -4,6 +4,7 @@ import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { LocaleProvider } from '@/contexts/locale-context';
+import { CookieNotice } from '@/components/cookie-notice';
 
 const BASE_URL = 'https://opencoop.be';
 
@@ -53,7 +54,10 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <LocaleProvider>{children}</LocaleProvider>
+      <LocaleProvider>
+        {children}
+        <CookieNotice />
+      </LocaleProvider>
     </NextIntlClientProvider>
   );
 }
