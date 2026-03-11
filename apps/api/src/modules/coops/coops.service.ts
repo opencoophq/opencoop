@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCoopDto } from './dto/create-coop.dto';
 import { UpdateCoopDto } from './dto/update-coop.dto';
@@ -7,6 +7,7 @@ import { PublicRegisterDto } from './dto/public-register.dto';
 import { ShareholdersService } from '../shareholders/shareholders.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { AuditService } from '../audit/audit.service';
+import { EmailService } from '../email/email.service';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import sharp from 'sharp';
 import * as path from 'path';
@@ -20,11 +21,14 @@ const LOGO_QUALITY = 80;
 
 @Injectable()
 export class CoopsService {
+  private readonly logger = new Logger(CoopsService.name);
+
   constructor(
     private prisma: PrismaService,
     private shareholdersService: ShareholdersService,
     private registrationsService: RegistrationsService,
     private auditService: AuditService,
+    private emailService: EmailService,
   ) {}
 
   async findAll() {
@@ -667,10 +671,11 @@ export class CoopsService {
 
     // Resolve referral code to referring shareholder
     let referralShareholderId: string | null = null;
+    let referrer: { id: string; email: string | null; firstName: string | null } | null = null;
     if (dto.referralCode) {
-      const referrer = await this.prisma.shareholder.findFirst({
+      referrer = await this.prisma.shareholder.findFirst({
         where: { referralCode: dto.referralCode, coopId: coop.id, status: 'ACTIVE' },
-        select: { id: true, email: true },
+        select: { id: true, email: true, firstName: true },
       });
       if (referrer) {
         referralShareholderId = referrer.id;
@@ -724,6 +729,17 @@ export class CoopsService {
         where: { id: shareholderId },
         data: { referredByShareholderId: referralShareholderId },
       });
+
+      // Notify referrer via email
+      if (referrer?.email) {
+        const referredName = [dto.firstName, dto.lastName?.charAt(0)].filter(Boolean).join(' ') + '.';
+        this.emailService
+          .sendReferralSuccessNotification(coop.id, referrer.email, {
+            referrerName: referrer.firstName || 'coöperant',
+            referredName,
+          })
+          .catch((err) => this.logger.error(`Failed to send referral notification: ${err.message}`));
+      }
     }
 
     const registration = await this.registrationsService.createBuy({

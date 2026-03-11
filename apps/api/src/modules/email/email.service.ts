@@ -280,6 +280,24 @@ export class EmailService {
     });
   }
 
+  async sendReferralSuccessNotification(
+    coopId: string,
+    to: string,
+    data: {
+      referrerName: string;
+      referredName: string;
+      dashboardUrl?: string;
+    },
+  ) {
+    return this.send({
+      coopId,
+      to,
+      subject: 'Iemand heeft je uitnodiging aanvaard!',
+      templateKey: 'referral-success',
+      templateData: data,
+    });
+  }
+
   async sendGiftCertificate(
     coopId: string,
     to: string,
