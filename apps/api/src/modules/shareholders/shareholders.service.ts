@@ -137,7 +137,7 @@ export class ShareholdersService {
       nationalId: bo.nationalId ? encryptField(bo.nationalId) : bo.nationalId,
     }));
 
-    // Generate unique referral code (retry on collision)
+    // Generate unique referral code (retry on collision, including DB-level unique constraint)
     let referralCode: string | null = null;
     for (let i = 0; i < 5; i++) {
       const candidate = generateReferralCode();
@@ -148,31 +148,44 @@ export class ShareholdersService {
       }
     }
 
-    const created = await this.prisma.shareholder.create({
-      data: {
-        ...rest,
-        nationalId,
-        coopId,
-        email: rest.email?.toLowerCase(),
-        birthDate: birthDate ? new Date(birthDate) : null,
-        status: 'ACTIVE',
-        referralCode,
-        address: address ? JSON.parse(JSON.stringify(address)) : undefined,
-        beneficialOwners: encryptedBeneficialOwners?.length
-          ? {
-              create: encryptedBeneficialOwners,
-            }
-          : undefined,
-      },
-      include: {
-        beneficialOwners: true,
-      },
-    });
+    let created;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        created = await this.prisma.shareholder.create({
+          data: {
+            ...rest,
+            nationalId,
+            coopId,
+            email: rest.email?.toLowerCase(),
+            birthDate: birthDate ? new Date(birthDate) : null,
+            status: 'ACTIVE',
+            referralCode,
+            address: address ? JSON.parse(JSON.stringify(address)) : undefined,
+            beneficialOwners: encryptedBeneficialOwners?.length
+              ? {
+                  create: encryptedBeneficialOwners,
+                }
+              : undefined,
+          },
+          include: {
+            beneficialOwners: true,
+          },
+        });
+        break;
+      } catch (err: any) {
+        // Retry on unique constraint violation for referralCode
+        if (err?.code === 'P2002' && err?.meta?.target?.includes('referralCode') && attempt < 2) {
+          referralCode = generateReferralCode();
+          continue;
+        }
+        throw err;
+      }
+    }
 
     await this.auditService.log({
       coopId,
       entity: 'Shareholder',
-      entityId: created.id,
+      entityId: created!.id,
       action: 'CREATE',
       changes: [{ field: '_created', oldValue: null, newValue: dto.type }],
       actorId,
@@ -180,7 +193,7 @@ export class ShareholdersService {
       userAgent,
     });
 
-    return this.decryptShareholder(created);
+    return this.decryptShareholder(created!);
   }
 
   async update(id: string, coopId: string, dto: UpdateShareholderDto, actorId?: string, ip?: string, userAgent?: string) {

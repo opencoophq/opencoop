@@ -732,7 +732,8 @@ export class CoopsService {
 
       // Notify referrer via email
       if (referrer?.email) {
-        const referredName = [dto.firstName, dto.lastName?.charAt(0)].filter(Boolean).join(' ') + '.';
+        const lastInitial = dto.lastName?.charAt(0);
+        const referredName = lastInitial ? `${dto.firstName} ${lastInitial}.` : (dto.firstName || 'coöperant');
         this.emailService
           .sendReferralSuccessNotification(coop.id, referrer.email, {
             referrerName: referrer.firstName || 'coöperant',

@@ -584,10 +584,12 @@ export class ShareholderActionsController {
       select: { slug: true },
     });
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+
     return {
       referralCode: shareholder.referralCode,
       referralLink: coopSlug
-        ? `https://opencoop.be/nl/${coopSlug.slug}/default/register?ref=${shareholder.referralCode}`
+        ? `${appUrl}/${coopSlug.slug}/register?ref=${shareholder.referralCode}`
         : null,
       totalReferred: referrals.length,
       convertedReferred: referrals.filter((r) => r.status === 'ACTIVE').length,
