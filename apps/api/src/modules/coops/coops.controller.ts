@@ -37,6 +37,17 @@ export class CoopsController {
   }
 
   @Public()
+  @Get('referral/:code')
+  @ApiOperation({ summary: 'Resolve referral code to coop slug (public)' })
+  @ApiResponse({ status: 200, description: 'Referral target coop slug and canonical code' })
+  @ApiResponse({ status: 404, description: 'Referral code not found' })
+  async resolveReferralTarget(
+    @Param('code') code: string,
+  ) {
+    return this.coopsService.lookupReferralTarget(code);
+  }
+
+  @Public()
   @Get(':slug/referrer/:code')
   @ApiOperation({ summary: 'Look up referrer display name by referral code (public)' })
   @ApiResponse({ status: 200, description: 'Referrer first name and last initial' })

@@ -589,7 +589,7 @@ export class ShareholderActionsController {
     return {
       referralCode: shareholder.referralCode,
       referralLink: coopSlug
-        ? `${appUrl}/${coopSlug.slug}/register?ref=${shareholder.referralCode}`
+        ? `${appUrl}/r/${shareholder.referralCode}`
         : null,
       totalReferred: referrals.length,
       convertedReferred: referrals.filter((r) => r.status === 'ACTIVE').length,

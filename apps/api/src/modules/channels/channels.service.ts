@@ -432,7 +432,7 @@ export class ChannelsService {
     let referralShareholderId: string | null = null;
     if (dto.referralCode) {
       const referrer = await this.prisma.shareholder.findFirst({
-        where: { referralCode: dto.referralCode, coopId: coop.id, status: 'ACTIVE' },
+        where: { referralCode: { equals: dto.referralCode, mode: 'insensitive' }, coopId: coop.id, status: 'ACTIVE' },
         select: { id: true },
       });
       if (referrer) {
