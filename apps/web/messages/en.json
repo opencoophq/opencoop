@@ -161,6 +161,7 @@
   "shareholder": {
     "title": "Shareholder",
     "type": {
+      "label": "Type",
       "individual": "Individual",
       "company": "Company",
       "minor": "Minor"
@@ -178,7 +179,10 @@
       "companyName": "Company Name",
       "companyId": "Company Number (KBO)",
       "vatNumber": "VAT Number",
-      "legalForm": "Legal Form"
+      "legalForm": "Legal Form",
+      "parentGuardian": "Parent / Guardian",
+      "searchParent": "Search for parent shareholder...",
+      "currentParentLinked": "A parent/guardian is already linked."
     },
     "beneficialOwners": "Beneficial Owners",
     "addBeneficialOwner": "Add Beneficial Owner",

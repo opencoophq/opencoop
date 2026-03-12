@@ -102,8 +102,18 @@ interface ShareholderDetail {
   };
   isEcoPowerClient?: boolean;
   ecoPowerId?: string;
+  registeredByUserId?: string;
+  userId?: string;
   registrations: Registration[];
   createdAt: string;
+}
+
+interface ParentShareholder {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  userId?: string;
 }
 
 interface PaymentDetails {
@@ -192,6 +202,13 @@ export default function ShareholderDetailPage() {
   const [rejectTxId, setRejectTxId] = useState('');
   const [rejectReason, setRejectReason] = useState('');
 
+  // Type management state
+  const [shareholderType, setShareholderType] = useState<'INDIVIDUAL' | 'COMPANY' | 'MINOR'>('INDIVIDUAL');
+  const [parentSearch, setParentSearch] = useState('');
+  const [parentResults, setParentResults] = useState<ParentShareholder[]>([]);
+  const [selectedParent, setSelectedParent] = useState<ParentShareholder | null>(null);
+  const [parentSearchLoading, setParentSearchLoading] = useState(false);
+
   // Audit log state
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -215,6 +232,7 @@ export default function ShareholderDetailPage() {
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
       );
       setShareholder(data);
+      setShareholderType(data.type);
       setIsEcoPowerClient(data.isEcoPowerClient || false);
       setEcoPowerId(data.ecoPowerId || '');
       const addr = data.address || {};
@@ -261,6 +279,31 @@ export default function ShareholderDetailPage() {
       .finally(() => setAuditLoading(false));
   }, [selectedCoop, shareholderId]);
 
+  // Search for parent/guardian shareholders when setting MINOR type
+  useEffect(() => {
+    if (!selectedCoop || shareholderType !== 'MINOR' || parentSearch.length < 2) {
+      setParentResults([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setParentSearchLoading(true);
+      try {
+        const res = await api<{ items: ParentShareholder[] }>(
+          `/admin/coops/${selectedCoop.id}/shareholders?search=${encodeURIComponent(parentSearch)}&type=INDIVIDUAL&pageSize=10`,
+        );
+        // Exclude the current shareholder from results
+        setParentResults((res.items || []).filter((s) => s.id !== shareholderId));
+      } catch {
+        setParentResults([]);
+      } finally {
+        setParentSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [selectedCoop, parentSearch, shareholderType, shareholderId]);
+
   const onSubmit = async (data: ShareholderForm) => {
     if (!selectedCoop || !shareholderId) return;
 
@@ -293,6 +336,18 @@ export default function ShareholderDetailPage() {
           city: city || '',
           country: country || '',
         };
+      }
+
+      // Include type if changed
+      if (shareholderType !== shareholder?.type) {
+        body.type = shareholderType;
+      }
+
+      // Include parent/guardian for MINOR type
+      if (shareholderType === 'MINOR' && selectedParent?.userId) {
+        body.registeredByUserId = selectedParent.userId;
+      } else if (shareholderType !== 'MINOR' && shareholder?.type === 'MINOR') {
+        body.registeredByUserId = null;
       }
 
       if (ecoPowerEnabled) {
@@ -548,13 +603,38 @@ export default function ShareholderDetailPage() {
                   : t('admin.shareholderDetail.personalInfo')}
               </CardTitle>
               <CardDescription>
-                <Badge>
-                  {t(`shareholder.type.${shareholder.type.toLowerCase()}`)}
-                </Badge>
+                {shareholder.type !== shareholderType && (
+                  <Badge variant="outline">
+                    {t(`shareholder.type.${shareholder.type.toLowerCase()}`)} → {t(`shareholder.type.${shareholderType.toLowerCase()}`)}
+                  </Badge>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {shareholder.type === 'COMPANY' ? (
+              <div className="space-y-2">
+                <Label>{t('shareholder.type.label')}</Label>
+                <Select
+                  value={shareholderType}
+                  onValueChange={(value) => {
+                    setShareholderType(value as 'INDIVIDUAL' | 'COMPANY' | 'MINOR');
+                    if (value !== 'MINOR') {
+                      setSelectedParent(null);
+                      setParentSearch('');
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INDIVIDUAL">{t('shareholder.type.individual')}</SelectItem>
+                    <SelectItem value="COMPANY">{t('shareholder.type.company')}</SelectItem>
+                    <SelectItem value="MINOR">{t('shareholder.type.minor')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {shareholderType === 'COMPANY' ? (
                 <>
                   <div className="space-y-2">
                     <Label>{t('shareholder.fields.companyName')}</Label>
@@ -592,6 +672,70 @@ export default function ShareholderDetailPage() {
                     />
                   </div>
                 </>
+              )}
+
+              {shareholderType === 'MINOR' && (
+                <div className="space-y-2">
+                  <Label>{t('shareholder.fields.parentGuardian')}</Label>
+                  {selectedParent ? (
+                    <div className="flex items-center gap-2 rounded-md border p-2">
+                      <span className="flex-1 text-sm">
+                        {selectedParent.firstName} {selectedParent.lastName}
+                        {selectedParent.email && (
+                          <span className="text-muted-foreground"> ({selectedParent.email})</span>
+                        )}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedParent(null);
+                          setParentSearch('');
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <Input
+                        placeholder={t('shareholder.fields.searchParent')}
+                        value={parentSearch}
+                        onChange={(e) => setParentSearch(e.target.value)}
+                      />
+                      {parentSearchLoading && (
+                        <p className="text-muted-foreground text-xs">{t('common.loading')}</p>
+                      )}
+                      {parentResults.length > 0 && (
+                        <div className="rounded-md border">
+                          {parentResults.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              className="hover:bg-muted w-full px-3 py-2 text-left text-sm"
+                              onClick={() => {
+                                setSelectedParent(p);
+                                setParentSearch('');
+                                setParentResults([]);
+                              }}
+                            >
+                              {p.firstName} {p.lastName}
+                              {p.email && (
+                                <span className="text-muted-foreground"> ({p.email})</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {shareholder?.registeredByUserId && !selectedParent && (
+                    <p className="text-muted-foreground text-xs">
+                      {t('shareholder.fields.currentParentLinked')}
+                    </p>
+                  )}
+                </div>
               )}
 
               <div className="space-y-2">
