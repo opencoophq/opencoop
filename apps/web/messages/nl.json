@@ -604,6 +604,7 @@
       "scanToPay": "De aandeelhouder kan deze QR-code scannen om te betalen",
       "missingBankDetails": "Bankgegevens (IBAN/BIC) ontbreken. Werk eerst de bankgegevens van de aandeelhouder bij.",
       "markComplete": "Markeer als voltooid",
+      "editPaymentDateDescription": "Wijzig de betaaldatum voor deze voltooide transactie.",
       "bankDetailsRequired": "Een bankrekening (IBAN) is vereist om terugbetalingen te ontvangen bij het verkopen van aandelen.",
       "refundToIban": "Terugbetaling wordt verstuurd naar",
       "unmatchedPayments": "Niet-gekoppelde betalingen",

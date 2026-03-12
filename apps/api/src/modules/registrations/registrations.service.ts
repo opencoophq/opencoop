@@ -513,6 +513,21 @@ export class RegistrationsService {
     return result;
   }
 
+  async updatePaymentDate(id: string, coopId: string, bankDate: Date) {
+    const registration = await this.findById(id, coopId);
+
+    if (registration.status !== 'COMPLETED') {
+      throw new BadRequestException('Only completed registrations can have their payment date updated');
+    }
+
+    await this.prisma.payment.updateMany({
+      where: { registrationId: id, coopId },
+      data: { bankDate },
+    });
+
+    return { success: true };
+  }
+
   // C4: Added coopId for tenant isolation
   async reject(id: string, coopId: string, processedByUserId: string, reason: string) {
     const registration = await this.findById(id, coopId);
