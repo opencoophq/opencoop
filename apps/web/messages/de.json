@@ -183,7 +183,7 @@
       "parentGuardian": "Elternteil / Vormund",
       "searchParent": "Nach Eltern-Anteilseigner suchen...",
       "currentParentLinked": "Ein Elternteil/Vormund ist bereits verknüpft.",
-      "parentNoAccount": "Dieser Anteilseigner hat kein Benutzerkonto. Er muss zuerst ein Konto haben (E-Mail + Login), bevor er als Elternteil/Vormund festgelegt werden kann."
+      "parentNoAccount": "Dieser Anteilseigner hat keine E-Mail-Adresse. Fügen Sie zuerst eine E-Mail-Adresse hinzu, bevor er als Elternteil/Vormund festgelegt wird."
     },
     "beneficialOwners": "Wirtschaftlich Berechtigte",
     "addBeneficialOwner": "Wirtschaftlich Berechtigten hinzufügen",
@@ -261,7 +261,8 @@
     "totalCost": "Gesamtkosten",
     "awaitingPayment": "Zahlung ausstehend",
     "purchaseSubmitted": "Kauf erfolgreich eingereicht",
-    "scanToPayMessage": "Scannen Sie den QR-Code mit Ihrer Banking-App, um zu bezahlen"
+    "scanToPayMessage": "Scannen Sie den QR-Code mit Ihrer Banking-App, um zu bezahlen",
+    "previewMode": "Vorschaumodus: Sie sehen diese Anteilseigneransicht als Genossenschaftsadmin. Aktionen sind deaktiviert."
   },
   "transactions": {
     "title": "Transaktionen",
@@ -320,6 +321,8 @@
     "bankDetails": "Bankverbindung",
     "iban": "IBAN",
     "bic": "BIC",
+    "ibanExampleHint": "Nur Beispielformat. Geben Sie die eigene IBAN des Anteilseigners ein.",
+    "bicExampleHint": "Nur Beispielformat. Geben Sie den eigenen BIC des Anteilseigners ein.",
     "beneficiary": "Begünstigter",
     "paymentInstructions": "Zahlungsanweisungen",
     "paymentDate": "Zahlungsdatum",
@@ -589,7 +592,8 @@
       "documents": "Dokumente",
       "notes": "Notizen",
       "saveChanges": "Änderungen speichern",
-      "deleteWarning": "Hierdurch werden dieser Anteilseigner und alle zugehörigen Daten dauerhaft gelöscht."
+      "deleteWarning": "Hierdurch werden dieser Anteilseigner und alle zugehörigen Daten dauerhaft gelöscht.",
+      "viewAsShareholder": "Anteilseigneransicht öffnen"
     },
     "transactions": {
       "title": "Transaktionswarteschlange",

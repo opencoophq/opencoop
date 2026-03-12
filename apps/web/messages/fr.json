@@ -261,7 +261,8 @@
     "totalCost": "Coût total",
     "awaitingPayment": "En attente de paiement",
     "purchaseSubmitted": "Achat soumis avec succès",
-    "scanToPayMessage": "Scannez le code QR avec votre application bancaire pour payer"
+    "scanToPayMessage": "Scannez le code QR avec votre application bancaire pour payer",
+    "previewMode": "Mode aperçu : vous consultez l'interface de ce coopérateur en tant qu'admin de la coop. Les actions sont désactivées."
   },
   "transactions": {
     "title": "Transactions",
@@ -320,6 +321,8 @@
     "bankDetails": "Coordonnées bancaires",
     "iban": "IBAN",
     "bic": "BIC",
+    "ibanExampleHint": "Format d'exemple uniquement. Saisissez l'IBAN propre du coopérateur.",
+    "bicExampleHint": "Format d'exemple uniquement. Saisissez le BIC propre du coopérateur.",
     "beneficiary": "Bénéficiaire",
     "paymentInstructions": "Instructions de paiement",
     "paymentDate": "Date de paiement",
@@ -589,7 +592,8 @@
       "documents": "Documents",
       "notes": "Notes",
       "saveChanges": "Enregistrer les modifications",
-      "deleteWarning": "Ceci supprimera définitivement ce coopérateur et toutes les données associées."
+      "deleteWarning": "Ceci supprimera définitivement ce coopérateur et toutes les données associées.",
+      "viewAsShareholder": "Voir l'interface coopérateur"
     },
     "transactions": {
       "title": "File de transactions",
