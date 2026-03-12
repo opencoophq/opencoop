@@ -686,7 +686,12 @@
       "upload": "CSV hochladen",
       "counterparty": "Gegenpartei",
       "matchedTo": "Zugeordnet zu",
-      "match": "Zuordnen"
+      "match": "Zuordnen",
+      "selectBank": "Bank auswählen",
+      "matchTransaction": "Transaktion zuordnen",
+      "reference": "Mitteilung",
+      "selectRegistration": "Wählen Sie eine Registrierung zum Zuordnen",
+      "noRegistrations": "Keine ausstehenden Registrierungen gefunden"
     },
     "dividends": {
       "title": "Dividendenverwaltung",

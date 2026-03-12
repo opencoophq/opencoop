@@ -686,7 +686,12 @@
       "upload": "Upload CSV",
       "counterparty": "Counterparty",
       "matchedTo": "Matched To",
-      "match": "Match"
+      "match": "Match",
+      "selectBank": "Select bank",
+      "matchTransaction": "Match Transaction",
+      "reference": "Reference",
+      "selectRegistration": "Select a registration to match",
+      "noRegistrations": "No pending registrations found"
     },
     "dividends": {
       "title": "Dividend Management",
