@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { useLocale } from '@/contexts/locale-context';
+import { useAdmin } from '@/contexts/admin-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -76,6 +78,10 @@ interface PaymentDetailsData {
 export default function SharesPage() {
   const t = useTranslations();
   const { locale } = useLocale();
+  const { selectedCoop } = useAdmin();
+  const searchParams = useSearchParams();
+  const previewShareholderId = searchParams.get('previewShareholderId');
+  const isPreviewMode = !!previewShareholderId;
   const [registrations, setRegistrations] = useState<RegistrationData[]>([]);
   const [shareholder, setShareholder] = useState<ShareholderData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,7 +119,48 @@ export default function SharesPage() {
 
   useEffect(() => {
     async function loadShares() {
+      setLoading(true);
       try {
+        if (isPreviewMode && previewShareholderId && selectedCoop) {
+          const [preview, settings] = await Promise.all([
+            api<{
+              id: string;
+              bankIban?: string;
+              bankBic?: string;
+              registrations: RegistrationData[];
+            }>(`/admin/coops/${selectedCoop.id}/shareholders/${previewShareholderId}`),
+            api<{
+              name?: string;
+              slug?: string;
+              minimumHoldingPeriod?: number;
+              bankIban?: string;
+              bankBic?: string;
+            }>(`/admin/coops/${selectedCoop.id}/settings`).catch(() => null),
+          ]);
+
+          const sh: ShareholderData = {
+            id: preview.id,
+            bankIban: preview.bankIban,
+            bankBic: preview.bankBic,
+            registrations: preview.registrations || [],
+            coop: {
+              minimumHoldingPeriod: settings?.minimumHoldingPeriod || 0,
+              name: settings?.name || selectedCoop.name,
+              slug: settings?.slug || selectedCoop.slug,
+              bankIban: settings?.bankIban,
+              bankBic: settings?.bankBic,
+            },
+          };
+
+          setShareholder(sh);
+          const buyRegs = (sh.registrations || []).filter(
+            (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED',
+          );
+          setRegistrations(buyRegs);
+          setShareClasses([]);
+          return;
+        }
+
         const profile = await api<{ shareholders: ShareholderData[] }>('/auth/me');
         if (profile.shareholders?.[0]) {
           const sh = profile.shareholders[0];
@@ -139,7 +186,7 @@ export default function SharesPage() {
       }
     }
     loadShares();
-  }, []);
+  }, [isPreviewMode, previewShareholderId, selectedCoop]);
 
   const statusVariant = (status: string) => {
     switch (status) {
@@ -298,10 +345,15 @@ export default function SharesPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">{t('shares.title')}</h1>
+      {isPreviewMode && (
+        <Alert className="mb-6">
+          <AlertDescription>{t('shares.previewMode')}</AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('shares.myShares')}</CardTitle>
-          {shareClasses.length > 0 && (
+          {!isPreviewMode && shareClasses.length > 0 && (
             <Button onClick={() => {
               setBuyOpen(true);
               setBuySuccess(false);
@@ -365,7 +417,7 @@ export default function SharesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {reg.isGift && reg.giftCode && !reg.giftClaimedAt && shareholder && (
+                      {!isPreviewMode && reg.isGift && reg.giftCode && !reg.giftClaimedAt && shareholder && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -391,7 +443,7 @@ export default function SharesPage() {
                           {t('gift.downloadCertificate')}
                         </Button>
                       )}
-                      {reg.status === 'COMPLETED' && !reg.isGift && (
+                      {!isPreviewMode && reg.status === 'COMPLETED' && !reg.isGift && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -402,7 +454,7 @@ export default function SharesPage() {
                           {t('common.certificate')}
                         </Button>
                       )}
-                      {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && !reg.isGift && (() => {
+                      {!isPreviewMode && (reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && !reg.isGift && (() => {
                         const holdingMonths = shareholder?.coop?.minimumHoldingPeriod || 0;
                         const minDate = new Date(reg.registerDate);
                         minDate.setMonth(minDate.getMonth() + holdingMonths);

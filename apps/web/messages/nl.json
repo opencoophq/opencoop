@@ -183,7 +183,7 @@
       "parentGuardian": "Ouder / Voogd",
       "searchParent": "Zoek naar ouder-aandeelhouder...",
       "currentParentLinked": "Er is al een ouder/voogd gekoppeld.",
-      "parentNoAccount": "Deze aandeelhouder heeft geen gebruikersaccount. Ze moeten eerst een account hebben (e-mail + login) voordat ze als ouder/voogd kunnen worden ingesteld."
+      "parentNoAccount": "Deze aandeelhouder heeft geen e-mailadres. Voeg eerst een e-mailadres toe voordat je deze als ouder/voogd instelt."
     },
     "beneficialOwners": "Uiteindelijke begunstigden",
     "addBeneficialOwner": "Begunstigde toevoegen",
@@ -261,7 +261,8 @@
     "totalCost": "Totale kosten",
     "awaitingPayment": "Wacht op betaling",
     "purchaseSubmitted": "Aankoop succesvol ingediend",
-    "scanToPayMessage": "Scan de QR-code met je bank-app om te betalen"
+    "scanToPayMessage": "Scan de QR-code met je bank-app om te betalen",
+    "previewMode": "Voorbeeldmodus: je bekijkt deze aandeelhoudersinterface als coop-admin. Acties zijn uitgeschakeld."
   },
   "transactions": {
     "title": "Transacties",
@@ -320,6 +321,8 @@
     "bankDetails": "Bankgegevens",
     "iban": "IBAN",
     "bic": "BIC",
+    "ibanExampleHint": "Alleen voorbeeldnotatie. Vul het eigen IBAN van de aandeelhouder in.",
+    "bicExampleHint": "Alleen voorbeeldnotatie. Vul de eigen BIC van de aandeelhouder in.",
     "beneficiary": "Begunstigde",
     "paymentInstructions": "Betalingsinstructies",
     "paymentDate": "Betaaldatum",
@@ -589,7 +592,8 @@
       "documents": "Documenten",
       "notes": "Notities",
       "saveChanges": "Wijzigingen opslaan",
-      "deleteWarning": "Dit verwijdert deze aandeelhouder en alle bijbehorende gegevens permanent."
+      "deleteWarning": "Dit verwijdert deze aandeelhouder en alle bijbehorende gegevens permanent.",
+      "viewAsShareholder": "Bekijk aandeelhoudersinterface"
     },
     "transactions": {
       "title": "Transactiewachtrij",

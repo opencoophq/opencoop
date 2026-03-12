@@ -183,7 +183,7 @@
       "parentGuardian": "Parent / Guardian",
       "searchParent": "Search for parent shareholder...",
       "currentParentLinked": "A parent/guardian is already linked.",
-      "parentNoAccount": "This shareholder has no user account. They must have an account (email + login) before they can be set as a parent/guardian."
+      "parentNoAccount": "This shareholder has no email address. Add an email first before setting them as a parent/guardian."
     },
     "beneficialOwners": "Beneficial Owners",
     "addBeneficialOwner": "Add Beneficial Owner",
@@ -261,7 +261,8 @@
     "totalCost": "Total cost",
     "awaitingPayment": "Awaiting Payment",
     "purchaseSubmitted": "Purchase submitted successfully",
-    "scanToPayMessage": "Scan the QR code with your banking app to pay"
+    "scanToPayMessage": "Scan the QR code with your banking app to pay",
+    "previewMode": "Preview mode: you are viewing this shareholder's interface as a coop admin. Actions are disabled."
   },
   "transactions": {
     "title": "Transactions",
@@ -320,6 +321,8 @@
     "bankDetails": "Bank Details",
     "iban": "IBAN",
     "bic": "BIC",
+    "ibanExampleHint": "Example format only. Enter the shareholder's own IBAN.",
+    "bicExampleHint": "Example format only. Enter the shareholder's own BIC.",
     "beneficiary": "Beneficiary",
     "paymentInstructions": "Payment Instructions",
     "paymentDate": "Payment Date",
@@ -589,7 +592,8 @@
       "documents": "Documents",
       "notes": "Notes",
       "saveChanges": "Save Changes",
-      "deleteWarning": "This will permanently delete this shareholder and all associated data."
+      "deleteWarning": "This will permanently delete this shareholder and all associated data.",
+      "viewAsShareholder": "View shareholder interface"
     },
     "transactions": {
       "title": "Transaction Queue",

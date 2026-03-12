@@ -43,7 +43,7 @@ import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard } from 'lucide-react';
+import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard, ExternalLink } from 'lucide-react';
 import { api, apiFetch } from '@/lib/api';
 
 interface ShareClass {
@@ -634,6 +634,12 @@ export default function ShareholderDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button asChild variant="secondary">
+            <Link href={`/dashboard/shares?previewShareholderId=${shareholder.id}`}>
+              <ExternalLink className="h-4 w-4 mr-2" />
+              {t('admin.shareholderDetail.viewAsShareholder')}
+            </Link>
+          </Button>
           <Button variant="outline" onClick={openBuyDialog}>
             <ShoppingCart className="h-4 w-4 mr-2" />
             {t('shares.buyMore')}
