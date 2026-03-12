@@ -270,6 +270,7 @@
     "transferIn": "Transfer In",
     "transferOut": "Transfer Out",
     "noTransactions": "No transactions yet",
+    "registrationDate": "Registration Date",
     "type": {
       "purchase": "Purchase",
       "sale": "Sale",

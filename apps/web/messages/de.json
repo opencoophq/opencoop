@@ -270,6 +270,7 @@
     "transferIn": "Eingehende Übertragung",
     "transferOut": "Ausgehende Übertragung",
     "noTransactions": "Noch keine Transaktionen",
+    "registrationDate": "Registrierungsdatum",
     "type": {
       "purchase": "Kauf",
       "sale": "Verkauf",
