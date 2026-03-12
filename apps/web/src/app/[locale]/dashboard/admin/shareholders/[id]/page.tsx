@@ -763,7 +763,7 @@ export default function ShareholderDetailPage() {
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
-                      {!selectedParent.userId && (
+                      {!selectedParent.email && (
                         <p className="text-destructive text-xs">
                           {t('shareholder.fields.parentNoAccount')}
                         </p>
