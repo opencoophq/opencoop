@@ -316,6 +316,7 @@
     "bic": "BIC",
     "beneficiary": "Bénéficiaire",
     "paymentInstructions": "Instructions de paiement",
+    "paymentDate": "Date de paiement",
     "pending": "En attente"
   },
   "dividends": {
