@@ -686,7 +686,12 @@
       "upload": "Téléverser un CSV",
       "counterparty": "Contrepartie",
       "matchedTo": "Rapproché avec",
-      "match": "Rapprocher"
+      "match": "Rapprocher",
+      "selectBank": "Sélectionner la banque",
+      "matchTransaction": "Rapprocher la transaction",
+      "reference": "Communication",
+      "selectRegistration": "Sélectionnez une inscription à rapprocher",
+      "noRegistrations": "Aucune inscription en attente trouvée"
     },
     "dividends": {
       "title": "Gestion des dividendes",
