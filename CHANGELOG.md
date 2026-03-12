@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.16] - 2026-03-12
+
+### Fixed
+- **Certificate dates** — certificates now show the payment date (date of registration in shareholder register) instead of the signup date
+- **Certificate placement** — moved certificate download button from "Registration History" to "Shareholdings" table on the admin shareholder detail page
+- **Certificates restricted to completed registrations** — certificate generation now requires COMPLETED status (payment confirmed) instead of allowing ACTIVE registrations
+
 ## [0.7.15] - 2026-03-12
 
 ### Changed
