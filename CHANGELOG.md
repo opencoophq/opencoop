@@ -2,6 +2,20 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.12] - 2026-03-12
+
+### Added
+- **Admin: shareholder type management** — coop admins can now change shareholder type (Individual/Company/Minor) and set parent/guardian relationships directly from the admin shareholder detail page
+- **Data fix script** — `fix-jasmine-maurice-email-swap.ts` corrects email swap between Maurice and Jasmine Verriet from migration
+
+## [0.7.11] - 2026-03-12
+
+### Added
+- **Referral link system** — cooperators can share referral links to invite new shareholders, with tracking and referral success email notifications to the referrer
+
+### Fixed
+- **Code review fixes** — addressed review issues in referral system (cookie notice click blocking, E2E test stability)
+
 ## [0.7.10] - 2026-03-11
 
 ### Added
