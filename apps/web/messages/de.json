@@ -316,6 +316,7 @@
     "bic": "BIC",
     "beneficiary": "Begünstigter",
     "paymentInstructions": "Zahlungsanweisungen",
+    "paymentDate": "Zahlungsdatum",
     "pending": "Ausstehend"
   },
   "dividends": {

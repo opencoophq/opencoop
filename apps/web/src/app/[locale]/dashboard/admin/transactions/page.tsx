@@ -90,6 +90,7 @@ export default function AdminTransactionsPage() {
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [paymentTxId, setPaymentTxId] = useState('');
   const [paymentTxStatus, setPaymentTxStatus] = useState('');
+  const [paymentBankDate, setPaymentBankDate] = useState('');
   const [completing, setCompleting] = useState(false);
 
   // Reject dialog state
@@ -187,6 +188,7 @@ export default function AdminTransactionsPage() {
       setPaymentDetails(details);
       setPaymentTxId(txId);
       setPaymentTxStatus(txStatus);
+      setPaymentBankDate(new Date().toISOString().split('T')[0]);
       setPaymentOpen(true);
     } catch {
       setError(t('common.actionError'));
@@ -199,6 +201,7 @@ export default function AdminTransactionsPage() {
     try {
       await api(`/admin/coops/${selectedCoop.id}/registrations/${paymentTxId}/complete`, {
         method: 'PUT',
+        body: { bankDate: paymentBankDate || undefined },
       });
       setPaymentOpen(false);
       loadData();
@@ -538,6 +541,16 @@ export default function AdminTransactionsPage() {
                   </div>
                 )}
               </div>
+              {paymentTxStatus === 'PENDING_PAYMENT' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{t('payments.paymentDate')}</label>
+                  <Input
+                    type="date"
+                    value={paymentBankDate}
+                    onChange={(e) => setPaymentBankDate(e.target.value)}
+                  />
+                </div>
+              )}
               <DialogFooter>
                 {paymentTxStatus === 'PENDING_PAYMENT' && (
                   <Button onClick={handleComplete} disabled={completing}>

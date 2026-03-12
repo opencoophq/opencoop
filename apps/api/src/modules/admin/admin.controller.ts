@@ -636,8 +636,10 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
+    @Body() body: { bankDate?: string },
   ) {
-    return this.registrationsService.complete(id, user.id, undefined, coopId);
+    const paymentDate = body?.bankDate ? new Date(body.bankDate) : undefined;
+    return this.registrationsService.complete(id, user.id, paymentDate, coopId);
   }
 
   // ==================== BANK IMPORT ====================
