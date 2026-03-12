@@ -43,7 +43,7 @@ import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard, CalendarDays } from 'lucide-react';
+import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard } from 'lucide-react';
 import { api, apiFetch } from '@/lib/api';
 
 interface ShareClass {
@@ -67,6 +67,7 @@ interface Registration {
   registerDate: string;
   status: string;
   createdAt: string;
+  totalAmount: number;
   shareClass: {
     name: string;
     pricePerShare: number;
@@ -74,6 +75,7 @@ interface Registration {
   project?: {
     name: string;
   };
+  payments?: { bankDate: string; amount: number }[];
 }
 
 interface ShareholderDetail {
@@ -204,12 +206,6 @@ export default function ShareholderDetailPage() {
   const [paymentTxStatus, setPaymentTxStatus] = useState('');
   const [paymentBankDate, setPaymentBankDate] = useState('');
   const [completing, setCompleting] = useState(false);
-
-  // Edit payment date dialog state
-  const [editDateOpen, setEditDateOpen] = useState(false);
-  const [editDateTxId, setEditDateTxId] = useState('');
-  const [editDateValue, setEditDateValue] = useState('');
-  const [editDateSaving, setEditDateSaving] = useState(false);
 
   // Reject dialog state
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -425,29 +421,6 @@ export default function ShareholderDetailPage() {
     }
   };
 
-  const openEditDate = (txId: string) => {
-    setEditDateTxId(txId);
-    setEditDateValue(new Date().toISOString().split('T')[0]);
-    setEditDateOpen(true);
-  };
-
-  const handleEditDate = async () => {
-    if (!selectedCoop || !editDateTxId || !editDateValue) return;
-    setEditDateSaving(true);
-    try {
-      await api(`/admin/coops/${selectedCoop.id}/registrations/${editDateTxId}/payment-date`, {
-        method: 'PATCH',
-        body: { bankDate: editDateValue },
-      });
-      setEditDateOpen(false);
-      reloadShareholder();
-    } catch {
-      setError(t('common.actionError'));
-    } finally {
-      setEditDateSaving(false);
-    }
-  };
-
   const openRejectDialog = (txId: string) => {
     setRejectTxId(txId);
     setRejectReason('');
@@ -585,6 +558,27 @@ export default function ShareholderDetailPage() {
   };
 
   const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
+
+  const getPaymentDate = (reg: Registration): string | null => {
+    if (!reg.payments?.length) return null;
+    return reg.payments[reg.payments.length - 1].bankDate;
+  };
+
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+
+  const handleInlineDateSave = async (regId: string, newDate: string) => {
+    if (!selectedCoop || !newDate) return;
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${regId}/payment-date`, {
+        method: 'PATCH',
+        body: { bankDate: newDate },
+      });
+      setEditingDateId(null);
+      reloadShareholder();
+    } catch {
+      setError(t('common.actionError'));
+    }
+  };
 
   const selectedShareClass = shareClasses.find((sc) => sc.id === buyShareClassId);
   const buyTotal = (selectedShareClass?.pricePerShare || 0) * buyQuantity;
@@ -944,32 +938,61 @@ export default function ShareholderDetailPage() {
                   <TableHead className="text-right">{t('shares.quantity')}</TableHead>
                   <TableHead className="text-right">{t('shares.pricePerShare')}</TableHead>
                   <TableHead className="text-right">{t('shares.totalValue')}</TableHead>
-                  <TableHead>{t('shares.purchaseDate')}</TableHead>
+                  <TableHead>{t('transactions.registrationDate')}</TableHead>
+                  <TableHead>{t('payments.paymentDate')}</TableHead>
                   <TableHead>{t('common.status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {shareholder.registrations
                   .filter((reg) => reg.status === 'ACTIVE' || reg.status === 'COMPLETED')
-                  .map((reg) => (
-                  <TableRow key={reg.id}>
-                    <TableCell>{reg.shareClass.name}</TableCell>
-                    <TableCell>{reg.project?.name || '-'}</TableCell>
-                    <TableCell className="text-right">{reg.sharesOwned ?? reg.quantity}</TableCell>
-                    <TableCell className="text-right">
-                      {fmtCurrency(reg.shareClass.pricePerShare)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {fmtCurrency((reg.sharesOwned ?? reg.quantity) * reg.shareClass.pricePerShare)}
-                    </TableCell>
-                    <TableCell>{formatDate(reg.registerDate)}</TableCell>
-                    <TableCell>
-                      <Badge variant={reg.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                        {t(`transactions.statuses.${reg.status}`)}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                  .map((reg) => {
+                    const payDate = getPaymentDate(reg);
+                    return (
+                      <TableRow key={reg.id}>
+                        <TableCell>{reg.shareClass.name}</TableCell>
+                        <TableCell>{reg.project?.name || '-'}</TableCell>
+                        <TableCell className="text-right">{reg.sharesOwned ?? reg.quantity}</TableCell>
+                        <TableCell className="text-right">
+                          {fmtCurrency(reg.shareClass.pricePerShare)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {fmtCurrency((reg.sharesOwned ?? reg.quantity) * reg.shareClass.pricePerShare)}
+                        </TableCell>
+                        <TableCell>{formatDate(reg.registerDate)}</TableCell>
+                        <TableCell>
+                          {reg.status === 'COMPLETED' && editingDateId === reg.id ? (
+                            <Input
+                              type="date"
+                              className="w-36 h-8"
+                              defaultValue={payDate ? new Date(payDate).toISOString().split('T')[0] : ''}
+                              autoFocus
+                              onBlur={(e) => {
+                                if (e.target.value) handleInlineDateSave(reg.id, e.target.value);
+                                else setEditingDateId(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                if (e.key === 'Escape') setEditingDateId(null);
+                              }}
+                            />
+                          ) : (
+                            <span
+                              className={reg.status === 'COMPLETED' ? 'cursor-pointer hover:underline' : ''}
+                              onClick={() => reg.status === 'COMPLETED' && setEditingDateId(reg.id)}
+                            >
+                              {payDate ? formatDate(payDate) : '-'}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={reg.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                            {t(`transactions.statuses.${reg.status}`)}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
               </TableBody>
             </Table>
           )}
@@ -988,7 +1011,8 @@ export default function ShareholderDetailPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('common.date')}</TableHead>
+                  <TableHead>{t('transactions.registrationDate')}</TableHead>
+                  <TableHead>{t('payments.paymentDate')}</TableHead>
                   <TableHead>{t('transactions.title')}</TableHead>
                   <TableHead className="text-right">{t('shares.quantity')}</TableHead>
                   <TableHead className="text-right">{t('shares.pricePerShare')}</TableHead>
@@ -998,9 +1022,36 @@ export default function ShareholderDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shareholder.registrations.map((reg) => (
+                {shareholder.registrations.map((reg) => {
+                  const payDate = getPaymentDate(reg);
+                  return (
                   <TableRow key={reg.id}>
                     <TableCell>{formatDate(reg.createdAt)}</TableCell>
+                    <TableCell>
+                      {reg.status === 'COMPLETED' && editingDateId === reg.id ? (
+                        <Input
+                          type="date"
+                          className="w-36 h-8"
+                          defaultValue={payDate ? new Date(payDate).toISOString().split('T')[0] : ''}
+                          autoFocus
+                          onBlur={(e) => {
+                            if (e.target.value) handleInlineDateSave(reg.id, e.target.value);
+                            else setEditingDateId(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                            if (e.key === 'Escape') setEditingDateId(null);
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className={reg.status === 'COMPLETED' ? 'cursor-pointer hover:underline' : ''}
+                          onClick={() => reg.status === 'COMPLETED' && setEditingDateId(reg.id)}
+                        >
+                          {payDate ? formatDate(payDate) : '-'}
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">
                         {t(`transactions.types.${reg.type}`)}
@@ -1057,16 +1108,6 @@ export default function ShareholderDetailPage() {
                             )}
                           </Button>
                         )}
-                        {reg.status === 'COMPLETED' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDate(reg.id)}
-                            title={t('payments.paymentDate')}
-                          >
-                            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                        )}
                         {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && reg.type === 'BUY' && (
                           <Button
                             variant="ghost"
@@ -1081,7 +1122,8 @@ export default function ShareholderDetailPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -1436,31 +1478,6 @@ export default function ShareholderDetailPage() {
               </DialogFooter>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Payment Date Dialog */}
-      <Dialog open={editDateOpen} onOpenChange={setEditDateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('payments.paymentDate')}</DialogTitle>
-            <DialogDescription>{t('admin.transactions.editPaymentDateDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              type="date"
-              value={editDateValue}
-              onChange={(e) => setEditDateValue(e.target.value)}
-            />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditDateOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button onClick={handleEditDate} disabled={editDateSaving || !editDateValue}>
-                {editDateSaving ? t('common.loading') : t('common.save')}
-              </Button>
-            </DialogFooter>
-          </div>
         </DialogContent>
       </Dialog>
 
