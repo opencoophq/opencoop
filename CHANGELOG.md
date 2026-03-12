@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.14] - 2026-03-12
+
+### Fixed
+- **Admin: shareholder type change error display** — show actual backend error messages instead of generic "Something went wrong" when saving shareholder changes fails
+- **Admin: parent/guardian warning** — show a clear warning when the selected parent/guardian has no user account, explaining they need an account before they can be linked as parent
+
 ## [0.7.13] - 2026-03-12
 
 ### Added
