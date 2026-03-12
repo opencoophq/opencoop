@@ -270,6 +270,7 @@
     "transferIn": "Ontvangen overdracht",
     "transferOut": "Uitgaande overdracht",
     "noTransactions": "Nog geen transacties",
+    "registrationDate": "Registratiedatum",
     "type": {
       "purchase": "Aankoop",
       "sale": "Verkoop",

@@ -270,6 +270,7 @@
     "transferIn": "Transfert entrant",
     "transferOut": "Transfert sortant",
     "noTransactions": "Aucune transaction pour le moment",
+    "registrationDate": "Date d'inscription",
     "type": {
       "purchase": "Achat",
       "sale": "Vente",
