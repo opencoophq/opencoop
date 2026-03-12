@@ -37,7 +37,7 @@ import { api } from '@/lib/api';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, X, QrCode, CreditCard, Link2 } from 'lucide-react';
+import { Check, X, QrCode, CreditCard, Link2, CalendarDays } from 'lucide-react';
 
 interface TransactionRow {
   id: string;
@@ -90,7 +90,14 @@ export default function AdminTransactionsPage() {
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [paymentTxId, setPaymentTxId] = useState('');
   const [paymentTxStatus, setPaymentTxStatus] = useState('');
+  const [paymentBankDate, setPaymentBankDate] = useState('');
   const [completing, setCompleting] = useState(false);
+
+  // Edit payment date dialog state
+  const [editDateOpen, setEditDateOpen] = useState(false);
+  const [editDateTxId, setEditDateTxId] = useState('');
+  const [editDateValue, setEditDateValue] = useState('');
+  const [editDateSaving, setEditDateSaving] = useState(false);
 
   // Reject dialog state
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -187,6 +194,7 @@ export default function AdminTransactionsPage() {
       setPaymentDetails(details);
       setPaymentTxId(txId);
       setPaymentTxStatus(txStatus);
+      setPaymentBankDate(new Date().toISOString().split('T')[0]);
       setPaymentOpen(true);
     } catch {
       setError(t('common.actionError'));
@@ -199,6 +207,7 @@ export default function AdminTransactionsPage() {
     try {
       await api(`/admin/coops/${selectedCoop.id}/registrations/${paymentTxId}/complete`, {
         method: 'PUT',
+        body: { bankDate: paymentBankDate || undefined },
       });
       setPaymentOpen(false);
       loadData();
@@ -206,6 +215,29 @@ export default function AdminTransactionsPage() {
       setError(t('common.actionError'));
     } finally {
       setCompleting(false);
+    }
+  };
+
+  const openEditDate = (txId: string) => {
+    setEditDateTxId(txId);
+    setEditDateValue(new Date().toISOString().split('T')[0]);
+    setEditDateOpen(true);
+  };
+
+  const handleEditDate = async () => {
+    if (!selectedCoop || !editDateTxId || !editDateValue) return;
+    setEditDateSaving(true);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${editDateTxId}/payment-date`, {
+        method: 'PATCH',
+        body: { bankDate: editDateValue },
+      });
+      setEditDateOpen(false);
+      loadData();
+    } catch {
+      setError(t('common.actionError'));
+    } finally {
+      setEditDateSaving(false);
     }
   };
 
@@ -411,6 +443,16 @@ export default function AdminTransactionsPage() {
                                 )}
                               </Button>
                             )}
+                            {tx.status === 'COMPLETED' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditDate(tx.id)}
+                                title={t('payments.paymentDate')}
+                              >
+                                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -538,6 +580,16 @@ export default function AdminTransactionsPage() {
                   </div>
                 )}
               </div>
+              {paymentTxStatus === 'PENDING_PAYMENT' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{t('payments.paymentDate')}</label>
+                  <Input
+                    type="date"
+                    value={paymentBankDate}
+                    onChange={(e) => setPaymentBankDate(e.target.value)}
+                  />
+                </div>
+              )}
               <DialogFooter>
                 {paymentTxStatus === 'PENDING_PAYMENT' && (
                   <Button onClick={handleComplete} disabled={completing}>
@@ -638,6 +690,31 @@ export default function AdminTransactionsPage() {
                 ))}
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Payment Date Dialog */}
+      <Dialog open={editDateOpen} onOpenChange={setEditDateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('payments.paymentDate')}</DialogTitle>
+            <DialogDescription>{t('admin.transactions.editPaymentDateDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="date"
+              value={editDateValue}
+              onChange={(e) => setEditDateValue(e.target.value)}
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditDateOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button onClick={handleEditDate} disabled={editDateSaving || !editDateValue}>
+                {editDateSaving ? t('common.loading') : t('common.save')}
+              </Button>
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>

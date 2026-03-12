@@ -320,6 +320,7 @@
     "bic": "BIC",
     "beneficiary": "Begünstigter",
     "paymentInstructions": "Zahlungsanweisungen",
+    "paymentDate": "Zahlungsdatum",
     "pending": "Ausstehend"
   },
   "dividends": {
@@ -607,6 +608,7 @@
       "scanToPay": "Der Aktionär kann diesen QR-Code scannen, um zu bezahlen",
       "missingBankDetails": "Bankdaten (IBAN/BIC) fehlen. Bitte aktualisieren Sie zuerst die Bankdaten des Aktionärs.",
       "markComplete": "Als abgeschlossen markieren",
+      "editPaymentDateDescription": "Ändern Sie das Zahlungsdatum für diese abgeschlossene Transaktion.",
       "bankDetailsRequired": "Ein Bankkonto (IBAN) ist erforderlich, um Rückerstattungen beim Verkauf von Aktien zu erhalten.",
       "refundToIban": "Rückerstattung wird gesendet an",
       "unmatchedPayments": "Nicht zugeordnete Zahlungen",

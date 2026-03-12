@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -636,8 +637,24 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
+    @Body() body: { bankDate?: string },
   ) {
-    return this.registrationsService.complete(id, user.id, undefined, coopId);
+    const paymentDate = body?.bankDate ? new Date(body.bankDate) : undefined;
+    return this.registrationsService.complete(id, user.id, paymentDate, coopId);
+  }
+
+  @Patch('registrations/:id/payment-date')
+  @RequirePermission('canManageTransactions')
+  @ApiOperation({ summary: 'Update payment date on a completed registration' })
+  async updatePaymentDate(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Body() body: { bankDate: string },
+  ) {
+    if (!body?.bankDate) {
+      throw new BadRequestException('bankDate is required');
+    }
+    return this.registrationsService.updatePaymentDate(id, coopId, new Date(body.bankDate));
   }
 
   // ==================== BANK IMPORT ====================
