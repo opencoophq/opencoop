@@ -651,7 +651,7 @@ export class CoopsService {
   async lookupReferrer(slug: string, code: string) {
     const coop = await this.findBySlug(slug);
     const referrer = await this.prisma.shareholder.findFirst({
-      where: { referralCode: code, coopId: coop.id, status: 'ACTIVE' },
+      where: { referralCode: { equals: code, mode: 'insensitive' }, coopId: coop.id, status: 'ACTIVE' },
       select: { firstName: true, lastName: true, companyName: true },
     });
     if (!referrer) {
@@ -660,6 +660,29 @@ export class CoopsService {
     const displayName = referrer.companyName
       || [referrer.firstName, referrer.lastName ? `${referrer.lastName.charAt(0)}.` : ''].filter(Boolean).join(' ');
     return { name: displayName };
+  }
+
+  async lookupReferralTarget(code: string) {
+    const referrer = await this.prisma.shareholder.findFirst({
+      where: { referralCode: { equals: code, mode: 'insensitive' }, status: 'ACTIVE' },
+      select: {
+        referralCode: true,
+        coop: {
+          select: {
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!referrer?.coop?.slug) {
+      throw new NotFoundException('Referral code not found');
+    }
+
+    return {
+      coopSlug: referrer.coop.slug,
+      referralCode: referrer.referralCode,
+    };
   }
 
   async publicRegister(slug: string, dto: PublicRegisterDto) {
@@ -674,7 +697,7 @@ export class CoopsService {
     let referrer: { id: string; email: string | null; firstName: string | null } | null = null;
     if (dto.referralCode) {
       referrer = await this.prisma.shareholder.findFirst({
-        where: { referralCode: dto.referralCode, coopId: coop.id, status: 'ACTIVE' },
+        where: { referralCode: { equals: dto.referralCode, mode: 'insensitive' }, coopId: coop.id, status: 'ACTIVE' },
         select: { id: true, email: true, firstName: true },
       });
       if (referrer) {
