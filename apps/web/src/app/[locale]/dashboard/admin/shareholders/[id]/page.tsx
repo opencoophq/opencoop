@@ -43,7 +43,7 @@ import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown } from 'lucide-react';
+import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard } from 'lucide-react';
 import { api, apiFetch } from '@/lib/api';
 
 interface ShareClass {
@@ -187,6 +187,13 @@ export default function ShareholderDetailPage() {
   const [sellLoading, setSellLoading] = useState(false);
   const [sellResult, setSellResult] = useState<PaymentDetails | null>(null);
 
+  // Payment details dialog state
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [paymentTxId, setPaymentTxId] = useState('');
+  const [paymentTxStatus, setPaymentTxStatus] = useState('');
+  const [completing, setCompleting] = useState(false);
+
   // Reject dialog state
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectTxId, setRejectTxId] = useState('');
@@ -321,6 +328,37 @@ export default function ShareholderDetailPage() {
     if (!selectedCoop) return;
     await api(`/admin/coops/${selectedCoop.id}/registrations/${txId}/approve`, { method: 'PUT' });
     reloadShareholder();
+  };
+
+  const showPaymentDetails = async (txId: string, txStatus: string) => {
+    if (!selectedCoop) return;
+    try {
+      const details = await api<PaymentDetails>(
+        `/admin/coops/${selectedCoop.id}/registrations/${txId}/payment-details`,
+      );
+      setPaymentDetails(details);
+      setPaymentTxId(txId);
+      setPaymentTxStatus(txStatus);
+      setPaymentOpen(true);
+    } catch {
+      setError(t('common.actionError'));
+    }
+  };
+
+  const handleComplete = async () => {
+    if (!selectedCoop || !paymentTxId) return;
+    setCompleting(true);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${paymentTxId}/complete`, {
+        method: 'PUT',
+      });
+      setPaymentOpen(false);
+      reloadShareholder();
+    } catch {
+      setError(t('common.actionError'));
+    } finally {
+      setCompleting(false);
+    }
   };
 
   const openRejectDialog = (txId: string) => {
@@ -817,6 +855,25 @@ export default function ShareholderDetailPage() {
                             </Button>
                           </>
                         )}
+                        {((reg.type === 'BUY' && ['PENDING', 'PENDING_PAYMENT'].includes(reg.status)) ||
+                          (reg.type === 'SELL' && reg.status === 'PENDING_PAYMENT')) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => showPaymentDetails(reg.id, reg.status)}
+                            title={
+                              reg.type === 'SELL'
+                                ? t('admin.transactions.payRefund')
+                                : t('admin.transactions.paymentInfo')
+                            }
+                          >
+                            {reg.type === 'SELL' ? (
+                              <CreditCard className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <QrCode className="h-4 w-4 text-blue-600" />
+                            )}
+                          </Button>
+                        )}
                         {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && reg.type === 'BUY' && (
                           <Button
                             variant="ghost"
@@ -1101,6 +1158,77 @@ export default function ShareholderDetailPage() {
                 </Button>
                 <Button onClick={handleSell} disabled={sellLoading || !sellRegistrationId}>
                   {sellLoading ? t('common.loading') : t('shares.confirmSell')}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Details Dialog */}
+      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {paymentDetails?.direction === 'outgoing'
+                ? t('admin.transactions.payRefund')
+                : t('admin.transactions.paymentInfo')}
+            </DialogTitle>
+            <DialogDescription>
+              {paymentDetails?.direction === 'outgoing'
+                ? t('admin.transactions.scanToPayRefund')
+                : t('admin.transactions.scanToPay')}
+            </DialogDescription>
+          </DialogHeader>
+          {paymentDetails && (
+            <div className="space-y-4">
+              {paymentDetails.iban && paymentDetails.bic ? (
+                <div className="flex justify-center">
+                  <EpcQrCode
+                    bic={paymentDetails.bic}
+                    beneficiaryName={paymentDetails.beneficiaryName}
+                    iban={paymentDetails.iban}
+                    amount={paymentDetails.amount}
+                    reference={paymentDetails.ogmCode}
+                  />
+                </div>
+              ) : (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {t('admin.transactions.missingBankDetails')}
+                  </AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('payments.beneficiary')}</span>
+                  <span className="font-medium">{paymentDetails.beneficiaryName}</span>
+                </div>
+                {paymentDetails.iban && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('payments.iban')}</span>
+                    <span className="font-mono text-xs">{formatIban(paymentDetails.iban)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('common.amount')}</span>
+                  <span className="font-medium">{fmtCurrency(paymentDetails.amount)}</span>
+                </div>
+                {paymentDetails.ogmCode && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('payments.ogmCode')}</span>
+                    <span className="font-mono text-xs">{paymentDetails.ogmCode}</span>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                {paymentTxStatus === 'PENDING_PAYMENT' && (
+                  <Button onClick={handleComplete} disabled={completing}>
+                    {completing ? t('common.loading') : t('admin.transactions.markComplete')}
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setPaymentOpen(false)}>
+                  {t('common.confirm')}
                 </Button>
               </DialogFooter>
             </div>
