@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.13] - 2026-03-12
+
+### Added
+- **Payment confirmation on shareholder detail page** — coop admins can now mark registrations as complete and view QR payment details directly from a shareholder's detail page (previously only available on the transactions page)
+- **Payment date picker** — when marking a registration as complete, admins can set the actual payment date (defaults to today) in both the transactions page and shareholder detail page
+- **Edit payment date** — coop admins can edit the payment date on completed registrations via a calendar icon button, useful for correcting dates after the fact
+
 ## [0.7.12] - 2026-03-12
 
 ### Added
