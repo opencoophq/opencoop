@@ -69,10 +69,10 @@ export class DocumentsService {
       include: {
         coop: true,
         registrations: {
-          where: { type: 'BUY', status: { in: ['ACTIVE', 'COMPLETED'] } },
+          where: { type: 'BUY', status: 'COMPLETED' },
           include: {
             shareClass: true,
-            payments: { select: { amount: true } },
+            payments: { select: { amount: true, bankDate: true } },
           },
         },
       },
@@ -129,7 +129,9 @@ export class DocumentsService {
       quantity: vestedQuantity,
       pricePerShare,
       totalValue,
-      purchaseDate: reg.registerDate.toISOString().split('T')[0],
+      purchaseDate: (reg.payments?.length
+        ? reg.payments[reg.payments.length - 1].bankDate
+        : null)?.toISOString().split('T')[0] || reg.registerDate.toISOString().split('T')[0],
       issueDate: new Date().toISOString().split('T')[0],
       locale: locale || 'nl',
       shareholderCity: this.getShareholderCity(shareholder.address),
@@ -175,7 +177,7 @@ export class DocumentsService {
           include: { coop: true },
         },
         shareClass: true,
-        payments: { select: { amount: true } },
+        payments: { select: { amount: true, bankDate: true } },
       },
     });
 
@@ -183,9 +185,9 @@ export class DocumentsService {
       throw new NotFoundException('Registration not found');
     }
 
-    if (reg.type !== 'BUY' || !['ACTIVE', 'COMPLETED'].includes(reg.status)) {
+    if (reg.type !== 'BUY' || reg.status !== 'COMPLETED') {
       throw new BadRequestException(
-        'Certificate can only be generated for BUY registrations with ACTIVE or COMPLETED status',
+        'Certificate can only be generated for completed BUY registrations',
       );
     }
 
@@ -231,7 +233,9 @@ export class DocumentsService {
       quantity: vestedQuantity,
       pricePerShare,
       totalValue,
-      purchaseDate: reg.registerDate.toISOString().split('T')[0],
+      purchaseDate: (reg.payments?.length
+        ? reg.payments[reg.payments.length - 1].bankDate
+        : null)?.toISOString().split('T')[0] || reg.registerDate.toISOString().split('T')[0],
       issueDate: new Date().toISOString().split('T')[0],
       locale: locale || 'nl',
       shareholderCity: this.getShareholderCity(shareholder.address),

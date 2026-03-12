@@ -941,6 +941,7 @@ export default function ShareholderDetailPage() {
                   <TableHead>{t('transactions.registrationDate')}</TableHead>
                   <TableHead>{t('payments.paymentDate')}</TableHead>
                   <TableHead>{t('common.status')}</TableHead>
+                  <TableHead>{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -989,6 +990,19 @@ export default function ShareholderDetailPage() {
                           <Badge variant={reg.status === 'ACTIVE' ? 'default' : 'secondary'}>
                             {t(`transactions.statuses.${reg.status}`)}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {reg.status === 'COMPLETED' && reg.type === 'BUY' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleGenerateCertificate(reg.id)}
+                              disabled={generatingCertFor === reg.id}
+                            >
+                              <FileDown className="h-4 w-4 mr-1" />
+                              {t('common.certificate')}
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -1106,17 +1120,6 @@ export default function ShareholderDetailPage() {
                             ) : (
                               <QrCode className="h-4 w-4 text-blue-600" />
                             )}
-                          </Button>
-                        )}
-                        {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && reg.type === 'BUY' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleGenerateCertificate(reg.id)}
-                            disabled={generatingCertFor === reg.id}
-                          >
-                            <FileDown className="h-4 w-4 mr-1" />
-                            {t('common.certificate')}
                           </Button>
                         )}
                       </div>

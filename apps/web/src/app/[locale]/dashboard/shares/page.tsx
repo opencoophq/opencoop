@@ -391,7 +391,7 @@ export default function SharesPage() {
                           {t('gift.downloadCertificate')}
                         </Button>
                       )}
-                      {(reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && !reg.isGift && (
+                      {reg.status === 'COMPLETED' && !reg.isGift && (
                         <Button
                           variant="ghost"
                           size="sm"
