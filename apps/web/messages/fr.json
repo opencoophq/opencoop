@@ -182,7 +182,8 @@
       "legalForm": "Forme juridique",
       "parentGuardian": "Parent / Tuteur",
       "searchParent": "Rechercher un actionnaire parent...",
-      "currentParentLinked": "Un parent/tuteur est déjà lié."
+      "currentParentLinked": "Un parent/tuteur est déjà lié.",
+      "parentNoAccount": "Cet actionnaire n'a pas de compte utilisateur. Il doit d'abord avoir un compte (e-mail + connexion) avant de pouvoir être défini comme parent/tuteur."
     },
     "beneficialOwners": "Bénéficiaires effectifs",
     "addBeneficialOwner": "Ajouter un bénéficiaire effectif",

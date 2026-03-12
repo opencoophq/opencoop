@@ -182,7 +182,8 @@
       "legalForm": "Legal Form",
       "parentGuardian": "Parent / Guardian",
       "searchParent": "Search for parent shareholder...",
-      "currentParentLinked": "A parent/guardian is already linked."
+      "currentParentLinked": "A parent/guardian is already linked.",
+      "parentNoAccount": "This shareholder has no user account. They must have an account (email + login) before they can be set as a parent/guardian."
     },
     "beneficialOwners": "Beneficial Owners",
     "addBeneficialOwner": "Add Beneficial Owner",
