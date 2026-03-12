@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.15] - 2026-03-12
+
+### Changed
+- **Transaction tables: separate date columns** — split single "Date" column into "Registration Date" and "Payment Date" in both the transactions page and shareholder detail page, so dividend-relevant payment dates are clearly visible
+- **Inline payment date editing** — click the payment date on any completed registration to edit it directly in the table (replaces the previous modal approach)
+
 ## [0.7.14] - 2026-03-12
 
 ### Fixed
