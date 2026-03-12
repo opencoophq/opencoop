@@ -161,6 +161,7 @@
   "shareholder": {
     "title": "Coopérateur",
     "type": {
+      "label": "Type",
       "individual": "Personne physique",
       "company": "Société",
       "minor": "Mineur"
@@ -178,7 +179,10 @@
       "companyName": "Nom de la société",
       "companyId": "Numéro d'entreprise (KBO)",
       "vatNumber": "Numéro de TVA",
-      "legalForm": "Forme juridique"
+      "legalForm": "Forme juridique",
+      "parentGuardian": "Parent / Tuteur",
+      "searchParent": "Rechercher un actionnaire parent...",
+      "currentParentLinked": "Un parent/tuteur est déjà lié."
     },
     "beneficialOwners": "Bénéficiaires effectifs",
     "addBeneficialOwner": "Ajouter un bénéficiaire effectif",

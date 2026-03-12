@@ -220,7 +220,22 @@ export class ShareholdersService {
       }
     }
 
-    const { beneficialOwners, birthDate, address, ...rest } = dto;
+    const { beneficialOwners, birthDate, address, registeredByUserId, ...rest } = dto;
+
+    // Handle type change to MINOR: validate parent and clear userId
+    const typeChangingToMinor = rest.type === 'MINOR' && existing.type !== 'MINOR';
+    const typeChangingFromMinor = rest.type && rest.type !== 'MINOR' && existing.type === 'MINOR';
+
+    if (typeChangingToMinor && !registeredByUserId && !existing.registeredByUserId) {
+      throw new BadRequestException('registeredByUserId is required when setting type to MINOR');
+    }
+
+    if (registeredByUserId) {
+      const parentUser = await this.prisma.user.findUnique({ where: { id: registeredByUserId } });
+      if (!parentUser) {
+        throw new BadRequestException('Parent/guardian user not found');
+      }
+    }
 
     // Encrypt nationalId fields before storage
     const nationalId = rest.nationalId ? encryptField(rest.nationalId) : rest.nationalId;
@@ -237,6 +252,9 @@ export class ShareholdersService {
         email: rest.email?.toLowerCase(),
         ...(address !== undefined && { address: address ? JSON.parse(JSON.stringify(address)) : null }),
         ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
+        ...(registeredByUserId !== undefined && { registeredByUserId }),
+        ...(typeChangingToMinor && { userId: null }),
+        ...(typeChangingFromMinor && { registeredByUserId: null }),
         ...(encryptedBeneficialOwners && {
           beneficialOwners: {
             deleteMany: {},
