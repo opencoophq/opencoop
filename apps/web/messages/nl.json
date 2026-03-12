@@ -161,6 +161,7 @@
   "shareholder": {
     "title": "Aandeelhouder",
     "type": {
+      "label": "Type",
       "individual": "Particulier",
       "company": "Bedrijf",
       "minor": "Minderjarige"
@@ -178,7 +179,10 @@
       "companyName": "Bedrijfsnaam",
       "companyId": "Ondernemingsnummer (KBO)",
       "vatNumber": "BTW-nummer",
-      "legalForm": "Rechtsvorm"
+      "legalForm": "Rechtsvorm",
+      "parentGuardian": "Ouder / Voogd",
+      "searchParent": "Zoek naar ouder-aandeelhouder...",
+      "currentParentLinked": "Er is al een ouder/voogd gekoppeld."
     },
     "beneficialOwners": "Uiteindelijke begunstigden",
     "addBeneficialOwner": "Begunstigde toevoegen",

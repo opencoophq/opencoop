@@ -161,6 +161,7 @@
   "shareholder": {
     "title": "Anteilseigner",
     "type": {
+      "label": "Typ",
       "individual": "Einzelperson",
       "company": "Unternehmen",
       "minor": "Minderjährig"
@@ -178,7 +179,10 @@
       "companyName": "Firmenname",
       "companyId": "Unternehmensnummer (KBO)",
       "vatNumber": "USt-IdNr.",
-      "legalForm": "Rechtsform"
+      "legalForm": "Rechtsform",
+      "parentGuardian": "Elternteil / Vormund",
+      "searchParent": "Nach Eltern-Anteilseigner suchen...",
+      "currentParentLinked": "Ein Elternteil/Vormund ist bereits verknüpft."
     },
     "beneficialOwners": "Wirtschaftlich Berechtigte",
     "addBeneficialOwner": "Wirtschaftlich Berechtigten hinzufügen",
