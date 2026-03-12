@@ -14,6 +14,11 @@ export class UpdateShareholderDto extends PartialType(CreateShareholderDto) {
   @IsString()
   registeredByUserId?: string | null;
 
+  @ApiProperty({ required: false, description: 'Parent/guardian shareholder ID used to resolve or auto-create parent account' })
+  @IsOptional()
+  @IsString()
+  registeredByShareholderId?: string | null;
+
   @IsOptional()
   @IsBoolean()
   isEcoPowerClient?: boolean;

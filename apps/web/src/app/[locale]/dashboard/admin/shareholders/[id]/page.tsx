@@ -353,9 +353,10 @@ export default function ShareholderDetailPage() {
         body.type = shareholderType;
       }
 
-      // Include parent/guardian for MINOR type
-      if (shareholderType === 'MINOR' && selectedParent?.userId) {
-        body.registeredByUserId = selectedParent.userId;
+      // Include parent/guardian for MINOR type.
+      // Backend resolves/creates parent user account when needed.
+      if (shareholderType === 'MINOR' && selectedParent) {
+        body.registeredByShareholderId = selectedParent.id;
       } else if (shareholderType !== 'MINOR' && shareholder?.type === 'MINOR') {
         body.registeredByUserId = null;
       }

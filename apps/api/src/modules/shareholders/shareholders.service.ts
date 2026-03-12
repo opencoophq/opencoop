@@ -220,18 +220,62 @@ export class ShareholdersService {
       }
     }
 
-    const { beneficialOwners, birthDate, address, registeredByUserId, ...rest } = dto;
+    const { beneficialOwners, birthDate, address, registeredByUserId, registeredByShareholderId, ...rest } = dto;
 
     // Handle type change to MINOR: validate parent and clear userId
     const typeChangingToMinor = rest.type === 'MINOR' && existing.type !== 'MINOR';
     const typeChangingFromMinor = rest.type && rest.type !== 'MINOR' && existing.type === 'MINOR';
 
-    if (typeChangingToMinor && !registeredByUserId && !existing.registeredByUserId) {
+    let resolvedRegisteredByUserId = registeredByUserId;
+
+    if (registeredByShareholderId) {
+      if (registeredByShareholderId === id) {
+        throw new BadRequestException('A shareholder cannot be their own parent/guardian');
+      }
+
+      const parentShareholder = await this.prisma.shareholder.findFirst({
+        where: { id: registeredByShareholderId, coopId },
+        select: { id: true, userId: true, email: true, firstName: true, lastName: true },
+      });
+      if (!parentShareholder) {
+        throw new BadRequestException('Parent/guardian shareholder not found');
+      }
+
+      if (parentShareholder.userId) {
+        resolvedRegisteredByUserId = parentShareholder.userId;
+      } else {
+        const parentEmail = parentShareholder.email?.toLowerCase();
+        if (!parentEmail) {
+          throw new BadRequestException('Parent/guardian must have an email before assigning a minor');
+        }
+
+        const parentUser =
+          (await this.prisma.user.findUnique({ where: { email: parentEmail } })) ??
+          (await this.prisma.user.create({
+            data: {
+              email: parentEmail,
+              name: `${parentShareholder.firstName || ''} ${parentShareholder.lastName || ''}`.trim() || null,
+              role: 'SHAREHOLDER',
+              preferredLanguage: 'nl',
+              emailVerified: new Date(),
+            },
+          }));
+
+        await this.prisma.shareholder.update({
+          where: { id: parentShareholder.id },
+          data: { userId: parentUser.id },
+        });
+
+        resolvedRegisteredByUserId = parentUser.id;
+      }
+    }
+
+    if (typeChangingToMinor && !resolvedRegisteredByUserId && !existing.registeredByUserId) {
       throw new BadRequestException('registeredByUserId is required when setting type to MINOR');
     }
 
-    if (registeredByUserId) {
-      const parentUser = await this.prisma.user.findUnique({ where: { id: registeredByUserId } });
+    if (resolvedRegisteredByUserId) {
+      const parentUser = await this.prisma.user.findUnique({ where: { id: resolvedRegisteredByUserId } });
       if (!parentUser) {
         throw new BadRequestException('Parent/guardian user not found');
       }
@@ -252,7 +296,9 @@ export class ShareholdersService {
         email: rest.email?.toLowerCase(),
         ...(address !== undefined && { address: address ? JSON.parse(JSON.stringify(address)) : null }),
         ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
-        ...(registeredByUserId !== undefined && { registeredByUserId }),
+        ...((registeredByUserId !== undefined || registeredByShareholderId !== undefined) && {
+          registeredByUserId: resolvedRegisteredByUserId ?? null,
+        }),
         ...(typeChangingToMinor && { userId: null }),
         ...(typeChangingFromMinor && { registeredByUserId: null }),
         ...(encryptedBeneficialOwners && {
