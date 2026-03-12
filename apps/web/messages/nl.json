@@ -182,7 +182,8 @@
       "legalForm": "Rechtsvorm",
       "parentGuardian": "Ouder / Voogd",
       "searchParent": "Zoek naar ouder-aandeelhouder...",
-      "currentParentLinked": "Er is al een ouder/voogd gekoppeld."
+      "currentParentLinked": "Er is al een ouder/voogd gekoppeld.",
+      "parentNoAccount": "Deze aandeelhouder heeft geen gebruikersaccount. Ze moeten eerst een account hebben (e-mail + login) voordat ze als ouder/voogd kunnen worden ingesteld."
     },
     "beneficialOwners": "Uiteindelijke begunstigden",
     "addBeneficialOwner": "Begunstigde toevoegen",

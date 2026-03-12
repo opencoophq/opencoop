@@ -375,8 +375,8 @@ export default function ShareholderDetailPage() {
       );
       setSuccess(t('common.savedSuccessfully'));
       setShareholder(updated);
-    } catch {
-      setError(t('common.error'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setSaving(false);
     }
@@ -748,24 +748,31 @@ export default function ShareholderDetailPage() {
                 <div className="space-y-2">
                   <Label>{t('shareholder.fields.parentGuardian')}</Label>
                   {selectedParent ? (
-                    <div className="flex items-center gap-2 rounded-md border p-2">
-                      <span className="flex-1 text-sm">
-                        {selectedParent.firstName} {selectedParent.lastName}
-                        {selectedParent.email && (
-                          <span className="text-muted-foreground"> ({selectedParent.email})</span>
-                        )}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedParent(null);
-                          setParentSearch('');
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 rounded-md border p-2">
+                        <span className="flex-1 text-sm">
+                          {selectedParent.firstName} {selectedParent.lastName}
+                          {selectedParent.email && (
+                            <span className="text-muted-foreground"> ({selectedParent.email})</span>
+                          )}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedParent(null);
+                            setParentSearch('');
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {!selectedParent.userId && (
+                        <p className="text-destructive text-xs">
+                          {t('shareholder.fields.parentNoAccount')}
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-1">

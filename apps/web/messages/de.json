@@ -182,7 +182,8 @@
       "legalForm": "Rechtsform",
       "parentGuardian": "Elternteil / Vormund",
       "searchParent": "Nach Eltern-Anteilseigner suchen...",
-      "currentParentLinked": "Ein Elternteil/Vormund ist bereits verknüpft."
+      "currentParentLinked": "Ein Elternteil/Vormund ist bereits verknüpft.",
+      "parentNoAccount": "Dieser Anteilseigner hat kein Benutzerkonto. Er muss zuerst ein Konto haben (E-Mail + Login), bevor er als Elternteil/Vormund festgelegt werden kann."
     },
     "beneficialOwners": "Wirtschaftlich Berechtigte",
     "addBeneficialOwner": "Wirtschaftlich Berechtigten hinzufügen",
