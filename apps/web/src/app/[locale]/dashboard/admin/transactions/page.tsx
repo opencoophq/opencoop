@@ -37,7 +37,7 @@ import { api } from '@/lib/api';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, X, QrCode, CreditCard, Link2, CalendarDays } from 'lucide-react';
+import { Check, X, QrCode, CreditCard, Link2 } from 'lucide-react';
 
 interface TransactionRow {
   id: string;
@@ -57,6 +57,7 @@ interface TransactionRow {
   shareClass?: {
     name: string;
   };
+  payments?: { bankDate: string; amount: number }[];
 }
 
 interface PaymentDetails {
@@ -93,11 +94,8 @@ export default function AdminTransactionsPage() {
   const [paymentBankDate, setPaymentBankDate] = useState('');
   const [completing, setCompleting] = useState(false);
 
-  // Edit payment date dialog state
-  const [editDateOpen, setEditDateOpen] = useState(false);
-  const [editDateTxId, setEditDateTxId] = useState('');
-  const [editDateValue, setEditDateValue] = useState('');
-  const [editDateSaving, setEditDateSaving] = useState(false);
+  // Inline payment date editing
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
 
   // Reject dialog state
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -218,26 +216,22 @@ export default function AdminTransactionsPage() {
     }
   };
 
-  const openEditDate = (txId: string) => {
-    setEditDateTxId(txId);
-    setEditDateValue(new Date().toISOString().split('T')[0]);
-    setEditDateOpen(true);
+  const getPaymentDate = (tx: TransactionRow): string | null => {
+    if (!tx.payments?.length) return null;
+    return tx.payments[tx.payments.length - 1].bankDate;
   };
 
-  const handleEditDate = async () => {
-    if (!selectedCoop || !editDateTxId || !editDateValue) return;
-    setEditDateSaving(true);
+  const handleInlineDateSave = async (regId: string, newDate: string) => {
+    if (!selectedCoop || !newDate) return;
     try {
-      await api(`/admin/coops/${selectedCoop.id}/registrations/${editDateTxId}/payment-date`, {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${regId}/payment-date`, {
         method: 'PATCH',
-        body: { bankDate: editDateValue },
+        body: { bankDate: newDate },
       });
-      setEditDateOpen(false);
+      setEditingDateId(null);
       loadData();
     } catch {
       setError(t('common.actionError'));
-    } finally {
-      setEditDateSaving(false);
     }
   };
 
@@ -371,13 +365,16 @@ export default function AdminTransactionsPage() {
                       <TableHead>{t('transactions.type')}</TableHead>
                       <TableHead className="text-right">{t('shares.quantity')}</TableHead>
                       <TableHead className="text-right">{t('common.amount')}</TableHead>
-                      <TableHead>{t('common.date')}</TableHead>
+                      <TableHead>{t('transactions.registrationDate')}</TableHead>
+                      <TableHead>{t('payments.paymentDate')}</TableHead>
                       <TableHead>{t('common.status')}</TableHead>
                       <TableHead>{t('common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.map((tx) => (
+                    {transactions.map((tx) => {
+                      const payDate = getPaymentDate(tx);
+                      return (
                       <TableRow key={tx.id}>
                         <TableCell className="font-medium">{getName(tx.shareholder)}</TableCell>
                         <TableCell>
@@ -389,6 +386,31 @@ export default function AdminTransactionsPage() {
                         </TableCell>
                         <TableCell>
                           {new Date(tx.createdAt).toLocaleDateString(locale)}
+                        </TableCell>
+                        <TableCell>
+                          {tx.status === 'COMPLETED' && editingDateId === tx.id ? (
+                            <Input
+                              type="date"
+                              className="w-36 h-8"
+                              defaultValue={payDate ? new Date(payDate).toISOString().split('T')[0] : ''}
+                              autoFocus
+                              onBlur={(e) => {
+                                if (e.target.value) handleInlineDateSave(tx.id, e.target.value);
+                                else setEditingDateId(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                if (e.key === 'Escape') setEditingDateId(null);
+                              }}
+                            />
+                          ) : (
+                            <span
+                              className={tx.status === 'COMPLETED' ? 'cursor-pointer hover:underline' : ''}
+                              onClick={() => tx.status === 'COMPLETED' && setEditingDateId(tx.id)}
+                            >
+                              {payDate ? new Date(payDate).toLocaleDateString(locale) : '-'}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -443,20 +465,11 @@ export default function AdminTransactionsPage() {
                                 )}
                               </Button>
                             )}
-                            {tx.status === 'COMPLETED' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditDate(tx.id)}
-                                title={t('payments.paymentDate')}
-                              >
-                                <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                            )}
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -694,30 +707,6 @@ export default function AdminTransactionsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Payment Date Dialog */}
-      <Dialog open={editDateOpen} onOpenChange={setEditDateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('payments.paymentDate')}</DialogTitle>
-            <DialogDescription>{t('admin.transactions.editPaymentDateDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              type="date"
-              value={editDateValue}
-              onChange={(e) => setEditDateValue(e.target.value)}
-            />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditDateOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button onClick={handleEditDate} disabled={editDateSaving || !editDateValue}>
-                {editDateSaving ? t('common.loading') : t('common.save')}
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
