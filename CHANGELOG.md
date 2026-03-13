@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.24] - 2026-03-13
+
+### Added
+- **EPC QR code: payment description** — QR codes now include a human-readable description ("Share purchase" / "Share refund") in the unstructured remittance field, so banking apps display what the payment is for when scanned. The same description also appears as a label below the QR code in the UI. Available in EN/NL/FR/DE.
+
 ## [0.7.23] - 2026-03-13
 
 ### Fixed
