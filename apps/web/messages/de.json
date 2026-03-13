@@ -327,8 +327,8 @@
     "paymentInstructions": "Zahlungsanweisungen",
     "paymentDate": "Zahlungsdatum",
     "pending": "Ausstehend",
-    "sharePurchase": "Aktienkauf",
-    "shareRefund": "Aktienrückerstattung"
+    "sharePurchase": "Aktienkauf {quantity} Aktien",
+    "shareRefund": "Aktienrückerstattung {quantity} Aktien"
   },
   "dividends": {
     "title": "Dividenden",
