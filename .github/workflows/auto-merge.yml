@@ -1,0 +1,21 @@
+name: Auto-merge claude:recommended
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.event.label.name == 'claude:recommended'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: gh pr merge --auto --squash --repo "$REPO" "$PR_NUMBER"
