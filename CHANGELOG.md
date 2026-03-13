@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.26] - 2026-03-13
+
+### Added
+- **Favicon** — OpenCoop now has a browser favicon based on the logo: a rounded blue square with the building icon. Shows in browser tabs and bookmarks.
+
 ## [0.7.25] - 2026-03-13
 
 ### Added
