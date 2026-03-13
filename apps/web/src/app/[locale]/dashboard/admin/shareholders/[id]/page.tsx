@@ -1224,6 +1224,8 @@ export default function ShareholderDetailPage() {
                   iban={buyResult.iban}
                   amount={buyResult.amount}
                   reference={buyResult.ogmCode}
+                  unstructured={t('payments.sharePurchase')}
+                  label={t('payments.sharePurchase')}
                 />
               </div>
               <div className="space-y-2 text-sm">
@@ -1331,6 +1333,8 @@ export default function ShareholderDetailPage() {
                   iban={sellResult.iban}
                   amount={sellResult.amount}
                   reference={sellResult.ogmCode}
+                  unstructured={t('payments.shareRefund')}
+                  label={t('payments.shareRefund')}
                 />
               </div>
               <div className="space-y-2 text-sm">

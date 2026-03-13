@@ -560,6 +560,8 @@ export default function AdminTransactionsPage() {
                     iban={paymentDetails.iban}
                     amount={paymentDetails.amount}
                     reference={paymentDetails.ogmCode}
+                    unstructured={paymentDetails.direction === 'outgoing' ? t('payments.shareRefund') : t('payments.sharePurchase')}
+                    label={paymentDetails.direction === 'outgoing' ? t('payments.shareRefund') : t('payments.sharePurchase')}
                   />
                 </div>
               ) : (
