@@ -215,7 +215,7 @@ export function generateReferralCode(): string {
  * @returns Multi-line string to encode in a QR code
  */
 export function generateEpcQrPayload(params: {
-  bic: string;
+  bic?: string;
   beneficiaryName: string;
   iban: string;
   amount: number;
@@ -227,7 +227,7 @@ export function generateEpcQrPayload(params: {
     '002',                                        // Version
     '1',                                          // Character set (UTF-8)
     'SCT',                                        // Identification code (SEPA Credit Transfer)
-    params.bic.replace(/\s/g, '').toUpperCase(),  // BIC
+    (params.bic || '').replace(/\s/g, '').toUpperCase(),  // BIC (optional in EPC v002 since SEPA dropped BIC requirement Nov 2016)
     params.beneficiaryName.slice(0, 70),          // Beneficiary name (max 70 chars)
     params.iban.replace(/\s/g, '').toUpperCase(), // IBAN
     `EUR${params.amount.toFixed(2)}`,             // Amount

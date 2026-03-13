@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.22] - 2026-03-13
+
+### Fixed
+- **EPC QR code: BIC no longer required** — shareholders with a valid IBAN but no BIC can now generate QR codes for share transactions. Per the EPC QR standard (version 002), BIC has been optional since SEPA dropped the requirement in November 2016. The QR code renders with an empty BIC field, which is fully valid and accepted by banking apps.
+
 ## [0.7.21] - 2026-03-13
 
 ### Fixed

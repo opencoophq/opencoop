@@ -1175,7 +1175,7 @@ export function CoopRegisterContent({
         )}
 
         {/* EPC QR code */}
-        {coop.bankBic && coop.bankIban && (
+        {coop.bankIban && (
           <div className="flex flex-col items-center py-4">
             <EpcQrCode
               bic={coop.bankBic}
