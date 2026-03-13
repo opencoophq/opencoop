@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.25] - 2026-03-13
+
+### Added
+- **EPC QR code: share count in description** — QR payment descriptions now include the number of shares, e.g. "Aankoop 3 aandelen" or "Terugbetaling 1 aandelen". Available in EN/NL/FR/DE.
+
 ## [0.7.24] - 2026-03-13
 
 ### Added
