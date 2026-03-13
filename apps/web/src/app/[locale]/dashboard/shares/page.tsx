@@ -543,7 +543,7 @@ export default function SharesPage() {
               <Alert>
                 <AlertDescription>{t('shares.purchaseSubmitted')}</AlertDescription>
               </Alert>
-              {buyPaymentDetails.iban && buyPaymentDetails.bic && (
+              {buyPaymentDetails.iban && (
                 <div className="flex justify-center">
                   <EpcQrCode
                     bic={buyPaymentDetails.bic}
