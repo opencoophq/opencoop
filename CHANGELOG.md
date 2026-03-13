@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.23] - 2026-03-13
+
+### Fixed
+- **EPC QR code: BIC guard in transactions page** — the admin transactions page still showed "IBAN is missing" error for shareholders with IBAN but no BIC. Missed location from the v0.7.22 fix.
+
 ## [0.7.22] - 2026-03-13
 
 ### Fixed
