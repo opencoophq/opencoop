@@ -2,7 +2,7 @@
 
 All notable changes to OpenCoop are documented in this file.
 
-## [0.7.17] - 2026-03-13
+## [0.7.21] - 2026-03-13
 
 ### Fixed
 - **IBAN/BIC placeholder clarity** — updated placeholder text to explicit `e.g.` format and added helper copy below each field ("Example format only. Enter the shareholder's own IBAN/BIC.") so admins no longer mistake the example values for the shareholder's actual saved data. Also improved mobile layout with single-column stacking.
