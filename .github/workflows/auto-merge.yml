@@ -3,17 +3,37 @@ name: Auto-merge claude:recommended
 on:
   pull_request:
     types: [labeled]
+  pull_request_review:
+    types: [submitted]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  auto-merge:
-    if: github.event.label.name == 'claude:recommended'
+  request-review:
+    # When claude:recommended label is added, request technical review before merging
+    if: github.event_name == 'pull_request' && github.event.label.name == 'claude:recommended'
     runs-on: ubuntu-latest
     steps:
-      - name: Enable auto-merge
+      - name: Request technical review
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Request review from wooter; || true handles the case where wooter is the PR author
+          gh pr edit "$PR_NUMBER" --add-reviewer wooter --repo "$REPO" || true
+
+  auto-merge:
+    # Auto-merge only after wooter approves AND PR has claude:recommended label
+    if: >
+      github.event_name == 'pull_request_review' &&
+      github.event.review.state == 'approved' &&
+      contains(github.event.pull_request.labels.*.name, 'claude:recommended')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto-merge after approval
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
