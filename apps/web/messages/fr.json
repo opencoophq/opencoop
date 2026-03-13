@@ -612,7 +612,7 @@
       "payRefund": "Rembourser",
       "scanToPayRefund": "Scannez le code QR avec votre application bancaire pour traiter le remboursement",
       "scanToPay": "L'actionnaire peut scanner ce code QR pour payer",
-      "missingBankDetails": "Les coordonnées bancaires (IBAN/BIC) sont manquantes. Veuillez d'abord mettre à jour les coordonnées bancaires de l'actionnaire.",
+      "missingBankDetails": "L'IBAN est manquant. Veuillez d'abord mettre à jour les coordonnées bancaires de l'actionnaire.",
       "markComplete": "Marquer comme terminé",
       "editPaymentDateDescription": "Modifier la date de paiement pour cette transaction terminée.",
       "bankDetailsRequired": "Un compte bancaire (IBAN) est requis pour recevoir les remboursements lors de la vente d'actions.",
