@@ -67,6 +67,7 @@ interface PaymentDetails {
   bic: string;
   amount: number;
   ogmCode: string;
+  quantity?: number;
 }
 
 interface UnmatchedTransaction {
@@ -560,8 +561,8 @@ export default function AdminTransactionsPage() {
                     iban={paymentDetails.iban}
                     amount={paymentDetails.amount}
                     reference={paymentDetails.ogmCode}
-                    unstructured={paymentDetails.direction === 'outgoing' ? t('payments.shareRefund') : t('payments.sharePurchase')}
-                    label={paymentDetails.direction === 'outgoing' ? t('payments.shareRefund') : t('payments.sharePurchase')}
+                    unstructured={paymentDetails.direction === 'outgoing' ? t('payments.shareRefund', { quantity: paymentDetails.quantity ?? '' }) : t('payments.sharePurchase', { quantity: paymentDetails.quantity ?? '' })}
+                    label={paymentDetails.direction === 'outgoing' ? t('payments.shareRefund', { quantity: paymentDetails.quantity ?? '' }) : t('payments.sharePurchase', { quantity: paymentDetails.quantity ?? '' })}
                   />
                 </div>
               ) : (

@@ -71,6 +71,7 @@ interface PaymentDetailsData {
   bic: string;
   amount: number;
   ogmCode: string;
+  quantity?: number;
 }
 
 // TransactionData no longer needed — registrations contain all necessary info
@@ -328,6 +329,7 @@ export default function SharesPage() {
       bic: shareholder.coop.bankBic || '',
       amount: reg.quantity * Number(reg.pricePerShare),
       ogmCode: reg.ogmCode || '',
+      quantity: reg.quantity,
     });
     setPaymentQrOpen(true);
   };
@@ -551,8 +553,8 @@ export default function SharesPage() {
                     iban={buyPaymentDetails.iban}
                     amount={buyPaymentDetails.amount}
                     reference={buyPaymentDetails.ogmCode}
-                    unstructured={t('payments.sharePurchase')}
-                    label={t('payments.sharePurchase')}
+                    unstructured={t('payments.sharePurchase', { quantity: buyPaymentDetails.quantity ?? '' })}
+                    label={t('payments.sharePurchase', { quantity: buyPaymentDetails.quantity ?? '' })}
                   />
                 </div>
               )}
@@ -654,8 +656,8 @@ export default function SharesPage() {
                     iban={paymentQrDetails.iban}
                     amount={paymentQrDetails.amount}
                     reference={paymentQrDetails.ogmCode}
-                    unstructured={t('payments.sharePurchase')}
-                    label={t('payments.sharePurchase')}
+                    unstructured={t('payments.sharePurchase', { quantity: paymentQrDetails.quantity ?? '' })}
+                    label={t('payments.sharePurchase', { quantity: paymentQrDetails.quantity ?? '' })}
                   />
                 </div>
               )}

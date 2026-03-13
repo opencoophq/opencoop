@@ -594,6 +594,7 @@ export class RegistrationsService {
         amount: Number(registration.totalAmount),
         ogmCode: registration.ogmCode || '',
         shareholderName,
+        quantity: registration.quantity,
       };
     } else {
       return {
@@ -604,6 +605,7 @@ export class RegistrationsService {
         amount: Number(registration.totalAmount),
         ogmCode: registration.ogmCode || '',
         shareholderName,
+        quantity: registration.quantity,
       };
     }
   }
