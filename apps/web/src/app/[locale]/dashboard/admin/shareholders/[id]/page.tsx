@@ -878,14 +878,16 @@ export default function ShareholderDetailPage() {
 
               <div className="border-t pt-4 mt-4">
                 <h4 className="text-sm font-medium mb-3">{t('payments.bankDetails')}</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('payments.iban')}</Label>
-                    <Input {...form.register('bankIban')} placeholder="BE68 5390 0754 7034" />
+                    <Input {...form.register('bankIban')} placeholder="e.g. BE68 5390 0754 7034" />
+                    <p className="text-xs text-muted-foreground">{t('payments.ibanExampleHint')}</p>
                   </div>
                   <div className="space-y-2">
                     <Label>{t('payments.bic')}</Label>
-                    <Input {...form.register('bankBic')} placeholder="BBRUBEBB" />
+                    <Input {...form.register('bankBic')} placeholder="e.g. BBRUBEBB" />
+                    <p className="text-xs text-muted-foreground">{t('payments.bicExampleHint')}</p>
                   </div>
                 </div>
               </div>
