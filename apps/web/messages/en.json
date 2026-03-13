@@ -327,8 +327,8 @@
     "paymentInstructions": "Payment Instructions",
     "paymentDate": "Payment Date",
     "pending": "Pending",
-    "sharePurchase": "Share purchase",
-    "shareRefund": "Share refund"
+    "sharePurchase": "Share purchase - {quantity} shares",
+    "shareRefund": "Share refund - {quantity} shares"
   },
   "dividends": {
     "title": "Dividends",

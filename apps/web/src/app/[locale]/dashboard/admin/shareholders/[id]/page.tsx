@@ -125,6 +125,7 @@ interface PaymentDetails {
   bic: string;
   amount: number;
   ogmCode: string;
+  quantity?: number;
 }
 
 interface AuditLogChange {
@@ -1224,8 +1225,8 @@ export default function ShareholderDetailPage() {
                   iban={buyResult.iban}
                   amount={buyResult.amount}
                   reference={buyResult.ogmCode}
-                  unstructured={t('payments.sharePurchase')}
-                  label={t('payments.sharePurchase')}
+                  unstructured={t('payments.sharePurchase', { quantity: buyResult.quantity ?? '' })}
+                  label={t('payments.sharePurchase', { quantity: buyResult.quantity ?? '' })}
                 />
               </div>
               <div className="space-y-2 text-sm">
@@ -1333,8 +1334,8 @@ export default function ShareholderDetailPage() {
                   iban={sellResult.iban}
                   amount={sellResult.amount}
                   reference={sellResult.ogmCode}
-                  unstructured={t('payments.shareRefund')}
-                  label={t('payments.shareRefund')}
+                  unstructured={t('payments.shareRefund', { quantity: sellResult.quantity ?? '' })}
+                  label={t('payments.shareRefund', { quantity: sellResult.quantity ?? '' })}
                 />
               </div>
               <div className="space-y-2 text-sm">

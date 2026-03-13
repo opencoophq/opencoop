@@ -327,8 +327,8 @@
     "paymentInstructions": "Betalingsinstructies",
     "paymentDate": "Betaaldatum",
     "pending": "In behandeling",
-    "sharePurchase": "Aankoop aandelen",
-    "shareRefund": "Terugbetaling aandelen"
+    "sharePurchase": "Aankoop {quantity} aandelen",
+    "shareRefund": "Terugbetaling {quantity} aandelen"
   },
   "dividends": {
     "title": "Dividenden",
