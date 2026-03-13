@@ -1183,6 +1183,8 @@ export function CoopRegisterContent({
               iban={coop.bankIban}
               amount={totalAmount}
               reference={result?.ogmCode}
+              unstructured={t('payments.sharePurchase')}
+              label={t('payments.sharePurchase')}
               size={180}
             />
             <p className="text-sm text-muted-foreground mt-2">

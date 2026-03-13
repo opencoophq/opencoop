@@ -10,6 +10,7 @@ interface EpcQrCodeProps {
   amount: number;
   reference?: string;
   unstructured?: string;
+  label?: string;
   size?: number;
 }
 
@@ -20,6 +21,7 @@ export function EpcQrCode({
   amount,
   reference,
   unstructured,
+  label,
   size = 200,
 }: EpcQrCodeProps) {
   if (!iban || !beneficiaryName || !amount) {
@@ -38,6 +40,9 @@ export function EpcQrCode({
   return (
     <div className="flex flex-col items-center gap-3">
       <QRCodeSVG value={payload} size={size} level="M" />
+      {label && (
+        <p className="text-xs font-medium text-center max-w-[200px]">{label}</p>
+      )}
       <p className="text-xs text-muted-foreground text-center max-w-[200px]">
         {formatIban(iban)}
       </p>

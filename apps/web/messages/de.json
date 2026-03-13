@@ -326,7 +326,9 @@
     "beneficiary": "Begünstigter",
     "paymentInstructions": "Zahlungsanweisungen",
     "paymentDate": "Zahlungsdatum",
-    "pending": "Ausstehend"
+    "pending": "Ausstehend",
+    "sharePurchase": "Aktienkauf",
+    "shareRefund": "Aktienrückerstattung"
   },
   "dividends": {
     "title": "Dividenden",

@@ -551,6 +551,8 @@ export default function SharesPage() {
                     iban={buyPaymentDetails.iban}
                     amount={buyPaymentDetails.amount}
                     reference={buyPaymentDetails.ogmCode}
+                    unstructured={t('payments.sharePurchase')}
+                    label={t('payments.sharePurchase')}
                   />
                 </div>
               )}
@@ -652,6 +654,8 @@ export default function SharesPage() {
                     iban={paymentQrDetails.iban}
                     amount={paymentQrDetails.amount}
                     reference={paymentQrDetails.ogmCode}
+                    unstructured={t('payments.sharePurchase')}
+                    label={t('payments.sharePurchase')}
                   />
                 </div>
               )}

@@ -326,7 +326,9 @@
     "beneficiary": "Beneficiary",
     "paymentInstructions": "Payment Instructions",
     "paymentDate": "Payment Date",
-    "pending": "Pending"
+    "pending": "Pending",
+    "sharePurchase": "Share purchase",
+    "shareRefund": "Share refund"
   },
   "dividends": {
     "title": "Dividends",
