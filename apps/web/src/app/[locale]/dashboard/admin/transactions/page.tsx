@@ -552,7 +552,7 @@ export default function AdminTransactionsPage() {
           </DialogHeader>
           {paymentDetails && (
             <div className="space-y-4">
-              {paymentDetails.iban && paymentDetails.bic ? (
+              {paymentDetails.iban ? (
                 <div className="flex justify-center">
                   <EpcQrCode
                     bic={paymentDetails.bic}
