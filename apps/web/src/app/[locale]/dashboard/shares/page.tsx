@@ -644,7 +644,7 @@ export default function SharesPage() {
           </DialogHeader>
           {paymentQrDetails && (
             <div className="space-y-4">
-              {paymentQrDetails.iban && paymentQrDetails.bic && (
+              {paymentQrDetails.iban && (
                 <div className="flex justify-center">
                   <EpcQrCode
                     bic={paymentQrDetails.bic}

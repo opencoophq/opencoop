@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { generateEpcQrPayload, formatIban } from '@opencoop/shared';
 
 interface EpcQrCodeProps {
-  bic: string;
+  bic?: string;
   beneficiaryName: string;
   iban: string;
   amount: number;
@@ -22,7 +22,7 @@ export function EpcQrCode({
   unstructured,
   size = 200,
 }: EpcQrCodeProps) {
-  if (!bic || !iban || !beneficiaryName || !amount) {
+  if (!iban || !beneficiaryName || !amount) {
     return null;
   }
 
