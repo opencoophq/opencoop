@@ -326,7 +326,9 @@
     "beneficiary": "Begunstigde",
     "paymentInstructions": "Betalingsinstructies",
     "paymentDate": "Betaaldatum",
-    "pending": "In behandeling"
+    "pending": "In behandeling",
+    "sharePurchase": "Aankoop aandelen",
+    "shareRefund": "Terugbetaling aandelen"
   },
   "dividends": {
     "title": "Dividenden",
