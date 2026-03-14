@@ -140,7 +140,7 @@ export class ShareholdersService {
     // Generate unique referral code (retry on collision, including DB-level unique constraint)
     let referralCode: string | null = null;
     for (let i = 0; i < 5; i++) {
-      const candidate = generateReferralCode();
+      const candidate = generateReferralCode(rest.firstName);
       const existing = await this.prisma.shareholder.findFirst({ where: { referralCode: candidate } });
       if (!existing) {
         referralCode = candidate;
@@ -175,7 +175,7 @@ export class ShareholdersService {
       } catch (err: any) {
         // Retry on unique constraint violation for referralCode
         if (err?.code === 'P2002' && err?.meta?.target?.includes('referralCode') && attempt < 2) {
-          referralCode = generateReferralCode();
+          referralCode = generateReferralCode(rest.firstName);
           continue;
         }
         throw err;
