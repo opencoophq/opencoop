@@ -579,16 +579,16 @@ export class ShareholderActionsController {
       orderBy: { createdAt: 'desc' },
     });
 
-    const coopSlug = await this.prisma.coop.findUnique({
+    const coop = await this.prisma.coop.findUnique({
       where: { id: shareholder.coopId },
-      select: { slug: true },
+      select: { slug: true, coopWebsite: true },
     });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+    const appUrl = coop?.coopWebsite || process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
 
     return {
       referralCode: shareholder.referralCode,
-      referralLink: coopSlug
+      referralLink: coop
         ? `${appUrl}/r/${shareholder.referralCode}`
         : null,
       totalReferred: referrals.length,
