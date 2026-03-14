@@ -193,18 +193,25 @@ export function validateIban(iban: string): boolean {
 }
 
 /**
- * Generate a unique referral code in the format BRG-XXXXX.
- * Uses crypto-safe random alphanumeric characters (uppercase + digits).
+ * Generate a unique referral code in the format firstname1234.
+ * Uses the shareholder's first name (normalized) + 4 random digits (1000–9999).
+ * Example: "Wouter" → "wouter3821", "Élodie" → "elodie4412"
  */
-export function generateReferralCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous: 0/O, 1/I
-  let code = '';
-  const bytes = new Uint8Array(5);
+export function generateReferralCode(firstName?: string): string {
+  const base = firstName
+    ? firstName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // strip accent marks
+        .replace(/[^a-zA-Z]/g, '') // keep only letters
+        .toLowerCase()
+        .slice(0, 10)
+    : '';
+  const prefix = base || 'coop';
+  // 4 random digits: 1000–9999
+  const bytes = new Uint8Array(2);
   globalThis.crypto.getRandomValues(bytes);
-  for (let i = 0; i < 5; i++) {
-    code += chars[bytes[i] % chars.length];
-  }
-  return `BRG-${code}`;
+  const num = 1000 + ((bytes[0] * 256 + bytes[1]) % 9000);
+  return `${prefix}${num}`;
 }
 
 /**
