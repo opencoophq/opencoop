@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Building2 } from 'lucide-react';
 import { resolveLogoUrl } from '@/lib/api';
+import { saveSession } from '@/lib/sessions';
 import { MfaVerifyStep } from './mfa-verify-step';
 import { PasskeyLoginButton } from './passkey-login-button';
 import { OAuthButtons } from './oauth-buttons';
@@ -132,6 +133,7 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
       localStorage.setItem('accessToken', result.accessToken);
       localStorage.setItem('refreshToken', result.refreshToken);
       localStorage.setItem('user', JSON.stringify(result.user));
+      saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
       if (onLoginSuccess) {
         onLoginSuccess();
       } else {
@@ -228,6 +230,7 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
                   localStorage.setItem('accessToken', result.accessToken);
                   if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
                   localStorage.setItem('user', JSON.stringify(result.user));
+                  saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
                   if (onLoginSuccess) {
                     onLoginSuccess();
                   } else {
@@ -427,6 +430,7 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
                 localStorage.setItem('accessToken', result.accessToken);
                 if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
                 localStorage.setItem('user', JSON.stringify(result.user));
+                saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
                 if (onLoginSuccess) {
                   onLoginSuccess();
                 } else {

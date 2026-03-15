@@ -138,7 +138,8 @@
     "currentPassword": "Huidig wachtwoord",
     "newPassword": "Nieuw wachtwoord",
     "passwordMinLength": "Wachtwoord moet minimaal 8 tekens bevatten",
-    "passwordMismatch": "Wachtwoorden komen niet overeen"
+    "passwordMismatch": "Wachtwoorden komen niet overeen",
+    "addAccount": "Account toevoegen"
   },
   "navigation": {
     "dashboard": "Dashboard",
