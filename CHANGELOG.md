@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.30] - 2026-03-15
+
+### Added
+- **Multi-account switching** — users can now log in with multiple accounts and switch between them from the sidebar. Clicking the user area at the bottom of the dashboard opens a dropdown showing all saved accounts, an "Add account" link, and logout. Useful for switching between coop admin and shareholder views without re-entering credentials.
+
 ## [0.7.29] - 2026-03-15
 
 ### Fixed
