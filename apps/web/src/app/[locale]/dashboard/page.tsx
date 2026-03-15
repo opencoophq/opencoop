@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,7 @@ import { ReferralCard } from '@/components/referral-card';
 export default function DashboardPage() {
   const t = useTranslations();
   const { locale } = useLocale();
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalShares: 0,
     totalValue: 0,
@@ -21,6 +23,25 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [shareholderId, setShareholderId] = useState<string | null>(null);
   const [coopName, setCoopName] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData);
+        if (parsed.role === 'SYSTEM_ADMIN') {
+          router.replace('/dashboard/system');
+          return;
+        }
+        if (parsed.role === 'COOP_ADMIN') {
+          router.replace('/dashboard/admin');
+          return;
+        }
+      } catch {
+        // continue as shareholder
+      }
+    }
+  }, [router]);
 
   useEffect(() => {
     async function loadData() {
