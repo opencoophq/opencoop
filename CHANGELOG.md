@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.33] - 2026-03-15
+
+### Added
+- **Multi-bank CSV import** — bank import now supports Belfius, KBC, ING, and BNP Paribas Fortis CSV formats in addition to the generic format. Select your bank from the dropdown before uploading.
+- **Manual transaction matching** — clicking "Match" on an unmatched bank transaction now opens a dialog listing pending registrations (shareholder name, OGM code, amount) for one-click matching.
+
 ## [0.7.32] - 2026-03-15
 
 ### Added
