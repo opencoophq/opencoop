@@ -701,7 +701,12 @@
       "upload": "CSV uploaden",
       "counterparty": "Tegenpartij",
       "matchedTo": "Gekoppeld aan",
-      "match": "Koppelen"
+      "match": "Koppelen",
+      "selectBank": "Selecteer bank",
+      "matchTransaction": "Transactie koppelen",
+      "reference": "Mededeling",
+      "selectRegistration": "Selecteer een registratie om te koppelen",
+      "noRegistrations": "Geen openstaande registraties gevonden"
     },
     "dividends": {
       "title": "Dividendbeheer",
