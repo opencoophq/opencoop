@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MfaVerifyStep } from '@/components/auth/mfa-verify-step';
+import { saveSession } from '@/lib/sessions';
 
 export default function OAuthCallbackPage() {
   const t = useTranslations();
@@ -32,6 +33,7 @@ export default function OAuthCallbackPage() {
             localStorage.setItem('refreshToken', result.refreshToken);
           }
           localStorage.setItem('user', JSON.stringify(result.user));
+          saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
           router.push('/dashboard');
           return;
         }
@@ -56,6 +58,7 @@ export default function OAuthCallbackPage() {
               localStorage.setItem('accessToken', result.accessToken);
               if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
               localStorage.setItem('user', JSON.stringify(result.user));
+              saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
               router.push('/dashboard');
             }}
           />

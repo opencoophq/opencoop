@@ -138,7 +138,8 @@
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Nouveau mot de passe",
     "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères",
-    "passwordMismatch": "Les mots de passe ne correspondent pas"
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "addAccount": "Ajouter un compte"
   },
   "navigation": {
     "dashboard": "Tableau de bord",

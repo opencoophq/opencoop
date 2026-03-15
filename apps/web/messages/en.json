@@ -138,7 +138,8 @@
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "passwordMinLength": "Password must be at least 8 characters",
-    "passwordMismatch": "Passwords do not match"
+    "passwordMismatch": "Passwords do not match",
+    "addAccount": "Add account"
   },
   "navigation": {
     "dashboard": "Dashboard",
