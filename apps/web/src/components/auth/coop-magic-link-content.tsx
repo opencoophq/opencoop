@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { resolveLogoUrl } from '@/lib/api';
+import { saveSession } from '@/lib/sessions';
 
 type VerifyState = 'loading' | 'success' | 'error';
 
@@ -103,6 +104,7 @@ export function CoopMagicLinkContent({
         localStorage.setItem('accessToken', result.accessToken);
         localStorage.setItem('refreshToken', result.refreshToken);
         localStorage.setItem('user', JSON.stringify(result.user));
+        saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
 
         setState('success');
 
