@@ -140,24 +140,20 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const remaining = getAllSessions();
     if (remaining.length > 0) {
       switchSession(remaining[0].id);
-      router.push('/dashboard');
-      router.refresh();
+      window.location.href = '/dashboard';
     } else {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       clearAllSessions();
-      router.push('/login');
+      window.location.href = '/login';
     }
   };
 
   const handleSwitchSession = (sessionId: string) => {
     if (sessionId === activeSessionId) return;
     switchSession(sessionId);
-    setSavedSessions(getAllSessions());
-    setActiveSessionId(sessionId);
-    router.push('/dashboard');
-    router.refresh();
+    window.location.href = '/dashboard';
   };
 
   const isAdmin = user?.role === 'COOP_ADMIN' || user?.role === 'SYSTEM_ADMIN';
