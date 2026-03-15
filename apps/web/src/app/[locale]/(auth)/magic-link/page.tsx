@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { resolveLogoUrl } from '@/lib/api';
+import { saveSession } from '@/lib/sessions';
 import { MfaVerifyStep } from '@/components/auth/mfa-verify-step';
 
 type VerifyState = 'loading' | 'success' | 'error' | 'mfa';
@@ -95,6 +96,7 @@ export default function MagicLinkPage() {
         localStorage.setItem('accessToken', result.accessToken);
         localStorage.setItem('refreshToken', result.refreshToken);
         localStorage.setItem('user', JSON.stringify(result.user));
+        saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
 
         setState('success');
 
@@ -185,6 +187,7 @@ export default function MagicLinkPage() {
                 localStorage.setItem('accessToken', result.accessToken);
                 if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
                 localStorage.setItem('user', JSON.stringify(result.user));
+                saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
                 setState('success');
                 setTimeout(() => {
                   router.push('/dashboard');

@@ -1,3 +1,5 @@
+import { clearAllSessions, removeSession, getActiveSessionId, getAllSessions, switchSession, updateActiveSessionToken } from './sessions';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface FetchOptions extends Omit<RequestInit, 'body'> {
@@ -31,6 +33,7 @@ async function tryRefreshToken(): Promise<boolean> {
 
       const data = await response.json();
       localStorage.setItem('accessToken', data.accessToken);
+      updateActiveSessionToken(data.accessToken);
       return true;
     } catch {
       return false;
@@ -43,9 +46,21 @@ async function tryRefreshToken(): Promise<boolean> {
 }
 
 function clearAuthAndRedirect() {
+  const activeId = getActiveSessionId();
+  if (activeId) removeSession(activeId);
+
+  // If other sessions remain, switch to the first available one
+  const remaining = getAllSessions();
+  if (remaining.length > 0) {
+    switchSession(remaining[0].id);
+    window.location.href = '/dashboard';
+    return;
+  }
+
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
+  clearAllSessions();
   window.location.href = '/login';
 }
 

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { saveSession } from '@/lib/sessions';
 
 const registerSchema = z
   .object({
@@ -61,6 +62,7 @@ export default function RegisterPage() {
       localStorage.setItem('accessToken', result.accessToken);
       localStorage.setItem('refreshToken', result.refreshToken);
       localStorage.setItem('user', JSON.stringify(result.user));
+      saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
