@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.31] - 2026-03-15
+
+### Fixed
+- **Account switcher: sidebar now updates after switching** — switching to another account in the sidebar dropdown now correctly updates the displayed name, email, role, and navigation items. Previously the sidebar kept showing the old account's info until a manual page refresh.
+
 ## [0.7.30] - 2026-03-15
 
 ### Added
