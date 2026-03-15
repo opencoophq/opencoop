@@ -683,13 +683,14 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
     @UploadedFile() file: Express.Multer.File,
+    @Query('preset') preset?: string,
   ) {
-    const csvContent = file.buffer.toString('utf-8');
-    return this.bankImportService.importBelfiusCsv(
+    return this.bankImportService.importCsv(
       coopId,
       user.id,
       file.originalname,
-      csvContent,
+      file.buffer,
+      preset || 'generic',
     );
   }
 
