@@ -2,6 +2,21 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.29] - 2026-03-15
+
+### Fixed
+- **Coop admin homepage redirect** — coop admins landing on `/dashboard` are now immediately redirected to `/dashboard/admin` instead of seeing the shareholder overview (which showed all zeros). System admins are redirected to `/dashboard/system`.
+
+## [0.7.28] - 2026-03-15
+
+### Added
+- **Referral links use coop website URL** — referral links now use the per-coop configured website URL instead of the generic opencoop.be domain.
+
+## [0.7.27] - 2026-03-15
+
+### Changed
+- **Referral code format** — referral codes now use a `firstname1234` style format for a friendlier, more recognizable code.
+
 ## [0.7.26] - 2026-03-13
 
 ### Added
