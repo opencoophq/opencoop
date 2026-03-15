@@ -1782,5 +1782,10 @@
       "referred": "Doorverwezen",
       "noReferrals": "Er zijn nog geen doorverwijzingen."
     }
+  },
+  "changelog": {
+    "title": "Wat is nieuw",
+    "description": "Laatste functies en oplossingen in OpenCoop",
+    "empty": "Geen wijzigingen beschikbaar."
   }
 }

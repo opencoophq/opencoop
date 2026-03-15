@@ -1782,5 +1782,10 @@
       "referred": "Parrainé",
       "noReferrals": "Aucun parrainage pour le moment."
     }
+  },
+  "changelog": {
+    "title": "Nouveautés",
+    "description": "Dernières fonctionnalités et corrections dans OpenCoop",
+    "empty": "Aucune entrée de journal disponible."
   }
 }

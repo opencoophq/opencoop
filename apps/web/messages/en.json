@@ -1782,5 +1782,10 @@
       "referred": "Referred",
       "noReferrals": "No referrals yet."
     }
+  },
+  "changelog": {
+    "title": "What's New",
+    "description": "Latest features and bug fixes in OpenCoop",
+    "empty": "No changelog entries available."
   }
 }

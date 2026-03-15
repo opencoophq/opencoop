@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.32] - 2026-03-15
+
+### Added
+- **Changelog page for coop admins** — a "What's New" page is now available in the admin sidebar (Megaphone icon). Shows all platform releases with version, date, and categorized changes (Added/Fixed/Changed etc.) in a timeline layout with color-coded badges.
+
 ## [0.7.31] - 2026-03-15
 
 ### Fixed
