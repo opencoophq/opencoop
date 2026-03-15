@@ -31,6 +31,7 @@ COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/apps/api/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages ./packages
+COPY --from=build /app/CHANGELOG.md ./CHANGELOG.md
 
 RUN mkdir -p /app/uploads/logos
 

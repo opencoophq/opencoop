@@ -30,6 +30,7 @@ import {
   BookOpen,
   Layers,
   UserPlus,
+  Megaphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -191,6 +192,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         hasPermission('canManageSettings') && { href: '/dashboard/admin/settings/channels', label: t('admin.channels.title'), icon: <Layers className="h-4 w-4" /> },
         hasPermission('canManageSettings') && { href: '/dashboard/admin/billing', label: t('admin.billing.title'), icon: <CreditCard className="h-4 w-4" /> },
         hasPermission('canManageAdmins') && { href: '/dashboard/admin/team', label: t('admin.team.title'), icon: <UserCog className="h-4 w-4" /> },
+        { href: '/dashboard/admin/changelog', label: t('changelog.title'), icon: <Megaphone className="h-4 w-4" /> },
       ].filter(Boolean) as NavItem[])
     : [];
 
