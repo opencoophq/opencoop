@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { saveSession } from '@/lib/sessions';
 import { Check, ArrowRight, ArrowLeft, Loader2, Mail } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -124,6 +125,7 @@ export default function OnboardingPage() {
       localStorage.setItem('accessToken', result.accessToken);
       localStorage.setItem('refreshToken', result.refreshToken);
       localStorage.setItem('user', JSON.stringify(result.user));
+      saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
 
       setStep(2);
     } catch {

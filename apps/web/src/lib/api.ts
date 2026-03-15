@@ -1,3 +1,5 @@
+import { clearAllSessions, updateActiveSessionToken } from './sessions';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface FetchOptions extends Omit<RequestInit, 'body'> {
@@ -31,6 +33,7 @@ async function tryRefreshToken(): Promise<boolean> {
 
       const data = await response.json();
       localStorage.setItem('accessToken', data.accessToken);
+      updateActiveSessionToken(data.accessToken);
       return true;
     } catch {
       return false;
@@ -46,6 +49,7 @@ function clearAuthAndRedirect() {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
+  clearAllSessions();
   window.location.href = '/login';
 }
 

@@ -29,6 +29,7 @@ import {
   Loader2,
   BookOpen,
   Layers,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +45,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FeedbackButton } from '@/components/feedback-button';
 import { api, resolveLogoUrl } from '@/lib/api';
+import { getAllSessions, switchSession, removeSession, getActiveSessionId, clearAllSessions, type Session } from '@/lib/sessions';
 
 interface NavItem {
   href: string;
@@ -63,6 +65,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [resendingVerification, setResendingVerification] = useState(false);
   const [verificationResent, setVerificationResent] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [savedSessions, setSavedSessions] = useState<Session[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [adminStats, setAdminStats] = useState<{
     pendingRegistrations: number;
     pendingShareholders: number;
@@ -83,6 +87,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     try {
       const parsed = JSON.parse(userData);
       setUser(parsed);
+      setSavedSessions(getAllSessions());
+      setActiveSessionId(getActiveSessionId());
 
       // Always fetch profile to get emailVerified status
       api<{
@@ -130,10 +136,28 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const handleLogout = () => {
     api('/auth/logout', { method: 'POST' }).catch(() => {});
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    router.push('/login');
+    if (activeSessionId) removeSession(activeSessionId);
+    const remaining = getAllSessions();
+    if (remaining.length > 0) {
+      switchSession(remaining[0].id);
+      router.push('/dashboard');
+      router.refresh();
+    } else {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      clearAllSessions();
+      router.push('/login');
+    }
+  };
+
+  const handleSwitchSession = (sessionId: string) => {
+    if (sessionId === activeSessionId) return;
+    switchSession(sessionId);
+    setSavedSessions(getAllSessions());
+    setActiveSessionId(sessionId);
+    router.push('/dashboard');
+    router.refresh();
   };
 
   const isAdmin = user?.role === 'COOP_ADMIN' || user?.role === 'SYSTEM_ADMIN';
@@ -347,26 +371,56 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <ThemeToggle />
           </div>
 
-          {/* User info + logout */}
+          {/* User info + account switcher */}
           <div className="p-3 border-t">
-            <div className="flex items-center justify-between">
-              <Link href="/dashboard/settings" className="text-sm truncate min-w-0 hover:opacity-80">
-                {user.name ? (
-                  <>
-                    <p className="font-medium truncate">{user.name}</p>
-                    <p className="text-muted-foreground text-xs truncate">{user.email}</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-medium truncate">{user.email}</p>
-                    <p className="text-muted-foreground text-xs">{t(`system.users.roles.${user.role}`)}</p>
-                  </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center justify-between w-full text-left hover:bg-accent rounded-md px-1 py-1 transition-colors group">
+                  <div className="text-sm truncate min-w-0">
+                    {user.name ? (
+                      <>
+                        <p className="font-medium truncate">{user.name}</p>
+                        <p className="text-muted-foreground text-xs truncate">{user.email}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium truncate">{user.email}</p>
+                        <p className="text-muted-foreground text-xs">{t(`system.users.roles.${user.role}`)}</p>
+                      </>
+                    )}
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground ml-1 flex-shrink-0" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {savedSessions.filter((s) => s.id !== activeSessionId).map((session) => (
+                  <DropdownMenuItem
+                    key={session.id}
+                    onClick={() => handleSwitchSession(session.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="flex-1 min-w-0">
+                      {session.name && <p className="text-sm font-medium truncate">{session.name}</p>}
+                      <p className="text-xs text-muted-foreground truncate">{session.email}</p>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+                {savedSessions.filter((s) => s.id !== activeSessionId).length > 0 && (
+                  <DropdownMenuSeparator />
                 )}
-              </Link>
-              <Button variant="ghost" size="icon" onClick={handleLogout}>
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
+                <DropdownMenuItem asChild>
+                  <Link href="/login?addAccount=true" className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    {t('auth.addAccount')}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive focus:text-destructive">
+                  <LogOut className="h-4 w-4" />
+                  {t('auth.logout')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </aside>
