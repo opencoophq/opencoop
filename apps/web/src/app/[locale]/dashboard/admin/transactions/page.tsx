@@ -363,7 +363,7 @@ export default function AdminTransactionsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('admin.shareholders.shareholder')}</TableHead>
-                      <TableHead>{t('transactions.type')}</TableHead>
+                      <TableHead>{t('transactions.typeLabel')}</TableHead>
                       <TableHead className="text-right">{t('shares.quantity')}</TableHead>
                       <TableHead className="text-right">{t('common.amount')}</TableHead>
                       <TableHead>{t('transactions.registrationDate')}</TableHead>
