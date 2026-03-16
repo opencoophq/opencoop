@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.34] - 2026-03-16
+
+### Fixed
+- **Admin transactions: "Type" column header now shows translated text** — the Type column header in the coop admin Transactions overview was displaying the raw translation key `transactions.type` instead of the label "Type". Fixed by using the correct `transactions.typeLabel` key, which is properly translated in all 4 supported languages (EN/NL/FR/DE).
+
 ## [0.7.33] - 2026-03-15
 
 ### Added
