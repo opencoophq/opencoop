@@ -593,6 +593,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User not found');
     if (user.mfaEnabled) throw new BadRequestException('MFA is already enabled');
+    if (!user.passwordHash) throw new BadRequestException('Set a password before enabling MFA');
 
     const secret = new OTPAuth.Secret({ size: 20 });
     const totp = new OTPAuth.TOTP({

@@ -41,6 +41,7 @@ export default function SettingsPage() {
   const [nameError, setNameError] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [hasPassword, setHasPassword] = useState(true);
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [googleLinked, setGoogleLinked] = useState(false);
   const [appleLinked, setAppleLinked] = useState(false);
@@ -55,7 +56,8 @@ export default function SettingsPage() {
     api<{ mfaEnabled: boolean }>('/auth/mfa/status').then((res) => {
       setMfaEnabled(res.mfaEnabled);
     }).catch(() => {});
-    api<{ googleLinked: boolean; appleLinked: boolean }>('/auth/me').then((res) => {
+    api<{ hasPassword: boolean; googleLinked: boolean; appleLinked: boolean }>('/auth/me').then((res) => {
+      setHasPassword(res.hasPassword);
       setGoogleLinked(res.googleLinked);
       setAppleLinked(res.appleLinked);
     }).catch(() => {});
@@ -112,10 +114,11 @@ export default function SettingsPage() {
         method: 'POST',
         body: { currentPassword, newPassword },
       });
-      setMessage(t('common.savedSuccessfully'));
+      setMessage(t('settings.passwordChanged'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      if (!hasPassword) setHasPassword(true);
     } catch {
       setError(t('errors.generic'));
     }
@@ -193,7 +196,8 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('auth.changePassword')}</CardTitle>
+            <CardTitle>{hasPassword ? t('settings.changePassword') : t('settings.setPassword')}</CardTitle>
+            <CardDescription>{hasPassword ? t('settings.changePasswordDescription') : t('settings.setPasswordDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {message && (
@@ -206,17 +210,19 @@ export default function SettingsPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+            {hasPassword && (
+              <div>
+                <Label>{t('settings.currentPassword')}</Label>
+                <Input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            )}
             <div>
-              <Label>{t('auth.currentPassword')}</Label>
-              <Input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>{t('auth.newPassword')}</Label>
+              <Label>{t('settings.newPassword')}</Label>
               <Input
                 type="password"
                 value={newPassword}
@@ -225,7 +231,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <Label>{t('auth.confirmPassword')}</Label>
+              <Label>{t('settings.confirmPassword')}</Label>
               <Input
                 type="password"
                 value={confirmPassword}
@@ -237,7 +243,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <MfaSetup mfaEnabled={mfaEnabled} onStatusChange={setMfaEnabled} />
+        <MfaSetup mfaEnabled={mfaEnabled} hasPassword={hasPassword} onStatusChange={setMfaEnabled} />
 
         <PasskeysManager />
 
