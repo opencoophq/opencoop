@@ -386,7 +386,9 @@
     "locale": "Datumnotatie",
     "localeDescription": "Kies hoe datums en getallen worden weergegeven",
     "changePassword": "Wachtwoord wijzigen",
+    "setPassword": "Wachtwoord instellen",
     "changePasswordDescription": "Werk uw accountwachtwoord bij",
+    "setPasswordDescription": "Stel een wachtwoord in voor uw account",
     "currentPassword": "Huidig wachtwoord",
     "newPassword": "Nieuw wachtwoord",
     "confirmPassword": "Bevestig nieuw wachtwoord",
@@ -1006,6 +1008,7 @@
   "mfa": {
     "title": "Tweestapsverificatie",
     "description": "Voeg een extra beveiligingslaag toe aan je account met een authenticator-app.",
+    "requiresPassword": "Stel een wachtwoord in om tweestapsverificatie in te schakelen.",
     "enable": "2FA inschakelen",
     "disable": "2FA uitschakelen",
     "enabled": "Tweestapsverificatie is ingeschakeld",

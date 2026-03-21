@@ -14,10 +14,11 @@ type MfaState = 'idle' | 'setup' | 'verify' | 'recovery-codes' | 'disable';
 
 interface MfaSetupProps {
   mfaEnabled: boolean;
+  hasPassword: boolean;
   onStatusChange: (enabled: boolean) => void;
 }
 
-export function MfaSetup({ mfaEnabled, onStatusChange }: MfaSetupProps) {
+export function MfaSetup({ mfaEnabled, hasPassword, onStatusChange }: MfaSetupProps) {
   const t = useTranslations();
   const [state, setState] = useState<MfaState>('idle');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
@@ -144,11 +145,13 @@ export function MfaSetup({ mfaEnabled, onStatusChange }: MfaSetupProps) {
                   </Button>
                 </div>
               </div>
-            ) : (
+            ) : hasPassword ? (
               <Button onClick={handleSetup} disabled={loading}>
                 <Shield className="w-4 h-4 mr-2" />
                 {t('mfa.enable')}
               </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('mfa.requiresPassword')}</p>
             )}
           </div>
         )}
