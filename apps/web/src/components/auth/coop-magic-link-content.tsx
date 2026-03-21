@@ -9,8 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { resolveLogoUrl } from '@/lib/api';
 import { saveSession } from '@/lib/sessions';
+import { MfaVerifyStep } from '@/components/auth/mfa-verify-step';
 
-type VerifyState = 'loading' | 'success' | 'error';
+type VerifyState = 'loading' | 'success' | 'error' | 'mfa';
 
 interface CoopPublicInfo {
   id: string;
@@ -38,6 +39,7 @@ export function CoopMagicLinkContent({
   const [coop, setCoop] = useState<CoopPublicInfo | null>(null);
   const [coopLoading, setCoopLoading] = useState(true);
   const [notFoundError, setNotFoundError] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
 
   // Fetch coop branding
   useEffect(() => {
@@ -100,10 +102,14 @@ export function CoopMagicLinkContent({
           return;
         }
 
+        // Check if MFA is required
+        if (result.requiresMfa) {
+          setMfaToken(result.mfaToken);
+          setState('mfa');
+          return;
+        }
+
         // Store token and user data
-        localStorage.setItem('accessToken', result.accessToken);
-        localStorage.setItem('refreshToken', result.refreshToken);
-        localStorage.setItem('user', JSON.stringify(result.user));
         saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
 
         setState('success');
@@ -159,6 +165,7 @@ export function CoopMagicLinkContent({
           <CardTitle className="text-2xl">
             {state === 'loading' && t('auth.magicLinkVerifying')}
             {state === 'success' && t('auth.loginSuccess')}
+            {state === 'mfa' && t('mfa.verifyTitle')}
             {state === 'error' && t('auth.loginError')}
           </CardTitle>
           <CardDescription>{coop?.name || 'OpenCoop'}</CardDescription>
@@ -172,6 +179,20 @@ export function CoopMagicLinkContent({
               />
               <p className="text-muted-foreground">{t('auth.magicLinkVerifying')}</p>
             </div>
+          )}
+
+          {state === 'mfa' && mfaToken && (
+            <MfaVerifyStep
+              mfaToken={mfaToken}
+              brandColor={coop?.primaryColor}
+              onSuccess={(result) => {
+                saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
+                setState('success');
+                setTimeout(() => {
+                  router.push('/dashboard');
+                }, 2000);
+              }}
+            />
           )}
 
           {state === 'success' && (

@@ -735,8 +735,8 @@ export class AuthService {
       userAgent,
     });
 
-    // Issue full JWT with permissions and refresh token
-    return this.issueJwtForUser(user);
+    // Issue full JWT with permissions and refresh token (mfaAlreadyVerified = true skips the MFA gate)
+    return this.issueJwtForUser(user, true);
   }
 
   async mfaDisable(userId: string, password: string) {
@@ -1550,16 +1550,19 @@ export class AuthService {
     });
   }
 
-  private async issueJwtForUser(user: {
-    id: string;
-    email: string;
-    name: string | null;
-    role: string;
-    preferredLanguage: string;
-    emailVerified: Date | null;
-    mfaEnabled?: boolean;
-    coopAdminOf?: { coopId: string; permissionOverrides?: any; role: { permissions: any } }[];
-  }) {
+  private async issueJwtForUser(
+    user: {
+      id: string;
+      email: string;
+      name: string | null;
+      role: string;
+      preferredLanguage: string;
+      emailVerified: Date | null;
+      mfaEnabled?: boolean;
+      coopAdminOf?: { coopId: string; permissionOverrides?: any; role: { permissions: any } }[];
+    },
+    mfaAlreadyVerified = false,
+  ) {
     const coopIds = (user.coopAdminOf ?? []).map((ca) => ca.coopId);
     const coopPermissions: Record<string, any> = {};
     for (const ca of user.coopAdminOf ?? []) {
@@ -1568,8 +1571,8 @@ export class AuthService {
       coopPermissions[ca.coopId] = { ...basePermissions, ...overrides };
     }
 
-    // If MFA is enabled, issue a short-lived mfa-pending token
-    if (user.mfaEnabled) {
+    // If MFA is enabled and not yet verified, issue a short-lived mfa-pending token
+    if (user.mfaEnabled && !mfaAlreadyVerified) {
       const mfaPayload = {
         sub: user.id,
         type: 'mfa-pending',
