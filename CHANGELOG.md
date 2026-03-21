@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.35] - 2026-03-21
+
+### Fixed
+- **MFA login lockout resolved** — users who enabled 2FA (password + authenticator app) were permanently locked out after setup. The MFA verification endpoint correctly validated the TOTP code but then re-issued an mfa-pending challenge token instead of the real access token, making login impossible. Fixed for both password+MFA and magic link login flows. Also fixed coop-branded magic link pages which had no MFA step at all, silently storing undefined tokens.
+
 ## [0.7.34] - 2026-03-16
 
 ### Fixed
