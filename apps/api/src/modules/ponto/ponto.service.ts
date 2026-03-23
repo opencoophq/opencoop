@@ -419,26 +419,6 @@ export class PontoService {
       this.logger.log(
         `Payment created for registration ${registration.id} from Ponto transaction`,
       );
-
-      // Send confirmation email if shareholder has an email
-      const { shareholder } = registration;
-      if (shareholder.email) {
-        const shareholderName =
-          [shareholder.firstName, shareholder.lastName].filter(Boolean).join(' ') ||
-          'Shareholder';
-
-        try {
-          await this.emailService.sendPaymentConfirmation(coopId, shareholder.email, {
-            shareholderName,
-            amount,
-          });
-        } catch (emailErr) {
-          this.logger.warn(
-            `Failed to send payment confirmation email to ${shareholder.email}: ` +
-              `${(emailErr as Error).message}`,
-          );
-        }
-      }
     } catch (err) {
       this.logger.error(
         `Failed to create payment for registration ${registration.id}: ` +

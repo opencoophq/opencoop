@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.40] - 2026-03-23
+
+### Added
+- **Payment confirmation email with share certificate** — when a share purchase payment is completed (via Ponto auto-match, admin manual complete, CSV import, or manual match), the shareholder now receives an automatic email confirmation with their share certificate PDF attached and a link to their dashboard. The email is translated in all 4 supported languages (NL/EN/FR/DE) based on the shareholder's preferred language setting.
+
 ## [0.7.39] - 2026-03-23
 
 ### Added
