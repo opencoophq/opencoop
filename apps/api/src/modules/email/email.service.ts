@@ -128,8 +128,18 @@ export class EmailService {
       shareholderName: string;
       amount: number;
       certificatePath?: string;
+      dashboardUrl?: string;
+      language?: string;
     },
   ) {
+    const lang = data.language || 'nl';
+    const subjects: Record<string, string> = {
+      nl: 'Betaling ontvangen - Uw aandelen zijn nu actief',
+      en: 'Payment Received - Your shares are now active',
+      fr: 'Paiement reçu - Vos actions sont maintenant actives',
+      de: 'Zahlung erhalten - Ihre Anteile sind jetzt aktiv',
+    };
+
     const attachments = data.certificatePath
       ? [{ filename: 'certificate.pdf', path: data.certificatePath }]
       : undefined;
@@ -137,7 +147,7 @@ export class EmailService {
     return this.send({
       coopId,
       to,
-      subject: 'Payment Received - Your shares are now active',
+      subject: subjects[lang] || subjects['en'],
       templateKey: 'payment-confirmed',
       templateData: data,
       attachments,
