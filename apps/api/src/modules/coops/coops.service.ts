@@ -353,6 +353,7 @@ export class CoopsService {
         legalForm: true,
         foundedDate: true,
         certificateSignatory: true,
+        certificateSignatureUrl: true,
         coopAddress: true,
         coopPhone: true,
         coopEmail: true,
@@ -582,6 +583,81 @@ export class CoopsService {
         entityId: coopId,
         action: 'UPDATE',
         changes: [{ field: 'logoUrl', oldValue: oldLogoUrl, newValue: null }],
+        actorId,
+        ipAddress: ip,
+        userAgent,
+      });
+    }
+  }
+
+  async uploadSignature(coopId: string, file: Express.Multer.File, actorId?: string, ip?: string, userAgent?: string): Promise<{ certificateSignatureUrl: string }> {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('No file provided');
+    }
+
+    const allowedMimeTypes = ['image/jpeg', 'image/png'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Invalid file type. Allowed: JPEG, PNG');
+    }
+
+    const dir = path.join(UPLOAD_DIR, 'signatures');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const filename = `${coopId}.png`;
+    const filePath = path.join(dir, filename);
+
+    // Normalise to PNG, cap at 800px wide
+    await sharp(file.buffer)
+      .resize(800, null, { fit: 'inside', withoutEnlargement: true })
+      .png()
+      .toFile(filePath);
+
+    const certificateSignatureUrl = `/uploads/signatures/${filename}`;
+    const coop = await this.prisma.coop.findUnique({ where: { id: coopId }, select: { certificateSignatureUrl: true } });
+    const oldUrl = coop?.certificateSignatureUrl;
+
+    await this.prisma.coop.update({
+      where: { id: coopId },
+      data: { certificateSignatureUrl },
+    });
+
+    await this.auditService.log({
+      coopId,
+      entity: 'Coop',
+      entityId: coopId,
+      action: 'UPDATE',
+      changes: [{ field: 'certificateSignatureUrl', oldValue: oldUrl, newValue: certificateSignatureUrl }],
+      actorId,
+      ipAddress: ip,
+      userAgent,
+    });
+
+    return { certificateSignatureUrl };
+  }
+
+  async removeSignature(coopId: string, actorId?: string, ip?: string, userAgent?: string): Promise<void> {
+    const filePath = path.join(UPLOAD_DIR, 'signatures', `${coopId}.png`);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    const coop = await this.prisma.coop.findUnique({ where: { id: coopId }, select: { certificateSignatureUrl: true } });
+    const oldUrl = coop?.certificateSignatureUrl;
+
+    await this.prisma.coop.update({
+      where: { id: coopId },
+      data: { certificateSignatureUrl: null },
+    });
+
+    if (oldUrl) {
+      await this.auditService.log({
+        coopId,
+        entity: 'Coop',
+        entityId: coopId,
+        action: 'UPDATE',
+        changes: [{ field: 'certificateSignatureUrl', oldValue: oldUrl, newValue: null }],
         actorId,
         ipAddress: ip,
         userAgent,
