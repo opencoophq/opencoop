@@ -2,7 +2,7 @@
 
 All notable changes to OpenCoop are documented in this file.
 
-## [0.7.36] - 2026-03-23
+## [0.7.37] - 2026-03-23
 
 ### Added
 - **Signature image on share certificate** — coops can now configure a signature image (`certificateSignatureUrl`) that appears above the signatory name on generated share certificates. Wouter's signature has been configured for Bronsgroen.
