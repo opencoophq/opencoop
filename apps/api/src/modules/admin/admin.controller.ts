@@ -169,6 +169,40 @@ export class AdminController {
     return { success: true };
   }
 
+  @Post('signature')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Upload certificate signature image' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async uploadSignature(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.coopsService.uploadSignature(coopId, file, user.id, req.ip, req.headers['user-agent']);
+  }
+
+  @Delete('signature')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Remove certificate signature image' })
+  async removeSignature(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+  ) {
+    await this.coopsService.removeSignature(coopId, user.id, req.ip, req.headers['user-agent']);
+    return { success: true };
+  }
+
   // ==================== CHANNELS ====================
 
   @Get('channels')
