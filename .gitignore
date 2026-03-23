@@ -49,9 +49,13 @@ packages/database/prisma/*.db-journal
 # Migration data exports (may contain PII)
 bronsgroen-*.json
 
-# Uploads
+# Uploads (user-generated content — not committed)
 uploads/*
 !uploads/.gitkeep
+# Signature images are static assets committed to the repo
+!uploads/signatures/
+uploads/signatures/*
+!uploads/signatures/*.png
 
 # Docker
 .docker-data

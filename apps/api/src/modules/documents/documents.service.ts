@@ -41,6 +41,7 @@ export class DocumentsService {
     legalForm?: string | null;
     foundedDate?: string | null;
     certificateSignatory?: string | null;
+    certificateSignatureUrl?: string | null;
     coopAddress?: unknown;
     coopPhone?: string | null;
     coopEmail?: string | null;
@@ -49,10 +50,23 @@ export class DocumentsService {
     bankIban?: string | null;
     bankBic?: string | null;
   }) {
+    let signatureImageBase64: string | undefined;
+    if (coop.certificateSignatureUrl) {
+      const uploadDir = process.env.UPLOAD_DIR || './uploads';
+      // Strip leading /uploads/ prefix if present, resolve against uploadDir
+      const relativePath = coop.certificateSignatureUrl.replace(/^\/uploads\//, '');
+      const filePath = path.join(uploadDir, relativePath);
+      if (fs.existsSync(filePath)) {
+        const imageBuffer = fs.readFileSync(filePath);
+        signatureImageBase64 = `data:image/png;base64,${imageBuffer.toString('base64')}`;
+      }
+    }
+
     return {
       legalForm: coop.legalForm || undefined,
       foundedDate: coop.foundedDate || undefined,
       certificateSignatory: coop.certificateSignatory || undefined,
+      signatureImageBase64,
       coopAddress: this.formatCoopAddress(coop.coopAddress),
       coopPhone: coop.coopPhone || undefined,
       coopEmail: coop.coopEmail || undefined,

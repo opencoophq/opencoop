@@ -102,7 +102,13 @@ const styles = StyleSheet.create({
   signatureLabel: {
     fontSize: 10,
     color: '#374151',
-    marginBottom: 30,
+    marginBottom: 8,
+  },
+  signatureImage: {
+    width: 120,
+    height: 40,
+    objectFit: 'contain',
+    marginBottom: 4,
   },
   signatureLine: {
     borderTop: '1 solid #374151',
@@ -161,6 +167,7 @@ export interface ShareCertificateProps {
   bankIban?: string;
   bankBic?: string;
   logoBase64?: string;
+  signatureImageBase64?: string;
   locale?: string;
   // Legacy props kept for backward compatibility with existing callers
   certificateNumber?: string;
@@ -247,6 +254,7 @@ export const ShareCertificate: React.FC<ShareCertificateProps> = ({
   bankIban,
   bankBic,
   logoBase64,
+  signatureImageBase64,
   locale = 'nl',
 }) => {
   const t = translations[locale as keyof typeof translations] || translations.nl;
@@ -329,6 +337,9 @@ export const ShareCertificate: React.FC<ShareCertificateProps> = ({
         {/* Signature block */}
         <View style={styles.signatureSection}>
           <Text style={styles.signatureLabel}>{t.signatureLabel}</Text>
+          {signatureImageBase64 && (
+            <Image style={styles.signatureImage} src={signatureImageBase64} />
+          )}
           <View style={styles.signatureLine}>
             {certificateSignatory && (
               <Text style={styles.signatoryName}>{certificateSignatory}</Text>
