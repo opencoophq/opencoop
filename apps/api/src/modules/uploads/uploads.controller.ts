@@ -32,4 +32,26 @@ export class UploadsController {
     res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
     fs.createReadStream(filePath).pipe(res);
   }
+
+  @Get('signatures/:filename')
+  @ApiOperation({ summary: 'Serve a coop certificate signature image' })
+  async serveSignature(@Param('filename') filename: string, @Res() res: Response) {
+    const sanitized = path.basename(filename);
+    const filePath = path.join(UPLOAD_DIR, 'signatures', sanitized);
+
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('Signature not found');
+    }
+
+    const ext = path.extname(sanitized).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+    };
+
+    res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+    fs.createReadStream(filePath).pipe(res);
+  }
 }
