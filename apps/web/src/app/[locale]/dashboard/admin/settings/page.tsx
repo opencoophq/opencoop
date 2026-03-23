@@ -110,6 +110,7 @@ interface SettingsResponse {
   legalForm: string | null;
   foundedDate: string | null;
   certificateSignatory: string | null;
+  certificateSignatureUrl: string | null;
   coopAddress: CoopAddress | null;
   coopPhone: string | null;
   coopEmail: string | null;
@@ -213,6 +214,8 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [isSystemAdmin, setIsSystemAdmin] = useState(false);
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+  const [signatureUploading, setSignatureUploading] = useState(false);
 
   // Shareholder links state
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -308,6 +311,7 @@ export default function AdminSettingsPage() {
           coopAddressCity: (settings.coopAddress as CoopAddress)?.city || '',
           coopAddressCountry: (settings.coopAddress as CoopAddress)?.country || '',
         });
+        setSignatureUrl(settings.certificateSignatureUrl || null);
         setApiKeyPrefix(settings.apiKeyPrefix || null);
         if (ponto) {
           setPontoStatus(ponto);
@@ -373,6 +377,35 @@ export default function AdminSettingsPage() {
 
       await api(`/admin/coops/${selectedCoop.id}/settings`, { method: 'PUT', body });
       showMessage(t('admin.settings.saved'));
+    } catch {
+      setError(t('admin.settings.error'));
+    }
+  };
+
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedCoop || !e.target.files?.[0]) return;
+    setSignatureUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', e.target.files[0]);
+      const result = await api<{ certificateSignatureUrl: string }>(
+        `/admin/coops/${selectedCoop.id}/signature`,
+        { method: 'POST', body: formData },
+      );
+      setSignatureUrl(result.certificateSignatureUrl);
+    } catch {
+      setError(t('admin.settings.error'));
+    } finally {
+      setSignatureUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleSignatureRemove = async () => {
+    if (!selectedCoop) return;
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/signature`, { method: 'DELETE' });
+      setSignatureUrl(null);
     } catch {
       setError(t('admin.settings.error'));
     }
@@ -639,6 +672,40 @@ export default function AdminSettingsPage() {
                 value={form.certificateSignatory}
                 onChange={(e) => setForm({ ...form, certificateSignatory: e.target.value })}
               />
+            </div>
+            <div>
+              <Label>{t('admin.settings.certificateSignatureImage')}</Label>
+              <div className="mt-1 space-y-2">
+                {signatureUrl && (
+                  <div className="flex items-center gap-3 p-2 border rounded-md bg-muted/30">
+                    <img
+                      src={`${process.env.NEXT_PUBLIC_API_URL}${signatureUrl}`}
+                      alt="Signature"
+                      className="h-10 object-contain"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSignatureRemove}
+                    >
+                      {t('admin.settings.removeSignature')}
+                    </Button>
+                  </div>
+                )}
+                <label className="cursor-pointer">
+                  <Input
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    className="hidden"
+                    onChange={handleSignatureUpload}
+                    disabled={signatureUploading}
+                  />
+                  <Button type="button" variant="outline" size="sm" asChild disabled={signatureUploading}>
+                    <span>{signatureUploading ? t('common.uploading') : t('admin.settings.uploadSignature')}</span>
+                  </Button>
+                </label>
+              </div>
             </div>
             <div>
               <Label>{t('admin.settings.vatNumber')}</Label>
