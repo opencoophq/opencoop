@@ -247,13 +247,60 @@ export class EmailProcessor {
         ` : ''}
         <p>Thank you for investing in ${cn}!</p>
       `,
-      'payment-confirmed': (d, cn) => `
-        <h1>Payment Confirmed</h1>
-        <p>Dear ${d.shareholderName},</p>
-        <p>We have received your payment of €${(d.amount as number).toFixed(2)}.</p>
-        <p>Your shares are now active. Please find your share certificate attached.</p>
-        <p>Thank you for being a shareholder of ${cn}!</p>
-      `,
+      'payment-confirmed': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Betaling bevestigd',
+            dear: `Beste ${d.shareholderName},`,
+            received: `We hebben uw betaling van €${(d.amount as number).toFixed(2)} ontvangen.`,
+            active: 'Uw aandelen zijn nu actief. Uw aandeelhoudersattest vindt u als bijlage.',
+            dashboard: 'Bekijk mijn dashboard',
+            thanks: `Bedankt om aandeelhouder te zijn van ${cn}!`,
+          },
+          en: {
+            title: 'Payment Confirmed',
+            dear: `Dear ${d.shareholderName},`,
+            received: `We have received your payment of €${(d.amount as number).toFixed(2)}.`,
+            active: 'Your shares are now active. Please find your share certificate attached.',
+            dashboard: 'View my dashboard',
+            thanks: `Thank you for being a shareholder of ${cn}!`,
+          },
+          fr: {
+            title: 'Paiement confirmé',
+            dear: `Cher/Chère ${d.shareholderName},`,
+            received: `Nous avons reçu votre paiement de €${(d.amount as number).toFixed(2)}.`,
+            active: "Vos actions sont maintenant actives. Veuillez trouver votre certificat d'actionnaire en pièce jointe.",
+            dashboard: 'Voir mon tableau de bord',
+            thanks: `Merci d'être actionnaire de ${cn}!`,
+          },
+          de: {
+            title: 'Zahlung bestätigt',
+            dear: `Liebe/r ${d.shareholderName},`,
+            received: `Wir haben Ihre Zahlung von €${(d.amount as number).toFixed(2)} erhalten.`,
+            active: 'Ihre Anteile sind jetzt aktiv. Bitte finden Sie Ihr Anteilszertifikat im Anhang.',
+            dashboard: 'Mein Dashboard anzeigen',
+            thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['en'];
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.received}</p>
+          <p>${s.active}</p>
+          ${d.dashboardUrl ? `
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.dashboardUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.dashboard}
+            </a>
+          </p>
+          ` : ''}
+          <p>${s.thanks}</p>
+        `;
+      },
       'dividend-statement': (d, cn) => `
         <h1>Dividend Statement ${d.year}</h1>
         <p>Dear ${d.shareholderName},</p>

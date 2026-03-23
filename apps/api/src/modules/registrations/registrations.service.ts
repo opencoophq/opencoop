@@ -756,13 +756,61 @@ export class RegistrationsService {
     const registration = await this.prisma.registration.findUnique({
       where: { id: registrationId },
       include: {
-        shareholder: true,
+        shareholder: {
+          include: {
+            user: { select: { preferredLanguage: true } },
+          },
+        },
         shareClass: true,
         coop: true,
       },
     });
 
-    if (!registration || !registration.isGift || registration.giftCode) {
+    if (!registration) {
+      return null;
+    }
+
+    const shareholder = registration.shareholder;
+
+    // Send payment confirmation (with certificate) for non-gift BUY registrations
+    if (!registration.isGift && registration.type === 'BUY' && shareholder.email) {
+      const shareholderName =
+        shareholder.type === 'COMPANY'
+          ? shareholder.companyName || ''
+          : `${shareholder.firstName || ''} ${shareholder.lastName || ''}`.trim();
+
+      const language = shareholder.user?.preferredLanguage || 'nl';
+
+      let certificatePath: string | undefined;
+      try {
+        const doc = await this.documentsService.generateCertificateForRegistration(
+          registrationId,
+          registration.coopId,
+          language,
+        );
+        certificatePath = doc.filePath;
+      } catch (err) {
+        console.error('Failed to generate share certificate for payment confirmation:', err);
+      }
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+      const dashboardUrl = `${appUrl}/${language}/dashboard`;
+
+      try {
+        await this.emailService.sendPaymentConfirmation(registration.coopId, shareholder.email, {
+          shareholderName,
+          amount: Number(registration.totalAmount),
+          certificatePath,
+          dashboardUrl,
+          language,
+        });
+      } catch (err) {
+        console.error('Failed to send payment confirmation email:', err);
+      }
+    }
+
+    // Handle gift code generation for gift registrations
+    if (!registration.isGift || registration.giftCode) {
       return null;
     }
 
@@ -777,12 +825,12 @@ export class RegistrationsService {
     try {
       const pdfPath = await this.documentsService.generateGiftCertificatePdf(registrationId);
 
-      const buyerEmail = registration.shareholder.email;
+      const buyerEmail = shareholder.email;
       if (buyerEmail) {
         const buyerName =
-          registration.shareholder.type === 'COMPANY'
-            ? registration.shareholder.companyName || ''
-            : `${registration.shareholder.firstName || ''} ${registration.shareholder.lastName || ''}`.trim();
+          shareholder.type === 'COMPANY'
+            ? shareholder.companyName || ''
+            : `${shareholder.firstName || ''} ${shareholder.lastName || ''}`.trim();
 
         await this.emailService.sendGiftCertificate(registration.coopId, buyerEmail, {
           buyerName,
