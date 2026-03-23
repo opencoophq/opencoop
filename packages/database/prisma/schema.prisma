@@ -149,8 +149,9 @@ model Coop {
   // Coop info (used in certificates, public pages)
   legalForm             String?  // e.g. "Coöperatieve vennootschap met sociaal oogmerk"
   foundedDate           String?  // e.g. "29 maart 2012"
-  certificateSignatory  String?  // Name of the board member who signs certificates
-  coopAddress           Json?    // { street, number, postalCode, city, country }
+  certificateSignatory     String?  // Name of the board member who signs certificates
+  certificateSignatureUrl  String?  // URL path to signature image for certificates (e.g. /uploads/signatures/...)
+  coopAddress              Json?    // { street, number, postalCode, city, country }
   coopPhone             String?
   coopEmail             String?
   coopWebsite           String?
