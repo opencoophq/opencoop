@@ -2,7 +2,7 @@
 
 All notable changes to OpenCoop are documented in this file.
 
-## [0.7.38] - 2026-03-23
+## [0.7.39] - 2026-03-23
 
 ### Added
 - **Signature image upload in admin settings** — coop admins can now upload a PNG/JPG signature image directly from the admin settings page (under Certificate Signatory). The image is stored per-coop and rendered on share certificates above the signature line.
