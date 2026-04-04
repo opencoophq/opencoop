@@ -53,6 +53,10 @@ export default function DashboardPage() {
             coop?: { name?: string };
             registrations: Array<{ sharesOwned: number; quantity: number; pricePerShare: number; status: string }>;
           }>;
+          minorShareholders?: Array<{
+            id: string;
+            registrations: Array<{ sharesOwned: number; quantity: number; pricePerShare: number; status: string }>;
+          }>;
         }>('/auth/me');
 
         let totalShares = 0;
@@ -64,6 +68,21 @@ export default function DashboardPage() {
             setCoopName(profile.shareholders[0].coop?.name);
           }
           for (const sh of profile.shareholders) {
+            if (sh.registrations) {
+              for (const reg of sh.registrations) {
+                if (reg.status === 'ACTIVE' || reg.status === 'COMPLETED') {
+                  const qty = reg.sharesOwned ?? reg.quantity;
+                  totalShares += qty;
+                  totalValue += qty * Number(reg.pricePerShare);
+                }
+              }
+            }
+          }
+        }
+
+        // Include minor shareholders in totals
+        if (profile.minorShareholders) {
+          for (const sh of profile.minorShareholders) {
             if (sh.registrations) {
               for (const reg of sh.registrations) {
                 if (reg.status === 'ACTIVE' || reg.status === 'COMPLETED') {
