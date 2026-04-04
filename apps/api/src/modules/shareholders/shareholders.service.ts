@@ -4,7 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { CreateShareholderDto } from './dto/create-shareholder.dto';
 import { UpdateShareholderDto } from './dto/update-shareholder.dto';
 import { encryptField, decryptField, isEncrypted } from '../../common/crypto';
-import { generateReferralCode } from '@opencoop/shared';
+import { generateReferralCode, computeTotalPaid, computeVestedShares } from '@opencoop/shared';
 
 @Injectable()
 export class ShareholdersService {
@@ -96,6 +96,10 @@ export class ShareholdersService {
             shareClass: true,
             project: true,
             payments: { orderBy: { bankDate: 'asc' } },
+            soldBy: {
+              where: { type: 'SELL', status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+              select: { quantity: true, status: true },
+            },
           },
         },
         beneficialOwners: true,
@@ -115,7 +119,23 @@ export class ShareholdersService {
       throw new NotFoundException('Shareholder not found');
     }
 
-    return this.decryptShareholder(shareholder);
+    // Compute sharesOwned for BUY registrations, subtracting sold quantities
+    const shareholderWithComputed = {
+      ...shareholder,
+      registrations: shareholder.registrations.map((reg) => {
+        if (reg.type === 'BUY') {
+          const totalPaid = computeTotalPaid(reg.payments);
+          const pricePerShare = Number(reg.pricePerShare);
+          const vestedShares = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
+          const soldQty = (reg.soldBy ?? []).reduce((sum, s) => sum + s.quantity, 0);
+          const sharesOwned = Math.max(0, vestedShares - soldQty);
+          return { ...reg, sharesOwned, sharesRemaining: reg.quantity - vestedShares };
+        }
+        return reg;
+      }),
+    };
+
+    return this.decryptShareholder(shareholderWithComputed);
   }
 
   async create(coopId: string, dto: CreateShareholderDto, actorId?: string, ip?: string, userAgent?: string) {
