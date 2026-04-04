@@ -428,7 +428,13 @@ export class MessagesService {
       include: {
         participants: {
           include: {
-            shareholder: { select: { email: true, firstName: true } },
+            shareholder: {
+              select: {
+                email: true,
+                firstName: true,
+                user: { select: { preferredLanguage: true } },
+              },
+            },
           },
         },
         messages: { orderBy: { createdAt: 'desc' }, take: 1 },
@@ -455,6 +461,7 @@ export class MessagesService {
           messageSubject: conversation.subject,
           messagePreview: conversation.messages[0]?.body.slice(0, 150) || '',
           inboxUrl: `https://opencoop.be/${coop.slug}/dashboard/inbox`,
+          language: participant.shareholder.user?.preferredLanguage || 'nl',
         },
       });
     }
