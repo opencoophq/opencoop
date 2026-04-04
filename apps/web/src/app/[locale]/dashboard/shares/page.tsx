@@ -28,6 +28,7 @@ import { TrendingDown, QrCode, Gift, Download, FileDown, Pencil, ArrowLeft } fro
 
 interface RegistrationData {
   id: string;
+  type?: string;
   quantity: number;
   sharesOwned: number;
   pricePerShare: number;
@@ -182,7 +183,7 @@ export default function SharesPage() {
 
           setShareholder(sh);
           const buyRegs = (sh.registrations || []).filter(
-            (r) => (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
+            (r) => r.type !== 'SELL' && (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
           );
           setRegistrations(buyRegs);
           setShareClasses([]);
@@ -210,7 +211,7 @@ export default function SharesPage() {
           setShareholder(sh);
           // Show BUY registrations that represent owned or in-progress shares
           const buyRegs = (sh.registrations || []).filter(
-            (r) => (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
+            (r) => r.type !== 'SELL' && (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
           );
           setRegistrations(buyRegs);
 
@@ -332,7 +333,7 @@ export default function SharesPage() {
         const sh = profile.shareholders[0];
         setShareholder(sh);
         const buyRegs = (sh.registrations || []).filter(
-          (r) => (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
+          (r) => r.type !== 'SELL' && (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
         );
         setRegistrations(buyRegs);
       }
@@ -366,7 +367,7 @@ export default function SharesPage() {
         const sh = profile.shareholders[0];
         setShareholder(sh);
         const buyRegs = (sh.registrations || []).filter(
-          (r) => (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
+          (r) => r.type !== 'SELL' && (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
         );
         setRegistrations(buyRegs);
       }
@@ -642,7 +643,7 @@ export default function SharesPage() {
       {/* Minor shareholder sections */}
       {minorShareholders.map((minor) => {
         const minorRegs = (minor.registrations || []).filter(
-          (r) => (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
+          (r) => r.type !== 'SELL' && (r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0,
         );
         return (
           <Card key={minor.id} className="mt-6">
