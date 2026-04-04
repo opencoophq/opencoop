@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.41] - 2026-04-04
+
+### Improved
+- **Clickable shareholder names in admin transaction list** — shareholder names in the Transactions overview are now links that navigate directly to the shareholder detail page, making it easy to verify share age and history before processing buybacks.
+
 ## [0.7.40] - 2026-03-23
 
 ### Added
