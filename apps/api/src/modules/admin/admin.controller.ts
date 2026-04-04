@@ -373,6 +373,18 @@ export class AdminController {
     return canViewPII ? result : maskShareholderPII(result);
   }
 
+  @Get('shareholders/:id/minors')
+  @RequirePermission('canManageShareholders')
+  @ApiOperation({ summary: 'Get minor shareholders registered by a shareholder' })
+  async getShareholderMinors(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+  ) {
+    const shareholder = await this.shareholdersService.findById(id, coopId);
+    if (!shareholder.userId) return [];
+    return this.shareholdersService.findMinorsByUserId(shareholder.userId, coopId);
+  }
+
   @Post('shareholders')
   @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Create a new shareholder' })

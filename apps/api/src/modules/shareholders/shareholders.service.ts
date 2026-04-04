@@ -138,6 +138,48 @@ export class ShareholdersService {
     return this.decryptShareholder(shareholderWithComputed);
   }
 
+  async findMinorsByUserId(userId: string, coopId: string) {
+    if (!userId) return [];
+
+    const minors = await this.prisma.shareholder.findMany({
+      where: {
+        coopId,
+        type: 'MINOR',
+        registeredByUserId: userId,
+      },
+      include: {
+        registrations: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            shareClass: true,
+            project: true,
+            payments: { orderBy: { bankDate: 'asc' } },
+            soldBy: {
+              where: { type: 'SELL', status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+              select: { quantity: true, status: true },
+            },
+          },
+        },
+      },
+      orderBy: { firstName: 'asc' },
+    });
+
+    return minors.map((minor) => ({
+      ...minor,
+      registrations: minor.registrations.map((reg) => {
+        if (reg.type === 'BUY') {
+          const totalPaid = computeTotalPaid(reg.payments);
+          const pricePerShare = Number(reg.pricePerShare);
+          const vestedShares = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
+          const soldQty = (reg.soldBy ?? []).reduce((sum, s) => sum + s.quantity, 0);
+          const sharesOwned = Math.max(0, vestedShares - soldQty);
+          return { ...reg, sharesOwned, sharesRemaining: reg.quantity - vestedShares };
+        }
+        return reg;
+      }),
+    }));
+  }
+
   async create(coopId: string, dto: CreateShareholderDto, actorId?: string, ip?: string, userAgent?: string) {
     if (dto.email) {
       const existing = await this.prisma.shareholder.findFirst({
