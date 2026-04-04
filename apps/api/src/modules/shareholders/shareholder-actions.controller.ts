@@ -149,7 +149,10 @@ export class ShareholderActionsController {
       throw new NotFoundException('Shareholder not found');
     }
 
-    if (shareholder.userId !== userId) {
+    const isOwner = shareholder.userId === userId;
+    const isParentOfMinor = shareholder.type === 'MINOR' && shareholder.registeredByUserId === userId;
+
+    if (!isOwner && !isParentOfMinor) {
       throw new ForbiddenException('You can only manage your own shareholder records');
     }
 

@@ -460,6 +460,48 @@ export class AuthService {
             },
           },
         },
+        registeredShareholders: {
+          where: { type: 'MINOR' },
+          include: {
+            coop: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                bankIban: true,
+                bankBic: true,
+                minimumHoldingPeriod: true,
+                channels: {
+                  where: { isDefault: true },
+                  select: { logoUrl: true },
+                  take: 1,
+                },
+              },
+            },
+            registrations: {
+              include: {
+                shareClass: true,
+                project: true,
+                payments: { orderBy: { bankDate: 'asc' } },
+                giftClaimedByShareholder: {
+                  select: { id: true, firstName: true, lastName: true },
+                },
+              },
+            },
+            dividendPayouts: {
+              include: {
+                dividendPeriod: {
+                  include: {
+                    coop: { select: { name: true } },
+                  },
+                },
+              },
+            },
+            documents: {
+              orderBy: { generatedAt: 'desc' },
+            },
+          },
+        },
       },
     });
 
@@ -530,9 +572,30 @@ export class AuthService {
     const typePriority = { INDIVIDUAL: 0, COMPANY: 1, MINOR: 2 };
     shareholdersWithComputed.sort((a, b) => (typePriority[a.type] ?? 9) - (typePriority[b.type] ?? 9));
 
+    // Compute vested shares for minor shareholders too
+    const minorShareholdersWithComputed = (safeUser as any).registeredShareholders?.map((s: any) => ({
+      ...s,
+      registrations: s.registrations.map((reg: any) => {
+        if (reg.payments) {
+          const totalPaid = computeTotalPaid(reg.payments);
+          const pricePerShare = Number(reg.pricePerShare);
+          const sharesOwned = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
+          return {
+            ...reg,
+            totalPaid,
+            sharesOwned,
+            sharesRemaining: reg.quantity - sharesOwned,
+            fullyPaid: totalPaid >= Number(reg.totalAmount),
+          };
+        }
+        return reg;
+      }),
+    })) ?? [];
+
     return {
       ...safeUser,
       shareholders: shareholdersWithComputed,
+      minorShareholders: minorShareholdersWithComputed,
       emailVerified,
       hasPassword: !!passwordHash,
       googleLinked: !!user.googleId,

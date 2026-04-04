@@ -264,7 +264,12 @@
     "awaitingPayment": "Wacht op betaling",
     "purchaseSubmitted": "Aankoop succesvol ingediend",
     "scanToPayMessage": "Scan de QR-code met je bank-app om te betalen",
-    "previewMode": "Voorbeeldmodus: je bekijkt deze aandeelhoudersinterface als coop-admin. Acties zijn uitgeschakeld."
+    "previewMode": "Voorbeeldmodus: je bekijkt deze aandeelhoudersinterface als coop-admin. Acties zijn uitgeschakeld.",
+    "childSharesOf": "Aandelen van {name}",
+    "editChildProfile": "Profiel bewerken",
+    "childProfileTitle": "Profiel van {name}",
+    "birthDateLabel": "Geboortedatum",
+    "birthDateRequired": "Geboortedatum is verplicht"
   },
   "transactions": {
     "title": "Transacties",
