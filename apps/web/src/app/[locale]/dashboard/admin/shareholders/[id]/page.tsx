@@ -43,7 +43,7 @@ import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard, ExternalLink } from 'lucide-react';
+import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard, ExternalLink, MessageSquare, Loader2 } from 'lucide-react';
 import { api, apiFetch } from '@/lib/api';
 
 interface ShareClass {
@@ -224,6 +224,12 @@ export default function ShareholderDetailPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
 
+  // Send message dialog state
+  const [messageOpen, setMessageOpen] = useState(false);
+  const [messageSubject, setMessageSubject] = useState('');
+  const [messageBody, setMessageBody] = useState('');
+  const [messageSending, setMessageSending] = useState(false);
+
   const form = useForm<ShareholderForm>({
     resolver: zodResolver(shareholderSchema),
     defaultValues: {
@@ -384,6 +390,31 @@ export default function ShareholderDetailPage() {
     await fetchShareholder();
   };
 
+  const handleSendMessage = async () => {
+    if (!selectedCoop || !messageSubject.trim() || !messageBody.trim()) return;
+    setMessageSending(true);
+    setError(null);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/conversations`, {
+        method: 'POST',
+        body: {
+          type: 'DIRECT',
+          subject: messageSubject.trim(),
+          body: messageBody.trim(),
+          shareholderId,
+        },
+      });
+      setSuccess(t('messages.messageSent'));
+      setMessageOpen(false);
+      setMessageSubject('');
+      setMessageBody('');
+    } catch {
+      setError(t('common.error'));
+    } finally {
+      setMessageSending(false);
+    }
+  };
+
   const handleApprove = async (txId: string) => {
     if (!selectedCoop) return;
     await api(`/admin/coops/${selectedCoop.id}/registrations/${txId}/approve`, { method: 'PUT' });
@@ -523,7 +554,7 @@ export default function ShareholderDetailPage() {
   };
 
   const openSellDialog = () => {
-    const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED') || [];
+    const activeRegs = shareholder?.registrations.filter((r) => r.type === 'BUY' && (r.status === 'ACTIVE' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0) || [];
     setSellRegistrationId(activeRegs[0]?.id || '');
     setSellQuantity(1);
     setSellResult(null);
@@ -584,7 +615,7 @@ export default function ShareholderDetailPage() {
 
   const selectedShareClass = shareClasses.find((sc) => sc.id === buyShareClassId);
   const buyTotal = (selectedShareClass?.pricePerShare || 0) * buyQuantity;
-  const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED') || [];
+  const activeRegs = shareholder?.registrations.filter((r) => r.type === 'BUY' && (r.status === 'ACTIVE' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0) || [];
   const selectedSellReg = shareholder?.registrations.find((r) => r.id === sellRegistrationId);
 
   if (loading) {
@@ -640,6 +671,10 @@ export default function ShareholderDetailPage() {
               <ExternalLink className="h-4 w-4 mr-2" />
               {t('admin.shareholderDetail.viewAsShareholder')}
             </Link>
+          </Button>
+          <Button variant="outline" onClick={() => { setError(null); setMessageOpen(true); }}>
+            <MessageSquare className="h-4 w-4 mr-2" />
+            {t('messages.newConversation')}
           </Button>
           <Button variant="outline" onClick={openBuyDialog}>
             <ShoppingCart className="h-4 w-4 mr-2" />
@@ -937,7 +972,7 @@ export default function ShareholderDetailPage() {
           <CardTitle>{t('admin.shareholderDetail.shareholdings')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {shareholder.registrations.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED').length === 0 ? (
+          {shareholder.registrations.filter((r) => r.type === 'BUY' && (r.status === 'ACTIVE' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0).length === 0 ? (
             <p className="text-muted-foreground">{t('common.noResults')}</p>
           ) : (
             <Table>
@@ -956,7 +991,7 @@ export default function ShareholderDetailPage() {
               </TableHeader>
               <TableBody>
                 {shareholder.registrations
-                  .filter((reg) => reg.status === 'ACTIVE' || reg.status === 'COMPLETED')
+                  .filter((reg) => reg.type === 'BUY' && (reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && (reg.sharesOwned ?? reg.quantity) > 0)
                   .map((reg) => {
                     const payDate = getPaymentDate(reg);
                     return (
@@ -1495,6 +1530,56 @@ export default function ShareholderDetailPage() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Message Dialog */}
+      <Dialog open={messageOpen} onOpenChange={(open) => {
+        setMessageOpen(open);
+        if (!open) { setMessageSubject(''); setMessageBody(''); }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('messages.startConversation')}</DialogTitle>
+            <DialogDescription>
+              {shareholder.type === 'COMPANY'
+                ? shareholder.companyName
+                : `${shareholder.firstName || ''} ${shareholder.lastName || ''}`.trim()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="msg-subject">{t('messages.subject')}</Label>
+              <Input
+                id="msg-subject"
+                value={messageSubject}
+                onChange={(e) => setMessageSubject(e.target.value)}
+                placeholder={t('messages.subjectPlaceholder')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="msg-body">{t('messages.body')}</Label>
+              <Textarea
+                id="msg-body"
+                value={messageBody}
+                onChange={(e) => setMessageBody(e.target.value)}
+                placeholder={t('messages.bodyPlaceholder')}
+                rows={6}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMessageOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleSendMessage}
+              disabled={messageSending || !messageSubject.trim() || !messageBody.trim()}
+            >
+              {messageSending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t('messages.send')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.42] - 2026-04-04
+
+### Added
+- **Send message button in shareholder detail** — coop admins can now send a direct message to a shareholder directly from the shareholder detail page, without navigating to the Inbox compose page. A "New Message" button in the header opens an inline dialog with subject and body fields.
+- **Multilingual message notification emails** — shareholder email notifications for new inbox messages are now sent in the shareholder's preferred language (NL/EN/FR/DE), consistent with other transactional emails.
+
 ## [0.7.41] - 2026-04-04
 
 ### Improved
