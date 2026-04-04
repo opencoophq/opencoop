@@ -38,6 +38,7 @@ import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
 import { Check, X, QrCode, CreditCard, Link2 } from 'lucide-react';
+import { Link } from '@/i18n/routing';
 
 interface TransactionRow {
   id: string;
@@ -49,6 +50,7 @@ interface TransactionRow {
   createdAt: string;
   ogmCode?: string;
   shareholder: {
+    id: string;
     firstName?: string;
     lastName?: string;
     companyName?: string;
@@ -377,7 +379,14 @@ export default function AdminTransactionsPage() {
                       const payDate = getPaymentDate(tx);
                       return (
                       <TableRow key={tx.id}>
-                        <TableCell className="font-medium">{getName(tx.shareholder)}</TableCell>
+                        <TableCell className="font-medium">
+                          <Link
+                            href={`/dashboard/admin/shareholders/${tx.shareholder.id}`}
+                            className="hover:underline"
+                          >
+                            {getName(tx.shareholder)}
+                          </Link>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline">{t(`transactions.types.${tx.type}`)}</Badge>
                         </TableCell>
