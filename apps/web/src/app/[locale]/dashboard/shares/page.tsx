@@ -24,7 +24,7 @@ import { api, apiFetch } from '@/lib/api';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatIban } from '@opencoop/shared';
-import { TrendingDown, QrCode, Gift, Download, FileDown, Pencil } from 'lucide-react';
+import { TrendingDown, QrCode, Gift, Download, FileDown, Pencil, ArrowLeft } from 'lucide-react';
 
 interface RegistrationData {
   id: string;
@@ -482,7 +482,17 @@ export default function SharesPage() {
       <h1 className="text-2xl font-bold mb-6">{t('shares.title')}</h1>
       {isPreviewMode && (
         <Alert className="mb-6">
-          <AlertDescription>{t('shares.previewMode')}</AlertDescription>
+          <AlertDescription className="flex items-center justify-between">
+            <span>{t('shares.previewMode')}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.history.back()}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              {t('common.back')}
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
       <Card>
