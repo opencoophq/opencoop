@@ -148,6 +148,11 @@ export class ShareholdersService {
       }
     }
 
+    // birthDate is required for MINOR shareholders
+    if (dto.type === 'MINOR' && !dto.birthDate) {
+      throw new BadRequestException('birthDate is required for MINOR shareholders');
+    }
+
     const { beneficialOwners, birthDate, address, ...rest } = dto;
 
     // Encrypt nationalId fields before storage
@@ -241,6 +246,13 @@ export class ShareholdersService {
     }
 
     const { beneficialOwners, birthDate, address, registeredByUserId, registeredByShareholderId, ...rest } = dto;
+
+    // birthDate is required for MINOR shareholders
+    const effectiveType = rest.type || existing.type;
+    const effectiveBirthDate = birthDate !== undefined ? birthDate : existing.birthDate;
+    if (effectiveType === 'MINOR' && !effectiveBirthDate) {
+      throw new BadRequestException('birthDate is required for MINOR shareholders');
+    }
 
     // Handle type change to MINOR: validate parent and clear userId
     const typeChangingToMinor = rest.type === 'MINOR' && existing.type !== 'MINOR';
