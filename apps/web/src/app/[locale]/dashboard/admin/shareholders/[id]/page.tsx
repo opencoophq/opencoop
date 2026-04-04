@@ -672,7 +672,7 @@ export default function ShareholderDetailPage() {
               {t('admin.shareholderDetail.viewAsShareholder')}
             </Link>
           </Button>
-          <Button variant="outline" onClick={() => setMessageOpen(true)}>
+          <Button variant="outline" onClick={() => { setError(null); setMessageOpen(true); }}>
             <MessageSquare className="h-4 w-4 mr-2" />
             {t('messages.newConversation')}
           </Button>

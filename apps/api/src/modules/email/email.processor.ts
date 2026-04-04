@@ -447,7 +447,7 @@ export class EmailProcessor {
           <p>${s.body}</p>
           <p><strong>${s.subject}:</strong> ${d.messageSubject}</p>
           <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
-            ${d.messagePreview}...
+            ${d.messagePreview}
           </blockquote>
           <p style="text-align: center; margin: 30px 0;">
             <a href="${d.inboxUrl}"

@@ -448,8 +448,13 @@ export class MessagesService {
     });
     if (!coop?.emailEnabled) return;
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+    const rawBody = conversation.messages[0]?.body || '';
+    const messagePreview = rawBody.length > 150 ? rawBody.slice(0, 150) + '...' : rawBody;
+
     for (const participant of conversation.participants) {
       if (!participant.shareholder.email) continue;
+      const language = participant.shareholder.user?.preferredLanguage || 'nl';
       await this.emailService.send({
         coopId,
         to: participant.shareholder.email,
@@ -459,9 +464,9 @@ export class MessagesService {
           coopName: coop.name,
           shareholderName: participant.shareholder.firstName || '',
           messageSubject: conversation.subject,
-          messagePreview: conversation.messages[0]?.body.slice(0, 150) || '',
-          inboxUrl: `https://opencoop.be/${coop.slug}/dashboard/inbox`,
-          language: participant.shareholder.user?.preferredLanguage || 'nl',
+          messagePreview,
+          inboxUrl: `${appUrl}/${language}/dashboard/inbox`,
+          language,
         },
       });
     }
