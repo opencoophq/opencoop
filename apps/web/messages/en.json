@@ -264,7 +264,12 @@
     "awaitingPayment": "Awaiting Payment",
     "purchaseSubmitted": "Purchase submitted successfully",
     "scanToPayMessage": "Scan the QR code with your banking app to pay",
-    "previewMode": "Preview mode: you are viewing this shareholder's interface as a coop admin. Actions are disabled."
+    "previewMode": "Preview mode: you are viewing this shareholder's interface as a coop admin. Actions are disabled.",
+    "childSharesOf": "Shares of {name}",
+    "editChildProfile": "Edit profile",
+    "childProfileTitle": "Profile of {name}",
+    "birthDateLabel": "Date of birth",
+    "birthDateRequired": "Date of birth is required"
   },
   "transactions": {
     "title": "Transactions",

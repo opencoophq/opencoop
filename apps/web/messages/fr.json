@@ -264,7 +264,12 @@
     "awaitingPayment": "En attente de paiement",
     "purchaseSubmitted": "Achat soumis avec succès",
     "scanToPayMessage": "Scannez le code QR avec votre application bancaire pour payer",
-    "previewMode": "Mode aperçu : vous consultez l'interface de ce coopérateur en tant qu'admin de la coop. Les actions sont désactivées."
+    "previewMode": "Mode aperçu : vous consultez l'interface de ce coopérateur en tant qu'admin de la coop. Les actions sont désactivées.",
+    "childSharesOf": "Parts de {name}",
+    "editChildProfile": "Modifier le profil",
+    "childProfileTitle": "Profil de {name}",
+    "birthDateLabel": "Date de naissance",
+    "birthDateRequired": "La date de naissance est obligatoire"
   },
   "transactions": {
     "title": "Transactions",
