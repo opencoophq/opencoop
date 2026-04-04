@@ -24,7 +24,7 @@ import { api, apiFetch } from '@/lib/api';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatIban } from '@opencoop/shared';
-import { TrendingDown, QrCode, Gift, Download, FileDown } from 'lucide-react';
+import { TrendingDown, QrCode, Gift, Download, FileDown, Pencil } from 'lucide-react';
 
 interface RegistrationData {
   id: string;
@@ -53,6 +53,20 @@ interface ShareholderData {
     slug?: string;
     bankIban?: string;
     bankBic?: string;
+  };
+}
+
+interface MinorShareholderData extends ShareholderData {
+  firstName: string;
+  lastName: string;
+  birthDate?: string;
+  phone?: string;
+  address?: {
+    street?: string;
+    number?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
   };
 }
 
@@ -118,6 +132,18 @@ export default function SharesPage() {
   // Certificate generation state
   const [generatingCertFor, setGeneratingCertFor] = useState<string | null>(null);
 
+  // Minor shareholders
+  const [minorShareholders, setMinorShareholders] = useState<MinorShareholderData[]>([]);
+
+  // Child profile edit dialog state
+  const [editChildOpen, setEditChildOpen] = useState(false);
+  const [editChild, setEditChild] = useState<MinorShareholderData | null>(null);
+  const [editChildForm, setEditChildForm] = useState({ firstName: '', lastName: '', birthDate: '', phone: '' });
+  const [editChildSaving, setEditChildSaving] = useState(false);
+
+  // Track which minor's buy/sell dialog is open
+  const [activeMinorId, setActiveMinorId] = useState<string | null>(null);
+
   useEffect(() => {
     async function loadShares() {
       setLoading(true);
@@ -126,6 +152,7 @@ export default function SharesPage() {
           const [preview, settings] = await Promise.all([
             api<{
               id: string;
+              userId?: string;
               bankIban?: string;
               bankBic?: string;
               registrations: RegistrationData[];
@@ -159,10 +186,25 @@ export default function SharesPage() {
           );
           setRegistrations(buyRegs);
           setShareClasses([]);
+
+          // In preview mode, also load minors if admin
+          if (selectedCoop && preview.userId) {
+            try {
+              const minors = await api<MinorShareholderData[]>(
+                `/admin/coops/${selectedCoop.id}/shareholders/${previewShareholderId}/minors`,
+              );
+              setMinorShareholders(minors || []);
+            } catch {
+              // ignore
+            }
+          }
           return;
         }
 
-        const profile = await api<{ shareholders: ShareholderData[] }>('/auth/me');
+        const profile = await api<{
+          shareholders: ShareholderData[];
+          minorShareholders?: MinorShareholderData[];
+        }>('/auth/me');
         if (profile.shareholders?.[0]) {
           const sh = profile.shareholders[0];
           setShareholder(sh);
@@ -178,6 +220,11 @@ export default function SharesPage() {
             setShareClasses(sc || []);
           } catch {
             // ignore
+          }
+
+          // Load minor shareholders
+          if (profile.minorShareholders?.length) {
+            setMinorShareholders(profile.minorShareholders);
           }
         }
       } catch {
@@ -228,6 +275,7 @@ export default function SharesPage() {
   };
 
   const openSellDialog = (registrationId: string) => {
+    setActiveMinorId(null);
     if (!shareholder?.bankIban) {
       // Prompt to add bank details first
       setBankIban(shareholder?.bankIban || '');
@@ -267,7 +315,7 @@ export default function SharesPage() {
       const result = await api<{
         registration: { id: string };
         paymentDetails?: PaymentDetailsData;
-      }>(`/shareholders/${shareholder.id}/buy`, {
+      }>(`/shareholders/${activeMinorId || shareholder.id}/buy`, {
         method: 'POST',
         body: { shareClassId: buyShareClassId, quantity: buyQuantity },
       });
@@ -275,8 +323,11 @@ export default function SharesPage() {
       if (result.paymentDetails) {
         setBuyPaymentDetails(result.paymentDetails);
       }
-      // Reload registrations
-      const profile = await api<{ shareholders: ShareholderData[] }>('/auth/me');
+      // Reload registrations (including minors)
+      const profile = await api<{
+        shareholders: ShareholderData[];
+        minorShareholders?: MinorShareholderData[];
+      }>('/auth/me');
       if (profile.shareholders?.[0]) {
         const sh = profile.shareholders[0];
         setShareholder(sh);
@@ -284,6 +335,9 @@ export default function SharesPage() {
           (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED',
         );
         setRegistrations(buyRegs);
+      }
+      if (profile.minorShareholders?.length) {
+        setMinorShareholders(profile.minorShareholders);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.error');
@@ -298,13 +352,16 @@ export default function SharesPage() {
     setSellLoading(true);
     setSellError('');
     try {
-      await api(`/shareholders/${shareholder.id}/sell-request`, {
+      await api(`/shareholders/${activeMinorId || shareholder.id}/sell-request`, {
         method: 'POST',
         body: { registrationId: sellRegistrationId, quantity: sellQuantity },
       });
       setSellSuccess(true);
-      // Reload registrations
-      const profile = await api<{ shareholders: ShareholderData[] }>('/auth/me');
+      // Reload registrations (including minors)
+      const profile = await api<{
+        shareholders: ShareholderData[];
+        minorShareholders?: MinorShareholderData[];
+      }>('/auth/me');
       if (profile.shareholders?.[0]) {
         const sh = profile.shareholders[0];
         setShareholder(sh);
@@ -312,6 +369,9 @@ export default function SharesPage() {
           (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED',
         );
         setRegistrations(buyRegs);
+      }
+      if (profile.minorShareholders?.length) {
+        setMinorShareholders(profile.minorShareholders);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.error');
@@ -332,6 +392,79 @@ export default function SharesPage() {
       quantity: reg.quantity,
     });
     setPaymentQrOpen(true);
+  };
+
+  const handleMinorBuy = async (minorId: string) => {
+    setActiveMinorId(minorId);
+    setBuyOpen(true);
+    setBuySuccess(false);
+    setBuyError('');
+    setBuyPaymentDetails(null);
+    setBuyShareClassId('');
+    setBuyQuantity(1);
+
+    try {
+      const sc = await api<ShareClassData[]>(`/shareholders/${minorId}/share-classes`);
+      setShareClasses(sc || []);
+    } catch {
+      setShareClasses([]);
+    }
+  };
+
+  const handleMinorSellDialog = (minorId: string, registrationId: string) => {
+    const minor = minorShareholders.find((m) => m.id === minorId);
+    if (!minor?.bankIban) {
+      setBankIban('');
+      setBankBic('');
+      setBankOpen(true);
+      return;
+    }
+    setActiveMinorId(minorId);
+    setSellRegistrationId(registrationId);
+    setSellQuantity(1);
+    setSellOpen(true);
+    setSellSuccess(false);
+    setSellError('');
+  };
+
+  const openEditChildDialog = (minor: MinorShareholderData) => {
+    setEditChild(minor);
+    setEditChildForm({
+      firstName: minor.firstName || '',
+      lastName: minor.lastName || '',
+      birthDate: minor.birthDate ? minor.birthDate.split('T')[0] : '',
+      phone: minor.phone || '',
+    });
+    setEditChildOpen(true);
+  };
+
+  const handleSaveChildProfile = async () => {
+    if (!editChild) return;
+    setEditChildSaving(true);
+    try {
+      await api(`/shareholders/${editChild.id}/profile`, {
+        method: 'PUT',
+        body: {
+          firstName: editChildForm.firstName,
+          lastName: editChildForm.lastName,
+          birthDate: editChildForm.birthDate || undefined,
+          phone: editChildForm.phone || undefined,
+        },
+      });
+      // Reload minor shareholders data
+      const profile = await api<{
+        shareholders: ShareholderData[];
+        minorShareholders?: MinorShareholderData[];
+      }>('/auth/me');
+      if (profile.minorShareholders?.length) {
+        setMinorShareholders(profile.minorShareholders);
+      }
+      setEditChildOpen(false);
+    } catch {
+      // ignore
+    } finally {
+      setEditChildSaving(false);
+    }
   };
 
   const selectedSellReg = registrations.find((r) => r.id === sellRegistrationId);
@@ -357,6 +490,7 @@ export default function SharesPage() {
           <CardTitle>{t('shares.myShares')}</CardTitle>
           {!isPreviewMode && shareClasses.length > 0 && (
             <Button onClick={() => {
+              setActiveMinorId(null);
               setBuyOpen(true);
               setBuySuccess(false);
               setBuyError('');
@@ -494,6 +628,107 @@ export default function SharesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Minor shareholder sections */}
+      {minorShareholders.map((minor) => {
+        const minorRegs = (minor.registrations || []).filter(
+          (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED',
+        );
+        return (
+          <Card key={minor.id} className="mt-6">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                {t('shares.childSharesOf', { name: `${minor.firstName} ${minor.lastName}` })}
+                {!isPreviewMode && (
+                  <Button variant="ghost" size="sm" onClick={() => openEditChildDialog(minor)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+              </CardTitle>
+              {!isPreviewMode && (
+                <Button onClick={() => handleMinorBuy(minor.id)}>
+                  {t('shares.buyShares')}
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {minorRegs.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('shares.shareClass')}</TableHead>
+                      <TableHead>{t('shares.project')}</TableHead>
+                      <TableHead className="text-right">{t('shares.quantity')}</TableHead>
+                      <TableHead className="text-right">{t('shares.pricePerShare')}</TableHead>
+                      <TableHead className="text-right">{t('shares.totalValue')}</TableHead>
+                      <TableHead>{t('shares.purchaseDate')}</TableHead>
+                      <TableHead>{t('common.status')}</TableHead>
+                      <TableHead>{t('common.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {minorRegs.map((reg) => (
+                      <TableRow key={reg.id}>
+                        <TableCell className="font-medium">
+                          {reg.shareClass.name} ({reg.shareClass.code})
+                        </TableCell>
+                        <TableCell>{reg.project?.name || '-'}</TableCell>
+                        <TableCell className="text-right">{reg.sharesOwned ?? reg.quantity}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(Number(reg.pricePerShare), locale)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency((reg.sharesOwned ?? reg.quantity) * Number(reg.pricePerShare), locale)}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(reg.registerDate).toLocaleDateString(locale)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant(reg.status)}>{t(`transactions.statuses.${reg.status}`)}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {!isPreviewMode && (reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && (() => {
+                            const holdingMonths = minor?.coop?.minimumHoldingPeriod || 0;
+                            const minDate = new Date(reg.registerDate);
+                            minDate.setMonth(minDate.getMonth() + holdingMonths);
+                            const canSell = holdingMonths === 0 || new Date() >= minDate;
+                            return canSell ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMinorSellDialog(minor.id, reg.id)}
+                              >
+                                <TrendingDown className="h-4 w-4 mr-1" />
+                                {t('shares.sellBack')}
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                {t('shares.reasonMinHoldingPeriod', { months: holdingMonths })}
+                              </span>
+                            );
+                          })()}
+                          {reg.status === 'PENDING_PAYMENT' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => showPaymentForRegistration(reg)}
+                            >
+                              <QrCode className="h-4 w-4 mr-1" />
+                              {t('shares.awaitingPayment')}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
 
       {/* Bank Details Dialog */}
       <Dialog open={bankOpen} onOpenChange={setBankOpen}>
@@ -766,6 +1001,61 @@ export default function SharesPage() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Edit Child Profile Dialog */}
+      <Dialog open={editChildOpen} onOpenChange={setEditChildOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editChild ? t('shares.childProfileTitle', { name: `${editChild.firstName} ${editChild.lastName}` }) : ''}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('profile.firstName')}</Label>
+                <Input
+                  value={editChildForm.firstName}
+                  onChange={(e) => setEditChildForm((f) => ({ ...f, firstName: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('profile.lastName')}</Label>
+                <Input
+                  value={editChildForm.lastName}
+                  onChange={(e) => setEditChildForm((f) => ({ ...f, lastName: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('shares.birthDateLabel')} *</Label>
+              <Input
+                type="date"
+                value={editChildForm.birthDate}
+                onChange={(e) => setEditChildForm((f) => ({ ...f, birthDate: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('profile.phone')}</Label>
+              <Input
+                value={editChildForm.phone}
+                onChange={(e) => setEditChildForm((f) => ({ ...f, phone: e.target.value }))}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditChildOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={handleSaveChildProfile}
+                disabled={editChildSaving || !editChildForm.firstName || !editChildForm.lastName || !editChildForm.birthDate}
+              >
+                {editChildSaving ? t('common.loading') : t('common.save')}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
