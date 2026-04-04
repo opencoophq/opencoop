@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.43] - 2026-04-04
+
+### Fixed
+- **Sold-back shares no longer appear in Aandelenbezit table** — when a shareholder sells shares back, the sold registration was previously listed as extra "owned shares" in the Shareholdings table. The table now correctly shows only active BUY registrations with remaining share count, computed as vested shares minus sold quantity. The sell dialog also correctly limits the sellable quantity to actually-owned shares.
+
 ## [0.7.42] - 2026-04-04
 
 ### Added
