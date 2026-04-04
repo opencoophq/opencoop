@@ -408,22 +408,56 @@ export class EmailProcessor {
         <p>Share this certificate with the recipient. They can use the code or QR code to claim their shares.</p>
         <p>Thank you for being a shareholder of ${cn}!</p>
       `,
-      'message-notification': (d, cn) => `
-        <h1>Nieuw bericht van ${cn}</h1>
-        <p>Beste ${d.shareholderName},</p>
-        <p>U heeft een nieuw bericht ontvangen van ${cn}.</p>
-        <p><strong>Onderwerp:</strong> ${d.messageSubject}</p>
-        <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
-          ${d.messagePreview}...
-        </blockquote>
-        <p style="text-align: center; margin: 30px 0;">
-          <a href="${d.inboxUrl}"
-             style="background-color: #1e40af; color: white; padding: 12px 24px;
-                    text-decoration: none; border-radius: 6px; display: inline-block;">
-            Bekijk het bericht
-          </a>
-        </p>
-      `,
+      'message-notification': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: `Nieuw bericht van ${cn}`,
+            dear: `Beste ${d.shareholderName},`,
+            body: `U heeft een nieuw bericht ontvangen van ${cn}.`,
+            subject: 'Onderwerp',
+            viewMessage: 'Bekijk het bericht',
+          },
+          en: {
+            title: `New message from ${cn}`,
+            dear: `Dear ${d.shareholderName},`,
+            body: `You have received a new message from ${cn}.`,
+            subject: 'Subject',
+            viewMessage: 'View message',
+          },
+          fr: {
+            title: `Nouveau message de ${cn}`,
+            dear: `Cher/Chère ${d.shareholderName},`,
+            body: `Vous avez reçu un nouveau message de ${cn}.`,
+            subject: 'Sujet',
+            viewMessage: 'Voir le message',
+          },
+          de: {
+            title: `Neue Nachricht von ${cn}`,
+            dear: `Liebe/r ${d.shareholderName},`,
+            body: `Sie haben eine neue Nachricht von ${cn} erhalten.`,
+            subject: 'Betreff',
+            viewMessage: 'Nachricht anzeigen',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.body}</p>
+          <p><strong>${s.subject}:</strong> ${d.messageSubject}</p>
+          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+            ${d.messagePreview}
+          </blockquote>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.inboxUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.viewMessage}
+            </a>
+          </p>
+        `;
+      },
       'admin-message-notification': (d, cn) => `
         <h1>Nieuw bericht ontvangen</h1>
         <p>Beste ${d.adminName},</p>
