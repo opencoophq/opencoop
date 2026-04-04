@@ -605,10 +605,6 @@ export class AuthService {
         const { channels, ...rest } = s.coop as typeof s.coop & { channels?: { logoUrl: string | null }[] };
         return { ...rest, logoUrl: channels?.[0]?.logoUrl ?? null };
       }),
-      minorShareholderCoops: (safeUser as any).registeredShareholders?.map((s: any) => {
-        const { channels, ...rest } = s.coop as typeof s.coop & { channels?: { logoUrl: string | null }[] };
-        return { ...rest, logoUrl: channels?.[0]?.logoUrl ?? null };
-      }) ?? [],
     };
   }
 

@@ -323,8 +323,11 @@ export default function SharesPage() {
       if (result.paymentDetails) {
         setBuyPaymentDetails(result.paymentDetails);
       }
-      // Reload registrations
-      const profile = await api<{ shareholders: ShareholderData[] }>('/auth/me');
+      // Reload registrations (including minors)
+      const profile = await api<{
+        shareholders: ShareholderData[];
+        minorShareholders?: MinorShareholderData[];
+      }>('/auth/me');
       if (profile.shareholders?.[0]) {
         const sh = profile.shareholders[0];
         setShareholder(sh);
@@ -332,6 +335,9 @@ export default function SharesPage() {
           (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED',
         );
         setRegistrations(buyRegs);
+      }
+      if (profile.minorShareholders?.length) {
+        setMinorShareholders(profile.minorShareholders);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.error');
@@ -351,8 +357,11 @@ export default function SharesPage() {
         body: { registrationId: sellRegistrationId, quantity: sellQuantity },
       });
       setSellSuccess(true);
-      // Reload registrations
-      const profile = await api<{ shareholders: ShareholderData[] }>('/auth/me');
+      // Reload registrations (including minors)
+      const profile = await api<{
+        shareholders: ShareholderData[];
+        minorShareholders?: MinorShareholderData[];
+      }>('/auth/me');
       if (profile.shareholders?.[0]) {
         const sh = profile.shareholders[0];
         setShareholder(sh);
@@ -360,6 +369,9 @@ export default function SharesPage() {
           (r) => r.status === 'ACTIVE' || r.status === 'PENDING_PAYMENT' || r.status === 'COMPLETED',
         );
         setRegistrations(buyRegs);
+      }
+      if (profile.minorShareholders?.length) {
+        setMinorShareholders(profile.minorShareholders);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.error');
@@ -400,6 +412,13 @@ export default function SharesPage() {
   };
 
   const handleMinorSellDialog = (minorId: string, registrationId: string) => {
+    const minor = minorShareholders.find((m) => m.id === minorId);
+    if (!minor?.bankIban) {
+      setBankIban('');
+      setBankBic('');
+      setBankOpen(true);
+      return;
+    }
     setActiveMinorId(minorId);
     setSellRegistrationId(registrationId);
     setSellQuantity(1);
@@ -425,14 +444,22 @@ export default function SharesPage() {
     try {
       await api(`/shareholders/${editChild.id}/profile`, {
         method: 'PUT',
-        body: JSON.stringify({
+        body: {
           firstName: editChildForm.firstName,
           lastName: editChildForm.lastName,
           birthDate: editChildForm.birthDate || undefined,
           phone: editChildForm.phone || undefined,
-        }),
+        },
       });
-      window.location.reload();
+      // Reload minor shareholders data
+      const profile = await api<{
+        shareholders: ShareholderData[];
+        minorShareholders?: MinorShareholderData[];
+      }>('/auth/me');
+      if (profile.minorShareholders?.length) {
+        setMinorShareholders(profile.minorShareholders);
+      }
+      setEditChildOpen(false);
     } catch {
       // ignore
     } finally {
