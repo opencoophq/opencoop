@@ -523,7 +523,7 @@ export default function ShareholderDetailPage() {
   };
 
   const openSellDialog = () => {
-    const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED') || [];
+    const activeRegs = shareholder?.registrations.filter((r) => r.type === 'BUY' && (r.status === 'ACTIVE' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0) || [];
     setSellRegistrationId(activeRegs[0]?.id || '');
     setSellQuantity(1);
     setSellResult(null);
@@ -584,7 +584,7 @@ export default function ShareholderDetailPage() {
 
   const selectedShareClass = shareClasses.find((sc) => sc.id === buyShareClassId);
   const buyTotal = (selectedShareClass?.pricePerShare || 0) * buyQuantity;
-  const activeRegs = shareholder?.registrations.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED') || [];
+  const activeRegs = shareholder?.registrations.filter((r) => r.type === 'BUY' && (r.status === 'ACTIVE' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0) || [];
   const selectedSellReg = shareholder?.registrations.find((r) => r.id === sellRegistrationId);
 
   if (loading) {
@@ -937,7 +937,7 @@ export default function ShareholderDetailPage() {
           <CardTitle>{t('admin.shareholderDetail.shareholdings')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {shareholder.registrations.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED').length === 0 ? (
+          {shareholder.registrations.filter((r) => r.type === 'BUY' && (r.status === 'ACTIVE' || r.status === 'COMPLETED') && (r.sharesOwned ?? r.quantity) > 0).length === 0 ? (
             <p className="text-muted-foreground">{t('common.noResults')}</p>
           ) : (
             <Table>
@@ -956,7 +956,7 @@ export default function ShareholderDetailPage() {
               </TableHeader>
               <TableBody>
                 {shareholder.registrations
-                  .filter((reg) => reg.status === 'ACTIVE' || reg.status === 'COMPLETED')
+                  .filter((reg) => reg.type === 'BUY' && (reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && (reg.sharesOwned ?? reg.quantity) > 0)
                   .map((reg) => {
                     const payDate = getPaymentDate(reg);
                     return (
