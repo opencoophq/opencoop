@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.52] - 2026-04-09
+
+### Changed
+- **User settings moved to user dropdown** — the "Settings" link previously shown in the sidebar under "My Account" is now accessible directly from the user dropdown at the bottom of the sidebar. This follows standard SaaS UX patterns (Linear, GitHub, Notion) and reduces sidebar clutter.
+
 ## [0.7.51] - 2026-04-09
 
 ### Added
