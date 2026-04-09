@@ -307,6 +307,64 @@ export class CoopAdminsService {
     return invitation;
   }
 
+  // ==================== NOTIFICATION SETTINGS ====================
+
+  async getNotificationSettings(coopId: string, userId: string) {
+    const admin = await this.prisma.coopAdmin.findUnique({
+      where: { userId_coopId: { userId, coopId } },
+      include: { notificationSettings: true },
+    });
+    if (!admin) {
+      throw new NotFoundException('Admin not found');
+    }
+
+    return admin.notificationSettings ?? {
+      frequency: 'IMMEDIATE',
+      notifyOnNewShareholder: false,
+      notifyOnSharePurchase: false,
+      notifyOnShareSell: false,
+      notifyOnPaymentReceived: false,
+    };
+  }
+
+  async updateNotificationSettings(
+    coopId: string,
+    userId: string,
+    dto: {
+      frequency?: 'IMMEDIATE' | 'DAILY' | 'WEEKLY';
+      notifyOnNewShareholder?: boolean;
+      notifyOnSharePurchase?: boolean;
+      notifyOnShareSell?: boolean;
+      notifyOnPaymentReceived?: boolean;
+    },
+  ) {
+    const admin = await this.prisma.coopAdmin.findUnique({
+      where: { userId_coopId: { userId, coopId } },
+    });
+    if (!admin) {
+      throw new NotFoundException('Admin not found');
+    }
+
+    return this.prisma.coopAdminNotificationSettings.upsert({
+      where: { coopAdminId: admin.id },
+      create: {
+        coopAdminId: admin.id,
+        frequency: dto.frequency ?? 'IMMEDIATE',
+        notifyOnNewShareholder: dto.notifyOnNewShareholder ?? false,
+        notifyOnSharePurchase: dto.notifyOnSharePurchase ?? false,
+        notifyOnShareSell: dto.notifyOnShareSell ?? false,
+        notifyOnPaymentReceived: dto.notifyOnPaymentReceived ?? false,
+      },
+      update: {
+        ...(dto.frequency !== undefined && { frequency: dto.frequency }),
+        ...(dto.notifyOnNewShareholder !== undefined && { notifyOnNewShareholder: dto.notifyOnNewShareholder }),
+        ...(dto.notifyOnSharePurchase !== undefined && { notifyOnSharePurchase: dto.notifyOnSharePurchase }),
+        ...(dto.notifyOnShareSell !== undefined && { notifyOnShareSell: dto.notifyOnShareSell }),
+        ...(dto.notifyOnPaymentReceived !== undefined && { notifyOnPaymentReceived: dto.notifyOnPaymentReceived }),
+      },
+    });
+  }
+
   async acceptInvitation(token: string, userId: string) {
     const invitation = await this.getInvitationByToken(token);
 

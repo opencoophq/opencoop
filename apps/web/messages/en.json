@@ -401,7 +401,20 @@
     "passwordChanged": "Password changed successfully",
     "displayName": "Display Name",
     "displayNamePlaceholder": "Your name",
-    "bankDetailsDescription": "Your bank account for receiving refunds when selling shares"
+    "bankDetailsDescription": "Your bank account for receiving refunds when selling shares",
+    "notifications": {
+      "title": "Email Notifications",
+      "description": "Configure which events trigger an email notification for {coopName}.",
+      "frequency": "Frequency",
+      "frequencyImmediate": "Immediate (every event)",
+      "frequencyDaily": "Daily digest",
+      "frequencyWeekly": "Weekly digest",
+      "events": "Events",
+      "eventNewShareholder": "New shareholder registered",
+      "eventSharePurchase": "Shareholder buys shares",
+      "eventShareSell": "Shareholder sells shares",
+      "eventPaymentReceived": "Payment received"
+    }
   },
   "nav": {
     "dashboard": "Dashboard",

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
+import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 import { computeTotalPaid } from '@opencoop/shared';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class PaymentsService {
   constructor(
     private prisma: PrismaService,
     private registrationsService: RegistrationsService,
+    private adminNotificationsService: AdminNotificationsService,
   ) {}
 
   async findByRegistration(registrationId: string) {
@@ -69,6 +71,20 @@ export class PaymentsService {
         matchedAt: new Date(),
       },
     });
+
+    // Notify coop admins of payment received
+    const reg = await this.prisma.registration.findUnique({
+      where: { id: data.registrationId },
+      include: { shareholder: { select: { firstName: true, lastName: true, companyName: true } } },
+    });
+    if (reg) {
+      const sh = reg.shareholder;
+      const shareholderName = sh.companyName || [sh.firstName, sh.lastName].filter(Boolean).join(' ');
+      this.adminNotificationsService.notifyAdminsOnEvent(data.coopId, 'payment_received', {
+        shareholderName,
+        paymentAmount: data.amount,
+      }).catch(() => {});
+    }
 
     // Update registration status based on cumulative payments
     const totalPaid = computeTotalPaid(registration.payments) + data.amount;

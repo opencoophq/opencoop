@@ -100,6 +100,12 @@ enum PontoConnectionStatus {
   REVOKED
 }
 
+enum AdminNotificationFrequency {
+  IMMEDIATE
+  DAILY
+  WEEKLY
+}
+
 // ============================================================================
 // MULTI-TENANCY: COOPS
 // ============================================================================
@@ -332,12 +338,32 @@ model CoopAdmin {
   permissionOverrides Json?
   createdAt           DateTime @default(now())
 
-  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coop Coop     @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  role CoopRole @relation(fields: [roleId], references: [id])
+  user                 User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coop                 Coop                          @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  role                 CoopRole                      @relation(fields: [roleId], references: [id])
+  notificationSettings CoopAdminNotificationSettings?
 
   @@unique([userId, coopId])
   @@map("coop_admins")
+}
+
+model CoopAdminNotificationSettings {
+  id           String                      @id @default(cuid())
+  coopAdminId  String                      @unique
+  frequency    AdminNotificationFrequency  @default(IMMEDIATE)
+
+  // Event toggles
+  notifyOnNewShareholder  Boolean @default(false)
+  notifyOnSharePurchase   Boolean @default(false)
+  notifyOnShareSell       Boolean @default(false)
+  notifyOnPaymentReceived Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  coopAdmin CoopAdmin @relation(fields: [coopAdminId], references: [id], onDelete: Cascade)
+
+  @@map("coop_admin_notification_settings")
 }
 
 model CoopRole {
