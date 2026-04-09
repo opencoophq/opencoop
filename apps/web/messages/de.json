@@ -645,7 +645,11 @@
       "selectRegistration": "Wählen Sie eine Registrierung, um diese Zahlung zuzuordnen",
       "matched": "Zahlung erfolgreich zugeordnet.",
       "counterparty": "Gegenpartei",
-      "reference": "Referenz"
+      "reference": "Referenz",
+      "cancelTransaction": "Transaktion Stornieren",
+      "cancelTransactionDescription": "Dies storniert die Transaktion. Der Gesellschafter erhält keine Anteile. Sie können optional einen Grund angeben.",
+      "cancelReasonPlaceholder": "Grund für die Stornierung (optional)...",
+      "confirmCancel": "Transaktion Stornieren"
     },
     "shareClasses": {
       "title": "Anteilsklassen",

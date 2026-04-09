@@ -542,6 +542,27 @@ export class RegistrationsService {
     return result;
   }
 
+  async cancel(id: string, coopId: string, processedByUserId: string, reason?: string) {
+    const registration = await this.findById(id, coopId);
+
+    const cancellableStatuses = ['PENDING', 'PENDING_PAYMENT'];
+    if (!cancellableStatuses.includes(registration.status)) {
+      throw new BadRequestException(
+        'Only pending or pending_payment registrations can be cancelled',
+      );
+    }
+
+    return this.prisma.registration.update({
+      where: { id },
+      data: {
+        status: 'CANCELLED',
+        processedByUserId,
+        processedAt: new Date(),
+        rejectionReason: reason || null,
+      },
+    });
+  }
+
   async updatePaymentDate(id: string, coopId: string, bankDate: Date) {
     const registration = await this.findById(id, coopId);
 
