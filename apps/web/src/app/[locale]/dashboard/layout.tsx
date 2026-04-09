@@ -347,6 +347,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <div className="flex-1 overflow-y-auto py-4 px-2">
             {!isAdmin && renderNavSection(t('common.myAccount'), shareholderNav)}
             {isAdmin && adminNav.length > 0 && renderNavSection(t('admin.title'), adminNav)}
+            {isAdmin && renderNavSection(t('common.myAccount'), [
+              { href: '/dashboard/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
+            ])}
             {isSystemAdmin && renderNavSection(t('system.title'), systemNav)}
           </div>
 

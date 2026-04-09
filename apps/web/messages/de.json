@@ -411,7 +411,9 @@
       "eventNewShareholder": "Neuer Anteilseigner registriert",
       "eventSharePurchase": "Anteilseigner kauft Anteile",
       "eventShareSell": "Anteilseigner verkauft Anteile",
-      "eventPaymentReceived": "Zahlung eingegangen"
+      "eventPaymentReceived": "Zahlung eingegangen",
+      "digestTime": "Zusammenfassung senden um",
+      "digestTimeUTC": "UTC"
     }
   },
   "nav": {
