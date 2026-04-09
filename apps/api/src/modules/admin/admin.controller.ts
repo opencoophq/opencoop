@@ -619,6 +619,18 @@ export class AdminController {
     return this.registrationsService.reject(id, coopId, user.id, reason);
   }
 
+  @Put('registrations/:id/cancel')
+  @RequirePermission('canManageTransactions')
+  @ApiOperation({ summary: 'Cancel a registration (admin override)' })
+  async cancelRegistration(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body('reason') reason?: string,
+  ) {
+    return this.registrationsService.cancel(id, coopId, user.id, reason);
+  }
+
   @Post('transfers')
   @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Create an admin-initiated transfer' })
