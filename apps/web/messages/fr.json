@@ -399,7 +399,20 @@
     "passwordChanged": "Mot de passe modifié avec succès",
     "displayName": "Nom d'affichage",
     "displayNamePlaceholder": "Votre nom",
-    "bankDetailsDescription": "Votre compte bancaire pour recevoir les remboursements lors de la vente d'actions"
+    "bankDetailsDescription": "Votre compte bancaire pour recevoir les remboursements lors de la vente d'actions",
+    "notifications": {
+      "title": "Notifications par e-mail",
+      "description": "Configurez quels événements déclenchent une notification par e-mail pour {coopName}.",
+      "frequency": "Fréquence",
+      "frequencyImmediate": "Immédiat (chaque événement)",
+      "frequencyDaily": "Résumé quotidien",
+      "frequencyWeekly": "Résumé hebdomadaire",
+      "events": "Événements",
+      "eventNewShareholder": "Nouvel actionnaire enregistré",
+      "eventSharePurchase": "Un actionnaire achète des actions",
+      "eventShareSell": "Un actionnaire vend des actions",
+      "eventPaymentReceived": "Paiement reçu"
+    }
   },
   "nav": {
     "dashboard": "Tableau de bord",

@@ -468,6 +468,76 @@ export class EmailProcessor {
         </blockquote>
         <p>Log in op het dashboard om het bericht te bekijken en te beantwoorden.</p>
       `,
+      'admin-event-notification': (d, _cn) => {
+        const event = d.event as string;
+        const data = d.data as Record<string, unknown>;
+        const eventLabels: Record<string, string> = {
+          new_shareholder: 'New shareholder registered',
+          share_purchase: 'Share purchase',
+          share_sell: 'Share sale',
+          payment_received: 'Payment received',
+        };
+        const label = eventLabels[event] || event;
+
+        const details: string[] = [];
+        if (data.shareholderName) details.push(`<li><strong>Shareholder:</strong> ${data.shareholderName}</li>`);
+        if (data.shareClassName) details.push(`<li><strong>Share class:</strong> ${data.shareClassName}</li>`);
+        if (data.quantity) details.push(`<li><strong>Quantity:</strong> ${data.quantity}</li>`);
+        if (data.totalAmount !== undefined) details.push(`<li><strong>Total amount:</strong> €${(data.totalAmount as number).toFixed(2)}</li>`);
+        if (data.paymentAmount !== undefined) details.push(`<li><strong>Payment amount:</strong> €${(data.paymentAmount as number).toFixed(2)}</li>`);
+
+        return `
+          <h1>${label}</h1>
+          <p>Dear ${d.adminName},</p>
+          <p>A new event has occurred in <strong>${d.coopName}</strong>:</p>
+          <ul>${details.join('')}</ul>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this because you enabled this notification in your admin profile.
+          </p>
+        `;
+      },
+      'admin-digest': (d, _cn) => {
+        const events = d.events as Array<{ event: string; data: Record<string, unknown> }>;
+        const frequency = d.frequency as string;
+        const label = frequency === 'DAILY' ? 'daily' : 'weekly';
+
+        const eventLabels: Record<string, string> = {
+          new_shareholder: 'New shareholder registered',
+          share_purchase: 'Share purchase',
+          share_sell: 'Share sale',
+          payment_received: 'Payment received',
+        };
+
+        const rows = events.map((e) => {
+          const parts: string[] = [];
+          if (e.data.shareholderName) parts.push(`${e.data.shareholderName}`);
+          if (e.data.shareClassName) parts.push(`${e.data.quantity ?? ''} × ${e.data.shareClassName}`);
+          if (e.data.totalAmount !== undefined) parts.push(`€${(e.data.totalAmount as number).toFixed(2)}`);
+          if (e.data.paymentAmount !== undefined) parts.push(`€${(e.data.paymentAmount as number).toFixed(2)}`);
+          return `<tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${eventLabels[e.event] || e.event}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">${parts.join(' — ')}</td>
+          </tr>`;
+        }).join('');
+
+        return `
+          <h1>Your ${label} digest for ${d.coopName}</h1>
+          <p>Dear ${d.adminName},</p>
+          <p>Here is a summary of activity in <strong>${d.coopName}</strong> over the past ${frequency === 'DAILY' ? '24 hours' : '7 days'}:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Event</th>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Details</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this ${label} digest because you enabled it in your admin profile.
+          </p>
+        `;
+      },
       'referral-success': (d, cn) => `
         <h1>Iemand heeft je uitnodiging aanvaard!</h1>
         <p>Beste ${d.referrerName},</p>

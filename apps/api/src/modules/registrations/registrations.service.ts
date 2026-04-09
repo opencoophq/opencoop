@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { generateOgmCode, computeTotalPaid, computeVestedShares } from '@opencoop/shared';
 import { DocumentsService } from '../documents/documents.service';
 import { EmailService } from '../email/email.service';
+import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 
 @Injectable()
 export class RegistrationsService {
@@ -11,6 +12,7 @@ export class RegistrationsService {
     @Inject(forwardRef(() => DocumentsService))
     private documentsService: DocumentsService,
     private emailService: EmailService,
+    private adminNotificationsService: AdminNotificationsService,
   ) {}
 
   private readonly defaultInclude = {
@@ -331,11 +333,11 @@ export class RegistrationsService {
       });
     });
 
+    const shareholderName = shareholder.companyName
+      || [shareholder.firstName, shareholder.lastName].filter(Boolean).join(' ');
+
     // Send payment info email (only if shareholder has email and coop has email enabled)
     if (shareholder.email && coop.emailEnabled) {
-      const shareholderName = shareholder.companyName
-        || [shareholder.firstName, shareholder.lastName].filter(Boolean).join(' ');
-
       this.emailService.sendSharePurchaseConfirmation(data.coopId, shareholder.email, {
         shareholderName,
         shareClassName: shareClass.name,
@@ -348,6 +350,22 @@ export class RegistrationsService {
         console.error('Failed to send share purchase confirmation email:', err);
       });
     }
+
+    // Check if this is a first-time shareholder (new_shareholder event)
+    const priorBuyCount = await this.prisma.registration.count({
+      where: { coopId: data.coopId, shareholderId: data.shareholderId, type: 'BUY', id: { not: registration.id } },
+    });
+    if (priorBuyCount === 0) {
+      this.adminNotificationsService.notifyAdminsOnEvent(data.coopId, 'new_shareholder', { shareholderName }).catch(() => {});
+    }
+
+    // Notify admins of share purchase
+    this.adminNotificationsService.notifyAdminsOnEvent(data.coopId, 'share_purchase', {
+      shareholderName,
+      shareClassName: shareClass.name,
+      quantity: data.quantity,
+      totalAmount,
+    }).catch(() => {});
 
     return registration;
   }
@@ -431,7 +449,7 @@ export class RegistrationsService {
 
     const totalAmount = data.quantity * pricePerShare;
 
-    return this.prisma.registration.create({
+    const sellRegistration = await this.prisma.registration.create({
       data: {
         coopId: data.coopId,
         shareholderId: data.shareholderId,
@@ -447,6 +465,17 @@ export class RegistrationsService {
       },
       include: this.defaultInclude,
     });
+
+    // Notify admins of share sale
+    const sh = sellRegistration.shareholder;
+    const shareholderName = sh.companyName || [sh.firstName, sh.lastName].filter(Boolean).join(' ');
+    this.adminNotificationsService.notifyAdminsOnEvent(data.coopId, 'share_sell', {
+      shareholderName,
+      shareClassName: buyRegistration.shareClass.name,
+      quantity: data.quantity,
+    }).catch(() => {});
+
+    return sellRegistration;
   }
 
   // C4: Added coopId for tenant isolation

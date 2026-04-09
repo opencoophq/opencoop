@@ -29,6 +29,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CoopAdminsModule } from './modules/coop-admins/coop-admins.module';
+import { AdminNotificationsModule } from './modules/admin-notifications/admin-notifications.module';
 import { McpTools } from './modules/mcp/mcp.tools';
 import { PontoModule } from './modules/ponto/ponto.module';
 import { LlmsModule } from './modules/llms/llms.module';
@@ -67,6 +68,7 @@ import { ChangelogModule } from './modules/changelog/changelog.module';
     EmailModule,
     AdminModule,
     CoopAdminsModule,
+    AdminNotificationsModule,
     SystemModule,
     FeatureRequestsModule,
     UploadsModule,
