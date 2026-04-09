@@ -9,8 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { api } from '@/lib/api';
 import { useRouter } from '@/i18n/routing';
+import { useAdmin } from '@/contexts/admin-context';
 import { MfaSetup } from '@/components/settings/mfa-setup';
 import { PasskeysManager } from '@/components/settings/passkeys-manager';
 
@@ -28,10 +30,19 @@ const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
 ];
 
+interface NotificationSettings {
+  frequency: 'IMMEDIATE' | 'DAILY' | 'WEEKLY';
+  notifyOnNewShareholder: boolean;
+  notifyOnSharePurchase: boolean;
+  notifyOnShareSell: boolean;
+  notifyOnPaymentReceived: boolean;
+}
+
 export default function SettingsPage() {
   const t = useTranslations();
   const router = useRouter();
   const { locale: formattingLocale, setLocale: setFormattingLocale } = useLocale();
+  const { selectedCoop } = useAdmin();
   const [name, setName] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState('nl');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -45,6 +56,15 @@ export default function SettingsPage() {
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [googleLinked, setGoogleLinked] = useState(false);
   const [appleLinked, setAppleLinked] = useState(false);
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>({
+    frequency: 'IMMEDIATE',
+    notifyOnNewShareholder: false,
+    notifyOnSharePurchase: false,
+    notifyOnShareSell: false,
+    notifyOnPaymentReceived: false,
+  });
+  const [notifMessage, setNotifMessage] = useState('');
+  const [notifError, setNotifError] = useState('');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -62,6 +82,28 @@ export default function SettingsPage() {
       setAppleLinked(res.appleLinked);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!selectedCoop) return;
+    api<NotificationSettings>(`/admin/coops/${selectedCoop.id}/team/me/notifications`)
+      .then((res) => setNotifSettings(res))
+      .catch(() => {});
+  }, [selectedCoop?.id]);
+
+  const handleNotifSave = async () => {
+    if (!selectedCoop) return;
+    setNotifError('');
+    setNotifMessage('');
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/team/me/notifications`, {
+        method: 'PATCH',
+        body: notifSettings,
+      });
+      setNotifMessage(t('common.savedSuccessfully'));
+    } catch {
+      setNotifError(t('errors.generic'));
+    }
+  };
 
   const handleNameSave = async () => {
     setNameError('');
@@ -242,6 +284,66 @@ export default function SettingsPage() {
             <Button onClick={handlePasswordChange}>{t('common.save')}</Button>
           </CardContent>
         </Card>
+
+        {selectedCoop && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('settings.notifications.title')}</CardTitle>
+              <CardDescription>{t('settings.notifications.description', { coopName: selectedCoop.name })}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {notifMessage && (
+                <Alert>
+                  <AlertDescription>{notifMessage}</AlertDescription>
+                </Alert>
+              )}
+              {notifError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{notifError}</AlertDescription>
+                </Alert>
+              )}
+              <div>
+                <Label>{t('settings.notifications.frequency')}</Label>
+                <Select
+                  value={notifSettings.frequency}
+                  onValueChange={(v) => setNotifSettings((s) => ({ ...s, frequency: v as NotificationSettings['frequency'] }))}
+                >
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="IMMEDIATE">{t('settings.notifications.frequencyImmediate')}</SelectItem>
+                    <SelectItem value="DAILY">{t('settings.notifications.frequencyDaily')}</SelectItem>
+                    <SelectItem value="WEEKLY">{t('settings.notifications.frequencyWeekly')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-3">
+                <Label>{t('settings.notifications.events')}</Label>
+                {(
+                  [
+                    ['notifyOnNewShareholder', t('settings.notifications.eventNewShareholder')] as const,
+                    ['notifyOnSharePurchase', t('settings.notifications.eventSharePurchase')] as const,
+                    ['notifyOnShareSell', t('settings.notifications.eventShareSell')] as const,
+                    ['notifyOnPaymentReceived', t('settings.notifications.eventPaymentReceived')] as const,
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={key}
+                      checked={notifSettings[key]}
+                      onCheckedChange={(checked) =>
+                        setNotifSettings((s) => ({ ...s, [key]: checked === true }))
+                      }
+                    />
+                    <label htmlFor={key} className="text-sm cursor-pointer">{label}</label>
+                  </div>
+                ))}
+              </div>
+              <Button onClick={handleNotifSave}>{t('common.save')}</Button>
+            </CardContent>
+          </Card>
+        )}
 
         <MfaSetup mfaEnabled={mfaEnabled} hasPassword={hasPassword} onStatusChange={setMfaEnabled} />
 

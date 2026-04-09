@@ -401,7 +401,20 @@
     "passwordChanged": "Wachtwoord succesvol gewijzigd",
     "displayName": "Weergavenaam",
     "displayNamePlaceholder": "Je naam",
-    "bankDetailsDescription": "Je bankrekening voor het ontvangen van terugbetalingen bij het verkopen van aandelen"
+    "bankDetailsDescription": "Je bankrekening voor het ontvangen van terugbetalingen bij het verkopen van aandelen",
+    "notifications": {
+      "title": "E-mailmeldingen",
+      "description": "Stel in welke gebeurtenissen een e-mailmelding activeren voor {coopName}.",
+      "frequency": "Frequentie",
+      "frequencyImmediate": "Onmiddellijk (bij elk event)",
+      "frequencyDaily": "Dagelijks overzicht",
+      "frequencyWeekly": "Wekelijks overzicht",
+      "events": "Gebeurtenissen",
+      "eventNewShareholder": "Nieuwe aandeelhouder geregistreerd",
+      "eventSharePurchase": "Aandeelhouder koopt aandelen",
+      "eventShareSell": "Aandeelhouder verkoopt aandelen",
+      "eventPaymentReceived": "Betaling ontvangen"
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
