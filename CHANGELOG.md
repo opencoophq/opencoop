@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.51] - 2026-04-09
+
+### Added
+- **Configurable notification digest time** — coop admins can now set the hour (UTC) at which their daily or weekly email digest is delivered. Previously hardcoded to 09:00 UTC; now each admin picks their preferred time in the notification settings.
+
+### Fixed
+- **Notification settings unreachable for admins** — the "Settings" link was missing from the admin sidebar, making notification preferences inaccessible for coop admins. A "My Account" section with a Settings link is now visible in the admin navigation.
+
 ## [0.7.50] - 2026-04-09
 
 ### Added
