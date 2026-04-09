@@ -14,6 +14,6 @@ test.describe('Admin dashboard', () => {
     // Verify sidebar navigation links
     await expect(page.getByRole('link', { name: /Aandeelhouders/ })).toBeVisible();
     await expect(page.getByRole('link', { name: /Transacties/ })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Instellingen' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Instellingen' }).first()).toBeVisible();
   });
 });
