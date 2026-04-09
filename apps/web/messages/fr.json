@@ -411,7 +411,9 @@
       "eventNewShareholder": "Nouvel actionnaire enregistré",
       "eventSharePurchase": "Un actionnaire achète des actions",
       "eventShareSell": "Un actionnaire vend des actions",
-      "eventPaymentReceived": "Paiement reçu"
+      "eventPaymentReceived": "Paiement reçu",
+      "digestTime": "Envoyer le résumé à",
+      "digestTimeUTC": "UTC"
     }
   },
   "nav": {

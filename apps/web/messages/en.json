@@ -413,7 +413,9 @@
       "eventNewShareholder": "New shareholder registered",
       "eventSharePurchase": "Shareholder buys shares",
       "eventShareSell": "Shareholder sells shares",
-      "eventPaymentReceived": "Payment received"
+      "eventPaymentReceived": "Payment received",
+      "digestTime": "Send digest at",
+      "digestTimeUTC": "UTC"
     }
   },
   "nav": {

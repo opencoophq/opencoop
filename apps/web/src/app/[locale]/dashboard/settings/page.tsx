@@ -32,6 +32,7 @@ const LANGUAGE_OPTIONS = [
 
 interface NotificationSettings {
   frequency: 'IMMEDIATE' | 'DAILY' | 'WEEKLY';
+  digestHour: number;
   notifyOnNewShareholder: boolean;
   notifyOnSharePurchase: boolean;
   notifyOnShareSell: boolean;
@@ -58,6 +59,7 @@ export default function SettingsPage() {
   const [appleLinked, setAppleLinked] = useState(false);
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>({
     frequency: 'IMMEDIATE',
+    digestHour: 9,
     notifyOnNewShareholder: false,
     notifyOnSharePurchase: false,
     notifyOnShareSell: false,
@@ -318,6 +320,26 @@ export default function SettingsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {(notifSettings.frequency === 'DAILY' || notifSettings.frequency === 'WEEKLY') && (
+                <div>
+                  <Label>{t('settings.notifications.digestTime')}</Label>
+                  <Select
+                    value={String(notifSettings.digestHour)}
+                    onValueChange={(v) => setNotifSettings((s) => ({ ...s, digestHour: Number(v) }))}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {String(i).padStart(2, '0')}:00 {t('settings.notifications.digestTimeUTC')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-3">
                 <Label>{t('settings.notifications.events')}</Label>
                 {(

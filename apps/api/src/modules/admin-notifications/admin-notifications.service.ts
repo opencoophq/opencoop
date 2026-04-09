@@ -72,32 +72,34 @@ export class AdminNotificationsService {
     }
   }
 
-  // Run daily digest at 9:00 AM
-  @Cron('0 9 * * *')
+  // Run every hour; send daily digests to admins whose configured digestHour matches
+  @Cron('0 * * * *')
   async sendDailyDigests(): Promise<void> {
     return Sentry.withIsolationScope(async (scope) => {
       scope.setTag('cron', 'adminDailyDigests');
-      this.logger.log('Sending daily admin notification digests...');
+      const currentHour = new Date().getUTCHours();
+      this.logger.log(`Sending daily admin notification digests for hour ${currentHour}...`);
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      await this.sendDigests('DAILY', since);
+      await this.sendDigests('DAILY', since, currentHour);
     });
   }
 
-  // Run weekly digest on Monday at 9:00 AM
-  @Cron('0 9 * * 1')
+  // Run every hour on Mondays; send weekly digests to admins whose configured digestHour matches
+  @Cron('0 * * * 1')
   async sendWeeklyDigests(): Promise<void> {
     return Sentry.withIsolationScope(async (scope) => {
       scope.setTag('cron', 'adminWeeklyDigests');
-      this.logger.log('Sending weekly admin notification digests...');
+      const currentHour = new Date().getUTCHours();
+      this.logger.log(`Sending weekly admin notification digests for hour ${currentHour}...`);
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      await this.sendDigests('WEEKLY', since);
+      await this.sendDigests('WEEKLY', since, currentHour);
     });
   }
 
-  private async sendDigests(frequency: 'DAILY' | 'WEEKLY', since: Date): Promise<void> {
+  private async sendDigests(frequency: 'DAILY' | 'WEEKLY', since: Date, digestHour: number): Promise<void> {
     const adminsWithDigest = await this.prisma.coopAdmin.findMany({
       where: {
-        notificationSettings: { frequency },
+        notificationSettings: { frequency, digestHour },
       },
       include: {
         user: { select: { email: true, name: true } },
