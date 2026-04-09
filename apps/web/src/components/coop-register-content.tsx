@@ -300,6 +300,10 @@ export function CoopRegisterContent({
         console.error('Failed to fetch coop:', error);
       } finally {
         setLoading(false);
+        // Track funnel start for Bronsgroen
+        if (coopSlug === 'bronsgroen') {
+          (window as any).umami?.track('registration_started', { coop: coopSlug });
+        }
       }
     }
 
@@ -515,6 +519,10 @@ export function CoopRegisterContent({
         registrationId: data.registrationId,
         ogmCode: data.ogmCode,
       });
+      // Track funnel completion for Bronsgroen
+      if (coopSlug === 'bronsgroen') {
+        (window as any).umami?.track('registration_completed', { coop: coopSlug });
+      }
       setStep(STEP.PAYMENT);
     } catch (error) {
       console.error('Registration failed:', error);
