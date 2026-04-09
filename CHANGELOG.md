@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.44] - 2026-04-09
+
+### Added
+- **Email notifications for coop admins** — coop admins can now configure per-coop email notification preferences in their account settings. Choose which events trigger a notification (new shareholder registered, share purchase, share sale, payment received) and the frequency: immediate (every event), daily digest, or weekly digest. Each admin's settings are independent per cooperative.
+
 ## [0.7.43] - 2026-04-04
 
 ### Fixed
