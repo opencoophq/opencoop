@@ -351,6 +351,7 @@ model CoopAdminNotificationSettings {
   id           String                      @id @default(cuid())
   coopAdminId  String                      @unique
   frequency    AdminNotificationFrequency  @default(IMMEDIATE)
+  digestHour   Int                         @default(9)
 
   // Event toggles
   notifyOnNewShareholder  Boolean @default(false)
