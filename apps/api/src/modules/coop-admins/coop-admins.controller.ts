@@ -125,6 +125,7 @@ export class CoopAdminsController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: {
       frequency?: 'IMMEDIATE' | 'DAILY' | 'WEEKLY';
+      digestHour?: number;
       notifyOnNewShareholder?: boolean;
       notifyOnSharePurchase?: boolean;
       notifyOnShareSell?: boolean;

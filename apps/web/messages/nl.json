@@ -413,7 +413,9 @@
       "eventNewShareholder": "Nieuwe aandeelhouder geregistreerd",
       "eventSharePurchase": "Aandeelhouder koopt aandelen",
       "eventShareSell": "Aandeelhouder verkoopt aandelen",
-      "eventPaymentReceived": "Betaling ontvangen"
+      "eventPaymentReceived": "Betaling ontvangen",
+      "digestTime": "Verstuur samenvatting om",
+      "digestTimeUTC": "UTC"
     }
   },
   "nav": {

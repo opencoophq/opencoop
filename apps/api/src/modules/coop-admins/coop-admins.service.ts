@@ -320,6 +320,7 @@ export class CoopAdminsService {
 
     return admin.notificationSettings ?? {
       frequency: 'IMMEDIATE',
+      digestHour: 9,
       notifyOnNewShareholder: false,
       notifyOnSharePurchase: false,
       notifyOnShareSell: false,
@@ -332,6 +333,7 @@ export class CoopAdminsService {
     userId: string,
     dto: {
       frequency?: 'IMMEDIATE' | 'DAILY' | 'WEEKLY';
+      digestHour?: number;
       notifyOnNewShareholder?: boolean;
       notifyOnSharePurchase?: boolean;
       notifyOnShareSell?: boolean;
@@ -350,6 +352,7 @@ export class CoopAdminsService {
       create: {
         coopAdminId: admin.id,
         frequency: dto.frequency ?? 'IMMEDIATE',
+        digestHour: dto.digestHour ?? 9,
         notifyOnNewShareholder: dto.notifyOnNewShareholder ?? false,
         notifyOnSharePurchase: dto.notifyOnSharePurchase ?? false,
         notifyOnShareSell: dto.notifyOnShareSell ?? false,
@@ -357,6 +360,7 @@ export class CoopAdminsService {
       },
       update: {
         ...(dto.frequency !== undefined && { frequency: dto.frequency }),
+        ...(dto.digestHour !== undefined && { digestHour: dto.digestHour }),
         ...(dto.notifyOnNewShareholder !== undefined && { notifyOnNewShareholder: dto.notifyOnNewShareholder }),
         ...(dto.notifyOnSharePurchase !== undefined && { notifyOnSharePurchase: dto.notifyOnSharePurchase }),
         ...(dto.notifyOnShareSell !== undefined && { notifyOnShareSell: dto.notifyOnShareSell }),
