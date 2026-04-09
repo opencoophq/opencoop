@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.50] - 2026-04-09
+
+### Added
+- **Cancel transactions for coop admins** — coop admins can now cancel erroneous or duplicate transactions directly from the transaction list. A cancel button (ban icon) appears for `PENDING` and `PENDING_PAYMENT` transactions. Clicking opens a confirmation dialog with an optional reason field. Cancellation is blocked for transactions that have already been completed or are in active payment processing.
+
 ## [0.7.49] - 2026-04-09
 
 ### Added
