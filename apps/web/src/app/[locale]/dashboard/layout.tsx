@@ -174,7 +174,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/documents', label: t('common.documents'), icon: <FileDown className="h-4 w-4" /> },
     { href: '/dashboard/inbox', label: t('messages.title'), icon: <MailIcon className="h-4 w-4" />, badge: unreadCount },
     { href: '/dashboard/personal-data', label: t('personalData.title'), icon: <UserCog className="h-4 w-4" /> },
-    { href: '/dashboard/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
   ];
 
   const adminNav: NavItem[] = selectedCoop
@@ -347,9 +346,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <div className="flex-1 overflow-y-auto py-4 px-2">
             {!isAdmin && renderNavSection(t('common.myAccount'), shareholderNav)}
             {isAdmin && adminNav.length > 0 && renderNavSection(t('admin.title'), adminNav)}
-            {isAdmin && renderNavSection(t('common.myAccount'), [
-              { href: '/dashboard/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
-            ])}
             {isSystemAdmin && renderNavSection(t('system.title'), systemNav)}
           </div>
 
@@ -409,6 +405,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 {savedSessions.filter((s) => s.id !== activeSessionId).length > 0 && (
                   <DropdownMenuSeparator />
                 )}
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    {t('common.settings')}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/login?addAccount=true" className="flex items-center gap-2">
                     <UserPlus className="h-4 w-4" />
