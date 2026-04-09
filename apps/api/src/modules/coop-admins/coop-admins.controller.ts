@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -15,6 +16,7 @@ import { CoopGuard } from '../../common/guards/coop.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RequirePermission } from '../../common/decorators/permissions.decorator';
+import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { CoopAdminsService } from './coop-admins.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -103,6 +105,33 @@ export class CoopAdminsController {
   @ApiOperation({ summary: 'Remove an admin' })
   removeAdmin(@Param('coopId') coopId: string, @Param('adminId') adminId: string) {
     return this.coopAdminsService.removeAdmin(coopId, adminId);
+  }
+
+  // ==================== MY NOTIFICATION SETTINGS ====================
+
+  @Get('me/notifications')
+  @ApiOperation({ summary: 'Get my notification settings for this coop' })
+  getMyNotificationSettings(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.coopAdminsService.getNotificationSettings(coopId, user.id);
+  }
+
+  @Patch('me/notifications')
+  @ApiOperation({ summary: 'Update my notification settings for this coop' })
+  updateMyNotificationSettings(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: {
+      frequency?: 'IMMEDIATE' | 'DAILY' | 'WEEKLY';
+      notifyOnNewShareholder?: boolean;
+      notifyOnSharePurchase?: boolean;
+      notifyOnShareSell?: boolean;
+      notifyOnPaymentReceived?: boolean;
+    },
+  ) {
+    return this.coopAdminsService.updateNotificationSettings(coopId, user.id, dto);
   }
 
   // ==================== INVITATIONS ====================

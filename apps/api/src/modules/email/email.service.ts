@@ -3,6 +3,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { AdminNotificationEvent, AdminNotificationData } from '../admin-notifications/admin-notifications.service';
 
 export interface EmailOptions {
   coopId: string;
@@ -304,6 +305,52 @@ export class EmailService {
       to,
       subject: 'Iemand heeft je uitnodiging aanvaard!',
       templateKey: 'referral-success',
+      templateData: data,
+    });
+  }
+
+  async sendAdminEventNotification(
+    coopId: string,
+    to: string,
+    data: {
+      adminName: string;
+      coopName: string;
+      event: AdminNotificationEvent;
+      data: AdminNotificationData;
+    },
+  ) {
+    const subjects: Record<AdminNotificationEvent, string> = {
+      new_shareholder: `[${data.coopName}] New shareholder registered`,
+      share_purchase: `[${data.coopName}] Share purchase`,
+      share_sell: `[${data.coopName}] Share sale`,
+      payment_received: `[${data.coopName}] Payment received`,
+    };
+
+    return this.send({
+      coopId,
+      to,
+      subject: subjects[data.event],
+      templateKey: 'admin-event-notification',
+      templateData: data,
+    });
+  }
+
+  async sendAdminDigest(
+    coopId: string,
+    to: string,
+    data: {
+      adminName: string;
+      coopName: string;
+      frequency: 'DAILY' | 'WEEKLY';
+      events: Array<{ event: AdminNotificationEvent; data: AdminNotificationData }>;
+    },
+  ) {
+    const label = data.frequency === 'DAILY' ? 'Daily' : 'Weekly';
+    return this.send({
+      coopId,
+      to,
+      subject: `[${data.coopName}] ${label} digest — ${data.events.length} update${data.events.length === 1 ? '' : 's'}`,
+      templateKey: 'admin-digest',
       templateData: data,
     });
   }

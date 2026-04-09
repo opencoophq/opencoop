@@ -399,7 +399,20 @@
     "passwordChanged": "Passwort erfolgreich geändert",
     "displayName": "Anzeigename",
     "displayNamePlaceholder": "Ihr Name",
-    "bankDetailsDescription": "Ihr Bankkonto für den Empfang von Rückerstattungen beim Verkauf von Aktien"
+    "bankDetailsDescription": "Ihr Bankkonto für den Empfang von Rückerstattungen beim Verkauf von Aktien",
+    "notifications": {
+      "title": "E-Mail-Benachrichtigungen",
+      "description": "Konfigurieren Sie, welche Ereignisse eine E-Mail-Benachrichtigung für {coopName} auslösen.",
+      "frequency": "Häufigkeit",
+      "frequencyImmediate": "Sofort (bei jedem Ereignis)",
+      "frequencyDaily": "Tägliche Zusammenfassung",
+      "frequencyWeekly": "Wöchentliche Zusammenfassung",
+      "events": "Ereignisse",
+      "eventNewShareholder": "Neuer Anteilseigner registriert",
+      "eventSharePurchase": "Anteilseigner kauft Anteile",
+      "eventShareSell": "Anteilseigner verkauft Anteile",
+      "eventPaymentReceived": "Zahlung eingegangen"
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
