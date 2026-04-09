@@ -647,7 +647,11 @@
       "selectRegistration": "Select a registration to match this payment to",
       "matched": "Payment matched successfully.",
       "counterparty": "Counterparty",
-      "reference": "Reference"
+      "reference": "Reference",
+      "cancelTransaction": "Cancel Transaction",
+      "cancelTransactionDescription": "This will cancel the transaction. The shareholder will not receive any shares. You can optionally provide a reason.",
+      "cancelReasonPlaceholder": "Reason for cancellation (optional)...",
+      "confirmCancel": "Cancel Transaction"
     },
     "shareClasses": {
       "title": "Share Classes",

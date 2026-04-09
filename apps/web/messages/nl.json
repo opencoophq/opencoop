@@ -647,7 +647,11 @@
       "selectRegistration": "Selecteer een registratie om deze betaling aan te koppelen",
       "matched": "Betaling succesvol gekoppeld.",
       "counterparty": "Tegenpartij",
-      "reference": "Referentie"
+      "reference": "Referentie",
+      "cancelTransaction": "Transactie Annuleren",
+      "cancelTransactionDescription": "Dit annuleert de transactie. De aandeelhouder ontvangt geen aandelen. U kunt optioneel een reden opgeven.",
+      "cancelReasonPlaceholder": "Reden voor annulering (optioneel)...",
+      "confirmCancel": "Transactie Annuleren"
     },
     "shareClasses": {
       "title": "Aandelenklassen",

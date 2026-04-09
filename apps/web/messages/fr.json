@@ -645,7 +645,11 @@
       "selectRegistration": "Sélectionnez une inscription pour associer ce paiement",
       "matched": "Paiement associé avec succès.",
       "counterparty": "Contrepartie",
-      "reference": "Référence"
+      "reference": "Référence",
+      "cancelTransaction": "Annuler la Transaction",
+      "cancelTransactionDescription": "Ceci annulera la transaction. L'actionnaire ne recevra pas de parts. Vous pouvez optionnellement fournir une raison.",
+      "cancelReasonPlaceholder": "Raison d'annulation (optionnel)...",
+      "confirmCancel": "Annuler la Transaction"
     },
     "shareClasses": {
       "title": "Classes de parts",

@@ -37,7 +37,7 @@ import { api } from '@/lib/api';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, X, QrCode, CreditCard, Link2 } from 'lucide-react';
+import { Check, X, QrCode, CreditCard, Link2, Ban } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
 interface TransactionRow {
@@ -104,6 +104,11 @@ export default function AdminTransactionsPage() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectTxId, setRejectTxId] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+
+  // Cancel dialog state
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelTxId, setCancelTxId] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -180,6 +185,26 @@ export default function AdminTransactionsPage() {
         body: { reason: rejectReason.trim() },
       });
       setRejectOpen(false);
+      loadData();
+    } catch {
+      setError(t('common.actionError'));
+    }
+  };
+
+  const openCancelDialog = (id: string) => {
+    setCancelTxId(id);
+    setCancelReason('');
+    setCancelOpen(true);
+  };
+
+  const handleCancel = async () => {
+    if (!selectedCoop || !cancelTxId) return;
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${cancelTxId}/cancel`, {
+        method: 'PUT',
+        body: { reason: cancelReason.trim() || undefined },
+      });
+      setCancelOpen(false);
       loadData();
     } catch {
       setError(t('common.actionError'));
@@ -457,6 +482,16 @@ export default function AdminTransactionsPage() {
                                 </Button>
                               </>
                             )}
+                            {['PENDING', 'PENDING_PAYMENT'].includes(tx.status) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openCancelDialog(tx.id)}
+                                title={t('admin.transactions.cancelTransaction')}
+                              >
+                                <Ban className="h-4 w-4 text-orange-600" />
+                              </Button>
+                            )}
                             {canShowPayment(tx) && (
                               <Button
                                 variant="ghost"
@@ -653,6 +688,32 @@ export default function AdminTransactionsPage() {
                 disabled={!rejectReason.trim()}
               >
                 {t('transactions.reject')}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Transaction Dialog */}
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.transactions.cancelTransaction')}</DialogTitle>
+            <DialogDescription>{t('admin.transactions.cancelTransactionDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder={t('admin.transactions.cancelReasonPlaceholder')}
+              rows={3}
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCancelOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button variant="destructive" onClick={handleCancel}>
+                {t('admin.transactions.confirmCancel')}
               </Button>
             </DialogFooter>
           </div>
