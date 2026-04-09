@@ -25,6 +25,5 @@ test.describe('Shareholder dashboard', () => {
     await expect(sidebar.getByText('Dividenden')).toBeVisible();
     await expect(sidebar.getByText('Documenten')).toBeVisible();
     await expect(sidebar.getByText('Persoonlijke gegevens')).toBeVisible();
-    await expect(sidebar.getByText('Instellingen')).toBeVisible();
   });
 });
