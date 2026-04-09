@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.53] - 2026-04-09
+
+### Fixed
+- **E2E test alignment** — updated shareholder dashboard E2E test to reflect settings being in the user dropdown instead of the sidebar.
+
 ## [0.7.52] - 2026-04-09
 
 ### Changed
