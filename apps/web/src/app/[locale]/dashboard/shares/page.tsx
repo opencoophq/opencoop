@@ -24,7 +24,7 @@ import { api, apiFetch } from '@/lib/api';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatIban } from '@opencoop/shared';
-import { TrendingDown, QrCode, Gift, Download, FileDown, Pencil, ArrowLeft, Smartphone, Copy, Check } from 'lucide-react';
+import { TrendingDown, QrCode, Gift, Download, FileDown, Pencil, ArrowLeft, Copy, Check } from 'lucide-react';
 
 interface RegistrationData {
   id: string;
@@ -793,7 +793,7 @@ export default function SharesPage() {
                 <AlertDescription>{t('shares.purchaseSubmitted')}</AlertDescription>
               </Alert>
               {buyPaymentDetails.iban && (
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex justify-center">
                   <EpcQrCode
                     bic={buyPaymentDetails.bic}
                     beneficiaryName={buyPaymentDetails.beneficiaryName}
@@ -803,15 +803,6 @@ export default function SharesPage() {
                     unstructured={t('payments.sharePurchase', { quantity: buyPaymentDetails.quantity ?? '' })}
                     label={t('payments.sharePurchase', { quantity: buyPaymentDetails.quantity ?? '' })}
                   />
-                  <a
-                    href="https://payconiq.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Smartphone className="h-3.5 w-3.5" />
-                    {t('payments.openInPayconiq')}
-                  </a>
                 </div>
               )}
               <div className="space-y-2 text-sm">
@@ -919,7 +910,7 @@ export default function SharesPage() {
           {paymentQrDetails && (
             <div className="space-y-4">
               {paymentQrDetails.iban && (
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex justify-center">
                   <EpcQrCode
                     bic={paymentQrDetails.bic}
                     beneficiaryName={paymentQrDetails.beneficiaryName}
@@ -929,15 +920,6 @@ export default function SharesPage() {
                     unstructured={t('payments.sharePurchase', { quantity: paymentQrDetails.quantity ?? '' })}
                     label={t('payments.sharePurchase', { quantity: paymentQrDetails.quantity ?? '' })}
                   />
-                  <a
-                    href="https://payconiq.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Smartphone className="h-3.5 w-3.5" />
-                    {t('payments.openInPayconiq')}
-                  </a>
                 </div>
               )}
               <div className="space-y-2 text-sm">
