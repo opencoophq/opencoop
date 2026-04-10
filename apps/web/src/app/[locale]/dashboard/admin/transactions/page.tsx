@@ -37,7 +37,7 @@ import { api } from '@/lib/api';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, X, QrCode, CreditCard, Link2, Ban, Smartphone } from 'lucide-react';
+import { Check, X, QrCode, CreditCard, Link2, Ban, Smartphone, Copy } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
 interface TransactionRow {
@@ -96,6 +96,7 @@ export default function AdminTransactionsPage() {
   const [paymentTxStatus, setPaymentTxStatus] = useState('');
   const [paymentBankDate, setPaymentBankDate] = useState('');
   const [completing, setCompleting] = useState(false);
+  const [copiedOgm, setCopiedOgm] = useState(false);
 
   // Inline payment date editing
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
@@ -609,7 +610,9 @@ export default function AdminTransactionsPage() {
                     label={paymentDetails.direction === 'outgoing' ? t('payments.shareRefund', { quantity: paymentDetails.quantity ?? '' }) : t('payments.sharePurchase', { quantity: paymentDetails.quantity ?? '' })}
                   />
                   <a
-                    href={`payconiq://pay?amount=${Math.round(paymentDetails.amount * 100)}&currency=EUR${paymentDetails.ogmCode ? `&message=${encodeURIComponent(paymentDetails.ogmCode)}` : ''}`}
+                    href="https://payconiq.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Smartphone className="h-3.5 w-3.5" />
@@ -641,9 +644,23 @@ export default function AdminTransactionsPage() {
                   </span>
                 </div>
                 {paymentDetails.ogmCode && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">{t('payments.ogmCode')}</span>
-                    <span className="font-mono text-xs">{paymentDetails.ogmCode}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs">{paymentDetails.ogmCode}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(paymentDetails.ogmCode!);
+                          setCopiedOgm(true);
+                          setTimeout(() => setCopiedOgm(false), 2000);
+                        }}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Copy reference"
+                      >
+                        {copiedOgm ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

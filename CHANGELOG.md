@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.56] - 2026-04-10
+
+### Fixed
+- **Payconiq/Bancontact link works on iOS Safari** — replaced the `payconiq://` custom URL scheme with `https://payconiq.com` (HTTPS universal link). iOS Safari blocks custom schemes with "address is invalid" when the app is not installed; the HTTPS link opens the Payconiq website as a fallback instead.
+- **Copy OGM reference button in payment dialogs** — a clipboard icon now appears next to the structured reference (OGM) in all payment dialogs. Tapping it copies the reference and briefly shows a checkmark, making it easy to paste into any banking app on mobile.
+
 ## [0.7.55] - 2026-04-10
 
 ### Fixed
