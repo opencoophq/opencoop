@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.57] - 2026-04-10
+
+### Changed
+- **Removed Payconiq/Bancontact link from payment dialogs** — the link to `payconiq.com` has been removed as the site is outdated and unhelpful. The EPC QR code and copy-OGM button remain the primary payment tools.
+
 ## [0.7.56] - 2026-04-10
 
 ### Fixed

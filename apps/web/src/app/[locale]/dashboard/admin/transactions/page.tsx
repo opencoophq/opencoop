@@ -37,7 +37,7 @@ import { api } from '@/lib/api';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, X, QrCode, CreditCard, Link2, Ban, Smartphone, Copy } from 'lucide-react';
+import { Check, X, QrCode, CreditCard, Link2, Ban, Copy } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
 interface TransactionRow {
@@ -599,7 +599,7 @@ export default function AdminTransactionsPage() {
           {paymentDetails && (
             <div className="space-y-4">
               {paymentDetails.iban ? (
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex justify-center">
                   <EpcQrCode
                     bic={paymentDetails.bic}
                     beneficiaryName={paymentDetails.beneficiaryName}
@@ -609,15 +609,6 @@ export default function AdminTransactionsPage() {
                     unstructured={paymentDetails.direction === 'outgoing' ? t('payments.shareRefund', { quantity: paymentDetails.quantity ?? '' }) : t('payments.sharePurchase', { quantity: paymentDetails.quantity ?? '' })}
                     label={paymentDetails.direction === 'outgoing' ? t('payments.shareRefund', { quantity: paymentDetails.quantity ?? '' }) : t('payments.sharePurchase', { quantity: paymentDetails.quantity ?? '' })}
                   />
-                  <a
-                    href="https://payconiq.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Smartphone className="h-3.5 w-3.5" />
-                    {t('payments.openInPayconiq')}
-                  </a>
                 </div>
               ) : (
                 <Alert variant="destructive">
