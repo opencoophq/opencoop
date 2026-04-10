@@ -465,7 +465,7 @@ export class MessagesService {
           shareholderName: participant.shareholder.firstName || '',
           messageSubject: conversation.subject,
           messagePreview,
-          inboxUrl: `${appUrl}/${language}/dashboard/inbox`,
+          inboxUrl: `${appUrl}/${language}/dashboard/inbox/${conversationId}`,
           language,
         },
       });
