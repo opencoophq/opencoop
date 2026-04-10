@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.55] - 2026-04-10
+
+### Fixed
+- **Message notification email deep-links to conversation** — the "View message" button in shareholder notification emails now links directly to the specific conversation (`/dashboard/inbox/{conversationId}`) instead of the generic inbox. Previously shareholders would land on the inbox list and sometimes start a new thread instead of replying in-place.
+
 ## [0.7.54] - 2026-04-10
 
 ### Added
