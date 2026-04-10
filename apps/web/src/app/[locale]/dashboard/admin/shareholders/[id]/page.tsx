@@ -1511,10 +1511,9 @@ export default function ShareholderDetailPage() {
               {paymentTxStatus === 'PENDING_PAYMENT' && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{t('payments.paymentDate')}</label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={paymentBankDate}
-                    onChange={(e) => setPaymentBankDate(e.target.value)}
+                    onChange={(val) => setPaymentBankDate(val || '')}
                   />
                 </div>
               )}
@@ -1525,7 +1524,7 @@ export default function ShareholderDetailPage() {
                   </Button>
                 )}
                 <Button variant="outline" onClick={() => setPaymentOpen(false)}>
-                  {t('common.confirm')}
+                  {paymentTxStatus === 'PENDING_PAYMENT' ? t('common.cancel') : t('common.close')}
                 </Button>
               </DialogFooter>
             </div>

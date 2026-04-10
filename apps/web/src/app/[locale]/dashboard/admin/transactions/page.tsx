@@ -37,6 +37,7 @@ import { api } from '@/lib/api';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Check, X, QrCode, CreditCard, Link2, Ban, Copy } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
@@ -658,10 +659,9 @@ export default function AdminTransactionsPage() {
               {paymentTxStatus === 'PENDING_PAYMENT' && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{t('payments.paymentDate')}</label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={paymentBankDate}
-                    onChange={(e) => setPaymentBankDate(e.target.value)}
+                    onChange={(val) => setPaymentBankDate(val || '')}
                   />
                 </div>
               )}
@@ -672,7 +672,7 @@ export default function AdminTransactionsPage() {
                   </Button>
                 )}
                 <Button variant="outline" onClick={() => setPaymentOpen(false)}>
-                  {t('common.confirm')}
+                  {paymentTxStatus === 'PENDING_PAYMENT' ? t('common.cancel') : t('common.close')}
                 </Button>
               </DialogFooter>
             </div>
