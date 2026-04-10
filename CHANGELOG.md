@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.54] - 2026-04-10
+
+### Added
+- **Payconiq/Bancontact deep link in payment dialogs** — a "Pay via Payconiq / Bancontact" link now appears below the EPC QR code in all payment dialogs (admin transaction view and shareholder share purchase/pending-payment screens). On mobile, tapping opens the Payconiq or Bancontact app pre-filled with the amount, currency, and OGM structured reference.
+- **Participant names in admin messages overview** — the Participants column in the admin Postvak now shows actual names instead of a count. Broadcast messages display "All shareholders"; direct messages show up to 2 participant names with an ellipsis for overflow.
+
 ## [0.7.53] - 2026-04-09
 
 ### Fixed
