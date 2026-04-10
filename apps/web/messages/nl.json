@@ -335,7 +335,8 @@
     "paymentDate": "Betaaldatum",
     "pending": "In behandeling",
     "sharePurchase": "Aankoop {quantity} aandelen",
-    "shareRefund": "Terugbetaling {quantity} aandelen"
+    "shareRefund": "Terugbetaling {quantity} aandelen",
+    "openInPayconiq": "Betalen via Payconiq / Bancontact"
   },
   "dividends": {
     "title": "Dividenden",

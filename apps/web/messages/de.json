@@ -335,7 +335,8 @@
     "paymentDate": "Zahlungsdatum",
     "pending": "Ausstehend",
     "sharePurchase": "Aktienkauf {quantity} Aktien",
-    "shareRefund": "Aktienrückerstattung {quantity} Aktien"
+    "shareRefund": "Aktienrückerstattung {quantity} Aktien",
+    "openInPayconiq": "Bezahlen mit Payconiq / Bancontact"
   },
   "dividends": {
     "title": "Dividenden",
