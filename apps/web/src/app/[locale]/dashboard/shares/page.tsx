@@ -24,7 +24,7 @@ import { api, apiFetch } from '@/lib/api';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatIban } from '@opencoop/shared';
-import { TrendingDown, QrCode, Gift, Download, FileDown, Pencil, ArrowLeft, Smartphone } from 'lucide-react';
+import { TrendingDown, QrCode, Gift, Download, FileDown, Pencil, ArrowLeft, Smartphone, Copy, Check } from 'lucide-react';
 
 interface RegistrationData {
   id: string;
@@ -123,6 +123,7 @@ export default function SharesPage() {
   // Payment QR dialog for PENDING_PAYMENT registrations
   const [paymentQrOpen, setPaymentQrOpen] = useState(false);
   const [paymentQrDetails, setPaymentQrDetails] = useState<PaymentDetailsData | null>(null);
+  const [copiedOgm, setCopiedOgm] = useState(false);
 
   // Bank details dialog for when IBAN is missing
   const [bankOpen, setBankOpen] = useState(false);
@@ -803,7 +804,9 @@ export default function SharesPage() {
                     label={t('payments.sharePurchase', { quantity: buyPaymentDetails.quantity ?? '' })}
                   />
                   <a
-                    href={`payconiq://pay?amount=${Math.round(buyPaymentDetails.amount * 100)}&currency=EUR${buyPaymentDetails.ogmCode ? `&message=${encodeURIComponent(buyPaymentDetails.ogmCode)}` : ''}`}
+                    href="https://payconiq.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Smartphone className="h-3.5 w-3.5" />
@@ -825,9 +828,23 @@ export default function SharesPage() {
                   <span className="font-medium">{formatCurrency(buyPaymentDetails.amount, locale)}</span>
                 </div>
                 {buyPaymentDetails.ogmCode && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">{t('payments.ogmCode')}</span>
-                    <span className="font-mono text-xs">{buyPaymentDetails.ogmCode}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs">{buyPaymentDetails.ogmCode}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(buyPaymentDetails.ogmCode!);
+                          setCopiedOgm(true);
+                          setTimeout(() => setCopiedOgm(false), 2000);
+                        }}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Copy reference"
+                      >
+                        {copiedOgm ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -913,7 +930,9 @@ export default function SharesPage() {
                     label={t('payments.sharePurchase', { quantity: paymentQrDetails.quantity ?? '' })}
                   />
                   <a
-                    href={`payconiq://pay?amount=${Math.round(paymentQrDetails.amount * 100)}&currency=EUR${paymentQrDetails.ogmCode ? `&message=${encodeURIComponent(paymentQrDetails.ogmCode)}` : ''}`}
+                    href="https://payconiq.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Smartphone className="h-3.5 w-3.5" />
@@ -935,9 +954,23 @@ export default function SharesPage() {
                   <span className="font-medium">{formatCurrency(paymentQrDetails.amount, locale)}</span>
                 </div>
                 {paymentQrDetails.ogmCode && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">{t('payments.ogmCode')}</span>
-                    <span className="font-mono text-xs">{paymentQrDetails.ogmCode}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs">{paymentQrDetails.ogmCode}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(paymentQrDetails.ogmCode!);
+                          setCopiedOgm(true);
+                          setTimeout(() => setCopiedOgm(false), 2000);
+                        }}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Copy reference"
+                      >
+                        {copiedOgm ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
