@@ -19,6 +19,15 @@ import {
 import { api } from '@/lib/api';
 import { Plus } from 'lucide-react';
 
+interface ConversationParticipant {
+  shareholder: {
+    firstName: string;
+    lastName: string;
+    companyName: string | null;
+    type: string;
+  };
+}
+
 interface ConversationListItem {
   id: string;
   subject: string;
@@ -29,6 +38,7 @@ interface ConversationListItem {
     createdAt: string;
     senderType: string;
   }>;
+  participants: ConversationParticipant[];
   _count: {
     participants: number;
     messages: number;
@@ -141,7 +151,21 @@ export default function AdminMessagesPage() {
                         </Link>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{preview}</TableCell>
-                      <TableCell>{conv._count.participants}</TableCell>
+                      <TableCell>
+                        {conv.type === 'BROADCAST'
+                          ? t('messages.allShareholders')
+                          : (() => {
+                              const names = conv.participants.map((p) =>
+                                p.shareholder.type === 'COMPANY'
+                                  ? (p.shareholder.companyName ?? '')
+                                  : `${p.shareholder.firstName} ${p.shareholder.lastName}`.trim(),
+                              );
+                              const total = conv._count.participants;
+                              if (names.length === 0) return String(total);
+                              const shown = names.slice(0, 2).join(', ');
+                              return total > 2 ? `${shown}, ...` : shown;
+                            })()}
+                      </TableCell>
                       <TableCell>
                         {new Date(conv.updatedAt).toLocaleDateString(locale)}
                       </TableCell>

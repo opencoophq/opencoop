@@ -32,6 +32,14 @@ export class MessagesService {
             take: 1,
             select: { body: true, createdAt: true, senderType: true },
           },
+          participants: {
+            take: 3,
+            include: {
+              shareholder: {
+                select: { firstName: true, lastName: true, companyName: true, type: true },
+              },
+            },
+          },
           _count: { select: { participants: true, messages: true } },
         },
       }),
