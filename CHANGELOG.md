@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.58] - 2026-04-10
+
+### Added
+- **Participant names in admin messages overview** — the Participants column in the admin Postvak now shows actual names instead of a count. Broadcast messages display "All shareholders"; direct messages show up to 2 participant names with an ellipsis for overflow.
+
 ## [0.7.57] - 2026-04-10
 
 ### Changed
