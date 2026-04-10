@@ -335,7 +335,8 @@
     "paymentDate": "Payment Date",
     "pending": "Pending",
     "sharePurchase": "Share purchase - {quantity} shares",
-    "shareRefund": "Share refund - {quantity} shares"
+    "shareRefund": "Share refund - {quantity} shares",
+    "openInPayconiq": "Pay via Payconiq / Bancontact"
   },
   "dividends": {
     "title": "Dividends",
