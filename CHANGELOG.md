@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.59] - 2026-04-10
+
+### Fixed
+- **Payment dialog date picker respects user locale** — replaced native `<input type="date">` (which shows mm/dd/yyyy on US-configured systems) with the existing locale-aware DatePicker component in both the transactions and shareholder detail payment dialogs.
+- **Clarified payment dialog dismiss button** — the "Confirm" button that only closed the dialog was confusing next to the "Mark as completed" action. Now shows "Cancel" when mark-complete is available, and "Close" when just viewing payment info.
+
 ## [0.7.58] - 2026-04-10
 
 ### Added
