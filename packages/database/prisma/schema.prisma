@@ -182,6 +182,7 @@ model Coop {
   subscription     Subscription?
   pontoConnection  PontoConnection?
   auditLogs        AuditLog[]
+  apiKeys          ApiKey[]
 
   @@map("coops")
 }
@@ -277,6 +278,7 @@ model User {
   auditLogs              AuditLog[]
   conversationsCreated   Conversation[]        @relation("ConversationCreatedBy")
   refreshTokens          RefreshToken[]
+  apiKeys                ApiKey[]
 
   @@map("users")
 }
@@ -312,6 +314,23 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  prefix     String    // first 11 chars of raw key for display ("oc_a1b2c3d4...")
+  keyHash    String    @unique // SHA-256 hash of full key
+  name       String    // user-chosen label
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coopId     String
+  coop       Coop      @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  @@index([keyHash])
+  @@map("api_keys")
 }
 
 model MagicLinkToken {

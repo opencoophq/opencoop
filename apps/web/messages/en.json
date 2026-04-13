@@ -848,7 +848,28 @@
       "addressNumber": "Number",
       "addressPostalCode": "Postal Code",
       "addressCity": "City",
-      "addressCountry": "Country"
+      "addressCountry": "Country",
+      "apiKeys": {
+        "title": "AI API Keys",
+        "description": "Create API keys to connect Claude or other AI assistants to your cooperative's data via MCP.",
+        "create": "Create API Key",
+        "name": "Key Name",
+        "namePlaceholder": "e.g. Claude Code - laptop",
+        "prefix": "Key",
+        "createdAt": "Created",
+        "lastUsed": "Last Used",
+        "never": "Never",
+        "revoke": "Revoke",
+        "revokeConfirm": "Are you sure you want to revoke this API key? Any tools using it will stop working.",
+        "noKeys": "No API keys yet. Create one to connect AI assistants to your cooperative's data.",
+        "created": "API key created",
+        "createdWarning": "Copy this key now — it won't be shown again.",
+        "copied": "Copied!",
+        "copyKey": "Copy Key",
+        "copyConfig": "Copy Claude Config",
+        "claudeConfig": "Claude MCP Configuration",
+        "revoked": "API key revoked"
+      }
     },
     "branding": {
       "title": "Branding Settings",

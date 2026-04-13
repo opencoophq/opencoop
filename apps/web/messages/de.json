@@ -846,7 +846,28 @@
       "addressNumber": "Nummer",
       "addressPostalCode": "Postleitzahl",
       "addressCity": "Stadt",
-      "addressCountry": "Land"
+      "addressCountry": "Land",
+      "apiKeys": {
+        "title": "KI-API-Schlüssel",
+        "description": "Erstellen Sie API-Schlüssel, um Claude oder andere KI-Assistenten über MCP mit den Daten Ihrer Genossenschaft zu verbinden.",
+        "create": "API-Schlüssel erstellen",
+        "name": "Schlüsselname",
+        "namePlaceholder": "z.B. Claude Code - Laptop",
+        "prefix": "Schlüssel",
+        "createdAt": "Erstellt",
+        "lastUsed": "Zuletzt verwendet",
+        "never": "Nie",
+        "revoke": "Widerrufen",
+        "revokeConfirm": "Sind Sie sicher, dass Sie diesen API-Schlüssel widerrufen möchten? Tools, die ihn verwenden, funktionieren nicht mehr.",
+        "noKeys": "Noch keine API-Schlüssel. Erstellen Sie einen, um KI-Assistenten mit den Daten Ihrer Genossenschaft zu verbinden.",
+        "created": "API-Schlüssel erstellt",
+        "createdWarning": "Kopieren Sie diesen Schlüssel jetzt — er wird nicht erneut angezeigt.",
+        "copied": "Kopiert!",
+        "copyKey": "Schlüssel kopieren",
+        "copyConfig": "Claude-Konfiguration kopieren",
+        "claudeConfig": "Claude MCP-Konfiguration",
+        "revoked": "API-Schlüssel widerrufen"
+      }
     },
     "branding": {
       "title": "Branding-Einstellungen",
