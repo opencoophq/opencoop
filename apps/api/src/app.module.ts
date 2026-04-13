@@ -80,7 +80,7 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
       name: 'opencoop',
       version: '1.0.0',
       instructions:
-        'OpenCoop public API for AI agents — query cooperative data and generate share purchase URLs',
+        'OpenCoop admin API — query your cooperative\'s shareholders, transactions, analytics, and more. Authenticated via API key.',
       transport: McpTransportType.STREAMABLE_HTTP,
       capabilities: {
         tools: {},
