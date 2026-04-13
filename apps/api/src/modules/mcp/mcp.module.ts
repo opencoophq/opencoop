@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { McpModule } from '@rekog/mcp-nest';
 import { McpAuthStore } from './mcp-auth.store';
 import { McpCoopTools } from './tools/mcp-coop.tools';
 import { McpShareholderTools } from './tools/mcp-shareholder.tools';
@@ -9,7 +10,15 @@ import { RegistrationsModule } from '../registrations/registrations.module';
 import { AdminModule } from '../admin/admin.module';
 
 @Module({
-  imports: [ShareholdersModule, RegistrationsModule, AdminModule],
+  imports: [
+    McpModule.forFeature(
+      [McpCoopTools, McpShareholderTools, McpTransactionTools, McpAnalyticsTools],
+      'opencoop',
+    ),
+    ShareholdersModule,
+    RegistrationsModule,
+    AdminModule,
+  ],
   providers: [
     McpAuthStore,
     McpCoopTools,

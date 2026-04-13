@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Tool } from '@rekog/mcp-nest';
+import { z } from 'zod';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { McpAuthStore } from '../mcp-auth.store';
 
@@ -21,6 +22,7 @@ export class McpCoopTools {
     name: 'get_coop_info',
     description:
       'Get cooperative details: name, slug, bank info, address, branding channels, and settings.',
+    parameters: z.object({}),
   })
   async getCoopInfo() {
     const coopId = this.auth.getCoopId();
@@ -66,6 +68,7 @@ export class McpCoopTools {
     name: 'get_coop_stats',
     description:
       'Get high-level cooperative statistics: total/active/pending shareholders, pending registrations, unmatched bank transactions, and total capital.',
+    parameters: z.object({}),
   })
   async getCoopStats() {
     const coopId = this.auth.getCoopId();
@@ -112,6 +115,7 @@ export class McpCoopTools {
     name: 'list_share_classes',
     description:
       'List all share classes for the cooperative with their name, code, price per share, and active status.',
+    parameters: z.object({}),
   })
   async listShareClasses() {
     const coopId = this.auth.getCoopId();
@@ -132,6 +136,7 @@ export class McpCoopTools {
     name: 'list_projects',
     description:
       'List all projects for the cooperative with the number of shares sold per project.',
+    parameters: z.object({}),
   })
   async listProjects() {
     const coopId = this.auth.getCoopId();
