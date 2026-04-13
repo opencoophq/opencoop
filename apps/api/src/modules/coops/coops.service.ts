@@ -57,8 +57,9 @@ export class CoopsService {
           },
         },
         registrations: {
-          where: { type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+          where: { type: { in: ['BUY', 'SELL'] }, status: { in: ['ACTIVE', 'COMPLETED'] } },
           select: {
+            type: true,
             quantity: true,
             pricePerShare: true,
             payments: {
@@ -78,7 +79,7 @@ export class CoopsService {
     return coops.map((coop) => {
       const totalCapital = coop.registrations.reduce((sum, reg) => {
         const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
-        return sum + totalPaid;
+        return sum + (reg.type === 'BUY' ? totalPaid : -totalPaid);
       }, 0);
 
       const defaultChannel = coop.channels[0];
@@ -285,10 +286,11 @@ export class CoopsService {
 
     const coopId = coop.id;
 
-    // Query all buy registrations across the entire coop
-    const buyRegistrations = await this.prisma.registration.findMany({
-      where: { coopId, type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+    // Query all confirmed registrations (BUY and SELL) to compute net capital
+    const registrations = await this.prisma.registration.findMany({
+      where: { coopId, type: { in: ['BUY', 'SELL'] }, status: { in: ['ACTIVE', 'COMPLETED'] } },
       select: {
+        type: true,
         shareholderId: true,
         quantity: true,
         pricePerShare: true,
@@ -296,18 +298,30 @@ export class CoopsService {
       },
     });
 
+    const buyRegistrations = registrations.filter((r) => r.type === 'BUY');
+    const sellRegistrations = registrations.filter((r) => r.type === 'SELL');
+
     const uniqueShareholders = new Set(
       buyRegistrations.map((r) => r.shareholderId),
     ).size;
-    const totalCapital = buyRegistrations.reduce(
+
+    const totalBuyCapital = buyRegistrations.reduce(
       (sum, r) => sum + r.payments.reduce((s, p) => s + Number(p.amount), 0),
       0,
     );
-    const totalShares = buyRegistrations.reduce((sum, r) => {
+    const totalSellCapital = sellRegistrations.reduce(
+      (sum, r) => sum + r.payments.reduce((s, p) => s + Number(p.amount), 0),
+      0,
+    );
+    const totalCapital = totalBuyCapital - totalSellCapital;
+
+    const boughtShares = buyRegistrations.reduce((sum, r) => {
       const totalPaid = r.payments.reduce((s, p) => s + Number(p.amount), 0);
       const pricePerShare = Number(r.pricePerShare);
       return sum + (pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), r.quantity) : 0);
     }, 0);
+    const soldShares = sellRegistrations.reduce((sum, r) => sum + r.quantity, 0);
+    const totalShares = boughtShares - soldShares;
 
     const projectCount = await this.prisma.project.count({
       where: { coopId, isActive: true },
