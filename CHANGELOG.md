@@ -2,6 +2,17 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.60] - 2026-04-13
+
+### Added
+- **Authenticated admin MCP server** — coop admins can now connect Claude or other AI assistants to query their cooperative's data via MCP. 13 read-only tools cover shareholders, transactions, analytics, share classes, projects, and annual overviews. Date range and channel filtering support campaign attribution analysis.
+- **Per-user API keys** — admins generate personal API keys in dashboard Settings → AI API Keys. Keys are SHA-256 hashed, revocable, and scoped to one cooperative. The creation dialog shows a ready-to-paste Claude MCP config snippet.
+- **Key management REST API** — `GET/POST/DELETE /admin/coops/:coopId/api-keys` for creating, listing, and revoking API keys programmatically.
+
+### Removed
+- **Public MCP endpoint** — the unauthenticated `POST /mcp` endpoint that exposed coop info, bank details, and investment stats has been replaced by the authenticated version.
+- **llms.txt endpoints** — `GET /llms.txt` and `GET /llms-full.txt` removed (exposed sensitive data without authentication).
+
 ## [0.7.59] - 2026-04-10
 
 ### Fixed
