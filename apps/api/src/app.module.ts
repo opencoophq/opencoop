@@ -33,6 +33,7 @@ import { AdminNotificationsModule } from './modules/admin-notifications/admin-no
 import { PontoModule } from './modules/ponto/ponto.module';
 import { ExternalApiModule } from './modules/external-api/external-api.module';
 import { ChangelogModule } from './modules/changelog/changelog.module';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { ChangelogModule } from './modules/changelog/changelog.module';
     }),
     ExternalApiModule,
     ChangelogModule,
+    ApiKeysModule,
   ],
   providers: [
     {
