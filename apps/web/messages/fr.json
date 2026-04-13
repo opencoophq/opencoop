@@ -846,7 +846,28 @@
       "addressNumber": "Numéro",
       "addressPostalCode": "Code postal",
       "addressCity": "Ville",
-      "addressCountry": "Pays"
+      "addressCountry": "Pays",
+      "apiKeys": {
+        "title": "Clés API IA",
+        "description": "Créez des clés API pour connecter Claude ou d'autres assistants IA aux données de votre coopérative via MCP.",
+        "create": "Créer une clé API",
+        "name": "Nom de la clé",
+        "namePlaceholder": "ex. Claude Code - laptop",
+        "prefix": "Clé",
+        "createdAt": "Créée le",
+        "lastUsed": "Dernière utilisation",
+        "never": "Jamais",
+        "revoke": "Révoquer",
+        "revokeConfirm": "Êtes-vous sûr de vouloir révoquer cette clé API ? Les outils qui l'utilisent cesseront de fonctionner.",
+        "noKeys": "Aucune clé API pour le moment. Créez-en une pour connecter des assistants IA aux données de votre coopérative.",
+        "created": "Clé API créée",
+        "createdWarning": "Copiez cette clé maintenant — elle ne sera plus affichée.",
+        "copied": "Copié !",
+        "copyKey": "Copier la clé",
+        "copyConfig": "Copier la config Claude",
+        "claudeConfig": "Configuration MCP Claude",
+        "revoked": "Clé API révoquée"
+      }
     },
     "branding": {
       "title": "Paramètres d'image de marque",
