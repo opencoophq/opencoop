@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
@@ -34,6 +34,8 @@ import { PontoModule } from './modules/ponto/ponto.module';
 import { ExternalApiModule } from './modules/external-api/external-api.module';
 import { ChangelogModule } from './modules/changelog/changelog.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+import { McpToolsModule } from './modules/mcp/mcp.module';
+import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
 
 @Module({
   imports: [
@@ -90,6 +92,7 @@ import { ApiKeysModule } from './modules/api-keys/api-keys.module';
     ExternalApiModule,
     ChangelogModule,
     ApiKeysModule,
+    McpToolsModule,
   ],
   providers: [
     {
@@ -102,4 +105,8 @@ import { ApiKeysModule } from './modules/api-keys/api-keys.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(McpAuthMiddleware).forRoutes('mcp');
+  }
+}
