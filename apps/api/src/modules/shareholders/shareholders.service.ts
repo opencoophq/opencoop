@@ -35,6 +35,7 @@ export class ShareholdersService {
       status?: string;
       type?: string;
       ecoPowerClient?: string;
+      channelId?: string;
     } = {},
   ) {
     const page = Number(params.page) || 1;
@@ -51,6 +52,7 @@ export class ShareholdersService {
       where.type = type;
     }
     if (params.ecoPowerClient === 'true') where.isEcoPowerClient = true;
+    if (params.channelId) where.channelId = params.channelId;
     if (search) {
       where.OR = [
         { firstName: { contains: search, mode: 'insensitive' } },

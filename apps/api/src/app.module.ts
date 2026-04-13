@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
@@ -30,11 +30,12 @@ import { HealthModule } from './modules/health/health.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CoopAdminsModule } from './modules/coop-admins/coop-admins.module';
 import { AdminNotificationsModule } from './modules/admin-notifications/admin-notifications.module';
-import { McpTools } from './modules/mcp/mcp.tools';
 import { PontoModule } from './modules/ponto/ponto.module';
-import { LlmsModule } from './modules/llms/llms.module';
 import { ExternalApiModule } from './modules/external-api/external-api.module';
 import { ChangelogModule } from './modules/changelog/changelog.module';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+import { McpToolsModule } from './modules/mcp/mcp.module';
+import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
 
 @Module({
   imports: [
@@ -79,7 +80,7 @@ import { ChangelogModule } from './modules/changelog/changelog.module';
       name: 'opencoop',
       version: '1.0.0',
       instructions:
-        'OpenCoop public API for AI agents — query cooperative data and generate share purchase URLs',
+        'OpenCoop admin API — query your cooperative\'s shareholders, transactions, analytics, and more. Authenticated via API key.',
       transport: McpTransportType.STREAMABLE_HTTP,
       capabilities: {
         tools: {},
@@ -88,9 +89,10 @@ import { ChangelogModule } from './modules/changelog/changelog.module';
         sessionIdGenerator: () => randomUUID(),
       },
     }),
-    LlmsModule,
     ExternalApiModule,
     ChangelogModule,
+    ApiKeysModule,
+    McpToolsModule,
   ],
   providers: [
     {
@@ -101,7 +103,10 @@ import { ChangelogModule } from './modules/changelog/changelog.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    McpTools,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(McpAuthMiddleware).forRoutes('mcp');
+  }
+}

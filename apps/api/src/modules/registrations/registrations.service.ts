@@ -41,6 +41,9 @@ export class RegistrationsService {
       status?: string;
       type?: string;
       shareholderId?: string;
+      fromDate?: string;
+      toDate?: string;
+      channelId?: string;
     } = {},
   ) {
     const page = Number(params.page) || 1;
@@ -52,6 +55,13 @@ export class RegistrationsService {
     if (status) where.status = status;
     if (type) where.type = type;
     if (shareholderId) where.shareholderId = shareholderId;
+    if (params.channelId) where.channelId = params.channelId;
+    if (params.fromDate || params.toDate) {
+      where.createdAt = {
+        ...(params.fromDate ? { gte: new Date(params.fromDate) } : {}),
+        ...(params.toDate ? { lte: new Date(params.toDate) } : {}),
+      };
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.registration.findMany({

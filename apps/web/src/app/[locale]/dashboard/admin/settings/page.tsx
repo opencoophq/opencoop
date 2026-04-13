@@ -37,6 +37,7 @@ import {
   ChevronRight,
   Landmark,
   Building2,
+  Key,
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
@@ -232,6 +233,21 @@ export default function AdminSettingsPage() {
   const [apiKeyCopied, setApiKeyCopied] = useState(false);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
 
+  // MCP API keys
+  const [mcpApiKeys, setMcpApiKeys] = useState<Array<{
+    id: string;
+    prefix: string;
+    name: string;
+    createdAt: string;
+    lastUsedAt: string | null;
+  }>>([]);
+  const [showCreateMcpKeyDialog, setShowCreateMcpKeyDialog] = useState(false);
+  const [mcpKeyName, setMcpKeyName] = useState('');
+  const [newMcpKey, setNewMcpKey] = useState('');
+  const [mcpKeyCopied, setMcpKeyCopied] = useState(false);
+  const [mcpConfigCopied, setMcpConfigCopied] = useState(false);
+  const [mcpKeyToRevoke, setMcpKeyToRevoke] = useState<string | null>(null);
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
@@ -321,6 +337,11 @@ export default function AdminSettingsPage() {
         setError(t('admin.settings.error'));
       })
       .finally(() => setLoading(false));
+
+    // Load MCP API keys
+    api<Array<{ id: string; prefix: string; name: string; createdAt: string; lastUsedAt: string | null }>>(
+      `/admin/coops/${selectedCoop.id}/api-keys`
+    ).then(setMcpApiKeys).catch(() => {});
   }, [selectedCoop, t]);
 
   const handleSave = async () => {
@@ -494,6 +515,43 @@ export default function AdminSettingsPage() {
       setError(t('admin.settings.error'));
     }
   };
+
+  const handleCreateMcpKey = async () => {
+    if (!selectedCoop || !mcpKeyName.trim()) return;
+    try {
+      const result = await api<{ rawKey: string; id: string; prefix: string; name: string; createdAt: string }>(
+        `/admin/coops/${selectedCoop.id}/api-keys`,
+        { method: 'POST', body: { name: mcpKeyName.trim() } },
+      );
+      setNewMcpKey(result.rawKey);
+      setMcpApiKeys(prev => [{ id: result.id, prefix: result.prefix, name: result.name, createdAt: result.createdAt, lastUsedAt: null }, ...prev]);
+      setMcpKeyName('');
+      setShowCreateMcpKeyDialog(false);
+    } catch {
+      setError(t('admin.settings.error'));
+    }
+  };
+
+  const handleRevokeMcpKey = async (keyId: string) => {
+    if (!selectedCoop) return;
+    setMcpKeyToRevoke(null);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/api-keys/${keyId}`, { method: 'DELETE' });
+      setMcpApiKeys(prev => prev.filter(k => k.id !== keyId));
+    } catch {
+      setError(t('admin.settings.error'));
+    }
+  };
+
+  const getMcpConfigSnippet = (key: string) => JSON.stringify({
+    mcpServers: {
+      opencoop: {
+        type: 'streamablehttp',
+        url: `${window.location.origin}/api/mcp`,
+        headers: { Authorization: `Bearer ${key}` },
+      },
+    },
+  }, null, 2);
 
   if (!selectedCoop) return <p className="text-muted-foreground">{t('admin.selectCoop')}</p>;
 
@@ -1142,6 +1200,50 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
+        {/* AI API Keys */}
+        <Card>
+          <CardHeader className="flex flex-row items-center space-y-0">
+            <Key className="h-5 w-5 text-muted-foreground mr-2" />
+            <div className="flex-1">
+              <CardTitle>{t('admin.settings.apiKeys.title')}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">{t('admin.settings.apiKeys.description')}</p>
+            </div>
+            <Button size="sm" onClick={() => setShowCreateMcpKeyDialog(true)}>
+              {t('admin.settings.apiKeys.create')}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {mcpApiKeys.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('admin.settings.apiKeys.noKeys')}</p>
+            ) : (
+              <div className="space-y-3">
+                {mcpApiKeys.map((key) => (
+                  <div key={key.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{key.name}</span>
+                        <code className="text-xs text-muted-foreground">{key.prefix}{'••••••••'}</code>
+                      </div>
+                      <div className="flex gap-3 text-xs text-muted-foreground">
+                        <span>{t('admin.settings.apiKeys.createdAt')}: {new Date(key.createdAt).toLocaleDateString(intlLocale)}</span>
+                        <span>{t('admin.settings.apiKeys.lastUsed')}: {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString(intlLocale) : t('admin.settings.apiKeys.never')}</span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setMcpKeyToRevoke(key.id)}
+                    >
+                      {t('admin.settings.apiKeys.revoke')}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Button onClick={handleSave}>{t('common.save')}</Button>
       </div>
 
@@ -1222,6 +1324,109 @@ export default function AdminSettingsPage() {
             </Button>
             <Button variant="destructive" onClick={handlePontoDisconnect}>
               {t('admin.settings.disconnectBankAccount')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create MCP API Key dialog */}
+      <Dialog open={showCreateMcpKeyDialog} onOpenChange={setShowCreateMcpKeyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.settings.apiKeys.create')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t('admin.settings.apiKeys.name')}</Label>
+              <Input
+                placeholder={t('admin.settings.apiKeys.namePlaceholder')}
+                value={mcpKeyName}
+                onChange={(e) => setMcpKeyName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateMcpKey()}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateMcpKeyDialog(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleCreateMcpKey} disabled={!mcpKeyName.trim()}>
+              {t('admin.settings.apiKeys.create')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Show new MCP key dialog */}
+      <Dialog open={!!newMcpKey} onOpenChange={() => { setNewMcpKey(''); setMcpKeyCopied(false); setMcpConfigCopied(false); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t('admin.settings.apiKeys.created')}</DialogTitle>
+            <DialogDescription>
+              <span className="flex items-center gap-1.5 text-amber-600">
+                <AlertTriangle className="h-4 w-4" />
+                {t('admin.settings.apiKeys.createdWarning')}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+              <code className="text-sm flex-1 break-all">{newMcpKey}</code>
+              <button
+                onClick={async () => {
+                  await navigator.clipboard.writeText(newMcpKey);
+                  setMcpKeyCopied(true);
+                }}
+                className="shrink-0 rounded-md p-1.5 hover:bg-background transition-colors"
+              >
+                {mcpKeyCopied ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">{t('admin.settings.apiKeys.claudeConfig')}</Label>
+              <div className="relative mt-1">
+                <pre className="text-xs p-3 bg-muted rounded-md overflow-x-auto">{getMcpConfigSnippet(newMcpKey)}</pre>
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(getMcpConfigSnippet(newMcpKey));
+                    setMcpConfigCopied(true);
+                  }}
+                  className="absolute top-2 right-2 rounded-md p-1.5 hover:bg-background transition-colors"
+                >
+                  {mcpConfigCopied ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => { setNewMcpKey(''); setMcpKeyCopied(false); setMcpConfigCopied(false); }}>
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revoke MCP key confirmation */}
+      <Dialog open={!!mcpKeyToRevoke} onOpenChange={() => setMcpKeyToRevoke(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.settings.apiKeys.revoke')}</DialogTitle>
+            <DialogDescription>{t('admin.settings.apiKeys.revokeConfirm')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMcpKeyToRevoke(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={() => mcpKeyToRevoke && handleRevokeMcpKey(mcpKeyToRevoke)}>
+              {t('admin.settings.apiKeys.revoke')}
             </Button>
           </DialogFooter>
         </DialogContent>

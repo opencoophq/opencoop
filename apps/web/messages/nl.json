@@ -848,7 +848,28 @@
       "addressNumber": "Nummer",
       "addressPostalCode": "Postcode",
       "addressCity": "Stad",
-      "addressCountry": "Land"
+      "addressCountry": "Land",
+      "apiKeys": {
+        "title": "AI API-sleutels",
+        "description": "Maak API-sleutels aan om Claude of andere AI-assistenten te verbinden met de gegevens van uw coöperatie via MCP.",
+        "create": "API-sleutel aanmaken",
+        "name": "Naam sleutel",
+        "namePlaceholder": "bijv. Claude Code - laptop",
+        "prefix": "Sleutel",
+        "createdAt": "Aangemaakt",
+        "lastUsed": "Laatst gebruikt",
+        "never": "Nooit",
+        "revoke": "Intrekken",
+        "revokeConfirm": "Weet u zeker dat u deze API-sleutel wilt intrekken? Tools die deze sleutel gebruiken, werken niet meer.",
+        "noKeys": "Nog geen API-sleutels. Maak er een aan om AI-assistenten te verbinden met de gegevens van uw coöperatie.",
+        "created": "API-sleutel aangemaakt",
+        "createdWarning": "Kopieer deze sleutel nu — hij wordt niet opnieuw getoond.",
+        "copied": "Gekopieerd!",
+        "copyKey": "Sleutel kopiëren",
+        "copyConfig": "Claude-configuratie kopiëren",
+        "claudeConfig": "Claude MCP-configuratie",
+        "revoked": "API-sleutel ingetrokken"
+      }
     },
     "branding": {
       "title": "Huisstijl instellingen",
