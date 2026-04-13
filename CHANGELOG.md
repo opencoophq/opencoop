@@ -2,7 +2,7 @@
 
 All notable changes to OpenCoop are documented in this file.
 
-## [0.7.60] - 2026-04-13
+## [0.7.61] - 2026-04-13
 
 ### Added
 - **Authenticated admin MCP server** — coop admins can now connect Claude or other AI assistants to query their cooperative's data via MCP. 13 read-only tools cover shareholders, transactions, analytics, share classes, projects, and annual overviews. Date range and channel filtering support campaign attribution analysis.
