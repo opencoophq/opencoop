@@ -2,6 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
 import { McpAuthStore } from '../mcp-auth.store';
+
+function decimalReplacer(_key: string, value: unknown) {
+  if (value && typeof value === 'object' && 'toNumber' in value) {
+    return (value as { toNumber(): number }).toNumber();
+  }
+  return value;
+}
 import { ShareholdersService } from '../../shareholders/shareholders.service';
 
 @Injectable()
@@ -56,7 +63,7 @@ export class McpShareholderTools {
       }),
     };
 
-    return JSON.stringify(sanitized, null, 2);
+    return JSON.stringify(sanitized, decimalReplacer, 2);
   }
 
   @Tool({
@@ -86,6 +93,6 @@ export class McpShareholderTools {
       });
     }
 
-    return JSON.stringify(rest, null, 2);
+    return JSON.stringify(rest, decimalReplacer, 2);
   }
 }

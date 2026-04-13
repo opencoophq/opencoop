@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Tool } from '@rekog/mcp-nest';
-import { z } from 'zod';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { McpAuthStore } from '../mcp-auth.store';
+
+function decimalReplacer(_key: string, value: unknown) {
+  if (value && typeof value === 'object' && 'toNumber' in value) {
+    return (value as { toNumber(): number }).toNumber();
+  }
+  return value;
+}
 
 @Injectable()
 export class McpCoopTools {
@@ -53,7 +59,7 @@ export class McpCoopTools {
       },
     });
 
-    return JSON.stringify(coop, null, 2);
+    return JSON.stringify(coop, decimalReplacer, 2);
   }
 
   @Tool({
@@ -99,7 +105,7 @@ export class McpCoopTools {
       totalCapital: Number(capitalResult[0].total),
     };
 
-    return JSON.stringify(stats, null, 2);
+    return JSON.stringify(stats, decimalReplacer, 2);
   }
 
   @Tool({
@@ -119,7 +125,7 @@ export class McpCoopTools {
       pricePerShare: Number(sc.pricePerShare),
     }));
 
-    return JSON.stringify(result, null, 2);
+    return JSON.stringify(result, decimalReplacer, 2);
   }
 
   @Tool({
@@ -155,6 +161,6 @@ export class McpCoopTools {
       sharesSold: sharesByProject.get(p.id) || 0,
     }));
 
-    return JSON.stringify(result, null, 2);
+    return JSON.stringify(result, decimalReplacer, 2);
   }
 }
