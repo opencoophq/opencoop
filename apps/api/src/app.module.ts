@@ -30,9 +30,7 @@ import { HealthModule } from './modules/health/health.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CoopAdminsModule } from './modules/coop-admins/coop-admins.module';
 import { AdminNotificationsModule } from './modules/admin-notifications/admin-notifications.module';
-import { McpTools } from './modules/mcp/mcp.tools';
 import { PontoModule } from './modules/ponto/ponto.module';
-import { LlmsModule } from './modules/llms/llms.module';
 import { ExternalApiModule } from './modules/external-api/external-api.module';
 import { ChangelogModule } from './modules/changelog/changelog.module';
 
@@ -88,7 +86,6 @@ import { ChangelogModule } from './modules/changelog/changelog.module';
         sessionIdGenerator: () => randomUUID(),
       },
     }),
-    LlmsModule,
     ExternalApiModule,
     ChangelogModule,
   ],
@@ -101,7 +98,6 @@ import { ChangelogModule } from './modules/changelog/changelog.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    McpTools,
   ],
 })
 export class AppModule {}
