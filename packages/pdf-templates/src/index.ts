@@ -14,3 +14,4 @@ export { GiftCertificate } from './templates/gift-certificate';
 export type { GiftCertificateProps } from './templates/gift-certificate';
 export { ConvocationPdf, type ConvocationProps } from './templates/convocation';
 export { VolmachtFormPdf, type VolmachtFormProps } from './templates/volmacht-form';
+export { AttendanceSheetPdf, type AttendanceSheetProps } from './templates/attendance-sheet';
