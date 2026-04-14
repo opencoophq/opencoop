@@ -2,10 +2,15 @@
 
 All notable changes to OpenCoop are documented in this file.
 
-## [0.7.62] - 2026-04-14
+## [0.7.63] - 2026-04-14
 
 ### Fixed
 - **MCP API key dialog config snippet background overflow** — the JSON config block in the "API key created" dialog cut off its background mid-line when the long `Authorization: Bearer ...` line overflowed horizontally. The `<pre>` now grows to its content width with `inline-block` inside a scroll wrapper, so the muted background spans the full snippet.
+
+## [0.7.62] - 2026-04-13
+
+### Fixed
+- **Missing migration for `api_keys` table** — the `ApiKey` model was added to the schema in 0.7.61 but no Prisma migration file was generated. Prod and acc deployments use `prisma migrate deploy` which requires migration files, so the table wasn't being created. Added the missing migration.
 
 ## [0.7.61] - 2026-04-13
 
