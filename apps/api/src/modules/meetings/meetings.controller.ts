@@ -16,11 +16,13 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CoopGuard } from '../../common/guards/coop.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { MeetingsService } from './meetings.service';
 import { AgendaService } from './agenda.service';
 import { ProxiesService } from './proxies.service';
 import { VotesService } from './votes.service';
 import { ConvocationService } from './convocation.service';
+import { KioskService } from './kiosk.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { CreateAgendaItemDto } from './dto/create-agenda-item.dto';
@@ -41,6 +43,7 @@ export class MeetingsController {
     private proxies: ProxiesService,
     private votes: VotesService,
     private convocation: ConvocationService,
+    private kiosk: KioskService,
   ) {}
 
   @Post()
@@ -162,5 +165,22 @@ export class MeetingsController {
   @Get(':id/convocation/status')
   convocationStatus(@Param('coopId') coopId: string, @Param('id') id: string) {
     return this.convocation.listStatus(coopId, id);
+  }
+
+  @Post(':id/kiosk/start')
+  startKiosk(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.kiosk.startSession(coopId, id, user.id);
+  }
+
+  @Post(':id/kiosk/:sessionId/end')
+  endKiosk(
+    @Param('coopId') coopId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.kiosk.endSession(coopId, sessionId);
   }
 }
