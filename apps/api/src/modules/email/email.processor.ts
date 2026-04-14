@@ -223,12 +223,42 @@ export class EmailProcessor {
   ): string {
     // Simple template rendering - in production, use a proper template engine
     const templates: Record<string, (data: Record<string, unknown>, coopName: string) => string> = {
-      welcome: (d, cn) => `
-        <h1>Welcome to ${cn}!</h1>
-        <p>Dear ${d.shareholderName},</p>
-        <p>Thank you for becoming a shareholder of ${cn}.</p>
-        <p>You can log in to your dashboard to view your shares and documents.</p>
-      `,
+      welcome: (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: `Welkom bij ${cn}!`,
+            dear: `Beste ${d.shareholderName},`,
+            thanks: `Bedankt om aandeelhouder te worden van ${cn}.`,
+            login: 'Je kan inloggen in je dashboard om je aandelen en documenten te bekijken.',
+          },
+          en: {
+            title: `Welcome to ${cn}!`,
+            dear: `Dear ${d.shareholderName},`,
+            thanks: `Thank you for becoming a shareholder of ${cn}.`,
+            login: 'You can log in to your dashboard to view your shares and documents.',
+          },
+          fr: {
+            title: `Bienvenue chez ${cn} !`,
+            dear: `Cher/Chère ${d.shareholderName},`,
+            thanks: `Merci de devenir actionnaire de ${cn}.`,
+            login: 'Vous pouvez vous connecter à votre tableau de bord pour consulter vos actions et documents.',
+          },
+          de: {
+            title: `Willkommen bei ${cn}!`,
+            dear: `Liebe/r ${d.shareholderName},`,
+            thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} werden.`,
+            login: 'Sie können sich in Ihrem Dashboard anmelden, um Ihre Anteile und Dokumente einzusehen.',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.dear}</p>
+    <p>${s.thanks}</p>
+    <p>${s.login}</p>
+  `;
+      },
       'share-purchase': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const t = {
