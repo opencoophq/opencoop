@@ -121,12 +121,19 @@ export class EmailService {
       bankBic?: string;
     },
   ) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: 'Bevestiging van je aandelenaankoop',
+      en: 'Share Purchase Confirmation',
+      fr: "Confirmation d'achat d'actions",
+      de: 'Bestätigung Ihres Anteilskaufs',
+    };
     return this.send({
       coopId,
       to,
-      subject: 'Share Purchase Confirmation',
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'share-purchase',
-      templateData: data,
+      templateData: { ...data, language },
     });
   }
 

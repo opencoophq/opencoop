@@ -229,24 +229,86 @@ export class EmailProcessor {
         <p>Thank you for becoming a shareholder of ${cn}.</p>
         <p>You can log in to your dashboard to view your shares and documents.</p>
       `,
-      'share-purchase': (d, cn) => `
-        <h1>Share Purchase Confirmation</h1>
-        <p>Dear ${d.shareholderName},</p>
-        <p>We have received your share purchase request:</p>
-        <ul>
-          <li>Share Class: ${d.shareClassName}</li>
-          <li>Quantity: ${d.quantity}</li>
-          <li>Total Amount: €${(d.totalAmount as number).toFixed(2)}</li>
-        </ul>
-        ${d.bankIban || d.ogmCode ? `
-        <h2>Payment Details</h2>
-        ${d.bankIban ? `<p>IBAN: <strong>${d.bankIban}</strong></p>` : ''}
-        ${d.bankBic ? `<p>BIC: <strong>${d.bankBic}</strong></p>` : ''}
-        ${d.ogmCode ? `<p>Structured communication: <strong>${d.ogmCode}</strong></p>` : ''}
-        <p>Amount: <strong>€${(d.totalAmount as number).toFixed(2)}</strong></p>
-        ` : ''}
-        <p>Thank you for investing in ${cn}!</p>
-      `,
+      'share-purchase': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Bevestiging van je aandelenaankoop',
+            dear: `Beste ${d.shareholderName},`,
+            intro: 'We hebben je aanvraag voor een aandelenaankoop goed ontvangen:',
+            shareClass: 'Aandelenklasse',
+            quantity: 'Aantal',
+            totalAmount: 'Totaalbedrag',
+            paymentDetailsTitle: 'Betalingsgegevens',
+            iban: 'IBAN',
+            bic: 'BIC',
+            ogm: 'Gestructureerde mededeling',
+            amount: 'Bedrag',
+            thanks: `Bedankt om te investeren in ${cn}!`,
+          },
+          en: {
+            title: 'Share Purchase Confirmation',
+            dear: `Dear ${d.shareholderName},`,
+            intro: 'We have received your share purchase request:',
+            shareClass: 'Share Class',
+            quantity: 'Quantity',
+            totalAmount: 'Total Amount',
+            paymentDetailsTitle: 'Payment Details',
+            iban: 'IBAN',
+            bic: 'BIC',
+            ogm: 'Structured communication',
+            amount: 'Amount',
+            thanks: `Thank you for investing in ${cn}!`,
+          },
+          fr: {
+            title: "Confirmation d'achat d'actions",
+            dear: `Cher/Chère ${d.shareholderName},`,
+            intro: "Nous avons bien reçu votre demande d'achat d'actions :",
+            shareClass: "Classe d'actions",
+            quantity: 'Quantité',
+            totalAmount: 'Montant total',
+            paymentDetailsTitle: 'Détails de paiement',
+            iban: 'IBAN',
+            bic: 'BIC',
+            ogm: 'Communication structurée',
+            amount: 'Montant',
+            thanks: `Merci d'investir dans ${cn} !`,
+          },
+          de: {
+            title: 'Bestätigung Ihres Anteilskaufs',
+            dear: `Liebe/r ${d.shareholderName},`,
+            intro: 'Wir haben Ihre Anfrage zum Anteilskauf erhalten:',
+            shareClass: 'Anteilsklasse',
+            quantity: 'Anzahl',
+            totalAmount: 'Gesamtbetrag',
+            paymentDetailsTitle: 'Zahlungsdetails',
+            iban: 'IBAN',
+            bic: 'BIC',
+            ogm: 'Strukturierte Mitteilung',
+            amount: 'Betrag',
+            thanks: `Vielen Dank für Ihre Investition in ${cn}!`,
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.dear}</p>
+    <p>${s.intro}</p>
+    <ul>
+      <li>${s.shareClass}: ${d.shareClassName}</li>
+      <li>${s.quantity}: ${d.quantity}</li>
+      <li>${s.totalAmount}: €${(d.totalAmount as number).toFixed(2)}</li>
+    </ul>
+    ${d.bankIban || d.ogmCode ? `
+    <h2>${s.paymentDetailsTitle}</h2>
+    ${d.bankIban ? `<p>${s.iban}: <strong>${d.bankIban}</strong></p>` : ''}
+    ${d.bankBic ? `<p>${s.bic}: <strong>${d.bankBic}</strong></p>` : ''}
+    ${d.ogmCode ? `<p>${s.ogm}: <strong>${d.ogmCode}</strong></p>` : ''}
+    <p>${s.amount}: <strong>€${(d.totalAmount as number).toFixed(2)}</strong></p>
+    ` : ''}
+    <p>${s.thanks}</p>
+  `;
+      },
       'payment-confirmed': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const t = {
