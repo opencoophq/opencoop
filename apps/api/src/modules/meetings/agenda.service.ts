@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAgendaItemDto } from './dto/create-agenda-item.dto';
 import { UpdateAgendaItemDto } from './dto/update-agenda-item.dto';
@@ -28,7 +28,24 @@ const AGENDA_ATTACHMENT_ALLOWED_MIME = new Set<string>([
 export class AgendaService {
   constructor(private prisma: PrismaService) {}
 
-  async addItem(meetingId: string, dto: CreateAgendaItemDto) {
+  private async getItemInCoopOrThrow(itemId: string, coopId: string) {
+    const item = await this.prisma.agendaItem.findUnique({
+      where: { id: itemId },
+      include: { resolution: true, meeting: { select: { coopId: true } } },
+    });
+    if (!item) throw new NotFoundException('Agenda item not found');
+    if (item.meeting.coopId !== coopId) throw new ForbiddenException('Agenda item does not belong to this coop');
+    return item;
+  }
+
+  private async assertMeetingInCoop(meetingId: string, coopId: string) {
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { coopId: true } });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.coopId !== coopId) throw new ForbiddenException('Meeting does not belong to this coop');
+  }
+
+  async addItem(coopId: string, meetingId: string, dto: CreateAgendaItemDto) {
+    await this.assertMeetingInCoop(meetingId, coopId);
     return this.prisma.$transaction(async (tx) => {
       const item = await tx.agendaItem.create({
         data: {
@@ -58,12 +75,8 @@ export class AgendaService {
     });
   }
 
-  async updateItem(itemId: string, dto: UpdateAgendaItemDto) {
-    const item = await this.prisma.agendaItem.findUnique({
-      where: { id: itemId },
-      include: { resolution: true },
-    });
-    if (!item) throw new NotFoundException('Agenda item not found');
+  async updateItem(coopId: string, itemId: string, dto: UpdateAgendaItemDto) {
+    const item = await this.getItemInCoopOrThrow(itemId, coopId);
 
     return this.prisma.$transaction(async (tx) => {
       await tx.agendaItem.update({
@@ -103,13 +116,12 @@ export class AgendaService {
     });
   }
 
-  async removeItem(itemId: string) {
-    const item = await this.prisma.agendaItem.findUnique({ where: { id: itemId } });
-    if (!item) throw new NotFoundException('Agenda item not found');
+  async removeItem(coopId: string, itemId: string) {
+    await this.getItemInCoopOrThrow(itemId, coopId);
     await this.prisma.agendaItem.delete({ where: { id: itemId } });
   }
 
-  async addAttachment(itemId: string, file: Express.Multer.File) {
+  async addAttachment(coopId: string, itemId: string, file: Express.Multer.File) {
     if (!file || !file.buffer) {
       throw new BadRequestException('No file provided');
     }
@@ -120,8 +132,7 @@ export class AgendaService {
       throw new BadRequestException(`Unsupported file type: ${file.mimetype}`);
     }
 
-    const item = await this.prisma.agendaItem.findUnique({ where: { id: itemId } });
-    if (!item) throw new NotFoundException('Agenda item not found');
+    await this.getItemInCoopOrThrow(itemId, coopId);
 
     const dir = path.join(UPLOAD_DIR, 'agenda-attachments', itemId);
     if (!fs.existsSync(dir)) {

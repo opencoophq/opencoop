@@ -73,18 +73,26 @@ export class MeetingsController {
   }
 
   @Post(':id/agenda-items')
-  addAgendaItem(@Param('id') id: string, @Body() dto: CreateAgendaItemDto) {
-    return this.agenda.addItem(id, dto);
+  addAgendaItem(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateAgendaItemDto,
+  ) {
+    return this.agenda.addItem(coopId, id, dto);
   }
 
   @Patch(':id/agenda-items/:itemId')
-  updateAgendaItem(@Param('itemId') itemId: string, @Body() dto: UpdateAgendaItemDto) {
-    return this.agenda.updateItem(itemId, dto);
+  updateAgendaItem(
+    @Param('coopId') coopId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateAgendaItemDto,
+  ) {
+    return this.agenda.updateItem(coopId, itemId, dto);
   }
 
   @Delete(':id/agenda-items/:itemId')
-  removeAgendaItem(@Param('itemId') itemId: string) {
-    return this.agenda.removeItem(itemId);
+  removeAgendaItem(@Param('coopId') coopId: string, @Param('itemId') itemId: string) {
+    return this.agenda.removeItem(coopId, itemId);
   }
 
   @Post(':id/agenda-items/:itemId/attachments')
@@ -97,9 +105,10 @@ export class MeetingsController {
   })
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   uploadAgendaAttachment(
+    @Param('coopId') coopId: string,
     @Param('itemId') itemId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.agenda.addAttachment(itemId, file);
+    return this.agenda.addAttachment(coopId, itemId, file);
   }
 }
