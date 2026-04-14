@@ -8,6 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { MeetingStatus, ShareholderStatus } from '@opencoop/database';
 import { randomBytes } from 'crypto';
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 
 function createToken(): string {
   // URL-safe base64 token, 32 bytes of entropy
@@ -49,12 +50,22 @@ export class ConvocationService {
 
     const shareholders = await this.prisma.shareholder.findMany({
       where: { coopId, status: ShareholderStatus.ACTIVE },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        user: { select: { email: true } },
+      },
     });
 
+    // Create attendance records and per-shareholder token map first
+    const tokenMap = new Map<string, string>();
     const failures: Array<{ shareholderId: string; error: string }> = [];
     for (const sh of shareholders) {
       try {
         const token = createToken();
+        tokenMap.set(sh.id, token);
         await this.prisma.meetingAttendance.upsert({
           where: { meetingId_shareholderId: { meetingId, shareholderId: sh.id } },
           create: {
@@ -68,26 +79,6 @@ export class ConvocationService {
             rsvpTokenExpires: meeting.scheduledAt,
           },
         });
-        if (sh.email) {
-          await this.email.send({
-            coopId,
-            to: sh.email,
-            subject: `Oproeping - ${meeting.title}`,
-            templateKey: 'meeting-convocation',
-            templateData: {
-              shareholderName: `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim(),
-              meetingTitle: meeting.title,
-              meetingDate: meeting.scheduledAt.toISOString(),
-              meetingLocation: meeting.location ?? '',
-              agendaItems: meeting.agendaItems.map((a) => ({
-                order: a.order,
-                title: a.title,
-                description: a.description,
-              })),
-              rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${token}`,
-            },
-          });
-        }
       } catch (err) {
         failures.push({
           shareholderId: sh.id,
@@ -96,7 +87,55 @@ export class ConvocationService {
       }
     }
 
-    return this.prisma.meeting.update({
+    // Dedupe by resolved email: group shareholders sharing the same inbox
+    const inboxMap = new Map<string, typeof shareholders>();
+    for (const sh of shareholders) {
+      const email = resolveShareholderEmail(sh);
+      if (!email) continue; // postal-only: skip
+      const group = inboxMap.get(email) ?? [];
+      group.push(sh);
+      inboxMap.set(email, group);
+    }
+
+    // Send one email per distinct inbox
+    const sent: Array<{ to: string; shareholderIds: string[] }> = [];
+    for (const [email, group] of inboxMap) {
+      try {
+        // Use the first shareholder's token as the RSVP link (primary contact)
+        const primaryToken = tokenMap.get(group[0].id) ?? '';
+        await this.email.send({
+          coopId,
+          to: email,
+          subject: `Oproeping - ${meeting.title}`,
+          templateKey: 'meeting-convocation',
+          templateData: {
+            shareholderName: group
+              .map((sh) => `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim())
+              .filter(Boolean)
+              .join(', '),
+            meetingTitle: meeting.title,
+            meetingDate: meeting.scheduledAt.toISOString(),
+            meetingLocation: meeting.location ?? '',
+            agendaItems: meeting.agendaItems.map((a) => ({
+              order: a.order,
+              title: a.title,
+              description: a.description,
+            })),
+            rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${primaryToken}`,
+          },
+        });
+        sent.push({ to: email, shareholderIds: group.map((sh) => sh.id) });
+      } catch (err) {
+        for (const sh of group) {
+          failures.push({
+            shareholderId: sh.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    }
+
+    await this.prisma.meeting.update({
       where: { id: meetingId },
       data: {
         status: MeetingStatus.CONVOKED,
@@ -104,6 +143,8 @@ export class ConvocationService {
         convocationFailures: failures.length ? (failures as any) : undefined,
       },
     });
+
+    return { sent, failures };
   }
 
   async listStatus(coopId: string, meetingId: string) {
@@ -132,16 +173,26 @@ export class ConvocationService {
 
     const attendances = await this.prisma.meetingAttendance.findMany({
       where: { meetingId, rsvpStatus: 'UNKNOWN' },
-      include: { shareholder: true },
+      include: {
+        shareholder: {
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+            user: { select: { email: true } },
+          },
+        },
+      },
     });
 
     let sent = 0;
     for (const att of attendances) {
-      if (!att.shareholder.email) continue;
+      const email = resolveShareholderEmail(att.shareholder);
+      if (!email) continue;
       try {
         await this.email.send({
           coopId,
-          to: att.shareholder.email,
+          to: email,
           subject: `Herinnering — ${meeting.title}`,
           templateKey: 'meeting-reminder',
           templateData: {

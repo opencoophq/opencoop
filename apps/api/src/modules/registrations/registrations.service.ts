@@ -4,6 +4,7 @@ import { generateOgmCode, computeTotalPaid, computeVestedShares } from '@opencoo
 import { DocumentsService } from '../documents/documents.service';
 import { EmailService } from '../email/email.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 
 @Injectable()
 export class RegistrationsService {
@@ -280,6 +281,7 @@ export class RegistrationsService {
 
     const shareholder = await this.prisma.shareholder.findFirst({
       where: { id: data.shareholderId, coopId: data.coopId },
+      include: { user: { select: { email: true } } },
     });
 
     if (!shareholder) {
@@ -346,9 +348,10 @@ export class RegistrationsService {
     const shareholderName = shareholder.companyName
       || [shareholder.firstName, shareholder.lastName].filter(Boolean).join(' ');
 
-    // Send payment info email (only if shareholder has email and coop has email enabled)
-    if (shareholder.email && coop.emailEnabled) {
-      this.emailService.sendSharePurchaseConfirmation(data.coopId, shareholder.email, {
+    // Send payment info email (only if shareholder has resolvable email and coop has email enabled)
+    const shareholderEmailForBuy = resolveShareholderEmail(shareholder);
+    if (shareholderEmailForBuy && coop.emailEnabled) {
+      this.emailService.sendSharePurchaseConfirmation(data.coopId, shareholderEmailForBuy, {
         shareholderName,
         shareClassName: shareClass.name,
         quantity: data.quantity,
@@ -384,7 +387,15 @@ export class RegistrationsService {
     const registration = await this.prisma.registration.findFirst({
       where: { id: registrationId, coopId },
       include: {
-        shareholder: { select: { firstName: true, lastName: true, companyName: true, email: true } },
+        shareholder: {
+          select: {
+            firstName: true,
+            lastName: true,
+            companyName: true,
+            email: true,
+            user: { select: { email: true } },
+          },
+        },
         shareClass: { select: { name: true } },
       },
     });
@@ -393,7 +404,8 @@ export class RegistrationsService {
       throw new NotFoundException('Registration not found');
     }
 
-    if (!registration.shareholder.email) {
+    const resolvedEmail = resolveShareholderEmail(registration.shareholder);
+    if (!resolvedEmail) {
       throw new BadRequestException('Shareholder has no email address');
     }
 
@@ -405,7 +417,7 @@ export class RegistrationsService {
     const shareholderName = registration.shareholder.companyName
       || [registration.shareholder.firstName, registration.shareholder.lastName].filter(Boolean).join(' ');
 
-    return this.emailService.sendSharePurchaseConfirmation(coopId, registration.shareholder.email, {
+    await this.emailService.sendSharePurchaseConfirmation(coopId, resolvedEmail, {
       shareholderName,
       shareClassName: registration.shareClass.name,
       quantity: registration.quantity,
@@ -414,6 +426,8 @@ export class RegistrationsService {
       bankIban: coop?.bankIban ?? undefined,
       bankBic: coop?.bankBic ?? undefined,
     });
+
+    return { sentTo: resolvedEmail };
   }
 
   async createSell(data: {
@@ -818,7 +832,7 @@ export class RegistrationsService {
       include: {
         shareholder: {
           include: {
-            user: { select: { preferredLanguage: true } },
+            user: { select: { preferredLanguage: true, email: true } },
           },
         },
         shareClass: true,
@@ -833,7 +847,8 @@ export class RegistrationsService {
     const shareholder = registration.shareholder;
 
     // Send payment confirmation (with certificate) for non-gift BUY registrations
-    if (!registration.isGift && registration.type === 'BUY' && shareholder.email) {
+    const resolvedEmailForCompleted = resolveShareholderEmail(shareholder);
+    if (!registration.isGift && registration.type === 'BUY' && resolvedEmailForCompleted) {
       const shareholderName =
         shareholder.type === 'COMPANY'
           ? shareholder.companyName || ''
@@ -857,7 +872,7 @@ export class RegistrationsService {
       const dashboardUrl = `${appUrl}/${language}/dashboard`;
 
       try {
-        await this.emailService.sendPaymentConfirmation(registration.coopId, shareholder.email, {
+        await this.emailService.sendPaymentConfirmation(registration.coopId, resolvedEmailForCompleted, {
           shareholderName,
           amount: Number(registration.totalAmount),
           certificatePath,

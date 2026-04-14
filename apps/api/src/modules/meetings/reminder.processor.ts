@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { MeetingStatus, RSVPStatus } from '@opencoop/database';
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 
 @Processor('meetings-reminder')
 export class ReminderProcessor {
@@ -21,7 +22,16 @@ export class ReminderProcessor {
         coop: true,
         attendances: {
           where: { rsvpStatus: RSVPStatus.UNKNOWN },
-          include: { shareholder: true },
+          include: {
+            shareholder: {
+              select: {
+                email: true,
+                firstName: true,
+                lastName: true,
+                user: { select: { email: true } },
+              },
+            },
+          },
         },
       },
     });
@@ -39,11 +49,12 @@ export class ReminderProcessor {
         if (d === daysUntil && !sentMap[String(d)]) {
           let sent = 0;
           for (const a of meeting.attendances) {
-            if (!a.shareholder.email) continue;
+            const email = resolveShareholderEmail(a.shareholder);
+            if (!email) continue;
             try {
               await this.email.send({
                 coopId: meeting.coopId,
-                to: a.shareholder.email,
+                to: email,
                 subject: `Herinnering — ${meeting.title}`,
                 templateKey: 'meeting-reminder',
                 templateData: {
