@@ -782,6 +782,172 @@ export class EmailProcessor {
           </p>
         `;
       },
+      'meeting-convocation': (d, _cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Oproeping Algemene Vergadering',
+            dear: `Beste ${d.shareholderName},`,
+            intro: `U wordt uitgenodigd voor de <strong>${d.meetingTitle}</strong> op <strong>${d.meetingDate}</strong> te <strong>${d.meetingLocation || 'nader te bepalen'}</strong>.`,
+            agendaTitle: 'Agenda',
+            cta: 'RSVP hier',
+            proxy: 'Indien u niet aanwezig kunt zijn, kunt u zich laten vertegenwoordigen door een andere aandeelhouder via een volmacht.',
+            closing: 'Met vriendelijke groet,',
+          },
+          en: {
+            title: 'Notice of General Meeting',
+            dear: `Dear ${d.shareholderName},`,
+            intro: `You are invited to the <strong>${d.meetingTitle}</strong> on <strong>${d.meetingDate}</strong> at <strong>${d.meetingLocation || 'to be determined'}</strong>.`,
+            agendaTitle: 'Agenda',
+            cta: 'RSVP here',
+            proxy: 'If you are unable to attend, you may grant a proxy to another shareholder to represent you.',
+            closing: 'Kind regards,',
+          },
+          fr: {
+            title: "Convocation à l'Assemblée Générale",
+            dear: `Cher/Chère ${d.shareholderName},`,
+            intro: `Vous êtes invité(e) à <strong>${d.meetingTitle}</strong> le <strong>${d.meetingDate}</strong> à <strong>${d.meetingLocation || 'à déterminer'}</strong>.`,
+            agendaTitle: 'Ordre du jour',
+            cta: 'Répondre ici',
+            proxy: "Si vous ne pouvez pas être présent(e), vous pouvez vous faire représenter par un autre actionnaire via une procuration.",
+            closing: 'Cordialement,',
+          },
+          de: {
+            title: 'Einladung zur Generalversammlung',
+            dear: `Liebe/r ${d.shareholderName},`,
+            intro: `Sie sind eingeladen zur <strong>${d.meetingTitle}</strong> am <strong>${d.meetingDate}</strong> in <strong>${d.meetingLocation || 'noch zu bestimmen'}</strong>.`,
+            agendaTitle: 'Tagesordnung',
+            cta: 'Hier antworten',
+            proxy: 'Falls Sie nicht teilnehmen können, können Sie sich von einem anderen Anteilseigner per Vollmacht vertreten lassen.',
+            closing: 'Mit freundlichen Grüßen,',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        const items = (d.agendaItems as Array<{ order: number; title: string; description?: string }>) || [];
+        const agendaHtml = items
+          .sort((a, b) => a.order - b.order)
+          .map((i) => `<li><strong>${i.title}</strong>${i.description ? `<br><span style="color:#555;">${i.description}</span>` : ''}</li>`)
+          .join('');
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.intro}</p>
+          <h2>${s.agendaTitle}</h2>
+          <ol>${agendaHtml}</ol>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.rsvpUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.cta}
+            </a>
+          </p>
+          <p style="color: #666; font-size: 12px;">${s.proxy}</p>
+          <p>${s.closing}</p>
+        `;
+      },
+      'meeting-rsvp-confirmation': (d, _cn) => {
+        const lang = (d.language as string) || 'nl';
+        const status = (d.rsvpStatus as string) || 'ATTENDING';
+        const delegateName = (d.delegateName as string) || '';
+        const t = {
+          nl: {
+            title: 'Bevestiging van uw RSVP',
+            dear: `Beste ${d.shareholderName},`,
+            meeting: `Vergadering: <strong>${d.meetingTitle}</strong> op <strong>${d.meetingDate}</strong>.`,
+            attending: 'Bedankt voor uw bevestiging. We kijken uit naar uw aanwezigheid.',
+            absent: 'We hebben genoteerd dat u niet aanwezig kunt zijn.',
+            proxy: `U heeft uw stem gedelegeerd aan <strong>${delegateName}</strong>.`,
+            change: 'Wijzig uw RSVP',
+          },
+          en: {
+            title: 'RSVP Confirmation',
+            dear: `Dear ${d.shareholderName},`,
+            meeting: `Meeting: <strong>${d.meetingTitle}</strong> on <strong>${d.meetingDate}</strong>.`,
+            attending: 'Thank you for confirming. We look forward to your attendance.',
+            absent: 'We have noted that you will not be able to attend.',
+            proxy: `You have delegated your vote to <strong>${delegateName}</strong>.`,
+            change: 'Change your RSVP',
+          },
+          fr: {
+            title: 'Confirmation de votre RSVP',
+            dear: `Cher/Chère ${d.shareholderName},`,
+            meeting: `Réunion : <strong>${d.meetingTitle}</strong> le <strong>${d.meetingDate}</strong>.`,
+            attending: 'Merci pour votre confirmation. Nous attendons votre présence.',
+            absent: 'Nous avons noté que vous ne pourrez pas être présent(e).',
+            proxy: `Vous avez délégué votre vote à <strong>${delegateName}</strong>.`,
+            change: 'Modifier votre RSVP',
+          },
+          de: {
+            title: 'Bestätigung Ihrer RSVP',
+            dear: `Liebe/r ${d.shareholderName},`,
+            meeting: `Versammlung: <strong>${d.meetingTitle}</strong> am <strong>${d.meetingDate}</strong>.`,
+            attending: 'Vielen Dank für Ihre Bestätigung. Wir freuen uns auf Ihre Teilnahme.',
+            absent: 'Wir haben vermerkt, dass Sie nicht teilnehmen können.',
+            proxy: `Sie haben Ihre Stimme an <strong>${delegateName}</strong> delegiert.`,
+            change: 'RSVP ändern',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        const body = status === 'PROXY' ? s.proxy : status === 'ABSENT' ? s.absent : s.attending;
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.meeting}</p>
+          <p>${body}</p>
+          ${d.rsvpUrl ? `
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.rsvpUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.change}
+            </a>
+          </p>
+          ` : ''}
+        `;
+      },
+      'meeting-reminder': (d, _cn) => {
+        const lang = (d.language as string) || 'nl';
+        const days = (d.daysUntil as number) ?? 0;
+        const t = {
+          nl: {
+            title: 'Herinnering: Algemene Vergadering',
+            dear: `Beste ${d.shareholderName},`,
+            body: `Herinnering: de <strong>${d.meetingTitle}</strong> vindt plaats over <strong>${days}</strong> dag(en) op <strong>${d.meetingDate}</strong>. U heeft nog niet geantwoord. Gelieve te bevestigen:`,
+            cta: 'RSVP hier',
+          },
+          en: {
+            title: 'Reminder: General Meeting',
+            dear: `Dear ${d.shareholderName},`,
+            body: `Reminder: the <strong>${d.meetingTitle}</strong> is in <strong>${days}</strong> day(s) on <strong>${d.meetingDate}</strong>. You haven't yet responded. Please RSVP:`,
+            cta: 'RSVP here',
+          },
+          fr: {
+            title: 'Rappel : Assemblée Générale',
+            dear: `Cher/Chère ${d.shareholderName},`,
+            body: `Rappel : <strong>${d.meetingTitle}</strong> aura lieu dans <strong>${days}</strong> jour(s), le <strong>${d.meetingDate}</strong>. Vous n'avez pas encore répondu. Veuillez confirmer :`,
+            cta: 'Répondre ici',
+          },
+          de: {
+            title: 'Erinnerung: Generalversammlung',
+            dear: `Liebe/r ${d.shareholderName},`,
+            body: `Erinnerung: die <strong>${d.meetingTitle}</strong> findet in <strong>${days}</strong> Tag(en) am <strong>${d.meetingDate}</strong> statt. Sie haben noch nicht geantwortet. Bitte bestätigen Sie:`,
+            cta: 'Hier antworten',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.body}</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.rsvpUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.cta}
+            </a>
+          </p>
+        `;
+      },
       'referral-success': (d, cn) => `
         <h1>Iemand heeft je uitnodiging aanvaard!</h1>
         <p>Beste ${d.referrerName},</p>
