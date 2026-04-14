@@ -1,0 +1,261 @@
+---
+title: Ecopower Externe API
+description: API-Referenz für die Ecopower-Integration — Abfrage von Anteilseignerdaten und Synchronisierung des Ecopower-Kundenstatus für Genossenschaften auf OpenCoop.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenCoop stellt eine externe API bereit, mit der Ecopower (Bronsgroen) jede Genossenschaft auf der Plattform nach Anteilseignerdaten und Ecopower-Kundenstatus abfragen kann. Jede Genossenschaft, die die Ecopower-Integration aktiviert, generiert einen eigenen API-Schlüssel, der Ecopower Zugriff auf die Anteilseigner dieser Genossenschaft gewährt.
+
+Das bedeutet, dass Ecopower eine einzige Integration nutzen kann, um den Anteilseignerstatus bei allen Genossenschaften auf OpenCoop zu prüfen — jede mit ihrem eigenen API-Schlüssel.
+
+**Basis-URL:** `https://opencoop.be/api/external`
+
+<Callout type="warn" title="Brechende Änderung — 2026-04-14">
+Die Antwortstruktur von `/shareholders/query` wurde geändert, um Haushalt-Anteilseigner zu unterstützen (Paare, Minderjährige + Vormund), die eine gemeinsame E-Mail-Inbox verwenden.
+
+**Vorher:** Jedes Ergebnis war ein flacher Datensatz mit einem `found`-Boolean.
+**Nachher:** Jedes Ergebnis enthält ein `shareholders`-Array (leer = nicht gefunden).
+
+Siehe das [Antwortschema unten](#1-anteilseigner-abfragen) und den [Migrationspfad](#migrationspfad) für Details.
+</Callout>
+
+## Funktionsweise
+
+1. Eine Genossenschaft aktiviert die Ecopower-Integration in den OpenCoop-Administrationseinstellungen
+2. Der Genossenschaftsadministrator generiert einen API-Schlüssel und teilt ihn mit Ecopower
+3. Ecopower verwendet diesen Schlüssel, um die Anteilseigner der Genossenschaft abzufragen und den Ecopower-Kundenstatus zu synchronisieren
+4. Die Genossenschaft kann optional einen Mindestanteilsschwellenwert konfigurieren — als Ecopower-Kunden markierte Anteilseigner können nicht unterhalb dieses Schwellenwerts verkaufen
+
+## Authentifizierung
+
+Alle Anfragen erfordern ein Bearer-Token im `Authorization`-Header:
+
+```
+Authorization: Bearer <api-key>
+```
+
+Jeder API-Schlüssel ist auf eine Genossenschaft beschränkt. Um mehrere Genossenschaften abzufragen, verwenden Sie den von jeder Genossenschaft bereitgestellten API-Schlüssel. Die Neugenerierung eines Schlüssels macht den vorherigen sofort ungültig.
+
+## Ratenbegrenzung
+
+- **100 Anfragen pro 60 Sekunden** pro Genossenschaft
+- Bei Überschreitung der Grenze wird `429 Too Many Requests` zurückgegeben
+
+## Endpunkte
+
+### 1. Anteilseigner abfragen
+
+Suchen Sie Anteilseigner anhand ihrer E-Mail-Adresse und rufen Sie ihr Anteilsportfolio ab.
+
+```
+POST /shareholders/query
+```
+
+**Anfragekörper:**
+
+```json
+{
+  "shareholders": [
+    { "email": "jan.peeters@example.com" },
+    { "email": "haushalt@example.com" },
+    { "email": "unknown@example.com" }
+  ]
+}
+```
+
+- Maximal **500 E-Mail-Adressen** pro Anfrage
+
+**Antwort:**
+
+```json
+{
+  "results": [
+    {
+      "email": "jan.peeters@example.com",
+      "shareholders": [
+        {
+          "firstName": "Jan",
+          "lastName": "Peeters",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 10,
+          "totalShareValue": 2500,
+          "isEcoPowerClient": true,
+          "ecoPowerId": "ECO-12345"
+        }
+      ]
+    },
+    {
+      "email": "haushalt@example.com",
+      "shareholders": [
+        {
+          "firstName": "Marie",
+          "lastName": "Janssens",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 4,
+          "totalShareValue": 1000,
+          "isEcoPowerClient": false,
+          "ecoPowerId": null
+        },
+        {
+          "firstName": "Jan",
+          "lastName": "Janssens",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 6,
+          "totalShareValue": 1500,
+          "isEcoPowerClient": false,
+          "ecoPowerId": null
+        }
+      ]
+    },
+    {
+      "email": "unknown@example.com",
+      "shareholders": []
+    }
+  ]
+}
+```
+
+Ein leeres `shareholders`-Array bedeutet, dass für diese E-Mail-Adresse kein Anteilseigner gefunden wurde. Dies wurde zuvor durch `found: false` angezeigt.
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `email` | string | Die abgefragte E-Mail-Adresse |
+| `shareholders` | array | Übereinstimmende Anteilseigner (leer = nicht gefunden) |
+| `shareholders[].firstName` | string | Vorname |
+| `shareholders[].lastName` | string | Nachname |
+| `shareholders[].companyName` | string \| null | Unternehmensname (für Anteilseigner vom Typ COMPANY) |
+| `shareholders[].type` | string | `INDIVIDUAL`, `COMPANY` oder `MINOR` |
+| `shareholders[].totalShares` | number | Netto erworbene Anteile (Käufe minus Verkäufe) |
+| `shareholders[].totalShareValue` | number | Gesamtwert in EUR |
+| `shareholders[].isEcoPowerClient` | boolean | Ob als Ecopower-Kunde markiert |
+| `shareholders[].ecoPowerId` | string \| null | Ecopower-Kunden-ID |
+
+#### Haushaltsabgleich
+
+Die Abfrage gleicht Anteilseigner anhand ihrer eigenen E-Mail-Adresse **oder** der E-Mail-Adresse ihres verknüpften Benutzerkontos ab. Das bedeutet, dass ein mit einem Haushalt verknüpfter Anteilseigner ohne eigene E-Mail-Adresse (z. B. ein Minderjähriger oder ein zweiter Ehepartner) über die gemeinsame Haushalts-E-Mail-Adresse auffindbar ist.
+
+### 2. Ecopower-Status aktualisieren
+
+Massenaktualisierung, welche Anteilseigner Ecopower-Kunden sind.
+
+```
+PATCH /shareholders/ecopower
+```
+
+**Anfragekörper:**
+
+```json
+{
+  "updates": [
+    {
+      "email": "jan.peeters@example.com",
+      "isEcoPowerClient": true,
+      "ecoPowerId": "ECO-12345"
+    },
+    {
+      "email": "maria.janssens@example.com",
+      "isEcoPowerClient": false
+    }
+  ]
+}
+```
+
+- Maximal **500 Aktualisierungen** pro Anfrage
+- `ecoPowerId` ist optional
+
+**Antwort:**
+
+```json
+{
+  "results": [
+    { "email": "jan.peeters@example.com", "success": true },
+    { "email": "maria.janssens@example.com", "success": true }
+  ]
+}
+```
+
+Wenn ein Anteilseigner nicht gefunden wird:
+
+```json
+{ "email": "unknown@example.com", "success": false, "error": "not found" }
+```
+
+**Haushalts-Fan-out:** Wenn mehrere Anteilseigner dieselbe E-Mail-Adresse teilen (Haushaltsfall), wird die Statusaktualisierung auf **alle** übereinstimmenden Anteilseigner angewendet. Bei einem Fan-out wird serverseitig eine Warnung protokolliert.
+
+## Migrationspfad
+
+Ersetzen Sie das alte Muster, das `found` prüfte:
+
+```typescript
+const result = await api.queryShareholders(emails);
+const byEmail = new Map(result.map(r => [r.email, r.found ? r : null]));
+```
+
+Durch das neue gruppierte Format:
+
+```typescript
+const result = await api.queryShareholders(emails);
+const byEmail = new Map(result.map(r => [r.email, r.shareholders]));  // jetzt ein Array
+
+// Um den ersten (oder einzigen) Anteilseigner für eine E-Mail zu erhalten:
+const shareholders = byEmail.get('jan@example.com') ?? [];
+if (shareholders.length > 0) {
+  // Anteilseigner gefunden
+}
+```
+
+Wenn Ihr Code davon ausgegangen ist, dass es nur einen Anteilseigner pro E-Mail-Adresse gibt, iterieren Sie das `shareholders`-Array und aggregieren Sie entsprechend Ihrem Anwendungsfall.
+
+## Fehlerantworten
+
+| Status | Bedeutung |
+|--------|-----------|
+| `401 Unauthorized` | Fehlender, ungültiger oder widerrufener API-Schlüssel |
+| `400 Bad Request` | Ungültiger Anfragekörper (prüfen Sie das Feld `message`) |
+| `429 Too Many Requests` | Ratenbegrenzung überschritten — warten und erneut versuchen |
+
+Format des Fehlerkörpers:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid API key"
+}
+```
+
+## Beispiel (cURL)
+
+```bash
+# Anteilseigner einer bestimmten Genossenschaft abfragen
+curl -X POST https://opencoop.be/api/external/shareholders/query \
+  -H "Authorization: Bearer COOP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shareholders": [
+      { "email": "jan.peeters@example.com" }
+    ]
+  }'
+
+# Ecopower-Status für eine bestimmte Genossenschaft aktualisieren
+curl -X PATCH https://opencoop.be/api/external/shareholders/ecopower \
+  -H "Authorization: Bearer COOP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "updates": [
+      { "email": "jan.peeters@example.com", "isEcoPowerClient": true, "ecoPowerId": "ECO-12345" }
+    ]
+  }'
+```
+
+## Schwellenwertdurchsetzung
+
+Wenn eine Genossenschaft einen Ecopower-Mindestschwellenwert konfiguriert (in den Administrationseinstellungen), können als Ecopower-Kunden markierte Anteilseigner keine Anteile unterhalb dieses Schwellenwerts verkaufen. Der Schwellenwert kann konfiguriert werden als:
+
+- **Eurobetrag** — Mindestportfoliowert in EUR
+- **Anteilsanzahl** — Mindestanzahl von Anteilen
+
+Dies wird bei Verkaufs- und Übertragungsoperationen von Anteilen innerhalb von OpenCoop automatisch durchgesetzt. Die externe API setzt keine Schwellenwerte durch — sie liest und schreibt ausschließlich die Felder `isEcoPowerClient` und `ecoPowerId`.

@@ -1,0 +1,261 @@
+---
+title: Ecopower External API
+description: API reference for the Ecopower integration — query shareholder data and sync Ecopower client status across cooperatives on OpenCoop.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenCoop provides an external API that allows Ecopower (Bronsgroen) to query any cooperative on the platform for shareholder data and Ecopower client status. Each cooperative that enables the Ecopower integration generates its own API key, giving Ecopower access to that cooperative's shareholders.
+
+This means Ecopower can use a single integration to check shareholder status across all cooperatives on OpenCoop — each with their own API key.
+
+**Base URL:** `https://opencoop.be/api/external`
+
+<Callout type="warn" title="Breaking change — 2026-04-14">
+The `/shareholders/query` response shape has changed to support household shareholders (couples, minor + guardian) sharing one email inbox.
+
+**Before:** each result was a flat record with a `found` boolean.
+**After:** each result has a `shareholders` array (empty = not found).
+
+See the [response schema below](#1-query-shareholders) and the [upgrade path](#upgrade-path) for migration details.
+</Callout>
+
+## How It Works
+
+1. A cooperative enables the Ecopower integration in their OpenCoop admin settings
+2. The coop admin generates an API key and shares it with Ecopower
+3. Ecopower uses that key to query the cooperative's shareholders and sync Ecopower client status
+4. The cooperative can optionally configure a minimum share threshold — shareholders marked as Ecopower clients cannot sell below that threshold
+
+## Authentication
+
+All requests require a Bearer token in the `Authorization` header:
+
+```
+Authorization: Bearer <api-key>
+```
+
+Each API key is scoped to one cooperative. To query multiple cooperatives, use the API key provided by each coop. Regenerating a key invalidates the previous one immediately.
+
+## Rate Limiting
+
+- **100 requests per 60 seconds** per cooperative
+- Exceeding the limit returns `429 Too Many Requests`
+
+## Endpoints
+
+### 1. Query Shareholders
+
+Look up shareholders by email address and retrieve their share portfolio.
+
+```
+POST /shareholders/query
+```
+
+**Request body:**
+
+```json
+{
+  "shareholders": [
+    { "email": "jan.peeters@example.com" },
+    { "email": "household@example.com" },
+    { "email": "unknown@example.com" }
+  ]
+}
+```
+
+- Maximum **500 emails** per request
+
+**Response:**
+
+```json
+{
+  "results": [
+    {
+      "email": "jan.peeters@example.com",
+      "shareholders": [
+        {
+          "firstName": "Jan",
+          "lastName": "Peeters",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 10,
+          "totalShareValue": 2500,
+          "isEcoPowerClient": true,
+          "ecoPowerId": "ECO-12345"
+        }
+      ]
+    },
+    {
+      "email": "household@example.com",
+      "shareholders": [
+        {
+          "firstName": "Marie",
+          "lastName": "Janssens",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 4,
+          "totalShareValue": 1000,
+          "isEcoPowerClient": false,
+          "ecoPowerId": null
+        },
+        {
+          "firstName": "Jan",
+          "lastName": "Janssens",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 6,
+          "totalShareValue": 1500,
+          "isEcoPowerClient": false,
+          "ecoPowerId": null
+        }
+      ]
+    },
+    {
+      "email": "unknown@example.com",
+      "shareholders": []
+    }
+  ]
+}
+```
+
+An empty `shareholders` array means no shareholder was found for that email. Previously this was indicated by `found: false`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `email` | string | The queried email address |
+| `shareholders` | array | Matching shareholders (empty = not found) |
+| `shareholders[].firstName` | string | First name |
+| `shareholders[].lastName` | string | Last name |
+| `shareholders[].companyName` | string \| null | Company name (for COMPANY type shareholders) |
+| `shareholders[].type` | string | `INDIVIDUAL`, `COMPANY`, or `MINOR` |
+| `shareholders[].totalShares` | number | Net vested shares (buys minus sells) |
+| `shareholders[].totalShareValue` | number | Total value in EUR |
+| `shareholders[].isEcoPowerClient` | boolean | Whether marked as Ecopower client |
+| `shareholders[].ecoPowerId` | string \| null | Ecopower customer ID |
+
+#### Household matching
+
+The query matches shareholders by either their own email address **or** the email address of their linked user account. This means a household-linked shareholder with no direct email (e.g. a minor or secondary spouse) is findable through the shared household email.
+
+### 2. Update Ecopower Status
+
+Batch update which shareholders are Ecopower clients.
+
+```
+PATCH /shareholders/ecopower
+```
+
+**Request body:**
+
+```json
+{
+  "updates": [
+    {
+      "email": "jan.peeters@example.com",
+      "isEcoPowerClient": true,
+      "ecoPowerId": "ECO-12345"
+    },
+    {
+      "email": "maria.janssens@example.com",
+      "isEcoPowerClient": false
+    }
+  ]
+}
+```
+
+- Maximum **500 updates** per request
+- `ecoPowerId` is optional
+
+**Response:**
+
+```json
+{
+  "results": [
+    { "email": "jan.peeters@example.com", "success": true },
+    { "email": "maria.janssens@example.com", "success": true }
+  ]
+}
+```
+
+If a shareholder is not found:
+
+```json
+{ "email": "unknown@example.com", "success": false, "error": "not found" }
+```
+
+**Household fan-out:** When multiple shareholders share the same email (household case), the status update is applied to **all** matching shareholders. A warning is logged server-side when a fan-out occurs.
+
+## Upgrade Path
+
+Replace the old pattern that checked `found`:
+
+```typescript
+const result = await api.queryShareholders(emails);
+const byEmail = new Map(result.map(r => [r.email, r.found ? r : null]));
+```
+
+With the new grouped shape:
+
+```typescript
+const result = await api.queryShareholders(emails);
+const byEmail = new Map(result.map(r => [r.email, r.shareholders]));  // now an array
+
+// To get the first (or only) shareholder for an email:
+const shareholders = byEmail.get('jan@example.com') ?? [];
+if (shareholders.length > 0) {
+  // shareholder found
+}
+```
+
+If your code assumed a single shareholder per email, iterate the `shareholders` array and aggregate as appropriate for your use case.
+
+## Error Responses
+
+| Status | Meaning |
+|--------|---------|
+| `401 Unauthorized` | Missing, invalid, or revoked API key |
+| `400 Bad Request` | Invalid request body (check `message` field) |
+| `429 Too Many Requests` | Rate limit exceeded — wait and retry |
+
+Error body format:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid API key"
+}
+```
+
+## Example (cURL)
+
+```bash
+# Query shareholders for a specific cooperative
+curl -X POST https://opencoop.be/api/external/shareholders/query \
+  -H "Authorization: Bearer COOP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shareholders": [
+      { "email": "jan.peeters@example.com" }
+    ]
+  }'
+
+# Update Ecopower status for a specific cooperative
+curl -X PATCH https://opencoop.be/api/external/shareholders/ecopower \
+  -H "Authorization: Bearer COOP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "updates": [
+      { "email": "jan.peeters@example.com", "isEcoPowerClient": true, "ecoPowerId": "ECO-12345" }
+    ]
+  }'
+```
+
+## Threshold Enforcement
+
+When a cooperative configures an Ecopower minimum threshold (in their admin settings), shareholders marked as Ecopower clients cannot sell shares below that threshold. The threshold can be configured as:
+
+- **Euro amount** — minimum portfolio value in EUR
+- **Share count** — minimum number of shares
+
+This is enforced automatically on share sale and transfer operations within OpenCoop. The external API does not enforce thresholds — it only reads and writes the `isEcoPowerClient` and `ecoPowerId` fields.

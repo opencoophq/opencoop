@@ -1,0 +1,261 @@
+---
+title: API externe Ecopower
+description: Référence de l'API pour l'intégration Ecopower — interrogez les données des actionnaires et synchronisez le statut de client Ecopower pour les coopératives sur OpenCoop.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenCoop fournit une API externe qui permet à Ecopower (Bronsgroen) d'interroger n'importe quelle coopérative sur la plateforme pour obtenir des données sur les actionnaires et le statut de client Ecopower. Chaque coopérative qui active l'intégration Ecopower génère sa propre clé API, donnant à Ecopower accès aux actionnaires de cette coopérative.
+
+Cela signifie qu'Ecopower peut utiliser une seule intégration pour vérifier le statut des actionnaires dans toutes les coopératives sur OpenCoop — chacune avec sa propre clé API.
+
+**URL de base :** `https://opencoop.be/api/external`
+
+<Callout type="warn" title="Changement incompatible — 2026-04-14">
+La structure de réponse de `/shareholders/query` a été modifiée pour prendre en charge les actionnaires d'un même foyer (couples, mineur + tuteur) partageant une seule boîte e-mail.
+
+**Avant :** chaque résultat était un enregistrement plat avec un booléen `found`.
+**Après :** chaque résultat contient un tableau `shareholders` (vide = non trouvé).
+
+Consultez le [schéma de réponse ci-dessous](#1-interroger-les-actionnaires) et le [chemin de migration](#chemin-de-migration) pour les détails.
+</Callout>
+
+## Fonctionnement
+
+1. Une coopérative active l'intégration Ecopower dans les paramètres d'administration d'OpenCoop
+2. L'administrateur de la coopérative génère une clé API et la partage avec Ecopower
+3. Ecopower utilise cette clé pour interroger les actionnaires de la coopérative et synchroniser le statut de client Ecopower
+4. La coopérative peut optionnellement configurer un seuil minimum d'actions — les actionnaires identifiés comme clients Ecopower ne peuvent pas vendre en dessous de ce seuil
+
+## Authentification
+
+Toutes les requêtes nécessitent un token Bearer dans l'en-tête `Authorization` :
+
+```
+Authorization: Bearer <api-key>
+```
+
+Chaque clé API est limitée à une seule coopérative. Pour interroger plusieurs coopératives, utilisez la clé API fournie par chaque coopérative. La régénération d'une clé invalide immédiatement la précédente.
+
+## Limites de débit
+
+- **100 requêtes par 60 secondes** par coopérative
+- Dépasser la limite renvoie `429 Too Many Requests`
+
+## Endpoints
+
+### 1. Interroger les actionnaires
+
+Recherchez des actionnaires par adresse e-mail et récupérez leur portefeuille d'actions.
+
+```
+POST /shareholders/query
+```
+
+**Corps de la requête :**
+
+```json
+{
+  "shareholders": [
+    { "email": "jan.peeters@example.com" },
+    { "email": "foyer@example.com" },
+    { "email": "unknown@example.com" }
+  ]
+}
+```
+
+- Maximum **500 e-mails** par requête
+
+**Réponse :**
+
+```json
+{
+  "results": [
+    {
+      "email": "jan.peeters@example.com",
+      "shareholders": [
+        {
+          "firstName": "Jan",
+          "lastName": "Peeters",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 10,
+          "totalShareValue": 2500,
+          "isEcoPowerClient": true,
+          "ecoPowerId": "ECO-12345"
+        }
+      ]
+    },
+    {
+      "email": "foyer@example.com",
+      "shareholders": [
+        {
+          "firstName": "Marie",
+          "lastName": "Janssens",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 4,
+          "totalShareValue": 1000,
+          "isEcoPowerClient": false,
+          "ecoPowerId": null
+        },
+        {
+          "firstName": "Jan",
+          "lastName": "Janssens",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 6,
+          "totalShareValue": 1500,
+          "isEcoPowerClient": false,
+          "ecoPowerId": null
+        }
+      ]
+    },
+    {
+      "email": "unknown@example.com",
+      "shareholders": []
+    }
+  ]
+}
+```
+
+Un tableau `shareholders` vide indique qu'aucun actionnaire n'a été trouvé pour cette adresse e-mail. Cela était auparavant indiqué par `found: false`.
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `email` | string | L'adresse e-mail interrogée |
+| `shareholders` | array | Actionnaires correspondants (vide = non trouvé) |
+| `shareholders[].firstName` | string | Prénom |
+| `shareholders[].lastName` | string | Nom de famille |
+| `shareholders[].companyName` | string \| null | Nom de l'entreprise (pour les actionnaires de type COMPANY) |
+| `shareholders[].type` | string | `INDIVIDUAL`, `COMPANY`, ou `MINOR` |
+| `shareholders[].totalShares` | number | Actions nettes acquises (achats moins ventes) |
+| `shareholders[].totalShareValue` | number | Valeur totale en EUR |
+| `shareholders[].isEcoPowerClient` | boolean | Si identifié comme client Ecopower |
+| `shareholders[].ecoPowerId` | string \| null | Identifiant client Ecopower |
+
+#### Correspondance par foyer
+
+La requête fait correspondre les actionnaires par leur propre adresse e-mail **ou** par l'adresse e-mail de leur compte utilisateur associé. Cela signifie qu'un actionnaire lié à un foyer sans adresse e-mail directe (p. ex. un mineur ou un second conjoint) est trouvable via l'adresse e-mail partagée du foyer.
+
+### 2. Mettre à jour le statut Ecopower
+
+Mise à jour en lot des actionnaires qui sont clients Ecopower.
+
+```
+PATCH /shareholders/ecopower
+```
+
+**Corps de la requête :**
+
+```json
+{
+  "updates": [
+    {
+      "email": "jan.peeters@example.com",
+      "isEcoPowerClient": true,
+      "ecoPowerId": "ECO-12345"
+    },
+    {
+      "email": "maria.janssens@example.com",
+      "isEcoPowerClient": false
+    }
+  ]
+}
+```
+
+- Maximum **500 mises à jour** par requête
+- `ecoPowerId` est optionnel
+
+**Réponse :**
+
+```json
+{
+  "results": [
+    { "email": "jan.peeters@example.com", "success": true },
+    { "email": "maria.janssens@example.com", "success": true }
+  ]
+}
+```
+
+Si un actionnaire n'est pas trouvé :
+
+```json
+{ "email": "unknown@example.com", "success": false, "error": "not found" }
+```
+
+**Distribution dans le foyer :** lorsque plusieurs actionnaires partagent la même adresse e-mail (cas d'un foyer), la mise à jour du statut est appliquée à **tous** les actionnaires correspondants. Un avertissement est journalisé côté serveur lors d'une telle distribution.
+
+## Chemin de migration
+
+Remplacez l'ancien modèle qui vérifiait `found` :
+
+```typescript
+const result = await api.queryShareholders(emails);
+const byEmail = new Map(result.map(r => [r.email, r.found ? r : null]));
+```
+
+Par le nouveau format groupé :
+
+```typescript
+const result = await api.queryShareholders(emails);
+const byEmail = new Map(result.map(r => [r.email, r.shareholders]));  // maintenant un tableau
+
+// Pour obtenir le premier (ou unique) actionnaire pour un e-mail :
+const shareholders = byEmail.get('jan@example.com') ?? [];
+if (shareholders.length > 0) {
+  // actionnaire trouvé
+}
+```
+
+Si votre code supposait un seul actionnaire par adresse e-mail, parcourez le tableau `shareholders` et agrégez selon vos besoins.
+
+## Réponses d'erreur
+
+| Statut | Signification |
+|--------|---------------|
+| `401 Unauthorized` | Clé API manquante, invalide ou révoquée |
+| `400 Bad Request` | Corps de requête invalide (vérifiez le champ `message`) |
+| `429 Too Many Requests` | Limite de débit dépassée — attendez et réessayez |
+
+Format du corps d'erreur :
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid API key"
+}
+```
+
+## Exemple (cURL)
+
+```bash
+# Interroger les actionnaires d'une coopérative spécifique
+curl -X POST https://opencoop.be/api/external/shareholders/query \
+  -H "Authorization: Bearer COOP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shareholders": [
+      { "email": "jan.peeters@example.com" }
+    ]
+  }'
+
+# Mettre à jour le statut Ecopower pour une coopérative spécifique
+curl -X PATCH https://opencoop.be/api/external/shareholders/ecopower \
+  -H "Authorization: Bearer COOP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "updates": [
+      { "email": "jan.peeters@example.com", "isEcoPowerClient": true, "ecoPowerId": "ECO-12345" }
+    ]
+  }'
+```
+
+## Application du seuil
+
+Lorsqu'une coopérative configure un seuil minimum Ecopower (dans ses paramètres d'administration), les actionnaires identifiés comme clients Ecopower ne peuvent pas vendre d'actions en dessous de ce seuil. Le seuil peut être configuré comme :
+
+- **Montant en euros** — valeur minimale du portefeuille en EUR
+- **Nombre d'actions** — nombre minimum d'actions
+
+Ceci est appliqué automatiquement lors des opérations de vente et de transfert d'actions dans OpenCoop. L'API externe n'applique pas les seuils — elle se contente de lire et d'écrire les champs `isEcoPowerClient` et `ecoPowerId`.
