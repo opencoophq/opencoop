@@ -571,3 +571,118 @@ export interface DocumentDto {
   filePath: string;
   generatedAt: string;
 }
+
+// ============================================================================
+// AGM (Algemene Vergadering) Types
+// ============================================================================
+
+export type MeetingType = 'ANNUAL' | 'EXTRAORDINARY' | 'WRITTEN';
+export type MeetingFormat = 'PHYSICAL' | 'HYBRID' | 'DIGITAL';
+export type MeetingStatus = 'DRAFT' | 'CONVOKED' | 'HELD' | 'CLOSED' | 'CANCELLED';
+export type VotingWeight = 'PER_SHAREHOLDER' | 'PER_SHARE';
+export type AgendaType = 'INFORMATIONAL' | 'RESOLUTION' | 'ELECTION';
+export type MajorityType = 'SIMPLE' | 'TWO_THIRDS' | 'THREE_QUARTERS';
+export type VoteChoice = 'FOR' | 'AGAINST' | 'ABSTAIN';
+export type RSVPStatus = 'ATTENDING' | 'PROXY' | 'ABSENT' | 'UNKNOWN';
+export type CheckInMethod = 'ADMIN' | 'KIOSK' | 'PAPER_RECONCILED';
+
+export interface MeetingDto {
+  id: string;
+  coopId: string;
+  type: MeetingType;
+  title: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  location?: string | null;
+  format: MeetingFormat;
+  votingWeight: VotingWeight;
+  maxProxiesPerPerson: number;
+  convocationSentAt?: string | null;
+  status: MeetingStatus;
+  reminderDaysBefore: number[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgendaItemDto {
+  id: string;
+  meetingId: string;
+  order: number;
+  title: string;
+  description?: string | null;
+  type: AgendaType;
+  resolution?: ResolutionDto | null;
+  attachments?: AgendaAttachmentDto[];
+}
+
+export interface AgendaAttachmentDto {
+  id: string;
+  agendaItemId: string;
+  fileName: string;
+  fileUrl: string;
+  uploadedAt: string;
+}
+
+export interface ResolutionDto {
+  id: string;
+  agendaItemId: string;
+  proposedText: string;
+  majorityType: MajorityType;
+  quorumRequired?: string | null;
+  votesFor: number;
+  votesAgainst: number;
+  votesAbstain: number;
+  passed?: boolean | null;
+  closedAt?: string | null;
+}
+
+export interface VoteDto {
+  id: string;
+  resolutionId: string;
+  shareholderId: string;
+  choice: VoteChoice;
+  castViaProxyId?: string | null;
+  weight: number;
+  castAt: string;
+}
+
+export interface ProxyDto {
+  id: string;
+  meetingId: string;
+  grantorShareholderId: string;
+  delegateShareholderId: string;
+  signedFormUrl?: string | null;
+  grantedAt: string;
+  revokedAt?: string | null;
+}
+
+export interface MeetingAttendanceDto {
+  id: string;
+  meetingId: string;
+  shareholderId: string;
+  rsvpStatus: RSVPStatus;
+  rsvpAt?: string | null;
+  checkedInAt?: string | null;
+  checkedInBy?: string | null;
+  checkInMethod?: CheckInMethod | null;
+  signatureImageUrl?: string | null;
+}
+
+export interface MeetingMinutesDto {
+  id: string;
+  meetingId: string;
+  content: string;
+  generatedPdfUrl?: string | null;
+  signedPdfUrl?: string | null;
+  signedAt?: string | null;
+  signedByName?: string | null;
+}
+
+export interface ResolutionOutcome {
+  resolutionId: string;
+  votesFor: number;
+  votesAgainst: number;
+  votesAbstain: number;
+  passed: boolean;
+  majorityType: MajorityType;
+}

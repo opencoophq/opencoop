@@ -18,6 +18,7 @@ import { RegistrationsModule } from './modules/registrations/registrations.modul
 import { PaymentsModule } from './modules/payments/payments.module';
 import { BankImportModule } from './modules/bank-import/bank-import.module';
 import { DividendsModule } from './modules/dividends/dividends.module';
+import { MeetingsModule } from './modules/meetings/meetings.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { EmailModule } from './modules/email/email.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -65,6 +66,7 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
     BankImportModule,
     PontoModule,
     DividendsModule,
+    MeetingsModule,
     DocumentsModule,
     EmailModule,
     AdminModule,
