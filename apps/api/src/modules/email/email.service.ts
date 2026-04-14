@@ -205,12 +205,19 @@ export class EmailService {
   }
 
   async sendPasswordReset(coopId: string, to: string, resetUrl: string) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: 'Wachtwoord resetten',
+      en: 'Password Reset Request',
+      fr: 'Demande de réinitialisation du mot de passe',
+      de: 'Passwort zurücksetzen',
+    };
     return this.send({
       coopId,
       to,
-      subject: 'Password Reset Request',
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'password-reset',
-      templateData: { resetUrl },
+      templateData: { resetUrl, language },
     });
   }
 

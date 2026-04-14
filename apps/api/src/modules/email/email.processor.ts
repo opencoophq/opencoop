@@ -434,14 +434,48 @@ export class EmailProcessor {
     <p>${s.thanks}</p>
   `;
       },
-      'password-reset': (d, _cn) => `
-        <h1>Password Reset Request</h1>
-        <p>You have requested to reset your password.</p>
-        <p>Click the link below to reset your password:</p>
-        <p><a href="${d.resetUrl}">${d.resetUrl}</a></p>
-        <p>If you did not request this, please ignore this email.</p>
-        <p>This link will expire in 1 hour.</p>
-      `,
+      'password-reset': (d, _cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Wachtwoord resetten',
+            requested: 'Je hebt een wachtwoord reset aangevraagd.',
+            click: 'Klik op onderstaande link om je wachtwoord te resetten:',
+            ignore: 'Als je dit niet hebt aangevraagd, kan je deze e-mail negeren.',
+            expires: 'Deze link vervalt binnen 1 uur.',
+          },
+          en: {
+            title: 'Password Reset Request',
+            requested: 'You have requested to reset your password.',
+            click: 'Click the link below to reset your password:',
+            ignore: 'If you did not request this, please ignore this email.',
+            expires: 'This link will expire in 1 hour.',
+          },
+          fr: {
+            title: 'Demande de réinitialisation du mot de passe',
+            requested: 'Vous avez demandé la réinitialisation de votre mot de passe.',
+            click: 'Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :',
+            ignore: "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.",
+            expires: 'Ce lien expirera dans 1 heure.',
+          },
+          de: {
+            title: 'Passwort zurücksetzen',
+            requested: 'Sie haben eine Passwort-Zurücksetzung angefordert.',
+            click: 'Klicken Sie auf den folgenden Link, um Ihr Passwort zurückzusetzen:',
+            ignore: 'Wenn Sie dies nicht angefordert haben, ignorieren Sie diese E-Mail.',
+            expires: 'Dieser Link läuft in 1 Stunde ab.',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.requested}</p>
+    <p>${s.click}</p>
+    <p><a href="${d.resetUrl}">${d.resetUrl}</a></p>
+    <p>${s.ignore}</p>
+    <p>${s.expires}</p>
+  `;
+      },
       'magic-link': (d, _cn) => `
         <h1>Login to OpenCoop</h1>
         <p>Click the button below to log in:</p>
