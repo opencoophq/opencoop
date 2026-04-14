@@ -29,6 +29,8 @@ interface ShareholderProfile {
   birthDate?: string;
   bankIban?: string;
   bankBic?: string;
+  userId?: string;
+  user?: { id: string; email: string } | null;
   address?: {
     street?: string;
     number?: string;
@@ -60,6 +62,7 @@ type ProfileForm = z.infer<typeof profileSchema>;
 export default function PersonalDataPage() {
   const t = useTranslations();
   const [shareholder, setShareholder] = useState<ShareholderProfile | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -72,7 +75,8 @@ export default function PersonalDataPage() {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const profile = await api<{ shareholders: ShareholderProfile[] }>('/auth/me');
+        const profile = await api<{ email: string; shareholders: ShareholderProfile[] }>('/auth/me');
+        setUserEmail(profile.email ?? null);
         if (profile.shareholders?.[0]) {
           const sh = profile.shareholders[0];
           setShareholder(sh);
@@ -246,8 +250,18 @@ export default function PersonalDataPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>{t('common.email')}</Label>
-                <Input value={shareholder.email || ''} disabled className="bg-muted" />
-                <p className="text-xs text-muted-foreground">{t('personalData.readOnlyEmail')}</p>
+                <Input
+                  value={shareholder.email ?? userEmail ?? ''}
+                  disabled
+                  className="bg-muted"
+                />
+                {!shareholder.email && userEmail ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t('personalData.householdManagedEmail', { email: userEmail })}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t('personalData.readOnlyEmail')}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>{t('common.phone')}</Label>

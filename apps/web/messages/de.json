@@ -379,11 +379,25 @@
     "companyInfo": "Unternehmensinformationen",
     "contactInfo": "Kontakt- & Bankdaten",
     "readOnlyEmail": "Die E-Mail-Adresse kann nicht geändert werden. Wenden Sie sich bei Bedarf an den Support.",
+    "householdManagedEmail": "E-Mail verwaltet von {email} (Haushaltskonto)",
     "saveChanges": "Änderungen speichern",
     "generateCertificate": "Zertifikat erstellen",
     "generateDividendStatement": "Abrechnung erstellen",
     "generating": "Wird erstellt...",
     "downloadError": "Download fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
+  "household": {
+    "linkButton": "Mit Haushalt verknüpfen",
+    "linkTitle": "Haushalt",
+    "linkIntro": "Durch die Verknüpfung dieses Aktionärs mit einem anderen Benutzer werden dessen Kommunikationen an den Posteingang dieses Benutzers weitergeleitet und die eigene E-Mail-Adresse wird gelöscht.",
+    "searchPlaceholder": "Benutzer nach E-Mail suchen...",
+    "confirmLink": "Aktionär verknüpfen",
+    "cancel": "Abbrechen",
+    "resultMeta": "{count, plural, one {# Aktionär} other {# Aktionäre}} in dieser Genossenschaft",
+    "unlinkButton": "Verknüpfung aufheben (Emanzipation starten)",
+    "unlinkConfirmTitle": "Aktionär trennen",
+    "unlinkConfirmBody": "Dadurch wird der Emanzipationsprozess gestartet und diesem Aktionär eine neue E-Mail-Adresse zugewiesen. Fortfahren?",
+    "notLinked": "Dieser Aktionär ist mit keinem Haushalt verknüpft."
   },
   "settings": {
     "title": "Einstellungen",
@@ -2184,6 +2198,24 @@
       "save": "Änderungen speichern",
       "saving": "Speichern...",
       "notFound": "Versammlung nicht gefunden"
+    }
+  },
+  "emancipation": {
+    "claimTitle": "Eigenes Konto beanspruchen",
+    "claimIntro": "Richten Sie Ihren persönlichen Login ein, um Ihre Anteile selbstständig zu verwalten.",
+    "claimCta": "Konto erstellen",
+    "emailLabel": "Ihre E-Mail-Adresse",
+    "passwordLabel": "Passwort wählen",
+    "confirmPasswordLabel": "Passwort bestätigen",
+    "loading": "Konto wird erstellt...",
+    "successMessage": "Konto erstellt! Sie werden zu Ihrem Dashboard weitergeleitet...",
+    "errors": {
+      "invalidToken": "Dieser Link ist ungültig oder abgelaufen. Bitte kontaktieren Sie Ihre Genossenschaft.",
+      "emailTaken": "Diese E-Mail-Adresse ist bereits registriert. Bitte verwenden Sie eine andere.",
+      "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+      "passwordComplexity": "Das Passwort muss mindestens 8 Zeichen enthalten mit Groß-, Kleinbuchstaben und einer Zahl.",
+      "passwordMismatch": "Passwörter stimmen nicht überein.",
+      "unknown": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
     }
   }
 }

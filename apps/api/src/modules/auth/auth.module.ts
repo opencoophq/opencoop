@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { EmancipationService } from './emancipation.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -46,12 +47,13 @@ if (process.env.APPLE_CLIENT_ID) {
   controllers: [AuthController],
   providers: [
     AuthService,
+    EmancipationService,
     JwtStrategy,
     LocalStrategy,
     WebAuthnService,
     RedisService,
     ...conditionalProviders,
   ],
-  exports: [AuthService],
+  exports: [AuthService, EmancipationService],
 })
 export class AuthModule {}

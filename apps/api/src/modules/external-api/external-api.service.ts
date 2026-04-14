@@ -1,14 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { computeTotalPaid, computeVestedShares } from '@opencoop/shared';
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 
 @Injectable()
 export class ExternalApiService {
+  private readonly logger = new Logger(ExternalApiService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async queryShareholders(coopId: string, emails: string[]) {
+    const lowerEmails = emails.map((e) => e.toLowerCase());
+
     const shareholders = await this.prisma.shareholder.findMany({
-      where: { coopId, email: { in: emails } },
+      where: {
+        coopId,
+        OR: [
+          { email: { in: lowerEmails, mode: 'insensitive' } },
+          { user: { email: { in: lowerEmails, mode: 'insensitive' } } },
+        ],
+      },
       select: {
         email: true,
         firstName: true,
@@ -17,6 +28,7 @@ export class ExternalApiService {
         type: true,
         isEcoPowerClient: true,
         ecoPowerId: true,
+        user: { select: { email: true } },
         registrations: {
           where: { status: { in: ['ACTIVE', 'COMPLETED', 'PENDING_PAYMENT'] } },
           select: {
@@ -30,11 +42,25 @@ export class ExternalApiService {
       },
     });
 
-    const shareholderMap = new Map(shareholders.map((s) => [s.email, s]));
+    const byEmail = new Map<
+      string,
+      Array<{
+        firstName: string | null;
+        lastName: string | null;
+        companyName: string | null;
+        type: string;
+        totalShares: number;
+        totalShareValue: number;
+        isEcoPowerClient: boolean;
+        ecoPowerId: string | null;
+      }>
+    >();
 
-    return emails.map((email) => {
-      const sh = shareholderMap.get(email);
-      if (!sh) return { email, found: false };
+    for (const sh of shareholders) {
+      const resolved = resolveShareholderEmail(sh);
+      if (!resolved) continue;
+      const key = resolved.toLowerCase();
+      if (!lowerEmails.includes(key)) continue;
 
       let totalShares = 0;
       let totalShareValue = 0;
@@ -52,9 +78,7 @@ export class ExternalApiService {
         }
       }
 
-      return {
-        email,
-        found: true,
+      const record = {
         firstName: sh.firstName,
         lastName: sh.lastName,
         companyName: sh.companyName,
@@ -64,7 +88,16 @@ export class ExternalApiService {
         isEcoPowerClient: sh.isEcoPowerClient,
         ecoPowerId: sh.ecoPowerId,
       };
-    });
+
+      const arr = byEmail.get(key) ?? [];
+      arr.push(record);
+      byEmail.set(key, arr);
+    }
+
+    return emails.map((email) => ({
+      email,
+      shareholders: byEmail.get(email.toLowerCase()) ?? [],
+    }));
   }
 
   async searchByName(coopId: string, name: string) {
@@ -140,23 +173,51 @@ export class ExternalApiService {
     updates: { email: string; isEcoPowerClient: boolean; ecoPowerId?: string }[],
   ) {
     const results: { email: string; success: boolean; error?: string }[] = [];
+
     for (const update of updates) {
-      const shareholder = await this.prisma.shareholder.findFirst({
-        where: { coopId, email: update.email },
+      const lowerEmail = update.email.toLowerCase();
+
+      const matchingShareholders = await this.prisma.shareholder.findMany({
+        where: {
+          coopId,
+          OR: [
+            { email: { equals: lowerEmail, mode: 'insensitive' } },
+            { user: { email: { equals: lowerEmail, mode: 'insensitive' } } },
+          ],
+        },
+        select: { id: true, email: true, user: { select: { email: true } } },
       });
-      if (!shareholder) {
+
+      if (matchingShareholders.length === 0) {
         results.push({ email: update.email, success: false, error: 'not found' });
         continue;
       }
-      await this.prisma.shareholder.update({
-        where: { id: shareholder.id },
-        data: {
-          isEcoPowerClient: update.isEcoPowerClient,
-          ...(update.ecoPowerId !== undefined && { ecoPowerId: update.ecoPowerId }),
-        },
-      });
-      results.push({ email: update.email, success: true });
+
+      if (matchingShareholders.length > 1) {
+        this.logger.warn(
+          `updateEcoPowerStatus: ${matchingShareholders.length} shareholders match email "${update.email}" in coop ${coopId} — applying fan-out update to all matches`,
+        );
+      }
+
+      try {
+        for (const shareholder of matchingShareholders) {
+          await this.prisma.shareholder.update({
+            where: { id: shareholder.id },
+            data: {
+              isEcoPowerClient: update.isEcoPowerClient,
+              ...(update.ecoPowerId !== undefined && { ecoPowerId: update.ecoPowerId }),
+            },
+          });
+        }
+        results.push({ email: update.email, success: true });
+      } catch (err) {
+        this.logger.error(
+          `updateEcoPowerStatus: DB update failed for email "${update.email}": ${err instanceof Error ? err.message : String(err)}`,
+        );
+        results.push({ email: update.email, success: false, error: err instanceof Error ? err.message : String(err) });
+      }
     }
+
     return results;
   }
 }

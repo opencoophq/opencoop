@@ -334,6 +334,25 @@ export class EmailService {
     });
   }
 
+  async sendEmancipationHouseholdNotification(
+    coopId: string,
+    to: string,
+    data: {
+      shareholderFirstName: string;
+      shareholderLastName: string;
+      coopName: string;
+      claimUrl: string;
+    },
+  ) {
+    return this.send({
+      coopId,
+      to,
+      subject: `${data.shareholderFirstName} kan nu een eigen account aanmaken bij ${data.coopName}`,
+      templateKey: 'emancipation-household',
+      templateData: data,
+    });
+  }
+
   async sendReferralSuccessNotification(
     coopId: string,
     to: string,

@@ -43,8 +43,9 @@ import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard, ExternalLink, MessageSquare, Loader2 } from 'lucide-react';
+import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard, ExternalLink, MessageSquare, Loader2, Users, Unlink } from 'lucide-react';
 import { api, apiFetch } from '@/lib/api';
+import { LinkShareholderDialog } from '@/components/admin/link-shareholder-dialog';
 
 interface ShareClass {
   id: string;
@@ -94,6 +95,8 @@ interface ShareholderDetail {
   birthDate?: string;
   bankIban?: string;
   bankBic?: string;
+  userId?: string;
+  user?: { id: string; email: string } | null;
   address?: {
     street?: string;
     number?: string;
@@ -105,7 +108,6 @@ interface ShareholderDetail {
   isEcoPowerClient?: boolean;
   ecoPowerId?: string;
   registeredByUserId?: string;
-  userId?: string;
   registrations: Registration[];
   createdAt: string;
 }
@@ -223,6 +225,10 @@ export default function ShareholderDetailPage() {
   // Audit log state
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
+
+  // Household linking state
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [unlinkLoading, setUnlinkLoading] = useState(false);
 
   // Send message dialog state
   const [messageOpen, setMessageOpen] = useState(false);
@@ -412,6 +418,24 @@ export default function ShareholderDetailPage() {
       setError(t('common.error'));
     } finally {
       setMessageSending(false);
+    }
+  };
+
+  const handleUnlink = async () => {
+    if (!selectedCoop || !shareholderId) return;
+    if (!window.confirm(t('household.unlinkConfirmBody'))) return;
+    setUnlinkLoading(true);
+    setError(null);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}/household/emancipate`, {
+        method: 'POST',
+      });
+      setSuccess(t('common.success'));
+      reloadShareholder();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setUnlinkLoading(false);
     }
   };
 
@@ -938,6 +962,52 @@ export default function ShareholderDetailPage() {
           </Button>
         </div>
       </form>
+
+      {/* Household Linking */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              {t('household.linkTitle')}
+            </CardTitle>
+            {shareholder.userId ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUnlink}
+                disabled={unlinkLoading}
+              >
+                {unlinkLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Unlink className="h-4 w-4 mr-2" />
+                {t('household.unlinkButton')}
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLinkOpen(true)}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                {t('household.linkButton')}
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {shareholder.userId ? (
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">{t('common.email')}:</span>
+                <span className="font-medium">{shareholder.user?.email ?? shareholder.userId}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{t('household.linkIntro')}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t('household.notLinked')}</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Ecopower Integration */}
       {ecoPowerEnabled && (
@@ -1606,6 +1676,20 @@ export default function ShareholderDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Household Link Dialog */}
+      {selectedCoop && (
+        <LinkShareholderDialog
+          open={linkOpen}
+          onOpenChange={setLinkOpen}
+          coopId={selectedCoop.id}
+          shareholderId={shareholderId}
+          onLinked={() => {
+            setSuccess(t('common.success'));
+            reloadShareholder();
+          }}
+        />
+      )}
     </div>
   );
 }

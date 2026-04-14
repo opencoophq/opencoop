@@ -1,0 +1,261 @@
+---
+title: Ecopower Externe API
+description: API-referentie voor de Ecopower-integratie — bevraag aandeelhoudersgegevens en synchroniseer Ecopower-clientstatus voor coöperaties op OpenCoop.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenCoop biedt een externe API waarmee Ecopower (Bronsgroen) elke coöperatie op het platform kan bevragen voor aandeelhoudersgegevens en Ecopower-clientstatus. Elke coöperatie die de Ecopower-integratie inschakelt, genereert een eigen API-sleutel, waarmee Ecopower toegang krijgt tot de aandeelhouders van die coöperatie.
+
+Dit betekent dat Ecopower één enkele integratie kan gebruiken om de aandeelhoudersstatus te controleren bij alle coöperaties op OpenCoop — elk met hun eigen API-sleutel.
+
+**Basis-URL:** `https://opencoop.be/api/external`
+
+<Callout type="warn" title="Brekende wijziging — 2026-04-14">
+De responsstructuur van `/shareholders/query` is gewijzigd ter ondersteuning van huishoudelijke aandeelhouders (koppels, minderjarige + voogd) die één e-mailbox delen.
+
+**Vóór:** elk resultaat was een plat record met een `found`-boolean.
+**Na:** elk resultaat bevat een `shareholders`-array (leeg = niet gevonden).
+
+Zie het [responsschema hieronder](#1-aandeelhouders-bevragen) en het [migratiepad](#migratiepad) voor meer details.
+</Callout>
+
+## Hoe het werkt
+
+1. Een coöperatie schakelt de Ecopower-integratie in via de OpenCoop-beheerdersinstellingen
+2. De coöperatiebeheerder genereert een API-sleutel en deelt deze met Ecopower
+3. Ecopower gebruikt die sleutel om de aandeelhouders van de coöperatie te bevragen en de Ecopower-clientstatus te synchroniseren
+4. De coöperatie kan optioneel een minimale aandelendrempel instellen — aandeelhouders die als Ecopower-client zijn gemarkeerd, kunnen niet onder die drempel verkopen
+
+## Authenticatie
+
+Alle verzoeken vereisen een Bearer-token in de `Authorization`-header:
+
+```
+Authorization: Bearer <api-key>
+```
+
+Elke API-sleutel is beperkt tot één coöperatie. Om meerdere coöperaties te bevragen, gebruik de API-sleutel die door elke coöperatie is verstrekt. Het opnieuw genereren van een sleutel maakt de vorige onmiddellijk ongeldig.
+
+## Snelheidslimieten
+
+- **100 verzoeken per 60 seconden** per coöperatie
+- Overschrijding van de limiet geeft `429 Too Many Requests` terug
+
+## Endpoints
+
+### 1. Aandeelhouders bevragen
+
+Zoek aandeelhouders op via e-mailadres en haal hun aandelenportefeuille op.
+
+```
+POST /shareholders/query
+```
+
+**Verzoekbody:**
+
+```json
+{
+  "shareholders": [
+    { "email": "jan.peeters@example.com" },
+    { "email": "huishouden@example.com" },
+    { "email": "unknown@example.com" }
+  ]
+}
+```
+
+- Maximaal **500 e-mailadressen** per verzoek
+
+**Antwoord:**
+
+```json
+{
+  "results": [
+    {
+      "email": "jan.peeters@example.com",
+      "shareholders": [
+        {
+          "firstName": "Jan",
+          "lastName": "Peeters",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 10,
+          "totalShareValue": 2500,
+          "isEcoPowerClient": true,
+          "ecoPowerId": "ECO-12345"
+        }
+      ]
+    },
+    {
+      "email": "huishouden@example.com",
+      "shareholders": [
+        {
+          "firstName": "Marie",
+          "lastName": "Janssens",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 4,
+          "totalShareValue": 1000,
+          "isEcoPowerClient": false,
+          "ecoPowerId": null
+        },
+        {
+          "firstName": "Jan",
+          "lastName": "Janssens",
+          "companyName": null,
+          "type": "INDIVIDUAL",
+          "totalShares": 6,
+          "totalShareValue": 1500,
+          "isEcoPowerClient": false,
+          "ecoPowerId": null
+        }
+      ]
+    },
+    {
+      "email": "unknown@example.com",
+      "shareholders": []
+    }
+  ]
+}
+```
+
+Een lege `shareholders`-array betekent dat er geen aandeelhouder gevonden werd voor dat e-mailadres. Dit werd voorheen aangegeven met `found: false`.
+
+| Veld | Type | Beschrijving |
+|------|------|--------------|
+| `email` | string | Het bevraagde e-mailadres |
+| `shareholders` | array | Overeenkomende aandeelhouders (leeg = niet gevonden) |
+| `shareholders[].firstName` | string | Voornaam |
+| `shareholders[].lastName` | string | Achternaam |
+| `shareholders[].companyName` | string \| null | Bedrijfsnaam (voor aandeelhouders van het type COMPANY) |
+| `shareholders[].type` | string | `INDIVIDUAL`, `COMPANY`, of `MINOR` |
+| `shareholders[].totalShares` | number | Netto verworven aandelen (aankopen minus verkopen) |
+| `shareholders[].totalShareValue` | number | Totale waarde in EUR |
+| `shareholders[].isEcoPowerClient` | boolean | Of gemarkeerd als Ecopower-client |
+| `shareholders[].ecoPowerId` | string \| null | Ecopower-klant-ID |
+
+#### Huishoudelijke matching
+
+De query matcht aandeelhouders op basis van hun eigen e-mailadres **of** het e-mailadres van hun gekoppeld gebruikersaccount. Dit betekent dat een aandeelhouder zonder eigen e-mailadres (bijv. een minderjarige of tweede partner) vindbaar is via het gedeelde huishoudelijke e-mailadres.
+
+### 2. Ecopower-status bijwerken
+
+Batch-update van welke aandeelhouders Ecopower-clients zijn.
+
+```
+PATCH /shareholders/ecopower
+```
+
+**Verzoekbody:**
+
+```json
+{
+  "updates": [
+    {
+      "email": "jan.peeters@example.com",
+      "isEcoPowerClient": true,
+      "ecoPowerId": "ECO-12345"
+    },
+    {
+      "email": "maria.janssens@example.com",
+      "isEcoPowerClient": false
+    }
+  ]
+}
+```
+
+- Maximaal **500 updates** per verzoek
+- `ecoPowerId` is optioneel
+
+**Antwoord:**
+
+```json
+{
+  "results": [
+    { "email": "jan.peeters@example.com", "success": true },
+    { "email": "maria.janssens@example.com", "success": true }
+  ]
+}
+```
+
+Als een aandeelhouder niet gevonden wordt:
+
+```json
+{ "email": "unknown@example.com", "success": false, "error": "not found" }
+```
+
+**Huishoudelijke fan-out:** wanneer meerdere aandeelhouders hetzelfde e-mailadres delen, wordt de statusupdate toegepast op **alle** overeenkomende aandeelhouders. Wanneer een fan-out plaatsvindt, wordt een waarschuwing gelogd aan de serverzijde.
+
+## Migratiepad
+
+Vervang het oude patroon dat `found` controleerde:
+
+```typescript
+const result = await api.queryShareholders(emails);
+const byEmail = new Map(result.map(r => [r.email, r.found ? r : null]));
+```
+
+Door het nieuwe gegroepeerde formaat:
+
+```typescript
+const result = await api.queryShareholders(emails);
+const byEmail = new Map(result.map(r => [r.email, r.shareholders]));  // nu een array
+
+// Om de eerste (of enige) aandeelhouder voor een e-mailadres op te halen:
+const shareholders = byEmail.get('jan@example.com') ?? [];
+if (shareholders.length > 0) {
+  // aandeelhouder gevonden
+}
+```
+
+Als uw code uitging van één aandeelhouder per e-mailadres, doorloop dan de `shareholders`-array en aggregeer naar behoefte.
+
+## Foutantwoorden
+
+| Status | Betekenis |
+|--------|-----------|
+| `401 Unauthorized` | Ontbrekende, ongeldige of ingetrokken API-sleutel |
+| `400 Bad Request` | Ongeldige verzoekbody (controleer het veld `message`) |
+| `429 Too Many Requests` | Snelheidslimiet overschreden — wacht en probeer opnieuw |
+
+Foutantwoordformaat:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid API key"
+}
+```
+
+## Voorbeeld (cURL)
+
+```bash
+# Aandeelhouders bevragen voor een specifieke coöperatie
+curl -X POST https://opencoop.be/api/external/shareholders/query \
+  -H "Authorization: Bearer COOP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shareholders": [
+      { "email": "jan.peeters@example.com" }
+    ]
+  }'
+
+# Ecopower-status bijwerken voor een specifieke coöperatie
+curl -X PATCH https://opencoop.be/api/external/shareholders/ecopower \
+  -H "Authorization: Bearer COOP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "updates": [
+      { "email": "jan.peeters@example.com", "isEcoPowerClient": true, "ecoPowerId": "ECO-12345" }
+    ]
+  }'
+```
+
+## Drempelhandhaving
+
+Wanneer een coöperatie een minimale Ecopower-drempel instelt (via de beheerdersinstellingen), kunnen aandeelhouders die als Ecopower-client zijn gemarkeerd geen aandelen verkopen onder die drempel. De drempel kan worden ingesteld als:
+
+- **Eurobedrag** — minimale portefeuillewaarde in EUR
+- **Aandelenaantal** — minimaal aantal aandelen
+
+Dit wordt automatisch afgedwongen bij verkoop- en overdrachtsoperaties van aandelen binnen OpenCoop. De externe API handhaaft geen drempels — deze leest en schrijft uitsluitend de velden `isEcoPowerClient` en `ecoPowerId`.

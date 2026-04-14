@@ -943,8 +943,8 @@ export class AuthService {
   // ============================================================================
 
   async validateUpgradeToken(token: string) {
-    const upgradeToken = await this.prisma.minorUpgradeToken.findUnique({
-      where: { token },
+    const upgradeToken = await this.prisma.shareholderEmancipationToken.findFirst({
+      where: { token, reason: 'MINOR_COMING_OF_AGE' },
       include: {
         shareholder: {
           include: {
@@ -995,8 +995,8 @@ export class AuthService {
 
   async upgradeMinorToAdult(upgradeDto: UpgradeToAdultDto) {
     // Validate the token first
-    const upgradeToken = await this.prisma.minorUpgradeToken.findUnique({
-      where: { token: upgradeDto.token },
+    const upgradeToken = await this.prisma.shareholderEmancipationToken.findFirst({
+      where: { token: upgradeDto.token, reason: 'MINOR_COMING_OF_AGE' },
       include: {
         shareholder: true,
       },
@@ -1066,7 +1066,7 @@ export class AuthService {
       });
 
       // Mark the token as used
-      await tx.minorUpgradeToken.update({
+      await tx.shareholderEmancipationToken.update({
         where: { id: upgradeToken.id },
         data: { usedAt: new Date() },
       });
@@ -1101,15 +1101,17 @@ export class AuthService {
     expiresAt.setDate(expiresAt.getDate() + 90); // Token valid for 90 days
 
     // Upsert to handle case where token already exists
-    await this.prisma.minorUpgradeToken.upsert({
+    await this.prisma.shareholderEmancipationToken.upsert({
       where: { shareholderId },
       create: {
         token,
         shareholderId,
+        reason: 'MINOR_COMING_OF_AGE',
         expiresAt,
       },
       update: {
         token,
+        reason: 'MINOR_COMING_OF_AGE',
         expiresAt,
         usedAt: null,
         parentNotifiedAt: null,

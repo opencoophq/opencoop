@@ -379,11 +379,25 @@
     "companyInfo": "Company Information",
     "contactInfo": "Contact & Bank Details",
     "readOnlyEmail": "Email address cannot be changed. Contact support if needed.",
+    "householdManagedEmail": "Email managed by {email} (household account)",
     "saveChanges": "Save Changes",
     "generateCertificate": "Generate Certificate",
     "generateDividendStatement": "Generate Statement",
     "generating": "Generating...",
     "downloadError": "Download failed. Please try again."
+  },
+  "household": {
+    "linkButton": "Link to household",
+    "linkTitle": "Household",
+    "linkIntro": "Linking this shareholder to another user routes their communications to that user's inbox and clears their own email address.",
+    "searchPlaceholder": "Search users by email...",
+    "confirmLink": "Link shareholder",
+    "cancel": "Cancel",
+    "resultMeta": "{count, plural, one {# shareholder} other {# shareholders}} in this coop",
+    "unlinkButton": "Unlink (start emancipation)",
+    "unlinkConfirmTitle": "Unlink shareholder",
+    "unlinkConfirmBody": "This will start the emancipation flow and assign a new email address to this shareholder. Continue?",
+    "notLinked": "This shareholder is not linked to a household."
   },
   "settings": {
     "title": "Settings",
@@ -2187,6 +2201,24 @@
       "save": "Save changes",
       "saving": "Saving...",
       "notFound": "Meeting not found"
+    }
+  },
+  "emancipation": {
+    "claimTitle": "Claim Your Own Account",
+    "claimIntro": "Set up your personal login to manage your shares independently.",
+    "claimCta": "Create Account",
+    "emailLabel": "Your email address",
+    "passwordLabel": "Choose a password",
+    "confirmPasswordLabel": "Confirm password",
+    "loading": "Creating account...",
+    "successMessage": "Account created! Redirecting to your dashboard...",
+    "errors": {
+      "invalidToken": "This link is invalid or has expired. Please contact your cooperative.",
+      "emailTaken": "This email address is already registered. Please use a different one.",
+      "invalidEmail": "Please enter a valid email address.",
+      "passwordComplexity": "Password must be at least 8 characters and contain uppercase, lowercase, and a digit.",
+      "passwordMismatch": "Passwords do not match.",
+      "unknown": "Something went wrong. Please try again."
     }
   }
 }

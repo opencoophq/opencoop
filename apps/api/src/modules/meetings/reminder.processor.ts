@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { MeetingStatus, RSVPStatus } from '@opencoop/database';
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 
 @Processor('meetings-reminder')
 export class ReminderProcessor {
@@ -21,7 +22,16 @@ export class ReminderProcessor {
         coop: true,
         attendances: {
           where: { rsvpStatus: RSVPStatus.UNKNOWN },
-          include: { shareholder: true },
+          include: {
+            shareholder: {
+              select: {
+                email: true,
+                firstName: true,
+                lastName: true,
+                user: { select: { email: true } },
+              },
+            },
+          },
         },
       },
     });
@@ -37,36 +47,57 @@ export class ReminderProcessor {
 
       for (const d of meeting.reminderDaysBefore) {
         if (d === daysUntil && !sentMap[String(d)]) {
-          let sent = 0;
+          // Dedup by inbox: group attendances that resolve to the same email address.
+          // A household sharing one inbox must receive a single reminder, not one per shareholder.
+          const inboxMap = new Map<string, typeof meeting.attendances>();
           for (const a of meeting.attendances) {
-            if (!a.shareholder.email) continue;
+            const email = resolveShareholderEmail(a.shareholder);
+            if (!email) continue; // postal-only: skip
+            const group = inboxMap.get(email) ?? [];
+            group.push(a);
+            inboxMap.set(email, group);
+          }
+
+          let sent = 0;
+          for (const [email, group] of inboxMap) {
+            // Use the first attendance's RSVP token (consistent with convocation send()).
+            // NOTE: The current meeting-reminder template only supports a single
+            // shareholderName string. If the template is later updated to accept a list,
+            // pass group.map(a => name(a.shareholder)) instead.
+            const primaryA = group[0];
             try {
               await this.email.send({
                 coopId: meeting.coopId,
-                to: a.shareholder.email,
+                to: email,
                 subject: `Herinnering — ${meeting.title}`,
                 templateKey: 'meeting-reminder',
                 templateData: {
                   language: 'nl',
-                  shareholderName: `${a.shareholder.firstName ?? ''} ${a.shareholder.lastName ?? ''}`.trim(),
+                  shareholderName: `${primaryA.shareholder.firstName ?? ''} ${primaryA.shareholder.lastName ?? ''}`.trim(),
                   meetingTitle: meeting.title,
                   meetingDate: meeting.scheduledAt.toISOString(),
                   daysUntil,
-                  rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${a.rsvpToken}`,
+                  rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${primaryA.rsvpToken}`,
                 },
               });
               sent++;
             } catch (err) {
-              this.logger.warn(`Failed to send reminder to ${a.shareholderId}: ${err}`);
+              this.logger.warn(`Failed to send reminder to ${primaryA.shareholderId}: ${err}`);
             }
           }
-          await this.prisma.meeting.update({
-            where: { id: meeting.id },
-            data: {
-              remindersSent: { ...sentMap, [String(d)]: new Date().toISOString() },
-            },
-          });
-          this.logger.log(`Sent ${sent} reminders for meeting ${meeting.id} (T-${d} days)`);
+          if (sent === 0 && inboxMap.size > 0) {
+            this.logger.warn(
+              `All ${inboxMap.size} reminder sends failed for meeting ${meeting.id} (T-${d} days) — NOT marking day as sent; will retry next tick`,
+            );
+          } else {
+            await this.prisma.meeting.update({
+              where: { id: meeting.id },
+              data: {
+                remindersSent: { ...sentMap, [String(d)]: new Date().toISOString() },
+              },
+            });
+            this.logger.log(`Sent ${sent}/${inboxMap.size} reminders for meeting ${meeting.id} (T-${d} days)`);
+          }
         }
       }
     }

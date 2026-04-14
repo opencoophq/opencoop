@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
+import { EmancipationService } from './emancipation.service';
+import { EmancipateDto } from './dto/emancipate.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -34,6 +36,7 @@ function isSafeRedirectPath(path: string): boolean {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly emancipationService: EmancipationService,
     private readonly webAuthnService: WebAuthnService,
     private readonly coopAdminsService: CoopAdminsService,
     private readonly auditService: AuditService,
@@ -187,6 +190,21 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email already in use' })
   async upgradeToAdult(@Body() upgradeDto: UpgradeToAdultDto) {
     return this.authService.upgradeMinorToAdult(upgradeDto);
+  }
+
+  @Public()
+  @Post('emancipate')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @ApiOperation({ summary: 'Claim shareholder account via emancipation token (household split or minor turning 18)' })
+  @ApiResponse({ status: 201, description: 'Account claimed, user logged in' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @ApiResponse({ status: 409, description: 'Email already in use' })
+  async emancipate(@Body() dto: EmancipateDto) {
+    const { user } = await this.emancipationService.consumeEmancipation(dto);
+    return this.authService.issueJwtForUserPublic({
+      ...user,
+      coopAdminOf: [],
+    });
   }
 
   @Public()

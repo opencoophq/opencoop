@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateDividendPeriodDto } from './dto/create-dividend-period.dto';
 import { calculateDividend } from '@opencoop/shared';
+import { resolveShareholderEmailWithSource } from '../shareholders/shareholder-email.resolver';
 
 @Injectable()
 export class DividendsService {
@@ -398,6 +399,7 @@ export class DividendsService {
                 lastName: true,
                 companyName: true,
                 email: true,
+                user: { select: { email: true } },
               },
             },
           },
@@ -419,6 +421,7 @@ export class DividendsService {
       'Name',
       'Type',
       'Email',
+      'Email source',
       'Gross Amount',
       'Withholding Tax',
       'Net Amount',
@@ -433,12 +436,14 @@ export class DividendsService {
           : `${payout.shareholder.firstName || ''} ${payout.shareholder.lastName || ''}`.trim();
 
       const reference = `Dividend ${period.name || period.year} - ${period.coop.name}`;
+      const { email, source } = resolveShareholderEmailWithSource(payout.shareholder);
 
       return [
         payout.shareholder.id,
         `"${name}"`,
         payout.shareholder.type,
-        payout.shareholder.email || '',
+        email || '',
+        source,
         Number(payout.grossAmount).toFixed(2),
         Number(payout.withholdingTax).toFixed(2),
         Number(payout.netAmount).toFixed(2),

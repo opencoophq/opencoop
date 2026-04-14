@@ -6,6 +6,7 @@ import { CreateConversationDto } from './dto/create-conversation.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import * as path from 'path';
 import * as fs from 'fs';
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 
 @Injectable()
 export class MessagesService {
@@ -440,7 +441,7 @@ export class MessagesService {
               select: {
                 email: true,
                 firstName: true,
-                user: { select: { preferredLanguage: true } },
+                user: { select: { preferredLanguage: true, email: true } },
               },
             },
           },
@@ -461,11 +462,12 @@ export class MessagesService {
     const messagePreview = rawBody.length > 150 ? rawBody.slice(0, 150) + '...' : rawBody;
 
     for (const participant of conversation.participants) {
-      if (!participant.shareholder.email) continue;
+      const resolvedEmail = resolveShareholderEmail(participant.shareholder);
+      if (!resolvedEmail) continue;
       const language = participant.shareholder.user?.preferredLanguage || 'nl';
       await this.emailService.send({
         coopId,
-        to: participant.shareholder.email,
+        to: resolvedEmail,
         subject: `${coop.name}: ${conversation.subject}`,
         templateKey: 'message-notification',
         templateData: {
