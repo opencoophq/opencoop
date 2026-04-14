@@ -27,6 +27,9 @@ export class RegistrationsService {
         email: true,
         bankIban: true,
         bankBic: true,
+        // Include user.email so resolveShareholderEmail() can fall back to the
+        // linked User's address when shareholder.email is null (shared-email households).
+        user: { select: { email: true } },
       },
     },
     shareClass: true,

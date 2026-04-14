@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
@@ -21,6 +22,8 @@ export interface SendConvocationOpts {
 
 @Injectable()
 export class ConvocationService {
+  private readonly logger = new Logger(ConvocationService.name);
+
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
@@ -88,8 +91,12 @@ export class ConvocationService {
     }
 
     // Dedupe by resolved email: group shareholders sharing the same inbox
+    // Skip shareholders whose upsert failed — their token may be missing and
+    // they should not contribute a broken RSVP URL to a household group.
+    const upsertFailedIds = new Set<string>(failures.map((f) => f.shareholderId));
     const inboxMap = new Map<string, typeof shareholders>();
     for (const sh of shareholders) {
+      if (upsertFailedIds.has(sh.id)) continue;
       const email = resolveShareholderEmail(sh);
       if (!email) continue; // postal-only: skip
       const group = inboxMap.get(email) ?? [];
@@ -101,8 +108,20 @@ export class ConvocationService {
     const sent: Array<{ to: string; shareholderIds: string[] }> = [];
     for (const [email, group] of inboxMap) {
       try {
-        // Use the first shareholder's token as the RSVP link (primary contact)
-        const primaryToken = tokenMap.get(group[0].id) ?? '';
+        // Use the first shareholder's token as the RSVP link (primary contact).
+        // Guard explicitly: if the token is missing (should not happen after the
+        // upsertFailedIds filter above), skip the whole group rather than sending
+        // a broken /rsvp/ URL.
+        const primaryToken = tokenMap.get(group[0].id);
+        if (!primaryToken) {
+          this.logger.warn(
+            `No RSVP token for primary shareholder ${group[0].id} in inbox group; skipping send`,
+          );
+          for (const sh of group) {
+            failures.push({ shareholderId: sh.id, error: 'No RSVP token available' });
+          }
+          continue;
+        }
         await this.email.send({
           coopId,
           to: email,
@@ -185,10 +204,24 @@ export class ConvocationService {
       },
     });
 
-    let sent = 0;
+    // Dedup by inbox: group attendances that resolve to the same email address.
+    // A household sharing one inbox must receive a single reminder, not one per shareholder.
+    const inboxMap = new Map<string, typeof attendances>();
     for (const att of attendances) {
       const email = resolveShareholderEmail(att.shareholder);
-      if (!email) continue;
+      if (!email) continue; // postal-only: skip
+      const group = inboxMap.get(email) ?? [];
+      group.push(att);
+      inboxMap.set(email, group);
+    }
+
+    let sent = 0;
+    for (const [email, group] of inboxMap) {
+      // Use the first attendance's RSVP token (consistent with convocation send()).
+      // NOTE: The current meeting-reminder template only supports a single
+      // shareholderName string. If the template is later updated to accept a list,
+      // pass group.map(a => name(a.shareholder)) instead.
+      const primaryAtt = group[0];
       try {
         await this.email.send({
           coopId,
@@ -196,10 +229,10 @@ export class ConvocationService {
           subject: `Herinnering — ${meeting.title}`,
           templateKey: 'meeting-reminder',
           templateData: {
-            shareholderName: `${att.shareholder.firstName ?? ''} ${att.shareholder.lastName ?? ''}`.trim(),
+            shareholderName: `${primaryAtt.shareholder.firstName ?? ''} ${primaryAtt.shareholder.lastName ?? ''}`.trim(),
             meetingTitle: meeting.title,
             meetingDate: meeting.scheduledAt.toISOString(),
-            rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${att.rsvpToken}`,
+            rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${primaryAtt.rsvpToken}`,
           },
         });
         sent++;

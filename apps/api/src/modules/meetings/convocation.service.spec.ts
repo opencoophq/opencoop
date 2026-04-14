@@ -64,6 +64,75 @@ describe('ConvocationService', () => {
     expect(res).toEqual({ alreadySent: true });
   });
 
+  describe('sendReminderNow with shared households', () => {
+    function makeMeetingForReminder(overrides: Record<string, any> = {}) {
+      return {
+        id: 'm1',
+        coopId: 'c1',
+        title: 'AGM 2026',
+        scheduledAt: FAR_FUTURE,
+        ...overrides,
+      };
+    }
+
+    it('sends one email per distinct inbox when multiple shareholders share a User', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeetingForReminder());
+      // Three attendances: s1 & s2 share jan@x.com (via user.email), s3 has own piet@x.com
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        {
+          rsvpToken: 'token-s1',
+          shareholderId: 's1',
+          shareholder: { email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'A' },
+        },
+        {
+          rsvpToken: 'token-s2',
+          shareholderId: 's2',
+          shareholder: { email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'B' },
+        },
+        {
+          rsvpToken: 'token-s3',
+          shareholderId: 's3',
+          shareholder: { email: null, user: { email: 'piet@x.com' }, firstName: 'Piet', lastName: 'C' },
+        },
+      ]);
+
+      const result = await service.sendReminderNow('c1', 'm1');
+
+      // Only 2 emails sent (one per distinct inbox)
+      expect(emailService.send).toHaveBeenCalledTimes(2);
+      expect(result.sent).toBe(2);
+
+      const recipients = emailService.send.mock.calls.map((c: any[]) => c[0].to).sort();
+      expect(recipients).toEqual(['jan@x.com', 'piet@x.com']);
+
+      // jan@x.com should use the first shareholder's token
+      const janCall = emailService.send.mock.calls.find((c: any[]) => c[0].to === 'jan@x.com');
+      expect(janCall[0].templateData.rsvpUrl).toContain('token-s1');
+    });
+
+    it('skips postal-only shareholders in reminders', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeetingForReminder());
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        {
+          rsvpToken: 'token-s1',
+          shareholderId: 's1',
+          shareholder: { email: 'real@x.com', user: null, firstName: 'Real', lastName: 'Person' },
+        },
+        {
+          rsvpToken: 'token-s2',
+          shareholderId: 's2',
+          shareholder: { email: null, user: null, firstName: 'Postal', lastName: 'Only' },
+        },
+      ]);
+
+      const result = await service.sendReminderNow('c1', 'm1');
+
+      expect(emailService.send).toHaveBeenCalledTimes(1);
+      expect(result.sent).toBe(1);
+      expect(emailService.send.mock.calls[0][0].to).toBe('real@x.com');
+    });
+  });
+
   describe('sendConvocation with shared households', () => {
     it('sends one email per distinct User when multiple shareholders share a User', async () => {
       // User U1 (jan@x.com) owns S1 and S2 (both email=null), User U2 (piet@x.com) owns S3 (email=null)
