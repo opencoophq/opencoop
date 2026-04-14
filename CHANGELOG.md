@@ -2,6 +2,15 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.66] - 2026-04-14
+
+### Fixed
+- **AGM date input showed MM/DD/YYYY on EN-browser OSes** — native `<input type="datetime-local">` uses the browser OS locale, not the app UI language. Replaced with two text inputs (`Datum DD/MM/JJJJ` + `Tijd HH:MM`) that always use European format regardless of OS.
+- **Reminder days selector was a fixed checkbox set** (14/7/3/1) — now a free-text field accepting any comma-separated numbers.
+
+### Added
+- **Edit meeting settings after creation** — AGM settings (type/title/date/location/format/voting weight/max proxies/reminder days) are now editable from the meeting detail page via a new "Vergadering bewerken" button. Reuses the create form in PATCH mode.
+
 ## [0.7.65] - 2026-04-14
 
 ### Added
