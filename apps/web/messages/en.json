@@ -1893,12 +1893,17 @@
       "votingWeightLabel": "Voting weight",
       "maxProxiesLabel": "Max proxies per person",
       "reminderLabel": "Reminders (days before)",
-      "reminderHint": "Send email reminders this many days before the meeting",
+      "reminderHint": "Days before the meeting, comma-separated (e.g. 7, 3, 1)",
       "create": "Create meeting",
       "cancel": "Cancel",
       "back": "Back to meetings",
       "creating": "Creating...",
-      "errorCreating": "Failed to create meeting"
+      "errorCreating": "Failed to create meeting",
+      "dateInputLabel": "Date (DD/MM/YYYY)",
+      "timeInputLabel": "Time (HH:MM)",
+      "invalidDateTime": "Date or time is invalid",
+      "invalidReminderDays": "Enter at least one valid number of days",
+      "errorSaving": "Could not save changes"
     },
     "detail": {
       "overview": "Overview",
@@ -1943,7 +1948,8 @@
       "notFound": "Meeting not found",
       "loadError": "Failed to load meeting",
       "cancelError": "Failed to cancel meeting",
-      "deleteError": "Failed to delete meeting"
+      "deleteError": "Failed to delete meeting",
+      "editMeeting": "Edit meeting"
     },
     "agenda": {
       "heading": "Agenda",
@@ -2174,6 +2180,13 @@
       "backToList": "Back to meetings",
       "agendaHeading": "Agenda",
       "invitedNote": "You are invited to this meeting. To RSVP, use the link in the convocation email."
+    },
+    "edit": {
+      "heading": "Edit meeting",
+      "back": "Back to meeting",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "notFound": "Meeting not found"
     }
   }
 }

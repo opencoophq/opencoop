@@ -1893,12 +1893,17 @@
       "votingWeightLabel": "Stemgewicht",
       "maxProxiesLabel": "Max volmachten per persoon",
       "reminderLabel": "Herinneringen (dagen vooraf)",
-      "reminderHint": "Verstuur e-mailherinneringen dit aantal dagen voor de vergadering",
+      "reminderHint": "Aantal dagen vooraf, gescheiden met komma's (bv. 7, 3, 1)",
       "create": "Maak vergadering aan",
       "cancel": "Annuleer",
       "back": "Terug naar vergaderingen",
       "creating": "Aanmaken...",
-      "errorCreating": "Kon vergadering niet aanmaken"
+      "errorCreating": "Kon vergadering niet aanmaken",
+      "dateInputLabel": "Datum (DD/MM/JJJJ)",
+      "timeInputLabel": "Tijd (HH:MM)",
+      "invalidDateTime": "Datum of tijd is ongeldig",
+      "invalidReminderDays": "Voer minstens één geldig aantal dagen in",
+      "errorSaving": "Kon wijzigingen niet opslaan"
     },
     "detail": {
       "overview": "Overzicht",
@@ -1943,7 +1948,8 @@
       "notFound": "Vergadering niet gevonden",
       "loadError": "Kon vergadering niet laden",
       "cancelError": "Kon vergadering niet annuleren",
-      "deleteError": "Kon vergadering niet verwijderen"
+      "deleteError": "Kon vergadering niet verwijderen",
+      "editMeeting": "Vergadering bewerken"
     },
     "agenda": {
       "heading": "Agenda",
@@ -2174,6 +2180,13 @@
       "backToList": "Terug naar vergaderingen",
       "agendaHeading": "Agenda",
       "invitedNote": "U bent uitgenodigd voor deze vergadering. Gebruik de link in de convocatie-e-mail om te antwoorden."
+    },
+    "edit": {
+      "heading": "Vergadering bewerken",
+      "back": "Terug naar vergadering",
+      "save": "Wijzigingen opslaan",
+      "saving": "Opslaan...",
+      "notFound": "Vergadering niet gevonden"
     }
   }
 }

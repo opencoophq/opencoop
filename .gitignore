@@ -67,3 +67,11 @@ uploads/signatures/*
 # Allow project documentation
 !CLAUDE.md
 .worktrees/
+
+# Build artifacts next to source config (from tsc --declaration runs)
+apps/*/tailwind.config.js
+apps/*/tailwind.config.d.ts
+apps/*/source.config.js
+apps/*/source.config.d.ts
+apps/*/mdx-components.js
+apps/*/mdx-components.d.ts
