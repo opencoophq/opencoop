@@ -13,3 +13,4 @@ export type { ProjectInvestmentReportProps } from './templates/project-investmen
 export { GiftCertificate } from './templates/gift-certificate';
 export type { GiftCertificateProps } from './templates/gift-certificate';
 export { ConvocationPdf, type ConvocationProps } from './templates/convocation';
+export { VolmachtFormPdf, type VolmachtFormProps } from './templates/volmacht-form';
