@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, Link } from '@/i18n/routing';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +30,7 @@ function slugify(value: string): string {
 export default function OnboardingPage() {
   const t = useTranslations('onboarding');
   const tLegal = useTranslations('legal');
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -100,6 +101,7 @@ export default function OnboardingPage() {
           plan,
           ...(!isFree && { billingPeriod: billing }),
           termsAccepted: accountValues.acceptTerms === true,
+          preferredLanguage: locale,
         }),
       });
 

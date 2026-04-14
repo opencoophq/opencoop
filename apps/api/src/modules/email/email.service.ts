@@ -90,13 +90,28 @@ export class EmailService {
     return emailLog;
   }
 
+  private async resolveRecipientLanguage(email: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      select: { preferredLanguage: true },
+    });
+    return user?.preferredLanguage || 'nl';
+  }
+
   async sendWelcomeEmail(coopId: string, to: string, shareholderName: string) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: 'Welkom bij OpenCoop',
+      en: 'Welcome to OpenCoop',
+      fr: 'Bienvenue sur OpenCoop',
+      de: 'Willkommen bei OpenCoop',
+    };
     return this.send({
       coopId,
       to,
-      subject: 'Welcome to OpenCoop',
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'welcome',
-      templateData: { shareholderName },
+      templateData: { shareholderName, language },
     });
   }
 
@@ -113,12 +128,19 @@ export class EmailService {
       bankBic?: string;
     },
   ) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: 'Bevestiging van je aandelenaankoop',
+      en: 'Share Purchase Confirmation',
+      fr: "Confirmation d'achat d'actions",
+      de: 'Bestätigung Ihres Anteilskaufs',
+    };
     return this.send({
       coopId,
       to,
-      subject: 'Share Purchase Confirmation',
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'share-purchase',
-      templateData: data,
+      templateData: { ...data, language },
     });
   }
 
@@ -148,7 +170,7 @@ export class EmailService {
     return this.send({
       coopId,
       to,
-      subject: subjects[lang] || subjects['en'],
+      subject: subjects[lang] || subjects['nl'],
       templateKey: 'payment-confirmed',
       templateData: data,
       attachments,
@@ -165,33 +187,54 @@ export class EmailService {
       statementPath: string;
     },
   ) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: `Dividendafrekening ${data.year}`,
+      en: `Dividend Statement ${data.year}`,
+      fr: `Relevé de dividendes ${data.year}`,
+      de: `Dividendenabrechnung ${data.year}`,
+    };
     return this.send({
       coopId,
       to,
-      subject: `Dividend Statement ${data.year}`,
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'dividend-statement',
-      templateData: data,
+      templateData: { ...data, language },
       attachments: [{ filename: `dividend-${data.year}.pdf`, path: data.statementPath }],
     });
   }
 
   async sendPasswordReset(coopId: string, to: string, resetUrl: string) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: 'Wachtwoord resetten',
+      en: 'Password Reset Request',
+      fr: 'Demande de réinitialisation du mot de passe',
+      de: 'Passwort zurücksetzen',
+    };
     return this.send({
       coopId,
       to,
-      subject: 'Password Reset Request',
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'password-reset',
-      templateData: { resetUrl },
+      templateData: { resetUrl, language },
     });
   }
 
   async sendMagicLink(coopId: string, to: string, magicLinkUrl: string) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: 'Je inloglink',
+      en: 'Your Login Link',
+      fr: 'Votre lien de connexion',
+      de: 'Ihr Anmeldelink',
+    };
     return this.send({
       coopId,
       to,
-      subject: 'Your Login Link',
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'magic-link',
-      templateData: { magicLinkUrl },
+      templateData: { magicLinkUrl, language },
     });
   }
 
@@ -368,12 +411,19 @@ export class EmailService {
       certificatePath: string;
     },
   ) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: `${data.coopName} — Je cadeaubon`,
+      en: `${data.coopName} — Your gift certificate`,
+      fr: `${data.coopName} — Votre bon cadeau`,
+      de: `${data.coopName} — Ihr Geschenkgutschein`,
+    };
     return this.send({
       coopId,
       to,
-      subject: `${data.coopName} — Your gift certificate`,
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'gift-certificate',
-      templateData: data,
+      templateData: { ...data, language },
       attachments: [{ filename: 'gift-certificate.pdf', path: data.certificatePath }],
     });
   }
