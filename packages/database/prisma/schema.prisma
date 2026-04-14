@@ -1100,6 +1100,7 @@ model Meeting {
   updatedAt           DateTime              @updatedAt
 
   @@index([coopId, scheduledAt])
+  @@map("meetings")
 }
 
 model AgendaItem {
@@ -1114,6 +1115,7 @@ model AgendaItem {
   attachments AgendaAttachment[]
 
   @@unique([meetingId, order])
+  @@map("agenda_items")
 }
 
 model AgendaAttachment {
@@ -1123,6 +1125,8 @@ model AgendaAttachment {
   fileName     String
   fileUrl      String
   uploadedAt   DateTime   @default(now())
+
+  @@map("agenda_attachments")
 }
 
 model Resolution {
@@ -1138,6 +1142,8 @@ model Resolution {
   passed         Boolean?
   closedAt       DateTime?
   votes          Vote[]
+
+  @@map("resolutions")
 }
 
 model Vote {
@@ -1152,6 +1158,7 @@ model Vote {
   castAt         DateTime    @default(now())
 
   @@unique([resolutionId, shareholderId])
+  @@map("votes")
 }
 
 model Proxy {
@@ -1167,6 +1174,7 @@ model Proxy {
   revokedAt             DateTime?
 
   @@unique([meetingId, grantorShareholderId])
+  @@map("proxies")
 }
 
 model MeetingAttendance {
@@ -1185,6 +1193,7 @@ model MeetingAttendance {
   signatureImageUrl String?
 
   @@unique([meetingId, shareholderId])
+  @@map("meeting_attendances")
 }
 
 model MeetingMinutes {
@@ -1196,6 +1205,8 @@ model MeetingMinutes {
   signedPdfUrl    String?
   signedAt        DateTime?
   signedByName    String?
+
+  @@map("meeting_minutes")
 }
 
 model MeetingKioskSession {
@@ -1209,4 +1220,5 @@ model MeetingKioskSession {
   active    Boolean   @default(true)
 
   @@index([meetingId, active])
+  @@map("meeting_kiosk_sessions")
 }
