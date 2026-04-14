@@ -1,0 +1,56 @@
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { CoopGuard } from '../../common/guards/coop.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { MeetingsService } from './meetings.service';
+import { CreateMeetingDto } from './dto/create-meeting.dto';
+import { UpdateMeetingDto } from './dto/update-meeting.dto';
+
+@ApiTags('Meetings')
+@ApiBearerAuth()
+@Controller('admin/coops/:coopId/meetings')
+@UseGuards(JwtAuthGuard, RolesGuard, CoopGuard)
+@Roles('COOP_ADMIN', 'SYSTEM_ADMIN')
+export class MeetingsController {
+  constructor(private meetings: MeetingsService) {}
+
+  @Post()
+  create(@Param('coopId') coopId: string, @Body() dto: CreateMeetingDto) {
+    return this.meetings.create(coopId, dto);
+  }
+
+  @Get()
+  list(@Param('coopId') coopId: string) {
+    return this.meetings.list(coopId);
+  }
+
+  @Get(':id')
+  get(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.meetings.get(coopId, id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateMeetingDto,
+  ) {
+    return this.meetings.update(coopId, id, dto);
+  }
+
+  @Delete(':id')
+  delete(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.meetings.delete(coopId, id);
+  }
+
+  @Post(':id/cancel')
+  cancel(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Body('reason') reason: string,
+  ) {
+    return this.meetings.cancel(coopId, id, reason);
+  }
+}
