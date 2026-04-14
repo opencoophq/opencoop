@@ -476,20 +476,50 @@ export class EmailProcessor {
     <p>${s.expires}</p>
   `;
       },
-      'magic-link': (d, _cn) => `
-        <h1>Login to OpenCoop</h1>
-        <p>Click the button below to log in:</p>
-        <p style="text-align: center; margin: 30px 0;">
-          <a href="${d.magicLinkUrl}"
-             style="background-color: #1e40af; color: white; padding: 12px 24px;
-                    text-decoration: none; border-radius: 6px; display: inline-block;">
-            Log In
-          </a>
-        </p>
-        <p style="color: #666; font-size: 12px;">
-          This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.
-        </p>
-      `,
+      'magic-link': (d, _cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Inloggen bij OpenCoop',
+            click: 'Klik op de knop hieronder om in te loggen:',
+            button: 'Inloggen',
+            expires: 'Deze link vervalt binnen 15 minuten. Als je dit niet hebt aangevraagd, kan je deze e-mail veilig negeren.',
+          },
+          en: {
+            title: 'Login to OpenCoop',
+            click: 'Click the button below to log in:',
+            button: 'Log In',
+            expires: "This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.",
+          },
+          fr: {
+            title: 'Connexion à OpenCoop',
+            click: 'Cliquez sur le bouton ci-dessous pour vous connecter :',
+            button: 'Se connecter',
+            expires: "Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.",
+          },
+          de: {
+            title: 'Anmeldung bei OpenCoop',
+            click: 'Klicken Sie auf die Schaltfläche unten, um sich anzumelden:',
+            button: 'Anmelden',
+            expires: 'Dieser Link läuft in 15 Minuten ab. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.click}</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${d.magicLinkUrl}"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        ${s.button}
+      </a>
+    </p>
+    <p style="color: #666; font-size: 12px;">
+      ${s.expires}
+    </p>
+  `;
+      },
       'minor-turned-adult': (d, cn) => `
         <h1>Welkom bij ${cn}, ${d.firstName}!</h1>
         <p>Gefeliciteerd met je 18de verjaardag! 🎉</p>
