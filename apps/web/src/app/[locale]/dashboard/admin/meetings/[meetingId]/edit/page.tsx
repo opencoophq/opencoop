@@ -1,7 +1,8 @@
 'use client';
 
-import { use, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useParams } from 'next/navigation';
 import { Link, useRouter } from '@/i18n/routing';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -13,12 +14,9 @@ import {
   type MeetingSubmitPayload,
 } from '../../_components/meeting-form';
 
-interface EditMeetingPageProps {
-  params: Promise<{ meetingId: string }>;
-}
-
-export default function EditMeetingPage({ params }: EditMeetingPageProps) {
-  const { meetingId } = use(params);
+export default function EditMeetingPage() {
+  const params = useParams();
+  const meetingId = (params?.meetingId as string) || '';
   const t = useTranslations();
   const router = useRouter();
   const { selectedCoop } = useAdmin();
