@@ -21,6 +21,7 @@ describe('RegistrationsService', () => {
     emailService = {
       sendSharePurchaseConfirmation: jest.fn().mockResolvedValue(undefined),
       sendPaymentConfirmation: jest.fn().mockResolvedValue(undefined),
+      sendGiftCertificate: jest.fn().mockResolvedValue(undefined),
     };
     prisma = {
       registration: { findFirst: jest.fn(), findUnique: jest.fn() },
@@ -116,6 +117,63 @@ describe('RegistrationsService', () => {
       prisma.registration.findFirst.mockResolvedValue(null);
       await expect(service.resendPaymentEmail('nonexistent', 'c1')).rejects.toThrow(
         NotFoundException,
+      );
+    });
+  });
+
+  describe('onRegistrationCompleted', () => {
+    it('sends gift certificate using user.email when shareholder.email is null (shared household)', async () => {
+      // Mock the DocumentsService that was created in the module
+      const documentsService = service['documentsService'];
+      documentsService.generateGiftCertificatePdf = jest.fn().mockResolvedValue('/path/to/cert.pdf');
+
+      // Setup findUnique to handle both the initial registration fetch and gift code uniqueness check
+      prisma.registration.findUnique.mockImplementation(async (args: any) => {
+        // For gift code uniqueness check (giftCode: <value> in where clause)
+        if (args.where.giftCode !== undefined) {
+          return null; // Indicates the gift code is unique
+        }
+        // For the initial registration fetch
+        return {
+          id: 'giftReg1',
+          coopId: 'c1',
+          isGift: true,
+          giftCode: null,
+          type: 'BUY',
+          quantity: 10,
+          totalAmount: '1000',
+          shareholder: {
+            id: 'sh1',
+            type: 'INDIVIDUAL',
+            firstName: 'Alice',
+            lastName: 'Smith',
+            companyName: null,
+            email: null,
+            user: {
+              preferredLanguage: 'nl',
+              email: 'alice@shared-family.com'
+            },
+          },
+          shareClass: { id: 'sc1', name: 'Class A' },
+          coop: { id: 'c1', name: 'Test Coop' },
+        };
+      });
+
+      // Mock the update call for setting giftCode
+      prisma.registration.update = jest.fn().mockResolvedValue({ giftCode: 'GIFT123' });
+
+      const result = await service.onRegistrationCompleted('giftReg1');
+
+      expect(emailService.sendGiftCertificate).toHaveBeenCalledWith(
+        'c1',
+        'alice@shared-family.com',
+        expect.objectContaining({
+          buyerName: 'Alice Smith',
+          coopName: 'Test Coop',
+          shareClassName: 'Class A',
+          quantity: 10,
+          totalValue: 1000,
+        }),
       );
     });
   });

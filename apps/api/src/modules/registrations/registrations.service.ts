@@ -900,7 +900,7 @@ export class RegistrationsService {
     try {
       const pdfPath = await this.documentsService.generateGiftCertificatePdf(registrationId);
 
-      const buyerEmail = shareholder.email;
+      const buyerEmail = resolveShareholderEmail(shareholder);
       if (buyerEmail) {
         const buyerName =
           shareholder.type === 'COMPANY'
