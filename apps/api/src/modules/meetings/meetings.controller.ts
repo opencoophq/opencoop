@@ -18,10 +18,12 @@ import { CoopGuard } from '../../common/guards/coop.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { MeetingsService } from './meetings.service';
 import { AgendaService } from './agenda.service';
+import { ProxiesService } from './proxies.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { CreateAgendaItemDto } from './dto/create-agenda-item.dto';
 import { UpdateAgendaItemDto } from './dto/update-agenda-item.dto';
+import { CreateProxyDto } from './dto/create-proxy.dto';
 
 @ApiTags('Meetings')
 @ApiBearerAuth()
@@ -32,6 +34,7 @@ export class MeetingsController {
   constructor(
     private meetings: MeetingsService,
     private agenda: AgendaService,
+    private proxies: ProxiesService,
   ) {}
 
   @Post()
@@ -110,5 +113,20 @@ export class MeetingsController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.agenda.addAttachment(coopId, itemId, file);
+  }
+
+  @Post(':id/proxies')
+  createProxy(@Param('id') id: string, @Body() dto: CreateProxyDto) {
+    return this.proxies.create(id, dto.grantorShareholderId, dto.delegateShareholderId);
+  }
+
+  @Get(':id/proxies')
+  listProxies(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.proxies.list(coopId, id);
+  }
+
+  @Delete(':id/proxies/:proxyId')
+  revokeProxy(@Param('coopId') coopId: string, @Param('proxyId') proxyId: string) {
+    return this.proxies.revoke(coopId, proxyId);
   }
 }
