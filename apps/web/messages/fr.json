@@ -1890,12 +1890,17 @@
       "votingWeightLabel": "Pondération du vote",
       "maxProxiesLabel": "Procurations max par personne",
       "reminderLabel": "Rappels (jours avant)",
-      "reminderHint": "Envoyer des rappels par e-mail ce nombre de jours avant l'assemblée",
+      "reminderHint": "Jours avant l'assemblée, séparés par virgules (ex. 7, 3, 1)",
       "create": "Créer l'assemblée",
       "cancel": "Annuler",
       "back": "Retour aux assemblées",
       "creating": "Création...",
-      "errorCreating": "Échec de la création de l'assemblée"
+      "errorCreating": "Échec de la création de l'assemblée",
+      "dateInputLabel": "Date (JJ/MM/AAAA)",
+      "timeInputLabel": "Heure (HH:MM)",
+      "invalidDateTime": "Date ou heure invalide",
+      "invalidReminderDays": "Entrez au moins un nombre de jours valide",
+      "errorSaving": "Impossible d'enregistrer les modifications"
     },
     "detail": {
       "overview": "Aperçu",
@@ -1940,7 +1945,8 @@
       "notFound": "Assemblée introuvable",
       "loadError": "Échec du chargement de l'assemblée",
       "cancelError": "Échec de l'annulation de l'assemblée",
-      "deleteError": "Échec de la suppression de l'assemblée"
+      "deleteError": "Échec de la suppression de l'assemblée",
+      "editMeeting": "Modifier l'assemblée"
     },
     "agenda": {
       "heading": "Ordre du jour",
@@ -2171,6 +2177,13 @@
       "backToList": "Retour aux assemblées",
       "agendaHeading": "Ordre du jour",
       "invitedNote": "Vous êtes invité à cette assemblée. Pour répondre, utilisez le lien dans l'e-mail de convocation."
+    },
+    "edit": {
+      "heading": "Modifier l'assemblée",
+      "back": "Retour à l'assemblée",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "notFound": "Assemblée introuvable"
     }
   }
 }
