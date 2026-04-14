@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,6 +27,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const t = useTranslations();
+  const locale = useLocale();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           email: data.email,
           password: data.password,
+          preferredLanguage: locale,
         }),
       });
 

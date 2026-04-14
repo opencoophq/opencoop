@@ -2,6 +2,15 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.64] - 2026-04-14
+
+### Fixed
+- **Emails now respect user language preference with NL fallback** — share purchase, welcome, dividend statement, password reset, magic link, and gift certificate emails were hardcoded English, ignoring `User.preferredLanguage`. All templates now render in NL/EN/FR/DE with Dutch as the fallback. Fixes Bronsgroen complaint that `nl_BE` browser users were receiving English emails.
+- **Payment confirmation and message notification fallback flipped from EN to NL** — the two already-multilingual templates were falling back to English for unknown languages; now fall back to Dutch for consistency.
+
+### Changed
+- **Shareholder registration and coop onboarding persist current UI locale** — the language users are browsing in (`nl`/`en`/`fr`/`de`) is now saved as their `preferredLanguage`, so future emails match the language they signed up in.
+
 ## [0.7.63] - 2026-04-14
 
 ### Fixed

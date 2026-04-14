@@ -223,30 +223,122 @@ export class EmailProcessor {
   ): string {
     // Simple template rendering - in production, use a proper template engine
     const templates: Record<string, (data: Record<string, unknown>, coopName: string) => string> = {
-      welcome: (d, cn) => `
-        <h1>Welcome to ${cn}!</h1>
-        <p>Dear ${d.shareholderName},</p>
-        <p>Thank you for becoming a shareholder of ${cn}.</p>
-        <p>You can log in to your dashboard to view your shares and documents.</p>
-      `,
-      'share-purchase': (d, cn) => `
-        <h1>Share Purchase Confirmation</h1>
-        <p>Dear ${d.shareholderName},</p>
-        <p>We have received your share purchase request:</p>
-        <ul>
-          <li>Share Class: ${d.shareClassName}</li>
-          <li>Quantity: ${d.quantity}</li>
-          <li>Total Amount: €${(d.totalAmount as number).toFixed(2)}</li>
-        </ul>
-        ${d.bankIban || d.ogmCode ? `
-        <h2>Payment Details</h2>
-        ${d.bankIban ? `<p>IBAN: <strong>${d.bankIban}</strong></p>` : ''}
-        ${d.bankBic ? `<p>BIC: <strong>${d.bankBic}</strong></p>` : ''}
-        ${d.ogmCode ? `<p>Structured communication: <strong>${d.ogmCode}</strong></p>` : ''}
-        <p>Amount: <strong>€${(d.totalAmount as number).toFixed(2)}</strong></p>
-        ` : ''}
-        <p>Thank you for investing in ${cn}!</p>
-      `,
+      welcome: (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: `Welkom bij ${cn}!`,
+            dear: `Beste ${d.shareholderName},`,
+            thanks: `Bedankt om aandeelhouder te worden van ${cn}.`,
+            login: 'Je kan inloggen in je dashboard om je aandelen en documenten te bekijken.',
+          },
+          en: {
+            title: `Welcome to ${cn}!`,
+            dear: `Dear ${d.shareholderName},`,
+            thanks: `Thank you for becoming a shareholder of ${cn}.`,
+            login: 'You can log in to your dashboard to view your shares and documents.',
+          },
+          fr: {
+            title: `Bienvenue chez ${cn} !`,
+            dear: `Cher/Chère ${d.shareholderName},`,
+            thanks: `Merci de devenir actionnaire de ${cn}.`,
+            login: 'Vous pouvez vous connecter à votre tableau de bord pour consulter vos actions et documents.',
+          },
+          de: {
+            title: `Willkommen bei ${cn}!`,
+            dear: `Liebe/r ${d.shareholderName},`,
+            thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} werden.`,
+            login: 'Sie können sich in Ihrem Dashboard anmelden, um Ihre Anteile und Dokumente einzusehen.',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.dear}</p>
+    <p>${s.thanks}</p>
+    <p>${s.login}</p>
+  `;
+      },
+      'share-purchase': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Bevestiging van je aandelenaankoop',
+            dear: `Beste ${d.shareholderName},`,
+            intro: 'We hebben je aanvraag voor een aandelenaankoop goed ontvangen:',
+            shareClass: 'Aandelenklasse',
+            quantity: 'Aantal',
+            totalAmount: 'Totaalbedrag',
+            paymentDetailsTitle: 'Betalingsgegevens',
+            iban: 'IBAN',
+            bic: 'BIC',
+            ogm: 'Gestructureerde mededeling',
+            amount: 'Bedrag',
+            thanks: `Bedankt om te investeren in ${cn}!`,
+          },
+          en: {
+            title: 'Share Purchase Confirmation',
+            dear: `Dear ${d.shareholderName},`,
+            intro: 'We have received your share purchase request:',
+            shareClass: 'Share Class',
+            quantity: 'Quantity',
+            totalAmount: 'Total Amount',
+            paymentDetailsTitle: 'Payment Details',
+            iban: 'IBAN',
+            bic: 'BIC',
+            ogm: 'Structured communication',
+            amount: 'Amount',
+            thanks: `Thank you for investing in ${cn}!`,
+          },
+          fr: {
+            title: "Confirmation d'achat d'actions",
+            dear: `Cher/Chère ${d.shareholderName},`,
+            intro: "Nous avons bien reçu votre demande d'achat d'actions :",
+            shareClass: "Classe d'actions",
+            quantity: 'Quantité',
+            totalAmount: 'Montant total',
+            paymentDetailsTitle: 'Détails de paiement',
+            iban: 'IBAN',
+            bic: 'BIC',
+            ogm: 'Communication structurée',
+            amount: 'Montant',
+            thanks: `Merci d'investir dans ${cn} !`,
+          },
+          de: {
+            title: 'Bestätigung Ihres Anteilskaufs',
+            dear: `Liebe/r ${d.shareholderName},`,
+            intro: 'Wir haben Ihre Anfrage zum Anteilskauf erhalten:',
+            shareClass: 'Anteilsklasse',
+            quantity: 'Anzahl',
+            totalAmount: 'Gesamtbetrag',
+            paymentDetailsTitle: 'Zahlungsdetails',
+            iban: 'IBAN',
+            bic: 'BIC',
+            ogm: 'Strukturierte Mitteilung',
+            amount: 'Betrag',
+            thanks: `Vielen Dank für Ihre Investition in ${cn}!`,
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.dear}</p>
+    <p>${s.intro}</p>
+    <ul>
+      <li>${s.shareClass}: ${d.shareClassName}</li>
+      <li>${s.quantity}: ${d.quantity}</li>
+      <li>${s.totalAmount}: €${(d.totalAmount as number).toFixed(2)}</li>
+    </ul>
+    ${d.bankIban || d.ogmCode ? `
+    <h2>${s.paymentDetailsTitle}</h2>
+    ${d.bankIban ? `<p>${s.iban}: <strong>${d.bankIban}</strong></p>` : ''}
+    ${d.bankBic ? `<p>${s.bic}: <strong>${d.bankBic}</strong></p>` : ''}
+    ${d.ogmCode ? `<p>${s.ogm}: <strong>${d.ogmCode}</strong></p>` : ''}
+    <p>${s.amount}: <strong>€${(d.totalAmount as number).toFixed(2)}</strong></p>
+    ` : ''}
+    <p>${s.thanks}</p>
+  `;
+      },
       'payment-confirmed': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const t = {
@@ -283,7 +375,7 @@ export class EmailProcessor {
             thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
           },
         };
-        const s = t[lang as keyof typeof t] || t['en'];
+        const s = t[lang as keyof typeof t] || t['nl'];
         return `
           <h1>${s.title}</h1>
           <p>${s.dear}</p>
@@ -301,35 +393,133 @@ export class EmailProcessor {
           <p>${s.thanks}</p>
         `;
       },
-      'dividend-statement': (d, cn) => `
-        <h1>Dividend Statement ${d.year}</h1>
-        <p>Dear ${d.shareholderName},</p>
-        <p>Please find attached your dividend statement for ${d.year}.</p>
-        <p>Net dividend amount: €${(d.netAmount as number).toFixed(2)}</p>
-        <p>Thank you for being a shareholder of ${cn}!</p>
-      `,
-      'password-reset': (d, _cn) => `
-        <h1>Password Reset Request</h1>
-        <p>You have requested to reset your password.</p>
-        <p>Click the link below to reset your password:</p>
-        <p><a href="${d.resetUrl}">${d.resetUrl}</a></p>
-        <p>If you did not request this, please ignore this email.</p>
-        <p>This link will expire in 1 hour.</p>
-      `,
-      'magic-link': (d, _cn) => `
-        <h1>Login to OpenCoop</h1>
-        <p>Click the button below to log in:</p>
-        <p style="text-align: center; margin: 30px 0;">
-          <a href="${d.magicLinkUrl}"
-             style="background-color: #1e40af; color: white; padding: 12px 24px;
-                    text-decoration: none; border-radius: 6px; display: inline-block;">
-            Log In
-          </a>
-        </p>
-        <p style="color: #666; font-size: 12px;">
-          This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.
-        </p>
-      `,
+      'dividend-statement': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: `Dividendafrekening ${d.year}`,
+            dear: `Beste ${d.shareholderName},`,
+            attached: `In bijlage vind je je dividendafrekening voor ${d.year}.`,
+            net: 'Netto dividendbedrag',
+            thanks: `Bedankt om aandeelhouder te zijn van ${cn}!`,
+          },
+          en: {
+            title: `Dividend Statement ${d.year}`,
+            dear: `Dear ${d.shareholderName},`,
+            attached: `Please find attached your dividend statement for ${d.year}.`,
+            net: 'Net dividend amount',
+            thanks: `Thank you for being a shareholder of ${cn}!`,
+          },
+          fr: {
+            title: `Relevé de dividendes ${d.year}`,
+            dear: `Cher/Chère ${d.shareholderName},`,
+            attached: `Veuillez trouver ci-joint votre relevé de dividendes pour ${d.year}.`,
+            net: 'Montant net du dividende',
+            thanks: `Merci d'être actionnaire de ${cn} !`,
+          },
+          de: {
+            title: `Dividendenabrechnung ${d.year}`,
+            dear: `Liebe/r ${d.shareholderName},`,
+            attached: `Bitte finden Sie im Anhang Ihre Dividendenabrechnung für ${d.year}.`,
+            net: 'Netto-Dividendenbetrag',
+            thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.dear}</p>
+    <p>${s.attached}</p>
+    <p>${s.net}: €${(d.netAmount as number).toFixed(2)}</p>
+    <p>${s.thanks}</p>
+  `;
+      },
+      'password-reset': (d, _cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Wachtwoord resetten',
+            requested: 'Je hebt een wachtwoord reset aangevraagd.',
+            click: 'Klik op onderstaande link om je wachtwoord te resetten:',
+            ignore: 'Als je dit niet hebt aangevraagd, kan je deze e-mail negeren.',
+            expires: 'Deze link vervalt binnen 1 uur.',
+          },
+          en: {
+            title: 'Password Reset Request',
+            requested: 'You have requested to reset your password.',
+            click: 'Click the link below to reset your password:',
+            ignore: 'If you did not request this, please ignore this email.',
+            expires: 'This link will expire in 1 hour.',
+          },
+          fr: {
+            title: 'Demande de réinitialisation du mot de passe',
+            requested: 'Vous avez demandé la réinitialisation de votre mot de passe.',
+            click: 'Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :',
+            ignore: "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.",
+            expires: 'Ce lien expirera dans 1 heure.',
+          },
+          de: {
+            title: 'Passwort zurücksetzen',
+            requested: 'Sie haben eine Passwort-Zurücksetzung angefordert.',
+            click: 'Klicken Sie auf den folgenden Link, um Ihr Passwort zurückzusetzen:',
+            ignore: 'Wenn Sie dies nicht angefordert haben, ignorieren Sie diese E-Mail.',
+            expires: 'Dieser Link läuft in 1 Stunde ab.',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.requested}</p>
+    <p>${s.click}</p>
+    <p><a href="${d.resetUrl}">${d.resetUrl}</a></p>
+    <p>${s.ignore}</p>
+    <p>${s.expires}</p>
+  `;
+      },
+      'magic-link': (d, _cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Inloggen bij OpenCoop',
+            click: 'Klik op de knop hieronder om in te loggen:',
+            button: 'Inloggen',
+            expires: 'Deze link vervalt binnen 15 minuten. Als je dit niet hebt aangevraagd, kan je deze e-mail veilig negeren.',
+          },
+          en: {
+            title: 'Login to OpenCoop',
+            click: 'Click the button below to log in:',
+            button: 'Log In',
+            expires: "This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.",
+          },
+          fr: {
+            title: 'Connexion à OpenCoop',
+            click: 'Cliquez sur le bouton ci-dessous pour vous connecter :',
+            button: 'Se connecter',
+            expires: "Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.",
+          },
+          de: {
+            title: 'Anmeldung bei OpenCoop',
+            click: 'Klicken Sie auf die Schaltfläche unten, um sich anzumelden:',
+            button: 'Anmelden',
+            expires: 'Dieser Link läuft in 15 Minuten ab. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.',
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.click}</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${d.magicLinkUrl}"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        ${s.button}
+      </a>
+    </p>
+    <p style="color: #666; font-size: 12px;">
+      ${s.expires}
+    </p>
+  `;
+      },
       'minor-turned-adult': (d, cn) => `
         <h1>Welkom bij ${cn}, ${d.firstName}!</h1>
         <p>Gefeliciteerd met je 18de verjaardag! 🎉</p>
@@ -394,20 +584,74 @@ export class EmailProcessor {
           Als ${d.minorFirstName} nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
         </p>
       `,
-      'gift-certificate': (d, cn) => `
-        <h1>Your Gift Certificate</h1>
-        <p>Dear ${d.buyerName},</p>
-        <p>Thank you for purchasing a gift certificate at ${cn}!</p>
-        <p>Your payment has been received and the gift certificate is attached to this email.</p>
-        <ul>
-          <li>Share Class: ${d.shareClassName}</li>
-          <li>Quantity: ${d.quantity}</li>
-          <li>Total Value: €${(d.totalValue as number).toFixed(2)}</li>
-        </ul>
-        <p>Gift code: <strong>${d.giftCode}</strong></p>
-        <p>Share this certificate with the recipient. They can use the code or QR code to claim their shares.</p>
-        <p>Thank you for being a shareholder of ${cn}!</p>
-      `,
+      'gift-certificate': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Je cadeaubon',
+            dear: `Beste ${d.buyerName},`,
+            thanks: `Bedankt voor het aankopen van een cadeaubon bij ${cn}!`,
+            received: 'Je betaling is ontvangen en de cadeaubon is als bijlage toegevoegd.',
+            shareClass: 'Aandelenklasse',
+            quantity: 'Aantal',
+            totalValue: 'Totale waarde',
+            giftCode: 'Cadeaucode',
+            share: 'Deel de cadeaubon met de ontvanger. Ze kunnen de code of QR-code gebruiken om hun aandelen op te vragen.',
+            thanksEnd: `Bedankt om aandeelhouder te zijn van ${cn}!`,
+          },
+          en: {
+            title: 'Your Gift Certificate',
+            dear: `Dear ${d.buyerName},`,
+            thanks: `Thank you for purchasing a gift certificate at ${cn}!`,
+            received: 'Your payment has been received and the gift certificate is attached to this email.',
+            shareClass: 'Share Class',
+            quantity: 'Quantity',
+            totalValue: 'Total Value',
+            giftCode: 'Gift code',
+            share: 'Share this certificate with the recipient. They can use the code or QR code to claim their shares.',
+            thanksEnd: `Thank you for being a shareholder of ${cn}!`,
+          },
+          fr: {
+            title: 'Votre bon cadeau',
+            dear: `Cher/Chère ${d.buyerName},`,
+            thanks: `Merci d'avoir acheté un bon cadeau chez ${cn} !`,
+            received: 'Votre paiement a été reçu et le bon cadeau est joint à cet e-mail.',
+            shareClass: "Classe d'actions",
+            quantity: 'Quantité',
+            totalValue: 'Valeur totale',
+            giftCode: 'Code cadeau',
+            share: 'Partagez ce bon avec le destinataire. Il peut utiliser le code ou le QR code pour réclamer ses actions.',
+            thanksEnd: `Merci d'être actionnaire de ${cn} !`,
+          },
+          de: {
+            title: 'Ihr Geschenkgutschein',
+            dear: `Liebe/r ${d.buyerName},`,
+            thanks: `Vielen Dank für den Kauf eines Geschenkgutscheins bei ${cn}!`,
+            received: 'Ihre Zahlung wurde erhalten und der Geschenkgutschein ist dieser E-Mail beigefügt.',
+            shareClass: 'Anteilsklasse',
+            quantity: 'Anzahl',
+            totalValue: 'Gesamtwert',
+            giftCode: 'Geschenkcode',
+            share: 'Teilen Sie diesen Gutschein mit dem Empfänger. Er kann den Code oder QR-Code verwenden, um seine Anteile einzulösen.',
+            thanksEnd: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.dear}</p>
+    <p>${s.thanks}</p>
+    <p>${s.received}</p>
+    <ul>
+      <li>${s.shareClass}: ${d.shareClassName}</li>
+      <li>${s.quantity}: ${d.quantity}</li>
+      <li>${s.totalValue}: €${(d.totalValue as number).toFixed(2)}</li>
+    </ul>
+    <p>${s.giftCode}: <strong>${d.giftCode}</strong></p>
+    <p>${s.share}</p>
+    <p>${s.thanksEnd}</p>
+  `;
+      },
       'message-notification': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const t = {
