@@ -121,4 +121,41 @@ export class ConvocationService {
       },
     });
   }
+
+  async sendReminderNow(coopId: string, meetingId: string) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      select: { coopId: true, title: true, scheduledAt: true },
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.coopId !== coopId) throw new ForbiddenException();
+
+    const attendances = await this.prisma.meetingAttendance.findMany({
+      where: { meetingId, rsvpStatus: 'UNKNOWN' },
+      include: { shareholder: true },
+    });
+
+    let sent = 0;
+    for (const att of attendances) {
+      if (!att.shareholder.email) continue;
+      try {
+        await this.email.send({
+          coopId,
+          to: att.shareholder.email,
+          subject: `Herinnering — ${meeting.title}`,
+          templateKey: 'meeting-reminder',
+          templateData: {
+            shareholderName: `${att.shareholder.firstName ?? ''} ${att.shareholder.lastName ?? ''}`.trim(),
+            meetingTitle: meeting.title,
+            meetingDate: meeting.scheduledAt.toISOString(),
+            rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${att.rsvpToken}`,
+          },
+        });
+        sent++;
+      } catch {
+        // swallow per-recipient errors
+      }
+    }
+    return { sent };
+  }
 }

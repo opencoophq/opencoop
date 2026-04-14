@@ -1941,6 +1941,98 @@
       "loadError": "Échec du chargement de l'assemblée",
       "cancelError": "Échec de l'annulation de l'assemblée",
       "deleteError": "Échec de la suppression de l'assemblée"
+    },
+    "agenda": {
+      "heading": "Ordre du jour",
+      "addItem": "Ajouter un point",
+      "editItem": "Modifier le point",
+      "deleteItem": "Supprimer",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce point de l'ordre du jour ?",
+      "deleteError": "Échec de la suppression du point",
+      "saveError": "Échec de l'enregistrement du point",
+      "uploadError": "Échec du téléversement de la pièce jointe",
+      "titleLabel": "Titre",
+      "titleRequired": "Le titre est obligatoire",
+      "descriptionLabel": "Description",
+      "orderLabel": "Ordre",
+      "typeLabel": "Type",
+      "informational": "Informatif",
+      "resolution": "Résolution",
+      "election": "Élection",
+      "resolutionTextLabel": "Texte proposé",
+      "majorityLabel": "Majorité requise",
+      "simple": "Majorité simple",
+      "twoThirds": "Majorité des deux tiers",
+      "threeQuarters": "Majorité des trois quarts",
+      "attachments": "Pièces jointes",
+      "uploadAttachment": "Téléverser une pièce jointe",
+      "empty": "Aucun point à l'ordre du jour"
+    },
+    "convocation": {
+      "heading": "Convocation",
+      "preview": "Aperçu",
+      "send": "Envoyer la convocation",
+      "sendConfirm": "Ceci enverra la convocation par e-mail à tous les coopérateurs actifs. Continuer ?",
+      "sendSuccess": "Convocation envoyée",
+      "sendFailure": "Échec de l'envoi de la convocation",
+      "daysUntil": "Jours avant l'assemblée",
+      "daysBefore": "{days} jours",
+      "shortNoticeWarning": "Cette assemblée est dans moins de 15 jours. Le préavis légal belge (Art. 22) est normalement de 15 jours.",
+      "shortNoticeConfirm": "Je comprends que le délai est inférieur aux 15 jours légaux",
+      "reminderConfig": "Rappels",
+      "reminderSave": "Enregistrer les rappels",
+      "sendReminderNow": "Envoyer un rappel maintenant",
+      "sendReminderConfirm": "Envoyer un rappel maintenant aux coopérateurs qui n'ont pas encore répondu ?",
+      "reminderSentCount": "Rappel envoyé à {count} coopérateur(s)",
+      "deliveryStatus": "Statut d'envoi",
+      "noDeliveries": "Aucune convocation envoyée pour le moment",
+      "noShareholders": "Aucun coopérateur disponible pour l'aperçu",
+      "alreadyConvoked": "Déjà convoquée"
+    },
+    "rsvp": {
+      "heading": "RSVPs",
+      "total": "Total éligible",
+      "exportCsv": "Exporter en CSV",
+      "empty": "Aucun RSVP à afficher",
+      "copyLink": "Copier le lien",
+      "copied": "Copié",
+      "filters": {
+        "label": "Filtre",
+        "all": "Tous"
+      },
+      "status": {
+        "attending": "Présent",
+        "proxy": "Procuration",
+        "absent": "Absent",
+        "unknown": "Pas de réponse"
+      },
+      "columns": {
+        "shareholder": "Coopérateur",
+        "email": "E-mail",
+        "rsvpStatus": "Statut RSVP",
+        "delegate": "Mandataire",
+        "rsvpAt": "Répondu le"
+      }
+    },
+    "proxies": {
+      "heading": "Procurations",
+      "addProxy": "Ajouter une procuration",
+      "revoke": "Révoquer",
+      "revokeConfirm": "Êtes-vous sûr de vouloir révoquer cette procuration ?",
+      "grantorLabel": "Mandant (coopérateur délégant)",
+      "delegateLabel": "Mandataire (coopérateur agissant)",
+      "cannotDelegateToSelf": "Un coopérateur ne peut pas se déléguer à lui-même",
+      "maxProxiesExceeded": "Ce coopérateur a atteint le nombre maximum de procurations",
+      "signedFormStatus": "Formulaire signé",
+      "notSigned": "Non signé",
+      "signed": "Signé",
+      "empty": "Aucune procuration active",
+      "columns": {
+        "grantor": "Mandant",
+        "delegate": "Mandataire",
+        "signedForm": "Formulaire signé",
+        "grantedAt": "Accordée le"
+      }
     }
   }
 }

@@ -180,6 +180,11 @@ export class MeetingsController {
     return this.convocation.listStatus(coopId, id);
   }
 
+  @Post(':id/convocation/reminder')
+  sendReminderNow(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.convocation.sendReminderNow(coopId, id);
+  }
+
   @Post(':id/kiosk/start')
   startKiosk(
     @Param('coopId') coopId: string,

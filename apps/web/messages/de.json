@@ -1941,6 +1941,98 @@
       "loadError": "Versammlung konnte nicht geladen werden",
       "cancelError": "Versammlung konnte nicht abgesagt werden",
       "deleteError": "Versammlung konnte nicht gelöscht werden"
+    },
+    "agenda": {
+      "heading": "Tagesordnung",
+      "addItem": "Tagesordnungspunkt hinzufügen",
+      "editItem": "Tagesordnungspunkt bearbeiten",
+      "deleteItem": "Löschen",
+      "deleteConfirm": "Sind Sie sicher, dass Sie diesen Tagesordnungspunkt löschen möchten?",
+      "deleteError": "Tagesordnungspunkt konnte nicht gelöscht werden",
+      "saveError": "Tagesordnungspunkt konnte nicht gespeichert werden",
+      "uploadError": "Anhang konnte nicht hochgeladen werden",
+      "titleLabel": "Titel",
+      "titleRequired": "Titel ist erforderlich",
+      "descriptionLabel": "Beschreibung",
+      "orderLabel": "Reihenfolge",
+      "typeLabel": "Typ",
+      "informational": "Information",
+      "resolution": "Beschluss",
+      "election": "Wahl",
+      "resolutionTextLabel": "Vorgeschlagener Text",
+      "majorityLabel": "Erforderliche Mehrheit",
+      "simple": "Einfache Mehrheit",
+      "twoThirds": "Zweidrittelmehrheit",
+      "threeQuarters": "Dreiviertelmehrheit",
+      "attachments": "Anhänge",
+      "uploadAttachment": "Anhang hochladen",
+      "empty": "Noch keine Tagesordnungspunkte"
+    },
+    "convocation": {
+      "heading": "Einberufung",
+      "preview": "Vorschau",
+      "send": "Einberufung senden",
+      "sendConfirm": "Die Einberufung wird per E-Mail an alle aktiven Mitglieder gesendet. Fortfahren?",
+      "sendSuccess": "Einberufung versandt",
+      "sendFailure": "Einberufung konnte nicht gesendet werden",
+      "daysUntil": "Tage bis zur Versammlung",
+      "daysBefore": "{days} Tage",
+      "shortNoticeWarning": "Diese Versammlung ist in weniger als 15 Tagen. Die belgische gesetzliche Frist (Art. 22) beträgt normalerweise 15 Tage.",
+      "shortNoticeConfirm": "Mir ist bewusst, dass dies weniger als die gesetzliche 15-Tage-Frist ist",
+      "reminderConfig": "Erinnerungen",
+      "reminderSave": "Erinnerungen speichern",
+      "sendReminderNow": "Erinnerung jetzt senden",
+      "sendReminderConfirm": "Jetzt eine Erinnerung an Mitglieder senden, die noch nicht geantwortet haben?",
+      "reminderSentCount": "Erinnerung an {count} Mitglied(er) gesendet",
+      "deliveryStatus": "Versandstatus",
+      "noDeliveries": "Noch keine Einberufung versandt",
+      "noShareholders": "Keine Mitglieder für die Vorschau verfügbar",
+      "alreadyConvoked": "Bereits einberufen"
+    },
+    "rsvp": {
+      "heading": "RSVPs",
+      "total": "Gesamt berechtigt",
+      "exportCsv": "CSV exportieren",
+      "empty": "Keine RSVPs anzuzeigen",
+      "copyLink": "Link kopieren",
+      "copied": "Kopiert",
+      "filters": {
+        "label": "Filter",
+        "all": "Alle"
+      },
+      "status": {
+        "attending": "Anwesend",
+        "proxy": "Vollmacht",
+        "absent": "Abwesend",
+        "unknown": "Keine Antwort"
+      },
+      "columns": {
+        "shareholder": "Mitglied",
+        "email": "E-Mail",
+        "rsvpStatus": "RSVP-Status",
+        "delegate": "Bevollmächtigter",
+        "rsvpAt": "Geantwortet am"
+      }
+    },
+    "proxies": {
+      "heading": "Vollmachten",
+      "addProxy": "Vollmacht hinzufügen",
+      "revoke": "Widerrufen",
+      "revokeConfirm": "Sind Sie sicher, dass Sie diese Vollmacht widerrufen möchten?",
+      "grantorLabel": "Vollmachtgeber (delegierendes Mitglied)",
+      "delegateLabel": "Bevollmächtigter (handelndes Mitglied)",
+      "cannotDelegateToSelf": "Ein Mitglied kann sich nicht selbst bevollmächtigen",
+      "maxProxiesExceeded": "Dieses Mitglied hat die maximale Anzahl an Vollmachten erreicht",
+      "signedFormStatus": "Unterzeichnetes Formular",
+      "notSigned": "Nicht unterzeichnet",
+      "signed": "Unterzeichnet",
+      "empty": "Keine aktiven Vollmachten",
+      "columns": {
+        "grantor": "Vollmachtgeber",
+        "delegate": "Bevollmächtigter",
+        "signedForm": "Unterzeichnetes Formular",
+        "grantedAt": "Erteilt am"
+      }
     }
   }
 }

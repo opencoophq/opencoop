@@ -1944,6 +1944,98 @@
       "loadError": "Failed to load meeting",
       "cancelError": "Failed to cancel meeting",
       "deleteError": "Failed to delete meeting"
+    },
+    "agenda": {
+      "heading": "Agenda",
+      "addItem": "Add agenda item",
+      "editItem": "Edit agenda item",
+      "deleteItem": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this agenda item?",
+      "deleteError": "Failed to delete agenda item",
+      "saveError": "Failed to save agenda item",
+      "uploadError": "Failed to upload attachment",
+      "titleLabel": "Title",
+      "titleRequired": "Title is required",
+      "descriptionLabel": "Description",
+      "orderLabel": "Order",
+      "typeLabel": "Type",
+      "informational": "Informational",
+      "resolution": "Resolution",
+      "election": "Election",
+      "resolutionTextLabel": "Proposed text",
+      "majorityLabel": "Majority required",
+      "simple": "Simple majority",
+      "twoThirds": "Two-thirds majority",
+      "threeQuarters": "Three-quarters majority",
+      "attachments": "Attachments",
+      "uploadAttachment": "Upload attachment",
+      "empty": "No agenda items yet"
+    },
+    "convocation": {
+      "heading": "Convocation",
+      "preview": "Preview",
+      "send": "Send convocation",
+      "sendConfirm": "This will email the convocation to all active shareholders. Continue?",
+      "sendSuccess": "Convocation sent",
+      "sendFailure": "Failed to send convocation",
+      "daysUntil": "Days until meeting",
+      "daysBefore": "{days} days",
+      "shortNoticeWarning": "This meeting is less than 15 days away. Belgian statutory notice (Art. 22) is normally 15 days.",
+      "shortNoticeConfirm": "I understand this is less than the 15-day statutory notice",
+      "reminderConfig": "Reminders",
+      "reminderSave": "Save reminders",
+      "sendReminderNow": "Send reminder now",
+      "sendReminderConfirm": "Send a reminder email now to shareholders who haven't RSVP'd yet?",
+      "reminderSentCount": "Reminder sent to {count} shareholder(s)",
+      "deliveryStatus": "Delivery status",
+      "noDeliveries": "No convocation sent yet",
+      "noShareholders": "No shareholders available for preview",
+      "alreadyConvoked": "Already convoked"
+    },
+    "rsvp": {
+      "heading": "RSVPs",
+      "total": "Total eligible",
+      "exportCsv": "Export CSV",
+      "empty": "No RSVPs to show",
+      "copyLink": "Copy link",
+      "copied": "Copied",
+      "filters": {
+        "label": "Filter",
+        "all": "All"
+      },
+      "status": {
+        "attending": "Attending",
+        "proxy": "Proxy",
+        "absent": "Absent",
+        "unknown": "No response"
+      },
+      "columns": {
+        "shareholder": "Shareholder",
+        "email": "Email",
+        "rsvpStatus": "RSVP status",
+        "delegate": "Delegate",
+        "rsvpAt": "RSVP'd at"
+      }
+    },
+    "proxies": {
+      "heading": "Proxies",
+      "addProxy": "Add proxy",
+      "revoke": "Revoke",
+      "revokeConfirm": "Are you sure you want to revoke this proxy?",
+      "grantorLabel": "Grantor (delegating shareholder)",
+      "delegateLabel": "Delegate (acting shareholder)",
+      "cannotDelegateToSelf": "A shareholder cannot delegate to themselves",
+      "maxProxiesExceeded": "This shareholder has reached the maximum number of proxies",
+      "signedFormStatus": "Signed form",
+      "notSigned": "Not signed",
+      "signed": "Signed",
+      "empty": "No active proxies",
+      "columns": {
+        "grantor": "Grantor",
+        "delegate": "Delegate",
+        "signedForm": "Signed form",
+        "grantedAt": "Granted at"
+      }
     }
   }
 }

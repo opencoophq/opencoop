@@ -1944,6 +1944,98 @@
       "loadError": "Kon vergadering niet laden",
       "cancelError": "Kon vergadering niet annuleren",
       "deleteError": "Kon vergadering niet verwijderen"
+    },
+    "agenda": {
+      "heading": "Agenda",
+      "addItem": "Agendapunt toevoegen",
+      "editItem": "Agendapunt bewerken",
+      "deleteItem": "Verwijderen",
+      "deleteConfirm": "Weet je zeker dat je dit agendapunt wilt verwijderen?",
+      "deleteError": "Kon agendapunt niet verwijderen",
+      "saveError": "Kon agendapunt niet opslaan",
+      "uploadError": "Kon bijlage niet uploaden",
+      "titleLabel": "Titel",
+      "titleRequired": "Titel is verplicht",
+      "descriptionLabel": "Omschrijving",
+      "orderLabel": "Volgorde",
+      "typeLabel": "Type",
+      "informational": "Informatief",
+      "resolution": "Besluit",
+      "election": "Verkiezing",
+      "resolutionTextLabel": "Voorgestelde tekst",
+      "majorityLabel": "Vereiste meerderheid",
+      "simple": "Gewone meerderheid",
+      "twoThirds": "Tweederde meerderheid",
+      "threeQuarters": "Driekwart meerderheid",
+      "attachments": "Bijlagen",
+      "uploadAttachment": "Bijlage uploaden",
+      "empty": "Nog geen agendapunten"
+    },
+    "convocation": {
+      "heading": "Oproeping",
+      "preview": "Voorbeeld",
+      "send": "Oproeping versturen",
+      "sendConfirm": "Hiermee wordt de oproeping per e-mail verstuurd naar alle actieve vennoten. Doorgaan?",
+      "sendSuccess": "Oproeping verstuurd",
+      "sendFailure": "Kon oproeping niet versturen",
+      "daysUntil": "Dagen tot vergadering",
+      "daysBefore": "{days} dagen",
+      "shortNoticeWarning": "Deze vergadering is minder dan 15 dagen weg. De wettelijke oproepingstermijn (Art. 22) is normaal 15 dagen.",
+      "shortNoticeConfirm": "Ik begrijp dat dit minder is dan de wettelijke 15-dagen termijn",
+      "reminderConfig": "Herinneringen",
+      "reminderSave": "Herinneringen opslaan",
+      "sendReminderNow": "Herinnering nu versturen",
+      "sendReminderConfirm": "Nu een herinnering e-mailen naar vennoten die nog niet hebben geantwoord?",
+      "reminderSentCount": "Herinnering verstuurd naar {count} vennoot/vennoten",
+      "deliveryStatus": "Verzendstatus",
+      "noDeliveries": "Nog geen oproeping verstuurd",
+      "noShareholders": "Geen vennoten beschikbaar voor voorbeeld",
+      "alreadyConvoked": "Reeds opgeroepen"
+    },
+    "rsvp": {
+      "heading": "RSVPs",
+      "total": "Totaal opgeroepen",
+      "exportCsv": "Exporteer CSV",
+      "empty": "Geen RSVPs om te tonen",
+      "copyLink": "Link kopiëren",
+      "copied": "Gekopieerd",
+      "filters": {
+        "label": "Filter",
+        "all": "Alle"
+      },
+      "status": {
+        "attending": "Aanwezig",
+        "proxy": "Volmacht",
+        "absent": "Afwezig",
+        "unknown": "Geen antwoord"
+      },
+      "columns": {
+        "shareholder": "Vennoot",
+        "email": "E-mail",
+        "rsvpStatus": "RSVP status",
+        "delegate": "Gemachtigde",
+        "rsvpAt": "Geantwoord op"
+      }
+    },
+    "proxies": {
+      "heading": "Volmachten",
+      "addProxy": "Volmacht toevoegen",
+      "revoke": "Intrekken",
+      "revokeConfirm": "Weet je zeker dat je deze volmacht wilt intrekken?",
+      "grantorLabel": "Volmachtgever (delegerende vennoot)",
+      "delegateLabel": "Gevolmachtigde (handelende vennoot)",
+      "cannotDelegateToSelf": "Een vennoot kan geen volmacht aan zichzelf geven",
+      "maxProxiesExceeded": "Deze vennoot heeft het maximum aantal volmachten bereikt",
+      "signedFormStatus": "Ondertekend formulier",
+      "notSigned": "Niet ondertekend",
+      "signed": "Ondertekend",
+      "empty": "Geen actieve volmachten",
+      "columns": {
+        "grantor": "Volmachtgever",
+        "delegate": "Gevolmachtigde",
+        "signedForm": "Ondertekend formulier",
+        "grantedAt": "Verleend op"
+      }
     }
   }
 }
