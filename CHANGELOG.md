@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.67] - 2026-04-14
+
+### Fixed
+- **AGM edit page client error** — used `use(params)` (React 19 async-params pattern) but the project is Next.js 14 + React 18. Swapped to `useParams()` matching the sibling detail page.
+
 ## [0.7.66] - 2026-04-14
 
 ### Fixed
