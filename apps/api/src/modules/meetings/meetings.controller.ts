@@ -1,5 +1,17 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CoopGuard } from '../../common/guards/coop.guard';
@@ -73,5 +85,21 @@ export class MeetingsController {
   @Delete(':id/agenda-items/:itemId')
   removeAgendaItem(@Param('itemId') itemId: string) {
     return this.agenda.removeItem(itemId);
+  }
+
+  @Post(':id/agenda-items/:itemId/attachments')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  uploadAgendaAttachment(
+    @Param('itemId') itemId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.agenda.addAttachment(itemId, file);
   }
 }
