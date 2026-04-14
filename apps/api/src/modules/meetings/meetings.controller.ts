@@ -5,8 +5,11 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { CoopGuard } from '../../common/guards/coop.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { MeetingsService } from './meetings.service';
+import { AgendaService } from './agenda.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
+import { CreateAgendaItemDto } from './dto/create-agenda-item.dto';
+import { UpdateAgendaItemDto } from './dto/update-agenda-item.dto';
 
 @ApiTags('Meetings')
 @ApiBearerAuth()
@@ -14,7 +17,10 @@ import { UpdateMeetingDto } from './dto/update-meeting.dto';
 @UseGuards(JwtAuthGuard, RolesGuard, CoopGuard)
 @Roles('COOP_ADMIN', 'SYSTEM_ADMIN')
 export class MeetingsController {
-  constructor(private meetings: MeetingsService) {}
+  constructor(
+    private meetings: MeetingsService,
+    private agenda: AgendaService,
+  ) {}
 
   @Post()
   create(@Param('coopId') coopId: string, @Body() dto: CreateMeetingDto) {
@@ -52,5 +58,20 @@ export class MeetingsController {
     @Body('reason') reason: string,
   ) {
     return this.meetings.cancel(coopId, id, reason);
+  }
+
+  @Post(':id/agenda-items')
+  addAgendaItem(@Param('id') id: string, @Body() dto: CreateAgendaItemDto) {
+    return this.agenda.addItem(id, dto);
+  }
+
+  @Patch(':id/agenda-items/:itemId')
+  updateAgendaItem(@Param('itemId') itemId: string, @Body() dto: UpdateAgendaItemDto) {
+    return this.agenda.updateItem(itemId, dto);
+  }
+
+  @Delete(':id/agenda-items/:itemId')
+  removeAgendaItem(@Param('itemId') itemId: string) {
+    return this.agenda.removeItem(itemId);
   }
 }
