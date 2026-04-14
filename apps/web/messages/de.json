@@ -1890,12 +1890,17 @@
       "votingWeightLabel": "Stimmgewicht",
       "maxProxiesLabel": "Max. Vollmachten pro Person",
       "reminderLabel": "Erinnerungen (Tage vorher)",
-      "reminderHint": "E-Mail-Erinnerungen so viele Tage vor der Versammlung senden",
+      "reminderHint": "Tage vor der Versammlung, durch Komma getrennt (z.B. 7, 3, 1)",
       "create": "Versammlung erstellen",
       "cancel": "Abbrechen",
       "back": "Zurück zu Versammlungen",
       "creating": "Wird erstellt...",
-      "errorCreating": "Versammlung konnte nicht erstellt werden"
+      "errorCreating": "Versammlung konnte nicht erstellt werden",
+      "dateInputLabel": "Datum (TT/MM/JJJJ)",
+      "timeInputLabel": "Uhrzeit (HH:MM)",
+      "invalidDateTime": "Datum oder Uhrzeit ungültig",
+      "invalidReminderDays": "Geben Sie mindestens eine gültige Anzahl von Tagen ein",
+      "errorSaving": "Änderungen konnten nicht gespeichert werden"
     },
     "detail": {
       "overview": "Übersicht",
@@ -1940,7 +1945,8 @@
       "notFound": "Versammlung nicht gefunden",
       "loadError": "Versammlung konnte nicht geladen werden",
       "cancelError": "Versammlung konnte nicht abgesagt werden",
-      "deleteError": "Versammlung konnte nicht gelöscht werden"
+      "deleteError": "Versammlung konnte nicht gelöscht werden",
+      "editMeeting": "Versammlung bearbeiten"
     },
     "agenda": {
       "heading": "Tagesordnung",
@@ -2171,6 +2177,13 @@
       "backToList": "Zurück zu den Versammlungen",
       "agendaHeading": "Tagesordnung",
       "invitedNote": "Sie sind zu dieser Versammlung eingeladen. Verwenden Sie zum Antworten den Link in der Einladungs-E-Mail."
+    },
+    "edit": {
+      "heading": "Versammlung bearbeiten",
+      "back": "Zurück zur Versammlung",
+      "save": "Änderungen speichern",
+      "saving": "Speichern...",
+      "notFound": "Versammlung nicht gefunden"
     }
   }
 }

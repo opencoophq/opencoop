@@ -34,6 +34,7 @@ import {
   UserCheck,
   XCircle,
   Trash2,
+  Pencil,
 } from 'lucide-react';
 import type {
   MeetingDto,
@@ -372,6 +373,12 @@ export default function MeetingDetailPage() {
 
       {!isCancelled && (
         <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/admin/meetings/${meetingId}/edit`}>
+              <Pencil className="h-4 w-4 mr-2" />
+              {t('meetings.detail.editMeeting')}
+            </Link>
+          </Button>
           {isDraft && (
             <Button variant="outline" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4 mr-2" />
