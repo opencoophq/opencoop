@@ -275,9 +275,13 @@ export class ShareholdersService {
           email: dto.email.toLowerCase(),
           NOT: { id },
         },
+        select: { userId: true },
       });
-      if (emailTaken) {
-        throw new ConflictException('A shareholder with this email already exists in this cooperative');
+      const sameHousehold = emailTaken?.userId && emailTaken.userId === existing.userId;
+      if (emailTaken && !sameHousehold) {
+        throw new ConflictException(
+          'A shareholder with this email already exists in this cooperative (different household)',
+        );
       }
     }
 
