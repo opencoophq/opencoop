@@ -79,11 +79,12 @@ Translations will be drafted using existing `apps/web/messages/{nl,en,fr,de}.jso
 
 ### Track 2 — Frontend: capture `useLocale()` on registration
 
-Three pages add `preferredLanguage: useLocale()` to their registration POST body:
+Two pages add `preferredLanguage: useLocale()` to their registration POST body:
 
 1. **`apps/web/src/app/[locale]/(auth)/register/page.tsx`** — currently sends `{email, password}` only (line 50–53). Add locale.
-2. **`apps/web/src/components/coop-register-content.tsx`** — public coop register flow (the main Bronsgroen path). Already imports `useLocale` at line 142; add `preferredLanguage: locale` to the registration POST body.
-3. **`apps/web/src/app/[locale]/onboarding/page.tsx`** — coop admin onboarding. Verify `preferredLanguage` is in the POST; add if missing.
+2. **`apps/web/src/app/[locale]/onboarding/page.tsx`** — coop admin onboarding. POSTs to `/auth/onboarding` without `preferredLanguage` (line 92–103); add locale.
+
+**Not changed:** `apps/web/src/components/coop-register-content.tsx` (public coop register — the main Bronsgroen path). This flow creates a `Shareholder` but **no `User`**, so there's no `User.preferredLanguage` to populate. Storing locale on the shareholder would require a schema change (explicitly out of scope). The NL fallback in `resolveRecipientLanguage` covers this flow correctly: when a shareholder's email has no linked user, it returns `'nl'`.
 
 **Backend DTOs** (`register.dto.ts`, `onboarding.dto.ts`) already accept an optional `preferredLanguage` field — no backend DTO changes needed.
 
