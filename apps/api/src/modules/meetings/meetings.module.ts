@@ -4,11 +4,12 @@ import { MeetingsController } from './meetings.controller';
 import { MeetingsService } from './meetings.service';
 import { AgendaService } from './agenda.service';
 import { ProxiesService } from './proxies.service';
+import { VotesService } from './votes.service';
 
 @Module({
   imports: [EmailModule],
   controllers: [MeetingsController],
-  providers: [MeetingsService, AgendaService, ProxiesService],
-  exports: [MeetingsService, AgendaService, ProxiesService],
+  providers: [MeetingsService, AgendaService, ProxiesService, VotesService],
+  exports: [MeetingsService, AgendaService, ProxiesService, VotesService],
 })
 export class MeetingsModule {}
