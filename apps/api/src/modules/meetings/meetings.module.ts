@@ -6,11 +6,26 @@ import { AgendaService } from './agenda.service';
 import { ProxiesService } from './proxies.service';
 import { VotesService } from './votes.service';
 import { IcsService } from './ics.service';
+import { ConvocationService } from './convocation.service';
 
 @Module({
   imports: [EmailModule],
   controllers: [MeetingsController],
-  providers: [MeetingsService, AgendaService, ProxiesService, VotesService, IcsService],
-  exports: [MeetingsService, AgendaService, ProxiesService, VotesService, IcsService],
+  providers: [
+    MeetingsService,
+    AgendaService,
+    ProxiesService,
+    VotesService,
+    IcsService,
+    ConvocationService,
+  ],
+  exports: [
+    MeetingsService,
+    AgendaService,
+    ProxiesService,
+    VotesService,
+    IcsService,
+    ConvocationService,
+  ],
 })
 export class MeetingsModule {}
