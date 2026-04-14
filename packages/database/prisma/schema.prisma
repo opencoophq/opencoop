@@ -118,51 +118,51 @@ model Coop {
   updatedAt DateTime @updatedAt
 
   // Settings
-  active               Boolean @default(true)
-  plan                 CoopPlan @default(FREE)
+  active               Boolean   @default(true)
+  plan                 CoopPlan  @default(FREE)
   trialEndsAt          DateTime?
-  requiresApproval     Boolean @default(true)
-  ogmPrefix            String  @unique // Unique prefix for OGM codes (e.g., "001")
-  minimumHoldingPeriod Int     @default(0) // months, 0 = no restriction
-  pontoEnabled         Boolean @default(false)
-  autoMatchPayments    Boolean @default(true)
+  requiresApproval     Boolean   @default(true)
+  ogmPrefix            String    @unique // Unique prefix for OGM codes (e.g., "001")
+  minimumHoldingPeriod Int       @default(0) // months, 0 = no restriction
+  pontoEnabled         Boolean   @default(false)
+  autoMatchPayments    Boolean   @default(true)
 
   // Ecopower integration
-  ecoPowerEnabled          Boolean               @default(false)
+  ecoPowerEnabled          Boolean                @default(false)
   ecoPowerMinThresholdType EcoPowerThresholdType?
-  ecoPowerMinThreshold     Decimal?              @db.Decimal(10, 2)
-  apiKeyHash               String?               @unique
+  ecoPowerMinThreshold     Decimal?               @db.Decimal(10, 2)
+  apiKeyHash               String?                @unique
   apiKeyPrefix             String?
 
   // Email configuration (encrypted in production)
-  emailEnabled     Boolean @default(true)
-  emailProvider    String? // "smtp" | "graph"
-  smtpHost         String?
-  smtpPort         Int?
-  smtpUser         String?
-  smtpPass         String?
-  smtpFrom         String?
-  graphClientId    String?
+  emailEnabled      Boolean @default(true)
+  emailProvider     String? // "smtp" | "graph"
+  smtpHost          String?
+  smtpPort          Int?
+  smtpUser          String?
+  smtpPass          String?
+  smtpFrom          String?
+  graphClientId     String?
   graphClientSecret String?
-  graphTenantId    String?
-  graphFromEmail   String?
+  graphTenantId     String?
+  graphFromEmail    String?
 
   // Bank details for shareholders
-  bankName    String?
-  bankIban    String?
-  bankBic     String?
+  bankName String?
+  bankIban String?
+  bankBic  String?
 
   // Coop info (used in certificates, public pages)
-  legalForm             String?  // e.g. "Coöperatieve vennootschap met sociaal oogmerk"
-  foundedDate           String?  // e.g. "29 maart 2012"
-  certificateSignatory     String?  // Name of the board member who signs certificates
-  certificateSignatureUrl  String?  // URL path to signature image for certificates (e.g. /uploads/signatures/...)
-  coopAddress              Json?    // { street, number, postalCode, city, country }
-  coopPhone             String?
-  coopEmail             String?
-  coopWebsite           String?
-  vatNumber             String?
-  logoUrl               String?
+  legalForm               String? // e.g. "Coöperatieve vennootschap met sociaal oogmerk"
+  foundedDate             String? // e.g. "29 maart 2012"
+  certificateSignatory    String? // Name of the board member who signs certificates
+  certificateSignatureUrl String? // URL path to signature image for certificates (e.g. /uploads/signatures/...)
+  coopAddress             Json? // { street, number, postalCode, city, country }
+  coopPhone               String?
+  coopEmail               String?
+  coopWebsite             String?
+  vatNumber               String?
+  logoUrl                 String?
 
   // Relations
   channels         Channel[]
@@ -183,6 +183,7 @@ model Coop {
   pontoConnection  PontoConnection?
   auditLogs        AuditLog[]
   apiKeys          ApiKey[]
+  meetings         Meeting[]
 
   @@map("coops")
 }
@@ -239,44 +240,44 @@ model ChannelProject {
 // ============================================================================
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  name              String?
-  passwordHash      String?
-  emailVerified      DateTime?
-  emailVerifyToken   String?
-  emailVerifyExpires DateTime?
-  passwordResetToken String?
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  name                 String?
+  passwordHash         String?
+  emailVerified        DateTime?
+  emailVerifyToken     String?
+  emailVerifyExpires   DateTime?
+  passwordResetToken   String?
   passwordResetExpires DateTime?
-  role              UserRole  @default(SHAREHOLDER)
-  preferredLanguage String    @default("nl")
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  role                 UserRole  @default(SHAREHOLDER)
+  preferredLanguage    String    @default("nl")
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   // MFA
-  mfaEnabled       Boolean   @default(false)
-  mfaSecret        String?   // AES-256-GCM encrypted TOTP secret
-  mfaRecoveryCodes String[]  @default([]) // SHA-256 hashed recovery codes
+  mfaEnabled       Boolean  @default(false)
+  mfaSecret        String? // AES-256-GCM encrypted TOTP secret
+  mfaRecoveryCodes String[] @default([]) // SHA-256 hashed recovery codes
 
   // OAuth
-  googleId         String?   @unique
-  appleId          String?   @unique
+  googleId String? @unique
+  appleId  String? @unique
 
   // Terms acceptance
-  termsAcceptedAt  DateTime?
-  termsVersion     String?
+  termsAcceptedAt DateTime?
+  termsVersion    String?
 
   // Relations
   coopAdminOf            CoopAdmin[]
-  shareholders           Shareholder[]         @relation("UserShareholder")
-  registeredShareholders Shareholder[]         @relation("RegisteredBy")
+  shareholders           Shareholder[]        @relation("UserShareholder")
+  registeredShareholders Shareholder[]        @relation("RegisteredBy")
   processedRegistrations Registration[]
-  matchedPayments        Payment[]             @relation("PaymentMatcher")
+  matchedPayments        Payment[]            @relation("PaymentMatcher")
   importedBankFiles      BankImport[]
   magicLinkTokens        MagicLinkToken[]
   webAuthnCredentials    WebAuthnCredential[]
   auditLogs              AuditLog[]
-  conversationsCreated   Conversation[]        @relation("ConversationCreatedBy")
+  conversationsCreated   Conversation[]       @relation("ConversationCreatedBy")
   refreshTokens          RefreshToken[]
   apiKeys                ApiKey[]
 
@@ -284,17 +285,17 @@ model User {
 }
 
 model WebAuthnCredential {
-  id                    String   @id @default(cuid())
-  userId                String
-  credentialId          Bytes    @unique
-  publicKey             Bytes
-  counter               BigInt
-  credentialDeviceType  String
-  credentialBackedUp    Boolean
-  transports            String[]
-  friendlyName          String?
-  createdAt             DateTime @default(now())
-  lastUsedAt            DateTime?
+  id                   String    @id @default(cuid())
+  userId               String
+  credentialId         Bytes     @unique
+  publicKey            Bytes
+  counter              BigInt
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String[]
+  friendlyName         String?
+  createdAt            DateTime  @default(now())
+  lastUsedAt           DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -303,11 +304,11 @@ model WebAuthnCredential {
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
   userId    String
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   revokedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -318,9 +319,9 @@ model RefreshToken {
 
 model ApiKey {
   id         String    @id @default(cuid())
-  prefix     String    // first 11 chars of raw key for display ("oc_a1b2c3d4...")
+  prefix     String // first 11 chars of raw key for display ("oc_a1b2c3d4...")
   keyHash    String    @unique // SHA-256 hash of full key
-  name       String    // user-chosen label
+  name       String // user-chosen label
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   coopId     String
@@ -357,9 +358,9 @@ model CoopAdmin {
   permissionOverrides Json?
   createdAt           DateTime @default(now())
 
-  user                 User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coop                 Coop                          @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  role                 CoopRole                      @relation(fields: [roleId], references: [id])
+  user                 User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coop                 Coop                           @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  role                 CoopRole                       @relation(fields: [roleId], references: [id])
   notificationSettings CoopAdminNotificationSettings?
 
   @@unique([userId, coopId])
@@ -367,10 +368,10 @@ model CoopAdmin {
 }
 
 model CoopAdminNotificationSettings {
-  id           String                      @id @default(cuid())
-  coopAdminId  String                      @unique
-  frequency    AdminNotificationFrequency  @default(IMMEDIATE)
-  digestHour   Int                         @default(9)
+  id          String                     @id @default(cuid())
+  coopAdminId String                     @unique
+  frequency   AdminNotificationFrequency @default(IMMEDIATE)
+  digestHour  Int                        @default(9)
 
   // Event toggles
   notifyOnNewShareholder  Boolean @default(false)
@@ -427,28 +428,28 @@ model AdminInvitation {
 model Shareholder {
   id        String            @id @default(cuid())
   coopId    String
-  userId    String?           // Nullable for imported/gift shareholders without account
+  userId    String? // Nullable for imported/gift shareholders without account
   type      ShareholderType
   status    ShareholderStatus @default(PENDING)
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
   // Personal info (for INDIVIDUAL and MINOR)
-  firstName   String?
-  lastName    String?
-  nationalId  String?  // Belgian national registry number (rijksregisternummer)
-  birthDate   DateTime?
+  firstName  String?
+  lastName   String?
+  nationalId String? // Belgian national registry number (rijksregisternummer)
+  birthDate  DateTime?
 
   // Company info (for COMPANY)
   companyName String?
-  companyId   String?  // Belgian company number (KBO/BCE ondernemingsnummer)
+  companyId   String? // Belgian company number (KBO/BCE ondernemingsnummer)
   vatNumber   String?
   legalForm   String?
 
   // Contact info (all types)
-  email   String?  // Optional for MINOR type (child uses parent's contact)
+  email   String? // Optional for MINOR type (child uses parent's contact)
   phone   String?
-  address Json?    // { street, number, box, postalCode, city, country }
+  address Json? // { street, number, box, postalCode, city, country }
 
   // For minors/gifts/family registrations - links to parent/guardian account
   registeredByUserId String?
@@ -458,9 +459,9 @@ model Shareholder {
   bankBic  String?
 
   // Channel tracking
-  channelId          String?
+  channelId String?
 
-  memberNumber  Int?  // Sequential member number (vennotennummer)
+  memberNumber Int? // Sequential member number (vennotennummer)
 
   // Minor email reminder tracking (for reminding parents to set email before 18)
   emailReminderSentAt DateTime?
@@ -471,25 +472,29 @@ model Shareholder {
 
   // Referral system
   referralCode            String?       @unique // 8-char alphanumeric (e.g., BRG-A7K2M), generated when status becomes ACTIVE
-  referredByShareholderId String?                // Who referred this shareholder (first referrer, lifetime attribution)
+  referredByShareholderId String? // Who referred this shareholder (first referrer, lifetime attribution)
   referredByShareholder   Shareholder?  @relation("ReferredBy", fields: [referredByShareholderId], references: [id], onDelete: SetNull)
   referrals               Shareholder[] @relation("ReferredBy") // People this shareholder referred
 
   // Relations
-  coop             Coop               @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  channel          Channel?           @relation(fields: [channelId], references: [id], onDelete: SetNull)
-  user             User?              @relation("UserShareholder", fields: [userId], references: [id], onDelete: SetNull)
-  registeredBy     User?              @relation("RegisteredBy", fields: [registeredByUserId], references: [id], onDelete: SetNull)
-  beneficialOwners BeneficialOwner[]
-  registrations    Registration[]     @relation("ShareholderRegistrations")
-  referralRegistrations Registration[] @relation("ReferralRegistration") // Registrations attributed to this referrer
-  transfersIn      Registration[]     @relation("TransferIn")
-  transfersOut     Registration[]     @relation("TransferOut")
-  dividendPayouts  DividendPayout[]
-  documents        ShareholderDocument[]
-  upgradeToken     MinorUpgradeToken?
-  claimedGifts     Registration[]     @relation("GiftClaimedBy")
+  coop                     Coop                      @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  channel                  Channel?                  @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  user                     User?                     @relation("UserShareholder", fields: [userId], references: [id], onDelete: SetNull)
+  registeredBy             User?                     @relation("RegisteredBy", fields: [registeredByUserId], references: [id], onDelete: SetNull)
+  beneficialOwners         BeneficialOwner[]
+  registrations            Registration[]            @relation("ShareholderRegistrations")
+  referralRegistrations    Registration[]            @relation("ReferralRegistration") // Registrations attributed to this referrer
+  transfersIn              Registration[]            @relation("TransferIn")
+  transfersOut             Registration[]            @relation("TransferOut")
+  dividendPayouts          DividendPayout[]
+  documents                ShareholderDocument[]
+  upgradeToken             MinorUpgradeToken?
+  claimedGifts             Registration[]            @relation("GiftClaimedBy")
   conversationParticipants ConversationParticipant[]
+  proxiesGranted           Proxy[]                   @relation("ProxyGrantor")
+  proxiesHeld              Proxy[]                   @relation("ProxyDelegate")
+  meetingAttendances       MeetingAttendance[]
+  votes                    Vote[]
 
   // Unique email per coop (null emails allowed for minors - PostgreSQL allows multiple nulls)
   @@unique([coopId, email])
@@ -497,11 +502,11 @@ model Shareholder {
 }
 
 model BeneficialOwner {
-  id                 String @id @default(cuid())
-  shareholderId      String
-  firstName          String
-  lastName           String
-  nationalId         String?
+  id                  String  @id @default(cuid())
+  shareholderId       String
+  firstName           String
+  lastName            String
+  nationalId          String?
   ownershipPercentage Decimal @db.Decimal(5, 2)
 
   shareholder Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
@@ -523,10 +528,10 @@ model ShareholderDocument {
 
 // Token for minor shareholders to upgrade to adult accounts when they turn 18
 model MinorUpgradeToken {
-  id            String   @id @default(cuid())
-  token         String   @unique
-  shareholderId String   @unique  // One active token per shareholder
-  createdAt     DateTime @default(now())
+  id            String    @id @default(cuid())
+  token         String    @unique
+  shareholderId String    @unique // One active token per shareholder
+  createdAt     DateTime  @default(now())
   expiresAt     DateTime
   usedAt        DateTime?
 
@@ -547,13 +552,13 @@ model ShareClass {
   id        String   @id @default(cuid())
   coopId    String
   name      String
-  code      String   // e.g., "A", "B"
+  code      String // e.g., "A", "B"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   pricePerShare        Decimal  @db.Decimal(10, 2)
   minShares            Int      @default(1)
-  maxShares            Int?     // null = unlimited
+  maxShares            Int? // null = unlimited
   hasVotingRights      Boolean  @default(true)
   dividendRateOverride Decimal? @db.Decimal(5, 4) // e.g., 0.0350 = 3.5%
   isActive             Boolean  @default(true)
@@ -572,19 +577,19 @@ enum ProjectType {
 }
 
 model Project {
-  id                 String       @id @default(cuid())
+  id                 String      @id @default(cuid())
   coopId             String
   name               String
   description        String?
-  type               ProjectType  @default(SOLAR)
-  capacityKw         Decimal?     @db.Decimal(10, 2) // Power capacity in kW
-  estimatedAnnualMwh Decimal?     @db.Decimal(10, 2) // Estimated annual production in MWh
+  type               ProjectType @default(SOLAR)
+  capacityKw         Decimal?    @db.Decimal(10, 2) // Power capacity in kW
+  estimatedAnnualMwh Decimal?    @db.Decimal(10, 2) // Estimated annual production in MWh
   startDate          DateTime?
-  endDate            DateTime?    // Optional end date
-  targetShares       Int?         // Financing goal: number of shares to sell
-  isActive           Boolean      @default(true)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  endDate            DateTime? // Optional end date
+  targetShares       Int? // Financing goal: number of shares to sell
+  isActive           Boolean     @default(true)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   coop          Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
   registrations Registration[]
@@ -599,26 +604,26 @@ model Project {
 // ============================================================================
 
 model Registration {
-  id                String             @id @default(cuid())
-  coopId            String
-  shareholderId     String
-  shareClassId      String
-  projectId         String?
-  type              RegistrationType
-  status            RegistrationStatus @default(PENDING)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id            String             @id @default(cuid())
+  coopId        String
+  shareholderId String
+  shareClassId  String
+  projectId     String?
+  type          RegistrationType
+  status        RegistrationStatus @default(PENDING)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   // What
-  quantity          Int                // number of shares
-  pricePerShare     Decimal            @db.Decimal(10, 2)
-  totalAmount       Decimal            @db.Decimal(12, 2) // quantity * pricePerShare
+  quantity      Int // number of shares
+  pricePerShare Decimal @db.Decimal(10, 2)
+  totalAmount   Decimal @db.Decimal(12, 2) // quantity * pricePerShare
 
   // When
-  registerDate      DateTime           // when the shareholder registered
+  registerDate DateTime // when the shareholder registered
 
   // Savings shares (monthly installment plan)
-  isSavings         Boolean            @default(false)
+  isSavings Boolean @default(false)
 
   // For sells: which buy registration is being reversed
   sellsRegistrationId String?
@@ -627,8 +632,8 @@ model Registration {
   certificateNumber String?
 
   // Transfer tracking
-  fromShareholderId String?            // for transfers: original owner
-  toShareholderId   String?            // for transfers: new owner
+  fromShareholderId String? // for transfers: original owner
+  toShareholderId   String? // for transfers: new owner
 
   // Channel / processing
   channelId         String?
@@ -637,37 +642,37 @@ model Registration {
   rejectionReason   String?
 
   // OGM for payment matching
-  ogmCode           String?            @unique
+  ogmCode String? @unique
 
   // Gift certificate
-  isGift                     Boolean    @default(false)
-  giftCode                   String?    @unique
+  isGift                     Boolean      @default(false)
+  giftCode                   String?      @unique
   giftClaimedAt              DateTime?
   giftClaimedByShareholderId String?
   giftClaimedByShareholder   Shareholder? @relation("GiftClaimedBy", fields: [giftClaimedByShareholderId], references: [id])
 
   // Referral attribution (per-transaction, preserved even if shareholder.referredBy changes)
-  referralShareholderId      String?
-  referralShareholder        Shareholder? @relation("ReferralRegistration", fields: [referralShareholderId], references: [id], onDelete: SetNull)
+  referralShareholderId String?
+  referralShareholder   Shareholder? @relation("ReferralRegistration", fields: [referralShareholderId], references: [id], onDelete: SetNull)
 
   // Terms & privacy acceptance
   coopTermsAcceptedAt DateTime?
-  coopTermsVersion    String?   // termsUrl at time of acceptance
+  coopTermsVersion    String? // termsUrl at time of acceptance
   privacyAcceptedAt   DateTime?
   privacyVersion      String?
 
   // Relations
-  coop              Coop               @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  shareholder       Shareholder        @relation("ShareholderRegistrations", fields: [shareholderId], references: [id], onDelete: Cascade)
-  shareClass        ShareClass         @relation(fields: [shareClassId], references: [id], onDelete: Restrict)
-  project           Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  channel           Channel?           @relation(fields: [channelId], references: [id], onDelete: SetNull)
-  processedBy       User?              @relation(fields: [processedByUserId], references: [id], onDelete: SetNull)
+  coop              Coop           @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shareholder       Shareholder    @relation("ShareholderRegistrations", fields: [shareholderId], references: [id], onDelete: Cascade)
+  shareClass        ShareClass     @relation(fields: [shareClassId], references: [id], onDelete: Restrict)
+  project           Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  channel           Channel?       @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  processedBy       User?          @relation(fields: [processedByUserId], references: [id], onDelete: SetNull)
   payments          Payment[]
-  sellsRegistration Registration?      @relation("SellsBuy", fields: [sellsRegistrationId], references: [id], onDelete: SetNull)
-  soldBy            Registration[]     @relation("SellsBuy")
-  fromShareholder   Shareholder?       @relation("TransferOut", fields: [fromShareholderId], references: [id], onDelete: SetNull)
-  toShareholder     Shareholder?       @relation("TransferIn", fields: [toShareholderId], references: [id], onDelete: SetNull)
+  sellsRegistration Registration?  @relation("SellsBuy", fields: [sellsRegistrationId], references: [id], onDelete: SetNull)
+  soldBy            Registration[] @relation("SellsBuy")
+  fromShareholder   Shareholder?   @relation("TransferOut", fields: [fromShareholderId], references: [id], onDelete: SetNull)
+  toShareholder     Shareholder?   @relation("TransferIn", fields: [toShareholderId], references: [id], onDelete: SetNull)
 
   @@index([coopId])
   @@index([shareholderId])
@@ -676,25 +681,25 @@ model Registration {
 }
 
 model Payment {
-  id                String   @id @default(cuid())
-  registrationId    String
-  coopId            String
-  amount            Decimal  @db.Decimal(12, 2) // always positive
-  bankDate          DateTime // when the bank transaction cleared
-  createdAt         DateTime @default(now())
+  id             String   @id @default(cuid())
+  registrationId String
+  coopId         String
+  amount         Decimal  @db.Decimal(12, 2) // always positive
+  bankDate       DateTime // when the bank transaction cleared
+  createdAt      DateTime @default(now())
 
   // Link to imported bank statement
-  bankTransactionId String?  @unique
+  bankTransactionId String? @unique
 
   // Who matched it
-  matchedByUserId   String?
-  matchedAt         DateTime?
+  matchedByUserId String?
+  matchedAt       DateTime?
 
   // Relations
-  registration      Registration     @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  coop              Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  bankTransaction   BankTransaction? @relation(fields: [bankTransactionId], references: [id], onDelete: SetNull)
-  matchedBy         User?            @relation("PaymentMatcher", fields: [matchedByUserId], references: [id], onDelete: SetNull)
+  registration    Registration     @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  coop            Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  bankTransaction BankTransaction? @relation(fields: [bankTransactionId], references: [id], onDelete: SetNull)
+  matchedBy       User?            @relation("PaymentMatcher", fields: [matchedByUserId], references: [id], onDelete: SetNull)
 
   @@index([registrationId])
   @@index([bankDate])
@@ -712,8 +717,8 @@ model BankImport {
   importedAt   DateTime @default(now())
   importedById String
 
-  rowCount      Int @default(0)
-  matchedCount  Int @default(0)
+  rowCount       Int @default(0)
+  matchedCount   Int @default(0)
   unmatchedCount Int @default(0)
 
   coop         Coop              @relation(fields: [coopId], references: [id], onDelete: Cascade)
@@ -724,16 +729,16 @@ model BankImport {
 }
 
 model BankTransaction {
-  id           String                     @id @default(cuid())
-  coopId       String
-  bankImportId String?
-  date         DateTime
-  amount       Decimal                    @db.Decimal(12, 2)
-  counterparty String?
-  ogmCode      String?
-  referenceText String?
-  pontoTransactionId  String? @unique
-  matchStatus  BankTransactionMatchStatus @default(UNMATCHED)
+  id                 String                     @id @default(cuid())
+  coopId             String
+  bankImportId       String?
+  date               DateTime
+  amount             Decimal                    @db.Decimal(12, 2)
+  counterparty       String?
+  ogmCode            String?
+  referenceText      String?
+  pontoTransactionId String?                    @unique
+  matchStatus        BankTransactionMatchStatus @default(UNMATCHED)
 
   coop           Coop        @relation(fields: [coopId], references: [id], onDelete: Cascade)
   bankImport     BankImport? @relation(fields: [bankImportId], references: [id], onDelete: Cascade)
@@ -749,7 +754,7 @@ model BankTransaction {
 model DividendPeriod {
   id        String               @id @default(cuid())
   coopId    String
-  name      String?              // e.g., "Q4 2024"
+  name      String? // e.g., "Q4 2024"
   year      Int
   status    DividendPeriodStatus @default(DRAFT)
   createdAt DateTime             @default(now())
@@ -757,7 +762,7 @@ model DividendPeriod {
 
   dividendRate       Decimal   @db.Decimal(5, 4) // e.g., 0.0300 = 3%
   withholdingTaxRate Decimal   @default(0.30) @db.Decimal(5, 4) // Belgian: 30%
-  exDividendDate     DateTime  // Shares owned before this date qualify
+  exDividendDate     DateTime // Shares owned before this date qualify
   paymentDate        DateTime? // When dividends will be paid
 
   coop    Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
@@ -774,10 +779,10 @@ model DividendPayout {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  grossAmount       Decimal @db.Decimal(12, 2)
-  withholdingTax    Decimal @db.Decimal(12, 2)
-  netAmount         Decimal @db.Decimal(12, 2)
-  calculationDetails Json?   // Breakdown by share class
+  grossAmount        Decimal @db.Decimal(12, 2)
+  withholdingTax     Decimal @db.Decimal(12, 2)
+  netAmount          Decimal @db.Decimal(12, 2)
+  calculationDetails Json? // Breakdown by share class
 
   paidAt           DateTime?
   paymentReference String?
@@ -858,12 +863,12 @@ model ConversationParticipant {
 model Message {
   id             String   @id @default(cuid())
   conversationId String
-  senderType     String   // "ADMIN" | "SHAREHOLDER"
-  senderId       String   // userId (for admin) or shareholderId (for shareholder)
+  senderType     String // "ADMIN" | "SHAREHOLDER"
+  senderId       String // userId (for admin) or shareholderId (for shareholder)
   body           String
   createdAt      DateTime @default(now())
 
-  conversation Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   attachments  MessageAttachment[]
 
   @@index([conversationId])
@@ -873,7 +878,7 @@ model Message {
 model MessageAttachment {
   id        String  @id @default(cuid())
   messageId String
-  type      String  // "UPLOADED_FILE" | "EXISTING_DOCUMENT"
+  type      String // "UPLOADED_FILE" | "EXISTING_DOCUMENT"
   filePath  String?
   fileName  String
   mimeType  String?
@@ -934,19 +939,19 @@ model MigrationRequest {
 // ============================================================================
 
 model Subscription {
-  id                     String             @id @default(cuid())
-  coopId                 String             @unique
-  stripeCustomerId       String             @unique
-  stripeSubscriptionId   String?            @unique
-  status                 SubscriptionStatus @default(TRIALING)
-  billingPeriod          BillingPeriod      @default(YEARLY)
-  stripePriceId          String?
-  currentPeriodStart     DateTime?
-  currentPeriodEnd       DateTime?
-  cancelAtPeriodEnd      Boolean            @default(false)
-  canceledAt             DateTime?
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
+  id                   String             @id @default(cuid())
+  coopId               String             @unique
+  stripeCustomerId     String             @unique
+  stripeSubscriptionId String?            @unique
+  status               SubscriptionStatus @default(TRIALING)
+  billingPeriod        BillingPeriod      @default(YEARLY)
+  stripePriceId        String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  canceledAt           DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   coop Coop @relation(fields: [coopId], references: [id], onDelete: Cascade)
 
@@ -960,17 +965,17 @@ model Subscription {
 model AuditLog {
   id        String   @id @default(cuid())
   coopId    String?
-  entity    String               // "Shareholder", "User", "Coop"
+  entity    String // "Shareholder", "User", "Coop"
   entityId  String
-  action    String               // "CREATE", "UPDATE", "DELETE"
-  changes   Json                 // [{ field, oldValue, newValue }]
+  action    String // "CREATE", "UPDATE", "DELETE"
+  changes   Json // [{ field, oldValue, newValue }]
   actorId   String?
   ipAddress String?
   userAgent String?
   createdAt DateTime @default(now())
 
-  coop      Coop?    @relation(fields: [coopId], references: [id])
-  actor     User?    @relation(fields: [actorId], references: [id])
+  coop  Coop? @relation(fields: [coopId], references: [id])
+  actor User? @relation(fields: [actorId], references: [id])
 
   @@index([entity, entityId])
   @@index([coopId])
@@ -984,26 +989,224 @@ model AuditLog {
 // ============================================================================
 
 model PontoConnection {
-  id                  String                @id @default(cuid())
-  coopId              String                @unique
-  coop                Coop                  @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  coopId String @unique
+  coop   Coop   @relation(fields: [coopId], references: [id], onDelete: Cascade)
 
-  accessToken         String // AES-256-GCM encrypted
-  refreshToken        String // AES-256-GCM encrypted
-  tokenExpiresAt      DateTime
+  accessToken    String // AES-256-GCM encrypted
+  refreshToken   String // AES-256-GCM encrypted
+  tokenExpiresAt DateTime
 
   pontoAccountId      String?
   pontoOrganizationId String?
   iban                String?
   bankName            String?
 
-  status              PontoConnectionStatus @default(PENDING)
-  lastSyncAt          DateTime?
-  authExpiresAt       DateTime?
-  expiryNotifiedAt    DateTime?
+  status           PontoConnectionStatus @default(PENDING)
+  lastSyncAt       DateTime?
+  authExpiresAt    DateTime?
+  expiryNotifiedAt DateTime?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("ponto_connections")
+}
+
+// ============================================================================
+// MEETINGS & VOTING (AGM)
+// ============================================================================
+
+enum MeetingType {
+  ANNUAL
+  EXTRAORDINARY
+  WRITTEN
+}
+
+enum MeetingFormat {
+  PHYSICAL
+  HYBRID
+  DIGITAL
+}
+
+enum MeetingStatus {
+  DRAFT
+  CONVOKED
+  HELD
+  CLOSED
+  CANCELLED
+}
+
+enum VotingWeight {
+  PER_SHAREHOLDER
+  PER_SHARE
+}
+
+enum AgendaType {
+  INFORMATIONAL
+  RESOLUTION
+  ELECTION
+}
+
+enum MajorityType {
+  SIMPLE
+  TWO_THIRDS
+  THREE_QUARTERS
+}
+
+enum VoteChoice {
+  FOR
+  AGAINST
+  ABSTAIN
+}
+
+enum RSVPStatus {
+  ATTENDING
+  PROXY
+  ABSENT
+  UNKNOWN
+}
+
+enum CheckInMethod {
+  ADMIN
+  KIOSK
+  PAPER_RECONCILED
+}
+
+model Meeting {
+  id                  String                @id @default(cuid())
+  coopId              String
+  coop                Coop                  @relation(fields: [coopId], references: [id])
+  type                MeetingType
+  title               String
+  scheduledAt         DateTime
+  durationMinutes     Int                   @default(120)
+  location            String?
+  format              MeetingFormat
+  votingWeight        VotingWeight          @default(PER_SHAREHOLDER)
+  maxProxiesPerPerson Int                   @default(1)
+  convocationSentAt   DateTime?
+  convocationDocUrl   String?
+  convocationFailures Json?
+  reminderDaysBefore  Int[]                 @default([3])
+  remindersSent       Json?                 @default("{}")
+  status              MeetingStatus         @default(DRAFT)
+  agendaItems         AgendaItem[]
+  attendances         MeetingAttendance[]
+  proxies             Proxy[]
+  minutes             MeetingMinutes?
+  kioskSessions       MeetingKioskSession[]
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
-  @@map("ponto_connections")
+  @@index([coopId, scheduledAt])
+}
+
+model AgendaItem {
+  id          String             @id @default(cuid())
+  meetingId   String
+  meeting     Meeting            @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  order       Int
+  title       String
+  description String?            @db.Text
+  type        AgendaType
+  resolution  Resolution?
+  attachments AgendaAttachment[]
+
+  @@unique([meetingId, order])
+}
+
+model AgendaAttachment {
+  id           String     @id @default(cuid())
+  agendaItemId String
+  agendaItem   AgendaItem @relation(fields: [agendaItemId], references: [id], onDelete: Cascade)
+  fileName     String
+  fileUrl      String
+  uploadedAt   DateTime   @default(now())
+}
+
+model Resolution {
+  id             String       @id @default(cuid())
+  agendaItemId   String       @unique
+  agendaItem     AgendaItem   @relation(fields: [agendaItemId], references: [id], onDelete: Cascade)
+  proposedText   String       @db.Text
+  majorityType   MajorityType
+  quorumRequired Decimal?
+  votesFor       Int          @default(0)
+  votesAgainst   Int          @default(0)
+  votesAbstain   Int          @default(0)
+  passed         Boolean?
+  closedAt       DateTime?
+  votes          Vote[]
+}
+
+model Vote {
+  id             String      @id @default(cuid())
+  resolutionId   String
+  resolution     Resolution  @relation(fields: [resolutionId], references: [id], onDelete: Cascade)
+  shareholderId  String
+  shareholder    Shareholder @relation(fields: [shareholderId], references: [id])
+  choice         VoteChoice
+  castViaProxyId String?
+  weight         Int         @default(1)
+  castAt         DateTime    @default(now())
+
+  @@unique([resolutionId, shareholderId])
+}
+
+model Proxy {
+  id                    String      @id @default(cuid())
+  meetingId             String
+  meeting               Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  grantorShareholderId  String
+  grantor               Shareholder @relation("ProxyGrantor", fields: [grantorShareholderId], references: [id])
+  delegateShareholderId String
+  delegate              Shareholder @relation("ProxyDelegate", fields: [delegateShareholderId], references: [id])
+  signedFormUrl         String?
+  grantedAt             DateTime    @default(now())
+  revokedAt             DateTime?
+
+  @@unique([meetingId, grantorShareholderId])
+}
+
+model MeetingAttendance {
+  id                String         @id @default(cuid())
+  meetingId         String
+  meeting           Meeting        @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  shareholderId     String
+  shareholder       Shareholder    @relation(fields: [shareholderId], references: [id])
+  rsvpStatus        RSVPStatus     @default(UNKNOWN)
+  rsvpAt            DateTime?
+  rsvpToken         String         @unique
+  rsvpTokenExpires  DateTime
+  checkedInAt       DateTime?
+  checkedInBy       String?
+  checkInMethod     CheckInMethod?
+  signatureImageUrl String?
+
+  @@unique([meetingId, shareholderId])
+}
+
+model MeetingMinutes {
+  id              String    @id @default(cuid())
+  meetingId       String    @unique
+  meeting         Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  content         String    @db.Text
+  generatedPdfUrl String?
+  signedPdfUrl    String?
+  signedAt        DateTime?
+  signedByName    String?
+}
+
+model MeetingKioskSession {
+  id        String    @id @default(cuid())
+  meetingId String
+  meeting   Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  startedBy String
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  active    Boolean   @default(true)
+
+  @@index([meetingId, active])
 }
