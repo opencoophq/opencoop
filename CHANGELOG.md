@@ -2,6 +2,30 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.0] - 2026-04-14
+
+### Added
+- **Shared-email households** — couples, guardians with minor children, and elderly shareholders with caregivers can now share one login/inbox while each remains a distinct shareholder with their own voting rights. Generalizes the existing minor/parent pattern: a Shareholder with `email=null` and `userId=<primary-user-id>` routes all communications through that User's inbox. Triggered by a real Bronsgroen case (husband + internet-illiterate wife sharing one email) surfaced ahead of the 2026-05-09 AGM.
+- **Admin household linking UI** — on the shareholder detail page, admins can search an existing User by email and link a shareholder to that User's household. Linked shareholders inherit comms routing; `shareholder.email` is cleared to NULL.
+- **Emancipation flow** — any linked shareholder can be graduated to their own login via a token-based flow. Generalizes the existing minor-turning-18 upgrade to also serve household splits. Reuses the renamed `ShareholderEmancipationToken` table with a `reason` enum (`MINOR_COMING_OF_AGE` | `HOUSEHOLD_SPLIT`). New public claim page at `/emancipate/[token]`.
+- **Email resolver helper** — single source of truth `resolveShareholderEmail(shareholder)` returning `user.email ?? shareholder.email ?? null`. Every outbound email-send site in the API now routes through it. Convocation sender dedupes by inbox so a household sharing one email gets ONE invite enumerating all household shareholders.
+- **CSV import `linkedTo` column** — optional column lets bulk imports create household members by referencing the primary's email. Validation gated: duplicate emails without `linkedTo` still rejected.
+- **Audit script** — `packages/database/prisma/audit-household-data.ts` reports data inconsistencies (orphans, email divergences, existing multi-shareholder Users) before prod deploy.
+
+### Changed
+- **BREAKING (external API):** `POST /external-api/shareholders/query` response shape changed from `[{email, found, ...}]` to `[{email, shareholders: [...]}]`. The `found` boolean is gone — consumers use `shareholders.length > 0`. Fan-out: `POST /external-api/shareholders/status` now applies updates to all household matches. See `docs/migrations/2026-04-14-ecopower-api-breaking-change.md` for the upgrade path. EcoPower integration contacts must be notified before prod deploy.
+- **Email uniqueness is no longer strict within a coop** — the `@@unique([coopId, email])` constraint stays (nullable column allows multiple nulls), but application-layer dedup in shareholder create/update now permits the same non-null email across shareholders that share a `userId` (household). Cross-household collisions still reject.
+- **Dividend CSV export gained an "Email source" column** — indicates whether the exported email came from `user`, `shareholder`, or `none`, for bank-upload diagnostics.
+
+### Fixed
+- **Convocation & reminder sends dedupe by inbox** — previously a household sharing one email would receive one reminder per shareholder; now one per inbox enumerating all members.
+- **Gift certificate send respects household routing** — `onRegistrationCompleted` gift path also uses the resolver (was missed in the initial Task 2 sweep, fixed before the feature shipped).
+- **Cross-tenant shareholder access in household link endpoint** — the admin link endpoint now scopes the shareholder lookup by the route `coopId`, preventing a COOP_ADMIN in coop A from touching a shareholder in coop B.
+- **Magic-link orphan fallback hardened** — linked shareholders (userId set, email null) can never trigger auto-User-creation during magic-link lookup (already defensively correct; test coverage added to prevent regressions).
+
+### Migration
+- Renames the Prisma table `minor_upgrade_tokens` → `shareholder_emancipation_tokens` in place, backfills `reason = 'MINOR_COMING_OF_AGE'` for existing rows, adds the `recipient_user_id` column. Data-preserving — no existing minor tokens lost.
+
 ## [0.7.67] - 2026-04-14
 
 ### Fixed
