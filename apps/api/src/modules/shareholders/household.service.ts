@@ -78,6 +78,45 @@ export class HouseholdService {
     });
   }
 
+  /**
+   * Search for users who have at least one shareholder in this coop.
+   * Returns user email + count of shareholders, filtered by email prefix.
+   */
+  async searchUsersInCoop(coopId: string, search: string) {
+    if (!search || search.length < 2) return [];
+
+    // Find shareholders with a user whose email matches, grouped by userId
+    const rows = await this.prisma.shareholder.findMany({
+      where: {
+        coopId,
+        userId: { not: null },
+        user: { email: { contains: search, mode: 'insensitive' } },
+      },
+      select: {
+        userId: true,
+        user: { select: { id: true, email: true } },
+      },
+      distinct: ['userId'],
+      take: 10,
+    });
+
+    // For each userId, count their shareholders in the coop
+    const results = await Promise.all(
+      rows.map(async (row) => {
+        const count = await this.prisma.shareholder.count({
+          where: { coopId, userId: row.userId! },
+        });
+        return {
+          userId: row.user!.id,
+          email: row.user!.email,
+          shareholderCount: count,
+        };
+      }),
+    );
+
+    return results;
+  }
+
   async unlinkShareholder(args: { coopId: string; shareholderId: string; actorUserId: string }) {
     const shareholder = await this.prisma.shareholder.findFirst({
       where: { id: args.shareholderId, coopId: args.coopId },

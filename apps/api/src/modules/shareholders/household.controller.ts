@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -15,6 +15,15 @@ import { LinkShareholderDto } from './dto/link-shareholder.dto';
 @Roles('COOP_ADMIN', 'SYSTEM_ADMIN')
 export class HouseholdController {
   constructor(private readonly household: HouseholdService) {}
+
+  @Get('search-users')
+  @ApiOperation({ summary: 'Search users in this coop by email (for household linking)' })
+  async searchUsers(
+    @Param('coopId') coopId: string,
+    @Query('search') search: string,
+  ) {
+    return this.household.searchUsersInCoop(coopId, search ?? '');
+  }
 
   @Post('link')
   @ApiOperation({ summary: 'Link a shareholder to an existing user account (shared-household)' })

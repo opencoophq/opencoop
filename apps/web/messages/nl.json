@@ -379,11 +379,25 @@
     "companyInfo": "Bedrijfsinformatie",
     "contactInfo": "Contact- & bankgegevens",
     "readOnlyEmail": "E-mailadres kan niet worden gewijzigd. Neem contact op met support indien nodig.",
+    "householdManagedEmail": "E-mail beheerd door {email} (huishoudaccount)",
     "saveChanges": "Wijzigingen opslaan",
     "generateCertificate": "Certificaat genereren",
     "generateDividendStatement": "Afschrift genereren",
     "generating": "Genereren...",
     "downloadError": "Download mislukt. Probeer het opnieuw."
+  },
+  "household": {
+    "linkButton": "Koppel aan huishouden",
+    "linkTitle": "Huishouden",
+    "linkIntro": "Door deze aandeelhouder te koppelen aan een andere gebruiker worden berichten naar die gebruiker doorgestuurd en wordt het eigen e-mailadres gewist.",
+    "searchPlaceholder": "Zoek gebruikers op e-mailadres...",
+    "confirmLink": "Aandeelhouder koppelen",
+    "cancel": "Annuleren",
+    "resultMeta": "{count, plural, one {# aandeelhouder} other {# aandeelhouders}} in deze coöperatie",
+    "unlinkButton": "Ontkoppelen (emancipatie starten)",
+    "unlinkConfirmTitle": "Aandeelhouder ontkoppelen",
+    "unlinkConfirmBody": "Dit start het emancipatieproces en kent een nieuw e-mailadres toe aan deze aandeelhouder. Doorgaan?",
+    "notLinked": "Deze aandeelhouder is niet gekoppeld aan een huishouden."
   },
   "settings": {
     "title": "Instellingen",

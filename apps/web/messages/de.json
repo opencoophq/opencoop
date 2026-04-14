@@ -379,11 +379,25 @@
     "companyInfo": "Unternehmensinformationen",
     "contactInfo": "Kontakt- & Bankdaten",
     "readOnlyEmail": "Die E-Mail-Adresse kann nicht geändert werden. Wenden Sie sich bei Bedarf an den Support.",
+    "householdManagedEmail": "E-Mail verwaltet von {email} (Haushaltskonto)",
     "saveChanges": "Änderungen speichern",
     "generateCertificate": "Zertifikat erstellen",
     "generateDividendStatement": "Abrechnung erstellen",
     "generating": "Wird erstellt...",
     "downloadError": "Download fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
+  "household": {
+    "linkButton": "Mit Haushalt verknüpfen",
+    "linkTitle": "Haushalt",
+    "linkIntro": "Durch die Verknüpfung dieses Aktionärs mit einem anderen Benutzer werden dessen Kommunikationen an den Posteingang dieses Benutzers weitergeleitet und die eigene E-Mail-Adresse wird gelöscht.",
+    "searchPlaceholder": "Benutzer nach E-Mail suchen...",
+    "confirmLink": "Aktionär verknüpfen",
+    "cancel": "Abbrechen",
+    "resultMeta": "{count, plural, one {# Aktionär} other {# Aktionäre}} in dieser Genossenschaft",
+    "unlinkButton": "Verknüpfung aufheben (Emanzipation starten)",
+    "unlinkConfirmTitle": "Aktionär trennen",
+    "unlinkConfirmBody": "Dadurch wird der Emanzipationsprozess gestartet und diesem Aktionär eine neue E-Mail-Adresse zugewiesen. Fortfahren?",
+    "notLinked": "Dieser Aktionär ist mit keinem Haushalt verknüpft."
   },
   "settings": {
     "title": "Einstellungen",

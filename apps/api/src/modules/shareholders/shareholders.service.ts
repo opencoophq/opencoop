@@ -92,6 +92,7 @@ export class ShareholdersService {
     const shareholder = await this.prisma.shareholder.findFirst({
       where: { id, coopId },
       include: {
+        user: { select: { id: true, email: true } },
         registrations: {
           orderBy: { createdAt: 'desc' },
           include: {

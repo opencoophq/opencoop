@@ -379,11 +379,25 @@
     "companyInfo": "Informations de l'entreprise",
     "contactInfo": "Contact & coordonnées bancaires",
     "readOnlyEmail": "L'adresse e-mail ne peut pas être modifiée. Contactez le support si nécessaire.",
+    "householdManagedEmail": "E-mail géré par {email} (compte foyer)",
     "saveChanges": "Enregistrer les modifications",
     "generateCertificate": "Générer un certificat",
     "generateDividendStatement": "Générer un relevé",
     "generating": "Génération...",
     "downloadError": "Échec du téléchargement. Veuillez réessayer."
+  },
+  "household": {
+    "linkButton": "Lier au foyer",
+    "linkTitle": "Foyer",
+    "linkIntro": "Lier cet actionnaire à un autre utilisateur redirige ses communications vers la boîte de réception de cet utilisateur et efface sa propre adresse e-mail.",
+    "searchPlaceholder": "Rechercher des utilisateurs par e-mail...",
+    "confirmLink": "Lier l'actionnaire",
+    "cancel": "Annuler",
+    "resultMeta": "{count, plural, one {# actionnaire} other {# actionnaires}} dans cette coopérative",
+    "unlinkButton": "Délier (démarrer l'émancipation)",
+    "unlinkConfirmTitle": "Délier l'actionnaire",
+    "unlinkConfirmBody": "Cela démarrera le processus d'émancipation et attribuera une nouvelle adresse e-mail à cet actionnaire. Continuer ?",
+    "notLinked": "Cet actionnaire n'est pas lié à un foyer."
   },
   "settings": {
     "title": "Paramètres",
