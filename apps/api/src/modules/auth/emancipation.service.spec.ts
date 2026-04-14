@@ -10,6 +10,7 @@ const mockShareholder = {
   lastName: 'Peeters',
   email: null,
   coopId: 'coop1',
+  type: 'MINOR',
   coop: { name: 'Test Coöperatie' },
   registeredBy: { id: 'parent-user', email: 'parent@example.com' },
   user: { id: 'shared-user', email: 'shared@household.com' },
@@ -112,10 +113,24 @@ describe('EmancipationService', () => {
     });
   });
 
+  describe('startEmancipation — input guards', () => {
+    it('throws BadRequestException when MINOR_COMING_OF_AGE is requested for a non-MINOR shareholder', async () => {
+      prisma.shareholder.findUnique.mockResolvedValue({
+        ...mockShareholder,
+        type: 'INDIVIDUAL', // not a MINOR
+      });
+
+      await expect(
+        service.startEmancipation({ shareholderId: 'sh1', reason: 'MINOR_COMING_OF_AGE' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe('startEmancipation — recipient missing', () => {
     it('throws BadRequestException when parent email is missing for MINOR_COMING_OF_AGE', async () => {
       prisma.shareholder.findUnique.mockResolvedValue({
         ...mockShareholder,
+        type: 'MINOR',
         registeredBy: null, // no parent
       });
 

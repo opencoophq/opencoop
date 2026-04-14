@@ -81,36 +81,23 @@ describe('ShareholdersService', () => {
   });
 
   describe('update — household email dedup', () => {
-    it('update allows setting email to a value that exists on another shareholder IF both share a User', async () => {
+    it('update rejects setting email to a value already taken in the coop, even within the same household', async () => {
       // Fixture: user1 owns s1 (email='shared@x.com', userId='user-1') and
       //          s2 (email=null, userId='user-1')
+      // Linked household secondaries must have email=NULL — setting a non-null colliding
+      // value would violate the @@unique([coopId, email]) DB constraint.
       const sharedUserId = 'user-1';
       const s2 = makeShareholder({ id: 'sh-2', email: null, userId: sharedUserId });
 
-      // findById (called by update) returns s2 for the target shareholder
-      // findById uses findFirst internally — first call: the target shareholder
-      // second call (inside findById at end of update): returns updated state
       (prismaService.shareholder.findFirst as jest.Mock)
         // First call: findById to load existing shareholder
         .mockResolvedValueOnce(s2)
         // Second call: email collision check — finds s1 (same userId)
-        .mockResolvedValueOnce({ userId: sharedUserId })
-        // Third call: findById at the end of update (returns updated shareholder)
-        .mockResolvedValueOnce({ ...s2, email: 'shared@x.com' });
+        .mockResolvedValueOnce({ userId: sharedUserId });
 
-      (prismaService.shareholder.update as jest.Mock).mockResolvedValue({});
-
-      const result = await service.update('sh-2', 'coop-1', { email: 'shared@x.com' });
-
-      // Should NOT throw — should resolve with updated shareholder
-      expect(result.email).toBe('shared@x.com');
-      // update should have been called (not thrown)
-      expect(prismaService.shareholder.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'sh-2' },
-          data: expect.objectContaining({ email: 'shared@x.com' }),
-        }),
-      );
+      await expect(
+        service.update('sh-2', 'coop-1', { email: 'shared@x.com' }),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('update still rejects email collision when shareholders belong to different Users', async () => {

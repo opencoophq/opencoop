@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
-import { MeetingStatus, ShareholderStatus } from '@opencoop/database';
+import { MeetingStatus, ShareholderStatus, Prisma } from '@opencoop/database';
 import { randomBytes } from 'crypto';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 
@@ -20,6 +20,14 @@ export interface SendConvocationOpts {
   confirmShortNotice?: boolean;
 }
 
+export type SendConvocationResult =
+  | { alreadySent: true }
+  | {
+      alreadySent?: false;
+      sent: Array<{ to: string; shareholderIds: string[] }>;
+      failures: Array<{ to: string; shareholderIds?: string[]; error: string }>;
+    };
+
 @Injectable()
 export class ConvocationService {
   private readonly logger = new Logger(ConvocationService.name);
@@ -29,7 +37,7 @@ export class ConvocationService {
     private email: EmailService,
   ) {}
 
-  async send(coopId: string, meetingId: string, opts: SendConvocationOpts = {}) {
+  async send(coopId: string, meetingId: string, opts: SendConvocationOpts = {}): Promise<SendConvocationResult> {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
       include: {
@@ -41,7 +49,7 @@ export class ConvocationService {
     if (meeting.coopId !== coopId)
       throw new ForbiddenException('Meeting does not belong to this coop');
     if (meeting.status === MeetingStatus.CONVOKED) {
-      return { alreadySent: true as const };
+      return { alreadySent: true };
     }
 
     const daysUntil = (meeting.scheduledAt.getTime() - Date.now()) / (86400 * 1000);
@@ -64,7 +72,7 @@ export class ConvocationService {
 
     // Create attendance records and per-shareholder token map first
     const tokenMap = new Map<string, string>();
-    const failures: Array<{ shareholderId: string; error: string }> = [];
+    const upsertFailedIds = new Set<string>();
     for (const sh of shareholders) {
       try {
         const token = createToken();
@@ -83,17 +91,16 @@ export class ConvocationService {
           },
         });
       } catch (err) {
-        failures.push({
-          shareholderId: sh.id,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        upsertFailedIds.add(sh.id);
+        this.logger.warn(
+          `Attendance upsert failed for shareholder ${sh.id}: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
 
     // Dedupe by resolved email: group shareholders sharing the same inbox
     // Skip shareholders whose upsert failed — their token may be missing and
     // they should not contribute a broken RSVP URL to a household group.
-    const upsertFailedIds = new Set<string>(failures.map((f) => f.shareholderId));
     const inboxMap = new Map<string, typeof shareholders>();
     for (const sh of shareholders) {
       if (upsertFailedIds.has(sh.id)) continue;
@@ -106,6 +113,7 @@ export class ConvocationService {
 
     // Send one email per distinct inbox
     const sent: Array<{ to: string; shareholderIds: string[] }> = [];
+    const failures: Array<{ to: string; shareholderIds?: string[]; error: string }> = [];
     for (const [email, group] of inboxMap) {
       try {
         // Use the first shareholder's token as the RSVP link (primary contact).
@@ -117,9 +125,11 @@ export class ConvocationService {
           this.logger.warn(
             `No RSVP token for primary shareholder ${group[0].id} in inbox group; skipping send`,
           );
-          for (const sh of group) {
-            failures.push({ shareholderId: sh.id, error: 'No RSVP token available' });
-          }
+          failures.push({
+            to: email,
+            shareholderIds: group.map((sh) => sh.id),
+            error: 'No RSVP token available',
+          });
           continue;
         }
         await this.email.send({
@@ -145,25 +155,31 @@ export class ConvocationService {
         });
         sent.push({ to: email, shareholderIds: group.map((sh) => sh.id) });
       } catch (err) {
-        for (const sh of group) {
-          failures.push({
-            shareholderId: sh.id,
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
+        failures.push({
+          to: email,
+          shareholderIds: group.map((sh) => sh.id),
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
-    await this.prisma.meeting.update({
-      where: { id: meetingId },
-      data: {
-        status: MeetingStatus.CONVOKED,
-        convocationSentAt: new Date(),
-        convocationFailures: failures.length ? (failures as any) : undefined,
-      },
-    });
+    if (sent.length > 0) {
+      await this.prisma.meeting.update({
+        where: { id: meetingId },
+        data: {
+          status: MeetingStatus.CONVOKED,
+          convocationSentAt: new Date(),
+          convocationFailures: failures.length ? (failures as unknown as Prisma.InputJsonValue) : undefined,
+        },
+      });
+    } else {
+      // All sends failed — log clearly so admin knows and can retry
+      this.logger.error(
+        `Convocation send failed for ALL ${failures.length} recipients on meeting ${meetingId}; not marking CONVOKED to allow retry`,
+      );
+    }
 
-    return { sent, failures };
+    return { alreadySent: false, sent, failures };
   }
 
   async listStatus(coopId: string, meetingId: string) {
@@ -216,6 +232,7 @@ export class ConvocationService {
     }
 
     let sent = 0;
+    const failures: Array<{ to: string; error: string }> = [];
     for (const [email, group] of inboxMap) {
       // Use the first attendance's RSVP token (consistent with convocation send()).
       // NOTE: The current meeting-reminder template only supports a single
@@ -236,10 +253,13 @@ export class ConvocationService {
           },
         });
         sent++;
-      } catch {
-        // swallow per-recipient errors
+      } catch (err) {
+        this.logger.warn(
+          `sendReminderNow: failed to send reminder to ${email}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        failures.push({ to: email, error: err instanceof Error ? err.message : String(err) });
       }
     }
-    return { sent };
+    return { sent, failures };
   }
 }

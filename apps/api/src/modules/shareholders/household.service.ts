@@ -124,6 +124,18 @@ export class HouseholdService {
     if (!shareholder) {
       throw new NotFoundException('Shareholder not found');
     }
+    await this.prisma.auditLog.create({
+      data: {
+        coopId: shareholder.coopId,
+        entity: 'Shareholder',
+        entityId: args.shareholderId,
+        action: 'UNLINK_SHAREHOLDER_FROM_HOUSEHOLD',
+        actorId: args.actorUserId,
+        changes: [
+          { field: 'userId', oldValue: shareholder.userId, newValue: null },
+        ] as unknown as Prisma.InputJsonValue,
+      },
+    });
     return this.emancipationService.startEmancipation({
       shareholderId: args.shareholderId,
       reason: EmancipationReason.HOUSEHOLD_SPLIT,

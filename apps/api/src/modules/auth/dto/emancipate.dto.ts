@@ -1,9 +1,10 @@
-import { IsEmail, IsString, MinLength, MaxLength, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class EmancipateDto {
   @ApiProperty({ description: 'Emancipation token received via email link' })
   @IsString()
+  @IsNotEmpty()
   token: string;
 
   @ApiProperty({ example: 'user@example.com' })

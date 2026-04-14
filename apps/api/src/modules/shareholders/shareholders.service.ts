@@ -278,11 +278,8 @@ export class ShareholdersService {
         },
         select: { userId: true },
       });
-      const sameHousehold = emailTaken?.userId && emailTaken.userId === existing.userId;
-      if (emailTaken && !sameHousehold) {
-        throw new ConflictException(
-          'A shareholder with this email already exists in this cooperative (different household)',
-        );
+      if (emailTaken) {
+        throw new ConflictException('A shareholder with this email already exists in this cooperative');
       }
     }
 

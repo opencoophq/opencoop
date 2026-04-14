@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
@@ -14,6 +15,8 @@ export { EmancipationReason };
 
 @Injectable()
 export class EmancipationService {
+  private readonly logger = new Logger(EmancipationService.name);
+
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
@@ -43,6 +46,10 @@ export class EmancipationService {
 
     if (!shareholder) {
       throw new NotFoundException('Shareholder not found');
+    }
+
+    if (reason === 'MINOR_COMING_OF_AGE' && shareholder.type !== 'MINOR') {
+      throw new BadRequestException('MINOR_COMING_OF_AGE emancipation requires a MINOR shareholder');
     }
 
     // Resolve the recipient based on the reason
@@ -90,23 +97,32 @@ export class EmancipationService {
     const claimUrl = `${baseUrl}/emancipate/${token}`;
 
     // Send the appropriate notification email
-    if (reason === 'MINOR_COMING_OF_AGE') {
-      await this.emailService.sendMinorUpgradeNotification(shareholder.coopId, recipientEmail, {
-        minorFirstName: shareholder.firstName || '',
-        minorLastName: shareholder.lastName || '',
-        coopName: shareholder.coop.name,
-        upgradeUrl: claimUrl,
-      });
-    } else {
-      await this.emailService.sendEmancipationHouseholdNotification(
-        shareholder.coopId,
-        recipientEmail,
-        {
-          shareholderFirstName: shareholder.firstName || '',
-          shareholderLastName: shareholder.lastName || '',
+    try {
+      if (reason === 'MINOR_COMING_OF_AGE') {
+        await this.emailService.sendMinorUpgradeNotification(shareholder.coopId, recipientEmail, {
+          minorFirstName: shareholder.firstName || '',
+          minorLastName: shareholder.lastName || '',
           coopName: shareholder.coop.name,
-          claimUrl,
-        },
+          upgradeUrl: claimUrl,
+        });
+      } else {
+        await this.emailService.sendEmancipationHouseholdNotification(
+          shareholder.coopId,
+          recipientEmail,
+          {
+            shareholderFirstName: shareholder.firstName || '',
+            shareholderLastName: shareholder.lastName || '',
+            coopName: shareholder.coop.name,
+            claimUrl,
+          },
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `startEmancipation: failed to send ${reason} email to ${recipientEmail}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      throw new BadRequestException(
+        'Emancipation token created but notification email failed to send. Please try again.',
       );
     }
 

@@ -199,17 +199,23 @@ export class ExternalApiService {
         );
       }
 
-      for (const shareholder of matchingShareholders) {
-        await this.prisma.shareholder.update({
-          where: { id: shareholder.id },
-          data: {
-            isEcoPowerClient: update.isEcoPowerClient,
-            ...(update.ecoPowerId !== undefined && { ecoPowerId: update.ecoPowerId }),
-          },
-        });
+      try {
+        for (const shareholder of matchingShareholders) {
+          await this.prisma.shareholder.update({
+            where: { id: shareholder.id },
+            data: {
+              isEcoPowerClient: update.isEcoPowerClient,
+              ...(update.ecoPowerId !== undefined && { ecoPowerId: update.ecoPowerId }),
+            },
+          });
+        }
+        results.push({ email: update.email, success: true });
+      } catch (err) {
+        this.logger.error(
+          `updateEcoPowerStatus: DB update failed for email "${update.email}": ${err instanceof Error ? err.message : String(err)}`,
+        );
+        results.push({ email: update.email, success: false, error: err instanceof Error ? err.message : String(err) });
       }
-
-      results.push({ email: update.email, success: true });
     }
 
     return results;

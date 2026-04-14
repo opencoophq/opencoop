@@ -943,8 +943,8 @@ export class AuthService {
   // ============================================================================
 
   async validateUpgradeToken(token: string) {
-    const upgradeToken = await this.prisma.shareholderEmancipationToken.findUnique({
-      where: { token },
+    const upgradeToken = await this.prisma.shareholderEmancipationToken.findFirst({
+      where: { token, reason: 'MINOR_COMING_OF_AGE' },
       include: {
         shareholder: {
           include: {
@@ -995,8 +995,8 @@ export class AuthService {
 
   async upgradeMinorToAdult(upgradeDto: UpgradeToAdultDto) {
     // Validate the token first
-    const upgradeToken = await this.prisma.shareholderEmancipationToken.findUnique({
-      where: { token: upgradeDto.token },
+    const upgradeToken = await this.prisma.shareholderEmancipationToken.findFirst({
+      where: { token: upgradeDto.token, reason: 'MINOR_COMING_OF_AGE' },
       include: {
         shareholder: true,
       },

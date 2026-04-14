@@ -215,6 +215,37 @@ describe('HouseholdService', () => {
         reason: 'HOUSEHOLD_SPLIT',
       });
     });
+
+    it('writes audit log for UNLINK_SHAREHOLDER_FROM_HOUSEHOLD before delegating to emancipation', async () => {
+      const wifWithUser = { ...wife, userId: 'some-user-id' };
+      (prismaService.shareholder.findFirst as jest.Mock).mockResolvedValueOnce(wifWithUser);
+
+      await service.unlinkShareholder({
+        coopId: coop1.id,
+        shareholderId: wife.id,
+        actorUserId: adminUser.id,
+      });
+
+      expect(prismaService.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            coopId: coop1.id,
+            entity: 'Shareholder',
+            entityId: wife.id,
+            action: 'UNLINK_SHAREHOLDER_FROM_HOUSEHOLD',
+            actorId: adminUser.id,
+            changes: expect.arrayContaining([
+              expect.objectContaining({ field: 'userId', oldValue: 'some-user-id', newValue: null }),
+            ]),
+          }),
+        }),
+      );
+
+      expect(emancipationService.startEmancipation).toHaveBeenCalledWith({
+        shareholderId: wife.id,
+        reason: 'HOUSEHOLD_SPLIT',
+      });
+    });
   });
 
   describe('listShareholdersForUser', () => {

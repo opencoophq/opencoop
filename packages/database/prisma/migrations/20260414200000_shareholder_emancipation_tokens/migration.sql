@@ -16,6 +16,11 @@ CREATE TYPE "EmancipationReason" AS ENUM ('MINOR_COMING_OF_AGE', 'HOUSEHOLD_SPLI
 -- Rename the table in place (preserves all existing data)
 ALTER TABLE "minor_upgrade_tokens" RENAME TO "shareholder_emancipation_tokens";
 
+-- Rename associated indexes and primary key constraint
+ALTER INDEX "minor_upgrade_tokens_pkey" RENAME TO "shareholder_emancipation_tokens_pkey";
+ALTER INDEX "minor_upgrade_tokens_token_key" RENAME TO "shareholder_emancipation_tokens_token_key";
+ALTER INDEX "minor_upgrade_tokens_shareholderId_key" RENAME TO "shareholder_emancipation_tokens_shareholderId_key";
+
 -- Add reason column with a default so existing rows get backfilled automatically
 ALTER TABLE "shareholder_emancipation_tokens"
   ADD COLUMN "reason" "EmancipationReason" NOT NULL DEFAULT 'MINOR_COMING_OF_AGE';

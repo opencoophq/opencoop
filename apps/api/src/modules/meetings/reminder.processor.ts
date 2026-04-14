@@ -85,13 +85,19 @@ export class ReminderProcessor {
               this.logger.warn(`Failed to send reminder to ${primaryA.shareholderId}: ${err}`);
             }
           }
-          await this.prisma.meeting.update({
-            where: { id: meeting.id },
-            data: {
-              remindersSent: { ...sentMap, [String(d)]: new Date().toISOString() },
-            },
-          });
-          this.logger.log(`Sent ${sent} reminders for meeting ${meeting.id} (T-${d} days)`);
+          if (sent === 0 && inboxMap.size > 0) {
+            this.logger.warn(
+              `All ${inboxMap.size} reminder sends failed for meeting ${meeting.id} (T-${d} days) — NOT marking day as sent; will retry next tick`,
+            );
+          } else {
+            await this.prisma.meeting.update({
+              where: { id: meeting.id },
+              data: {
+                remindersSent: { ...sentMap, [String(d)]: new Date().toISOString() },
+              },
+            });
+            this.logger.log(`Sent ${sent}/${inboxMap.size} reminders for meeting ${meeting.id} (T-${d} days)`);
+          }
         }
       }
     }

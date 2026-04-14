@@ -50,12 +50,14 @@ describe('ConvocationService', () => {
     );
   });
 
-  it('allows short notice if confirmed', async () => {
+  it('allows short notice if confirmed (no shareholders = not marked CONVOKED)', async () => {
     const scheduledAt = new Date(Date.now() + 10 * 24 * 3600 * 1000);
     prisma.meeting.findUnique.mockResolvedValue(makeMeeting({ scheduledAt }));
     prisma.shareholder.findMany.mockResolvedValue([]);
-    await service.send('c1', 'm1', { confirmShortNotice: true });
-    expect(prisma.meeting.update).toHaveBeenCalled();
+    const result = await service.send('c1', 'm1', { confirmShortNotice: true });
+    // No shareholders → no emails sent → meeting NOT marked CONVOKED (to allow retry when shareholders exist)
+    expect(prisma.meeting.update).not.toHaveBeenCalled();
+    expect((result as any).sent).toHaveLength(0);
   });
 
   it('is idempotent if meeting is already CONVOKED', async () => {

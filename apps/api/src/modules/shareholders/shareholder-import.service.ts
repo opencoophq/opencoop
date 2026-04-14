@@ -294,6 +294,57 @@ export class ShareholderImportService {
       return result;
     }
 
+    // Pre-flight: validate linkedTo targets before entering the transaction so we
+    // can return clean 400 responses with row numbers instead of raw Prisma errors.
+    const linkedRowsPreFlight = validRows.filter((r) => r.data.linkedTo?.trim());
+    if (linkedRowsPreFlight.length > 0) {
+      const linkedToEmails = [
+        ...new Set(linkedRowsPreFlight.map((r) => r.data.linkedTo!.trim().toLowerCase())),
+      ];
+      const primaries = await this.prisma.shareholder.findMany({
+        where: { coopId, email: { in: linkedToEmails } },
+        select: { email: true, userId: true },
+      });
+      const primaryMap = new Map(primaries.map((p) => [p.email!.toLowerCase(), p]));
+
+      const preFlightErrors: string[] = [];
+      for (const r of linkedRowsPreFlight) {
+        const primaryEmail = r.data.linkedTo!.trim().toLowerCase();
+        const primary = primaryMap.get(primaryEmail);
+        if (!primary) {
+          // Also accept if the primary is being created in THIS import (in-flight primary)
+          const inFlightPrimary = validRows.find(
+            (vr) =>
+              vr.data.email?.trim().toLowerCase() === primaryEmail && !vr.data.linkedTo?.trim(),
+          );
+          if (!inFlightPrimary) {
+            preFlightErrors.push(
+              `Row ${r.row}: linkedTo target "${r.data.linkedTo}" does not match any shareholder in this coop`,
+            );
+          }
+          // If inFlightPrimary exists, defer to runtime — primary will be created in pass 1
+        } else if (!primary.userId) {
+          preFlightErrors.push(
+            `Row ${r.row}: linkedTo target "${r.data.linkedTo}" has no user account to link to`,
+          );
+        }
+      }
+
+      if (preFlightErrors.length > 0) {
+        return {
+          ...result,
+          created: 0,
+          errors: [
+            ...result.errors,
+            ...preFlightErrors.map((msg) => ({
+              row: parseInt(msg.match(/Row (\d+):/)?.[1] ?? '0', 10),
+              errors: [msg],
+            })),
+          ],
+        };
+      }
+    }
+
     // Separate linked rows from primary rows so primaries are always created first.
     // This ensures that a linkedTo target created in the same import already exists when the
     // linked row is processed — even when both appear in the same CSV.
