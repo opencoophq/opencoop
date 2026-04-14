@@ -2188,5 +2188,23 @@
       "saving": "Saving...",
       "notFound": "Meeting not found"
     }
+  },
+  "emancipation": {
+    "claimTitle": "Claim Your Own Account",
+    "claimIntro": "Set up your personal login to manage your shares independently.",
+    "claimCta": "Create Account",
+    "emailLabel": "Your email address",
+    "passwordLabel": "Choose a password",
+    "confirmPasswordLabel": "Confirm password",
+    "loading": "Creating account...",
+    "successMessage": "Account created! Redirecting to your dashboard...",
+    "errors": {
+      "invalidToken": "This link is invalid or has expired. Please contact your cooperative.",
+      "emailTaken": "This email address is already registered. Please use a different one.",
+      "invalidEmail": "Please enter a valid email address.",
+      "passwordComplexity": "Password must be at least 8 characters and contain uppercase, lowercase, and a digit.",
+      "passwordMismatch": "Passwords do not match.",
+      "unknown": "Something went wrong. Please try again."
+    }
   }
 }

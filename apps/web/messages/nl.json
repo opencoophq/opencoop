@@ -2188,5 +2188,23 @@
       "saving": "Opslaan...",
       "notFound": "Vergadering niet gevonden"
     }
+  },
+  "emancipation": {
+    "claimTitle": "Claim uw eigen account",
+    "claimIntro": "Stel uw persoonlijke login in om uw aandelen zelf te beheren.",
+    "claimCta": "Account aanmaken",
+    "emailLabel": "Uw e-mailadres",
+    "passwordLabel": "Kies een wachtwoord",
+    "confirmPasswordLabel": "Wachtwoord bevestigen",
+    "loading": "Account aanmaken...",
+    "successMessage": "Account aangemaakt! U wordt doorverwezen naar uw dashboard...",
+    "errors": {
+      "invalidToken": "Deze link is ongeldig of verlopen. Neem contact op met uw coöperatie.",
+      "emailTaken": "Dit e-mailadres is al geregistreerd. Gebruik een ander adres.",
+      "invalidEmail": "Voer een geldig e-mailadres in.",
+      "passwordComplexity": "Wachtwoord moet minimaal 8 tekens bevatten met hoofd- en kleine letters en een cijfer.",
+      "passwordMismatch": "Wachtwoorden komen niet overeen.",
+      "unknown": "Er is iets misgegaan. Probeer het opnieuw."
+    }
   }
 }

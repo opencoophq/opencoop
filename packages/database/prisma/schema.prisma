@@ -84,6 +84,11 @@ enum BillingPeriod {
   YEARLY
 }
 
+enum EmancipationReason {
+  MINOR_COMING_OF_AGE
+  HOUSEHOLD_SPLIT
+}
+
 enum SubscriptionStatus {
   TRIALING
   ACTIVE
@@ -268,18 +273,19 @@ model User {
   termsVersion    String?
 
   // Relations
-  coopAdminOf            CoopAdmin[]
-  shareholders           Shareholder[]        @relation("UserShareholder")
-  registeredShareholders Shareholder[]        @relation("RegisteredBy")
-  processedRegistrations Registration[]
-  matchedPayments        Payment[]            @relation("PaymentMatcher")
-  importedBankFiles      BankImport[]
-  magicLinkTokens        MagicLinkToken[]
-  webAuthnCredentials    WebAuthnCredential[]
-  auditLogs              AuditLog[]
-  conversationsCreated   Conversation[]       @relation("ConversationCreatedBy")
-  refreshTokens          RefreshToken[]
-  apiKeys                ApiKey[]
+  coopAdminOf                  CoopAdmin[]
+  shareholders                 Shareholder[]                  @relation("UserShareholder")
+  registeredShareholders       Shareholder[]                  @relation("RegisteredBy")
+  processedRegistrations       Registration[]
+  matchedPayments              Payment[]                      @relation("PaymentMatcher")
+  importedBankFiles            BankImport[]
+  magicLinkTokens              MagicLinkToken[]
+  webAuthnCredentials          WebAuthnCredential[]
+  auditLogs                    AuditLog[]
+  conversationsCreated         Conversation[]                 @relation("ConversationCreatedBy")
+  refreshTokens                RefreshToken[]
+  apiKeys                      ApiKey[]
+  emancipationTokensReceived   ShareholderEmancipationToken[] @relation("EmancipationRecipient")
 
   @@map("users")
 }
@@ -488,7 +494,7 @@ model Shareholder {
   transfersOut             Registration[]            @relation("TransferOut")
   dividendPayouts          DividendPayout[]
   documents                ShareholderDocument[]
-  upgradeToken             MinorUpgradeToken?
+  emancipationToken        ShareholderEmancipationToken?
   claimedGifts             Registration[]            @relation("GiftClaimedBy")
   conversationParticipants ConversationParticipant[]
   proxiesGranted           Proxy[]                   @relation("ProxyGrantor")
@@ -526,22 +532,27 @@ model ShareholderDocument {
   @@map("shareholder_documents")
 }
 
-// Token for minor shareholders to upgrade to adult accounts when they turn 18
-model MinorUpgradeToken {
-  id            String    @id @default(cuid())
-  token         String    @unique
-  shareholderId String    @unique // One active token per shareholder
-  createdAt     DateTime  @default(now())
+// Token for shareholders to claim their own account (minors turning 18 or household splits)
+model ShareholderEmancipationToken {
+  id            String             @id @default(cuid())
+  token         String             @unique
+  shareholderId String             @unique // One active token per shareholder
+  reason        EmancipationReason
+  createdAt     DateTime           @default(now())
   expiresAt     DateTime
   usedAt        DateTime?
+
+  // The user who receives the claim email (parent for minors, primary account for household splits)
+  recipientUserId String?
 
   // Email notification tracking
   parentNotifiedAt DateTime?
   reminderSentAt   DateTime?
 
-  shareholder Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+  shareholder   Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+  recipientUser User?       @relation("EmancipationRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
 
-  @@map("minor_upgrade_tokens")
+  @@map("shareholder_emancipation_tokens")
 }
 
 // ============================================================================

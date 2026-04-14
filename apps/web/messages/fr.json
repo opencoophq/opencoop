@@ -2185,5 +2185,23 @@
       "saving": "Enregistrement...",
       "notFound": "Assemblée introuvable"
     }
+  },
+  "emancipation": {
+    "claimTitle": "Revendiquer votre compte",
+    "claimIntro": "Configurez votre connexion personnelle pour gérer vos parts de manière indépendante.",
+    "claimCta": "Créer un compte",
+    "emailLabel": "Votre adresse e-mail",
+    "passwordLabel": "Choisissez un mot de passe",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "loading": "Création du compte...",
+    "successMessage": "Compte créé ! Redirection vers votre tableau de bord...",
+    "errors": {
+      "invalidToken": "Ce lien est invalide ou expiré. Veuillez contacter votre coopérative.",
+      "emailTaken": "Cette adresse e-mail est déjà enregistrée. Veuillez en utiliser une autre.",
+      "invalidEmail": "Veuillez saisir une adresse e-mail valide.",
+      "passwordComplexity": "Le mot de passe doit contenir au moins 8 caractères avec majuscules, minuscules et un chiffre.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "unknown": "Une erreur est survenue. Veuillez réessayer."
+    }
   }
 }

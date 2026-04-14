@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
+import { EmancipationService } from '../auth/emancipation.service';
 
 @Injectable()
 export class BirthdaySchedulerService {
@@ -13,6 +14,7 @@ export class BirthdaySchedulerService {
     private prisma: PrismaService,
     private authService: AuthService,
     private emailService: EmailService,
+    private emancipationService: EmancipationService,
   ) {}
 
   // Run every day at 8:00 AM
@@ -51,7 +53,7 @@ export class BirthdaySchedulerService {
       include: {
         registeredBy: true,
         coop: true,
-        upgradeToken: true,
+        emancipationToken: true,
       },
     });
 
@@ -132,47 +134,30 @@ export class BirthdaySchedulerService {
       coopId: string;
       coop: { name: string };
       registeredBy: { email: string } | null;
-      upgradeToken: { usedAt: Date | null; expiresAt: Date } | null;
+      emancipationToken: { usedAt: Date | null; expiresAt: Date } | null;
     },
     today: Date,
   ) {
     // Check if already has a valid, unused token
-    if (minor.upgradeToken && !minor.upgradeToken.usedAt && minor.upgradeToken.expiresAt > today) {
-      this.logger.log(`Minor ${minor.id} already has active upgrade token, skipping`);
+    if (minor.emancipationToken && !minor.emancipationToken.usedAt && minor.emancipationToken.expiresAt > today) {
+      this.logger.log(`Minor ${minor.id} already has active emancipation token, skipping`);
       return;
     }
 
-    // Generate upgrade token
-    const token = await this.authService.generateUpgradeToken(minor.id);
-
-    // Get parent's email
+    // Get parent's email before delegating — log a warning if missing
     const parentEmail = minor.registeredBy?.email;
-
     if (!parentEmail) {
       this.logger.warn(`No parent email found for minor ${minor.id} (${minor.firstName} ${minor.lastName})`);
       return;
     }
 
-    // Send notification email to parent
-    const upgradeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3002'}/upgrade-to-adult?token=${token}`;
-    await this.emailService.sendMinorUpgradeNotification(
-      minor.coopId,
-      parentEmail,
-      {
-        minorFirstName: minor.firstName || '',
-        minorLastName: minor.lastName || '',
-        coopName: minor.coop.name,
-        upgradeUrl,
-      },
-    );
-
-    // Mark token as parent notified
-    await this.prisma.minorUpgradeToken.update({
-      where: { shareholderId: minor.id },
-      data: { parentNotifiedAt: new Date() },
+    // Delegate to EmancipationService (creates token + sends email + marks notified)
+    await this.emancipationService.startEmancipation({
+      shareholderId: minor.id,
+      reason: 'MINOR_COMING_OF_AGE',
     });
 
-    this.logger.log(`Sent upgrade notification for ${minor.firstName} ${minor.lastName} to ${parentEmail}`);
+    this.logger.log(`Sent emancipation notification for ${minor.firstName} ${minor.lastName} to ${parentEmail}`);
   }
 
   // ============================================================================
@@ -337,8 +322,9 @@ export class BirthdaySchedulerService {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const tokensNeedingReminder = await this.prisma.minorUpgradeToken.findMany({
+      const tokensNeedingReminder = await this.prisma.shareholderEmancipationToken.findMany({
         where: {
+          reason: 'MINOR_COMING_OF_AGE',
           usedAt: null,
           parentNotifiedAt: {
             lte: thirtyDaysAgo,
@@ -366,7 +352,7 @@ export class BirthdaySchedulerService {
           if (!parentEmail) continue;
 
           const daysRemaining = Math.ceil((tokenRecord.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-          const upgradeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3002'}/upgrade-to-adult?token=${tokenRecord.token}`;
+          const upgradeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3002'}/emancipate/${tokenRecord.token}`;
 
           await this.emailService.sendMinorUpgradeReminder(
             tokenRecord.shareholder.coopId,
@@ -380,7 +366,7 @@ export class BirthdaySchedulerService {
             },
           );
 
-          await this.prisma.minorUpgradeToken.update({
+          await this.prisma.shareholderEmancipationToken.update({
             where: { id: tokenRecord.id },
             data: { reminderSentAt: new Date() },
           });
