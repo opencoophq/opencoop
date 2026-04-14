@@ -19,11 +19,13 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { MeetingsService } from './meetings.service';
 import { AgendaService } from './agenda.service';
 import { ProxiesService } from './proxies.service';
+import { VotesService } from './votes.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { CreateAgendaItemDto } from './dto/create-agenda-item.dto';
 import { UpdateAgendaItemDto } from './dto/update-agenda-item.dto';
 import { CreateProxyDto } from './dto/create-proxy.dto';
+import { BulkRecordVotesDto } from './dto/record-vote.dto';
 
 @ApiTags('Meetings')
 @ApiBearerAuth()
@@ -35,6 +37,7 @@ export class MeetingsController {
     private meetings: MeetingsService,
     private agenda: AgendaService,
     private proxies: ProxiesService,
+    private votes: VotesService,
   ) {}
 
   @Post()
@@ -128,5 +131,19 @@ export class MeetingsController {
   @Delete(':id/proxies/:proxyId')
   revokeProxy(@Param('coopId') coopId: string, @Param('proxyId') proxyId: string) {
     return this.proxies.revoke(coopId, proxyId);
+  }
+
+  @Post(':id/resolutions/:resId/votes')
+  recordVotes(
+    @Param('coopId') coopId: string,
+    @Param('resId') resId: string,
+    @Body() dto: BulkRecordVotesDto,
+  ) {
+    return this.votes.recordVotes(coopId, resId, dto.votes);
+  }
+
+  @Post(':id/resolutions/:resId/close')
+  closeResolution(@Param('coopId') coopId: string, @Param('resId') resId: string) {
+    return this.votes.closeResolution(coopId, resId);
   }
 }
