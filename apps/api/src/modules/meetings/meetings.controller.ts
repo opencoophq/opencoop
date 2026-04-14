@@ -9,6 +9,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -24,6 +25,10 @@ import { VotesService } from './votes.service';
 import { ConvocationService } from './convocation.service';
 import { KioskService } from './kiosk.service';
 import { AttendanceService } from './attendance.service';
+import { MinutesService } from './minutes.service';
+import * as fs from 'fs';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { CreateAgendaItemDto } from './dto/create-agenda-item.dto';
@@ -46,6 +51,7 @@ export class MeetingsController {
     private convocation: ConvocationService,
     private kiosk: KioskService,
     private attendance: AttendanceService,
+    private minutes: MinutesService,
   ) {}
 
   @Post()
@@ -213,5 +219,59 @@ export class MeetingsController {
   @Get(':id/attendance')
   listAttendance(@Param('coopId') coopId: string, @Param('id') id: string) {
     return this.attendance.list(coopId, id);
+  }
+
+  @Get(':id/minutes')
+  getMinutes(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.minutes.get(coopId, id);
+  }
+
+  @Post(':id/minutes/generate')
+  generateMinutes(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.minutes.generateDraft(coopId, id);
+  }
+
+  @Patch(':id/minutes')
+  updateMinutes(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Body('content') content: string,
+  ) {
+    return this.minutes.update(coopId, id, content);
+  }
+
+  @Post(':id/minutes/finalize')
+  finalizeMinutes(@Param('coopId') coopId: string, @Param('id') id: string) {
+    // PDF generation wired in Phase 11 — for now mark finalized with placeholder URL
+    return this.minutes.finalize(coopId, id, '');
+  }
+
+  @Post(':id/minutes/upload-signed')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        signedByName: { type: 'string' },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async uploadSignedMinutes(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('signedByName') signedByName: string,
+  ) {
+    if (!file || !file.buffer) throw new BadRequestException('No file');
+    if (file.mimetype !== 'application/pdf') throw new BadRequestException('PDF required');
+    const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
+    const dir = path.join(UPLOAD_DIR, 'minutes', id);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const stored = `${randomUUID()}-signed.pdf`;
+    fs.writeFileSync(path.join(dir, stored), file.buffer);
+    const url = `/uploads/minutes/${id}/${stored}`;
+    return this.minutes.uploadSigned(coopId, id, url, signedByName);
   }
 }
