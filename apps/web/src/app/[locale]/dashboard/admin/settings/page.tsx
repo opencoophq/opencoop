@@ -1389,13 +1389,15 @@ export default function AdminSettingsPage() {
             <div>
               <Label className="text-sm font-medium">{t('admin.settings.apiKeys.claudeConfig')}</Label>
               <div className="relative mt-1">
-                <pre className="text-xs p-3 bg-muted rounded-md overflow-x-auto">{getMcpConfigSnippet(newMcpKey)}</pre>
+                <div className="overflow-x-auto rounded-md">
+                  <pre className="text-xs p-3 pr-12 bg-muted inline-block min-w-full">{getMcpConfigSnippet(newMcpKey)}</pre>
+                </div>
                 <button
                   onClick={async () => {
                     await navigator.clipboard.writeText(getMcpConfigSnippet(newMcpKey));
                     setMcpConfigCopied(true);
                   }}
-                  className="absolute top-2 right-2 rounded-md p-1.5 hover:bg-background transition-colors"
+                  className="absolute top-2 right-2 rounded-md p-1.5 bg-muted/80 backdrop-blur hover:bg-background transition-colors"
                 >
                   {mcpConfigCopied ? (
                     <Check className="h-4 w-4 text-green-600" />

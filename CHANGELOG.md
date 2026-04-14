@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.62] - 2026-04-14
+
+### Fixed
+- **MCP API key dialog config snippet background overflow** — the JSON config block in the "API key created" dialog cut off its background mid-line when the long `Authorization: Bearer ...` line overflowed horizontally. The `<pre>` now grows to its content width with `inline-block` inside a scroll wrapper, so the muted background spans the full snippet.
+
 ## [0.7.61] - 2026-04-13
 
 ### Added
