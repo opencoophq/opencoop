@@ -2105,6 +2105,72 @@
       "signedBy": "Unterzeichnet von",
       "download": "Unterzeichnete PDF herunterladen",
       "fileRequired": "Bitte PDF-Datei auswählen"
+    },
+    "publicRsvp": {
+      "greeting": "Hallo {name},",
+      "agendaHeading": "Tagesordnung",
+      "ctaHeading": "Werden Sie teilnehmen?",
+      "ctaAttending": "Ich nehme teil",
+      "ctaAbsent": "Ich kann nicht teilnehmen",
+      "ctaProxy": "Ich erteile Vollmacht",
+      "submitError": "Ihre Antwort konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      "loadError": "Diese Versammlung konnte nicht geladen werden.",
+      "expiredTitle": "Link abgelaufen",
+      "expiredBody": "Dieser Link ist nicht mehr gültig — bitte kontaktieren Sie Ihre Genossenschaft.",
+      "alreadyResponded": "Sie haben bereits geantwortet: {status}. Sie können Ihre Antwort unten ändern.",
+      "statusLabel": {
+        "attending": "Anwesend",
+        "absent": "Abwesend",
+        "proxy": "Vollmacht",
+        "unknown": "Keine Antwort"
+      },
+      "proxyHeading": "Bevollmächtigten wählen",
+      "proxyHelp": "Wählen Sie ein anderes Mitglied, das in Ihrem Namen abstimmt.",
+      "proxySearchPlaceholder": "Nach Name oder Mitgliedsnummer suchen",
+      "proxyEmpty": "Keine berechtigten Bevollmächtigten gefunden.",
+      "confirmProxy": "Vollmacht bestätigen",
+      "poweredBy": "Bereitgestellt von OpenCoop",
+      "thanks": {
+        "attendingHeading": "Danke — bis bald!",
+        "attendingBody": "Wir haben Ihre Teilnahme vermerkt.",
+        "absentHeading": "Danke für Ihre Antwort",
+        "absentBody": "Wir haben Ihre Abwesenheit vermerkt.",
+        "proxyHeading": "Vollmacht erfasst",
+        "proxyBody": "Wir haben Ihre Vollmacht erfasst. Sie erhalten das Vollmachtformular per E-Mail.",
+        "downloadIcs": "Zum Kalender hinzufügen (.ics)",
+        "proxyUploadHeading": "Unterzeichnete Vollmacht hochladen",
+        "proxyUploadHelp": "Wenn Sie das Vollmachtformular bereits unterzeichnet haben, laden Sie es hier hoch (PDF, PNG oder JPEG, max. 10 MB).",
+        "proxyUploadButton": "Datei wählen",
+        "uploadSuccess": "Vollmacht hochgeladen.",
+        "uploadError": "Upload fehlgeschlagen. Bitte erneut versuchen."
+      }
+    },
+    "kiosk": {
+      "invalidTitle": "Kiosk nicht aktiv",
+      "invalidBody": "Diese Kiosk-Sitzung ist nicht mehr aktiv. Bitte fragen Sie einen Organisator um Hilfe.",
+      "searchHeading": "Willkommen — finden Sie Ihren Namen",
+      "searchPlaceholder": "Name oder Mitgliedsnummer eingeben",
+      "noResults": "Keine Treffer gefunden.",
+      "confirmHeading": "Sind Sie das?",
+      "confirmYes": "Ja, das bin ich",
+      "back": "Zurück",
+      "signHeading": "Bitte unterschreiben Sie zum Einchecken",
+      "signSubheading": "Unterschreiben Sie mit dem Finger im Feld unten.",
+      "clear": "Löschen",
+      "confirmSign": "Bestätigen",
+      "signatureRequired": "Bitte unterschreiben Sie vor dem Bestätigen.",
+      "checkInError": "Einchecken fehlgeschlagen. Bitte um Hilfe fragen.",
+      "welcomeHeading": "Willkommen, {name}!",
+      "welcomeBody": "Sie sind eingecheckt. Bitte nehmen Sie Platz."
+    },
+    "shareholder": {
+      "heading": "Versammlungen",
+      "subheading": "Kommende Generalversammlungen Ihrer Genossenschaften",
+      "empty": "Sie haben keine kommenden Versammlungen.",
+      "view": "Ansehen",
+      "backToList": "Zurück zu den Versammlungen",
+      "agendaHeading": "Tagesordnung",
+      "invitedNote": "Sie sind zu dieser Versammlung eingeladen. Verwenden Sie zum Antworten den Link in der Einladungs-E-Mail."
     }
   }
 }

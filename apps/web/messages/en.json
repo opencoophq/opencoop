@@ -2108,6 +2108,72 @@
       "signedBy": "Signed by",
       "download": "Download signed PDF",
       "fileRequired": "Please choose a PDF file"
+    },
+    "publicRsvp": {
+      "greeting": "Hi {name},",
+      "agendaHeading": "Agenda",
+      "ctaHeading": "Will you attend?",
+      "ctaAttending": "I will attend",
+      "ctaAbsent": "I cannot attend",
+      "ctaProxy": "I'll grant a proxy",
+      "submitError": "Could not save your response. Please try again.",
+      "loadError": "Could not load this meeting.",
+      "expiredTitle": "Link expired",
+      "expiredBody": "This link is no longer valid — please contact your cooperative.",
+      "alreadyResponded": "You already responded: {status}. You can change your answer below.",
+      "statusLabel": {
+        "attending": "Attending",
+        "absent": "Absent",
+        "proxy": "Proxy",
+        "unknown": "No response"
+      },
+      "proxyHeading": "Choose a delegate",
+      "proxyHelp": "Pick another shareholder to vote on your behalf.",
+      "proxySearchPlaceholder": "Search by name or member number",
+      "proxyEmpty": "No eligible delegates found.",
+      "confirmProxy": "Confirm proxy",
+      "poweredBy": "Powered by OpenCoop",
+      "thanks": {
+        "attendingHeading": "Thank you — see you there!",
+        "attendingBody": "We've recorded that you will attend.",
+        "absentHeading": "Thank you for letting us know",
+        "absentBody": "We've recorded that you cannot attend.",
+        "proxyHeading": "Proxy recorded",
+        "proxyBody": "We've recorded your proxy. You will receive the volmacht form by email.",
+        "downloadIcs": "Add to calendar (.ics)",
+        "proxyUploadHeading": "Upload signed proxy form",
+        "proxyUploadHelp": "If you've already signed the volmacht form, upload it here (PDF, PNG or JPEG, max 10MB).",
+        "proxyUploadButton": "Choose file",
+        "uploadSuccess": "Signed proxy form uploaded.",
+        "uploadError": "Upload failed. Please try again."
+      }
+    },
+    "kiosk": {
+      "invalidTitle": "Kiosk not active",
+      "invalidBody": "This kiosk session is no longer active. Please ask an organiser for help.",
+      "searchHeading": "Welcome — please find your name",
+      "searchPlaceholder": "Type your name or member number",
+      "noResults": "No matches found.",
+      "confirmHeading": "Is this you?",
+      "confirmYes": "Yes, that's me",
+      "back": "Back",
+      "signHeading": "Please sign to check in",
+      "signSubheading": "Use your finger to sign in the box below.",
+      "clear": "Clear",
+      "confirmSign": "Confirm",
+      "signatureRequired": "Please sign before confirming.",
+      "checkInError": "Check-in failed. Please ask for help.",
+      "welcomeHeading": "Welcome, {name}!",
+      "welcomeBody": "You're checked in. Please take a seat."
+    },
+    "shareholder": {
+      "heading": "Meetings",
+      "subheading": "Upcoming general meetings of your cooperatives",
+      "empty": "You have no upcoming meetings.",
+      "view": "View",
+      "backToList": "Back to meetings",
+      "agendaHeading": "Agenda",
+      "invitedNote": "You are invited to this meeting. To RSVP, use the link in the convocation email."
     }
   }
 }

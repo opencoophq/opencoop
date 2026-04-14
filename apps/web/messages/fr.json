@@ -2105,6 +2105,72 @@
       "signedBy": "Signé par",
       "download": "Télécharger le PDF signé",
       "fileRequired": "Veuillez choisir un fichier PDF"
+    },
+    "publicRsvp": {
+      "greeting": "Bonjour {name},",
+      "agendaHeading": "Ordre du jour",
+      "ctaHeading": "Serez-vous présent ?",
+      "ctaAttending": "Je participerai",
+      "ctaAbsent": "Je ne pourrai pas participer",
+      "ctaProxy": "Je donne procuration",
+      "submitError": "Votre réponse n'a pas pu être enregistrée. Veuillez réessayer.",
+      "loadError": "Cette assemblée n'a pas pu être chargée.",
+      "expiredTitle": "Lien expiré",
+      "expiredBody": "Ce lien n'est plus valide — contactez votre coopérative.",
+      "alreadyResponded": "Vous avez déjà répondu : {status}. Vous pouvez modifier votre réponse ci-dessous.",
+      "statusLabel": {
+        "attending": "Présent",
+        "absent": "Absent",
+        "proxy": "Procuration",
+        "unknown": "Sans réponse"
+      },
+      "proxyHeading": "Choisir un mandataire",
+      "proxyHelp": "Choisissez un autre coopérateur pour voter en votre nom.",
+      "proxySearchPlaceholder": "Rechercher par nom ou numéro de membre",
+      "proxyEmpty": "Aucun mandataire éligible trouvé.",
+      "confirmProxy": "Confirmer la procuration",
+      "poweredBy": "Propulsé par OpenCoop",
+      "thanks": {
+        "attendingHeading": "Merci — à bientôt !",
+        "attendingBody": "Nous avons enregistré votre présence.",
+        "absentHeading": "Merci pour votre réponse",
+        "absentBody": "Nous avons enregistré votre absence.",
+        "proxyHeading": "Procuration enregistrée",
+        "proxyBody": "Votre procuration est enregistrée. Vous recevrez le formulaire par e-mail.",
+        "downloadIcs": "Ajouter au calendrier (.ics)",
+        "proxyUploadHeading": "Téléverser la procuration signée",
+        "proxyUploadHelp": "Si vous avez déjà signé le formulaire, téléversez-le ici (PDF, PNG ou JPEG, max 10 Mo).",
+        "proxyUploadButton": "Choisir un fichier",
+        "uploadSuccess": "Procuration téléversée.",
+        "uploadError": "Échec du téléversement. Réessayez."
+      }
+    },
+    "kiosk": {
+      "invalidTitle": "Borne non active",
+      "invalidBody": "Cette session de borne n'est plus active. Demandez de l'aide à un organisateur.",
+      "searchHeading": "Bienvenue — trouvez votre nom",
+      "searchPlaceholder": "Tapez votre nom ou numéro de membre",
+      "noResults": "Aucun résultat trouvé.",
+      "confirmHeading": "Est-ce bien vous ?",
+      "confirmYes": "Oui, c'est moi",
+      "back": "Retour",
+      "signHeading": "Veuillez signer pour vous enregistrer",
+      "signSubheading": "Signez avec votre doigt dans le cadre ci-dessous.",
+      "clear": "Effacer",
+      "confirmSign": "Confirmer",
+      "signatureRequired": "Veuillez signer avant de confirmer.",
+      "checkInError": "Échec de l'enregistrement. Demandez de l'aide.",
+      "welcomeHeading": "Bienvenue, {name} !",
+      "welcomeBody": "Vous êtes enregistré. Veuillez prendre place."
+    },
+    "shareholder": {
+      "heading": "Assemblées",
+      "subheading": "Prochaines assemblées générales de vos coopératives",
+      "empty": "Vous n'avez aucune assemblée à venir.",
+      "view": "Voir",
+      "backToList": "Retour aux assemblées",
+      "agendaHeading": "Ordre du jour",
+      "invitedNote": "Vous êtes invité à cette assemblée. Pour répondre, utilisez le lien dans l'e-mail de convocation."
     }
   }
 }

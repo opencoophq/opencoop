@@ -2108,6 +2108,72 @@
       "signedBy": "Ondertekend door",
       "download": "Ondertekende PDF downloaden",
       "fileRequired": "Kies een PDF-bestand"
+    },
+    "publicRsvp": {
+      "greeting": "Dag {name},",
+      "agendaHeading": "Agenda",
+      "ctaHeading": "Komt u?",
+      "ctaAttending": "Ik kom",
+      "ctaAbsent": "Ik kom niet",
+      "ctaProxy": "Ik geef volmacht",
+      "submitError": "Uw antwoord kon niet worden opgeslagen. Probeer het opnieuw.",
+      "loadError": "Deze vergadering kan niet geladen worden.",
+      "expiredTitle": "Link verlopen",
+      "expiredBody": "Deze link is niet meer geldig — neem contact op met uw coöperatie.",
+      "alreadyResponded": "U hebt al geantwoord: {status}. U kunt uw antwoord hieronder wijzigen.",
+      "statusLabel": {
+        "attending": "Aanwezig",
+        "absent": "Afwezig",
+        "proxy": "Volmacht",
+        "unknown": "Geen antwoord"
+      },
+      "proxyHeading": "Kies een gevolmachtigde",
+      "proxyHelp": "Kies een andere vennoot om in uw plaats te stemmen.",
+      "proxySearchPlaceholder": "Zoek op naam of lidnummer",
+      "proxyEmpty": "Geen gevolmachtigden gevonden.",
+      "confirmProxy": "Bevestig volmacht",
+      "poweredBy": "Mogelijk gemaakt door OpenCoop",
+      "thanks": {
+        "attendingHeading": "Bedankt — tot dan!",
+        "attendingBody": "We hebben uw aanwezigheid genoteerd.",
+        "absentHeading": "Bedankt voor uw bericht",
+        "absentBody": "We hebben genoteerd dat u niet aanwezig kunt zijn.",
+        "proxyHeading": "Volmacht genoteerd",
+        "proxyBody": "We hebben uw volmacht genoteerd. U ontvangt het volmachtformulier per e-mail.",
+        "downloadIcs": "Aan agenda toevoegen (.ics)",
+        "proxyUploadHeading": "Ondertekende volmacht uploaden",
+        "proxyUploadHelp": "Hebt u het volmachtformulier al ondertekend? Upload het hier (PDF, PNG of JPEG, max 10MB).",
+        "proxyUploadButton": "Kies bestand",
+        "uploadSuccess": "Volmacht geüpload.",
+        "uploadError": "Uploaden mislukt. Probeer het opnieuw."
+      }
+    },
+    "kiosk": {
+      "invalidTitle": "Kiosk niet actief",
+      "invalidBody": "Deze kiosksessie is niet actief. Vraag een organisator om hulp.",
+      "searchHeading": "Welkom — zoek uw naam",
+      "searchPlaceholder": "Typ uw naam of lidnummer",
+      "noResults": "Geen resultaten gevonden.",
+      "confirmHeading": "Bent u dit?",
+      "confirmYes": "Ja, dat ben ik",
+      "back": "Terug",
+      "signHeading": "Onderteken om in te checken",
+      "signSubheading": "Onderteken met uw vinger in het vak hieronder.",
+      "clear": "Wis",
+      "confirmSign": "Bevestig",
+      "signatureRequired": "Onderteken voor u bevestigt.",
+      "checkInError": "Inchecken mislukt. Vraag om hulp.",
+      "welcomeHeading": "Welkom, {name}!",
+      "welcomeBody": "U bent ingecheckt. Neem plaats."
+    },
+    "shareholder": {
+      "heading": "Vergaderingen",
+      "subheading": "Komende algemene vergaderingen van uw coöperaties",
+      "empty": "U hebt geen komende vergaderingen.",
+      "view": "Bekijken",
+      "backToList": "Terug naar vergaderingen",
+      "agendaHeading": "Agenda",
+      "invitedNote": "U bent uitgenodigd voor deze vergadering. Gebruik de link in de convocatie-e-mail om te antwoorden."
     }
   }
 }

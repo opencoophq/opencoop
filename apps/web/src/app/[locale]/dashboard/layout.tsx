@@ -172,6 +172,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/shares', label: t('shares.title'), icon: <FileText className="h-4 w-4" /> },
     { href: '/dashboard/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" /> },
     { href: '/dashboard/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
+    { href: '/dashboard/meetings', label: t('meetings.title'), icon: <CalendarCheck className="h-4 w-4" /> },
     { href: '/dashboard/documents', label: t('common.documents'), icon: <FileDown className="h-4 w-4" /> },
     { href: '/dashboard/inbox', label: t('messages.title'), icon: <MailIcon className="h-4 w-4" />, badge: unreadCount },
     { href: '/dashboard/personal-data', label: t('personalData.title'), icon: <UserCog className="h-4 w-4" /> },
