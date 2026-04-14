@@ -1,4 +1,6 @@
-# EcoPower API — Breaking Change (2026-04-14)
+# EcoPower API — Response Shape Change (2026-04-14, v0.8.0)
+
+> **Note:** No live consumer existed at the time of this change (verified via `api_keys` — only internal/Claude test keys). This doc is preserved as reference for whoever eventually wires up the EcoPower integration.
 
 ## What changed
 
@@ -61,12 +63,10 @@ If your code assumed a single shareholder per email, iterate the `shareholders` 
 
 When multiple shareholders match the supplied email (household case), the status update is applied to ALL matches. Previously it would match at most one shareholder. If your integration expects single-shareholder semantics, include a `shareholderId` in the payload to disambiguate (future v2 endpoint — not yet available).
 
-## Who to notify
+## Handoff to EcoPower
 
-**TODO (Wouter to fill in):** EcoPower technical contact email goes here.
+When the EcoPower integration is activated, hand them this doc along with the Fumadocs API reference at `/docs/ecopower-api`. They will need to follow the upgrade path above — their side has never implemented the old shape, so "upgrade" here just means "follow the current docs."
 
 ## Timeline
 
-- 2026-04-14: Breaking change lands on `feature/shared-email-households` branch.
-- **TBD**: Ship to acc environment.
-- **TBD**: Ship to prod. Notify EcoPower at least 2 weeks before.
+- 2026-04-14: Shape change shipped to prod in v0.8.0. No external consumer was using the endpoint, so no breakage occurred.
