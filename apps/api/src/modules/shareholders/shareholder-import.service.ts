@@ -343,7 +343,8 @@ export class ShareholderImportService {
       }
 
       // Pass 2: create linked (household member) rows
-      for (const item of linkedRows) {
+      for (let i = 0; i < linkedRows.length; i++) {
+        const item = linkedRows[i];
         const row = item.data;
         const primaryEmail = row.linkedTo!.trim().toLowerCase();
 
@@ -355,13 +356,13 @@ export class ShareholderImportService {
 
         if (!primary) {
           throw new BadRequestException(
-            `linkedTo target "${row.linkedTo}" does not match any shareholder in this cooperative`,
+            `Row ${item.row}: linkedTo target "${row.linkedTo}" does not match any shareholder in this cooperative`,
           );
         }
 
         if (!primary.userId) {
           throw new BadRequestException(
-            `linkedTo target "${row.linkedTo}" has no user account to link to — the primary shareholder must be linked to a user before importing household members`,
+            `Row ${item.row}: linkedTo target "${row.linkedTo}" has no user account to link to — the primary shareholder must be linked to a user before importing household members`,
           );
         }
 

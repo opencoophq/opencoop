@@ -334,7 +334,26 @@ describe('ShareholderImportService', () => {
 
       await expect(
         service.importShareholders('coop-1', makeFile(csv), false, 'user-admin'),
-      ).rejects.toThrow(/linkedTo.*nobody@x\.com|nobody@x\.com.*not found/i);
+      ).rejects.toThrow(/Row \d+:.*linkedTo.*nobody@x\.com|Row \d+:.*nobody@x\.com/i);
+    });
+
+    it('rejects linkedTo target with no user account (row number included)', async () => {
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
+      (prismaService.shareholder.create as jest.Mock).mockResolvedValue({ id: 'sh-primary' });
+      // findFirst returns a shareholder but with no userId
+      (prismaService.shareholder.findFirst as jest.Mock).mockResolvedValue({
+        userId: null,
+        email: 'primary@x.com',
+      });
+
+      const csv =
+        'type,firstName,lastName,email,linkedTo\n' +
+        'INDIVIDUAL,Jan,Janssens,jan@x.com,\n' +
+        'INDIVIDUAL,Marie,Janssens,,primary@x.com\n';
+
+      await expect(
+        service.importShareholders('coop-1', makeFile(csv), false, 'user-admin'),
+      ).rejects.toThrow(/Row 3:.*linkedTo target.*primary@x\.com.*no user account/i);
     });
   });
 });
