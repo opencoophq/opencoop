@@ -92,6 +92,7 @@ export class ShareholdersService {
     const shareholder = await this.prisma.shareholder.findFirst({
       where: { id, coopId },
       include: {
+        user: { select: { id: true, email: true } },
         registrations: {
           orderBy: { createdAt: 'desc' },
           include: {
@@ -275,6 +276,7 @@ export class ShareholdersService {
           email: dto.email.toLowerCase(),
           NOT: { id },
         },
+        select: { userId: true },
       });
       if (emailTaken) {
         throw new ConflictException('A shareholder with this email already exists in this cooperative');

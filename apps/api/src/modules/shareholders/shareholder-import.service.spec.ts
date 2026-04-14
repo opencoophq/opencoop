@@ -19,6 +19,7 @@ describe('ShareholderImportService', () => {
     prismaService = {
       shareholder: {
         findMany: jest.fn(),
+        findFirst: jest.fn(),
         create: jest.fn(),
       },
       auditLog: {
@@ -269,6 +270,93 @@ describe('ShareholderImportService', () => {
       await expect(
         service.importShareholders('coop-1', makeFile(csv), true, 'user-1'),
       ).rejects.toThrow('5000');
+    });
+  });
+
+  describe('import with linkedTo column', () => {
+    const makeFile = (csv: string) =>
+      ({
+        originalname: 'test.csv',
+        buffer: Buffer.from(csv),
+      }) as Express.Multer.File;
+
+    it('accepts duplicate email when second row has linkedTo pointing to first', async () => {
+      // No pre-existing shareholders in coop
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
+      // Jan is created first (primary); findFirst returns Jan's record (with userId) for Marie's linkedTo resolution
+      (prismaService.shareholder.create as jest.Mock).mockResolvedValue({ id: 'sh-jan', userId: 'user-jan' });
+      (prismaService.shareholder.findFirst as jest.Mock).mockResolvedValue({
+        userId: 'user-jan',
+        email: 'jan@x.com',
+      });
+
+      const csv =
+        'type,firstName,lastName,email,shares,linkedTo\n' +
+        'INDIVIDUAL,Jan,Janssens,jan@x.com,10,\n' +
+        'INDIVIDUAL,Marie,Janssens,jan@x.com,5,jan@x.com\n';
+
+      const result = await service.importShareholders('coop-1', makeFile(csv), false, 'user-admin');
+
+      expect(result.errors).toHaveLength(0);
+      // Jan created as normal, Marie created with email=null and userId=primary's userId
+      expect(prismaService.shareholder.create).toHaveBeenCalledTimes(2);
+      // Marie's create call should have email: null and userId: 'user-jan'
+      const createCalls = (prismaService.shareholder.create as jest.Mock).mock.calls;
+      const marieCall = createCalls.find((call) => call[0]?.data?.userId === 'user-jan');
+      expect(marieCall).toBeDefined();
+      expect(marieCall[0].data.email).toBeNull();
+    });
+
+    it('still rejects duplicate email when no linkedTo column', async () => {
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
+
+      const csv =
+        'type,firstName,lastName,email\n' +
+        'INDIVIDUAL,Jan,Janssens,jan@x.com\n' +
+        'INDIVIDUAL,Piet,Janssens,jan@x.com\n';
+
+      const result = await service.importShareholders('coop-1', makeFile(csv), true, 'user-admin');
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      const errorMessages = result.errors.flatMap((e) => e.errors);
+      expect(errorMessages.some((msg) => msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('already exists'))).toBe(true);
+    });
+
+    it('rejects linkedTo pointing to a non-existent primary (returns errors, created=0)', async () => {
+      // Pre-flight check: findMany returns existing shareholders in coop (none)
+      (prismaService.shareholder.findMany as jest.Mock)
+        .mockResolvedValueOnce([]) // existing email check for validateRows
+        .mockResolvedValueOnce([]); // pre-flight linkedTo DB lookup
+      (prismaService.shareholder.create as jest.Mock).mockResolvedValue({ id: 'sh-marie' });
+
+      const csv =
+        'type,firstName,lastName,email,linkedTo\n' +
+        'INDIVIDUAL,Marie,Janssens,,nobody@x.com\n';
+
+      const result = await service.importShareholders('coop-1', makeFile(csv), false, 'user-admin');
+
+      expect(result.created).toBe(0);
+      const allMessages = result.errors.flatMap((e) => e.errors);
+      expect(allMessages.some((msg) => /nobody@x\.com/i.test(msg))).toBe(true);
+    });
+
+    it('rejects linkedTo target with no user account (row number included, returns errors)', async () => {
+      // Pre-flight check: findMany returns existing shareholders (none for email check, then the primary)
+      (prismaService.shareholder.findMany as jest.Mock)
+        .mockResolvedValueOnce([]) // existing email check
+        .mockResolvedValueOnce([{ email: 'primary@x.com', userId: null }]); // pre-flight linkedTo lookup
+      (prismaService.shareholder.create as jest.Mock).mockResolvedValue({ id: 'sh-primary' });
+
+      const csv =
+        'type,firstName,lastName,email,linkedTo\n' +
+        'INDIVIDUAL,Jan,Janssens,jan@x.com,\n' +
+        'INDIVIDUAL,Marie,Janssens,,primary@x.com\n';
+
+      const result = await service.importShareholders('coop-1', makeFile(csv), false, 'user-admin');
+
+      expect(result.created).toBe(0);
+      const allMessages = result.errors.flatMap((e) => e.errors);
+      expect(allMessages.some((msg) => /primary@x\.com/.test(msg) && /no user account/i.test(msg))).toBe(true);
     });
   });
 });

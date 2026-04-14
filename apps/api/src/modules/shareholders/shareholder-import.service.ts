@@ -24,6 +24,8 @@ interface ImportRow {
   bankIban?: string;
   bankBic?: string;
   status?: string;
+  /** Optional: email of the primary (household head) shareholder to link this row to. */
+  linkedTo?: string;
 }
 
 interface RowValidationResult {
@@ -63,6 +65,7 @@ const EXPECTED_COLUMNS = [
   'bankIban',
   'bankBic',
   'status',
+  'linkedTo',
 ];
 
 @Injectable()
@@ -186,32 +189,39 @@ export class ShareholderImportService {
         errors.push(`Invalid type "${row.type}". Must be INDIVIDUAL, COMPANY, or MINOR.`);
       }
 
+      const isLinked = !!row.linkedTo?.trim();
+
       // Validate required fields per type
       if (type === 'INDIVIDUAL' || type === 'MINOR') {
         if (!row.firstName?.trim()) errors.push('firstName is required.');
         if (!row.lastName?.trim()) errors.push('lastName is required.');
       }
       if (type === 'INDIVIDUAL') {
-        if (!row.email?.trim()) errors.push('email is required for INDIVIDUAL shareholders.');
+        // Email is not required for household members — they inherit it from the primary via linkedTo
+        if (!row.email?.trim() && !isLinked) errors.push('email is required for INDIVIDUAL shareholders.');
       }
       if (type === 'COMPANY') {
         if (!row.companyName?.trim()) errors.push('companyName is required for COMPANY shareholders.');
-        if (!row.email?.trim()) errors.push('email is required for COMPANY shareholders.');
+        if (!row.email?.trim() && !isLinked) errors.push('email is required for COMPANY shareholders.');
       }
       if (type === 'MINOR') {
         if (!row.birthDate?.trim()) errors.push('birthDate is required for MINOR shareholders.');
       }
 
-      // Validate email uniqueness
+      // Validate email uniqueness; rows with linkedTo share the primary's email — skip uniqueness checks for them
       if (row.email?.trim()) {
         const email = row.email.trim().toLowerCase();
-        if (existingEmails.has(email)) {
-          errors.push(`Email "${email}" already exists in this cooperative.`);
+        if (existingEmails.has(email) && !isLinked) {
+          errors.push(
+            `Email "${email}" already exists in this cooperative. Add a 'linkedTo' column to import as household member.`,
+          );
         }
-        if (seenEmails.has(email)) {
-          errors.push(`Duplicate email "${email}" in import file.`);
+        if (seenEmails.has(email) && !isLinked) {
+          errors.push(
+            `Duplicate email "${email}" in import file (use linkedTo column for household members).`,
+          );
         }
-        seenEmails.add(email);
+        if (!isLinked) seenEmails.add(email);
       }
 
       // Validate birthDate format if provided
@@ -284,40 +294,135 @@ export class ShareholderImportService {
       return result;
     }
 
+    // Pre-flight: validate linkedTo targets before entering the transaction so we
+    // can return clean 400 responses with row numbers instead of raw Prisma errors.
+    const linkedRowsPreFlight = validRows.filter((r) => r.data.linkedTo?.trim());
+    if (linkedRowsPreFlight.length > 0) {
+      const linkedToEmails = [
+        ...new Set(linkedRowsPreFlight.map((r) => r.data.linkedTo!.trim().toLowerCase())),
+      ];
+      const primaries = await this.prisma.shareholder.findMany({
+        where: { coopId, email: { in: linkedToEmails } },
+        select: { email: true, userId: true },
+      });
+      const primaryMap = new Map(primaries.map((p) => [p.email!.toLowerCase(), p]));
+
+      const preFlightErrors: string[] = [];
+      for (const r of linkedRowsPreFlight) {
+        const primaryEmail = r.data.linkedTo!.trim().toLowerCase();
+        const primary = primaryMap.get(primaryEmail);
+        if (!primary) {
+          // Also accept if the primary is being created in THIS import (in-flight primary)
+          const inFlightPrimary = validRows.find(
+            (vr) =>
+              vr.data.email?.trim().toLowerCase() === primaryEmail && !vr.data.linkedTo?.trim(),
+          );
+          if (!inFlightPrimary) {
+            preFlightErrors.push(
+              `Row ${r.row}: linkedTo target "${r.data.linkedTo}" does not match any shareholder in this coop`,
+            );
+          }
+          // If inFlightPrimary exists, defer to runtime — primary will be created in pass 1
+        } else if (!primary.userId) {
+          preFlightErrors.push(
+            `Row ${r.row}: linkedTo target "${r.data.linkedTo}" has no user account to link to`,
+          );
+        }
+      }
+
+      if (preFlightErrors.length > 0) {
+        return {
+          ...result,
+          created: 0,
+          errors: [
+            ...result.errors,
+            ...preFlightErrors.map((msg) => ({
+              row: parseInt(msg.match(/Row (\d+):/)?.[1] ?? '0', 10),
+              errors: [msg],
+            })),
+          ],
+        };
+      }
+    }
+
+    // Separate linked rows from primary rows so primaries are always created first.
+    // This ensures that a linkedTo target created in the same import already exists when the
+    // linked row is processed — even when both appear in the same CSV.
+    const primaryRows = validRows.filter((r) => !r.data.linkedTo?.trim());
+    const linkedRows = validRows.filter((r) => !!r.data.linkedTo?.trim());
+
+    const buildAddress = (row: ImportRow) =>
+      row.street || row.houseNumber || row.postalCode || row.city || row.country
+        ? {
+            street: row.street || '',
+            number: row.houseNumber || '',
+            postalCode: row.postalCode || '',
+            city: row.city || '',
+            country: row.country || '',
+          }
+        : undefined;
+
+    const buildBaseData = (row: ImportRow, coopId: string) => ({
+      coopId,
+      type: row.type as 'INDIVIDUAL' | 'COMPANY' | 'MINOR',
+      status: (row.status?.toUpperCase() as 'PENDING' | 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
+      firstName: row.firstName?.trim() || null,
+      lastName: row.lastName?.trim() || null,
+      phone: row.phone?.trim() || null,
+      nationalId: row.nationalId?.trim() ? encryptField(row.nationalId.trim()) : null,
+      birthDate: row.birthDate ? new Date(row.birthDate) : null,
+      companyName: row.companyName?.trim() || null,
+      companyId: row.companyId?.trim() || null,
+      vatNumber: row.vatNumber?.trim() || null,
+      legalForm: row.legalForm?.trim() || null,
+      bankIban: row.bankIban?.trim() || null,
+      bankBic: row.bankBic?.trim() || null,
+      address: buildAddress(row) ? JSON.parse(JSON.stringify(buildAddress(row))) : undefined,
+    });
+
     // Create shareholders and audit log in a single transaction
     await this.prisma.$transaction(async (tx) => {
-      for (const item of validRows) {
+      // Pass 1: create primary (non-linked) rows
+      for (const item of primaryRows) {
         const row = item.data;
-
-        const address =
-          row.street || row.houseNumber || row.postalCode || row.city || row.country
-            ? {
-                street: row.street || '',
-                number: row.houseNumber || '',
-                postalCode: row.postalCode || '',
-                city: row.city || '',
-                country: row.country || '',
-              }
-            : undefined;
-
         await tx.shareholder.create({
           data: {
-            coopId,
-            type: row.type as 'INDIVIDUAL' | 'COMPANY' | 'MINOR',
-            status: (row.status?.toUpperCase() as 'PENDING' | 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
-            firstName: row.firstName?.trim() || null,
-            lastName: row.lastName?.trim() || null,
+            ...buildBaseData(row, coopId),
             email: row.email?.trim()?.toLowerCase() || null,
-            phone: row.phone?.trim() || null,
-            nationalId: row.nationalId?.trim() ? encryptField(row.nationalId.trim()) : null,
-            birthDate: row.birthDate ? new Date(row.birthDate) : null,
-            companyName: row.companyName?.trim() || null,
-            companyId: row.companyId?.trim() || null,
-            vatNumber: row.vatNumber?.trim() || null,
-            legalForm: row.legalForm?.trim() || null,
-            bankIban: row.bankIban?.trim() || null,
-            bankBic: row.bankBic?.trim() || null,
-            address: address ? JSON.parse(JSON.stringify(address)) : undefined,
+          },
+        });
+      }
+
+      // Pass 2: create linked (household member) rows
+      for (let i = 0; i < linkedRows.length; i++) {
+        const item = linkedRows[i];
+        const row = item.data;
+        const primaryEmail = row.linkedTo!.trim().toLowerCase();
+
+        // The primary may have just been created in pass 1, or may already exist in the coop
+        const primary = await tx.shareholder.findFirst({
+          where: { coopId, email: primaryEmail },
+          select: { userId: true, email: true },
+        });
+
+        if (!primary) {
+          throw new BadRequestException(
+            `Row ${item.row}: linkedTo target "${row.linkedTo}" does not match any shareholder in this cooperative`,
+          );
+        }
+
+        if (!primary.userId) {
+          throw new BadRequestException(
+            `Row ${item.row}: linkedTo target "${row.linkedTo}" has no user account to link to — the primary shareholder must be linked to a user before importing household members`,
+          );
+        }
+
+        // Create the household member with email=null, userId=primary.userId
+        await tx.shareholder.create({
+          data: {
+            ...buildBaseData(row, coopId),
+            email: null,
+            userId: primary.userId,
           },
         });
       }
