@@ -90,6 +90,14 @@ export class EmailService {
     return emailLog;
   }
 
+  private async resolveRecipientLanguage(email: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      select: { preferredLanguage: true },
+    });
+    return user?.preferredLanguage || 'nl';
+  }
+
   async sendWelcomeEmail(coopId: string, to: string, shareholderName: string) {
     return this.send({
       coopId,
