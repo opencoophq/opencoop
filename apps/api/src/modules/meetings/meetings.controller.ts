@@ -20,12 +20,14 @@ import { MeetingsService } from './meetings.service';
 import { AgendaService } from './agenda.service';
 import { ProxiesService } from './proxies.service';
 import { VotesService } from './votes.service';
+import { ConvocationService } from './convocation.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { CreateAgendaItemDto } from './dto/create-agenda-item.dto';
 import { UpdateAgendaItemDto } from './dto/update-agenda-item.dto';
 import { CreateProxyDto } from './dto/create-proxy.dto';
 import { BulkRecordVotesDto } from './dto/record-vote.dto';
+import { SendConvocationDto } from './dto/send-convocation.dto';
 
 @ApiTags('Meetings')
 @ApiBearerAuth()
@@ -38,6 +40,7 @@ export class MeetingsController {
     private agenda: AgendaService,
     private proxies: ProxiesService,
     private votes: VotesService,
+    private convocation: ConvocationService,
   ) {}
 
   @Post()
@@ -145,5 +148,19 @@ export class MeetingsController {
   @Post(':id/resolutions/:resId/close')
   closeResolution(@Param('coopId') coopId: string, @Param('resId') resId: string) {
     return this.votes.closeResolution(coopId, resId);
+  }
+
+  @Post(':id/convocation/send')
+  sendConvocation(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Body() dto: SendConvocationDto,
+  ) {
+    return this.convocation.send(coopId, id, dto);
+  }
+
+  @Get(':id/convocation/status')
+  convocationStatus(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.convocation.listStatus(coopId, id);
   }
 }
