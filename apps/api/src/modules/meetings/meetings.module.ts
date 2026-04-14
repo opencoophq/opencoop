@@ -11,6 +11,7 @@ import { IcsService } from './ics.service';
 import { ConvocationService } from './convocation.service';
 import { RsvpService } from './rsvp.service';
 import { KioskService } from './kiosk.service';
+import { AttendanceService } from './attendance.service';
 
 @Module({
   imports: [EmailModule],
@@ -24,6 +25,7 @@ import { KioskService } from './kiosk.service';
     ConvocationService,
     RsvpService,
     KioskService,
+    AttendanceService,
   ],
   exports: [
     MeetingsService,
@@ -34,6 +36,7 @@ import { KioskService } from './kiosk.service';
     ConvocationService,
     RsvpService,
     KioskService,
+    AttendanceService,
   ],
 })
 export class MeetingsModule {}

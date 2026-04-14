@@ -23,6 +23,7 @@ import { ProxiesService } from './proxies.service';
 import { VotesService } from './votes.service';
 import { ConvocationService } from './convocation.service';
 import { KioskService } from './kiosk.service';
+import { AttendanceService } from './attendance.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { CreateAgendaItemDto } from './dto/create-agenda-item.dto';
@@ -44,6 +45,7 @@ export class MeetingsController {
     private votes: VotesService,
     private convocation: ConvocationService,
     private kiosk: KioskService,
+    private attendance: AttendanceService,
   ) {}
 
   @Post()
@@ -182,5 +184,34 @@ export class MeetingsController {
     @Param('sessionId') sessionId: string,
   ) {
     return this.kiosk.endSession(coopId, sessionId);
+  }
+
+  @Post(':id/attendance/:shareholderId/check-in')
+  checkInAttendance(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Param('shareholderId') shareholderId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.attendance.checkIn(coopId, id, shareholderId, user.id);
+  }
+
+  @Post(':id/attendance/:shareholderId/undo')
+  undoCheckInAttendance(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Param('shareholderId') shareholderId: string,
+  ) {
+    return this.attendance.undo(coopId, id, shareholderId);
+  }
+
+  @Get(':id/live-attendance')
+  liveAttendance(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.attendance.liveState(coopId, id);
+  }
+
+  @Get(':id/attendance')
+  listAttendance(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.attendance.list(coopId, id);
   }
 }
