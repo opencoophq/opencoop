@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { EmailModule } from '../email/email.module';
 import { MeetingsController } from './meetings.controller';
 import { MeetingRsvpController } from './meeting-rsvp.controller';
@@ -15,9 +16,14 @@ import { KioskService } from './kiosk.service';
 import { AttendanceService } from './attendance.service';
 import { MinutesService } from './minutes.service';
 import { MeetingPdfService } from './pdf.service';
+import { ReminderProcessor } from './reminder.processor';
+import { ReminderScheduler } from './reminder.scheduler';
 
 @Module({
-  imports: [EmailModule],
+  imports: [
+    EmailModule,
+    BullModule.registerQueue({ name: 'meetings-reminder' }),
+  ],
   controllers: [
     MeetingsController,
     MeetingRsvpController,
@@ -36,6 +42,8 @@ import { MeetingPdfService } from './pdf.service';
     AttendanceService,
     MinutesService,
     MeetingPdfService,
+    ReminderProcessor,
+    ReminderScheduler,
   ],
   exports: [
     MeetingsService,
