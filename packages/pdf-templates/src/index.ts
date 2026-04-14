@@ -12,3 +12,4 @@ export { ProjectInvestmentReport } from './templates/project-investment-report';
 export type { ProjectInvestmentReportProps } from './templates/project-investment-report';
 export { GiftCertificate } from './templates/gift-certificate';
 export type { GiftCertificateProps } from './templates/gift-certificate';
+export { ConvocationPdf, type ConvocationProps } from './templates/convocation';
