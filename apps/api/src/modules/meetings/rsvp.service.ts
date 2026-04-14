@@ -55,6 +55,7 @@ export class RsvpService {
       });
       if (!existing) {
         await this.proxies.create(
+          attendance.meeting.coopId,
           attendance.meetingId,
           attendance.shareholderId,
           delegateShareholderId,
@@ -66,6 +67,7 @@ export class RsvpService {
           data: { revokedAt: new Date() },
         });
         await this.proxies.create(
+          attendance.meeting.coopId,
           attendance.meetingId,
           attendance.shareholderId,
           delegateShareholderId,

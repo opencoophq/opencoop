@@ -40,7 +40,13 @@ describe('ProxiesService', () => {
   });
 
   it('rejects self-delegation', async () => {
-    await expect(service.create('m1', 'sA', 'sA')).rejects.toThrow(BadRequestException);
+    await expect(service.create('c1', 'm1', 'sA', 'sA')).rejects.toThrow(BadRequestException);
+    expect(prisma.proxy.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects when meeting does not belong to the caller coop', async () => {
+    prisma.meeting.findUnique.mockResolvedValue({ ...meeting, coopId: 'OTHER' });
+    await expect(service.create('c1', 'm1', 'sA', 'sB')).rejects.toThrow(ForbiddenException);
     expect(prisma.proxy.create).not.toHaveBeenCalled();
   });
 
@@ -51,7 +57,7 @@ describe('ProxiesService', () => {
       .mockResolvedValueOnce({ id: 'sX', coopId: 'OTHER' });
     prisma.proxy.count.mockResolvedValue(0);
 
-    await expect(service.create('m1', 'sA', 'sX')).rejects.toThrow(ForbiddenException);
+    await expect(service.create('c1', 'm1', 'sA', 'sX')).rejects.toThrow(ForbiddenException);
     expect(prisma.proxy.create).not.toHaveBeenCalled();
   });
 
@@ -62,7 +68,7 @@ describe('ProxiesService', () => {
       .mockResolvedValueOnce(delegateSh);
     prisma.proxy.count.mockResolvedValue(1);
 
-    await expect(service.create('m1', 'sA', 'sB')).rejects.toThrow(BadRequestException);
+    await expect(service.create('c1', 'm1', 'sA', 'sB')).rejects.toThrow(BadRequestException);
     expect(prisma.proxy.create).not.toHaveBeenCalled();
   });
 
@@ -80,7 +86,7 @@ describe('ProxiesService', () => {
     };
     prisma.proxy.create.mockResolvedValue(created);
 
-    const result = await service.create('m1', 'sA', 'sB');
+    const result = await service.create('c1', 'm1', 'sA', 'sB');
 
     expect(result).toEqual(created);
     expect(prisma.proxy.create).toHaveBeenCalledWith({

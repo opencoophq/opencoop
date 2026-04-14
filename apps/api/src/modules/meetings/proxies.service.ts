@@ -10,13 +10,21 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class ProxiesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(meetingId: string, grantorShareholderId: string, delegateShareholderId: string) {
+  async create(
+    coopId: string,
+    meetingId: string,
+    grantorShareholderId: string,
+    delegateShareholderId: string,
+  ) {
     if (grantorShareholderId === delegateShareholderId) {
       throw new BadRequestException('A shareholder cannot delegate to themselves');
     }
 
     const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
     if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.coopId !== coopId) {
+      throw new ForbiddenException('Meeting does not belong to this coop');
+    }
 
     const grantor = await this.prisma.shareholder.findUnique({
       where: { id: grantorShareholderId },

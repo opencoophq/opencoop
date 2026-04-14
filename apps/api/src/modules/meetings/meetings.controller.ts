@@ -138,8 +138,17 @@ export class MeetingsController {
   }
 
   @Post(':id/proxies')
-  createProxy(@Param('id') id: string, @Body() dto: CreateProxyDto) {
-    return this.proxies.create(id, dto.grantorShareholderId, dto.delegateShareholderId);
+  createProxy(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateProxyDto,
+  ) {
+    return this.proxies.create(
+      coopId,
+      id,
+      dto.grantorShareholderId,
+      dto.delegateShareholderId,
+    );
   }
 
   @Get(':id/proxies')

@@ -104,6 +104,16 @@ export class KioskService {
   async checkIn(token: string, shareholderId: string, signaturePngDataUrl: string) {
     const session = await this.validate(token);
 
+    // Enforce tenant isolation: the shareholder must belong to the meeting's coop.
+    const shareholder = await this.prisma.shareholder.findUnique({
+      where: { id: shareholderId },
+      select: { coopId: true },
+    });
+    if (!shareholder) throw new NotFoundException('Shareholder not found');
+    if (shareholder.coopId !== session.meeting.coopId) {
+      throw new ForbiddenException('Shareholder does not belong to this meeting coop');
+    }
+
     // Decode the data URL
     const base64 = signaturePngDataUrl.replace(/^data:image\/png;base64,/, '');
     const buf = Buffer.from(base64, 'base64');

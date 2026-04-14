@@ -57,6 +57,40 @@ export class VotesService {
     const meeting = resolution.agendaItem.meeting;
     const perShare = meeting.votingWeight === VotingWeight.PER_SHARE;
 
+    // Tenant isolation: every submitted shareholderId must belong to the meeting's coop.
+    const shareholderIds = [...new Set(votes.map((v) => v.shareholderId))];
+    if (shareholderIds.length > 0) {
+      const validShareholders = await this.prisma.shareholder.findMany({
+        where: { id: { in: shareholderIds }, coopId },
+        select: { id: true },
+      });
+      const validIds = new Set(validShareholders.map((s) => s.id));
+      const invalid = shareholderIds.filter((id) => !validIds.has(id));
+      if (invalid.length > 0) {
+        throw new ForbiddenException(
+          `Shareholder(s) do not belong to this coop: ${invalid.join(', ')}`,
+        );
+      }
+    }
+
+    // Validate any proxy references belong to THIS meeting and are non-revoked.
+    const proxyIds = [
+      ...new Set(votes.map((v) => v.castViaProxyId).filter((x): x is string => !!x)),
+    ];
+    if (proxyIds.length > 0) {
+      const validProxies = await this.prisma.proxy.findMany({
+        where: { id: { in: proxyIds }, meetingId: meeting.id, revokedAt: null },
+        select: { id: true },
+      });
+      const validProxyIds = new Set(validProxies.map((p) => p.id));
+      const invalid = proxyIds.filter((id) => !validProxyIds.has(id));
+      if (invalid.length > 0) {
+        throw new BadRequestException(
+          `Proxy reference(s) invalid for this meeting: ${invalid.join(', ')}`,
+        );
+      }
+    }
+
     return this.prisma.$transaction(async (tx) => {
       for (const v of votes) {
         let weight = 1;
