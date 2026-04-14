@@ -584,20 +584,74 @@ export class EmailProcessor {
           Als ${d.minorFirstName} nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
         </p>
       `,
-      'gift-certificate': (d, cn) => `
-        <h1>Your Gift Certificate</h1>
-        <p>Dear ${d.buyerName},</p>
-        <p>Thank you for purchasing a gift certificate at ${cn}!</p>
-        <p>Your payment has been received and the gift certificate is attached to this email.</p>
-        <ul>
-          <li>Share Class: ${d.shareClassName}</li>
-          <li>Quantity: ${d.quantity}</li>
-          <li>Total Value: €${(d.totalValue as number).toFixed(2)}</li>
-        </ul>
-        <p>Gift code: <strong>${d.giftCode}</strong></p>
-        <p>Share this certificate with the recipient. They can use the code or QR code to claim their shares.</p>
-        <p>Thank you for being a shareholder of ${cn}!</p>
-      `,
+      'gift-certificate': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: 'Je cadeaubon',
+            dear: `Beste ${d.buyerName},`,
+            thanks: `Bedankt voor het aankopen van een cadeaubon bij ${cn}!`,
+            received: 'Je betaling is ontvangen en de cadeaubon is als bijlage toegevoegd.',
+            shareClass: 'Aandelenklasse',
+            quantity: 'Aantal',
+            totalValue: 'Totale waarde',
+            giftCode: 'Cadeaucode',
+            share: 'Deel de cadeaubon met de ontvanger. Ze kunnen de code of QR-code gebruiken om hun aandelen op te vragen.',
+            thanksEnd: `Bedankt om aandeelhouder te zijn van ${cn}!`,
+          },
+          en: {
+            title: 'Your Gift Certificate',
+            dear: `Dear ${d.buyerName},`,
+            thanks: `Thank you for purchasing a gift certificate at ${cn}!`,
+            received: 'Your payment has been received and the gift certificate is attached to this email.',
+            shareClass: 'Share Class',
+            quantity: 'Quantity',
+            totalValue: 'Total Value',
+            giftCode: 'Gift code',
+            share: 'Share this certificate with the recipient. They can use the code or QR code to claim their shares.',
+            thanksEnd: `Thank you for being a shareholder of ${cn}!`,
+          },
+          fr: {
+            title: 'Votre bon cadeau',
+            dear: `Cher/Chère ${d.buyerName},`,
+            thanks: `Merci d'avoir acheté un bon cadeau chez ${cn} !`,
+            received: 'Votre paiement a été reçu et le bon cadeau est joint à cet e-mail.',
+            shareClass: "Classe d'actions",
+            quantity: 'Quantité',
+            totalValue: 'Valeur totale',
+            giftCode: 'Code cadeau',
+            share: 'Partagez ce bon avec le destinataire. Il peut utiliser le code ou le QR code pour réclamer ses actions.',
+            thanksEnd: `Merci d'être actionnaire de ${cn} !`,
+          },
+          de: {
+            title: 'Ihr Geschenkgutschein',
+            dear: `Liebe/r ${d.buyerName},`,
+            thanks: `Vielen Dank für den Kauf eines Geschenkgutscheins bei ${cn}!`,
+            received: 'Ihre Zahlung wurde erhalten und der Geschenkgutschein ist dieser E-Mail beigefügt.',
+            shareClass: 'Anteilsklasse',
+            quantity: 'Anzahl',
+            totalValue: 'Gesamtwert',
+            giftCode: 'Geschenkcode',
+            share: 'Teilen Sie diesen Gutschein mit dem Empfänger. Er kann den Code oder QR-Code verwenden, um seine Anteile einzulösen.',
+            thanksEnd: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.dear}</p>
+    <p>${s.thanks}</p>
+    <p>${s.received}</p>
+    <ul>
+      <li>${s.shareClass}: ${d.shareClassName}</li>
+      <li>${s.quantity}: ${d.quantity}</li>
+      <li>${s.totalValue}: €${(d.totalValue as number).toFixed(2)}</li>
+    </ul>
+    <p>${s.giftCode}: <strong>${d.giftCode}</strong></p>
+    <p>${s.share}</p>
+    <p>${s.thanksEnd}</p>
+  `;
+      },
       'message-notification': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const t = {

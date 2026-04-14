@@ -411,12 +411,19 @@ export class EmailService {
       certificatePath: string;
     },
   ) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: `${data.coopName} — Je cadeaubon`,
+      en: `${data.coopName} — Your gift certificate`,
+      fr: `${data.coopName} — Votre bon cadeau`,
+      de: `${data.coopName} — Ihr Geschenkgutschein`,
+    };
     return this.send({
       coopId,
       to,
-      subject: `${data.coopName} — Your gift certificate`,
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'gift-certificate',
-      templateData: data,
+      templateData: { ...data, language },
       attachments: [{ filename: 'gift-certificate.pdf', path: data.certificatePath }],
     });
   }
