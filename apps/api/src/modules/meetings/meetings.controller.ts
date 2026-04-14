@@ -6,11 +6,14 @@ import {
   Delete,
   Body,
   Param,
+  Query,
+  Res,
   UseGuards,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -26,6 +29,7 @@ import { ConvocationService } from './convocation.service';
 import { KioskService } from './kiosk.service';
 import { AttendanceService } from './attendance.service';
 import { MinutesService } from './minutes.service';
+import { MeetingPdfService } from './pdf.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
@@ -52,6 +56,7 @@ export class MeetingsController {
     private kiosk: KioskService,
     private attendance: AttendanceService,
     private minutes: MinutesService,
+    private pdf: MeetingPdfService,
   ) {}
 
   @Post()
@@ -273,5 +278,41 @@ export class MeetingsController {
     fs.writeFileSync(path.join(dir, stored), file.buffer);
     const url = `/uploads/minutes/${id}/${stored}`;
     return this.minutes.uploadSigned(coopId, id, url, signedByName);
+  }
+
+  @Get(':id/attendance-sheet')
+  async attendanceSheetPdf(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const buf = await this.pdf.attendanceSheet(coopId, id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="attendance-sheet.pdf"');
+    res.send(buf);
+  }
+
+  @Get(':id/convocation/preview')
+  async previewConvocation(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Query('shareholderId') shId: string,
+    @Res() res: Response,
+  ) {
+    const buf = await this.pdf.convocation(coopId, id, shId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(buf);
+  }
+
+  @Get(':id/minutes/pdf')
+  async minutesPdf(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const buf = await this.pdf.minutes(coopId, id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="minutes.pdf"');
+    res.send(buf);
   }
 }
