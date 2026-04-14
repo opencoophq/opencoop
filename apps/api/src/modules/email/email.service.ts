@@ -187,12 +187,19 @@ export class EmailService {
       statementPath: string;
     },
   ) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: `Dividendafrekening ${data.year}`,
+      en: `Dividend Statement ${data.year}`,
+      fr: `Relevé de dividendes ${data.year}`,
+      de: `Dividendenabrechnung ${data.year}`,
+    };
     return this.send({
       coopId,
       to,
-      subject: `Dividend Statement ${data.year}`,
+      subject: subjects[language] || subjects['nl'],
       templateKey: 'dividend-statement',
-      templateData: data,
+      templateData: { ...data, language },
       attachments: [{ filename: `dividend-${data.year}.pdf`, path: data.statementPath }],
     });
   }

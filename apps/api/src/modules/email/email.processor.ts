@@ -393,13 +393,47 @@ export class EmailProcessor {
           <p>${s.thanks}</p>
         `;
       },
-      'dividend-statement': (d, cn) => `
-        <h1>Dividend Statement ${d.year}</h1>
-        <p>Dear ${d.shareholderName},</p>
-        <p>Please find attached your dividend statement for ${d.year}.</p>
-        <p>Net dividend amount: €${(d.netAmount as number).toFixed(2)}</p>
-        <p>Thank you for being a shareholder of ${cn}!</p>
-      `,
+      'dividend-statement': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const t = {
+          nl: {
+            title: `Dividendafrekening ${d.year}`,
+            dear: `Beste ${d.shareholderName},`,
+            attached: `In bijlage vind je je dividendafrekening voor ${d.year}.`,
+            net: 'Netto dividendbedrag',
+            thanks: `Bedankt om aandeelhouder te zijn van ${cn}!`,
+          },
+          en: {
+            title: `Dividend Statement ${d.year}`,
+            dear: `Dear ${d.shareholderName},`,
+            attached: `Please find attached your dividend statement for ${d.year}.`,
+            net: 'Net dividend amount',
+            thanks: `Thank you for being a shareholder of ${cn}!`,
+          },
+          fr: {
+            title: `Relevé de dividendes ${d.year}`,
+            dear: `Cher/Chère ${d.shareholderName},`,
+            attached: `Veuillez trouver ci-joint votre relevé de dividendes pour ${d.year}.`,
+            net: 'Montant net du dividende',
+            thanks: `Merci d'être actionnaire de ${cn} !`,
+          },
+          de: {
+            title: `Dividendenabrechnung ${d.year}`,
+            dear: `Liebe/r ${d.shareholderName},`,
+            attached: `Bitte finden Sie im Anhang Ihre Dividendenabrechnung für ${d.year}.`,
+            net: 'Netto-Dividendenbetrag',
+            thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
+          },
+        };
+        const s = t[lang as keyof typeof t] || t['nl'];
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.dear}</p>
+    <p>${s.attached}</p>
+    <p>${s.net}: €${(d.netAmount as number).toFixed(2)}</p>
+    <p>${s.thanks}</p>
+  `;
+      },
       'password-reset': (d, _cn) => `
         <h1>Password Reset Request</h1>
         <p>You have requested to reset your password.</p>
