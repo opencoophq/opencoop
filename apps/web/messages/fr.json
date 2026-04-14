@@ -2033,6 +2033,78 @@
         "signedForm": "Formulaire signé",
         "grantedAt": "Accordée le"
       }
+    },
+    "checkIn": {
+      "heading": "Enregistrement",
+      "rsvpd": "Confirmés présents",
+      "checkedIn": "Enregistrés",
+      "viaProxy": "Par procuration",
+      "quorum": "Quorum",
+      "quorumNotRequired": "Non requis (statutaire)",
+      "searchPlaceholder": "Rechercher par nom ou numéro de membre",
+      "checkInButton": "Enregistrer",
+      "undoButton": "Annuler",
+      "empty": "Aucun associé à afficher",
+      "startKiosk": "Démarrer la session kiosque",
+      "kioskRunning": "Session kiosque active",
+      "kioskUrl": "URL du kiosque",
+      "copyUrl": "Copier",
+      "copied": "Copié",
+      "endKiosk": "Terminer la session",
+      "kioskInstructions": "Ouvrez cette URL sur une tablette sur place pour que les participants puissent s'enregistrer eux-mêmes. Gardez la tablette auprès d'un administrateur — toute personne ayant l'URL peut utiliser le kiosque.",
+      "toggleError": "Échec de la mise à jour de l'enregistrement",
+      "kioskStartError": "Échec du démarrage du kiosque"
+    },
+    "voting": {
+      "heading": "Vote",
+      "noResolutions": "Aucune résolution à l'ordre du jour",
+      "proposedText": "Texte proposé",
+      "majority": {
+        "simple": "Majorité simple",
+        "twoThirds": "Majorité des deux tiers",
+        "threeQuarters": "Majorité des trois quarts"
+      },
+      "for": "pour",
+      "against": "contre",
+      "abstain": "abstentions",
+      "enterVotes": "Saisir les votes",
+      "closeResolution": "Clôturer & calculer",
+      "closeConfirm": "Clôturer cette résolution et calculer le résultat ? Cette action est irréversible.",
+      "closeError": "Échec de la clôture",
+      "outcome": {
+        "passed": "ADOPTÉE",
+        "rejected": "REJETÉE",
+        "notClosed": "Ouverte"
+      },
+      "votesCount": "{count} votes",
+      "submitVotes": "Soumettre les votes",
+      "cancel": "Annuler",
+      "saveError": "Échec de l'enregistrement des votes",
+      "noCheckedIn": "Aucun associé enregistré pour le moment",
+      "columns": {
+        "shareholder": "Associé"
+      }
+    },
+    "minutes": {
+      "heading": "Procès-verbal",
+      "generateDraft": "Générer un brouillon",
+      "generateError": "Échec de la génération du brouillon",
+      "empty": "Aucun procès-verbal. Générez un brouillon pour commencer.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "saved": "Enregistré",
+      "saveError": "Échec de l'enregistrement",
+      "downloadPdf": "Télécharger le PDF",
+      "downloadError": "Échec du téléchargement",
+      "finalize": "Finaliser",
+      "finalizeError": "Échec de la finalisation",
+      "uploadSigned": "Téléverser le PV signé",
+      "uploadError": "Échec du téléversement",
+      "signedByNameLabel": "Signé par (nom)",
+      "signedAt": "Signé le",
+      "signedBy": "Signé par",
+      "download": "Télécharger le PDF signé",
+      "fileRequired": "Veuillez choisir un fichier PDF"
     }
   }
 }

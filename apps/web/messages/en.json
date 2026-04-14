@@ -2036,6 +2036,78 @@
         "signedForm": "Signed form",
         "grantedAt": "Granted at"
       }
+    },
+    "checkIn": {
+      "heading": "Check-in",
+      "rsvpd": "RSVP'd attending",
+      "checkedIn": "Checked in",
+      "viaProxy": "Via proxy",
+      "quorum": "Quorum",
+      "quorumNotRequired": "Not required (statutory)",
+      "searchPlaceholder": "Search name or member number",
+      "checkInButton": "Check in",
+      "undoButton": "Undo",
+      "empty": "No shareholders to show",
+      "startKiosk": "Start kiosk session",
+      "kioskRunning": "Kiosk session running",
+      "kioskUrl": "Kiosk URL",
+      "copyUrl": "Copy",
+      "copied": "Copied",
+      "endKiosk": "End session",
+      "kioskInstructions": "Open this URL on a tablet at the venue so attendees can self-check-in. Keep the tablet with an admin — anyone with the URL can use the kiosk.",
+      "toggleError": "Failed to update check-in",
+      "kioskStartError": "Failed to start kiosk session"
+    },
+    "voting": {
+      "heading": "Voting",
+      "noResolutions": "No resolutions on the agenda",
+      "proposedText": "Proposed text",
+      "majority": {
+        "simple": "Simple majority",
+        "twoThirds": "Two-thirds majority",
+        "threeQuarters": "Three-quarters majority"
+      },
+      "for": "for",
+      "against": "against",
+      "abstain": "abstentions",
+      "enterVotes": "Enter votes",
+      "closeResolution": "Close & compute",
+      "closeConfirm": "Close this resolution and compute the outcome? This cannot be undone.",
+      "closeError": "Failed to close resolution",
+      "outcome": {
+        "passed": "PASSED",
+        "rejected": "REJECTED",
+        "notClosed": "Open"
+      },
+      "votesCount": "{count} votes",
+      "submitVotes": "Submit votes",
+      "cancel": "Cancel",
+      "saveError": "Failed to save votes",
+      "noCheckedIn": "No shareholders are checked in yet",
+      "columns": {
+        "shareholder": "Shareholder"
+      }
+    },
+    "minutes": {
+      "heading": "Minutes",
+      "generateDraft": "Generate draft",
+      "generateError": "Failed to generate draft",
+      "empty": "No minutes yet. Generate a draft to get started.",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Saved",
+      "saveError": "Failed to save minutes",
+      "downloadPdf": "Download PDF",
+      "downloadError": "Failed to download PDF",
+      "finalize": "Finalize",
+      "finalizeError": "Failed to finalize minutes",
+      "uploadSigned": "Upload signed minutes",
+      "uploadError": "Failed to upload signed minutes",
+      "signedByNameLabel": "Signed by (name)",
+      "signedAt": "Signed at",
+      "signedBy": "Signed by",
+      "download": "Download signed PDF",
+      "fileRequired": "Please choose a PDF file"
     }
   }
 }

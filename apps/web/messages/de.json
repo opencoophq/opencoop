@@ -2033,6 +2033,78 @@
         "signedForm": "Unterzeichnetes Formular",
         "grantedAt": "Erteilt am"
       }
+    },
+    "checkIn": {
+      "heading": "Check-in",
+      "rsvpd": "Teilnahme zugesagt",
+      "checkedIn": "Eingecheckt",
+      "viaProxy": "Per Vollmacht",
+      "quorum": "Quorum",
+      "quorumNotRequired": "Nicht erforderlich (satzungsgemäß)",
+      "searchPlaceholder": "Name oder Mitgliedsnummer suchen",
+      "checkInButton": "Einchecken",
+      "undoButton": "Rückgängig",
+      "empty": "Keine Mitglieder anzuzeigen",
+      "startKiosk": "Kiosk-Sitzung starten",
+      "kioskRunning": "Kiosk-Sitzung läuft",
+      "kioskUrl": "Kiosk-URL",
+      "copyUrl": "Kopieren",
+      "copied": "Kopiert",
+      "endKiosk": "Sitzung beenden",
+      "kioskInstructions": "Öffnen Sie diese URL auf einem Tablet vor Ort, damit Teilnehmende sich selbst einchecken können. Behalten Sie das Tablet bei einem Administrator — jeder mit der URL kann den Kiosk nutzen.",
+      "toggleError": "Check-in konnte nicht aktualisiert werden",
+      "kioskStartError": "Kiosk-Sitzung konnte nicht gestartet werden"
+    },
+    "voting": {
+      "heading": "Abstimmung",
+      "noResolutions": "Keine Beschlüsse auf der Tagesordnung",
+      "proposedText": "Vorgeschlagener Text",
+      "majority": {
+        "simple": "Einfache Mehrheit",
+        "twoThirds": "Zweidrittelmehrheit",
+        "threeQuarters": "Dreiviertelmehrheit"
+      },
+      "for": "dafür",
+      "against": "dagegen",
+      "abstain": "Enthaltungen",
+      "enterVotes": "Stimmen erfassen",
+      "closeResolution": "Schließen & auswerten",
+      "closeConfirm": "Diesen Beschluss schließen und das Ergebnis berechnen? Dies kann nicht rückgängig gemacht werden.",
+      "closeError": "Schließen fehlgeschlagen",
+      "outcome": {
+        "passed": "ANGENOMMEN",
+        "rejected": "ABGELEHNT",
+        "notClosed": "Offen"
+      },
+      "votesCount": "{count} Stimmen",
+      "submitVotes": "Stimmen übermitteln",
+      "cancel": "Abbrechen",
+      "saveError": "Stimmen speichern fehlgeschlagen",
+      "noCheckedIn": "Noch keine Mitglieder eingecheckt",
+      "columns": {
+        "shareholder": "Mitglied"
+      }
+    },
+    "minutes": {
+      "heading": "Protokoll",
+      "generateDraft": "Entwurf generieren",
+      "generateError": "Entwurf generieren fehlgeschlagen",
+      "empty": "Noch kein Protokoll. Entwurf generieren, um zu beginnen.",
+      "save": "Speichern",
+      "saving": "Speichern...",
+      "saved": "Gespeichert",
+      "saveError": "Speichern fehlgeschlagen",
+      "downloadPdf": "PDF herunterladen",
+      "downloadError": "Download fehlgeschlagen",
+      "finalize": "Finalisieren",
+      "finalizeError": "Finalisieren fehlgeschlagen",
+      "uploadSigned": "Unterzeichnetes Protokoll hochladen",
+      "uploadError": "Upload fehlgeschlagen",
+      "signedByNameLabel": "Unterzeichnet von (Name)",
+      "signedAt": "Unterzeichnet am",
+      "signedBy": "Unterzeichnet von",
+      "download": "Unterzeichnete PDF herunterladen",
+      "fileRequired": "Bitte PDF-Datei auswählen"
     }
   }
 }

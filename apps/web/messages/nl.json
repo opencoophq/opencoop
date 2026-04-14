@@ -2036,6 +2036,78 @@
         "signedForm": "Ondertekend formulier",
         "grantedAt": "Verleend op"
       }
+    },
+    "checkIn": {
+      "heading": "Inchecken",
+      "rsvpd": "Aanwezig aangemeld",
+      "checkedIn": "Ingecheckt",
+      "viaProxy": "Via volmacht",
+      "quorum": "Quorum",
+      "quorumNotRequired": "Statutair niet vereist",
+      "searchPlaceholder": "Zoek op naam of vennotennummer",
+      "checkInButton": "Inchecken",
+      "undoButton": "Ongedaan maken",
+      "empty": "Geen vennoten om te tonen",
+      "startKiosk": "Kiosksessie starten",
+      "kioskRunning": "Kiosksessie actief",
+      "kioskUrl": "Kiosk-URL",
+      "copyUrl": "Kopiëren",
+      "copied": "Gekopieerd",
+      "endKiosk": "Sessie beëindigen",
+      "kioskInstructions": "Open deze URL op een tablet op locatie zodat aanwezigen zichzelf kunnen inchecken. Hou de tablet bij een beheerder — iedereen met de URL kan de kiosk gebruiken.",
+      "toggleError": "Inchecken bijwerken mislukt",
+      "kioskStartError": "Kiosksessie starten mislukt"
+    },
+    "voting": {
+      "heading": "Stemming",
+      "noResolutions": "Geen resoluties op de agenda",
+      "proposedText": "Voorgestelde tekst",
+      "majority": {
+        "simple": "Gewone meerderheid",
+        "twoThirds": "Tweederde meerderheid",
+        "threeQuarters": "Driekwart meerderheid"
+      },
+      "for": "voor",
+      "against": "tegen",
+      "abstain": "onthoudingen",
+      "enterVotes": "Stemmen invoeren",
+      "closeResolution": "Sluiten & berekenen",
+      "closeConfirm": "Deze resolutie sluiten en de uitkomst berekenen? Dit kan niet worden ongedaan gemaakt.",
+      "closeError": "Resolutie sluiten mislukt",
+      "outcome": {
+        "passed": "AANGENOMEN",
+        "rejected": "VERWORPEN",
+        "notClosed": "Open"
+      },
+      "votesCount": "{count} stemmen",
+      "submitVotes": "Stemmen indienen",
+      "cancel": "Annuleren",
+      "saveError": "Stemmen opslaan mislukt",
+      "noCheckedIn": "Nog geen vennoten ingecheckt",
+      "columns": {
+        "shareholder": "Vennoot"
+      }
+    },
+    "minutes": {
+      "heading": "Notulen",
+      "generateDraft": "Concept genereren",
+      "generateError": "Concept genereren mislukt",
+      "empty": "Nog geen notulen. Genereer een concept om te beginnen.",
+      "save": "Opslaan",
+      "saving": "Bezig met opslaan...",
+      "saved": "Opgeslagen",
+      "saveError": "Notulen opslaan mislukt",
+      "downloadPdf": "PDF downloaden",
+      "downloadError": "PDF downloaden mislukt",
+      "finalize": "Finaliseren",
+      "finalizeError": "Finaliseren mislukt",
+      "uploadSigned": "Ondertekende notulen uploaden",
+      "uploadError": "Uploaden mislukt",
+      "signedByNameLabel": "Ondertekend door (naam)",
+      "signedAt": "Ondertekend op",
+      "signedBy": "Ondertekend door",
+      "download": "Ondertekende PDF downloaden",
+      "fileRequired": "Kies een PDF-bestand"
     }
   }
 }
