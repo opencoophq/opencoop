@@ -2,6 +2,19 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.7.65] - 2026-04-14
+
+### Added
+- **Algemene Vergadering (AGM) feature** — end-to-end workflow for Belgian coop annual general meetings.
+  - Admin: create meetings, build agendas (informational / resolution / election items), send convocations via email with personalized PDF attachment + RSVP magic link, track RSVPs, manage proxies (volmachten), live check-in at the door, record votes, generate and sign minutes.
+  - Shareholders: public magic-link RSVP page (no login required) with ATTENDING / ABSENT / PROXY flows, `.ics` calendar download, signed volmacht upload.
+  - Self-service kiosk: admin starts a kiosk session, iPad at the door lets shareholders search their name and sign in with a signature pad.
+  - PDF templates: convocation, volmacht form, attendance sheet (RSVP-filtered with walk-in block), minutes — all NL/EN/FR/DE.
+  - Statuten-compliant voting math: configurable SIMPLE / TWO_THIRDS / THREE_QUARTERS majority per resolution, with abstentions correctly excluded per Belgian WVV + coop bylaws.
+  - Art. 23 proxy enforcement: self-delegation blocked, cross-coop blocked, per-delegate max configurable per meeting (default 1).
+  - Daily reminder Bull job (09:00 Europe/Brussels) fires configurable reminders (`reminderDaysBefore`, default `[3]`) to shareholders still marked UNKNOWN.
+  - 9 new Prisma models: Meeting, AgendaItem, AgendaAttachment, Resolution, Vote, Proxy, MeetingAttendance, MeetingMinutes, MeetingKioskSession.
+
 ## [0.7.64] - 2026-04-14
 
 ### Fixed
