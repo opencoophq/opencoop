@@ -170,7 +170,7 @@ export class EmailService {
     return this.send({
       coopId,
       to,
-      subject: subjects[lang] || subjects['en'],
+      subject: subjects[lang] || subjects['nl'],
       templateKey: 'payment-confirmed',
       templateData: data,
       attachments,

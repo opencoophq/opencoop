@@ -375,7 +375,7 @@ export class EmailProcessor {
             thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
           },
         };
-        const s = t[lang as keyof typeof t] || t['en'];
+        const s = t[lang as keyof typeof t] || t['nl'];
         return `
           <h1>${s.title}</h1>
           <p>${s.dear}</p>
