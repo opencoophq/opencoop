@@ -36,7 +36,7 @@ export class HouseholdController {
     return this.household.linkShareholderToUser({
       coopId,
       shareholderId,
-      targetUserId: dto.targetUserId,
+      targetUserId: dto.targetShareholderId, // TEMP: bridged in Task 4 when linkShareholders lands
       actorUserId: user.id,
     });
   }
