@@ -22,38 +22,38 @@ export class HouseholdService {
       throw new BadRequestException('Cannot link a shareholder to itself');
     }
 
-    const source = await this.prisma.shareholder.findFirst({
-      where: { id: args.shareholderId, coopId: args.coopId },
-    });
-    if (!source) {
-      throw new NotFoundException('Shareholder not found');
-    }
-
-    const target = await this.prisma.shareholder.findFirst({
-      where: { id: args.targetShareholderId, coopId: args.coopId },
-    });
-    if (!target) {
-      throw new NotFoundException('Target shareholder not found in this cooperative');
-    }
-
-    // If source is already linked somewhere, either it's idempotent (same household) or rejected
-    if (source.userId !== null) {
-      if (target.userId !== null && source.userId === target.userId) {
-        return source; // already in same household, no-op
-      }
-      throw new BadRequestException(
-        'Shareholder is already linked to a different user. Emancipate first before re-linking.',
-      );
-    }
-
-    // Guard: target must have something to anchor a household on
-    if (!target.userId && !target.email) {
-      throw new BadRequestException(
-        'Target shareholder has no email or user account to anchor a household on.',
-      );
-    }
-
     return this.prisma.$transaction(async (tx) => {
+      const source = await tx.shareholder.findFirst({
+        where: { id: args.shareholderId, coopId: args.coopId },
+      });
+      if (!source) {
+        throw new NotFoundException('Shareholder not found');
+      }
+
+      const target = await tx.shareholder.findFirst({
+        where: { id: args.targetShareholderId, coopId: args.coopId },
+      });
+      if (!target) {
+        throw new NotFoundException('Target shareholder not found in this cooperative');
+      }
+
+      // If source is already linked somewhere, either it's idempotent (same household) or rejected
+      if (source.userId !== null) {
+        if (target.userId !== null && source.userId === target.userId) {
+          return source; // already in same household, no-op
+        }
+        throw new BadRequestException(
+          'Shareholder is already linked to a different user. Emancipate first before re-linking.',
+        );
+      }
+
+      // Guard: target must have something to anchor a household on
+      if (!target.userId && !target.email) {
+        throw new BadRequestException(
+          'Target shareholder has no email or user account to anchor a household on.',
+        );
+      }
+
       let anchorUserId = target.userId;
 
       // Auto-create a passwordless User from the target shareholder if needed
@@ -176,6 +176,7 @@ export class HouseholdService {
         createdAt: true,
       },
       orderBy: { createdAt: 'asc' },
+      // Pre-grouping limit: large households (>20 matches) may undercount shareholderCount. Acceptable per spec trade-off.
       take: 20,
     });
 

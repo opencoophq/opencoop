@@ -229,6 +229,7 @@ describe('HouseholdService', () => {
       expect(result).toBe(alreadyLinked);
       expect(prismaService.shareholder.update).not.toHaveBeenCalled();
       expect(prismaService.user.create).not.toHaveBeenCalled();
+      expect(prismaService.shareholder.findFirst).toHaveBeenCalledTimes(2);
     });
 
     it('throws when source is already linked to a different user', async () => {
