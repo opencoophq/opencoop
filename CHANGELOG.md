@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.1] - 2026-04-17
+
+### Fixed
+- **Household linking now works when neither shareholder has a login yet.** The admin dialog's search previously required an existing `User` account for the target, leaving the dropdown empty when both members of a household were pure imports (the common case for cooperatives migrating from spreadsheets). The search is now shareholder-keyed; when the picked target has no `User`, the backend auto-creates a passwordless one from the target's email inside the same transaction as the link. UI unchanged from the admin's perspective. Triggered by the Laurette Beusen / Jan Stevens case in prod (both imported, neither ever logged in).
+
 ## [0.8.0] - 2026-04-14
 
 ### Added
