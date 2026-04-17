@@ -17,26 +17,32 @@ export class HouseholdController {
   constructor(private readonly household: HouseholdService) {}
 
   @Get('search-users')
-  @ApiOperation({ summary: 'Search users in this coop by email (for household linking)' })
-  async searchUsers(
+  @ApiOperation({
+    summary: 'Search household-link candidates in this coop by email (excludes the current shareholder)',
+  })
+  async searchCandidates(
     @Param('coopId') coopId: string,
+    @Param('shareholderId') shareholderId: string,
     @Query('search') search: string,
   ) {
-    return this.household.searchUsersInCoop(coopId, search ?? '');
+    return this.household.searchHouseholdCandidates(coopId, shareholderId, search ?? '');
   }
 
   @Post('link')
-  @ApiOperation({ summary: 'Link a shareholder to an existing user account (shared-household)' })
+  @ApiOperation({
+    summary:
+      'Link a shareholder into a household. If the target shareholder has no user account yet, one is auto-created from their email.',
+  })
   async link(
     @Param('coopId') coopId: string,
     @Param('shareholderId') shareholderId: string,
     @Body() dto: LinkShareholderDto,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.household.linkShareholderToUser({
+    return this.household.linkShareholders({
       coopId,
       shareholderId,
-      targetUserId: dto.targetUserId,
+      targetShareholderId: dto.targetShareholderId,
       actorUserId: user.id,
     });
   }
