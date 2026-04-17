@@ -12,63 +12,118 @@ export class HouseholdService {
     private emancipationService: EmancipationService,
   ) {}
 
-  async linkShareholderToUser(args: {
+  async linkShareholders(args: {
     coopId: string;
-    shareholderId: string;
-    targetUserId: string;
+    shareholderId: string;      // source shareholder (the one being linked into the household)
+    targetShareholderId: string; // household anchor shareholder
     actorUserId: string;
   }) {
-    const shareholder = await this.prisma.shareholder.findFirst({
+    if (args.shareholderId === args.targetShareholderId) {
+      throw new BadRequestException('Cannot link a shareholder to itself');
+    }
+
+    const source = await this.prisma.shareholder.findFirst({
       where: { id: args.shareholderId, coopId: args.coopId },
     });
-
-    if (!shareholder) {
+    if (!source) {
       throw new NotFoundException('Shareholder not found');
     }
 
-    // Idempotent re-link: already linked to same user → no-op, return existing
-    if (shareholder.userId === args.targetUserId) {
-      return shareholder;
+    const target = await this.prisma.shareholder.findFirst({
+      where: { id: args.targetShareholderId, coopId: args.coopId },
+    });
+    if (!target) {
+      throw new NotFoundException('Target shareholder not found in this cooperative');
     }
 
-    // Already linked to a DIFFERENT user → reject with clear message
-    if (shareholder.userId !== null) {
+    // If source is already linked somewhere, either it's idempotent (same household) or rejected
+    if (source.userId !== null) {
+      if (target.userId !== null && source.userId === target.userId) {
+        return source; // already in same household, no-op
+      }
       throw new BadRequestException(
         'Shareholder is already linked to a different user. Emancipate first before re-linking.',
       );
     }
 
-    const targetInCoop = await this.prisma.shareholder.findFirst({
-      where: { userId: args.targetUserId, coopId: shareholder.coopId },
-      select: { id: true },
-    });
-
-    if (!targetInCoop) {
-      throw new BadRequestException('Target user is not associated with this cooperative');
+    // Guard: target must have something to anchor a household on
+    if (!target.userId && !target.email) {
+      throw new BadRequestException(
+        'Target shareholder has no email or user account to anchor a household on.',
+      );
     }
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const u = await tx.shareholder.update({
-        where: { id: args.shareholderId },
-        data: { userId: args.targetUserId, email: null },
+    return this.prisma.$transaction(async (tx) => {
+      let anchorUserId = target.userId;
+
+      // Auto-create a passwordless User from the target shareholder if needed
+      if (!anchorUserId) {
+        const email = target.email!.toLowerCase(); // guarded above
+        const existing = await tx.user.findUnique({ where: { email } });
+        let anchorUser = existing;
+        if (!anchorUser) {
+          anchorUser = await tx.user.create({
+            data: {
+              email,
+              passwordHash: null,
+              role: 'SHAREHOLDER',
+            },
+          });
+          await tx.auditLog.create({
+            data: {
+              coopId: args.coopId,
+              entity: 'User',
+              entityId: anchorUser.id,
+              action: 'CREATE_USER_FROM_SHAREHOLDER',
+              actorId: args.actorUserId,
+              changes: [
+                { field: 'email', oldValue: null, newValue: anchorUser.email },
+                { field: 'sourceShareholderId', oldValue: null, newValue: target.id },
+              ] as unknown as Prisma.InputJsonValue,
+            },
+          });
+        }
+        anchorUserId = anchorUser.id;
+
+        await tx.shareholder.update({
+          where: { id: target.id },
+          data: { userId: anchorUserId, email: null },
+        });
+        await tx.auditLog.create({
+          data: {
+            coopId: args.coopId,
+            entity: 'Shareholder',
+            entityId: target.id,
+            action: 'LINK_SHAREHOLDER_TO_HOUSEHOLD',
+            actorId: args.actorUserId,
+            changes: [
+              { field: 'userId', oldValue: null, newValue: anchorUserId },
+              { field: 'email', oldValue: target.email, newValue: null },
+            ] as unknown as Prisma.InputJsonValue,
+          },
+        });
+      }
+
+      const updatedSource = await tx.shareholder.update({
+        where: { id: source.id },
+        data: { userId: anchorUserId, email: null },
       });
       await tx.auditLog.create({
         data: {
-          coopId: shareholder.coopId,
+          coopId: args.coopId,
           entity: 'Shareholder',
-          entityId: args.shareholderId,
+          entityId: source.id,
           action: 'LINK_SHAREHOLDER_TO_HOUSEHOLD',
           actorId: args.actorUserId,
           changes: [
-            { field: 'userId', oldValue: shareholder.userId, newValue: u.userId },
-            { field: 'email', oldValue: shareholder.email, newValue: null },
+            { field: 'userId', oldValue: source.userId, newValue: anchorUserId },
+            { field: 'email', oldValue: source.email, newValue: null },
           ] as unknown as Prisma.InputJsonValue,
         },
       });
-      return u;
-    });
 
-    return updated;
+      return updatedSource;
+    });
   }
 
   async listShareholdersForUser(userId: string, coopId: string) {

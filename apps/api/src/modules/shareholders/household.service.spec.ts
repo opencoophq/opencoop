@@ -41,6 +41,10 @@ describe('HouseholdService', () => {
         findMany: jest.fn(),
         update: jest.fn(),
       },
+      user: {
+        findUnique: jest.fn(),
+        create: jest.fn(),
+      },
       auditLog: {
         create: jest.fn(),
       },
@@ -58,133 +62,231 @@ describe('HouseholdService', () => {
     service = new HouseholdService(prismaService, auditService, emancipationService);
   });
 
-  describe('linkShareholderToUser', () => {
-    it('sets shareholder.userId to target user and clears shareholder.email', async () => {
-      const updatedShareholder = { ...wife, userId: jan.id, email: null };
+  describe('linkShareholders', () => {
+    // Source: the shareholder the admin is currently viewing
+    const source = {
+      id: 'source-shareholder-id',
+      coopId: coop1.id,
+      userId: null as string | null,
+      email: 'laurette@telenet.be',
+    };
 
+    // Target (user-backed): Jan with an existing User account
+    const targetWithUser = {
+      id: 'jan-shareholder-id',
+      coopId: coop1.id,
+      userId: jan.id,
+      email: null as string | null,
+    };
+
+    // Target (userless): Jan as a pure imported shareholder
+    const targetWithoutUser = {
+      id: 'jan-shareholder-id',
+      coopId: coop1.id,
+      userId: null as string | null,
+      email: 'jeanstevens2@telenet.be',
+    };
+
+    it('links source to target.userId when target already has a User (existing-user path)', async () => {
+      const updated = { ...source, userId: jan.id, email: null };
       (prismaService.shareholder.findFirst as jest.Mock)
-        .mockResolvedValueOnce(wife)       // coop-ownership check
-        .mockResolvedValueOnce(janShareholder); // target-in-coop check
-      (prismaService.shareholder.update as jest.Mock).mockResolvedValue(updatedShareholder);
+        .mockResolvedValueOnce(source)          // load source
+        .mockResolvedValueOnce(targetWithUser); // load target
+      (prismaService.shareholder.update as jest.Mock).mockResolvedValue(updated);
 
-      const linked = await service.linkShareholderToUser({
+      const result = await service.linkShareholders({
         coopId: coop1.id,
-        shareholderId: wife.id,
-        targetUserId: jan.id,
+        shareholderId: source.id,
+        targetShareholderId: targetWithUser.id,
         actorUserId: adminUser.id,
       });
 
-      expect(linked.userId).toBe(jan.id);
-      expect(linked.email).toBeNull();
+      expect(result.userId).toBe(jan.id);
+      expect(result.email).toBeNull();
+      expect(prismaService.user.create).not.toHaveBeenCalled();
+    });
 
+    it('auto-creates a passwordless User from target.email when target has no User, then links source', async () => {
+      const newUser = { id: 'new-user-id', email: targetWithoutUser.email };
+      const updatedSource = { ...source, userId: newUser.id, email: null };
+      (prismaService.shareholder.findFirst as jest.Mock)
+        .mockResolvedValueOnce(source)
+        .mockResolvedValueOnce(targetWithoutUser);
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValueOnce(null); // no pre-existing collision
+      (prismaService.user.create as jest.Mock).mockResolvedValueOnce(newUser);
+      (prismaService.shareholder.update as jest.Mock)
+        .mockResolvedValueOnce({ ...targetWithoutUser, userId: newUser.id, email: null }) // target update
+        .mockResolvedValueOnce(updatedSource);                                              // source update
+
+      const result = await service.linkShareholders({
+        coopId: coop1.id,
+        shareholderId: source.id,
+        targetShareholderId: targetWithoutUser.id,
+        actorUserId: adminUser.id,
+      });
+
+      expect(prismaService.user.create).toHaveBeenCalledWith({
+        data: {
+          email: 'jeanstevens2@telenet.be',
+          passwordHash: null,
+          role: 'SHAREHOLDER',
+        },
+      });
+
+      // Target shareholder mutated: userId set, email cleared
       expect(prismaService.shareholder.update).toHaveBeenCalledWith({
-        where: { id: wife.id },
-        data: { userId: jan.id, email: null },
+        where: { id: targetWithoutUser.id },
+        data: { userId: newUser.id, email: null },
+      });
+
+      // Source shareholder linked to the new user
+      expect(prismaService.shareholder.update).toHaveBeenCalledWith({
+        where: { id: source.id },
+        data: { userId: newUser.id, email: null },
+      });
+
+      expect(result.userId).toBe(newUser.id);
+    });
+
+    it('reuses an existing User with the same email instead of creating a duplicate (defensive)', async () => {
+      const existingUser = { id: 'pre-existing-user-id', email: targetWithoutUser.email };
+      (prismaService.shareholder.findFirst as jest.Mock)
+        .mockResolvedValueOnce(source)
+        .mockResolvedValueOnce(targetWithoutUser);
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValueOnce(existingUser);
+      (prismaService.shareholder.update as jest.Mock)
+        .mockResolvedValueOnce({ ...targetWithoutUser, userId: existingUser.id, email: null })
+        .mockResolvedValueOnce({ ...source, userId: existingUser.id, email: null });
+
+      await service.linkShareholders({
+        coopId: coop1.id,
+        shareholderId: source.id,
+        targetShareholderId: targetWithoutUser.id,
+        actorUserId: adminUser.id,
+      });
+
+      expect(prismaService.user.create).not.toHaveBeenCalled();
+      expect(prismaService.shareholder.update).toHaveBeenCalledWith({
+        where: { id: source.id },
+        data: { userId: existingUser.id, email: null },
       });
     });
 
-    it('throws NotFoundException when shareholder belongs to a different coop than the route coopId', async () => {
-      // findFirst returns null because shareholderId doesn't belong to coopId in route
+    it('rejects self-link (source === target)', async () => {
+      await expect(
+        service.linkShareholders({
+          coopId: coop1.id,
+          shareholderId: source.id,
+          targetShareholderId: source.id,
+          actorUserId: adminUser.id,
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(prismaService.shareholder.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when source shareholder is not in the coop', async () => {
       (prismaService.shareholder.findFirst as jest.Mock).mockResolvedValueOnce(null);
 
       await expect(
-        service.linkShareholderToUser({
+        service.linkShareholders({
           coopId: coop1.id,
-          shareholderId: 'coop-b-shareholder-id',
-          targetUserId: jan.id,
+          shareholderId: 'unknown',
+          targetShareholderId: targetWithUser.id,
           actorUserId: adminUser.id,
         }),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('rejects when target user is not a shareholder in the same coop', async () => {
-      // Wife is in coop1; Jan has no shareholder record in coop1
+    it('throws NotFoundException when target shareholder is not in the coop', async () => {
       (prismaService.shareholder.findFirst as jest.Mock)
-        .mockResolvedValueOnce(wife)  // coop-ownership check passes
-        .mockResolvedValueOnce(null); // target-in-coop check fails
+        .mockResolvedValueOnce(source)
+        .mockResolvedValueOnce(null);
 
       await expect(
-        service.linkShareholderToUser({
+        service.linkShareholders({
           coopId: coop1.id,
-          shareholderId: wife.id,
-          targetUserId: jan.id,
+          shareholderId: source.id,
+          targetShareholderId: 'unknown',
           actorUserId: adminUser.id,
         }),
-      ).rejects.toThrow(/not associated with this cooperative/i);
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('returns existing shareholder unchanged when already linked to target user (idempotent)', async () => {
-      const alreadyLinked = { ...wife, userId: jan.id };
+    it('returns source unchanged when already linked to target.userId (idempotent)', async () => {
+      const alreadyLinked = { ...source, userId: jan.id };
+      (prismaService.shareholder.findFirst as jest.Mock)
+        .mockResolvedValueOnce(alreadyLinked)
+        .mockResolvedValueOnce(targetWithUser);
 
-      (prismaService.shareholder.findFirst as jest.Mock).mockResolvedValueOnce(alreadyLinked);
-
-      const result = await service.linkShareholderToUser({
+      const result = await service.linkShareholders({
         coopId: coop1.id,
-        shareholderId: wife.id,
-        targetUserId: jan.id,
+        shareholderId: source.id,
+        targetShareholderId: targetWithUser.id,
         actorUserId: adminUser.id,
       });
 
       expect(result).toBe(alreadyLinked);
       expect(prismaService.shareholder.update).not.toHaveBeenCalled();
+      expect(prismaService.user.create).not.toHaveBeenCalled();
     });
 
-    it('throws when shareholder is already linked to a different user', async () => {
-      const linkedToDifferentUser = { ...wife, userId: 'other-user-id' };
-
+    it('throws when source is already linked to a different user', async () => {
+      const linkedElsewhere = { ...source, userId: 'other-user-id' };
       (prismaService.shareholder.findFirst as jest.Mock)
-        .mockResolvedValueOnce(linkedToDifferentUser) // first call
-        .mockResolvedValueOnce(linkedToDifferentUser); // second call
+        .mockResolvedValueOnce(linkedElsewhere)
+        .mockResolvedValueOnce(targetWithUser);
 
       await expect(
-        service.linkShareholderToUser({
+        service.linkShareholders({
           coopId: coop1.id,
-          shareholderId: wife.id,
-          targetUserId: jan.id,
-          actorUserId: adminUser.id,
-        }),
-      ).rejects.toThrow(BadRequestException);
-
-      await expect(
-        service.linkShareholderToUser({
-          coopId: coop1.id,
-          shareholderId: wife.id,
-          targetUserId: jan.id,
+          shareholderId: source.id,
+          targetShareholderId: targetWithUser.id,
           actorUserId: adminUser.id,
         }),
       ).rejects.toThrow(/emancipate first/i);
     });
 
-    it('records audit log entry with before/after state', async () => {
-      const updatedShareholder = { ...wife, userId: jan.id, email: null };
-
+    it('rejects when target has no email (cannot auto-create anchor)', async () => {
+      const targetNoEmail = { ...targetWithoutUser, email: null };
       (prismaService.shareholder.findFirst as jest.Mock)
-        .mockResolvedValueOnce(wife)         // coop-ownership check
-        .mockResolvedValueOnce(janShareholder); // target-in-coop check
-      (prismaService.shareholder.update as jest.Mock).mockResolvedValue(updatedShareholder);
+        .mockResolvedValueOnce(source)
+        .mockResolvedValueOnce(targetNoEmail);
 
-      await service.linkShareholderToUser({
+      await expect(
+        service.linkShareholders({
+          coopId: coop1.id,
+          shareholderId: source.id,
+          targetShareholderId: targetNoEmail.id,
+          actorUserId: adminUser.id,
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(prismaService.user.create).not.toHaveBeenCalled();
+    });
+
+    it('writes audit rows for source link, target link, and User creation in the auto-create path', async () => {
+      const newUser = { id: 'new-user-id', email: targetWithoutUser.email };
+      (prismaService.shareholder.findFirst as jest.Mock)
+        .mockResolvedValueOnce(source)
+        .mockResolvedValueOnce(targetWithoutUser);
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
+      (prismaService.user.create as jest.Mock).mockResolvedValueOnce(newUser);
+      (prismaService.shareholder.update as jest.Mock)
+        .mockResolvedValueOnce({ ...targetWithoutUser, userId: newUser.id, email: null })
+        .mockResolvedValueOnce({ ...source, userId: newUser.id, email: null });
+
+      await service.linkShareholders({
         coopId: coop1.id,
-        shareholderId: wife.id,
-        targetUserId: jan.id,
+        shareholderId: source.id,
+        targetShareholderId: targetWithoutUser.id,
         actorUserId: adminUser.id,
       });
 
-      expect(prismaService.auditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            coopId: coop1.id,
-            entity: 'Shareholder',
-            entityId: wife.id,
-            action: 'LINK_SHAREHOLDER_TO_HOUSEHOLD',
-            actorId: adminUser.id,
-            changes: expect.arrayContaining([
-              expect.objectContaining({ field: 'userId', oldValue: null, newValue: jan.id }),
-              expect.objectContaining({ field: 'email', oldValue: 'marie@x.com', newValue: null }),
-            ]),
-          }),
-        }),
-      );
+      const auditCalls = (prismaService.auditLog.create as jest.Mock).mock.calls.map((c) => c[0].data);
+      const actions = auditCalls.map((d) => d.action);
+      expect(actions).toContain('CREATE_USER_FROM_SHAREHOLDER');
+      expect(actions.filter((a) => a === 'LINK_SHAREHOLDER_TO_HOUSEHOLD')).toHaveLength(2);
     });
   });
 
