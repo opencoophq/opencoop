@@ -272,4 +272,146 @@ describe('HouseholdService', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('searchHouseholdCandidates', () => {
+    const sourceId = 'source-shareholder-id';
+
+    it('returns [] when search is shorter than 2 characters', async () => {
+      const result = await service.searchHouseholdCandidates(coop1.id, sourceId, 'a');
+      expect(result).toEqual([]);
+      expect(prismaService.shareholder.findMany).not.toHaveBeenCalled();
+    });
+
+    it('returns a userless shareholder matched by shareholder.email', async () => {
+      const jan = {
+        id: 'jan-id',
+        firstName: 'Jan',
+        lastName: 'Stevens',
+        email: 'jeanstevens2@telenet.be',
+        userId: null,
+        user: null,
+        companyName: null,
+        createdAt: new Date('2024-01-01'),
+      };
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValueOnce([jan]);
+
+      const result = await service.searchHouseholdCandidates(coop1.id, sourceId, 'jeanstev');
+
+      expect(result).toEqual([
+        {
+          shareholderId: 'jan-id',
+          email: 'jeanstevens2@telenet.be',
+          fullName: 'Jan Stevens',
+          shareholderCount: 1,
+        },
+      ]);
+    });
+
+    it('returns a user-backed shareholder matched by user.email', async () => {
+      const row = {
+        id: 'sh-1',
+        firstName: 'Alice',
+        lastName: 'Dupont',
+        email: null,
+        userId: 'user-1',
+        user: { id: 'user-1', email: 'alice@x.com' },
+        companyName: null,
+        createdAt: new Date('2024-01-01'),
+      };
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValueOnce([row]);
+
+      const result = await service.searchHouseholdCandidates(coop1.id, sourceId, 'alice');
+
+      expect(result).toEqual([
+        {
+          shareholderId: 'sh-1',
+          email: 'alice@x.com',
+          fullName: 'Alice Dupont',
+          shareholderCount: 1,
+        },
+      ]);
+    });
+
+    it('collapses multiple shareholders sharing a userId into one candidate with shareholderCount = group size', async () => {
+      const anchor = {
+        id: 'sh-anchor',
+        firstName: 'Bob',
+        lastName: 'Martin',
+        email: null,
+        userId: 'user-2',
+        user: { id: 'user-2', email: 'bob@x.com' },
+        companyName: null,
+        createdAt: new Date('2024-01-01'),
+      };
+      const sibling = {
+        id: 'sh-sibling',
+        firstName: 'Clara',
+        lastName: 'Martin',
+        email: null,
+        userId: 'user-2',
+        user: { id: 'user-2', email: 'bob@x.com' },
+        companyName: null,
+        createdAt: new Date('2024-02-01'),
+      };
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValueOnce([anchor, sibling]);
+
+      const result = await service.searchHouseholdCandidates(coop1.id, sourceId, 'bob');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        shareholderId: 'sh-anchor', // earliest createdAt in the group
+        email: 'bob@x.com',
+        fullName: 'Bob Martin',
+        shareholderCount: 2,
+      });
+    });
+
+    it('excludes the source shareholder from the query', async () => {
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValueOnce([]);
+
+      await service.searchHouseholdCandidates(coop1.id, sourceId, 'anything');
+
+      const call = (prismaService.shareholder.findMany as jest.Mock).mock.calls[0][0];
+      expect(call.where.id).toEqual({ not: sourceId });
+      expect(call.where.coopId).toBe(coop1.id);
+    });
+
+    it('uses companyName as fullName for COMPANY-type shareholders', async () => {
+      const row = {
+        id: 'sh-co',
+        firstName: null,
+        lastName: null,
+        email: 'contact@bigco.be',
+        userId: null,
+        user: null,
+        companyName: 'BigCo NV',
+        createdAt: new Date('2024-01-01'),
+      };
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValueOnce([row]);
+
+      const result = await service.searchHouseholdCandidates(coop1.id, sourceId, 'bigco');
+
+      expect(result[0].fullName).toBe('BigCo NV');
+    });
+
+    it('sorts candidates by createdAt ascending and trims to 10 results', async () => {
+      const rows = Array.from({ length: 12 }, (_, i) => ({
+        id: `sh-${i}`,
+        firstName: 'User',
+        lastName: `${i}`,
+        email: `user${i}@x.com`,
+        userId: null,
+        user: null,
+        companyName: null,
+        createdAt: new Date(`2024-01-${String(i + 1).padStart(2, '0')}`),
+      }));
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValueOnce(rows);
+
+      const result = await service.searchHouseholdCandidates(coop1.id, sourceId, 'user');
+
+      expect(result).toHaveLength(10);
+      expect(result[0].shareholderId).toBe('sh-0');
+      expect(result[9].shareholderId).toBe('sh-9');
+    });
+  });
 });
