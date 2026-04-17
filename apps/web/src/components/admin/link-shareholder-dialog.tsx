@@ -15,9 +15,10 @@ import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { Loader2, Check } from 'lucide-react';
 
-interface HouseholdUser {
-  userId: string;
+interface HouseholdCandidate {
+  shareholderId: string;
   email: string;
+  fullName: string;
   shareholderCount: number;
 }
 
@@ -38,14 +39,13 @@ export function LinkShareholderDialog({
 }: LinkShareholderDialogProps) {
   const t = useTranslations();
   const [search, setSearch] = useState('');
-  const [results, setResults] = useState<HouseholdUser[]>([]);
+  const [results, setResults] = useState<HouseholdCandidate[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selected, setSelected] = useState<HouseholdUser | null>(null);
+  const [selected, setSelected] = useState<HouseholdCandidate | null>(null);
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset state when dialog opens/closes
   useEffect(() => {
     if (!open) {
       setSearch('');
@@ -56,7 +56,6 @@ export function LinkShareholderDialog({
     }
   }, [open]);
 
-  // Debounced search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -69,7 +68,7 @@ export function LinkShareholderDialog({
       setSearching(true);
       setError(null);
       try {
-        const data = await api<HouseholdUser[]>(
+        const data = await api<HouseholdCandidate[]>(
           `/admin/coops/${coopId}/shareholders/${shareholderId}/household/search-users?search=${encodeURIComponent(search)}`,
         );
         setResults(data);
@@ -92,7 +91,7 @@ export function LinkShareholderDialog({
     try {
       await api(
         `/admin/coops/${coopId}/shareholders/${shareholderId}/household/link`,
-        { method: 'POST', body: { targetUserId: selected.userId } },
+        { method: 'POST', body: { targetShareholderId: selected.shareholderId } },
       );
       onOpenChange(false);
       onLinked();
@@ -135,21 +134,24 @@ export function LinkShareholderDialog({
 
           {results.length > 0 && (
             <div className="rounded-md border divide-y">
-              {results.map((user) => (
+              {results.map((candidate) => (
                 <button
-                  key={user.userId}
+                  key={candidate.shareholderId}
                   type="button"
-                  onClick={() => setSelected(user)}
+                  onClick={() => setSelected(candidate)}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center justify-between ${
-                    selected?.userId === user.userId ? 'bg-muted' : ''
+                    selected?.shareholderId === candidate.shareholderId ? 'bg-muted' : ''
                   }`}
                 >
-                  <span className="font-medium">{user.email}</span>
+                  <span className="flex flex-col">
+                    <span className="font-medium">{candidate.fullName}</span>
+                    <span className="text-xs text-muted-foreground">{candidate.email}</span>
+                  </span>
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    {selected?.userId === user.userId && (
+                    {selected?.shareholderId === candidate.shareholderId && (
                       <Check className="h-3 w-3 text-green-600" />
                     )}
-                    {t('household.resultMeta', { count: user.shareholderCount })}
+                    {t('household.resultMeta', { count: candidate.shareholderCount })}
                   </span>
                 </button>
               ))}
