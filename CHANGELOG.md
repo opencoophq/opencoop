@@ -2,6 +2,20 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.2] - 2026-04-22
+
+### Fixed
+- **Coop-branded magic-link login silently bounced users back to `/login`.** The channel-scoped magic-link page (`coop-magic-link-content.tsx`) called `saveSession()` after a successful verify, but `saveSession()` only wrote to the `savedSessions[]` multi-account store — not to the top-level `accessToken`/`refreshToken`/`user` localStorage keys that `dashboard/layout.tsx` checks on mount. So shareholders verified their token successfully (audit log confirmed every attempt), got JWTs issued, then the dashboard redirect immediately sent them back to `/login` because the keys it reads were never populated. Fixed by mirroring inside `saveSession()`/`updateActiveSessionToken()` so no callsite can forget. Triggered by Jef de Bie's Bronsgroen login complaint — his audit log showed 5 successful magic-link verifies across 6 weeks, none of which landed him in the dashboard.
+- **Emancipation claim page had the same bug.** `emancipate/[token]/page.tsx` wrote tokens but not `user`, so any minor turning 18 and claiming their account would bounce to `/login` the same way. Now uses `saveSession()`.
+- **Hourly `AdminNotificationsService` Prisma error on prod** — `shareholder_emancipation_tokens.recipientUserId does not exist`. The v0.8.0 migration created the column as snake_case (`recipient_user_id`) but the Prisma schema field has no `@map`, so every scheduled query errored. Renames the column + FK constraint to match the camelCase convention used by every other column in the table.
+- **API audit logs recorded the Docker internal proxy IP (`::ffff:172.18.0.2`) instead of the real client IP.** Added `app.set('trust proxy', 2)` for the Cloudflare → Caddy → API chain so `req.ip` resolves to the actual client.
+
+### Changed
+- Centralized the top-level-key mirror inside `sessions.ts` and removed 10 duplicated `localStorage.setItem` triplets from the call sites (`magic-link`, `oauth-callback`, `register`, `onboarding`, `email-first-login`, `invite`, `api.ts` refresh). New callers only need `saveSession({ accessToken, refreshToken, user })` — no more foot-guns.
+
+### Migration
+- `20260422120000_fix_recipient_user_id_column_name` — idempotent rename of the stray snake_case column and its FK constraint. Guarded with `DO $$ ... END $$` existence checks so re-running after a partial failure is safe. 1 row affected on prod; rename is instant.
+
 ## [0.8.1] - 2026-04-17
 
 ### Fixed

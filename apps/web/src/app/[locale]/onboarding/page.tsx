@@ -124,9 +124,6 @@ export default function OnboardingPage() {
 
       const result = await res.json();
 
-      localStorage.setItem('accessToken', result.accessToken);
-      localStorage.setItem('refreshToken', result.refreshToken);
-      localStorage.setItem('user', JSON.stringify(result.user));
       saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
 
       setStep(2);

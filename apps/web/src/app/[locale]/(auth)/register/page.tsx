@@ -61,9 +61,6 @@ export default function RegisterPage() {
         throw new Error(result.message || t('common.error'));
       }
 
-      localStorage.setItem('accessToken', result.accessToken);
-      localStorage.setItem('refreshToken', result.refreshToken);
-      localStorage.setItem('user', JSON.stringify(result.user));
       saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
       router.push('/dashboard');
     } catch (err) {

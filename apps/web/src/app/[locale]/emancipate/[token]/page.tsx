@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
+import { saveSession } from '@/lib/sessions';
 import { CheckCircle } from 'lucide-react';
 
 const emancipateSchema = z
@@ -48,14 +49,16 @@ export default function EmancipatePage() {
     setError(null);
 
     try {
-      const result = await api<{ accessToken: string; refreshToken: string }>('/auth/emancipate', {
+      const result = await api<{
+        accessToken: string;
+        refreshToken: string;
+        user: Record<string, unknown>;
+      }>('/auth/emancipate', {
         method: 'POST',
         body: { token, email: data.email, password: data.password },
       });
 
-      // Store tokens and redirect to dashboard
-      localStorage.setItem('accessToken', result.accessToken);
-      localStorage.setItem('refreshToken', result.refreshToken);
+      saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
       setSuccess(true);
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: any) {

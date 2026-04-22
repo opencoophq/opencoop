@@ -1,12 +1,19 @@
 import './instrument';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
+
+  // Trust exactly 2 proxy hops (Cloudflare edge → Caddy → API container) so req.ip
+  // reflects the real client IP instead of the Docker internal proxy address. Using a
+  // specific count instead of `true` prevents X-Forwarded-For spoofing beyond the
+  // trusted chain.
+  app.set('trust proxy', 2);
 
   // Security headers
   app.use(helmet());

@@ -55,6 +55,14 @@ export function saveSession(params: {
 
   setSessions(sessions);
   localStorage.setItem('activeSessionId', sessionId);
+  // Mirror to top-level keys that the rest of the app reads (api.ts, dashboard layout, etc.)
+  localStorage.setItem('accessToken', accessToken);
+  if (refreshToken) {
+    localStorage.setItem('refreshToken', refreshToken);
+  } else {
+    localStorage.removeItem('refreshToken');
+  }
+  localStorage.setItem('user', JSON.stringify(user));
   return sessionId;
 }
 
@@ -99,6 +107,8 @@ export function clearAllSessions(): void {
 }
 
 export function updateActiveSessionToken(accessToken: string): void {
+  localStorage.setItem('accessToken', accessToken);
+
   const activeId = getActiveSessionId();
   if (!activeId) return;
 

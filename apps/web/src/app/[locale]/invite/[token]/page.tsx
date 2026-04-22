@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { updateActiveSessionToken } from '@/lib/sessions';
 import { CheckCircle, XCircle, Loader2, Shield } from 'lucide-react';
 
 interface InvitationInfo {
@@ -60,7 +61,7 @@ export default function InviteAcceptPage() {
           method: 'POST',
           body: { refreshToken: storedRefreshToken },
         });
-        localStorage.setItem('accessToken', refreshData.accessToken);
+        updateActiveSessionToken(refreshData.accessToken);
       }
       setTimeout(() => router.push('/dashboard/admin'), 2000);
     } catch (err: any) {
