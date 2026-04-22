@@ -130,9 +130,6 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
         return;
       }
 
-      localStorage.setItem('accessToken', result.accessToken);
-      localStorage.setItem('refreshToken', result.refreshToken);
-      localStorage.setItem('user', JSON.stringify(result.user));
       saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
       if (onLoginSuccess) {
         onLoginSuccess();
@@ -227,9 +224,6 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
               <PasskeyLoginButton
                 brandColor={coop?.primaryColor}
                 onSuccess={(result) => {
-                  localStorage.setItem('accessToken', result.accessToken);
-                  if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
-                  localStorage.setItem('user', JSON.stringify(result.user));
                   saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
                   if (onLoginSuccess) {
                     onLoginSuccess();
@@ -427,9 +421,6 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
               mfaToken={mfaToken}
               brandColor={coop?.primaryColor}
               onSuccess={(result) => {
-                localStorage.setItem('accessToken', result.accessToken);
-                if (result.refreshToken) localStorage.setItem('refreshToken', result.refreshToken);
-                localStorage.setItem('user', JSON.stringify(result.user));
                 saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
                 if (onLoginSuccess) {
                   onLoginSuccess();

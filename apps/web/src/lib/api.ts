@@ -32,7 +32,6 @@ async function tryRefreshToken(): Promise<boolean> {
       if (!response.ok) return false;
 
       const data = await response.json();
-      localStorage.setItem('accessToken', data.accessToken);
       updateActiveSessionToken(data.accessToken);
       return true;
     } catch {
