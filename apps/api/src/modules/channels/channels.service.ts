@@ -513,20 +513,29 @@ export class ChannelsService {
       privacyVersion: PRIVACY_VERSION,
     });
 
-    // Return the email we just dispatched the confirmation to, so the UI can
-    // reassure the buyer ("we sent details to <email>") on the payment screen.
-    const shareholderWithEmail = await this.prisma.shareholder.findUnique({
-      where: { id: shareholderId },
-      select: { email: true, user: { select: { email: true } } },
-    });
+    // Resolve the email we just dispatched the confirmation to, purely for the
+    // "we sent details to <email>" UI reassurance. Must never fail the request:
+    // the registration + email have already succeeded, and a thrown error here
+    // would make the client retry and create a duplicate registration — exactly
+    // the bug this whole flow change is meant to prevent.
+    let recipientEmail: string | null = null;
+    try {
+      const shareholderWithEmail = await this.prisma.shareholder.findUnique({
+        where: { id: shareholderId },
+        select: { email: true, user: { select: { email: true } } },
+      });
+      if (shareholderWithEmail) {
+        recipientEmail = resolveShareholderEmail(shareholderWithEmail);
+      }
+    } catch (err) {
+      console.error('Failed to resolve recipientEmail for confirmation UI:', err);
+    }
 
     return {
       registrationId: registration.id,
       ogmCode: registration.ogmCode ?? null,
       shareholderId,
-      recipientEmail: shareholderWithEmail
-        ? resolveShareholderEmail(shareholderWithEmail)
-        : null,
+      recipientEmail,
     };
   }
 

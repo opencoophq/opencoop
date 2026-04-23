@@ -131,12 +131,15 @@ const registrationSchema = z.object({
 
 type RegistrationForm = z.infer<typeof registrationSchema>;
 
+type CopyState = 'idle' | 'copied' | 'failed';
+
 function CopyRow({
   label,
   value,
   copyValue,
   copiedLabel,
   tapLabel,
+  failedLabel,
   emphasised,
   accentColor,
 }: {
@@ -145,20 +148,29 @@ function CopyRow({
   copyValue?: string;
   copiedLabel: string;
   tapLabel: string;
+  failedLabel: string;
   emphasised?: boolean;
   accentColor?: string;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<CopyState>('idle');
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(copyValue ?? value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API unavailable (old browsers / insecure context) — no-op.
-      // Users can still long-press the displayed value to copy manually.
+      setState('copied');
+      setTimeout(() => setState('idle'), 2000);
+    } catch (err) {
+      // Clipboard API unavailable (old browsers, insecure context, iframe
+      // sandbox, or permissions-policy). We surface a visible fallback so
+      // users don't tap repeatedly, and log so we notice unexpected cases.
+      console.warn('Clipboard write failed', err);
+      setState('failed');
+      setTimeout(() => setState('idle'), 4000);
     }
   };
+  const feedback =
+    state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : tapLabel;
+  const icon =
+    state === 'copied' ? <Check size={14} /> : <Copy size={14} />;
   return (
     <button
       type="button"
@@ -176,15 +188,10 @@ function CopyRow({
         </span>
       </div>
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0">
-        {copied ? (
-          <>
-            <Check size={14} /> {copiedLabel}
-          </>
-        ) : (
-          <>
-            <Copy size={14} /> {tapLabel}
-          </>
-        )}
+        {icon} {feedback}
+      </span>
+      <span className="sr-only" aria-live="polite">
+        {state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : ''}
       </span>
     </button>
   );
@@ -226,38 +233,39 @@ function CopyAllButton({
   text,
   label,
   copiedLabel,
+  failedLabel,
 }: {
   text: string;
   label: string;
   copiedLabel: string;
+  failedLabel: string;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<CopyState>('idle');
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard unavailable — no-op; per-field rows still work.
+      setState('copied');
+      setTimeout(() => setState('idle'), 2000);
+    } catch (err) {
+      // See CopyRow for the full rationale; per-field rows also remain
+      // as a manual-selection fallback on top of this button.
+      console.warn('Clipboard write failed', err);
+      setState('failed');
+      setTimeout(() => setState('idle'), 4000);
     }
   };
+  const feedback =
+    state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : label;
+  const icon = state === 'copied' ? <Check size={16} className="mr-2" /> : <Copy size={16} className="mr-2" />;
   return (
-    <Button
-      type="button"
-      variant="outline"
-      className="w-full"
-      onClick={handleCopy}
-    >
-      {copied ? (
-        <>
-          <Check size={16} className="mr-2" /> {copiedLabel}
-        </>
-      ) : (
-        <>
-          <Copy size={16} className="mr-2" /> {label}
-        </>
-      )}
-    </Button>
+    <>
+      <Button type="button" variant="outline" className="w-full" onClick={handleCopy}>
+        {icon} {feedback}
+      </Button>
+      <span className="sr-only" aria-live="polite">
+        {state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : ''}
+      </span>
+    </>
   );
 }
 
@@ -1269,7 +1277,8 @@ export function CoopRegisterContent({
   );
 
   // ============================================================================
-  // STEP 3: CONFIRMATION (success + EPC QR code + bank details)
+  // STEP 3: CONFIRMATION — success hero, email reassurance, copy-first payment
+  // details (QR-first on desktop), "what happens next" timeline, exit link.
   // ============================================================================
   const renderStep3Confirmation = () => {
     const shareClassName = selectedShareClass?.name ?? '';
@@ -1303,17 +1312,21 @@ export function CoopRegisterContent({
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Email reassurance */}
-          <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
-            <Mail className="flex-shrink-0 mt-0.5 text-muted-foreground" size={18} />
-            <p className="text-sm text-muted-foreground">
-              {result?.recipientEmail
-                ? t('registration.emailSentTo', { email: result.recipientEmail })
-                : t('registration.emailSentNoAddress')}
-            </p>
-          </div>
+          {/* Hidden on gift flows: the buyer sees a gift-certificate block
+              below and the generic payment-email banner would be confusing. */}
+          {!result?.giftCode && (
+            <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
+              <Mail className="flex-shrink-0 mt-0.5 text-muted-foreground" size={18} />
+              <p className="text-sm text-muted-foreground">
+                {result?.recipientEmail
+                  ? t('registration.emailSentTo', { email: result.recipientEmail })
+                  : t('registration.emailSentNoAddress')}
+              </p>
+            </div>
+          )}
 
-          {/* Gift certificate section (gift flow only — skips payment) */}
+          {/* Gift flow: show claim code + QR instead of payment details —
+              the gifter doesn't pay here; the recipient claims via code. */}
           {result?.giftCode && (
             <div className="border rounded-lg p-6 space-y-4">
               <h4 className="font-medium text-center">{t('registration.giftCertificate')}</h4>
@@ -1339,12 +1352,11 @@ export function CoopRegisterContent({
             </div>
           )}
 
-          {/* Payment block — skipped for gift purchases (buyer doesn't pay here) */}
           {!result?.giftCode && coop.bankIban && (
             <div className="grid gap-6 md:grid-cols-[auto,1fr] md:items-start">
-              {/* QR block — self-scan is impossible on mobile, so the QR is
-                  collapsed there. Desktop keeps it visible as the cross-device
-                  hero. */}
+              {/* Self-scan is impossible on mobile (QR on the same device you'd
+                  scan with), so mobile hides the QR behind a toggle; desktop
+                  keeps it as the cross-device hero. */}
               <div className="order-2 md:order-1">
                 <div className="hidden md:block">
                   <QrPaymentBlock
@@ -1371,24 +1383,24 @@ export function CoopRegisterContent({
                 </details>
               </div>
 
-              {/* Copy-first payment details — primary on mobile */}
+              {/* Primary on mobile (order-1), secondary on desktop (order-2). */}
               <div className="order-1 md:order-2 space-y-3">
                 <h4 className="font-medium">{t('registration.paymentDetails')}</h4>
                 <div className="rounded-lg border bg-background divide-y">
-                  <div className="flex items-center justify-between px-3 py-2.5">
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs text-muted-foreground">
-                        {t('registration.beneficiary')}
-                      </span>
-                      <span className="font-mono text-sm truncate">{coop.name}</span>
-                    </div>
-                  </div>
+                  <CopyRow
+                    label={t('registration.beneficiary')}
+                    value={coop.name}
+                    copiedLabel={t('registration.copied')}
+                    tapLabel={t('registration.tapToCopy')}
+                    failedLabel={t('registration.copyFailed')}
+                  />
                   {coop.bankIban && (
                     <CopyRow
                       label={t('payments.iban')}
                       value={coop.bankIban}
                       copiedLabel={t('registration.copied')}
                       tapLabel={t('registration.tapToCopy')}
+                      failedLabel={t('registration.copyFailed')}
                     />
                   )}
                   <CopyRow
@@ -1397,6 +1409,7 @@ export function CoopRegisterContent({
                     copyValue={totalAmount.toFixed(2)}
                     copiedLabel={t('registration.copied')}
                     tapLabel={t('registration.tapToCopy')}
+                    failedLabel={t('registration.copyFailed')}
                   />
                   {result?.ogmCode && (
                     <CopyRow
@@ -1406,6 +1419,7 @@ export function CoopRegisterContent({
                       emphasised
                       copiedLabel={t('registration.copied')}
                       tapLabel={t('registration.tapToCopy')}
+                      failedLabel={t('registration.copyFailed')}
                     />
                   )}
                 </div>
@@ -1413,12 +1427,12 @@ export function CoopRegisterContent({
                   text={copyAllText}
                   label={t('registration.copyAll')}
                   copiedLabel={t('registration.copyAllCopied')}
+                  failedLabel={t('registration.copyFailed')}
                 />
               </div>
             </div>
           )}
 
-          {/* What happens next */}
           <div className="rounded-lg border p-4 space-y-3">
             <h4 className="font-medium">{t('registration.whatHappensNext')}</h4>
             <ol className="space-y-2.5 text-sm">
