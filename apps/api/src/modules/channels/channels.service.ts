@@ -13,6 +13,7 @@ import { UpdateChannelDto } from './dto/update-channel.dto';
 import { PublicRegisterDto } from '../coops/dto/public-register.dto';
 import { ClaimGiftDto } from './dto/claim-gift.dto';
 import { PRIVACY_VERSION } from '@opencoop/shared';
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -512,10 +513,29 @@ export class ChannelsService {
       privacyVersion: PRIVACY_VERSION,
     });
 
+    // Resolve the email we just dispatched the confirmation to, purely for the
+    // "we sent details to <email>" UI reassurance. Must never fail the request:
+    // the registration + email have already succeeded, and a thrown error here
+    // would make the client retry and create a duplicate registration — exactly
+    // the bug this whole flow change is meant to prevent.
+    let recipientEmail: string | null = null;
+    try {
+      const shareholderWithEmail = await this.prisma.shareholder.findUnique({
+        where: { id: shareholderId },
+        select: { email: true, user: { select: { email: true } } },
+      });
+      if (shareholderWithEmail) {
+        recipientEmail = resolveShareholderEmail(shareholderWithEmail);
+      }
+    } catch (err) {
+      console.error('Failed to resolve recipientEmail for confirmation UI:', err);
+    }
+
     return {
       registrationId: registration.id,
       ogmCode: registration.ogmCode ?? null,
       shareholderId,
+      recipientEmail,
     };
   }
 

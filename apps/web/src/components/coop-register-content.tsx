@@ -17,7 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency } from '@opencoop/shared';
 import { DatePicker } from '@/components/ui/date-picker';
 import { EpcQrCode } from '@/components/epc-qr-code';
-import { Gift, UserPlus, LogIn } from 'lucide-react';
+import { Gift, UserPlus, LogIn, Check, Copy, Mail } from 'lucide-react';
 import { EmailFirstLogin } from '@/components/auth/email-first-login';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { resolveLogoUrl } from '@/lib/api';
@@ -131,6 +131,144 @@ const registrationSchema = z.object({
 
 type RegistrationForm = z.infer<typeof registrationSchema>;
 
+type CopyState = 'idle' | 'copied' | 'failed';
+
+function CopyRow({
+  label,
+  value,
+  copyValue,
+  copiedLabel,
+  tapLabel,
+  failedLabel,
+  emphasised,
+  accentColor,
+}: {
+  label: string;
+  value: string;
+  copyValue?: string;
+  copiedLabel: string;
+  tapLabel: string;
+  failedLabel: string;
+  emphasised?: boolean;
+  accentColor?: string;
+}) {
+  const [state, setState] = useState<CopyState>('idle');
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(copyValue ?? value);
+      setState('copied');
+      setTimeout(() => setState('idle'), 2000);
+    } catch (err) {
+      // Clipboard API unavailable (old browsers, insecure context, iframe
+      // sandbox, or permissions-policy). We surface a visible fallback so
+      // users don't tap repeatedly, and log so we notice unexpected cases.
+      console.warn('Clipboard write failed', err);
+      setState('failed');
+      setTimeout(() => setState('idle'), 4000);
+    }
+  };
+  const feedback =
+    state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : tapLabel;
+  const icon =
+    state === 'copied' ? <Check size={14} /> : <Copy size={14} />;
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-muted/60 transition-colors"
+      aria-label={`${label}: ${value}. ${tapLabel}`}
+    >
+      <div className="flex flex-col min-w-0">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span
+          className={`font-mono ${emphasised ? 'text-base font-bold' : 'text-sm'} truncate`}
+          style={emphasised && accentColor ? { color: accentColor } : undefined}
+        >
+          {value}
+        </span>
+      </div>
+      <span className="flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0">
+        {icon} {feedback}
+      </span>
+      <span className="sr-only" aria-live="polite">
+        {state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : ''}
+      </span>
+    </button>
+  );
+}
+
+function QrPaymentBlock({
+  coop,
+  totalAmount,
+  ogmCode,
+  unstructuredLabel,
+  caption,
+}: {
+  coop: CoopPublicInfo;
+  totalAmount: number;
+  ogmCode?: string;
+  unstructuredLabel: string;
+  caption: string;
+}) {
+  return (
+    <div className="flex flex-col items-center">
+      <EpcQrCode
+        bic={coop.bankBic}
+        beneficiaryName={coop.name}
+        iban={coop.bankIban!}
+        amount={totalAmount}
+        reference={ogmCode}
+        unstructured={unstructuredLabel}
+        label={unstructuredLabel}
+        size={180}
+      />
+      <p className="text-xs text-muted-foreground mt-2 text-center max-w-[180px]">
+        {caption}
+      </p>
+    </div>
+  );
+}
+
+function CopyAllButton({
+  text,
+  label,
+  copiedLabel,
+  failedLabel,
+}: {
+  text: string;
+  label: string;
+  copiedLabel: string;
+  failedLabel: string;
+}) {
+  const [state, setState] = useState<CopyState>('idle');
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setState('copied');
+      setTimeout(() => setState('idle'), 2000);
+    } catch (err) {
+      // See CopyRow for the full rationale; per-field rows also remain
+      // as a manual-selection fallback on top of this button.
+      console.warn('Clipboard write failed', err);
+      setState('failed');
+      setTimeout(() => setState('idle'), 4000);
+    }
+  };
+  const feedback =
+    state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : label;
+  const icon = state === 'copied' ? <Check size={16} className="mr-2" /> : <Copy size={16} className="mr-2" />;
+  return (
+    <>
+      <Button type="button" variant="outline" className="w-full" onClick={handleCopy}>
+        {icon} {feedback}
+      </Button>
+      <span className="sr-only" aria-live="polite">
+        {state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : ''}
+      </span>
+    </>
+  );
+}
+
 export function CoopRegisterContent({
   coopSlug,
   channelSlug,
@@ -160,6 +298,7 @@ export function CoopRegisterContent({
     registrationId: string;
     ogmCode?: string;
     giftCode?: string;
+    recipientEmail?: string | null;
   } | null>(null);
   const [referrerName, setReferrerName] = useState<string | null>(null);
 
@@ -434,6 +573,9 @@ export function CoopRegisterContent({
   };
 
   const onSubmit = async () => {
+    // Re-entrancy guard: `disabled={submitting}` on the button relies on a React
+    // re-render that hasn't happened yet on a rapid double-click.
+    if (submitting) return;
     const valid = await form.trigger(['shareClassId', 'quantity', 'acceptTerms', 'acceptPrivacy']);
     if (!valid) return;
     if (!form.getValues('acceptPrivacy')) return;
@@ -514,6 +656,7 @@ export function CoopRegisterContent({
       setResult({
         registrationId: data.registrationId,
         ogmCode: data.ogmCode,
+        recipientEmail: data.recipientEmail ?? null,
       });
       setStep(STEP.PAYMENT);
     } catch (error) {
@@ -1134,118 +1277,214 @@ export function CoopRegisterContent({
   );
 
   // ============================================================================
-  // STEP 3: CONFIRMATION (success + EPC QR code + bank details)
+  // STEP 3: CONFIRMATION — success hero, email reassurance, copy-first payment
+  // details (QR-first on desktop), "what happens next" timeline, exit link.
   // ============================================================================
-  const renderStep3Confirmation = () => (
-    <Card>
-      <CardHeader className="text-center">
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-          style={{ backgroundColor: coop.primaryColor }}
-        >
-          <span className="text-white text-2xl">✓</span>
-        </div>
-        <CardTitle>{t('registration.registrationComplete')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Gift certificate section */}
-        {result?.giftCode && (
-          <div className="border rounded-lg p-6 space-y-4">
-            <h4 className="font-medium text-center">{t('registration.giftCertificate')}</h4>
-            <div className="flex flex-col items-center gap-4">
-              <div
-                className="text-2xl font-mono font-bold tracking-wider px-4 py-2 rounded-md"
-                style={{ backgroundColor: `${coop.primaryColor}15`, color: coop.primaryColor }}
-              >
-                {result.giftCode}
-              </div>
-              <QRCodeSVG
-                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/${locale}/${coopSlug}/${channelSlug}/claim?code=${result.giftCode}`}
-                size={160}
-                level="M"
-              />
-              <p className="text-sm text-muted-foreground text-center">
-                {t('registration.giftShareWith')}
-              </p>
-              <p className="text-xs text-muted-foreground font-mono break-all text-center">
-                {typeof window !== 'undefined' ? window.location.origin : ''}/{locale}/{coopSlug}/{channelSlug}/claim?code={result.giftCode}
-              </p>
-            </div>
-          </div>
-        )}
+  const renderStep3Confirmation = () => {
+    const shareClassName = selectedShareClass?.name ?? '';
+    const orderLine = t('registration.orderSummaryLine', {
+      quantity: watchQuantity,
+      shareClass: shareClassName,
+      amount: formatCurrency(totalAmount),
+    });
+    const copyAllText = [
+      `${t('registration.beneficiary')}: ${coop.name}`,
+      coop.bankIban ? `${t('payments.iban')}: ${coop.bankIban}` : null,
+      `${t('common.amount')}: ${formatCurrency(totalAmount)}`,
+      result?.ogmCode ? `${t('payments.ogmCode')}: ${result.ogmCode}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n');
 
-        {/* EPC QR code */}
-        {coop.bankIban && (
-          <div className="flex flex-col items-center py-4">
-            <EpcQrCode
-              bic={coop.bankBic}
-              beneficiaryName={coop.name}
-              iban={coop.bankIban}
-              amount={totalAmount}
-              reference={result?.ogmCode}
-              unstructured={t('payments.sharePurchase', { quantity: watchQuantity })}
-              label={t('payments.sharePurchase', { quantity: watchQuantity })}
-              size={180}
-            />
-            <p className="text-sm text-muted-foreground mt-2">
-              {t('registration.scanToPay')}
-            </p>
+    return (
+      <Card>
+        <CardHeader className="text-center space-y-3">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto"
+            style={{ backgroundColor: coop.primaryColor }}
+          >
+            <Check className="text-white" size={44} strokeWidth={3} />
           </div>
-        )}
+          <CardTitle className="text-2xl">
+            {t('registration.confirmationHeadline')}
+          </CardTitle>
+          <p className="text-base text-muted-foreground">{orderLine}</p>
+        </CardHeader>
 
-        <div className="bg-muted p-4 rounded-lg space-y-3">
-          <h4 className="font-medium">{t('payments.bankDetails')}</h4>
-          <div className="text-sm space-y-2">
-            <div className="flex justify-between">
-              <span>{t('payments.beneficiary')}</span>
-              <span className="font-mono">{coop.name}</span>
+        <CardContent className="space-y-6">
+          {/* Hidden on gift flows: the buyer sees a gift-certificate block
+              below and the generic payment-email banner would be confusing. */}
+          {!result?.giftCode && (
+            <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
+              <Mail className="flex-shrink-0 mt-0.5 text-muted-foreground" size={18} />
+              <p className="text-sm text-muted-foreground">
+                {result?.recipientEmail
+                  ? t('registration.emailSentTo', { email: result.recipientEmail })
+                  : t('registration.emailSentNoAddress')}
+              </p>
             </div>
-            {coop.bankIban && (
-              <div className="flex justify-between">
-                <span>{t('payments.iban')}</span>
-                <span className="font-mono">{coop.bankIban}</span>
-              </div>
-            )}
-            {coop.bankBic && (
-              <div className="flex justify-between">
-                <span>{t('payments.bic')}</span>
-                <span className="font-mono">{coop.bankBic}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span>{t('common.amount')}</span>
-              <span className="font-semibold">{formatCurrency(totalAmount)}</span>
-            </div>
-            {result?.ogmCode && (
-              <div className="flex justify-between items-center pt-2 border-t">
-                <span>{t('payments.ogmCode')}</span>
-                <span
-                  className="font-mono text-lg font-bold"
-                  style={{ color: coop.primaryColor }}
+          )}
+
+          {/* Gift flow: show claim code + QR instead of payment details —
+              the gifter doesn't pay here; the recipient claims via code. */}
+          {result?.giftCode && (
+            <div className="border rounded-lg p-6 space-y-4">
+              <h4 className="font-medium text-center">{t('registration.giftCertificate')}</h4>
+              <div className="flex flex-col items-center gap-4">
+                <div
+                  className="text-2xl font-mono font-bold tracking-wider px-4 py-2 rounded-md"
+                  style={{ backgroundColor: `${coop.primaryColor}15`, color: coop.primaryColor }}
                 >
-                  {result.ogmCode}
-                </span>
+                  {result.giftCode}
+                </div>
+                <QRCodeSVG
+                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/${locale}/${coopSlug}/${channelSlug}/claim?code=${result.giftCode}`}
+                  size={160}
+                  level="M"
+                />
+                <p className="text-sm text-muted-foreground text-center">
+                  {t('registration.giftShareWith')}
+                </p>
+                <p className="text-xs text-muted-foreground font-mono break-all text-center">
+                  {typeof window !== 'undefined' ? window.location.origin : ''}/{locale}/{coopSlug}/{channelSlug}/claim?code={result.giftCode}
+                </p>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
 
-        {form.getValues('beneficiaryType') === 'gift' && (
-          <div className="mt-6 p-4 rounded-lg border bg-amber-50 border-amber-200">
-            <p className="text-sm text-amber-800 font-medium">
-              {t('registration.giftPaymentNote')}
-            </p>
-          </div>
-        )}
+          {!result?.giftCode && coop.bankIban && (
+            <div className="grid gap-6 md:grid-cols-[auto,1fr] md:items-start">
+              {/* Self-scan is impossible on mobile (QR on the same device you'd
+                  scan with), so mobile hides the QR behind a toggle; desktop
+                  keeps it as the cross-device hero. */}
+              <div className="order-2 md:order-1">
+                <div className="hidden md:block">
+                  <QrPaymentBlock
+                    coop={coop}
+                    totalAmount={totalAmount}
+                    ogmCode={result?.ogmCode}
+                    unstructuredLabel={t('payments.sharePurchase', { quantity: watchQuantity })}
+                    caption={t('registration.scanDesktopHint')}
+                  />
+                </div>
+                <details className="md:hidden">
+                  <summary className="cursor-pointer text-sm text-center text-muted-foreground underline underline-offset-2 select-none">
+                    {t('registration.showQrCode')}
+                  </summary>
+                  <div className="pt-4">
+                    <QrPaymentBlock
+                      coop={coop}
+                      totalAmount={totalAmount}
+                      ogmCode={result?.ogmCode}
+                      unstructuredLabel={t('payments.sharePurchase', { quantity: watchQuantity })}
+                      caption={t('registration.scanDesktopHint')}
+                    />
+                  </div>
+                </details>
+              </div>
 
-        {result && (
-          <p className="text-sm text-muted-foreground mt-4 text-center">
-            Registration ID: {result.registrationId}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
+              {/* Primary on mobile (order-1), secondary on desktop (order-2). */}
+              <div className="order-1 md:order-2 space-y-3">
+                <h4 className="font-medium">{t('registration.paymentDetails')}</h4>
+                <div className="rounded-lg border bg-background divide-y">
+                  <CopyRow
+                    label={t('registration.beneficiary')}
+                    value={coop.name}
+                    copiedLabel={t('registration.copied')}
+                    tapLabel={t('registration.tapToCopy')}
+                    failedLabel={t('registration.copyFailed')}
+                  />
+                  {coop.bankIban && (
+                    <CopyRow
+                      label={t('payments.iban')}
+                      value={coop.bankIban}
+                      copiedLabel={t('registration.copied')}
+                      tapLabel={t('registration.tapToCopy')}
+                      failedLabel={t('registration.copyFailed')}
+                    />
+                  )}
+                  <CopyRow
+                    label={t('common.amount')}
+                    value={formatCurrency(totalAmount)}
+                    copyValue={totalAmount.toFixed(2)}
+                    copiedLabel={t('registration.copied')}
+                    tapLabel={t('registration.tapToCopy')}
+                    failedLabel={t('registration.copyFailed')}
+                  />
+                  {result?.ogmCode && (
+                    <CopyRow
+                      label={t('payments.ogmCode')}
+                      value={result.ogmCode}
+                      accentColor={coop.primaryColor}
+                      emphasised
+                      copiedLabel={t('registration.copied')}
+                      tapLabel={t('registration.tapToCopy')}
+                      failedLabel={t('registration.copyFailed')}
+                    />
+                  )}
+                </div>
+                <CopyAllButton
+                  text={copyAllText}
+                  label={t('registration.copyAll')}
+                  copiedLabel={t('registration.copyAllCopied')}
+                  failedLabel={t('registration.copyFailed')}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-lg border p-4 space-y-3">
+            <h4 className="font-medium">{t('registration.whatHappensNext')}</h4>
+            <ol className="space-y-2.5 text-sm">
+              <li className="flex items-start gap-3">
+                <span
+                  className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: coop.primaryColor }}
+                >
+                  <Check className="text-white" size={12} strokeWidth={3} />
+                </span>
+                <span className="text-muted-foreground line-through decoration-1">
+                  {t('registration.nextStep1')}
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span
+                  className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-semibold text-white"
+                  style={{ backgroundColor: coop.primaryColor }}
+                >
+                  2
+                </span>
+                <span className="font-medium">{t('registration.nextStep2')}</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                  3
+                </span>
+                <span className="text-muted-foreground">{t('registration.nextStep3')}</span>
+              </li>
+            </ol>
+          </div>
+
+          {form.getValues('beneficiaryType') === 'gift' && (
+            <div className="p-4 rounded-lg border bg-amber-50 border-amber-200">
+              <p className="text-sm text-amber-800 font-medium">
+                {t('registration.giftPaymentNote')}
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-center pt-2">
+            <a
+              href={`/${locale}/${coopSlug}`}
+              className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              {t('registration.imDone')}
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   // ============================================================================
   // RENDER CURRENT STEP
