@@ -2,6 +2,20 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.3] - 2026-04-23
+
+### Changed
+- **Redesigned the step-3 payment confirmation page to read unambiguously as success.** Prod DB analysis found 5 duplicate registrations out of 47 organic post-migration registrations (21%) — logged-in shareholders re-submitting the form 40s–5min after the first success because the payment-instructions page didn't look confirmed. Two pairs led to double bank transfers before users noticed. The page now leads with a large ✓ + "Je bestelling is bevestigd" + order summary, shows the email address we just sent the details to (reassuring users they can close the page), adds a 3-step "what happens next" timeline so the payment step is clearly the *next* step not a re-submit trigger, and ends with an "Ik ben klaar" exit link instead of dead-ending.
+- **Responsive payment-details layout.** Mobile (<md) now puts copy-to-clipboard tiles (IBAN / amount / OGM) primary and collapses the EPC QR behind a toggle — the QR was structurally useless there since you can't self-scan a code on the same device. Desktop keeps the QR as the hero (cross-device scan use case). A "Kopieer alle gegevens" button puts a formatted block on the clipboard for pasting into a banking app or messaging a partner. Every copy tile includes a `Copied ✓` / `Select and copy manually` feedback state with `aria-live` announcements for screen readers.
+- **Share-purchase confirmation email rewritten in NL/EN/FR/DE.** "Order confirmed" framing, explicit "nothing more to do on our website" reassurance, matching 3-step timeline, "no rush" closer. Dropped BIC (not needed for Belgian transfers), added a beneficiary row.
+
+### Fixed
+- **`onSubmit` re-entrancy guard.** `disabled={submitting}` on the submit button relied on a React re-render that could miss a rapid double-click during the preceding `form.trigger()` await. Added an `if (submitting) return` short-circuit before the async validation. Belt + braces for the same double-submit class the UX redesign targets.
+- **`publicRegister` now resolves `recipientEmail` inside a `try/catch`.** A throw in the post-creation email lookup would have rejected the whole request *after* the registration and confirmation email had already succeeded, producing exactly the duplicate-retry scenario the PR addresses. The email is cosmetic UI reassurance and must never fail the flow.
+
+### Research note
+- No public deep-link URI schemes exist for Belgian banking apps (BNP Easy Banking, Belfius, KBC Mobile, Argenta, ING) for arbitrary SEPA transfers as of 2026-04. Payconiq/Wero require merchant integration. Clipboard + EPC QR remains the pragmatic standard.
+
 ## [0.8.2] - 2026-04-22
 
 ### Fixed
