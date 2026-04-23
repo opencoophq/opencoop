@@ -13,6 +13,7 @@ import { UpdateChannelDto } from './dto/update-channel.dto';
 import { PublicRegisterDto } from '../coops/dto/public-register.dto';
 import { ClaimGiftDto } from './dto/claim-gift.dto';
 import { PRIVACY_VERSION } from '@opencoop/shared';
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -512,10 +513,20 @@ export class ChannelsService {
       privacyVersion: PRIVACY_VERSION,
     });
 
+    // Return the email we just dispatched the confirmation to, so the UI can
+    // reassure the buyer ("we sent details to <email>") on the payment screen.
+    const shareholderWithEmail = await this.prisma.shareholder.findUnique({
+      where: { id: shareholderId },
+      select: { email: true, user: { select: { email: true } } },
+    });
+
     return {
       registrationId: registration.id,
       ogmCode: registration.ogmCode ?? null,
       shareholderId,
+      recipientEmail: shareholderWithEmail
+        ? resolveShareholderEmail(shareholderWithEmail)
+        : null,
     };
   }
 
