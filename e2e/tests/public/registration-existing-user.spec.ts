@@ -30,6 +30,6 @@ test.describe('Public registration - Existing user', () => {
     await page.getByRole('button', { name: 'Registratie voltooien' }).click();
 
     // Confirmation
-    await expect(page.getByText('Registratie voltooid')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Je bestelling is bevestigd')).toBeVisible({ timeout: 15_000 });
   });
 });
