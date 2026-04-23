@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.4] - 2026-04-23
+
+### Fixed
+- **Historical shareholders could no longer register or pay.** The public register flow (`POST /coops/:slug/register` and its channel-scoped sibling) threw a hard 409 `"A shareholder with this email already exists in this cooperative"` whenever the email matched a row in the coop's register — even when that row was a migration leftover with no linked `User` account. For Bronsgroen that's 98.8% of shareholders (751 of 760); anyone in that group trying to buy their first online share bounced. Triggered by an Els Rinkes complaint: she was in our register since May 2015 (LED groepsaankoop invoice on her name) but had never paid her €125 share, so the new "buy a share" flow refused her with no recovery path.
+
+  The magic-link auth flow (`/auth/magic-link/request`) already knew how to claim orphan shareholders (auto-create `User` + link row), so the register flow now routes there instead of failing. Adds a preflight email lookup in `publicRegister` that returns a soft `{ status: 'existing_shareholder', email, hasUserAccount }` response; the frontend opens a dialog offering to send a one-time login link via the existing `/auth/magic-link/request` endpoint rather than the previous browser alert.
+
+  Gift purchases (`isGift: true`) skip the preflight entirely — the email on a gift belongs to the recipient, not the buyer, so "already a shareholder" is not a blocker and surfacing it would leak the recipient's membership to an anonymous gift-buyer.
+
+### Changed
+- Frontend dialog surfaces magic-link send failures (429/500/network) via an i18n'd red-banner instead of silently resetting the button. Translation keys `registration.existingShareholder.*` added in NL/EN/FR/DE.
+
 ## [0.8.3] - 2026-04-23
 
 ### Changed
