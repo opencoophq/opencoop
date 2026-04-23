@@ -64,7 +64,7 @@ test.describe('Public registration - Individual', () => {
     }
 
     // Step 4: Payment confirmation
-    await expect(page.getByText('Registratie voltooid')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Je bestelling is bevestigd')).toBeVisible({ timeout: 15_000 });
 
     // Verify bank payment details are shown (OGM code format: +++XXX/XXXX/XXXXX+++)
     await expect(page.getByText('+++')).toBeVisible();
