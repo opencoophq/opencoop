@@ -465,6 +465,14 @@
       "existingTitle": "J'ai déjà un compte",
       "existingDescription": "Connectez-vous pour acheter des actions plus rapidement"
     },
+    "existingShareholder": {
+      "title": "Vous êtes déjà dans notre registre",
+      "descriptionOrphan": "Nous avons trouvé {email} dans le registre des coopérateurs de cette coopérative. Vous ne vous êtes encore jamais connecté(e) en ligne — cliquez ci-dessous pour recevoir un lien de connexion unique. Une fois connecté(e), vous pourrez acheter ou payer vos parts depuis votre tableau de bord.",
+      "descriptionAccount": "Un compte existe déjà pour {email}. Cliquez ci-dessous pour recevoir un lien de connexion, ou connectez-vous avec votre mot de passe.",
+      "linkSent": "Nous avons envoyé un lien de connexion à {email}. Consultez votre boîte de réception (et vos courriers indésirables) pour vous connecter.",
+      "sendLoginLink": "Envoyer un lien de connexion",
+      "close": "Fermer"
+    },
     "scanToPay": "Scannez avec votre appli bancaire pour payer",
     "scanDesktopHint": "Scannez avec l'appareil photo de votre appli bancaire sur votre téléphone",
     "confirmationHeadline": "Votre commande est confirmée",
