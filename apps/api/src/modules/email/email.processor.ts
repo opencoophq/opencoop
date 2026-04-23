@@ -263,79 +263,116 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const t = {
           nl: {
-            title: 'Bevestiging van je aandelenaankoop',
+            title: 'Je bestelling is bevestigd',
             dear: `Beste ${d.shareholderName},`,
-            intro: 'We hebben je aanvraag voor een aandelenaankoop goed ontvangen:',
+            intro: `Bedankt voor je bestelling bij ${cn}. We hebben deze goed ontvangen — je hoeft niets meer te doen op onze website. Onderstaande gegevens heb je nodig om het bedrag over te schrijven via je bank-app.`,
+            orderTitle: 'Je bestelling',
             shareClass: 'Aandelenklasse',
             quantity: 'Aantal',
             totalAmount: 'Totaalbedrag',
             paymentDetailsTitle: 'Betalingsgegevens',
             iban: 'IBAN',
-            bic: 'BIC',
             ogm: 'Gestructureerde mededeling',
             amount: 'Bedrag',
+            beneficiary: 'Begunstigde',
+            nextTitle: 'Wat gebeurt er nu?',
+            step1: 'Je bestelling is geregistreerd',
+            step2: 'Schrijf het bedrag over via je bank-app met de bovenstaande gegevens',
+            step3: `Je ontvangt een tweede e-mail zodra we je betaling gematcht hebben (doorgaans binnen 1 à 2 werkdagen). Pas daarna zijn je aandelen actief.`,
+            noHaste: 'Er is geen haast bij — je kunt nog steeds betalen wanneer het jou uitkomt.',
             thanks: `Bedankt om te investeren in ${cn}!`,
           },
           en: {
-            title: 'Share Purchase Confirmation',
+            title: 'Your order is confirmed',
             dear: `Dear ${d.shareholderName},`,
-            intro: 'We have received your share purchase request:',
-            shareClass: 'Share Class',
+            intro: `Thank you for your order with ${cn}. We've received it — there's nothing more to do on our website. Use the details below to transfer the amount via your banking app.`,
+            orderTitle: 'Your order',
+            shareClass: 'Share class',
             quantity: 'Quantity',
-            totalAmount: 'Total Amount',
-            paymentDetailsTitle: 'Payment Details',
+            totalAmount: 'Total amount',
+            paymentDetailsTitle: 'Payment details',
             iban: 'IBAN',
-            bic: 'BIC',
             ogm: 'Structured communication',
             amount: 'Amount',
+            beneficiary: 'Beneficiary',
+            nextTitle: "What happens next?",
+            step1: 'Your order is recorded',
+            step2: 'Transfer the amount via your banking app using the details above',
+            step3: `You'll get a second email once we've matched your payment (usually within 1–2 business days). Only then are your shares active.`,
+            noHaste: "No rush — you can still pay whenever it suits you.",
             thanks: `Thank you for investing in ${cn}!`,
           },
           fr: {
-            title: "Confirmation d'achat d'actions",
+            title: 'Votre commande est confirmée',
             dear: `Cher/Chère ${d.shareholderName},`,
-            intro: "Nous avons bien reçu votre demande d'achat d'actions :",
+            intro: `Merci pour votre commande auprès de ${cn}. Nous l'avons bien reçue — vous n'avez plus rien à faire sur notre site. Utilisez les informations ci-dessous pour effectuer le virement via votre application bancaire.`,
+            orderTitle: 'Votre commande',
             shareClass: "Classe d'actions",
             quantity: 'Quantité',
             totalAmount: 'Montant total',
             paymentDetailsTitle: 'Détails de paiement',
             iban: 'IBAN',
-            bic: 'BIC',
             ogm: 'Communication structurée',
             amount: 'Montant',
+            beneficiary: 'Bénéficiaire',
+            nextTitle: 'Et maintenant ?',
+            step1: 'Votre commande est enregistrée',
+            step2: 'Effectuez le virement via votre application bancaire avec les informations ci-dessus',
+            step3: `Vous recevrez un second e-mail dès que nous aurons réconcilié votre paiement (généralement sous 1 à 2 jours ouvrables). Vos actions seront alors actives.`,
+            noHaste: 'Pas de précipitation — vous pouvez encore payer quand cela vous convient.',
             thanks: `Merci d'investir dans ${cn} !`,
           },
           de: {
-            title: 'Bestätigung Ihres Anteilskaufs',
+            title: 'Ihre Bestellung ist bestätigt',
             dear: `Liebe/r ${d.shareholderName},`,
-            intro: 'Wir haben Ihre Anfrage zum Anteilskauf erhalten:',
+            intro: `Vielen Dank für Ihre Bestellung bei ${cn}. Wir haben sie erhalten — auf unserer Website müssen Sie nichts weiter tun. Mit den untenstehenden Daten überweisen Sie den Betrag über Ihre Banking-App.`,
+            orderTitle: 'Ihre Bestellung',
             shareClass: 'Anteilsklasse',
             quantity: 'Anzahl',
             totalAmount: 'Gesamtbetrag',
             paymentDetailsTitle: 'Zahlungsdetails',
             iban: 'IBAN',
-            bic: 'BIC',
             ogm: 'Strukturierte Mitteilung',
             amount: 'Betrag',
+            beneficiary: 'Empfänger',
+            nextTitle: 'Wie geht es weiter?',
+            step1: 'Ihre Bestellung ist erfasst',
+            step2: 'Überweisen Sie den Betrag über Ihre Banking-App mit den obigen Angaben',
+            step3: `Sobald wir Ihre Zahlung zugeordnet haben (in der Regel innerhalb von 1–2 Werktagen), erhalten Sie eine zweite E-Mail. Erst dann sind Ihre Anteile aktiv.`,
+            noHaste: 'Kein Stress — Sie können auch später zahlen, wann es Ihnen passt.',
             thanks: `Vielen Dank für Ihre Investition in ${cn}!`,
           },
         };
         const s = t[lang as keyof typeof t] || t['nl'];
+        const amount = (d.totalAmount as number).toFixed(2);
         return `
     <h1>${s.title}</h1>
     <p>${s.dear}</p>
     <p>${s.intro}</p>
+
+    <h2>${s.orderTitle}</h2>
     <ul>
       <li>${s.shareClass}: ${d.shareClassName}</li>
       <li>${s.quantity}: ${d.quantity}</li>
-      <li>${s.totalAmount}: €${(d.totalAmount as number).toFixed(2)}</li>
+      <li>${s.totalAmount}: €${amount}</li>
     </ul>
+
     ${d.bankIban || d.ogmCode ? `
     <h2>${s.paymentDetailsTitle}</h2>
+    <p>${s.beneficiary}: <strong>${cn}</strong></p>
     ${d.bankIban ? `<p>${s.iban}: <strong>${d.bankIban}</strong></p>` : ''}
-    ${d.bankBic ? `<p>${s.bic}: <strong>${d.bankBic}</strong></p>` : ''}
+    <p>${s.amount}: <strong>€${amount}</strong></p>
     ${d.ogmCode ? `<p>${s.ogm}: <strong>${d.ogmCode}</strong></p>` : ''}
-    <p>${s.amount}: <strong>€${(d.totalAmount as number).toFixed(2)}</strong></p>
     ` : ''}
+
+    <h2>${s.nextTitle}</h2>
+    <ol>
+      <li>${s.step1}</li>
+      <li>${s.step2}</li>
+      <li>${s.step3}</li>
+    </ol>
+    <p><em>${s.noHaste}</em></p>
+
     <p>${s.thanks}</p>
   `;
       },
