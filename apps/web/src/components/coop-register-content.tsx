@@ -14,6 +14,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { formatCurrency } from '@opencoop/shared';
 import { DatePicker } from '@/components/ui/date-picker';
 import { EpcQrCode } from '@/components/epc-qr-code';
@@ -301,6 +309,12 @@ export function CoopRegisterContent({
     recipientEmail?: string | null;
   } | null>(null);
   const [referrerName, setReferrerName] = useState<string | null>(null);
+  const [existingShareholder, setExistingShareholder] = useState<{
+    email: string;
+    hasUserAccount: boolean;
+    magicLinkSent: boolean;
+    sending: boolean;
+  } | null>(null);
 
   // Determine if user has existing shareholders (short flow) or is new (long flow)
   const hasExistingShareholders = allShareholders.length > 0 && !isRegisteringNew;
@@ -544,6 +558,23 @@ export function CoopRegisterContent({
     }
   };
 
+  const handleSendMagicLink = async () => {
+    if (!existingShareholder) return;
+    setExistingShareholder({ ...existingShareholder, sending: true });
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/magic-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: existingShareholder.email, coopSlug }),
+      });
+      if (!res.ok) throw new Error('magic-link request failed');
+      setExistingShareholder({ ...existingShareholder, sending: false, magicLinkSent: true });
+    } catch (err) {
+      console.error('Failed to send magic link:', err);
+      setExistingShareholder({ ...existingShareholder, sending: false });
+    }
+  };
+
   // Validate step 1 fields before navigating to step 2
   const handleStep1Next = async () => {
     if (hasExistingShareholders) {
@@ -653,6 +684,17 @@ export function CoopRegisterContent({
       }
 
       const data = await response.json();
+
+      if (data.status === 'existing_shareholder') {
+        setExistingShareholder({
+          email: data.email,
+          hasUserAccount: !!data.hasUserAccount,
+          magicLinkSent: false,
+          sending: false,
+        });
+        return;
+      }
+
       setResult({
         registrationId: data.registrationId,
         ogmCode: data.ogmCode,
@@ -1563,6 +1605,57 @@ export function CoopRegisterContent({
           {renderStep()}
         </div>
       </main>
+
+      <Dialog
+        open={!!existingShareholder}
+        onOpenChange={(open) => {
+          if (!open) setExistingShareholder(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('registration.existingShareholder.title')}</DialogTitle>
+            <DialogDescription>
+              {existingShareholder?.magicLinkSent
+                ? t('registration.existingShareholder.linkSent', {
+                    email: existingShareholder?.email ?? '',
+                  })
+                : existingShareholder?.hasUserAccount
+                ? t('registration.existingShareholder.descriptionAccount', {
+                    email: existingShareholder?.email ?? '',
+                  })
+                : t('registration.existingShareholder.descriptionOrphan', {
+                    email: existingShareholder?.email ?? '',
+                  })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            {existingShareholder?.magicLinkSent ? (
+              <Button onClick={() => setExistingShareholder(null)}>
+                {t('registration.existingShareholder.close')}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setExistingShareholder(null)}
+                  disabled={existingShareholder?.sending}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  onClick={handleSendMagicLink}
+                  disabled={existingShareholder?.sending}
+                >
+                  {existingShareholder?.sending
+                    ? t('common.loading')
+                    : t('registration.existingShareholder.sendLoginLink')}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

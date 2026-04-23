@@ -467,6 +467,14 @@
       "existingTitle": "Ik heb al een account",
       "existingDescription": "Log in om sneller aandelen te kopen"
     },
+    "existingShareholder": {
+      "title": "Je staat al in ons register",
+      "descriptionOrphan": "We vonden {email} terug in dit coöperatieregister. Je hebt nog nooit online ingelogd — klik hieronder om een eenmalige login-link te ontvangen. Daarna kan je vanuit je dashboard aandelen kopen of betalen.",
+      "descriptionAccount": "Er bestaat al een account voor {email}. Klik hieronder om een login-link te ontvangen, of log in met je wachtwoord.",
+      "linkSent": "We hebben een login-link gestuurd naar {email}. Check je inbox (ook je spam-folder) om in te loggen.",
+      "sendLoginLink": "Stuur login-link",
+      "close": "Sluiten"
+    },
     "scanToPay": "Scan met je bankapp om te betalen",
     "scanDesktopHint": "Scan met de camera van je bank-app op je telefoon",
     "confirmationHeadline": "Je bestelling is bevestigd",

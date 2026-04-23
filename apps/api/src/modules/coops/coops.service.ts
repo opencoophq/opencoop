@@ -816,6 +816,21 @@ export class CoopsService {
         throw new BadRequestException('Email is required for new registrations');
       }
 
+      // Pre-flight: if a shareholder already exists with this email (e.g. migrated
+      // from a historical register), don't 409. Return a soft signal so the client
+      // can steer the user to the login / magic-link flow instead.
+      const existing = await this.prisma.shareholder.findFirst({
+        where: { coopId: coop.id, email: dto.email.toLowerCase() },
+        select: { userId: true },
+      });
+      if (existing) {
+        return {
+          status: 'existing_shareholder' as const,
+          email: dto.email.toLowerCase(),
+          hasUserAccount: existing.userId !== null,
+        };
+      }
+
       const newShareholder = await this.shareholdersService.create(coop.id, {
         type: dto.type,
         firstName: dto.firstName,
@@ -868,6 +883,7 @@ export class CoopsService {
     });
 
     return {
+      status: 'registered' as const,
       registrationId: registration.id,
       ogmCode: registration.ogmCode ?? null,
       shareholderId,

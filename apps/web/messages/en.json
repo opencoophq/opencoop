@@ -467,6 +467,14 @@
       "existingTitle": "I already have an account",
       "existingDescription": "Log in to buy shares faster"
     },
+    "existingShareholder": {
+      "title": "You're already in our register",
+      "descriptionOrphan": "We found {email} in this cooperative's shareholder register. You haven't logged in online before — click below to receive a one-time login link. Once logged in, you can buy or pay for shares from your dashboard.",
+      "descriptionAccount": "An account already exists for {email}. Click below to receive a login link, or log in with your password.",
+      "linkSent": "We've sent a login link to {email}. Check your inbox (and spam folder) to sign in.",
+      "sendLoginLink": "Send login link",
+      "close": "Close"
+    },
     "scanToPay": "Scan with your banking app to pay",
     "scanDesktopHint": "Scan with the camera in your banking app on your phone",
     "confirmationHeadline": "Your order is confirmed",
