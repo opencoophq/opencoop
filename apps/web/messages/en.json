@@ -473,7 +473,8 @@
       "descriptionAccount": "An account already exists for {email}. Click below to receive a login link, or log in with your password.",
       "linkSent": "We've sent a login link to {email}. Check your inbox (and spam folder) to sign in.",
       "sendLoginLink": "Send login link",
-      "close": "Close"
+      "close": "Close",
+      "sendError": "We couldn't send the login link. Please try again in a moment."
     },
     "scanToPay": "Scan with your banking app to pay",
     "scanDesktopHint": "Scan with the camera in your banking app on your phone",

@@ -314,6 +314,7 @@ export function CoopRegisterContent({
     hasUserAccount: boolean;
     magicLinkSent: boolean;
     sending: boolean;
+    error: boolean;
   } | null>(null);
 
   // Determine if user has existing shareholders (short flow) or is new (long flow)
@@ -560,18 +561,23 @@ export function CoopRegisterContent({
 
   const handleSendMagicLink = async () => {
     if (!existingShareholder) return;
-    setExistingShareholder({ ...existingShareholder, sending: true });
+    setExistingShareholder({ ...existingShareholder, sending: true, error: false });
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/magic-link`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/magic-link/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: existingShareholder.email, coopSlug }),
       });
-      if (!res.ok) throw new Error('magic-link request failed');
-      setExistingShareholder({ ...existingShareholder, sending: false, magicLinkSent: true });
+      if (!res.ok) throw new Error(`magic-link request failed: ${res.status}`);
+      setExistingShareholder({
+        ...existingShareholder,
+        sending: false,
+        magicLinkSent: true,
+        error: false,
+      });
     } catch (err) {
       console.error('Failed to send magic link:', err);
-      setExistingShareholder({ ...existingShareholder, sending: false });
+      setExistingShareholder({ ...existingShareholder, sending: false, error: true });
     }
   };
 
@@ -685,12 +691,17 @@ export function CoopRegisterContent({
 
       const data = await response.json();
 
-      if (data.status === 'existing_shareholder') {
+      if (
+        data.status === 'existing_shareholder' &&
+        typeof data.email === 'string' &&
+        data.email
+      ) {
         setExistingShareholder({
           email: data.email,
           hasUserAccount: !!data.hasUserAccount,
           magicLinkSent: false,
           sending: false,
+          error: false,
         });
         return;
       }
@@ -1629,6 +1640,11 @@ export function CoopRegisterContent({
                   })}
             </DialogDescription>
           </DialogHeader>
+          {existingShareholder?.error && !existingShareholder.magicLinkSent && (
+            <p className="text-sm text-red-600" role="alert">
+              {t('registration.existingShareholder.sendError')}
+            </p>
+          )}
           <DialogFooter>
             {existingShareholder?.magicLinkSent ? (
               <Button onClick={() => setExistingShareholder(null)}>

@@ -473,7 +473,8 @@
       "descriptionAccount": "Er bestaat al een account voor {email}. Klik hieronder om een login-link te ontvangen, of log in met je wachtwoord.",
       "linkSent": "We hebben een login-link gestuurd naar {email}. Check je inbox (ook je spam-folder) om in te loggen.",
       "sendLoginLink": "Stuur login-link",
-      "close": "Sluiten"
+      "close": "Sluiten",
+      "sendError": "We konden de login-link nu niet versturen. Probeer het zo opnieuw."
     },
     "scanToPay": "Scan met je bankapp om te betalen",
     "scanDesktopHint": "Scan met de camera van je bank-app op je telefoon",

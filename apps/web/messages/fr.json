@@ -471,7 +471,8 @@
       "descriptionAccount": "Un compte existe déjà pour {email}. Cliquez ci-dessous pour recevoir un lien de connexion, ou connectez-vous avec votre mot de passe.",
       "linkSent": "Nous avons envoyé un lien de connexion à {email}. Consultez votre boîte de réception (et vos courriers indésirables) pour vous connecter.",
       "sendLoginLink": "Envoyer un lien de connexion",
-      "close": "Fermer"
+      "close": "Fermer",
+      "sendError": "Impossible d'envoyer le lien de connexion pour le moment. Veuillez réessayer dans un instant."
     },
     "scanToPay": "Scannez avec votre appli bancaire pour payer",
     "scanDesktopHint": "Scannez avec l'appareil photo de votre appli bancaire sur votre téléphone",
