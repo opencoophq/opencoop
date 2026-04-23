@@ -465,6 +465,15 @@
       "existingTitle": "Ich habe bereits ein Konto",
       "existingDescription": "Melden Sie sich an, um schneller Aktien zu kaufen"
     },
+    "existingShareholder": {
+      "title": "Sie sind bereits in unserem Register",
+      "descriptionOrphan": "Wir haben {email} im Genossenschaftsregister dieser Genossenschaft gefunden. Sie haben sich noch nie online angemeldet — klicken Sie unten, um einen einmaligen Login-Link zu erhalten. Nach der Anmeldung können Sie Anteile über Ihr Dashboard kaufen oder bezahlen.",
+      "descriptionAccount": "Für {email} existiert bereits ein Konto. Klicken Sie unten, um einen Login-Link zu erhalten, oder melden Sie sich mit Ihrem Passwort an.",
+      "linkSent": "Wir haben einen Login-Link an {email} gesendet. Prüfen Sie Ihren Posteingang (auch den Spam-Ordner), um sich anzumelden.",
+      "sendLoginLink": "Login-Link senden",
+      "close": "Schließen",
+      "sendError": "Der Login-Link konnte gerade nicht gesendet werden. Bitte versuchen Sie es gleich erneut."
+    },
     "scanToPay": "Mit Banking-App scannen zum Bezahlen",
     "scanDesktopHint": "Mit der Kamera in Ihrer Banking-App auf dem Telefon scannen",
     "confirmationHeadline": "Ihre Bestellung ist bestätigt",
