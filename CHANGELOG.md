@@ -2,6 +2,21 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.5] - 2026-04-25
+
+### Added
+- **Per-coop convocation notice period.** New `Coop.minConvocationDays` setting (default 15, the WVV norm). Migration sets Bronsgroen to 14 to match their statuten, so their 2026-05-09 AGM doesn't trigger a "short notice" override even though convocations go out exactly 14 days prior. Replaces the previously-hardcoded 15-day check in the convocation flow.
+- **Editable convocation email per meeting.** `Meeting.customSubject` and `Meeting.customBody` columns. Admins can now write a custom subject and HTML body with `{{rsvpUrl}}`, `{{shareholderName}}`, `{{meetingTitle}}`, `{{meetingDate}}`, `{{meetingLocation}}`, `{{agendaList}}` placeholders. Default RSVP CTA is auto-appended when the body has no link reference, so the link can never be silently dropped.
+- **Real email-body preview in admin UI.** New `GET /admin/coops/:c/meetings/:m/convocation/email-preview?shareholderId=X` endpoint returns `{subject, html, recipientEmail}` rendered exactly as that shareholder would receive it. Convocation page now shows a sandboxed iframe live-previewing the email before send.
+- **"Send a test to me" button.** New `POST /convocation/send-test` endpoint sends the actual convocation flow to the current admin's email (subject prefixed `[TEST]`). Lets an admin verify the rendered email + subject + RSVP link in their own inbox before blasting all shareholders.
+
+### Changed
+- **Retry-safe convocation send.** `MeetingAttendance.convocationSentAt` is now stamped per inbox group on each successful email send. The `send()` filter targets only attendances where `convocationSentAt IS NULL`, so calling Send again after a partial failure mails only the previously-failed shareholders — no duplicates. Existing RSVP tokens are preserved on retry, so emails already in flight keep working links. Drops the previous meeting-status-based `alreadySent` early-return in favour of attendance-level truth. Uses `upsert` for the attendance create so two concurrent send() calls don't race on the unique constraint.
+- **Convocation `BadRequestException` wording**: error no longer cites "statuten Art. 22 requires 15 days" since the threshold is now per-coop. Reads "Meeting is less than {n} days away (this coop's configured minimum convocation notice). Set confirmShortNotice=true to override."
+
+### Fixed
+- **Admin PDF preview button returned 401.** The "preview convocation" button on the admin convocation page was a bare `<a href>` that opened a new tab, so the browser never sent the localStorage JWT. Switched to `fetch` with `Bearer` auth + `URL.createObjectURL` to open the PDF as a blob URL.
+
 ## [0.8.4] - 2026-04-23
 
 ### Fixed
