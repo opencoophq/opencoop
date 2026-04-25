@@ -34,8 +34,8 @@ export class ShareholderMeetingsController {
   @Get(':id')
   async get(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
     const shareholders = await this.prisma.shareholder.findMany({
-      where: { userId: user.id },
-      select: { coopId: true },
+      where: { userId: user.id, status: 'ACTIVE' },
+      select: { id: true, coopId: true },
     });
     const coopIds = [...new Set(shareholders.map((s) => s.coopId))];
     if (coopIds.length === 0) throw new NotFoundException('Meeting not found');
@@ -54,6 +54,22 @@ export class ShareholderMeetingsController {
       },
     });
     if (!meeting) throw new NotFoundException('Meeting not found');
-    return meeting;
+
+    // Surface the user's MeetingAttendance for this meeting so the dashboard
+    // can render the RSVP buttons and current status. The rsvpToken comes
+    // back so the dashboard can hit the existing /public/meetings/rsvp/:token
+    // endpoints (PATCH, /ics, eligible-delegates) — same surface as the
+    // magic-link flow but kicked off from a logged-in context.
+    const myShareholder = shareholders.find((s) => s.coopId === meeting.coopId);
+    const myAttendance = myShareholder
+      ? await this.prisma.meetingAttendance.findUnique({
+          where: {
+            meetingId_shareholderId: { meetingId: id, shareholderId: myShareholder.id },
+          },
+          select: { id: true, rsvpStatus: true, rsvpAt: true, rsvpToken: true },
+        })
+      : null;
+
+    return { ...meeting, myAttendance };
   }
 }

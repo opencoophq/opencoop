@@ -2230,7 +2230,10 @@
       "view": "Voir",
       "backToList": "Retour aux assemblées",
       "agendaHeading": "Ordre du jour",
-      "invitedNote": "Vous êtes invité à cette assemblée. Pour répondre, utilisez le lien dans l'e-mail de convocation."
+      "invitedNote": "Vous êtes invité à cette assemblée. Pour répondre, utilisez le lien dans l'e-mail de convocation.",
+      "changeAnytimeNote": "Vous pouvez modifier votre réponse jusqu'au début de l'assemblée.",
+      "addToCalendar": "Ajouter à l'agenda",
+      "addToCalendarHelp": "Fonctionne avec Apple Calendar, Google Calendar, Outlook et Thunderbird (fichier .ics)."
     },
     "edit": {
       "heading": "Modifier l'assemblée",
