@@ -830,8 +830,9 @@ export class EmailProcessor {
             dear: `Beste ${d.shareholderName},`,
             intro: `U wordt uitgenodigd voor de <strong>${d.meetingTitle}</strong> op <strong>${d.meetingDate}</strong> te <strong>${d.meetingLocation || 'nader te bepalen'}</strong>.`,
             agendaTitle: 'Agenda',
-            cta: 'RSVP hier',
-            proxy: 'Indien u niet aanwezig kunt zijn, kunt u zich laten vertegenwoordigen door een andere aandeelhouder via een volmacht.',
+            cta: 'Reageer op de oproeping',
+            proxy: 'Klik op de knop hierboven om aan te geven of u aanwezig zult zijn, niet aanwezig zult zijn, of om uw stem te delegeren aan een andere aandeelhouder (volmacht).',
+            attachment: 'In bijlage vindt u de officiële oproeping als PDF.',
             closing: 'Met vriendelijke groet,',
           },
           en: {
@@ -839,8 +840,9 @@ export class EmailProcessor {
             dear: `Dear ${d.shareholderName},`,
             intro: `You are invited to the <strong>${d.meetingTitle}</strong> on <strong>${d.meetingDate}</strong> at <strong>${d.meetingLocation || 'to be determined'}</strong>.`,
             agendaTitle: 'Agenda',
-            cta: 'RSVP here',
-            proxy: 'If you are unable to attend, you may grant a proxy to another shareholder to represent you.',
+            cta: 'Respond to the notice',
+            proxy: 'Click the button above to indicate whether you will attend, will not attend, or to delegate your vote to another shareholder (proxy).',
+            attachment: 'The official notice is attached as a PDF.',
             closing: 'Kind regards,',
           },
           fr: {
@@ -848,8 +850,9 @@ export class EmailProcessor {
             dear: `Cher/Chère ${d.shareholderName},`,
             intro: `Vous êtes invité(e) à <strong>${d.meetingTitle}</strong> le <strong>${d.meetingDate}</strong> à <strong>${d.meetingLocation || 'à déterminer'}</strong>.`,
             agendaTitle: 'Ordre du jour',
-            cta: 'Répondre ici',
-            proxy: "Si vous ne pouvez pas être présent(e), vous pouvez vous faire représenter par un autre actionnaire via une procuration.",
+            cta: 'Répondre à la convocation',
+            proxy: "Cliquez sur le bouton ci-dessus pour indiquer si vous serez présent(e), absent(e), ou pour déléguer votre voix à un autre actionnaire (procuration).",
+            attachment: "La convocation officielle est jointe en PDF.",
             closing: 'Cordialement,',
           },
           de: {
@@ -857,8 +860,9 @@ export class EmailProcessor {
             dear: `Liebe/r ${d.shareholderName},`,
             intro: `Sie sind eingeladen zur <strong>${d.meetingTitle}</strong> am <strong>${d.meetingDate}</strong> in <strong>${d.meetingLocation || 'noch zu bestimmen'}</strong>.`,
             agendaTitle: 'Tagesordnung',
-            cta: 'Hier antworten',
-            proxy: 'Falls Sie nicht teilnehmen können, können Sie sich von einem anderen Anteilseigner per Vollmacht vertreten lassen.',
+            cta: 'Auf die Einladung antworten',
+            proxy: 'Klicken Sie oben auf die Schaltfläche, um anzugeben, ob Sie teilnehmen werden, nicht teilnehmen werden, oder Ihre Stimme an einen anderen Anteilseigner zu delegieren (Vollmacht).',
+            attachment: 'Die offizielle Einladung ist als PDF beigefügt.',
             closing: 'Mit freundlichen Grüßen,',
           },
         };
@@ -900,7 +904,8 @@ export class EmailProcessor {
           <h2>${s.agendaTitle}</h2>
           <ol>${agendaHtml}</ol>
           ${ctaButton}
-          <p style="color: #666; font-size: 12px;">${s.proxy}</p>
+          <p>${s.proxy}</p>
+          <p style="color: #666; font-size: 12px;">${s.attachment}</p>
           <p>${s.closing}</p>
         `;
       },

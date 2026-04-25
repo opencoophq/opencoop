@@ -8,8 +8,11 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { EmailProcessor } from '../email/email.processor';
+import { MeetingPdfService } from './pdf.service';
 import { MeetingStatus, ShareholderStatus, Prisma } from '@opencoop/database';
 import { randomBytes } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 
 interface ConvocationTemplateData extends Record<string, unknown> {
@@ -48,7 +51,28 @@ export class ConvocationService {
     private prisma: PrismaService,
     private email: EmailService,
     private emailProcessor: EmailProcessor,
+    private pdf: MeetingPdfService,
   ) {}
+
+  /**
+   * Generate a per-shareholder convocation PDF and persist it under UPLOAD_DIR
+   * so the bull email worker can read it later by path. Idempotent: if the file
+   * already exists from a prior send, the buffer is regenerated and overwritten
+   * (cheap; ensures the file matches the current meeting state).
+   */
+  private async writeShareholderPdf(
+    coopId: string,
+    meetingId: string,
+    shareholderId: string,
+  ): Promise<string> {
+    const buf = await this.pdf.convocation(coopId, meetingId, shareholderId);
+    const baseDir = process.env.UPLOAD_DIR || './uploads';
+    const dir = path.join(baseDir, 'convocations', meetingId);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const filePath = path.join(dir, `${shareholderId}.pdf`);
+    fs.writeFileSync(filePath, buf);
+    return filePath;
+  }
 
   private buildSubject(meeting: { title: string; customSubject: string | null }): string {
     return meeting.customSubject?.trim() || `Oproeping - ${meeting.title}`;
@@ -196,12 +220,34 @@ export class ConvocationService {
           .map((sh) => `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim())
           .filter(Boolean)
           .join(', ');
+
+        // One PDF per shareholder, all attached. Shared-inbox households get
+        // an email with multiple attachments — one named copy per family
+        // member — so each person has their own personalized convocation.
+        const attachments: Array<{ filename: string; path: string }> = [];
+        for (const sh of group) {
+          try {
+            const filePath = await this.writeShareholderPdf(coopId, meetingId, sh.id);
+            const safeName = `${sh.firstName ?? ''}-${sh.lastName ?? ''}`
+              .trim()
+              .replace(/[^a-zA-Z0-9-_]/g, '-')
+              .replace(/-+/g, '-');
+            const filename = safeName ? `oproeping-${safeName}.pdf` : `oproeping-${sh.id}.pdf`;
+            attachments.push({ filename, path: filePath });
+          } catch (pdfErr) {
+            this.logger.warn(
+              `PDF generation failed for shareholder ${sh.id}: ${pdfErr instanceof Error ? pdfErr.message : String(pdfErr)} — sending email without that attachment`,
+            );
+          }
+        }
+
         await this.email.send({
           coopId,
           to: email,
           subject: this.buildSubject(meeting),
           templateKey: 'meeting-convocation',
           templateData: this.buildTemplateData(meeting, shareholderName, primaryToken),
+          attachments: attachments.length ? attachments : undefined,
         });
         // Mark this inbox group as sent. Future send() calls won't re-mail them.
         await this.prisma.meetingAttendance.updateMany({
@@ -304,12 +350,33 @@ export class ConvocationService {
     const sampleToken = 'test-' + randomBytes(8).toString('base64url');
     const data = this.buildTemplateData(meeting, 'Test Recipient', sampleToken);
 
+    // For the test, render a PDF using the first active shareholder so the
+    // attachment matches what real recipients will see. Skip silently if there
+    // are no shareholders yet — the test email still goes out without an
+    // attachment so the admin can at least review the body.
+    const sampleShareholder = await this.prisma.shareholder.findFirst({
+      where: { coopId, status: ShareholderStatus.ACTIVE },
+      select: { id: true },
+    });
+    let attachments: Array<{ filename: string; path: string }> | undefined;
+    if (sampleShareholder) {
+      try {
+        const filePath = await this.writeShareholderPdf(coopId, meetingId, sampleShareholder.id);
+        attachments = [{ filename: 'oproeping-test.pdf', path: filePath }];
+      } catch (err) {
+        this.logger.warn(
+          `sendTest: PDF generation failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
     await this.email.send({
       coopId,
       to: recipientEmail,
       subject: `[TEST] ${this.buildSubject(meeting)}`,
       templateKey: 'meeting-convocation',
       templateData: data,
+      attachments,
     });
 
     return { sentTo: recipientEmail };
