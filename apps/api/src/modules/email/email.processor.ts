@@ -821,49 +821,83 @@ export class EmailProcessor {
           </p>
         `;
       },
-      'meeting-convocation': (d, _cn) => {
+      'meeting-convocation': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const customBody = (d.customBody as string) || '';
+        const coopName = (d.coopName as string) || cn;
+        const coopLogoUrl = (d.coopLogoUrl as string) || '';
+        const brandColor = (d.coopPrimaryColor as string) || '#1e40af';
+
+        // Format the meeting date in the recipient's language. Fall back to the
+        // raw value if Intl can't parse the input — better to ship the ISO than
+        // crash the email render.
+        const localeMap: Record<string, string> = {
+          nl: 'nl-BE',
+          en: 'en-US',
+          fr: 'fr-BE',
+          de: 'de-DE',
+        };
+        let humanDate = String(d.meetingDate ?? '');
+        try {
+          const parsed = new Date(humanDate);
+          if (!isNaN(parsed.getTime())) {
+            humanDate = new Intl.DateTimeFormat(localeMap[lang] || 'nl-BE', {
+              dateStyle: 'full',
+              timeStyle: 'short',
+            }).format(parsed);
+          }
+        } catch {
+          /* keep raw string */
+        }
+
         const t = {
           nl: {
-            title: 'Oproeping Algemene Vergadering',
+            title: `Oproeping ${coopName}`,
+            subtitle: 'Algemene Vergadering',
             dear: `Beste ${d.shareholderName},`,
-            intro: `U wordt uitgenodigd voor de <strong>${d.meetingTitle}</strong> op <strong>${d.meetingDate}</strong> te <strong>${d.meetingLocation || 'nader te bepalen'}</strong>.`,
+            intro: `Namens <strong>${coopName}</strong> nodigen wij u uit voor de <strong>${d.meetingTitle}</strong> op <strong>${humanDate}</strong> te <strong>${d.meetingLocation || 'nader te bepalen'}</strong>.`,
             agendaTitle: 'Agenda',
             cta: 'Reageer op de oproeping',
             proxy: 'Klik op de knop hierboven om aan te geven of u aanwezig zult zijn, niet aanwezig zult zijn, of om uw stem te delegeren aan een andere aandeelhouder (volmacht).',
             attachment: 'In bijlage vindt u de officiële oproeping als PDF.',
             closing: 'Met vriendelijke groet,',
+            signoff: `Het bestuur van ${coopName}`,
           },
           en: {
-            title: 'Notice of General Meeting',
+            title: `Notice — ${coopName}`,
+            subtitle: 'General Meeting',
             dear: `Dear ${d.shareholderName},`,
-            intro: `You are invited to the <strong>${d.meetingTitle}</strong> on <strong>${d.meetingDate}</strong> at <strong>${d.meetingLocation || 'to be determined'}</strong>.`,
+            intro: `On behalf of <strong>${coopName}</strong>, you are invited to the <strong>${d.meetingTitle}</strong> on <strong>${humanDate}</strong> at <strong>${d.meetingLocation || 'to be determined'}</strong>.`,
             agendaTitle: 'Agenda',
             cta: 'Respond to the notice',
             proxy: 'Click the button above to indicate whether you will attend, will not attend, or to delegate your vote to another shareholder (proxy).',
             attachment: 'The official notice is attached as a PDF.',
             closing: 'Kind regards,',
+            signoff: `The board of ${coopName}`,
           },
           fr: {
-            title: "Convocation à l'Assemblée Générale",
+            title: `Convocation — ${coopName}`,
+            subtitle: 'Assemblée Générale',
             dear: `Cher/Chère ${d.shareholderName},`,
-            intro: `Vous êtes invité(e) à <strong>${d.meetingTitle}</strong> le <strong>${d.meetingDate}</strong> à <strong>${d.meetingLocation || 'à déterminer'}</strong>.`,
+            intro: `Au nom de <strong>${coopName}</strong>, vous êtes invité(e) à <strong>${d.meetingTitle}</strong> le <strong>${humanDate}</strong> à <strong>${d.meetingLocation || 'à déterminer'}</strong>.`,
             agendaTitle: 'Ordre du jour',
             cta: 'Répondre à la convocation',
             proxy: "Cliquez sur le bouton ci-dessus pour indiquer si vous serez présent(e), absent(e), ou pour déléguer votre voix à un autre actionnaire (procuration).",
             attachment: "La convocation officielle est jointe en PDF.",
             closing: 'Cordialement,',
+            signoff: `Le conseil d'administration de ${coopName}`,
           },
           de: {
-            title: 'Einladung zur Generalversammlung',
+            title: `Einladung — ${coopName}`,
+            subtitle: 'Generalversammlung',
             dear: `Liebe/r ${d.shareholderName},`,
-            intro: `Sie sind eingeladen zur <strong>${d.meetingTitle}</strong> am <strong>${d.meetingDate}</strong> in <strong>${d.meetingLocation || 'noch zu bestimmen'}</strong>.`,
+            intro: `Im Namen von <strong>${coopName}</strong> laden wir Sie zur <strong>${d.meetingTitle}</strong> am <strong>${humanDate}</strong> in <strong>${d.meetingLocation || 'noch zu bestimmen'}</strong> ein.`,
             agendaTitle: 'Tagesordnung',
             cta: 'Auf die Einladung antworten',
             proxy: 'Klicken Sie oben auf die Schaltfläche, um anzugeben, ob Sie teilnehmen werden, nicht teilnehmen werden, oder Ihre Stimme an einen anderen Anteilseigner zu delegieren (Vollmacht).',
             attachment: 'Die offizielle Einladung ist als PDF beigefügt.',
             closing: 'Mit freundlichen Grüßen,',
+            signoff: `Der Vorstand von ${coopName}`,
           },
         };
         const s = t[lang as keyof typeof t] || t['nl'];
@@ -872,11 +906,23 @@ export class EmailProcessor {
           .sort((a, b) => a.order - b.order)
           .map((i) => `<li><strong>${i.title}</strong>${i.description ? `<br><span style="color:#555;">${i.description}</span>` : ''}</li>`)
           .join('');
+        const logoBlock = coopLogoUrl
+          ? `<div style="text-align: center; margin-bottom: 24px;">
+               <img src="${coopLogoUrl}" alt="${coopName}" style="max-height: 80px; max-width: 240px;" />
+             </div>`
+          : '';
+        const headerBlock = `
+          <div style="border-bottom: 3px solid ${brandColor}; padding-bottom: 14px; margin-bottom: 22px;">
+            ${logoBlock}
+            <h1 style="margin: 0; color: ${brandColor}; font-size: 22px;">${s.title}</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">${s.subtitle}</p>
+          </div>`;
         const ctaButton = `
           <p style="text-align: center; margin: 30px 0;">
             <a href="${d.rsvpUrl}"
-               style="background-color: #1e40af; color: white; padding: 12px 24px;
-                      text-decoration: none; border-radius: 6px; display: inline-block;">
+               style="background-color: ${brandColor}; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;
+                      font-weight: 600;">
               ${s.cta}
             </a>
           </p>`;
@@ -890,23 +936,24 @@ export class EmailProcessor {
             .replaceAll('{{rsvpUrl}}', String(d.rsvpUrl ?? ''))
             .replaceAll('{{shareholderName}}', String(d.shareholderName ?? ''))
             .replaceAll('{{meetingTitle}}', String(d.meetingTitle ?? ''))
-            .replaceAll('{{meetingDate}}', String(d.meetingDate ?? ''))
+            .replaceAll('{{meetingDate}}', humanDate)
             .replaceAll('{{meetingLocation}}', String(d.meetingLocation ?? ''))
-            .replaceAll('{{agendaList}}', agendaHtml ? `<ol>${agendaHtml}</ol>` : '');
+            .replaceAll('{{agendaList}}', agendaHtml ? `<ol>${agendaHtml}</ol>` : '')
+            .replaceAll('{{coopName}}', coopName);
           const hasRsvpLink = /rsvpurl|\/meetings\/rsvp\//i.test(substituted);
-          return substituted + (hasRsvpLink ? '' : ctaButton);
+          return headerBlock + substituted + (hasRsvpLink ? '' : ctaButton);
         }
 
         return `
-          <h1>${s.title}</h1>
+          ${headerBlock}
           <p>${s.dear}</p>
           <p>${s.intro}</p>
-          <h2>${s.agendaTitle}</h2>
+          <h2 style="color: ${brandColor};">${s.agendaTitle}</h2>
           <ol>${agendaHtml}</ol>
           ${ctaButton}
           <p>${s.proxy}</p>
           <p style="color: #666; font-size: 12px;">${s.attachment}</p>
-          <p>${s.closing}</p>
+          <p>${s.closing}<br><strong>${s.signoff}</strong></p>
         `;
       },
       'meeting-rsvp-confirmation': (d, _cn) => {

@@ -2040,6 +2040,7 @@
       "sendTestSuccess": "Test-oproeping naar je admin-mailbox verstuurd.",
       "sendTestFailure": "Test versturen mislukt.",
       "noShareholderForPreview": "Voeg minstens één actieve aandeelhouder toe om voorbeeld te kunnen tonen.",
+      "editorPlaceholder": "Type hier uw eigen oproepingstekst… of laat leeg om de standaard template te gebruiken.",
       "reminderConfig": "Herinneringen",
       "reminderSave": "Herinneringen opslaan",
       "sendReminderNow": "Herinnering nu versturen",

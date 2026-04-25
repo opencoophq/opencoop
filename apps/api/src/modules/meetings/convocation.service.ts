@@ -24,6 +24,9 @@ interface ConvocationTemplateData extends Record<string, unknown> {
   rsvpUrl: string;
   customBody?: string;
   language?: string;
+  coopName: string;
+  coopLogoUrl?: string;
+  coopPrimaryColor?: string;
 }
 
 function createToken(): string {
@@ -74,8 +77,31 @@ export class ConvocationService {
     return filePath;
   }
 
-  private buildSubject(meeting: { title: string; customSubject: string | null }): string {
-    return meeting.customSubject?.trim() || `Oproeping - ${meeting.title}`;
+  private buildSubject(
+    meeting: { title: string; customSubject: string | null },
+    coopName: string,
+  ): string {
+    return meeting.customSubject?.trim() || `${coopName} — ${meeting.title}`;
+  }
+
+  /**
+   * Look up the coop's brand color from its default channel. Falls back to the
+   * platform default blue if no default channel is configured. Cached per
+   * send() invocation by the caller.
+   */
+  private async resolveCoopBranding(coopId: string): Promise<{ logoUrl?: string; primaryColor?: string }> {
+    const coop = await this.prisma.coop.findUnique({
+      where: { id: coopId },
+      select: { logoUrl: true },
+    });
+    const defaultChannel = await this.prisma.channel.findFirst({
+      where: { coopId, isDefault: true, active: true },
+      select: { primaryColor: true },
+    });
+    return {
+      logoUrl: coop?.logoUrl ?? undefined,
+      primaryColor: defaultChannel?.primaryColor ?? undefined,
+    };
   }
 
   private buildTemplateData(
@@ -86,6 +112,7 @@ export class ConvocationService {
       customBody: string | null;
       agendaItems: Array<{ order: number; title: string; description: string | null }>;
     },
+    coop: { name: string; logoUrl?: string; primaryColor?: string },
     shareholderName: string,
     rsvpToken: string,
   ): ConvocationTemplateData {
@@ -101,6 +128,9 @@ export class ConvocationService {
       })),
       rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${rsvpToken}`,
       customBody: meeting.customBody?.trim() || undefined,
+      coopName: coop.name,
+      coopLogoUrl: coop.logoUrl,
+      coopPrimaryColor: coop.primaryColor,
     };
   }
 
@@ -151,6 +181,13 @@ export class ConvocationService {
     if (needsSend.length === 0) {
       return { alreadySent: true };
     }
+
+    const branding = await this.resolveCoopBranding(coopId);
+    const coopForTemplate = {
+      name: meeting.coop.name,
+      logoUrl: branding.logoUrl,
+      primaryColor: branding.primaryColor,
+    };
 
     // For each shareholder needing a send: ensure they have an attendance row
     // with a token. Reuse existing tokens to keep prior emails' RSVP links
@@ -244,9 +281,9 @@ export class ConvocationService {
         await this.email.send({
           coopId,
           to: email,
-          subject: this.buildSubject(meeting),
+          subject: this.buildSubject(meeting, coopForTemplate.name),
           templateKey: 'meeting-convocation',
-          templateData: this.buildTemplateData(meeting, shareholderName, primaryToken),
+          templateData: this.buildTemplateData(meeting, coopForTemplate, shareholderName, primaryToken),
           attachments: attachments.length ? attachments : undefined,
         });
         // Mark this inbox group as sent. Future send() calls won't re-mail them.
@@ -311,17 +348,23 @@ export class ConvocationService {
     });
     if (!sh || sh.coopId !== coopId) throw new NotFoundException('Shareholder not found');
 
+    const branding = await this.resolveCoopBranding(coopId);
+    const coopForTemplate = {
+      name: meeting.coop.name,
+      logoUrl: branding.logoUrl,
+      primaryColor: branding.primaryColor,
+    };
     const recipientEmail = resolveShareholderEmail(sh);
     const shareholderName = `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim();
     const sampleToken = 'preview-token-not-real';
     const data = {
-      ...this.buildTemplateData(meeting, shareholderName, sampleToken),
+      ...this.buildTemplateData(meeting, coopForTemplate, shareholderName, sampleToken),
       language: sh.user?.preferredLanguage ?? 'nl',
     };
 
     const html = this.emailProcessor.renderTemplate('meeting-convocation', data, meeting.coop.name);
     return {
-      subject: this.buildSubject(meeting),
+      subject: this.buildSubject(meeting, coopForTemplate.name),
       html,
       recipientEmail: recipientEmail ?? null,
       shareholderName,
@@ -347,8 +390,14 @@ export class ConvocationService {
     if (meeting.coopId !== coopId) throw new ForbiddenException();
     if (!recipientEmail) throw new BadRequestException('Recipient email required');
 
+    const branding = await this.resolveCoopBranding(coopId);
+    const coopForTemplate = {
+      name: meeting.coop.name,
+      logoUrl: branding.logoUrl,
+      primaryColor: branding.primaryColor,
+    };
     const sampleToken = 'test-' + randomBytes(8).toString('base64url');
-    const data = this.buildTemplateData(meeting, 'Test Recipient', sampleToken);
+    const data = this.buildTemplateData(meeting, coopForTemplate, 'Test Recipient', sampleToken);
 
     // For the test, render a PDF using the first active shareholder so the
     // attachment matches what real recipients will see. Skip silently if there
@@ -373,7 +422,7 @@ export class ConvocationService {
     await this.email.send({
       coopId,
       to: recipientEmail,
-      subject: `[TEST] ${this.buildSubject(meeting)}`,
+      subject: `[TEST] ${this.buildSubject(meeting, coopForTemplate.name)}`,
       templateKey: 'meeting-convocation',
       templateData: data,
       attachments,
