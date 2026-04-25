@@ -216,7 +216,9 @@ export class EmailProcessor {
       .post({ message, saveToSentItems: false });
   }
 
-  private renderTemplate(
+  // Public so other modules (e.g. meetings convocation preview) can render
+  // template HTML synchronously without going through the queue.
+  public renderTemplate(
     templateKey: string,
     data: Record<string, unknown>,
     coopName: string,
@@ -821,6 +823,7 @@ export class EmailProcessor {
       },
       'meeting-convocation': (d, _cn) => {
         const lang = (d.language as string) || 'nl';
+        const customBody = (d.customBody as string) || '';
         const t = {
           nl: {
             title: 'Oproeping Algemene Vergadering',
@@ -865,19 +868,38 @@ export class EmailProcessor {
           .sort((a, b) => a.order - b.order)
           .map((i) => `<li><strong>${i.title}</strong>${i.description ? `<br><span style="color:#555;">${i.description}</span>` : ''}</li>`)
           .join('');
-        return `
-          <h1>${s.title}</h1>
-          <p>${s.dear}</p>
-          <p>${s.intro}</p>
-          <h2>${s.agendaTitle}</h2>
-          <ol>${agendaHtml}</ol>
+        const ctaButton = `
           <p style="text-align: center; margin: 30px 0;">
             <a href="${d.rsvpUrl}"
                style="background-color: #1e40af; color: white; padding: 12px 24px;
                       text-decoration: none; border-radius: 6px; display: inline-block;">
               ${s.cta}
             </a>
-          </p>
+          </p>`;
+
+        // Custom body path: admin-supplied HTML with template-variable substitution.
+        // We substitute then check whether the body references the RSVP link in
+        // any way; if not, we append the standard CTA button so the link is
+        // never accidentally omitted.
+        if (customBody) {
+          const substituted = customBody
+            .replaceAll('{{rsvpUrl}}', String(d.rsvpUrl ?? ''))
+            .replaceAll('{{shareholderName}}', String(d.shareholderName ?? ''))
+            .replaceAll('{{meetingTitle}}', String(d.meetingTitle ?? ''))
+            .replaceAll('{{meetingDate}}', String(d.meetingDate ?? ''))
+            .replaceAll('{{meetingLocation}}', String(d.meetingLocation ?? ''))
+            .replaceAll('{{agendaList}}', agendaHtml ? `<ol>${agendaHtml}</ol>` : '');
+          const hasRsvpLink = /rsvpurl|\/meetings\/rsvp\//i.test(substituted);
+          return substituted + (hasRsvpLink ? '' : ctaButton);
+        }
+
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.intro}</p>
+          <h2>${s.agendaTitle}</h2>
+          <ol>${agendaHtml}</ol>
+          ${ctaButton}
           <p style="color: #666; font-size: 12px;">${s.proxy}</p>
           <p>${s.closing}</p>
         `;

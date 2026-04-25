@@ -3,11 +3,13 @@ import { BadRequestException } from '@nestjs/common';
 import { ConvocationService } from './convocation.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { EmailProcessor } from '../email/email.processor';
 
 describe('ConvocationService', () => {
   let service: ConvocationService;
   let prisma: any;
   let emailService: any;
+  let emailProcessor: any;
 
   const FAR_FUTURE = new Date(Date.now() + 30 * 24 * 3600 * 1000);
 
@@ -20,50 +22,167 @@ describe('ConvocationService', () => {
       title: 'AGM 2026',
       location: 'Brussels',
       agendaItems: [],
-      coop: { name: 'Co' },
+      coop: { name: 'Co', minConvocationDays: 15 },
+      convocationSentAt: null,
+      customSubject: null,
+      customBody: null,
       ...overrides,
     };
   }
 
   beforeEach(async () => {
     emailService = { send: jest.fn().mockResolvedValue(undefined) };
+    emailProcessor = { renderTemplate: jest.fn().mockReturnValue('<html>preview</html>') };
     prisma = {
       meeting: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({}) },
-      shareholder: { findMany: jest.fn() },
-      meetingAttendance: { upsert: jest.fn().mockResolvedValue({}), findMany: jest.fn() },
+      shareholder: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
+      meetingAttendance: {
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
     };
     const moduleRef = await Test.createTestingModule({
       providers: [
         ConvocationService,
         { provide: PrismaService, useValue: prisma },
         { provide: EmailService, useValue: emailService },
+        { provide: EmailProcessor, useValue: emailProcessor },
       ],
     }).compile();
     service = moduleRef.get(ConvocationService);
   });
 
-  it('rejects convocation less than 15 days before meeting without override', async () => {
-    const scheduledAt = new Date(Date.now() + 10 * 24 * 3600 * 1000);
-    prisma.meeting.findUnique.mockResolvedValue(makeMeeting({ scheduledAt }));
-    await expect(service.send('c1', 'm1', { confirmShortNotice: false })).rejects.toThrow(
-      BadRequestException,
-    );
+  describe('notice-period validation', () => {
+    it('rejects convocation less than the coop-configured minimum days without override', async () => {
+      const scheduledAt = new Date(Date.now() + 10 * 24 * 3600 * 1000);
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting({ scheduledAt }));
+      await expect(service.send('c1', 'm1', { confirmShortNotice: false })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('honors a custom per-coop minConvocationDays (e.g. Bronsgroen at 14)', async () => {
+      // 14 days away passes the check for a coop configured with min=14.
+      const scheduledAt = new Date(Date.now() + 14 * 24 * 3600 * 1000 + 60_000);
+      prisma.meeting.findUnique.mockResolvedValue(
+        makeMeeting({ scheduledAt, coop: { name: 'Co', minConvocationDays: 14 } }),
+      );
+      // Empty shareholder list — focus is the threshold, not the send.
+      prisma.shareholder.findMany.mockResolvedValue([]);
+      await expect(service.send('c1', 'm1', {})).resolves.toBeDefined();
+    });
+
+    it('rejects a 14-day-away convocation when the coop requires the WVV-default 15', async () => {
+      const scheduledAt = new Date(Date.now() + 14 * 24 * 3600 * 1000);
+      prisma.meeting.findUnique.mockResolvedValue(
+        makeMeeting({ scheduledAt, coop: { name: 'Co', minConvocationDays: 15 } }),
+      );
+      await expect(service.send('c1', 'm1', {})).rejects.toThrow(BadRequestException);
+    });
+
+    it('allows short notice if confirmed (no shareholders = not marked CONVOKED)', async () => {
+      const scheduledAt = new Date(Date.now() + 10 * 24 * 3600 * 1000);
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting({ scheduledAt }));
+      prisma.shareholder.findMany.mockResolvedValue([]);
+      const result = await service.send('c1', 'm1', { confirmShortNotice: true });
+      // No shareholders to send to → returns alreadySent for empty needsSend set.
+      expect(prisma.meeting.update).not.toHaveBeenCalled();
+      expect(result).toEqual({ alreadySent: true });
+    });
   });
 
-  it('allows short notice if confirmed (no shareholders = not marked CONVOKED)', async () => {
-    const scheduledAt = new Date(Date.now() + 10 * 24 * 3600 * 1000);
-    prisma.meeting.findUnique.mockResolvedValue(makeMeeting({ scheduledAt }));
-    prisma.shareholder.findMany.mockResolvedValue([]);
-    const result = await service.send('c1', 'm1', { confirmShortNotice: true });
-    // No shareholders → no emails sent → meeting NOT marked CONVOKED (to allow retry when shareholders exist)
-    expect(prisma.meeting.update).not.toHaveBeenCalled();
-    expect((result as any).sent).toHaveLength(0);
-  });
+  describe('retry safety', () => {
+    it('returns alreadySent when every shareholder has convocationSentAt set', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        { id: 's1', email: 'a@x.com', user: null, firstName: 'A', lastName: 'X' },
+      ]);
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        { shareholderId: 's1', rsvpToken: 'tok-s1', convocationSentAt: new Date() },
+      ]);
 
-  it('is idempotent if meeting is already CONVOKED', async () => {
-    prisma.meeting.findUnique.mockResolvedValue(makeMeeting({ status: 'CONVOKED' }));
-    const res = await service.send('c1', 'm1', {});
-    expect(res).toEqual({ alreadySent: true });
+      const res = await service.send('c1', 'm1', {});
+
+      expect(res).toEqual({ alreadySent: true });
+      expect(emailService.send).not.toHaveBeenCalled();
+      expect(prisma.meetingAttendance.create).not.toHaveBeenCalled();
+    });
+
+    it('re-sends only to shareholders without convocationSentAt (partial-failure recovery)', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        { id: 's1', email: 'a@x.com', user: null, firstName: 'A', lastName: 'X' },
+        { id: 's2', email: 'b@x.com', user: null, firstName: 'B', lastName: 'X' },
+        { id: 's3', email: 'c@x.com', user: null, firstName: 'C', lastName: 'X' },
+      ]);
+      // s1 already mailed; s2 and s3 are still pending (e.g. previous send failed for them).
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        { shareholderId: 's1', rsvpToken: 'tok-s1', convocationSentAt: new Date() },
+        { shareholderId: 's2', rsvpToken: 'tok-s2', convocationSentAt: null },
+        { shareholderId: 's3', rsvpToken: 'tok-s3', convocationSentAt: null },
+      ]);
+
+      const res = await service.send('c1', 'm1', {});
+      const sent = (res as any).sent as Array<{ to: string; shareholderIds: string[] }>;
+
+      expect(sent.map((s) => s.to).sort()).toEqual(['b@x.com', 'c@x.com']);
+      expect(emailService.send).toHaveBeenCalledTimes(2);
+      expect(prisma.meetingAttendance.create).not.toHaveBeenCalled(); // existing attendances reused
+    });
+
+    it('preserves existing rsvpToken on retry — does not rotate it', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        { id: 's1', email: 'a@x.com', user: null, firstName: 'A', lastName: 'X' },
+      ]);
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        { shareholderId: 's1', rsvpToken: 'persisted-token', convocationSentAt: null },
+      ]);
+
+      await service.send('c1', 'm1', {});
+
+      expect(prisma.meetingAttendance.create).not.toHaveBeenCalled();
+      const sentCall = emailService.send.mock.calls[0][0];
+      expect(sentCall.templateData.rsvpUrl).toContain('persisted-token');
+    });
+
+    it('marks convocationSentAt for all shareholders in a successfully-mailed inbox group', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        { id: 's1', email: null, user: { email: 'shared@x.com' }, firstName: 'A', lastName: '' },
+        { id: 's2', email: null, user: { email: 'shared@x.com' }, firstName: 'B', lastName: '' },
+      ]);
+      // No prior attendances → both will be created fresh.
+      prisma.meetingAttendance.findMany.mockResolvedValue([]);
+
+      await service.send('c1', 'm1', { confirmShortNotice: true });
+
+      expect(prisma.meetingAttendance.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { meetingId: 'm1', shareholderId: { in: expect.arrayContaining(['s1', 's2']) } },
+          data: { convocationSentAt: expect.any(Date) },
+        }),
+      );
+    });
+
+    it('does not mark convocationSentAt when the email send throws', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        { id: 's1', email: 'a@x.com', user: null, firstName: 'A', lastName: 'X' },
+      ]);
+      prisma.meetingAttendance.findMany.mockResolvedValue([]);
+      emailService.send.mockRejectedValueOnce(new Error('SMTP exploded'));
+
+      const res = await service.send('c1', 'm1', { confirmShortNotice: true });
+
+      expect(prisma.meetingAttendance.updateMany).not.toHaveBeenCalled();
+      const failures = (res as any).failures;
+      expect(failures).toHaveLength(1);
+      expect(failures[0].to).toBe('a@x.com');
+      // All-fail → meeting NOT marked CONVOKED so admin can retry.
+      expect(prisma.meeting.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('sendReminderNow with shared households', () => {
@@ -79,7 +198,6 @@ describe('ConvocationService', () => {
 
     it('sends one email per distinct inbox when multiple shareholders share a User', async () => {
       prisma.meeting.findUnique.mockResolvedValue(makeMeetingForReminder());
-      // Three attendances: s1 & s2 share jan@x.com (via user.email), s3 has own piet@x.com
       prisma.meetingAttendance.findMany.mockResolvedValue([
         {
           rsvpToken: 'token-s1',
@@ -100,14 +218,12 @@ describe('ConvocationService', () => {
 
       const result = await service.sendReminderNow('c1', 'm1');
 
-      // Only 2 emails sent (one per distinct inbox)
       expect(emailService.send).toHaveBeenCalledTimes(2);
       expect(result.sent).toBe(2);
 
       const recipients = emailService.send.mock.calls.map((c: any[]) => c[0].to).sort();
       expect(recipients).toEqual(['jan@x.com', 'piet@x.com']);
 
-      // jan@x.com should use the first shareholder's token
       const janCall = emailService.send.mock.calls.find((c: any[]) => c[0].to === 'jan@x.com');
       expect(janCall[0].templateData.rsvpUrl).toContain('token-s1');
     });
@@ -137,7 +253,6 @@ describe('ConvocationService', () => {
 
   describe('sendConvocation with shared households', () => {
     it('sends one email per distinct User when multiple shareholders share a User', async () => {
-      // User U1 (jan@x.com) owns S1 and S2 (both email=null), User U2 (piet@x.com) owns S3 (email=null)
       prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
       prisma.shareholder.findMany.mockResolvedValue([
         { id: 's1', email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'A', coopId: 'c1' },
@@ -147,7 +262,6 @@ describe('ConvocationService', () => {
 
       const result = await service.send('c1', 'm1', { confirmShortNotice: true });
 
-      // result is { sent: Array<{to, shareholderIds}>, ... } — extract sent array
       expect(result).toHaveProperty('sent');
       const sent = (result as any).sent as Array<{ to: string; shareholderIds: string[] }>;
       expect(sent).toHaveLength(2);
@@ -159,7 +273,6 @@ describe('ConvocationService', () => {
       expect(jansEmail.shareholderIds).toHaveLength(2);
       expect(jansEmail.shareholderIds.sort()).toEqual(['s1', 's2']);
 
-      // Email service should be called exactly twice (one per distinct inbox)
       expect(emailService.send).toHaveBeenCalledTimes(2);
     });
 
@@ -167,7 +280,6 @@ describe('ConvocationService', () => {
       prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
       prisma.shareholder.findMany.mockResolvedValue([
         { id: 's1', email: 'real@x.com', user: null, firstName: 'Real', lastName: 'Person', coopId: 'c1' },
-        // postal-only: neither shareholder.email nor user.email
         { id: 's2', email: null, user: null, firstName: 'Postal', lastName: 'Only', coopId: 'c1' },
         { id: 's3', email: null, user: { email: null }, firstName: 'Also', lastName: 'Postal', coopId: 'c1' },
       ]);

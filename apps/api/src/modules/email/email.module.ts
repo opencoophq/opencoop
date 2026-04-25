@@ -10,6 +10,6 @@ import { EmailProcessor } from './email.processor';
     }),
   ],
   providers: [EmailService, EmailProcessor],
-  exports: [EmailService],
+  exports: [EmailService, EmailProcessor],
 })
 export class EmailModule {}
