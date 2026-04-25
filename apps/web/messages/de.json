@@ -2038,6 +2038,7 @@
       "sendTestFailure": "Testversand fehlgeschlagen.",
       "noShareholderForPreview": "Mindestens einen aktiven Anteilseigner hinzufügen, um die Vorschau zu aktivieren.",
       "editorPlaceholder": "Geben Sie hier Ihren eigenen Einladungstext ein… oder lassen Sie es leer, um die Standardvorlage zu verwenden.",
+      "resetToDefault": "Standardtext wiederherstellen",
       "reminderConfig": "Erinnerungen",
       "reminderSave": "Erinnerungen speichern",
       "sendReminderNow": "Erinnerung jetzt senden",

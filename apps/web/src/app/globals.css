@@ -57,3 +57,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Show placeholder text inside an empty contentEditable element. */
+[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+}
