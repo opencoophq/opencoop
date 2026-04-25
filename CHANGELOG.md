@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.10] - 2026-04-25
+
+### Fixed
+- **RSVP click recorded correctly but showed "Link verlopen" page.** After a shareholder clicked an RSVP option, the PATCH actually persisted their response, but `router.push('./thanks?...')` from `/<locale>/meetings/rsvp/<token>` resolved per the URL spec to `/<locale>/meetings/rsvp/thanks` (the trailing `<token>` segment got treated as a "file" and replaced). The dynamic `[token]` route then matched `thanks` as the token, the API GET 404'd, and the page rendered the expired card. Replaced with an absolute path containing both locale and token.
+
 ## [0.8.9] - 2026-04-25
 
 ### Fixed
