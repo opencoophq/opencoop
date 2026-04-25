@@ -122,7 +122,17 @@ export default function PublicRsvpPage() {
         setSubmitting(null);
         return;
       }
-      router.push(`./thanks?status=${status.toLowerCase()}`);
+      // Use an absolute path including the token. A relative `./thanks`
+      // resolves wrong: from `/<locale>/meetings/rsvp/<token>` the URL spec
+      // treats `<token>` as a file (no trailing slash) and replaces it with
+      // `thanks`, giving `/<locale>/meetings/rsvp/thanks` — the route then
+      // catches `thanks` as the dynamic [token] param, the API GET 404s, and
+      // the page renders the "Link verlopen" expired card even though the
+      // PATCH above already succeeded.
+      const localeSegment = (params?.locale as string) || locale || 'nl';
+      router.push(
+        `/${localeSegment}/meetings/rsvp/${token}/thanks?status=${status.toLowerCase()}`,
+      );
     } catch {
       setSubmitError(t('meetings.publicRsvp.submitError'));
       setSubmitting(null);
