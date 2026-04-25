@@ -73,7 +73,8 @@ export class MeetingRsvpController {
     const att = await this.rsvp.resolveToken(token);
     const content = this.ics.generate({
       uid: `meeting-${att.meeting.id}@opencoop.be`,
-      title: att.meeting.title,
+      // Prefix with coop name so the event is identifiable in a busy calendar.
+      title: `${att.meeting.coop.name} — ${att.meeting.title}`,
       start: att.meeting.scheduledAt,
       durationMinutes: att.meeting.durationMinutes,
       location: att.meeting.location ?? '',
