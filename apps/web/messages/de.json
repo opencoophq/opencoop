@@ -1610,7 +1610,8 @@
       "capitalStatement": "Kapitalübersicht",
       "shareholderRegister": "Anteilseignerregister",
       "dividendSummary": "Dividendenübersicht",
-      "projectInvestment": "Projektinvestition"
+      "projectInvestment": "Projektinvestition",
+      "shareholdersPerProject": "Aktionäre pro Projekt"
     },
     "types": {
       "buy": "Kauf",
@@ -1685,6 +1686,19 @@
       "distribution": "Kapitalverteilung",
       "details": "Projektdetails",
       "searchPlaceholder": "Projekte suchen..."
+    },
+    "shareholdersPerProject": {
+      "noProjects": "Keine Projekte gefunden.",
+      "noShareholders": "Keine Aktionäre für dieses Projekt gefunden.",
+      "selectProject": "Projekt auswählen",
+      "shareholder": "Aktionär",
+      "type": "Typ",
+      "shareClass": "Aktienklasse",
+      "shares": "Aktien",
+      "capital": "Kapital",
+      "registerDate": "Registrierungsdatum",
+      "shareholders": "Aktionäre",
+      "details": "Aktionärsdetails"
     }
   },
   "feedback": {
