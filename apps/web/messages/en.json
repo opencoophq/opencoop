@@ -2233,7 +2233,10 @@
       "view": "View",
       "backToList": "Back to meetings",
       "agendaHeading": "Agenda",
-      "invitedNote": "You are invited to this meeting. To RSVP, use the link in the convocation email."
+      "invitedNote": "You are invited to this meeting. To RSVP, use the link in the convocation email.",
+      "changeAnytimeNote": "You can change your answer until the meeting starts.",
+      "addToCalendar": "Add to calendar",
+      "addToCalendarHelp": "Works with Apple Calendar, Google Calendar, Outlook and Thunderbird (.ics file)."
     },
     "edit": {
       "heading": "Edit meeting",

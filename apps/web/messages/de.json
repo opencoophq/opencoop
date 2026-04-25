@@ -2230,7 +2230,10 @@
       "view": "Ansehen",
       "backToList": "Zurück zu den Versammlungen",
       "agendaHeading": "Tagesordnung",
-      "invitedNote": "Sie sind zu dieser Versammlung eingeladen. Verwenden Sie zum Antworten den Link in der Einladungs-E-Mail."
+      "invitedNote": "Sie sind zu dieser Versammlung eingeladen. Verwenden Sie zum Antworten den Link in der Einladungs-E-Mail.",
+      "changeAnytimeNote": "Sie können Ihre Antwort bis zum Beginn der Versammlung ändern.",
+      "addToCalendar": "Zum Kalender hinzufügen",
+      "addToCalendarHelp": "Funktioniert mit Apple Calendar, Google Kalender, Outlook und Thunderbird (.ics-Datei)."
     },
     "edit": {
       "heading": "Versammlung bearbeiten",
