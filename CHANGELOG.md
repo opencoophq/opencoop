@@ -2,6 +2,17 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.6] - 2026-04-25
+
+### Added
+- **Personalized convocation PDF attached to every outgoing email.** Each shareholder now receives the official AGM letter as a PDF in their inbox (filename `oproeping-{First}-{Last}.pdf`). The PDF is rendered per shareholder via `MeetingPdfService.convocation()` and persisted to `UPLOAD_DIR/convocations/<meetingId>/<shareholderId>.pdf` so the Bull email worker can attach it by path. Shared-inbox households get one email with one attachment per named family member, so each person has their own personalized letter. Same attachment shows up in the `[TEST]` email when admins use "Send a test to me", so what they see in their own inbox matches what real recipients will get.
+
+### Changed
+- **Convocation email copy emphasizes the RSVP link covers all three responses (NL/EN/FR/DE).** The CTA button is renamed from "RSVP hier" to "Reageer op de oproeping" and the body explicitly calls out attend / decline / proxy as one-click options under the same link. Lowers the cognitive load when a shareholder is deciding what to do — proxy is no longer hidden behind the "if you can't attend" framing.
+
+### Fixed
+- PDF render failures for a single shareholder no longer block the entire convocation email. The flow now warns and sends the email without that one attachment instead of failing the whole inbox group.
+
 ## [0.8.5] - 2026-04-25
 
 ### Added
