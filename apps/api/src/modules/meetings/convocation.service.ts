@@ -130,7 +130,10 @@ export class ConvocationService {
 
     // For each shareholder needing a send: ensure they have an attendance row
     // with a token. Reuse existing tokens to keep prior emails' RSVP links
-    // working; create new attendances for first-time recipients.
+    // working; create new attendances for first-time recipients. Use upsert so
+    // that two concurrent send() calls don't race on the unique constraint —
+    // the second call's `update: {}` is a no-op that preserves the token from
+    // whichever call won the create.
     const tokenMap = new Map<string, string>();
     for (const sh of needsSend) {
       const existing = attMap.get(sh.id);
@@ -140,18 +143,21 @@ export class ConvocationService {
       }
       try {
         const token = createToken();
-        await this.prisma.meetingAttendance.create({
-          data: {
+        const row = await this.prisma.meetingAttendance.upsert({
+          where: { meetingId_shareholderId: { meetingId, shareholderId: sh.id } },
+          create: {
             meetingId,
             shareholderId: sh.id,
             rsvpToken: token,
             rsvpTokenExpires: meeting.scheduledAt,
           },
+          update: {}, // no-op: another concurrent send() may have created the row
+          select: { rsvpToken: true },
         });
-        tokenMap.set(sh.id, token);
+        tokenMap.set(sh.id, row.rsvpToken);
       } catch (err) {
         this.logger.warn(
-          `Attendance create failed for shareholder ${sh.id}: ${err instanceof Error ? err.message : String(err)}`,
+          `Attendance upsert failed for shareholder ${sh.id}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }

@@ -38,7 +38,9 @@ describe('ConvocationService', () => {
       shareholder: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
       meetingAttendance: {
         findMany: jest.fn().mockResolvedValue([]),
-        create: jest.fn().mockResolvedValue({}),
+        upsert: jest.fn().mockImplementation(({ create }) =>
+          Promise.resolve({ rsvpToken: create.rsvpToken }),
+        ),
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
     };
@@ -106,7 +108,7 @@ describe('ConvocationService', () => {
 
       expect(res).toEqual({ alreadySent: true });
       expect(emailService.send).not.toHaveBeenCalled();
-      expect(prisma.meetingAttendance.create).not.toHaveBeenCalled();
+      expect(prisma.meetingAttendance.upsert).not.toHaveBeenCalled();
     });
 
     it('re-sends only to shareholders without convocationSentAt (partial-failure recovery)', async () => {
@@ -128,7 +130,7 @@ describe('ConvocationService', () => {
 
       expect(sent.map((s) => s.to).sort()).toEqual(['b@x.com', 'c@x.com']);
       expect(emailService.send).toHaveBeenCalledTimes(2);
-      expect(prisma.meetingAttendance.create).not.toHaveBeenCalled(); // existing attendances reused
+      expect(prisma.meetingAttendance.upsert).not.toHaveBeenCalled(); // existing attendances reused
     });
 
     it('preserves existing rsvpToken on retry — does not rotate it', async () => {
@@ -142,7 +144,7 @@ describe('ConvocationService', () => {
 
       await service.send('c1', 'm1', {});
 
-      expect(prisma.meetingAttendance.create).not.toHaveBeenCalled();
+      expect(prisma.meetingAttendance.upsert).not.toHaveBeenCalled();
       const sentCall = emailService.send.mock.calls[0][0];
       expect(sentCall.templateData.rsvpUrl).toContain('persisted-token');
     });
