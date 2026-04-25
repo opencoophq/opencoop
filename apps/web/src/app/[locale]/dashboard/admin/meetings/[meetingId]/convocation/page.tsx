@@ -64,6 +64,79 @@ interface ShareholderListItem {
   email?: string | null;
 }
 
+/**
+ * Starter HTML the admin sees in the WYSIWYG editor when no customBody has been
+ * saved yet. Mirrors the shape of the server-side default template so the editor
+ * is a "live, editable preview" rather than a blank box. Variables stay as
+ * {{...}} text — they get substituted at send time, per shareholder.
+ */
+function buildStarterEmailBody(uiLocale: string, coopName: string): string {
+  const lang = uiLocale.slice(0, 2);
+  const t: Record<
+    string,
+    {
+      dear: string;
+      intro: string;
+      agenda: string;
+      proxy: string;
+      attachment: string;
+      cta: string;
+      closing: string;
+      signoff: string;
+    }
+  > = {
+    nl: {
+      dear: 'Beste {{shareholderName}},',
+      intro: `Namens <strong>${coopName}</strong> nodigen wij u uit voor <strong>{{meetingTitle}}</strong> op <strong>{{meetingDate}}</strong> te <strong>{{meetingLocation}}</strong>.`,
+      agenda: 'Agenda',
+      cta: 'Reageer op de oproeping: {{rsvpUrl}}',
+      proxy: 'Klik op de link hierboven om aan te geven of u aanwezig zult zijn, niet aanwezig zult zijn, of om uw stem te delegeren aan een andere aandeelhouder (volmacht).',
+      attachment: 'In bijlage vindt u de officiële oproeping als PDF.',
+      closing: 'Met vriendelijke groet,',
+      signoff: `Het bestuur van ${coopName}`,
+    },
+    en: {
+      dear: 'Dear {{shareholderName}},',
+      intro: `On behalf of <strong>${coopName}</strong>, you are invited to <strong>{{meetingTitle}}</strong> on <strong>{{meetingDate}}</strong> at <strong>{{meetingLocation}}</strong>.`,
+      agenda: 'Agenda',
+      cta: 'Respond to the notice: {{rsvpUrl}}',
+      proxy: 'Click the link above to indicate whether you will attend, will not attend, or to delegate your vote to another shareholder (proxy).',
+      attachment: 'The official notice is attached as a PDF.',
+      closing: 'Kind regards,',
+      signoff: `The board of ${coopName}`,
+    },
+    fr: {
+      dear: 'Cher/Chère {{shareholderName}},',
+      intro: `Au nom de <strong>${coopName}</strong>, vous êtes invité(e) à <strong>{{meetingTitle}}</strong> le <strong>{{meetingDate}}</strong> à <strong>{{meetingLocation}}</strong>.`,
+      agenda: 'Ordre du jour',
+      cta: 'Répondre à la convocation : {{rsvpUrl}}',
+      proxy: "Cliquez sur le lien ci-dessus pour indiquer si vous serez présent(e), absent(e), ou pour déléguer votre voix à un autre actionnaire (procuration).",
+      attachment: "La convocation officielle est jointe en PDF.",
+      closing: 'Cordialement,',
+      signoff: `Le conseil d'administration de ${coopName}`,
+    },
+    de: {
+      dear: 'Liebe/r {{shareholderName}},',
+      intro: `Im Namen von <strong>${coopName}</strong> laden wir Sie zur <strong>{{meetingTitle}}</strong> am <strong>{{meetingDate}}</strong> in <strong>{{meetingLocation}}</strong> ein.`,
+      agenda: 'Tagesordnung',
+      cta: 'Auf die Einladung antworten: {{rsvpUrl}}',
+      proxy: 'Klicken Sie oben auf den Link, um anzugeben, ob Sie teilnehmen werden, nicht teilnehmen werden, oder Ihre Stimme an einen anderen Anteilseigner zu delegieren (Vollmacht).',
+      attachment: 'Die offizielle Einladung ist als PDF beigefügt.',
+      closing: 'Mit freundlichen Grüßen,',
+      signoff: `Der Vorstand von ${coopName}`,
+    },
+  };
+  const s = t[lang] ?? t.nl;
+  return `<p>${s.dear}</p>
+<p>${s.intro}</p>
+<h2>${s.agenda}</h2>
+{{agendaList}}
+<p>${s.cta}</p>
+<p>${s.proxy}</p>
+<p style="color: #666; font-size: 12px;">${s.attachment}</p>
+<p>${s.closing}<br><strong>${s.signoff}</strong></p>`;
+}
+
 const REMINDER_DAY_OPTIONS = [14, 7, 3, 1];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -118,15 +191,20 @@ export default function ConvocationPage() {
       setStatus(s);
       setReminderDays(m.reminderDaysBefore ?? []);
       setCustomSubject(meetingWithCoop.customSubject ?? '');
-      const incomingBody = meetingWithCoop.customBody ?? '';
-      setCustomBody(incomingBody);
-      // Sync the contentEditable DOM with the freshly-loaded value. We only
+      // If no customBody has been saved yet, pre-fill the editor with a
+      // localized starter so the admin sees what an email looks like and can
+      // edit inline. Saving as-is captures the starter into customBody, which
+      // is fine — the starter mirrors the server-default template. Admin can
+      // click "Reset" to revert to empty (= "use server template").
+      const savedBody = meetingWithCoop.customBody ?? '';
+      const coopNameForStarter = selectedCoop?.name ?? 'Onze coöperatie';
+      const bodyToShow = savedBody || buildStarterEmailBody(locale, coopNameForStarter);
+      setCustomBody(bodyToShow);
+      // Sync the contentEditable DOM with the freshly-loaded value. Only
       // overwrite when the editor isn't currently focused so we don't fight
-      // the user's typing if a refetch arrives mid-edit. Source is the admin's
-      // own saved HTML for their own coop's email — same trust boundary as the
-      // iframe preview that already renders it.
+      // the user's typing if a refetch arrives mid-edit.
       if (editorRef.current && document.activeElement !== editorRef.current) {
-        const parsed = new DOMParser().parseFromString(incomingBody, 'text/html');
+        const parsed = new DOMParser().parseFromString(bodyToShow, 'text/html');
         editorRef.current.replaceChildren(...Array.from(parsed.body.childNodes));
       }
       setFirstShareholder(sh.items?.[0] ?? null);
@@ -136,7 +214,17 @@ export default function ConvocationPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCoop, meetingId, t]);
+  }, [selectedCoop, meetingId, locale, t]);
+
+  const resetEmailToDefault = () => {
+    if (alreadyConvoked || !selectedCoop) return;
+    const fresh = buildStarterEmailBody(locale, selectedCoop.name ?? 'Onze coöperatie');
+    setCustomBody(fresh);
+    if (editorRef.current) {
+      const parsed = new DOMParser().parseFromString(fresh, 'text/html');
+      editorRef.current.replaceChildren(...Array.from(parsed.body.childNodes));
+    }
+  };
 
   useEffect(() => {
     fetchAll();
@@ -463,9 +551,14 @@ export default function ConvocationPage() {
             </p>
           </div>
           {!alreadyConvoked && (
-            <Button onClick={saveCustomEmail} disabled={savingCustom} variant="outline">
-              {savingCustom ? t('common.loading') : t('common.save')}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={saveCustomEmail} disabled={savingCustom} variant="outline">
+                {savingCustom ? t('common.loading') : t('common.save')}
+              </Button>
+              <Button onClick={resetEmailToDefault} variant="ghost">
+                {t('meetings.convocation.resetToDefault')}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
