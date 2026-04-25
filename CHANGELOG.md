@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.8] - 2026-04-25
+
+### Fixed
+- **WYSIWYG editor opened to a blank box.** The contentEditable convocation editor shipped in v0.8.7 had no starter content, so admins saw a bare cursor instead of the email content they could adapt. Editor now pre-fills with a localized starter template (greeting + intro with coop name + agenda placeholder + RSVP link + signoff) when no `customBody` has been saved yet, mirroring the server-default. Variables stay as `{{...}}` text and substitute at send time. New "Reset to default copy" button replaces editor content with a fresh starter. Truly-empty editor now shows a muted placeholder hint via CSS.
+
 ## [0.8.7] - 2026-04-25
 
 ### Added
