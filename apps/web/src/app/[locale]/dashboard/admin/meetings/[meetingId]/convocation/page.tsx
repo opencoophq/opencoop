@@ -31,6 +31,20 @@ import { useLocale } from '@/contexts/locale-context';
 import { ArrowLeft, Mail, Eye, AlertTriangle, Send, BellRing } from 'lucide-react';
 import type { MeetingDto, RSVPStatus } from '@opencoop/shared';
 
+type MeetingWithCoop = MeetingDto & {
+  coop?: { minConvocationDays: number } | null;
+  customSubject?: string | null;
+  customBody?: string | null;
+};
+
+interface EmailPreview {
+  subject: string;
+  html: string;
+  recipientEmail: string | null;
+  shareholderName: string;
+  isPostalOnly: boolean;
+}
+
 interface ConvocationStatusItem {
   id: string;
   shareholderId: string;
@@ -61,7 +75,7 @@ export default function ConvocationPage() {
   const { selectedCoop } = useAdmin();
   const { locale } = useLocale();
 
-  const [meeting, setMeeting] = useState<MeetingDto | null>(null);
+  const [meeting, setMeeting] = useState<MeetingWithCoop | null>(null);
   const [status, setStatus] = useState<ConvocationStatusItem[]>([]);
   const [firstShareholder, setFirstShareholder] = useState<ShareholderListItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,6 +90,14 @@ export default function ConvocationPage() {
   const [sending, setSending] = useState(false);
 
   const [sendingReminderNow, setSendingReminderNow] = useState(false);
+  const [openingPreview, setOpeningPreview] = useState(false);
+
+  const [customSubject, setCustomSubject] = useState('');
+  const [customBody, setCustomBody] = useState('');
+  const [savingCustom, setSavingCustom] = useState(false);
+  const [emailPreview, setEmailPreview] = useState<EmailPreview | null>(null);
+  const [loadingEmailPreview, setLoadingEmailPreview] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!selectedCoop || !meetingId) return;
@@ -90,9 +112,12 @@ export default function ConvocationPage() {
           `/admin/coops/${selectedCoop.id}/shareholders?pageSize=1&page=1`,
         ).catch(() => ({ items: [] as ShareholderListItem[] })),
       ]);
-      setMeeting(m);
+      const meetingWithCoop = m as MeetingWithCoop;
+      setMeeting(meetingWithCoop);
       setStatus(s);
       setReminderDays(m.reminderDaysBefore ?? []);
+      setCustomSubject(meetingWithCoop.customSubject ?? '');
+      setCustomBody(meetingWithCoop.customBody ?? '');
       setFirstShareholder(sh.items?.[0] ?? null);
       setError(null);
     } catch {
@@ -111,13 +136,76 @@ export default function ConvocationPage() {
         (new Date(meeting.scheduledAt).getTime() - Date.now()) / (86400 * 1000),
       )
     : 0;
-  const isShortNotice = !!meeting && daysUntil < 15;
+  const minNoticeDays = meeting?.coop?.minConvocationDays ?? 15;
+  const isShortNotice = !!meeting && daysUntil < minNoticeDays;
   const alreadyConvoked = meeting?.status !== 'DRAFT';
 
   const toggleReminderDay = (day: number) => {
     setReminderDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort((a, b) => b - a),
     );
+  };
+
+  // Load the rendered email-preview whenever the meeting + a shareholder are
+  // available. Re-runs after saving custom subject/body so the preview reflects
+  // the latest persisted values without an extra round-trip.
+  const loadEmailPreview = useCallback(async () => {
+    if (!selectedCoop || !meeting || !firstShareholder) {
+      setEmailPreview(null);
+      return;
+    }
+    setLoadingEmailPreview(true);
+    try {
+      const preview = await api<EmailPreview>(
+        `/admin/coops/${selectedCoop.id}/meetings/${meeting.id}/convocation/email-preview?shareholderId=${firstShareholder.id}`,
+      );
+      setEmailPreview(preview);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+      setEmailPreview(null);
+    } finally {
+      setLoadingEmailPreview(false);
+    }
+  }, [selectedCoop, meeting, firstShareholder, t]);
+
+  useEffect(() => {
+    loadEmailPreview();
+  }, [loadEmailPreview]);
+
+  const saveCustomEmail = async () => {
+    if (!selectedCoop || !meeting) return;
+    setSavingCustom(true);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/meetings/${meeting.id}`, {
+        method: 'PATCH',
+        body: {
+          customSubject: customSubject.trim() ? customSubject : null,
+          customBody: customBody.trim() ? customBody : null,
+        },
+      });
+      setSuccess(t('common.success'));
+      await fetchAll();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    } finally {
+      setSavingCustom(false);
+    }
+  };
+
+  const sendTest = async () => {
+    if (!selectedCoop || !meeting) return;
+    setSendingTest(true);
+    try {
+      await api(
+        `/admin/coops/${selectedCoop.id}/meetings/${meeting.id}/convocation/send-test`,
+        { method: 'POST', body: {} },
+      );
+      setSuccess(t('meetings.convocation.sendTestSuccess'));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('meetings.convocation.sendTestFailure'));
+    } finally {
+      setSendingTest(false);
+    }
   };
 
   const saveReminders = async () => {
@@ -177,10 +265,37 @@ export default function ConvocationPage() {
     }
   };
 
-  const previewUrl =
-    meeting && firstShareholder
-      ? `${API_URL}/admin/coops/${selectedCoop?.id}/meetings/${meeting.id}/convocation/preview?shareholderId=${firstShareholder.id}`
-      : null;
+  const canPreview = !!meeting && !!firstShareholder && !!selectedCoop;
+
+  const openPreview = async () => {
+    if (!canPreview || !meeting || !firstShareholder || !selectedCoop) return;
+    setOpeningPreview(true);
+    setError(null);
+    try {
+      // The PDF endpoint requires JWT (JwtAuthGuard). A bare <a href> opens a new
+      // tab without the Authorization header, so we fetch the PDF with auth here
+      // and open it as a blob URL. The api() helper assumes JSON, so we hit fetch
+      // directly and attach the bearer token ourselves.
+      const token =
+        typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const url = `${API_URL}/admin/coops/${selectedCoop.id}/meetings/${meeting.id}/convocation/preview?shareholderId=${firstShareholder.id}`;
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        throw new Error(`Preview failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      // Revoke after a delay so the new tab has time to load it.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    } finally {
+      setOpeningPreview(false);
+    }
+  };
 
   const formatDateTime = (iso?: string | null) =>
     iso
@@ -290,30 +405,119 @@ export default function ConvocationPage() {
       {isShortNotice && !alreadyConvoked && (
         <Alert className="border-amber-600 text-amber-900 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-200">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{t('meetings.convocation.shortNoticeWarning')}</AlertDescription>
+          <AlertDescription>{t('meetings.convocation.shortNoticeWarning', { days: minNoticeDays })}</AlertDescription>
         </Alert>
       )}
 
-      {/* Preview + Send */}
+      {/* Editable email content */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
+            {t('meetings.convocation.bodyLabel')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-sm font-medium">
+              {t('meetings.convocation.subjectLabel')}
+            </label>
+            <input
+              type="text"
+              value={customSubject}
+              onChange={(e) => setCustomSubject(e.target.value)}
+              placeholder={`Oproeping - ${meeting.title}`}
+              className="w-full rounded border px-3 py-2 text-sm bg-background"
+              disabled={alreadyConvoked}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">
+              {t('meetings.convocation.bodyLabel')}
+            </label>
+            <textarea
+              value={customBody}
+              onChange={(e) => setCustomBody(e.target.value)}
+              rows={10}
+              className="w-full rounded border px-3 py-2 text-sm font-mono bg-background"
+              placeholder={`<p>{{shareholderName}},</p>\n<p>U wordt uitgenodigd voor {{meetingTitle}} op {{meetingDate}}…</p>\n{{agendaList}}\n<p>RSVP: {{rsvpUrl}}</p>`}
+              disabled={alreadyConvoked}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('meetings.convocation.bodyHelp')}{' '}
+              <code>{'{{rsvpUrl}}'}</code>, <code>{'{{shareholderName}}'}</code>,{' '}
+              <code>{'{{meetingTitle}}'}</code>, <code>{'{{meetingDate}}'}</code>,{' '}
+              <code>{'{{meetingLocation}}'}</code>, <code>{'{{agendaList}}'}</code>.
+            </p>
+          </div>
+          {!alreadyConvoked && (
+            <Button onClick={saveCustomEmail} disabled={savingCustom} variant="outline">
+              {savingCustom ? t('common.loading') : t('common.save')}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Live preview: email body + PDF + send-test */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" />
             {t('meetings.convocation.preview')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {previewUrl ? (
-            <Button asChild variant="outline">
-              <a href={previewUrl} target="_blank" rel="noreferrer">
-                <Eye className="h-4 w-4 mr-2" />
-                {t('meetings.convocation.preview')}
-              </a>
-            </Button>
-          ) : (
+          {!canPreview ? (
             <p className="text-sm text-muted-foreground">
-              {t('meetings.convocation.noShareholders')}
+              {t('meetings.convocation.noShareholderForPreview')}
             </p>
+          ) : (
+            <>
+              {emailPreview ? (
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      {t('meetings.convocation.previewSubject')}
+                    </div>
+                    <div className="font-medium">{emailPreview.subject}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      To
+                    </div>
+                    <div className="font-medium text-sm">
+                      {emailPreview.recipientEmail ?? `(postal — ${emailPreview.shareholderName})`}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                      {t('meetings.convocation.previewBody')}
+                    </div>
+                    <iframe
+                      title="email-preview"
+                      srcDoc={`<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:system-ui,-apple-system,sans-serif;padding:16px;color:#111}</style></head><body>${emailPreview.html}</body></html>`}
+                      className="w-full h-96 rounded border bg-white"
+                      sandbox=""
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t('meetings.convocation.previewHelp')}
+                  </p>
+                </div>
+              ) : loadingEmailPreview ? (
+                <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
+              ) : null}
+              <div className="flex flex-wrap gap-2 pt-2 border-t">
+                <Button variant="outline" onClick={openPreview} disabled={openingPreview}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  {openingPreview ? t('common.loading') : `PDF ${t('meetings.convocation.preview').toLowerCase()}`}
+                </Button>
+                <Button variant="outline" onClick={sendTest} disabled={sendingTest}>
+                  <Send className="h-4 w-4 mr-2" />
+                  {sendingTest ? t('common.loading') : t('meetings.convocation.sendTest')}
+                </Button>
+              </div>
+            </>
           )}
           <div className="pt-3 border-t">
             {alreadyConvoked ? (
@@ -436,7 +640,7 @@ export default function ConvocationPage() {
                 checked={shortNoticeConfirmed}
                 onCheckedChange={(v) => setShortNoticeConfirmed(!!v)}
               />
-              <span>{t('meetings.convocation.shortNoticeConfirm')}</span>
+              <span>{t('meetings.convocation.shortNoticeConfirm', { days: minNoticeDays })}</span>
             </label>
           )}
           <DialogFooter>
