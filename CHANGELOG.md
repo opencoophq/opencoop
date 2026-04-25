@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.9] - 2026-04-25
+
+### Fixed
+- **WYSIWYG editor stayed empty despite the v0.8.8 starter pre-fill.** The starter HTML landed in `customBody` state but never reached the contentEditable DOM — the inline `editorRef.current.replaceChildren(...)` ran synchronously inside `fetchAll`, but the editor div is conditionally rendered on `meeting` being non-null and `meeting` is set in the same commit. The ref was null at write time and the call silently no-op'd. Moved the DOM sync into a dedicated `useEffect` keyed on `customBody` so it fires after render when the ref is live, with focus + content-equality guards so mid-edit refetches don't stomp on the user.
+
 ## [0.8.8] - 2026-04-25
 
 ### Fixed
