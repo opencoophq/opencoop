@@ -2,6 +2,16 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.12] - 2026-04-25
+
+### Added
+- **Confirmation email after every RSVP**, with the meeting `.ics` attached for ATTENDING / PROXY responses (no attachment for ABSENT). Reuses the existing `meeting-rsvp-confirmation` template, now styled to match the convocation: coop logo, brand color from default `Channel.primaryColor`, human-readable date, signoff with the coop name, and a "Wijzig uw antwoord" button using the same magic-link token. Send is fire-and-forget — the RSVP itself is already persisted so an email failure (no inbox, ICS write error, queue down) only emits a warning. Postal-only shareholders are skipped.
+- ICS title now prefixed with the coop name (e.g. `Bronsgroen — Algemene Vergadering 2026`) so events are identifiable in a busy calendar. Applied to both the new confirmation email attachment and the existing `/public/meetings/rsvp/:token/ics` download.
+
+### Fixed
+- **Coop logos didn't render in convocation/confirmation emails.** Email clients (Gmail, Outlook, Apple Mail) render messages standalone with no base URL, so a relative `<img src="/uploads/logos/x.png">` silently fails. Both email flows now resolve `coop.logoUrl` through a `toAbsoluteUrl` helper that prepends `NEXT_PUBLIC_WEB_URL`.
+- `meeting-rsvp-confirmation` template now reads `coopPrimaryColor` from template data (was hardcoded platform blue), matching the convocation behaviour.
+
 ## [0.8.11] - 2026-04-25
 
 ### Added
