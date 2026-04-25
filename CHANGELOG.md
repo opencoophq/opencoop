@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.13] - 2026-04-25
+
+### Fixed
+- **Admin "RSVPs" counter on the meeting overview always showed 0.** The GET endpoint behind that card never included `attendances` in its Prisma query, so the page's `meeting.attendances?.length` always landed on undefined. Now included, filtered to rows where `rsvpStatus != UNKNOWN` so the count reflects actual responses (not "everyone who got the convocation"). Selects only the fields the page uses, so payload stays light on 750-shareholder coops.
+
 ## [0.8.12] - 2026-04-25
 
 ### Added
