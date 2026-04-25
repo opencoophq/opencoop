@@ -4,12 +4,29 @@ import { ConvocationService } from './convocation.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { EmailProcessor } from '../email/email.processor';
+import { MeetingPdfService } from './pdf.service';
+
+// Stub fs so the service's write-to-UPLOAD_DIR side-effect doesn't actually
+// touch the filesystem during unit tests.
+jest.mock('fs', () => ({
+  existsSync: jest.fn().mockReturnValue(true),
+  mkdirSync: jest.fn(),
+  writeFileSync: jest.fn(),
+}));
+
+// Stub the pdf.service module so jest doesn't try to evaluate @react-pdf/renderer's
+// ESM entry point (which trips ts-jest). The DI token is what we depend on; the
+// concrete class never runs in unit tests.
+jest.mock('./pdf.service', () => ({
+  MeetingPdfService: class MeetingPdfService {},
+}));
 
 describe('ConvocationService', () => {
   let service: ConvocationService;
   let prisma: any;
   let emailService: any;
   let emailProcessor: any;
+  let pdfService: any;
 
   const FAR_FUTURE = new Date(Date.now() + 30 * 24 * 3600 * 1000);
 
@@ -33,9 +50,14 @@ describe('ConvocationService', () => {
   beforeEach(async () => {
     emailService = { send: jest.fn().mockResolvedValue(undefined) };
     emailProcessor = { renderTemplate: jest.fn().mockReturnValue('<html>preview</html>') };
+    pdfService = { convocation: jest.fn().mockResolvedValue(Buffer.from('pdf-bytes')) };
     prisma = {
       meeting: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({}) },
-      shareholder: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
+      shareholder: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
       meetingAttendance: {
         findMany: jest.fn().mockResolvedValue([]),
         upsert: jest.fn().mockImplementation(({ create }) =>
@@ -50,6 +72,7 @@ describe('ConvocationService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EmailService, useValue: emailService },
         { provide: EmailProcessor, useValue: emailProcessor },
+        { provide: MeetingPdfService, useValue: pdfService },
       ],
     }).compile();
     service = moduleRef.get(ConvocationService);
@@ -276,6 +299,42 @@ describe('ConvocationService', () => {
       expect(jansEmail.shareholderIds.sort()).toEqual(['s1', 's2']);
 
       expect(emailService.send).toHaveBeenCalledTimes(2);
+    });
+
+    it('attaches a per-shareholder PDF for each member of an inbox group', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        { id: 's1', email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'A', coopId: 'c1' },
+        { id: 's2', email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'B', coopId: 'c1' },
+      ]);
+
+      await service.send('c1', 'm1', { confirmShortNotice: true });
+
+      // Two shareholders sharing one inbox => one email with two attachments
+      expect(emailService.send).toHaveBeenCalledTimes(1);
+      const call = emailService.send.mock.calls[0][0];
+      expect(call.attachments).toHaveLength(2);
+      expect(call.attachments.map((a: any) => a.filename).sort()).toEqual([
+        'oproeping-Jan-A.pdf',
+        'oproeping-Jan-B.pdf',
+      ]);
+      // pdf.service called once per shareholder
+      expect(pdfService.convocation).toHaveBeenCalledTimes(2);
+    });
+
+    it('still sends email when PDF generation fails for a shareholder', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        { id: 's1', email: 'a@x.com', user: null, firstName: 'A', lastName: 'X', coopId: 'c1' },
+      ]);
+      pdfService.convocation.mockRejectedValueOnce(new Error('renderToBuffer crashed'));
+
+      const res = await service.send('c1', 'm1', { confirmShortNotice: true });
+
+      expect(emailService.send).toHaveBeenCalledTimes(1);
+      const call = emailService.send.mock.calls[0][0];
+      expect(call.attachments).toBeUndefined(); // none successfully generated
+      expect((res as any).sent).toHaveLength(1);
     });
 
     it('skips attendees whose shareholders have no resolvable email (postal-only)', async () => {
