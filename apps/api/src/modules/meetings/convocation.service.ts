@@ -99,9 +99,22 @@ export class ConvocationService {
       select: { primaryColor: true },
     });
     return {
-      logoUrl: coop?.logoUrl ?? undefined,
+      logoUrl: this.toAbsoluteUrl(coop?.logoUrl) || undefined,
       primaryColor: defaultChannel?.primaryColor ?? undefined,
     };
+  }
+
+  /**
+   * Resolve a possibly-relative URL (e.g. `/uploads/logos/x.png`) to absolute.
+   * Email clients render messages standalone — `<img src="/path">` won't load
+   * because there's no base URL. Always prepend `NEXT_PUBLIC_WEB_URL` when
+   * the input lacks a scheme.
+   */
+  private toAbsoluteUrl(maybeRelative: string | null | undefined): string {
+    if (!maybeRelative) return '';
+    if (/^https?:\/\//i.test(maybeRelative)) return maybeRelative;
+    const base = process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be';
+    return `${base.replace(/\/$/, '')}${maybeRelative.startsWith('/') ? '' : '/'}${maybeRelative}`;
   }
 
   private buildTemplateData(
