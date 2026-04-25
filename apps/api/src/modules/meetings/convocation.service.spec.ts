@@ -53,6 +53,8 @@ describe('ConvocationService', () => {
     pdfService = { convocation: jest.fn().mockResolvedValue(Buffer.from('pdf-bytes')) };
     prisma = {
       meeting: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({}) },
+      coop: { findUnique: jest.fn().mockResolvedValue({ logoUrl: null }) },
+      channel: { findFirst: jest.fn().mockResolvedValue(null) },
       shareholder: {
         findMany: jest.fn().mockResolvedValue([]),
         findUnique: jest.fn(),
