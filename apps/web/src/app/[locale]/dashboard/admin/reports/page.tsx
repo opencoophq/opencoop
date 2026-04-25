@@ -9,6 +9,7 @@ import { CapitalStatementPreview } from '@/components/reports/capital-statement-
 import { ShareholderRegisterPreview } from '@/components/reports/shareholder-register-preview';
 import { DividendSummaryPreview } from '@/components/reports/dividend-summary-preview';
 import { ProjectInvestmentPreview } from '@/components/reports/project-investment-preview';
+import { ShareholdersPerProjectPreview } from '@/components/reports/shareholders-per-project-preview';
 
 export default function ReportsPage() {
   const t = useTranslations('reports');
@@ -35,6 +36,7 @@ export default function ReportsPage() {
           )}
           <TabsTrigger value="dividend-summary">{t('tabs.dividendSummary')}</TabsTrigger>
           <TabsTrigger value="project-investment">{t('tabs.projectInvestment')}</TabsTrigger>
+          <TabsTrigger value="shareholders-per-project">{t('tabs.shareholdersPerProject')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="annual-overview" className="mt-6">
@@ -57,6 +59,10 @@ export default function ReportsPage() {
 
         <TabsContent value="project-investment" className="mt-6">
           <ProjectInvestmentPreview />
+        </TabsContent>
+
+        <TabsContent value="shareholders-per-project" className="mt-6">
+          <ShareholdersPerProjectPreview />
         </TabsContent>
       </Tabs>
     </div>
