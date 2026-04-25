@@ -189,6 +189,25 @@ export class MeetingsController {
     return this.convocation.listStatus(coopId, id);
   }
 
+  @Get(':id/convocation/email-preview')
+  emailPreview(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Query('shareholderId') shareholderId: string,
+  ) {
+    return this.convocation.previewEmail(coopId, id, shareholderId);
+  }
+
+  @Post(':id/convocation/send-test')
+  sendTestConvocation(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body('to') to?: string,
+  ) {
+    return this.convocation.sendTest(coopId, id, to ?? user.email);
+  }
+
   @Post(':id/convocation/reminder')
   sendReminderNow(@Param('coopId') coopId: string, @Param('id') id: string) {
     return this.convocation.sendReminderNow(coopId, id);

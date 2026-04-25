@@ -7,9 +7,21 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { EmailProcessor } from '../email/email.processor';
 import { MeetingStatus, ShareholderStatus, Prisma } from '@opencoop/database';
 import { randomBytes } from 'crypto';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
+
+interface ConvocationTemplateData extends Record<string, unknown> {
+  shareholderName: string;
+  meetingTitle: string;
+  meetingDate: string;
+  meetingLocation: string;
+  agendaItems: Array<{ order: number; title: string; description: string | null }>;
+  rsvpUrl: string;
+  customBody?: string;
+  language?: string;
+}
 
 function createToken(): string {
   // URL-safe base64 token, 32 bytes of entropy
@@ -35,7 +47,38 @@ export class ConvocationService {
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
+    private emailProcessor: EmailProcessor,
   ) {}
+
+  private buildSubject(meeting: { title: string; customSubject: string | null }): string {
+    return meeting.customSubject?.trim() || `Oproeping - ${meeting.title}`;
+  }
+
+  private buildTemplateData(
+    meeting: {
+      title: string;
+      scheduledAt: Date;
+      location: string | null;
+      customBody: string | null;
+      agendaItems: Array<{ order: number; title: string; description: string | null }>;
+    },
+    shareholderName: string,
+    rsvpToken: string,
+  ): ConvocationTemplateData {
+    return {
+      shareholderName,
+      meetingTitle: meeting.title,
+      meetingDate: meeting.scheduledAt.toISOString(),
+      meetingLocation: meeting.location ?? '',
+      agendaItems: meeting.agendaItems.map((a) => ({
+        order: a.order,
+        title: a.title,
+        description: a.description,
+      })),
+      rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${rsvpToken}`,
+      customBody: meeting.customBody?.trim() || undefined,
+    };
+  }
 
   async send(coopId: string, meetingId: string, opts: SendConvocationOpts = {}): Promise<SendConvocationResult> {
     const meeting = await this.prisma.meeting.findUnique({
@@ -48,14 +91,12 @@ export class ConvocationService {
     if (!meeting) throw new NotFoundException('Meeting not found');
     if (meeting.coopId !== coopId)
       throw new ForbiddenException('Meeting does not belong to this coop');
-    if (meeting.status === MeetingStatus.CONVOKED) {
-      return { alreadySent: true };
-    }
 
+    const minDays = meeting.coop.minConvocationDays;
     const daysUntil = (meeting.scheduledAt.getTime() - Date.now()) / (86400 * 1000);
-    if (daysUntil < 15 && !opts.confirmShortNotice) {
+    if (daysUntil < minDays && !opts.confirmShortNotice) {
       throw new BadRequestException(
-        `Meeting is less than 15 days away. Set confirmShortNotice=true to override (statuten Art. 22 requires 15 days).`,
+        `Meeting is less than ${minDays} days away (this coop's configured minimum convocation notice). Set confirmShortNotice=true to override.`,
       );
     }
 
@@ -70,14 +111,39 @@ export class ConvocationService {
       },
     });
 
-    // Create attendance records and per-shareholder token map first
+    // Look up any existing attendances so we can (a) skip already-sent
+    // shareholders and (b) preserve their RSVP token instead of rotating it.
+    const existingAttendances = await this.prisma.meetingAttendance.findMany({
+      where: { meetingId, shareholderId: { in: shareholders.map((s) => s.id) } },
+      select: { shareholderId: true, rsvpToken: true, convocationSentAt: true },
+    });
+    const attMap = new Map(existingAttendances.map((a) => [a.shareholderId, a]));
+
+    const needsSend = shareholders.filter((sh) => {
+      const att = attMap.get(sh.id);
+      return !att || att.convocationSentAt === null;
+    });
+
+    if (needsSend.length === 0) {
+      return { alreadySent: true };
+    }
+
+    // For each shareholder needing a send: ensure they have an attendance row
+    // with a token. Reuse existing tokens to keep prior emails' RSVP links
+    // working; create new attendances for first-time recipients. Use upsert so
+    // that two concurrent send() calls don't race on the unique constraint —
+    // the second call's `update: {}` is a no-op that preserves the token from
+    // whichever call won the create.
     const tokenMap = new Map<string, string>();
-    const upsertFailedIds = new Set<string>();
-    for (const sh of shareholders) {
+    for (const sh of needsSend) {
+      const existing = attMap.get(sh.id);
+      if (existing) {
+        tokenMap.set(sh.id, existing.rsvpToken);
+        continue;
+      }
       try {
         const token = createToken();
-        tokenMap.set(sh.id, token);
-        await this.prisma.meetingAttendance.upsert({
+        const row = await this.prisma.meetingAttendance.upsert({
           where: { meetingId_shareholderId: { meetingId, shareholderId: sh.id } },
           create: {
             meetingId,
@@ -85,25 +151,23 @@ export class ConvocationService {
             rsvpToken: token,
             rsvpTokenExpires: meeting.scheduledAt,
           },
-          update: {
-            rsvpToken: token,
-            rsvpTokenExpires: meeting.scheduledAt,
-          },
+          update: {}, // no-op: another concurrent send() may have created the row
+          select: { rsvpToken: true },
         });
+        tokenMap.set(sh.id, row.rsvpToken);
       } catch (err) {
-        upsertFailedIds.add(sh.id);
         this.logger.warn(
           `Attendance upsert failed for shareholder ${sh.id}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }
 
-    // Dedupe by resolved email: group shareholders sharing the same inbox
-    // Skip shareholders whose upsert failed — their token may be missing and
-    // they should not contribute a broken RSVP URL to a household group.
-    const inboxMap = new Map<string, typeof shareholders>();
-    for (const sh of shareholders) {
-      if (upsertFailedIds.has(sh.id)) continue;
+    // Dedupe by resolved email: group shareholders sharing the same inbox.
+    // Skip shareholders without a tokenMap entry — their attendance create
+    // failed and including them would yield a broken RSVP URL.
+    const inboxMap = new Map<string, typeof needsSend>();
+    for (const sh of needsSend) {
+      if (!tokenMap.has(sh.id)) continue;
       const email = resolveShareholderEmail(sh);
       if (!email) continue; // postal-only: skip
       const group = inboxMap.get(email) ?? [];
@@ -111,47 +175,38 @@ export class ConvocationService {
       inboxMap.set(email, group);
     }
 
-    // Send one email per distinct inbox
     const sent: Array<{ to: string; shareholderIds: string[] }> = [];
     const failures: Array<{ to: string; shareholderIds?: string[]; error: string }> = [];
     for (const [email, group] of inboxMap) {
+      const primaryToken = tokenMap.get(group[0].id);
+      if (!primaryToken) {
+        // Defensive: should be unreachable given the tokenMap.has filter above.
+        this.logger.warn(
+          `No RSVP token for primary shareholder ${group[0].id} in inbox group; skipping send`,
+        );
+        failures.push({
+          to: email,
+          shareholderIds: group.map((sh) => sh.id),
+          error: 'No RSVP token available',
+        });
+        continue;
+      }
       try {
-        // Use the first shareholder's token as the RSVP link (primary contact).
-        // Guard explicitly: if the token is missing (should not happen after the
-        // upsertFailedIds filter above), skip the whole group rather than sending
-        // a broken /rsvp/ URL.
-        const primaryToken = tokenMap.get(group[0].id);
-        if (!primaryToken) {
-          this.logger.warn(
-            `No RSVP token for primary shareholder ${group[0].id} in inbox group; skipping send`,
-          );
-          failures.push({
-            to: email,
-            shareholderIds: group.map((sh) => sh.id),
-            error: 'No RSVP token available',
-          });
-          continue;
-        }
+        const shareholderName = group
+          .map((sh) => `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim())
+          .filter(Boolean)
+          .join(', ');
         await this.email.send({
           coopId,
           to: email,
-          subject: `Oproeping - ${meeting.title}`,
+          subject: this.buildSubject(meeting),
           templateKey: 'meeting-convocation',
-          templateData: {
-            shareholderName: group
-              .map((sh) => `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim())
-              .filter(Boolean)
-              .join(', '),
-            meetingTitle: meeting.title,
-            meetingDate: meeting.scheduledAt.toISOString(),
-            meetingLocation: meeting.location ?? '',
-            agendaItems: meeting.agendaItems.map((a) => ({
-              order: a.order,
-              title: a.title,
-              description: a.description,
-            })),
-            rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${primaryToken}`,
-          },
+          templateData: this.buildTemplateData(meeting, shareholderName, primaryToken),
+        });
+        // Mark this inbox group as sent. Future send() calls won't re-mail them.
+        await this.prisma.meetingAttendance.updateMany({
+          where: { meetingId, shareholderId: { in: group.map((sh) => sh.id) } },
+          data: { convocationSentAt: new Date() },
         });
         sent.push({ to: email, shareholderIds: group.map((sh) => sh.id) });
       } catch (err) {
@@ -168,18 +223,96 @@ export class ConvocationService {
         where: { id: meetingId },
         data: {
           status: MeetingStatus.CONVOKED,
-          convocationSentAt: new Date(),
-          convocationFailures: failures.length ? (failures as unknown as Prisma.InputJsonValue) : undefined,
+          convocationSentAt: meeting.convocationSentAt ?? new Date(),
+          convocationFailures: failures.length ? (failures as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
         },
       });
     } else {
-      // All sends failed — log clearly so admin knows and can retry
       this.logger.error(
         `Convocation send failed for ALL ${failures.length} recipients on meeting ${meetingId}; not marking CONVOKED to allow retry`,
       );
     }
 
     return { alreadySent: false, sent, failures };
+  }
+
+  /**
+   * Render the convocation email exactly as a single shareholder would receive
+   * it. Used by the admin "preview" UI so admins can verify subject + body
+   * before pressing the send button.
+   */
+  async previewEmail(coopId: string, meetingId: string, shareholderId: string) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: {
+        coop: { select: { name: true } },
+        agendaItems: { orderBy: { order: 'asc' } },
+      },
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.coopId !== coopId) throw new ForbiddenException();
+
+    const sh = await this.prisma.shareholder.findUnique({
+      where: { id: shareholderId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        coopId: true,
+        user: { select: { email: true, preferredLanguage: true } },
+      },
+    });
+    if (!sh || sh.coopId !== coopId) throw new NotFoundException('Shareholder not found');
+
+    const recipientEmail = resolveShareholderEmail(sh);
+    const shareholderName = `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim();
+    const sampleToken = 'preview-token-not-real';
+    const data = {
+      ...this.buildTemplateData(meeting, shareholderName, sampleToken),
+      language: sh.user?.preferredLanguage ?? 'nl',
+    };
+
+    const html = this.emailProcessor.renderTemplate('meeting-convocation', data, meeting.coop.name);
+    return {
+      subject: this.buildSubject(meeting),
+      html,
+      recipientEmail: recipientEmail ?? null,
+      shareholderName,
+      isPostalOnly: !recipientEmail,
+    };
+  }
+
+  /**
+   * Send the actual convocation email to a single test recipient (typically the
+   * admin's own email) so they can verify everything in their own inbox before
+   * blasting all shareholders. Bypasses convocationSentAt tracking — does not
+   * count as the official convocation send.
+   */
+  async sendTest(coopId: string, meetingId: string, recipientEmail: string) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: {
+        coop: { select: { name: true } },
+        agendaItems: { orderBy: { order: 'asc' } },
+      },
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.coopId !== coopId) throw new ForbiddenException();
+    if (!recipientEmail) throw new BadRequestException('Recipient email required');
+
+    const sampleToken = 'test-' + randomBytes(8).toString('base64url');
+    const data = this.buildTemplateData(meeting, 'Test Recipient', sampleToken);
+
+    await this.email.send({
+      coopId,
+      to: recipientEmail,
+      subject: `[TEST] ${this.buildSubject(meeting)}`,
+      templateKey: 'meeting-convocation',
+      templateData: data,
+    });
+
+    return { sentTo: recipientEmail };
   }
 
   async listStatus(coopId: string, meetingId: string) {
