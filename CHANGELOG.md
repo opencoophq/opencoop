@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.11] - 2026-04-25
+
+### Added
+- **Inline RSVP from the dashboard meeting page.** Logged-in shareholders no longer need to dig through their inbox to find the convocation email — the dashboard meeting detail page now shows their current RSVP status (if set, with timestamp), three RSVP buttons (Ik kom / Ik kom niet / Volmacht) with an inline delegate picker for proxy, and a "Toevoegen aan agenda" button that downloads the meeting as `.ics` (works with Apple Calendar, Google, Outlook, Thunderbird). All four locales updated.
+- `GET /meetings/:id` (shareholder context) now returns `myAttendance: { rsvpStatus, rsvpAt, rsvpToken }` so the frontend can drive the existing public RSVP endpoints — same trust boundary as the magic-link flow.
+
 ## [0.8.10] - 2026-04-25
 
 ### Fixed
