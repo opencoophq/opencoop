@@ -2037,6 +2037,7 @@
       "sendTestSuccess": "E-mail de test envoyé à votre boîte admin.",
       "sendTestFailure": "Échec de l'envoi du test.",
       "noShareholderForPreview": "Ajoutez au moins un actionnaire actif pour activer l'aperçu.",
+      "editorPlaceholder": "Tapez ici votre propre texte de convocation… ou laissez vide pour utiliser le modèle par défaut.",
       "reminderConfig": "Rappels",
       "reminderSave": "Enregistrer les rappels",
       "sendReminderNow": "Envoyer un rappel maintenant",

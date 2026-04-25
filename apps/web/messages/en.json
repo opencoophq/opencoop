@@ -2040,6 +2040,7 @@
       "sendTestSuccess": "Test convocation sent to your admin email.",
       "sendTestFailure": "Test send failed.",
       "noShareholderForPreview": "Add at least one active shareholder to enable preview.",
+      "editorPlaceholder": "Type your own convocation copy here… or leave empty to use the default template.",
       "reminderConfig": "Reminders",
       "reminderSave": "Save reminders",
       "sendReminderNow": "Send reminder now",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -95,6 +95,7 @@ export default function ConvocationPage() {
   const [customSubject, setCustomSubject] = useState('');
   const [customBody, setCustomBody] = useState('');
   const [savingCustom, setSavingCustom] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
   const [emailPreview, setEmailPreview] = useState<EmailPreview | null>(null);
   const [loadingEmailPreview, setLoadingEmailPreview] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
@@ -117,7 +118,17 @@ export default function ConvocationPage() {
       setStatus(s);
       setReminderDays(m.reminderDaysBefore ?? []);
       setCustomSubject(meetingWithCoop.customSubject ?? '');
-      setCustomBody(meetingWithCoop.customBody ?? '');
+      const incomingBody = meetingWithCoop.customBody ?? '';
+      setCustomBody(incomingBody);
+      // Sync the contentEditable DOM with the freshly-loaded value. We only
+      // overwrite when the editor isn't currently focused so we don't fight
+      // the user's typing if a refetch arrives mid-edit. Source is the admin's
+      // own saved HTML for their own coop's email — same trust boundary as the
+      // iframe preview that already renders it.
+      if (editorRef.current && document.activeElement !== editorRef.current) {
+        const parsed = new DOMParser().parseFromString(incomingBody, 'text/html');
+        editorRef.current.replaceChildren(...Array.from(parsed.body.childNodes));
+      }
       setFirstShareholder(sh.items?.[0] ?? null);
       setError(null);
     } catch {
@@ -435,19 +446,20 @@ export default function ConvocationPage() {
             <label className="text-sm font-medium">
               {t('meetings.convocation.bodyLabel')}
             </label>
-            <textarea
-              value={customBody}
-              onChange={(e) => setCustomBody(e.target.value)}
-              rows={10}
-              className="w-full rounded border px-3 py-2 text-sm font-mono bg-background"
-              placeholder={`<p>{{shareholderName}},</p>\n<p>U wordt uitgenodigd voor {{meetingTitle}} op {{meetingDate}}…</p>\n{{agendaList}}\n<p>RSVP: {{rsvpUrl}}</p>`}
-              disabled={alreadyConvoked}
+            <div
+              ref={editorRef}
+              contentEditable={!alreadyConvoked}
+              suppressContentEditableWarning
+              onBlur={(e) => setCustomBody(e.currentTarget.innerHTML)}
+              className="prose prose-sm dark:prose-invert max-w-none w-full rounded border px-4 py-3 text-sm bg-background min-h-[200px] focus:outline-none focus:ring-2 focus:ring-ring"
+              data-placeholder={t('meetings.convocation.editorPlaceholder')}
             />
             <p className="text-xs text-muted-foreground">
               {t('meetings.convocation.bodyHelp')}{' '}
               <code>{'{{rsvpUrl}}'}</code>, <code>{'{{shareholderName}}'}</code>,{' '}
               <code>{'{{meetingTitle}}'}</code>, <code>{'{{meetingDate}}'}</code>,{' '}
-              <code>{'{{meetingLocation}}'}</code>, <code>{'{{agendaList}}'}</code>.
+              <code>{'{{meetingLocation}}'}</code>, <code>{'{{agendaList}}'}</code>,{' '}
+              <code>{'{{coopName}}'}</code>.
             </p>
           </div>
           {!alreadyConvoked && (
