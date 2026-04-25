@@ -21,6 +21,8 @@ export class MeetingsService {
         votingWeight: dto.votingWeight ?? 'PER_SHAREHOLDER',
         maxProxiesPerPerson: dto.maxProxiesPerPerson ?? 1,
         reminderDaysBefore: dto.reminderDaysBefore ?? [3],
+        customSubject: dto.customSubject ?? undefined,
+        customBody: dto.customBody ?? undefined,
       },
     });
   }
@@ -40,6 +42,7 @@ export class MeetingsService {
     const meeting = await this.prisma.meeting.findFirst({
       where: { id, coopId },
       include: {
+        coop: { select: { minConvocationDays: true } },
         agendaItems: {
           orderBy: { order: 'asc' },
           include: { resolution: true, attachments: true },

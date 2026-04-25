@@ -129,6 +129,7 @@ model Coop {
   requiresApproval     Boolean   @default(true)
   ogmPrefix            String    @unique // Unique prefix for OGM codes (e.g., "001")
   minimumHoldingPeriod Int       @default(0) // months, 0 = no restriction
+  minConvocationDays   Int       @default(15) // statutory notice period for AGM convocation (per-coop bylaws)
   pontoEnabled         Boolean   @default(false)
   autoMatchPayments    Boolean   @default(true)
 
@@ -1099,6 +1100,8 @@ model Meeting {
   convocationSentAt   DateTime?
   convocationDocUrl   String?
   convocationFailures Json?
+  customSubject       String?               // overrides default convocation email subject when set
+  customBody          String?               @db.Text // HTML; overrides default intro paragraph when set
   reminderDaysBefore  Int[]                 @default([3])
   remindersSent       Json?                 @default("{}")
   status              MeetingStatus         @default(DRAFT)
@@ -1198,6 +1201,7 @@ model MeetingAttendance {
   rsvpAt            DateTime?
   rsvpToken         String         @unique
   rsvpTokenExpires  DateTime
+  convocationSentAt DateTime?
   checkedInAt       DateTime?
   checkedInBy       String?
   checkInMethod     CheckInMethod?

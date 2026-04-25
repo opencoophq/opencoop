@@ -45,4 +45,14 @@ export class CreateMeetingDto {
   @IsOptional()
   @IsArray()
   reminderDaysBefore?: number[];
+
+  @ApiPropertyOptional({ description: 'Override the default convocation email subject. Leave null to use the system template.' })
+  @IsOptional()
+  @IsString()
+  customSubject?: string | null;
+
+  @ApiPropertyOptional({ description: 'HTML body that replaces the default convocation intro. Supports {{rsvpUrl}}, {{shareholderName}}, {{meetingTitle}}, {{meetingDate}}, {{meetingLocation}}, {{agendaList}} placeholders.' })
+  @IsOptional()
+  @IsString()
+  customBody?: string | null;
 }
