@@ -47,6 +47,18 @@ export class MeetingsService {
           orderBy: { order: 'asc' },
           include: { resolution: true, attachments: true },
         },
+        // Only include attendances where the shareholder has actually
+        // responded — the "RSVPs" counter on the admin overview should
+        // reflect responses, not "everyone who got the convocation".
+        attendances: {
+          where: { rsvpStatus: { not: 'UNKNOWN' } },
+          select: {
+            id: true,
+            shareholderId: true,
+            rsvpStatus: true,
+            rsvpAt: true,
+          },
+        },
       },
     });
     if (!meeting) throw new NotFoundException('Meeting not found');
