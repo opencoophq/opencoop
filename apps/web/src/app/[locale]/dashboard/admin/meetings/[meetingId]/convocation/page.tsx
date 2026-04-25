@@ -200,13 +200,10 @@ export default function ConvocationPage() {
       const coopNameForStarter = selectedCoop?.name ?? 'Onze coöperatie';
       const bodyToShow = savedBody || buildStarterEmailBody(locale, coopNameForStarter);
       setCustomBody(bodyToShow);
-      // Sync the contentEditable DOM with the freshly-loaded value. Only
-      // overwrite when the editor isn't currently focused so we don't fight
-      // the user's typing if a refetch arrives mid-edit.
-      if (editorRef.current && document.activeElement !== editorRef.current) {
-        const parsed = new DOMParser().parseFromString(bodyToShow, 'text/html');
-        editorRef.current.replaceChildren(...Array.from(parsed.body.childNodes));
-      }
+      // The contentEditable DOM is synced separately by an effect that depends
+      // on `customBody` — at this point the div may not yet be mounted (it's
+      // gated on `meeting` being non-null, which we're setting in this same
+      // commit), so writing to editorRef.current here would silently no-op.
       setFirstShareholder(sh.items?.[0] ?? null);
       setError(null);
     } catch {
@@ -229,6 +226,21 @@ export default function ConvocationPage() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  // Sync the contentEditable DOM whenever `customBody` changes AND the editor
+  // is mounted. Critical because fetchAll sets customBody in the same commit
+  // that first mounts the editor (gated on `meeting`); writing to the ref
+  // synchronously inside fetchAll silently no-ops since the div hasn't
+  // rendered yet. This effect fires after the render, when the ref is live.
+  // Skipped while the editor is focused so a stray refetch doesn't blow away
+  // mid-edit work.
+  useEffect(() => {
+    if (!editorRef.current) return;
+    if (document.activeElement === editorRef.current) return;
+    if (editorRef.current.innerHTML === customBody) return;
+    const parsed = new DOMParser().parseFromString(customBody, 'text/html');
+    editorRef.current.replaceChildren(...Array.from(parsed.body.childNodes));
+  }, [customBody]);
 
   const daysUntil = meeting
     ? Math.floor(
