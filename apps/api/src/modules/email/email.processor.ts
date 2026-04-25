@@ -956,64 +956,120 @@ export class EmailProcessor {
           <p>${s.closing}<br><strong>${s.signoff}</strong></p>
         `;
       },
-      'meeting-rsvp-confirmation': (d, _cn) => {
+      'meeting-rsvp-confirmation': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const status = (d.rsvpStatus as string) || 'ATTENDING';
         const delegateName = (d.delegateName as string) || '';
+        const coopName = (d.coopName as string) || cn;
+        const coopLogoUrl = (d.coopLogoUrl as string) || '';
+        const brandColor = (d.coopPrimaryColor as string) || '#1e40af';
+
+        const localeMap: Record<string, string> = {
+          nl: 'nl-BE',
+          en: 'en-US',
+          fr: 'fr-BE',
+          de: 'de-DE',
+        };
+        let humanDate = String(d.meetingDate ?? '');
+        try {
+          const parsed = new Date(humanDate);
+          if (!isNaN(parsed.getTime())) {
+            humanDate = new Intl.DateTimeFormat(localeMap[lang] || 'nl-BE', {
+              dateStyle: 'full',
+              timeStyle: 'short',
+            }).format(parsed);
+          }
+        } catch {
+          /* keep raw */
+        }
+
         const t = {
           nl: {
-            title: 'Bevestiging van uw RSVP',
+            title: `Bevestiging — ${coopName}`,
+            subtitle: `Algemene Vergadering`,
             dear: `Beste ${d.shareholderName},`,
-            meeting: `Vergadering: <strong>${d.meetingTitle}</strong> op <strong>${d.meetingDate}</strong>.`,
+            meeting: `<strong>${d.meetingTitle}</strong> op <strong>${humanDate}</strong>${d.meetingLocation ? ` te <strong>${d.meetingLocation}</strong>` : ''}.`,
             attending: 'Bedankt voor uw bevestiging. We kijken uit naar uw aanwezigheid.',
             absent: 'We hebben genoteerd dat u niet aanwezig kunt zijn.',
             proxy: `U heeft uw stem gedelegeerd aan <strong>${delegateName}</strong>.`,
-            change: 'Wijzig uw RSVP',
+            attachment: 'In bijlage vindt u een agenda-uitnodiging (.ics) die u kan toevoegen aan Apple Calendar, Google Calendar, Outlook of Thunderbird.',
+            change: 'Wijzig uw antwoord',
+            closing: 'Met vriendelijke groet,',
+            signoff: `Het bestuur van ${coopName}`,
           },
           en: {
-            title: 'RSVP Confirmation',
+            title: `Confirmation — ${coopName}`,
+            subtitle: 'General Meeting',
             dear: `Dear ${d.shareholderName},`,
-            meeting: `Meeting: <strong>${d.meetingTitle}</strong> on <strong>${d.meetingDate}</strong>.`,
+            meeting: `<strong>${d.meetingTitle}</strong> on <strong>${humanDate}</strong>${d.meetingLocation ? ` at <strong>${d.meetingLocation}</strong>` : ''}.`,
             attending: 'Thank you for confirming. We look forward to your attendance.',
             absent: 'We have noted that you will not be able to attend.',
             proxy: `You have delegated your vote to <strong>${delegateName}</strong>.`,
-            change: 'Change your RSVP',
+            attachment: 'A calendar invite (.ics) is attached — works with Apple Calendar, Google Calendar, Outlook, and Thunderbird.',
+            change: 'Change your answer',
+            closing: 'Kind regards,',
+            signoff: `The board of ${coopName}`,
           },
           fr: {
-            title: 'Confirmation de votre RSVP',
+            title: `Confirmation — ${coopName}`,
+            subtitle: 'Assemblée Générale',
             dear: `Cher/Chère ${d.shareholderName},`,
-            meeting: `Réunion : <strong>${d.meetingTitle}</strong> le <strong>${d.meetingDate}</strong>.`,
+            meeting: `<strong>${d.meetingTitle}</strong> le <strong>${humanDate}</strong>${d.meetingLocation ? ` à <strong>${d.meetingLocation}</strong>` : ''}.`,
             attending: 'Merci pour votre confirmation. Nous attendons votre présence.',
             absent: 'Nous avons noté que vous ne pourrez pas être présent(e).',
             proxy: `Vous avez délégué votre vote à <strong>${delegateName}</strong>.`,
-            change: 'Modifier votre RSVP',
+            attachment: "Une invitation calendrier (.ics) est jointe — compatible Apple Calendar, Google Calendar, Outlook et Thunderbird.",
+            change: 'Modifier votre réponse',
+            closing: 'Cordialement,',
+            signoff: `Le conseil d'administration de ${coopName}`,
           },
           de: {
-            title: 'Bestätigung Ihrer RSVP',
+            title: `Bestätigung — ${coopName}`,
+            subtitle: 'Generalversammlung',
             dear: `Liebe/r ${d.shareholderName},`,
-            meeting: `Versammlung: <strong>${d.meetingTitle}</strong> am <strong>${d.meetingDate}</strong>.`,
+            meeting: `<strong>${d.meetingTitle}</strong> am <strong>${humanDate}</strong>${d.meetingLocation ? ` in <strong>${d.meetingLocation}</strong>` : ''}.`,
             attending: 'Vielen Dank für Ihre Bestätigung. Wir freuen uns auf Ihre Teilnahme.',
             absent: 'Wir haben vermerkt, dass Sie nicht teilnehmen können.',
             proxy: `Sie haben Ihre Stimme an <strong>${delegateName}</strong> delegiert.`,
-            change: 'RSVP ändern',
+            attachment: 'Eine Kalendereinladung (.ics) ist angehängt — funktioniert mit Apple Calendar, Google Kalender, Outlook und Thunderbird.',
+            change: 'Antwort ändern',
+            closing: 'Mit freundlichen Grüßen,',
+            signoff: `Der Vorstand von ${coopName}`,
           },
         };
         const s = t[lang as keyof typeof t] || t['nl'];
         const body = status === 'PROXY' ? s.proxy : status === 'ABSENT' ? s.absent : s.attending;
+        const showAttachment = status === 'ATTENDING' || status === 'PROXY';
+
+        const logoBlock = coopLogoUrl
+          ? `<div style="text-align: center; margin-bottom: 24px;">
+               <img src="${coopLogoUrl}" alt="${coopName}" style="max-height: 80px; max-width: 240px;" />
+             </div>`
+          : '';
+        const headerBlock = `
+          <div style="border-bottom: 3px solid ${brandColor}; padding-bottom: 14px; margin-bottom: 22px;">
+            ${logoBlock}
+            <h1 style="margin: 0; color: ${brandColor}; font-size: 22px;">${s.title}</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">${s.subtitle}</p>
+          </div>`;
+        const changeButton = d.rsvpUrl
+          ? `<p style="text-align: center; margin: 30px 0;">
+               <a href="${d.rsvpUrl}"
+                  style="background-color: ${brandColor}; color: white; padding: 12px 24px;
+                         text-decoration: none; border-radius: 6px; display: inline-block;
+                         font-weight: 600;">
+                 ${s.change}
+               </a>
+             </p>`
+          : '';
         return `
-          <h1>${s.title}</h1>
+          ${headerBlock}
           <p>${s.dear}</p>
           <p>${s.meeting}</p>
-          <p>${body}</p>
-          ${d.rsvpUrl ? `
-          <p style="text-align: center; margin: 30px 0;">
-            <a href="${d.rsvpUrl}"
-               style="background-color: #1e40af; color: white; padding: 12px 24px;
-                      text-decoration: none; border-radius: 6px; display: inline-block;">
-              ${s.change}
-            </a>
-          </p>
-          ` : ''}
+          <p><strong>${body}</strong></p>
+          ${showAttachment ? `<p style="color: #666; font-size: 12px;">${s.attachment}</p>` : ''}
+          ${changeButton}
+          <p>${s.closing}<br><strong>${s.signoff}</strong></p>
         `;
       },
       'meeting-reminder': (d, _cn) => {
