@@ -2041,6 +2041,7 @@
       "sendTestFailure": "Test send failed.",
       "noShareholderForPreview": "Add at least one active shareholder to enable preview.",
       "editorPlaceholder": "Type your own convocation copy here… or leave empty to use the default template.",
+      "resetToDefault": "Reset to default copy",
       "reminderConfig": "Reminders",
       "reminderSave": "Save reminders",
       "sendReminderNow": "Send reminder now",
