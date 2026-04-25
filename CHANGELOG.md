@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.7] - 2026-04-25
+
+### Added
+- **Coop branding on convocation emails.** Emails now render with the coop logo at the top, the coop name in the title/salutation/signoff, and the brand-coloured CTA button (pulled from the default `Channel.primaryColor`, falling back to platform blue if no default channel is configured). Subject line is now `{coopName} — {title}` instead of `Oproeping - {title}`. New `{{coopName}}` placeholder for admins authoring custom bodies.
+- **Human-readable meeting date.** Email body now formats `meetingDate` via `Intl.DateTimeFormat` using the recipient's language locale (`nl-BE` / `en-US` / `fr-BE` / `de-DE`), so what used to read `"2026-05-09T08:00:00.000Z"` now reads `"zaterdag 9 mei 2026 om 10:00"`.
+- **WYSIWYG editor for the custom email body.** The HTML-source textarea on the admin convocation page is replaced with a `contentEditable` div that shows the email content rendered (paragraphs, headings, formatting). Variables like `{{rsvpUrl}}` remain visible as text so admins can position them by typing prose around them. Initial content loads via `DOMParser` + `replaceChildren` (only when the editor isn't focused, so refetches don't stomp on in-progress edits); `innerHTML` captured on blur.
+
 ## [0.8.6] - 2026-04-25
 
 ### Added
