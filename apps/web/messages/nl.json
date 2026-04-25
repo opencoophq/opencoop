@@ -2233,7 +2233,10 @@
       "view": "Bekijken",
       "backToList": "Terug naar vergaderingen",
       "agendaHeading": "Agenda",
-      "invitedNote": "U bent uitgenodigd voor deze vergadering. Gebruik de link in de convocatie-e-mail om te antwoorden."
+      "invitedNote": "U bent uitgenodigd voor deze vergadering. Gebruik de link in de convocatie-e-mail om te antwoorden.",
+      "changeAnytimeNote": "U kunt uw antwoord wijzigen tot het begin van de vergadering.",
+      "addToCalendar": "Toevoegen aan agenda",
+      "addToCalendarHelp": "Werkt met Apple Calendar, Google Calendar, Outlook en Thunderbird (.ics-bestand)."
     },
     "edit": {
       "heading": "Vergadering bewerken",
