@@ -30,6 +30,36 @@ export class EmailProcessor {
 
   constructor(private prisma: PrismaService) {}
 
+  private resolveMeetingLocale(language: string): string {
+    const localeMap: Record<string, string> = {
+      nl: 'nl-BE',
+      en: 'en-US',
+      fr: 'fr-BE',
+      de: 'de-DE',
+    };
+    return localeMap[language] || 'nl-BE';
+  }
+
+  private formatMeetingDate(raw: unknown, language: string): string {
+    const fallback = String(raw ?? '');
+    if (!fallback) return '';
+
+    try {
+      const parsed = new Date(fallback);
+      if (Number.isNaN(parsed.getTime())) return fallback;
+
+      return new Intl.DateTimeFormat(this.resolveMeetingLocale(language), {
+        dateStyle: 'full',
+        timeStyle: 'short',
+        // AGM scheduling is currently Belgium-only. Make the rendered hour
+        // deterministic even when the API worker runs in UTC.
+        timeZone: process.env.MEETING_TIME_ZONE ?? 'Europe/Brussels',
+      }).format(parsed);
+    } catch {
+      return fallback;
+    }
+  }
+
   @Process('send')
   async handleSend(job: Job<EmailJob>) {
     return Sentry.withIsolationScope(async (scope) => {
@@ -827,28 +857,7 @@ export class EmailProcessor {
         const coopName = (d.coopName as string) || cn;
         const coopLogoUrl = (d.coopLogoUrl as string) || '';
         const brandColor = (d.coopPrimaryColor as string) || '#1e40af';
-
-        // Format the meeting date in the recipient's language. Fall back to the
-        // raw value if Intl can't parse the input — better to ship the ISO than
-        // crash the email render.
-        const localeMap: Record<string, string> = {
-          nl: 'nl-BE',
-          en: 'en-US',
-          fr: 'fr-BE',
-          de: 'de-DE',
-        };
-        let humanDate = String(d.meetingDate ?? '');
-        try {
-          const parsed = new Date(humanDate);
-          if (!isNaN(parsed.getTime())) {
-            humanDate = new Intl.DateTimeFormat(localeMap[lang] || 'nl-BE', {
-              dateStyle: 'full',
-              timeStyle: 'short',
-            }).format(parsed);
-          }
-        } catch {
-          /* keep raw string */
-        }
+        const humanDate = this.formatMeetingDate(d.meetingDate, lang);
 
         const t = {
           nl: {
@@ -963,25 +972,7 @@ export class EmailProcessor {
         const coopName = (d.coopName as string) || cn;
         const coopLogoUrl = (d.coopLogoUrl as string) || '';
         const brandColor = (d.coopPrimaryColor as string) || '#1e40af';
-
-        const localeMap: Record<string, string> = {
-          nl: 'nl-BE',
-          en: 'en-US',
-          fr: 'fr-BE',
-          de: 'de-DE',
-        };
-        let humanDate = String(d.meetingDate ?? '');
-        try {
-          const parsed = new Date(humanDate);
-          if (!isNaN(parsed.getTime())) {
-            humanDate = new Intl.DateTimeFormat(localeMap[lang] || 'nl-BE', {
-              dateStyle: 'full',
-              timeStyle: 'short',
-            }).format(parsed);
-          }
-        } catch {
-          /* keep raw */
-        }
+        const humanDate = this.formatMeetingDate(d.meetingDate, lang);
 
         const t = {
           nl: {
@@ -1075,29 +1066,30 @@ export class EmailProcessor {
       'meeting-reminder': (d, _cn) => {
         const lang = (d.language as string) || 'nl';
         const days = (d.daysUntil as number) ?? 0;
+        const humanDate = this.formatMeetingDate(d.meetingDate, lang);
         const t = {
           nl: {
             title: 'Herinnering: Algemene Vergadering',
             dear: `Beste ${d.shareholderName},`,
-            body: `Herinnering: de <strong>${d.meetingTitle}</strong> vindt plaats over <strong>${days}</strong> dag(en) op <strong>${d.meetingDate}</strong>. U heeft nog niet geantwoord. Gelieve te bevestigen:`,
+            body: `Herinnering: de <strong>${d.meetingTitle}</strong> vindt plaats over <strong>${days}</strong> dag(en) op <strong>${humanDate}</strong>. U heeft nog niet geantwoord. Gelieve te bevestigen:`,
             cta: 'RSVP hier',
           },
           en: {
             title: 'Reminder: General Meeting',
             dear: `Dear ${d.shareholderName},`,
-            body: `Reminder: the <strong>${d.meetingTitle}</strong> is in <strong>${days}</strong> day(s) on <strong>${d.meetingDate}</strong>. You haven't yet responded. Please RSVP:`,
+            body: `Reminder: the <strong>${d.meetingTitle}</strong> is in <strong>${days}</strong> day(s) on <strong>${humanDate}</strong>. You haven't yet responded. Please RSVP:`,
             cta: 'RSVP here',
           },
           fr: {
             title: 'Rappel : Assemblée Générale',
             dear: `Cher/Chère ${d.shareholderName},`,
-            body: `Rappel : <strong>${d.meetingTitle}</strong> aura lieu dans <strong>${days}</strong> jour(s), le <strong>${d.meetingDate}</strong>. Vous n'avez pas encore répondu. Veuillez confirmer :`,
+            body: `Rappel : <strong>${d.meetingTitle}</strong> aura lieu dans <strong>${days}</strong> jour(s), le <strong>${humanDate}</strong>. Vous n'avez pas encore répondu. Veuillez confirmer :`,
             cta: 'Répondre ici',
           },
           de: {
             title: 'Erinnerung: Generalversammlung',
             dear: `Liebe/r ${d.shareholderName},`,
-            body: `Erinnerung: die <strong>${d.meetingTitle}</strong> findet in <strong>${days}</strong> Tag(en) am <strong>${d.meetingDate}</strong> statt. Sie haben noch nicht geantwortet. Bitte bestätigen Sie:`,
+            body: `Erinnerung: die <strong>${d.meetingTitle}</strong> findet in <strong>${days}</strong> Tag(en) am <strong>${humanDate}</strong> statt. Sie haben noch nicht geantwortet. Bitte bestätigen Sie:`,
             cta: 'Hier antworten',
           },
         };
