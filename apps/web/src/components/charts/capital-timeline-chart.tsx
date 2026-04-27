@@ -57,6 +57,25 @@ export function CapitalTimelineChart({ period }: Props) {
     return d.toLocaleDateString(locale, { month: 'short', year: '2-digit' });
   };
 
+  const yDomain: [number | 'auto', number | 'auto'] = (() => {
+    if (data.length === 0) return ['auto', 'auto'];
+
+    const values = data.map((point) => point.totalCapital);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return ['auto', 'auto'];
+
+    if (min === max) {
+      const padding = Math.max(Math.abs(min) * 0.02, 1);
+      return [min - padding, max + padding];
+    }
+
+    const span = max - min;
+    const padding = span * 0.1;
+    return [min - padding, max + padding];
+  })();
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -86,6 +105,7 @@ export function CapitalTimelineChart({ period }: Props) {
                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
               />
               <YAxis
+                domain={yDomain}
                 tickFormatter={(v) => formatCurrency(v, locale).replace(/,00$/, '')}
                 className="text-xs"
                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
