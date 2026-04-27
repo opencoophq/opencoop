@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,7 +37,22 @@ import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { api } from '@/lib/api';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Edit, Trash2, Sun, Wind, Upload } from 'lucide-react';
+import {
+  applyColumnFiltersAndSort,
+  toggleColumnSort,
+  type ColumnSortState,
+} from '@/lib/table-utils';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Plus,
+  Edit,
+  Trash2,
+  Sun,
+  Wind,
+  Upload,
+} from 'lucide-react';
 
 interface Project {
   id: string;
@@ -64,6 +79,7 @@ const projectSchema = z.object({
 });
 
 type ProjectForm = z.infer<typeof projectSchema>;
+type ProjectColumn = 'name' | 'type' | 'capacity' | 'mwh' | 'startDate' | 'endDate' | 'status';
 
 export default function ProjectsPage() {
   const t = useTranslations();
@@ -78,6 +94,11 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<ProjectColumn, string>>>({});
+  const [columnSort, setColumnSort] = useState<ColumnSortState<ProjectColumn>>({
+    column: null,
+    direction: 'asc',
+  });
 
   const form = useForm<ProjectForm>({
     resolver: zodResolver(projectSchema),
@@ -224,6 +245,34 @@ export default function ProjectsPage() {
     );
   };
 
+  const visibleProjects = useMemo(
+    () =>
+      applyColumnFiltersAndSort(
+        projects,
+        {
+          name: { accessor: (p) => `${p.name} ${p.description || ''}` },
+          type: { accessor: (p) => p.type },
+          capacity: { accessor: (p) => p.capacityKw ?? 0 },
+          mwh: { accessor: (p) => p.estimatedAnnualMwh ?? 0 },
+          startDate: { accessor: (p) => p.startDate || '' },
+          endDate: { accessor: (p) => p.endDate || '' },
+          status: { accessor: (p) => (p.isActive ? 'active' : 'inactive') },
+        },
+        columnFilters,
+        columnSort,
+      ),
+    [projects, columnFilters, columnSort],
+  );
+
+  const renderSortIcon = (column: ProjectColumn) => {
+    if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+    return columnSort.direction === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -296,68 +345,170 @@ export default function ProjectsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('admin.projects.projectName')}</TableHead>
-                  <TableHead>{t('admin.projects.type')}</TableHead>
-                  <TableHead className="text-right">{t('admin.projects.capacityKw')}</TableHead>
-                  <TableHead className="text-right">{t('admin.projects.estimatedMwh')}</TableHead>
-                  <TableHead>{t('admin.projects.startDate')}</TableHead>
-                  <TableHead>{t('admin.projects.endDate')}</TableHead>
-                  <TableHead>{t('admin.projects.status')}</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'name'))}>
+                      {t('admin.projects.projectName')}
+                      {renderSortIcon('name')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'type'))}>
+                      {t('admin.projects.type')}
+                      {renderSortIcon('type')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'capacity'))}>
+                      {t('admin.projects.capacityKw')}
+                      {renderSortIcon('capacity')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'mwh'))}>
+                      {t('admin.projects.estimatedMwh')}
+                      {renderSortIcon('mwh')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'startDate'))}>
+                      {t('admin.projects.startDate')}
+                      {renderSortIcon('startDate')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'endDate'))}>
+                      {t('admin.projects.endDate')}
+                      {renderSortIcon('endDate')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'status'))}>
+                      {t('admin.projects.status')}
+                      {renderSortIcon('status')}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.name || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, name: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.type || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, type: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.capacity || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, capacity: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.mwh || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, mwh: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.startDate || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.endDate || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.status || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, status: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {projects.map((project) => (
-                  <TableRow key={project.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{project.name}</div>
-                        {project.description && (
-                          <div className="text-sm text-muted-foreground truncate max-w-xs">
-                            {project.description}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getTypeBadgeVariant(project.type)} className="flex items-center w-fit">
-                        {getTypeIcon(project.type)}
-                        {t(`admin.projects.${project.type.toLowerCase()}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {project.capacityKw ? `${project.capacityKw} kW` : '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {project.estimatedAnnualMwh ? `${project.estimatedAnnualMwh} MWh` : '-'}
-                    </TableCell>
-                    <TableCell>{project.startDate ? formatDate(project.startDate) : '-'}</TableCell>
-                    <TableCell>{project.endDate ? formatDate(project.endDate) : '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant={project.isActive ? 'default' : 'secondary'}>
-                        {project.isActive ? t('admin.projects.active') : t('admin.projects.inactive')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(project)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(project)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
+                {visibleProjects.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
+                      {t('common.noResults')}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  visibleProjects.map((project) => (
+                    <TableRow key={project.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{project.name}</div>
+                          {project.description && (
+                            <div className="text-sm text-muted-foreground truncate max-w-xs">
+                              {project.description}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getTypeBadgeVariant(project.type)} className="flex items-center w-fit">
+                          {getTypeIcon(project.type)}
+                          {t(`admin.projects.${project.type.toLowerCase()}`)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {project.capacityKw ? `${project.capacityKw} kW` : '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {project.estimatedAnnualMwh ? `${project.estimatedAnnualMwh} MWh` : '-'}
+                      </TableCell>
+                      <TableCell>{project.startDate ? formatDate(project.startDate) : '-'}</TableCell>
+                      <TableCell>{project.endDate ? formatDate(project.endDate) : '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={project.isActive ? 'default' : 'secondary'}>
+                          {project.isActive ? t('admin.projects.active') : t('admin.projects.inactive')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(project)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(project)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           )}
