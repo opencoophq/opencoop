@@ -163,7 +163,7 @@ export default function ShareholdersPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
   const { locale } = useLocale();
-  const [data, setData] = useState<PaginatedResponse | null>(null);
+  const [allShareholders, setAllShareholders] = useState<ShareholderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -191,6 +191,7 @@ export default function ShareholdersPage() {
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [importStep, setImportStep] = useState<'upload' | 'preview' | 'done'>('upload');
+  const pageSize = 25;
 
   const form = useForm<CreateShareholderForm>({
     resolver: zodResolver(createShareholderSchema),
@@ -225,7 +226,7 @@ export default function ShareholdersPage() {
   const loadData = useCallback(async () => {
     if (!selectedCoop) return;
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page), pageSize: '25' });
+    const params = new URLSearchParams({ page: '1', pageSize: '10000' });
     if (search) params.set('search', search);
     if (statusFilter !== 'all') params.set('status', statusFilter);
     if (typeFilter !== 'all') params.set('type', typeFilter);
@@ -235,13 +236,13 @@ export default function ShareholdersPage() {
       const result = await api<PaginatedResponse>(
         `/admin/coops/${selectedCoop.id}/shareholders?${params}`,
       );
-      setData(result);
+      setAllShareholders(result.items);
     } catch {
       // ignore
     } finally {
       setLoading(false);
     }
-  }, [selectedCoop, page, search, statusFilter, typeFilter, ecoPowerClientFilter]);
+  }, [selectedCoop, search, statusFilter, typeFilter, ecoPowerClientFilter]);
 
   useEffect(() => {
     loadData();
@@ -271,7 +272,7 @@ export default function ShareholdersPage() {
   const visibleShareholders = useMemo(
     () =>
       applyColumnFiltersAndSort(
-        data?.items || [],
+        allShareholders,
         {
           name: { accessor: (sh) => getName(sh) },
           type: { accessor: (sh) => sh.type },
@@ -284,8 +285,22 @@ export default function ShareholdersPage() {
         columnFilters,
         columnSort,
       ),
-    [data?.items, columnFilters, columnSort],
+    [allShareholders, columnFilters, columnSort],
   );
+
+  const totalPages = Math.max(1, Math.ceil(visibleShareholders.length / pageSize));
+  const pagedShareholders = useMemo(
+    () => visibleShareholders.slice((page - 1) * pageSize, page * pageSize),
+    [visibleShareholders, page, pageSize],
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, typeFilter, ecoPowerClientFilter, columnFilters, columnSort]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const renderSortIcon = (column: ShareholderColumn) => {
     if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
@@ -549,7 +564,7 @@ export default function ShareholdersPage() {
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
-          ) : !data || data.items.length === 0 ? (
+          ) : allShareholders.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
           ) : (
             <>
@@ -663,7 +678,7 @@ export default function ShareholdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visibleShareholders.map((sh) => (
+                  {pagedShareholders.map((sh) => (
                     <TableRow key={sh.id}>
                       <TableCell>
                         <Link
@@ -710,11 +725,11 @@ export default function ShareholdersPage() {
                 <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
               )}
 
-              {data.totalPages > 1 && (
+              {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
-                    {t('common.showing')} {(data.page - 1) * data.pageSize + 1}-
-                    {Math.min(data.page * data.pageSize, data.total)} {t('common.of')} {data.total}
+                    {t('common.showing')} {(page - 1) * pageSize + 1}-
+                    {Math.min(page * pageSize, visibleShareholders.length)} {t('common.of')} {visibleShareholders.length}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -728,7 +743,7 @@ export default function ShareholdersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={page >= data.totalPages}
+                      disabled={page >= totalPages}
                       onClick={() => setPage(page + 1)}
                     >
                       <ChevronRight className="h-4 w-4" />

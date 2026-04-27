@@ -64,7 +64,7 @@ export default function AdminMessagesPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
   const { locale } = useLocale();
-  const [data, setData] = useState<ConversationsResponse | null>(null);
+  const [allConversations, setAllConversations] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [columnFilters, setColumnFilters] = useState<Partial<Record<MessageColumn, string>>>({});
@@ -72,27 +72,37 @@ export default function AdminMessagesPage() {
     column: null,
     direction: 'asc',
   });
+  const pageSize = 20;
 
   const fetchConversations = useCallback(async () => {
     if (!selectedCoop) return;
     setLoading(true);
     try {
-      const result = await api<ConversationsResponse>(
-        `/admin/coops/${selectedCoop.id}/conversations?page=${page}`,
-      );
-      setData(result);
+      const all: ConversationListItem[] = [];
+      let currentPage = 1;
+      let totalPages = 1;
+
+      while (currentPage <= totalPages) {
+        const result = await api<ConversationsResponse>(
+          `/admin/coops/${selectedCoop.id}/conversations?page=${currentPage}`,
+        );
+        all.push(...result.conversations);
+        totalPages = result.totalPages || 1;
+        currentPage += 1;
+      }
+
+      setAllConversations(all);
     } catch {
       // ignore
     } finally {
       setLoading(false);
     }
-  }, [selectedCoop, page]);
+  }, [selectedCoop]);
 
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
 
-  const conversations = useMemo(() => data?.conversations || [], [data?.conversations]);
   const conversationParticipantsLabel = useCallback((conv: ConversationListItem): string => {
     if (conv.type === 'BROADCAST') return t('messages.allShareholders');
     const names = conv.participants.map((p) =>
@@ -109,7 +119,7 @@ export default function AdminMessagesPage() {
   const visibleConversations = useMemo(
     () =>
       applyColumnFiltersAndSort(
-        conversations,
+        allConversations,
         {
           type: { accessor: (conv) => conv.type },
           subject: { accessor: (conv) => conv.subject },
@@ -120,8 +130,22 @@ export default function AdminMessagesPage() {
         columnFilters,
         columnSort,
       ),
-    [conversations, columnFilters, columnSort, conversationParticipantsLabel],
+    [allConversations, columnFilters, columnSort, conversationParticipantsLabel],
   );
+
+  const totalPages = Math.max(1, Math.ceil(visibleConversations.length / pageSize));
+  const pagedConversations = useMemo(
+    () => visibleConversations.slice((page - 1) * pageSize, page * pageSize),
+    [visibleConversations, page, pageSize],
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [columnFilters, columnSort]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const sortIcon = (column: MessageColumn) => {
     if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
@@ -163,7 +187,7 @@ export default function AdminMessagesPage() {
 
       <Card>
         <CardContent className="pt-6">
-          {conversations.length === 0 ? (
+          {allConversations.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {t('messages.noConversations')}
             </div>
@@ -253,7 +277,7 @@ export default function AdminMessagesPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  visibleConversations.map((conv) => {
+                  pagedConversations.map((conv) => {
                     const lastMessage = conv.messages[0];
                     const preview = lastMessage?.body
                       ? lastMessage.body.length > 80
@@ -288,10 +312,11 @@ export default function AdminMessagesPage() {
             </Table>
           )}
 
-          {data && data.totalPages > 1 && (
+          {totalPages > 1 && (
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-muted-foreground">
-                {t('common.showing')} {conversations.length} {t('common.of')} {data.total}
+                {t('common.showing')} {(page - 1) * pageSize + 1}-
+                {Math.min(page * pageSize, visibleConversations.length)} {t('common.of')} {visibleConversations.length}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -305,7 +330,7 @@ export default function AdminMessagesPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={page >= data.totalPages}
+                  disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
                   {t('common.next')}
