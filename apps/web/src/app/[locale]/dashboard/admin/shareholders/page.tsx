@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,6 +41,11 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { api } from '@/lib/api';
 import { apiFetch } from '@/lib/api';
 import {
+  applyColumnFiltersAndSort,
+  toggleColumnSort,
+  type ColumnSortState,
+} from '@/lib/table-utils';
+import {
   Search,
   Plus,
   ChevronLeft,
@@ -50,6 +55,9 @@ import {
   Download,
   AlertCircle,
   CheckCircle2,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
 } from 'lucide-react';
 
 interface ShareholderRow {
@@ -142,12 +150,20 @@ const createShareholderSchema = z
   });
 
 type CreateShareholderForm = z.infer<typeof createShareholderSchema>;
+type ShareholderColumn =
+  | 'name'
+  | 'type'
+  | 'email'
+  | 'shares'
+  | 'status'
+  | 'ecoPower'
+  | 'memberSince';
 
 export default function ShareholdersPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
   const { locale } = useLocale();
-  const [data, setData] = useState<PaginatedResponse | null>(null);
+  const [allShareholders, setAllShareholders] = useState<ShareholderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -155,6 +171,11 @@ export default function ShareholdersPage() {
   const [page, setPage] = useState(1);
   const [ecoPowerEnabled, setEcoPowerEnabled] = useState(false);
   const [ecoPowerClientFilter, setEcoPowerClientFilter] = useState('all');
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<ShareholderColumn, string>>>({});
+  const [columnSort, setColumnSort] = useState<ColumnSortState<ShareholderColumn>>({
+    column: null,
+    direction: 'asc',
+  });
 
   // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
@@ -170,6 +191,7 @@ export default function ShareholdersPage() {
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [importStep, setImportStep] = useState<'upload' | 'preview' | 'done'>('upload');
+  const pageSize = 25;
 
   const form = useForm<CreateShareholderForm>({
     resolver: zodResolver(createShareholderSchema),
@@ -204,7 +226,7 @@ export default function ShareholdersPage() {
   const loadData = useCallback(async () => {
     if (!selectedCoop) return;
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page), pageSize: '25' });
+    const params = new URLSearchParams({ page: '1', pageSize: '10000' });
     if (search) params.set('search', search);
     if (statusFilter !== 'all') params.set('status', statusFilter);
     if (typeFilter !== 'all') params.set('type', typeFilter);
@@ -214,13 +236,13 @@ export default function ShareholdersPage() {
       const result = await api<PaginatedResponse>(
         `/admin/coops/${selectedCoop.id}/shareholders?${params}`,
       );
-      setData(result);
+      setAllShareholders(result.items);
     } catch {
       // ignore
     } finally {
       setLoading(false);
     }
-  }, [selectedCoop, page, search, statusFilter, typeFilter, ecoPowerClientFilter]);
+  }, [selectedCoop, search, statusFilter, typeFilter, ecoPowerClientFilter]);
 
   useEffect(() => {
     loadData();
@@ -245,6 +267,48 @@ export default function ShareholdersPage() {
     const dates = sh.registrations?.map((r) => r.registerDate).filter(Boolean) || [];
     if (dates.length === 0) return sh.createdAt;
     return dates.reduce((earliest, d) => (d < earliest ? d : earliest));
+  };
+
+  const visibleShareholders = useMemo(
+    () =>
+      applyColumnFiltersAndSort(
+        allShareholders,
+        {
+          name: { accessor: (sh) => getName(sh) },
+          type: { accessor: (sh) => sh.type },
+          email: { accessor: (sh) => sh.email || '' },
+          shares: { accessor: (sh) => activeShares(sh) },
+          status: { accessor: (sh) => sh.status },
+          ecoPower: { accessor: (sh) => (sh.isEcoPowerClient ? 'yes' : 'no') },
+          memberSince: { accessor: (sh) => memberSince(sh) },
+        },
+        columnFilters,
+        columnSort,
+      ),
+    [allShareholders, columnFilters, columnSort],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(visibleShareholders.length / pageSize));
+  const pagedShareholders = useMemo(
+    () => visibleShareholders.slice((page - 1) * pageSize, page * pageSize),
+    [visibleShareholders, page, pageSize],
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, typeFilter, ecoPowerClientFilter, columnFilters, columnSort]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const renderSortIcon = (column: ShareholderColumn) => {
+    if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+    return columnSort.direction === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
   };
 
   const openCreateDialog = () => {
@@ -500,24 +564,121 @@ export default function ShareholdersPage() {
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
-          ) : !data || data.items.length === 0 ? (
+          ) : allShareholders.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
           ) : (
             <>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('common.name')}</TableHead>
-                    <TableHead>{t('common.type')}</TableHead>
-                    <TableHead>{t('common.email')}</TableHead>
-                    <TableHead className="text-right">{t('shares.title')}</TableHead>
-                    <TableHead>{t('common.status')}</TableHead>
-                    {ecoPowerEnabled && <TableHead>{t('ecopower.client')}</TableHead>}
-                    <TableHead>{t('shareholder.memberSince')}</TableHead>
+                    <TableHead>
+                      <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'name'))}>
+                        {t('common.name')}
+                        {renderSortIcon('name')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'type'))}>
+                        {t('common.type')}
+                        {renderSortIcon('type')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'email'))}>
+                        {t('common.email')}
+                        {renderSortIcon('email')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'shares'))}>
+                        {t('shares.title')}
+                        {renderSortIcon('shares')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'status'))}>
+                        {t('common.status')}
+                        {renderSortIcon('status')}
+                      </Button>
+                    </TableHead>
+                    {ecoPowerEnabled && (
+                      <TableHead>
+                        <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'ecoPower'))}>
+                          {t('ecopower.client')}
+                          {renderSortIcon('ecoPower')}
+                        </Button>
+                      </TableHead>
+                    )}
+                    <TableHead>
+                      <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'memberSince'))}>
+                        {t('shareholder.memberSince')}
+                        {renderSortIcon('memberSince')}
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                  <TableRow>
+                    <TableHead>
+                      <Input
+                        value={columnFilters.name || ''}
+                        onChange={(e) => setColumnFilters((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder={t('common.filter')}
+                        className="h-8"
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <Input
+                        value={columnFilters.type || ''}
+                        onChange={(e) => setColumnFilters((prev) => ({ ...prev, type: e.target.value }))}
+                        placeholder={t('common.filter')}
+                        className="h-8"
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <Input
+                        value={columnFilters.email || ''}
+                        onChange={(e) => setColumnFilters((prev) => ({ ...prev, email: e.target.value }))}
+                        placeholder={t('common.filter')}
+                        className="h-8"
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <Input
+                        value={columnFilters.shares || ''}
+                        onChange={(e) => setColumnFilters((prev) => ({ ...prev, shares: e.target.value }))}
+                        placeholder={t('common.filter')}
+                        className="h-8"
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <Input
+                        value={columnFilters.status || ''}
+                        onChange={(e) => setColumnFilters((prev) => ({ ...prev, status: e.target.value }))}
+                        placeholder={t('common.filter')}
+                        className="h-8"
+                      />
+                    </TableHead>
+                    {ecoPowerEnabled && (
+                      <TableHead>
+                        <Input
+                          value={columnFilters.ecoPower || ''}
+                          onChange={(e) => setColumnFilters((prev) => ({ ...prev, ecoPower: e.target.value }))}
+                          placeholder={t('common.filter')}
+                          className="h-8"
+                        />
+                      </TableHead>
+                    )}
+                    <TableHead>
+                      <Input
+                        value={columnFilters.memberSince || ''}
+                        onChange={(e) => setColumnFilters((prev) => ({ ...prev, memberSince: e.target.value }))}
+                        placeholder={t('common.filter')}
+                        className="h-8"
+                      />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.items.map((sh) => (
+                  {pagedShareholders.map((sh) => (
                     <TableRow key={sh.id}>
                       <TableCell>
                         <Link
@@ -560,11 +721,15 @@ export default function ShareholdersPage() {
                 </TableBody>
               </Table>
 
-              {data.totalPages > 1 && (
+              {visibleShareholders.length === 0 && (
+                <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
+              )}
+
+              {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
-                    {t('common.showing')} {(data.page - 1) * data.pageSize + 1}-
-                    {Math.min(data.page * data.pageSize, data.total)} {t('common.of')} {data.total}
+                    {t('common.showing')} {(page - 1) * pageSize + 1}-
+                    {Math.min(page * pageSize, visibleShareholders.length)} {t('common.of')} {visibleShareholders.length}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -578,7 +743,7 @@ export default function ShareholdersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={page >= data.totalPages}
+                      disabled={page >= totalPages}
                       onClick={() => setPage(page + 1)}
                     >
                       <ChevronRight className="h-4 w-4" />
