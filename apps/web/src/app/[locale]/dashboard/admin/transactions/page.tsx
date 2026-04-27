@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
@@ -34,11 +34,29 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
+import {
+  applyColumnFiltersAndSort,
+  toggleColumnSort,
+  type ColumnSortState,
+} from '@/lib/table-utils';
 import { formatCurrency, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Check, X, QrCode, CreditCard, Link2, Ban, Copy } from 'lucide-react';
+import {
+  Check,
+  X,
+  QrCode,
+  CreditCard,
+  Link2,
+  Ban,
+  Copy,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
 interface TransactionRow {
@@ -82,6 +100,15 @@ interface UnmatchedTransaction {
   referenceText: string | null;
 }
 
+type TransactionColumn =
+  | 'shareholder'
+  | 'type'
+  | 'quantity'
+  | 'amount'
+  | 'registrationDate'
+  | 'paymentDate'
+  | 'status';
+
 export default function AdminTransactionsPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
@@ -89,6 +116,13 @@ export default function AdminTransactionsPage() {
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<TransactionColumn, string>>>({});
+  const [columnSort, setColumnSort] = useState<ColumnSortState<TransactionColumn>>({
+    column: null,
+    direction: 'asc',
+  });
+  const pageSize = 25;
 
   // Payment details dialog
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -130,7 +164,7 @@ export default function AdminTransactionsPage() {
     if (!selectedCoop) return;
     setLoading(true);
     setError('');
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ page: '1', pageSize: '10000' });
     if (statusFilter !== 'all') params.set('status', statusFilter);
     try {
       const result = await api<{ items: TransactionRow[] }>(
@@ -327,6 +361,48 @@ export default function AdminTransactionsPage() {
     return name.includes(search) || ogm.includes(search);
   });
 
+  const visibleTransactions = useMemo(
+    () =>
+      applyColumnFiltersAndSort(
+        transactions,
+        {
+          shareholder: { accessor: (tx) => getName(tx.shareholder) },
+          type: { accessor: (tx) => tx.type },
+          quantity: { accessor: (tx) => tx.quantity },
+          amount: { accessor: (tx) => tx.totalAmount },
+          registrationDate: { accessor: (tx) => tx.createdAt },
+          paymentDate: { accessor: (tx) => getPaymentDate(tx) || '' },
+          status: { accessor: (tx) => tx.status },
+        },
+        columnFilters,
+        columnSort,
+      ),
+    [transactions, columnFilters, columnSort],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(visibleTransactions.length / pageSize));
+  const pagedTransactions = useMemo(
+    () => visibleTransactions.slice((page - 1) * pageSize, page * pageSize),
+    [visibleTransactions, page, pageSize],
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, columnFilters, columnSort]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const renderSortIcon = (column: TransactionColumn) => {
+    if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+    return columnSort.direction === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
+  };
+
   if (!selectedCoop) return <p className="text-muted-foreground">{t('admin.selectCoop')}</p>;
 
   return (
@@ -388,137 +464,264 @@ export default function AdminTransactionsPage() {
               ) : transactions.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('admin.shareholders.shareholder')}</TableHead>
-                      <TableHead>{t('transactions.typeLabel')}</TableHead>
-                      <TableHead className="text-right">{t('shares.quantity')}</TableHead>
-                      <TableHead className="text-right">{t('common.amount')}</TableHead>
-                      <TableHead>{t('transactions.registrationDate')}</TableHead>
-                      <TableHead>{t('payments.paymentDate')}</TableHead>
-                      <TableHead>{t('common.status')}</TableHead>
-                      <TableHead>{t('common.actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map((tx) => {
-                      const payDate = getPaymentDate(tx);
-                      return (
-                      <TableRow key={tx.id}>
-                        <TableCell className="font-medium">
-                          <Link
-                            href={`/dashboard/admin/shareholders/${tx.shareholder.id}`}
-                            className="hover:underline"
-                          >
-                            {getName(tx.shareholder)}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{t(`transactions.types.${tx.type}`)}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">{tx.quantity}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(Number(tx.totalAmount), locale)}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(tx.createdAt).toLocaleDateString(locale)}
-                        </TableCell>
-                        <TableCell>
-                          {tx.status === 'COMPLETED' && editingDateId === tx.id ? (
-                            <Input
-                              type="date"
-                              className="w-36 h-8"
-                              defaultValue={payDate ? new Date(payDate).toISOString().split('T')[0] : ''}
-                              autoFocus
-                              onBlur={(e) => {
-                                if (e.target.value) handleInlineDateSave(tx.id, e.target.value);
-                                else setEditingDateId(null);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                                if (e.key === 'Escape') setEditingDateId(null);
-                              }}
-                            />
-                          ) : (
-                            <span
-                              className={tx.status === 'COMPLETED' ? 'cursor-pointer hover:underline' : ''}
-                              onClick={() => tx.status === 'COMPLETED' && setEditingDateId(tx.id)}
-                            >
-                              {payDate ? new Date(payDate).toLocaleDateString(locale) : '-'}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              tx.status === 'COMPLETED' || tx.status === 'ACTIVE'
-                                ? 'default'
-                                : tx.status === 'PENDING'
-                                  ? 'secondary'
-                                  : tx.status === 'CANCELLED'
-                                    ? 'destructive'
-                                    : 'outline'
-                            }
-                          >
-                            {t(`transactions.statuses.${tx.status}`)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {tx.status === 'PENDING' && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleApprove(tx.id)}
-                                >
-                                  <Check className="h-4 w-4 text-green-600" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => openRejectDialog(tx.id)}
-                                >
-                                  <X className="h-4 w-4 text-red-600" />
-                                </Button>
-                              </>
-                            )}
-                            {['PENDING', 'PENDING_PAYMENT'].includes(tx.status) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openCancelDialog(tx.id)}
-                                title={t('admin.transactions.cancelTransaction')}
-                              >
-                                <Ban className="h-4 w-4 text-orange-600" />
-                              </Button>
-                            )}
-                            {canShowPayment(tx) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => showPaymentDetails(tx.id, tx.status)}
-                                title={
-                                  tx.type === 'SELL'
-                                    ? t('admin.transactions.payRefund')
-                                    : t('admin.transactions.paymentInfo')
-                                }
-                              >
-                                {tx.type === 'SELL' ? (
-                                  <CreditCard className="h-4 w-4 text-blue-600" />
-                                ) : (
-                                  <QrCode className="h-4 w-4 text-blue-600" />
-                                )}
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>
+                          <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'shareholder'))}>
+                            {t('admin.shareholders.shareholder')}
+                            {renderSortIcon('shareholder')}
+                          </Button>
+                        </TableHead>
+                        <TableHead>
+                          <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'type'))}>
+                            {t('transactions.typeLabel')}
+                            {renderSortIcon('type')}
+                          </Button>
+                        </TableHead>
+                        <TableHead className="text-right">
+                          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'quantity'))}>
+                            {t('shares.quantity')}
+                            {renderSortIcon('quantity')}
+                          </Button>
+                        </TableHead>
+                        <TableHead className="text-right">
+                          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'amount'))}>
+                            {t('common.amount')}
+                            {renderSortIcon('amount')}
+                          </Button>
+                        </TableHead>
+                        <TableHead>
+                          <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'registrationDate'))}>
+                            {t('transactions.registrationDate')}
+                            {renderSortIcon('registrationDate')}
+                          </Button>
+                        </TableHead>
+                        <TableHead>
+                          <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'paymentDate'))}>
+                            {t('payments.paymentDate')}
+                            {renderSortIcon('paymentDate')}
+                          </Button>
+                        </TableHead>
+                        <TableHead>
+                          <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'status'))}>
+                            {t('common.status')}
+                            {renderSortIcon('status')}
+                          </Button>
+                        </TableHead>
+                        <TableHead>{t('common.actions')}</TableHead>
                       </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                      <TableRow>
+                        <TableHead>
+                          <Input
+                            value={columnFilters.shareholder || ''}
+                            onChange={(e) => setColumnFilters((prev) => ({ ...prev, shareholder: e.target.value }))}
+                            placeholder={t('common.filter')}
+                            className="h-8"
+                          />
+                        </TableHead>
+                        <TableHead>
+                          <Input
+                            value={columnFilters.type || ''}
+                            onChange={(e) => setColumnFilters((prev) => ({ ...prev, type: e.target.value }))}
+                            placeholder={t('common.filter')}
+                            className="h-8"
+                          />
+                        </TableHead>
+                        <TableHead>
+                          <Input
+                            value={columnFilters.quantity || ''}
+                            onChange={(e) => setColumnFilters((prev) => ({ ...prev, quantity: e.target.value }))}
+                            placeholder={t('common.filter')}
+                            className="h-8"
+                          />
+                        </TableHead>
+                        <TableHead>
+                          <Input
+                            value={columnFilters.amount || ''}
+                            onChange={(e) => setColumnFilters((prev) => ({ ...prev, amount: e.target.value }))}
+                            placeholder={t('common.filter')}
+                            className="h-8"
+                          />
+                        </TableHead>
+                        <TableHead>
+                          <Input
+                            value={columnFilters.registrationDate || ''}
+                            onChange={(e) => setColumnFilters((prev) => ({ ...prev, registrationDate: e.target.value }))}
+                            placeholder={t('common.filter')}
+                            className="h-8"
+                          />
+                        </TableHead>
+                        <TableHead>
+                          <Input
+                            value={columnFilters.paymentDate || ''}
+                            onChange={(e) => setColumnFilters((prev) => ({ ...prev, paymentDate: e.target.value }))}
+                            placeholder={t('common.filter')}
+                            className="h-8"
+                          />
+                        </TableHead>
+                        <TableHead>
+                          <Input
+                            value={columnFilters.status || ''}
+                            onChange={(e) => setColumnFilters((prev) => ({ ...prev, status: e.target.value }))}
+                            placeholder={t('common.filter')}
+                            className="h-8"
+                          />
+                        </TableHead>
+                        <TableHead />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagedTransactions.map((tx) => {
+                        const payDate = getPaymentDate(tx);
+                        return (
+                        <TableRow key={tx.id}>
+                          <TableCell className="font-medium">
+                            <Link
+                              href={`/dashboard/admin/shareholders/${tx.shareholder.id}`}
+                              className="hover:underline"
+                            >
+                              {getName(tx.shareholder)}
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{t(`transactions.types.${tx.type}`)}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">{tx.quantity}</TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(Number(tx.totalAmount), locale)}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(tx.createdAt).toLocaleDateString(locale)}
+                          </TableCell>
+                          <TableCell>
+                            {tx.status === 'COMPLETED' && editingDateId === tx.id ? (
+                              <Input
+                                type="date"
+                                className="w-36 h-8"
+                                defaultValue={payDate ? new Date(payDate).toISOString().split('T')[0] : ''}
+                                autoFocus
+                                onBlur={(e) => {
+                                  if (e.target.value) handleInlineDateSave(tx.id, e.target.value);
+                                  else setEditingDateId(null);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                  if (e.key === 'Escape') setEditingDateId(null);
+                                }}
+                              />
+                            ) : (
+                              <span
+                                className={tx.status === 'COMPLETED' ? 'cursor-pointer hover:underline' : ''}
+                                onClick={() => tx.status === 'COMPLETED' && setEditingDateId(tx.id)}
+                              >
+                                {payDate ? new Date(payDate).toLocaleDateString(locale) : '-'}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                tx.status === 'COMPLETED' || tx.status === 'ACTIVE'
+                                  ? 'default'
+                                  : tx.status === 'PENDING'
+                                    ? 'secondary'
+                                    : tx.status === 'CANCELLED'
+                                      ? 'destructive'
+                                      : 'outline'
+                              }
+                            >
+                              {t(`transactions.statuses.${tx.status}`)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {tx.status === 'PENDING' && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleApprove(tx.id)}
+                                  >
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openRejectDialog(tx.id)}
+                                  >
+                                    <X className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </>
+                              )}
+                              {['PENDING', 'PENDING_PAYMENT'].includes(tx.status) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openCancelDialog(tx.id)}
+                                  title={t('admin.transactions.cancelTransaction')}
+                                >
+                                  <Ban className="h-4 w-4 text-orange-600" />
+                                </Button>
+                              )}
+                              {canShowPayment(tx) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => showPaymentDetails(tx.id, tx.status)}
+                                  title={
+                                    tx.type === 'SELL'
+                                      ? t('admin.transactions.payRefund')
+                                      : t('admin.transactions.paymentInfo')
+                                  }
+                                >
+                                  {tx.type === 'SELL' ? (
+                                    <CreditCard className="h-4 w-4 text-blue-600" />
+                                  ) : (
+                                    <QrCode className="h-4 w-4 text-blue-600" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+
+                  {visibleTransactions.length === 0 && (
+                    <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
+                  )}
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <p className="text-sm text-muted-foreground">
+                        {t('common.showing')} {(page - 1) * pageSize + 1}-
+                        {Math.min(page * pageSize, visibleTransactions.length)} {t('common.of')} {visibleTransactions.length}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={page === 1}
+                          onClick={() => setPage(page - 1)}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={page >= totalPages}
+                          onClick={() => setPage(page + 1)}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
