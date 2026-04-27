@@ -1637,7 +1637,8 @@
       "capitalStatement": "Relevé de capital",
       "shareholderRegister": "Registre des actionnaires",
       "dividendSummary": "Résumé des dividendes",
-      "projectInvestment": "Investissement par projet"
+      "projectInvestment": "Investissement par projet",
+      "shareholdersPerProject": "Actionnaires par projet"
     },
     "types": {
       "buy": "Achat",
@@ -1712,6 +1713,19 @@
       "distribution": "Répartition du capital",
       "details": "Détails des projets",
       "searchPlaceholder": "Rechercher des projets..."
+    },
+    "shareholdersPerProject": {
+      "noProjects": "Aucun projet trouvé.",
+      "noShareholders": "Aucun actionnaire trouvé pour ce projet.",
+      "selectProject": "Sélectionner un projet",
+      "shareholder": "Actionnaire",
+      "type": "Type",
+      "shareClass": "Classe d'actions",
+      "shares": "Actions",
+      "capital": "Capital",
+      "registerDate": "Date d'inscription",
+      "shareholders": "Actionnaires",
+      "details": "Détails des actionnaires"
     }
   },
   "feedback": {

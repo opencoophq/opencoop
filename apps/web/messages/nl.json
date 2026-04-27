@@ -1640,7 +1640,8 @@
       "capitalStatement": "Kapitaaloverzicht",
       "shareholderRegister": "Aandeelhoudersregister",
       "dividendSummary": "Dividendoverzicht",
-      "projectInvestment": "Projectinvestering"
+      "projectInvestment": "Projectinvestering",
+      "shareholdersPerProject": "Aandeelhouders per project"
     },
     "types": {
       "buy": "Aankoop",
@@ -1715,6 +1716,19 @@
       "distribution": "Kapitaalverdeling",
       "details": "Projectdetails",
       "searchPlaceholder": "Projecten zoeken..."
+    },
+    "shareholdersPerProject": {
+      "noProjects": "Geen projecten gevonden.",
+      "noShareholders": "Geen aandeelhouders gevonden voor dit project.",
+      "selectProject": "Selecteer een project",
+      "shareholder": "Aandeelhouder",
+      "type": "Type",
+      "shareClass": "Aandeelklasse",
+      "shares": "Aandelen",
+      "capital": "Kapitaal",
+      "registerDate": "Registratiedatum",
+      "shareholders": "Aandeelhouders",
+      "details": "Aandeelhouderdetails"
     }
   },
   "feedback": {
