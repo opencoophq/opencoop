@@ -22,6 +22,7 @@ interface DataPoint {
   date: string;
   buys: number;
   sells: number;
+  negSells?: number;
   volume: number;
 }
 
@@ -67,7 +68,10 @@ export function TransactionActivityChart({ period }: Props) {
     return d.toLocaleDateString(locale, { month: 'short', year: '2-digit' });
   };
 
-  const timeline = data?.timeline ?? [];
+  const timeline = (data?.timeline ?? []).map((point) => ({
+    ...point,
+    negSells: point.sells > 0 ? -point.sells : 0,
+  }));
 
   return (
     <Card>
@@ -98,6 +102,7 @@ export function TransactionActivityChart({ period }: Props) {
               />
               <Tooltip
                 labelFormatter={(label) => formatDate(String(label))}
+                formatter={(value: number | undefined) => [Math.abs(Number(value) || 0)]}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -108,7 +113,7 @@ export function TransactionActivityChart({ period }: Props) {
                 formatter={(value) => <span className="text-xs">{value}</span>}
               />
               <Bar dataKey="buys" name={t('transactionTypes.buys')} fill="hsl(142, 71%, 45%)" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="sells" name={t('transactionTypes.sells')} fill="hsl(350, 89%, 60%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="negSells" name={t('transactionTypes.sells')} fill="hsl(350, 89%, 60%)" radius={[0, 0, 4, 4]} />
             </BarChart>
           </ResponsiveContainer>
         )}
