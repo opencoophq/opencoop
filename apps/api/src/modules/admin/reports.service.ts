@@ -115,6 +115,28 @@ export interface ProjectInvestment {
   projects: ProjectInvestmentEntry[];
 }
 
+export interface ShareholdersPerProjectEntry {
+  shareholderId: string;
+  shareholderName: string;
+  shareholderType: string;
+  email: string | null;
+  shareClass: string;
+  shareClassCode: string;
+  shareCount: number;
+  totalCapital: number;
+  registerDate: Date;
+}
+
+export interface ShareholdersPerProject {
+  projectId: string | null;
+  projectName: string;
+  projectType: string;
+  totalShareholders: number;
+  totalShares: number;
+  totalCapital: number;
+  shareholders: ShareholdersPerProjectEntry[];
+}
+
 // ============================================================================
 // REPORTS SERVICE
 // ============================================================================
@@ -675,7 +697,78 @@ export class ReportsService {
   }
 
   // --------------------------------------------------------------------------
-  // 6. CSV GENERATION
+  // 6. SHAREHOLDERS PER PROJECT
+  // --------------------------------------------------------------------------
+
+  async getShareholdersPerProject(coopId: string, projectId: string): Promise<ShareholdersPerProject> {
+    // Validate project belongs to coop
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, coopId },
+      select: { id: true, name: true, type: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
+
+    const registrations = await this.prisma.registration.findMany({
+      where: {
+        coopId,
+        projectId,
+        type: 'BUY',
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+      },
+      include: {
+        shareholder: { select: { id: true, firstName: true, lastName: true, companyName: true, type: true, email: true } },
+        shareClass: { select: { name: true, code: true } },
+        payments: { select: { amount: true } },
+      },
+      orderBy: [{ shareholder: { lastName: 'asc' } }, { shareClass: { code: 'asc' } }],
+    });
+
+    // Aggregate by (shareholderId, shareClassId) — a shareholder may have
+    // multiple BUY registrations for the same share class within a project.
+    const map = new Map<string, ShareholdersPerProjectEntry>();
+    for (const reg of registrations) {
+      const key = `${reg.shareholderId}-${reg.shareClassId}`;
+      const capital = reg.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const name = reg.shareholder.type === 'COMPANY'
+        ? (reg.shareholder.companyName ?? '')
+        : `${reg.shareholder.lastName ?? ''} ${reg.shareholder.firstName ?? ''}`.trim();
+
+      if (map.has(key)) {
+        const entry = map.get(key)!;
+        entry.shareCount += reg.quantity;
+        entry.totalCapital += capital;
+      } else {
+        map.set(key, {
+          shareholderId: reg.shareholderId,
+          shareholderName: name,
+          shareholderType: reg.shareholder.type,
+          email: reg.shareholder.email,
+          shareClass: reg.shareClass.name,
+          shareClassCode: reg.shareClass.code,
+          shareCount: reg.quantity,
+          totalCapital: capital,
+          registerDate: reg.registerDate,
+        });
+      }
+    }
+
+    const shareholders = Array.from(map.values()).sort((a, b) =>
+      a.shareholderName.localeCompare(b.shareholderName),
+    );
+
+    return {
+      projectId: project.id,
+      projectName: project.name,
+      projectType: project.type,
+      totalShareholders: new Set(registrations.map((r) => r.shareholderId)).size,
+      totalShares: shareholders.reduce((s, e) => s + e.shareCount, 0),
+      totalCapital: shareholders.reduce((s, e) => s + e.totalCapital, 0),
+      shareholders,
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // 7. CSV GENERATION
   // --------------------------------------------------------------------------
 
   generateCsv(headers: string[], rows: string[][]): string {
@@ -780,6 +873,23 @@ export class ReportsService {
           String(p.shareholderCount),
           String(p.shareCount),
           `${p.percentage.toFixed(2)}%`,
+        ]);
+        return { data, csv: this.generateCsv(headers, rows) };
+      }
+
+      case 'shareholders-per-project': {
+        if (!params.projectId) return { data: null, csv: '' };
+        const data = await this.getShareholdersPerProject(coopId, params.projectId);
+        const headers = ['Shareholder', 'Type', 'Email', 'Share Class', 'Code', 'Shares', 'Capital', 'Register Date'];
+        const rows = data.shareholders.map((s) => [
+          s.shareholderName,
+          s.shareholderType,
+          s.email ?? '',
+          s.shareClass,
+          s.shareClassCode,
+          String(s.shareCount),
+          s.totalCapital.toFixed(2),
+          s.registerDate instanceof Date ? s.registerDate.toISOString().split('T')[0] : String(s.registerDate).split('T')[0],
         ]);
         return { data, csv: this.generateCsv(headers, rows) };
       }

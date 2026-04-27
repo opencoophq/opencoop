@@ -964,6 +964,16 @@ export class AdminController {
     return this.reportsService.getProjectInvestment(coopId, projectId);
   }
 
+  @Get('reports/shareholders-per-project')
+  @RequirePermission('canViewReports')
+  @ApiOperation({ summary: 'Get shareholders and shares per project report data' })
+  async getShareholdersPerProject(
+    @Param('coopId') coopId: string,
+    @Query('projectId') projectId: string,
+  ) {
+    return this.reportsService.getShareholdersPerProject(coopId, projectId);
+  }
+
   @Get('reports/:type/csv')
   @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Export report as CSV' })

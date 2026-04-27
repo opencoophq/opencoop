@@ -1640,7 +1640,8 @@
       "capitalStatement": "Capital Statement",
       "shareholderRegister": "Shareholder Register",
       "dividendSummary": "Dividend Summary",
-      "projectInvestment": "Project Investment"
+      "projectInvestment": "Project Investment",
+      "shareholdersPerProject": "Shareholders per Project"
     },
     "types": {
       "buy": "Purchase",
@@ -1715,6 +1716,19 @@
       "distribution": "Capital Distribution",
       "details": "Project Details",
       "searchPlaceholder": "Search projects..."
+    },
+    "shareholdersPerProject": {
+      "noProjects": "No projects found.",
+      "noShareholders": "No shareholders found for this project.",
+      "selectProject": "Select a project",
+      "shareholder": "Shareholder",
+      "type": "Type",
+      "shareClass": "Share Class",
+      "shares": "Shares",
+      "capital": "Capital",
+      "registerDate": "Register Date",
+      "shareholders": "Shareholders",
+      "details": "Shareholder Details"
     }
   },
   "feedback": {
