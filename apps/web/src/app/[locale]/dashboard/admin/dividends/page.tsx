@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,7 +32,20 @@ import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatCurrency } from '@opencoop/shared';
-import { Plus, Eye, Calculator, Check } from 'lucide-react';
+import {
+  applyColumnFiltersAndSort,
+  toggleColumnSort,
+  type ColumnSortState,
+} from '@/lib/table-utils';
+import {
+  Plus,
+  Eye,
+  Calculator,
+  Check,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 
 interface DividendPeriod {
   id: string;
@@ -47,6 +60,8 @@ interface DividendPeriod {
   status: 'DRAFT' | 'CALCULATED' | 'PAID';
   createdAt: string;
 }
+
+type DividendColumn = 'name' | 'year' | 'exDividendDate' | 'dividendRate' | 'totalGross' | 'totalNet' | 'status';
 
 // Parse a number string that may use comma as decimal separator (NL/BE locale)
 const parseLocaleNumber = (val: unknown): number => {
@@ -73,6 +88,11 @@ export default function DividendsListPage() {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<DividendColumn, string>>>({});
+  const [columnSort, setColumnSort] = useState<ColumnSortState<DividendColumn>>({
+    column: null,
+    direction: 'asc',
+  });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -198,6 +218,34 @@ export default function DividendsListPage() {
     }
   };
 
+  const visiblePeriods = useMemo(
+    () =>
+      applyColumnFiltersAndSort(
+        periods,
+        {
+          name: { accessor: (period) => period.name },
+          year: { accessor: (period) => period.year },
+          exDividendDate: { accessor: (period) => period.exDividendDate },
+          dividendRate: { accessor: (period) => period.dividendRate },
+          totalGross: { accessor: (period) => period.totalGross },
+          totalNet: { accessor: (period) => period.totalNet },
+          status: { accessor: (period) => period.status },
+        },
+        columnFilters,
+        columnSort,
+      ),
+    [periods, columnFilters, columnSort],
+  );
+
+  const sortIcon = (column: DividendColumn) => {
+    if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+    return columnSort.direction === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -253,73 +301,175 @@ export default function DividendsListPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('admin.dividends.periodName')}</TableHead>
-                  <TableHead>{t('admin.dividends.year')}</TableHead>
-                  <TableHead>{t('admin.dividends.exDividendDate')}</TableHead>
-                  <TableHead className="text-right">{t('admin.dividends.dividendRate')}</TableHead>
-                  <TableHead className="text-right">{t('admin.dividends.totalGross')}</TableHead>
-                  <TableHead className="text-right">{t('admin.dividends.totalNet')}</TableHead>
-                  <TableHead>{t('admin.dividends.status')}</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'name'))}>
+                      {t('admin.dividends.periodName')}
+                      {sortIcon('name')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'year'))}>
+                      {t('admin.dividends.year')}
+                      {sortIcon('year')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'exDividendDate'))}>
+                      {t('admin.dividends.exDividendDate')}
+                      {sortIcon('exDividendDate')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'dividendRate'))}>
+                      {t('admin.dividends.dividendRate')}
+                      {sortIcon('dividendRate')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'totalGross'))}>
+                      {t('admin.dividends.totalGross')}
+                      {sortIcon('totalGross')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'totalNet'))}>
+                      {t('admin.dividends.totalNet')}
+                      {sortIcon('totalNet')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'status'))}>
+                      {t('admin.dividends.status')}
+                      {sortIcon('status')}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.name || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, name: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.year || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, year: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.exDividendDate || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, exDividendDate: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.dividendRate || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, dividendRate: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.totalGross || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, totalGross: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.totalNet || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, totalNet: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.status || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, status: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {periods.map((period) => (
-                  <TableRow key={period.id}>
-                    <TableCell className="font-medium">{period.name}</TableCell>
-                    <TableCell>{period.year}</TableCell>
-                    <TableCell>{formatDate(period.exDividendDate)}</TableCell>
-                    <TableCell className="text-right">{(period.dividendRate * 100).toFixed(2)}%</TableCell>
-                    <TableCell className="text-right">
-                      {period.totalGross > 0 ? fmtCurrency(period.totalGross) : '-'}
+                {visiblePeriods.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
+                      {t('common.noResults')}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {period.totalNet > 0 ? fmtCurrency(period.totalNet) : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(period.status)}>
-                        {t(`admin.dividends.${period.status.toLowerCase()}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button asChild variant="ghost" size="sm">
-                          <Link href={`/dashboard/admin/dividends/${period.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        {period.status === 'DRAFT' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCalculate(period)}
-                          >
-                            <Calculator className="h-4 w-4" />
+                  </TableRow>
+                ) : (
+                  visiblePeriods.map((period) => (
+                    <TableRow key={period.id}>
+                      <TableCell className="font-medium">{period.name}</TableCell>
+                      <TableCell>{period.year}</TableCell>
+                      <TableCell>{formatDate(period.exDividendDate)}</TableCell>
+                      <TableCell className="text-right">{(period.dividendRate * 100).toFixed(2)}%</TableCell>
+                      <TableCell className="text-right">
+                        {period.totalGross > 0 ? fmtCurrency(period.totalGross) : '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {period.totalNet > 0 ? fmtCurrency(period.totalNet) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(period.status)}>
+                          {t(`admin.dividends.${period.status.toLowerCase()}`)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button asChild variant="ghost" size="sm">
+                            <Link href={`/dashboard/admin/dividends/${period.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
                           </Button>
-                        )}
-                        {period.status === 'CALCULATED' && (
-                          <>
+                          {period.status === 'DRAFT' && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleCalculate(period)}
-                              title={t('admin.dividends.recalculate')}
                             >
                               <Calculator className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleMarkPaid(period)}
-                            >
-                              <Check className="h-4 w-4 text-green-600" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          )}
+                          {period.status === 'CALCULATED' && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCalculate(period)}
+                                title={t('admin.dividends.recalculate')}
+                              >
+                                <Calculator className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMarkPaid(period)}
+                              >
+                                <Check className="h-4 w-4 text-green-600" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           )}

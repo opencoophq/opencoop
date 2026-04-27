@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { Link } from '@/i18n/routing';
@@ -34,7 +34,22 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { api } from '@/lib/api';
-import { UserPlus, Trash2, Settings, Mail, X, Shield } from 'lucide-react';
+import {
+  applyColumnFiltersAndSort,
+  toggleColumnSort,
+  type ColumnSortState,
+} from '@/lib/table-utils';
+import {
+  UserPlus,
+  Trash2,
+  Settings,
+  Mail,
+  X,
+  Shield,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 
 const PERMISSION_KEYS = [
   'canManageShareholders',
@@ -75,6 +90,9 @@ interface Invitation {
   createdAt: string;
 }
 
+type AdminColumn = 'name' | 'email' | 'role' | 'date';
+type InvitationColumn = 'email' | 'role' | 'expiresAt';
+
 export default function TeamPage() {
   const t = useTranslations('admin');
   const tc = useTranslations('common');
@@ -84,6 +102,16 @@ export default function TeamPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [adminFilters, setAdminFilters] = useState<Partial<Record<AdminColumn, string>>>({});
+  const [adminSort, setAdminSort] = useState<ColumnSortState<AdminColumn>>({
+    column: null,
+    direction: 'asc',
+  });
+  const [invitationFilters, setInvitationFilters] = useState<Partial<Record<InvitationColumn, string>>>({});
+  const [invitationSort, setInvitationSort] = useState<ColumnSortState<InvitationColumn>>({
+    column: null,
+    direction: 'asc',
+  });
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -103,7 +131,47 @@ export default function TeamPage() {
 
   const coopId = selectedCoop?.id;
 
-  const loadData = async () => {
+  const visibleAdmins = useMemo(
+    () =>
+      applyColumnFiltersAndSort(
+        admins,
+        {
+          name: { accessor: (admin) => admin.user.name || '' },
+          email: { accessor: (admin) => admin.user.email },
+          role: { accessor: (admin) => admin.role.name },
+          date: { accessor: (admin) => admin.createdAt },
+        },
+        adminFilters,
+        adminSort,
+      ),
+    [admins, adminFilters, adminSort],
+  );
+
+  const visibleInvitations = useMemo(
+    () =>
+      applyColumnFiltersAndSort(
+        invitations,
+        {
+          email: { accessor: (inv) => inv.email },
+          role: { accessor: (inv) => inv.role.name },
+          expiresAt: { accessor: (inv) => inv.expiresAt },
+        },
+        invitationFilters,
+        invitationSort,
+      ),
+    [invitations, invitationFilters, invitationSort],
+  );
+
+  const sortIcon = (active: boolean, direction: 'asc' | 'desc') => {
+    if (!active) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+    return direction === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
+  };
+
+  const loadData = useCallback(async () => {
     if (!coopId) return;
     setLoading(true);
     try {
@@ -120,11 +188,11 @@ export default function TeamPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [coopId]);
 
   useEffect(() => {
     loadData();
-  }, [coopId]);
+  }, [loadData]);
 
   const handleInvite = async () => {
     if (!coopId || !inviteEmail || !inviteRoleId) return;
@@ -271,67 +339,130 @@ export default function TeamPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{tc('name')}</TableHead>
-                  <TableHead>{tc('email')}</TableHead>
-                  <TableHead>{t('team.role')}</TableHead>
-                  <TableHead>{tc('date')}</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'name'))}>
+                      {tc('name')}
+                      {sortIcon(adminSort.column === 'name', adminSort.direction)}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'email'))}>
+                      {tc('email')}
+                      {sortIcon(adminSort.column === 'email', adminSort.direction)}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'role'))}>
+                      {t('team.role')}
+                      {sortIcon(adminSort.column === 'role', adminSort.direction)}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'date'))}>
+                      {tc('date')}
+                      {sortIcon(adminSort.column === 'date', adminSort.direction)}
+                    </Button>
+                  </TableHead>
                   <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead>
+                    <Input
+                      value={adminFilters.name || ''}
+                      onChange={(e) => setAdminFilters((prev) => ({ ...prev, name: e.target.value }))}
+                      placeholder={tc('filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={adminFilters.email || ''}
+                      onChange={(e) => setAdminFilters((prev) => ({ ...prev, email: e.target.value }))}
+                      placeholder={tc('filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={adminFilters.role || ''}
+                      onChange={(e) => setAdminFilters((prev) => ({ ...prev, role: e.target.value }))}
+                      placeholder={tc('filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={adminFilters.date || ''}
+                      onChange={(e) => setAdminFilters((prev) => ({ ...prev, date: e.target.value }))}
+                      placeholder={tc('filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {admins.map((admin) => (
-                  <TableRow key={admin.id}>
-                    <TableCell className="font-medium">
-                      {admin.user.name || '-'}
-                    </TableCell>
-                    <TableCell>{admin.user.email}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={admin.role.id}
-                        onValueChange={(value) => handleRoleChange(admin.id, value)}
-                      >
-                        <SelectTrigger className="w-[160px] h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {roles.map((role) => (
-                            <SelectItem key={role.id} value={role.id}>
-                              {role.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(admin.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title={t('team.customPermissions')}
-                          onClick={() => openPermsDialog(admin)}
-                        >
-                          <Shield className={`h-4 w-4 ${admin.permissionOverrides ? 'text-primary' : ''}`} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => {
-                            setAdminToRemove(admin);
-                            setRemoveOpen(true);
-                            setRemoveError('');
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {visibleAdmins.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                      {tc('noResults')}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  visibleAdmins.map((admin) => (
+                    <TableRow key={admin.id}>
+                      <TableCell className="font-medium">
+                        {admin.user.name || '-'}
+                      </TableCell>
+                      <TableCell>{admin.user.email}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={admin.role.id}
+                          onValueChange={(value) => handleRoleChange(admin.id, value)}
+                        >
+                          <SelectTrigger className="w-[160px] h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {roles.map((role) => (
+                              <SelectItem key={role.id} value={role.id}>
+                                {role.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(admin.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title={t('team.customPermissions')}
+                            onClick={() => openPermsDialog(admin)}
+                          >
+                            <Shield className={`h-4 w-4 ${admin.permissionOverrides ? 'text-primary' : ''}`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => {
+                              setAdminToRemove(admin);
+                              setRemoveOpen(true);
+                              setRemoveError('');
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           )}
@@ -348,39 +479,89 @@ export default function TeamPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{tc('email')}</TableHead>
-                  <TableHead>{t('team.role')}</TableHead>
-                  <TableHead>{t('team.expiresAt')}</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setInvitationSort((prev) => toggleColumnSort(prev, 'email'))}>
+                      {tc('email')}
+                      {sortIcon(invitationSort.column === 'email', invitationSort.direction)}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setInvitationSort((prev) => toggleColumnSort(prev, 'role'))}>
+                      {t('team.role')}
+                      {sortIcon(invitationSort.column === 'role', invitationSort.direction)}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setInvitationSort((prev) => toggleColumnSort(prev, 'expiresAt'))}>
+                      {t('team.expiresAt')}
+                      {sortIcon(invitationSort.column === 'expiresAt', invitationSort.direction)}
+                    </Button>
+                  </TableHead>
                   <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead>
+                    <Input
+                      value={invitationFilters.email || ''}
+                      onChange={(e) => setInvitationFilters((prev) => ({ ...prev, email: e.target.value }))}
+                      placeholder={tc('filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={invitationFilters.role || ''}
+                      onChange={(e) => setInvitationFilters((prev) => ({ ...prev, role: e.target.value }))}
+                      placeholder={tc('filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={invitationFilters.expiresAt || ''}
+                      onChange={(e) => setInvitationFilters((prev) => ({ ...prev, expiresAt: e.target.value }))}
+                      placeholder={tc('filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invitations.map((inv) => (
-                  <TableRow key={inv.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        {inv.email}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{inv.role.name}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(inv.expiresAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => handleRevokeInvitation(inv.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                {visibleInvitations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                      {tc('noResults')}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  visibleInvitations.map((inv) => (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          {inv.email}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{inv.role.name}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(inv.expiresAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => handleRevokeInvitation(inv.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
