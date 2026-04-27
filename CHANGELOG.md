@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.15] - 2026-04-27
+
+### Added
+- **Shareholders per project report** for coop admins. New report tab in Dashboard > Admin > Reports with a project selector that lists shareholder rows (name, type, share class, share count, capital, registration date) plus totals.
+- **Backend endpoint** `GET /admin/coops/:coopId/reports/shareholders-per-project?projectId=...` with aggregation across multiple BUY registrations for the same shareholder/share class pair.
+- **CSV export support** for the new report via the existing export flow (`shareholders-per-project` report type).
+- **Translations** for the new report UI in NL/EN/FR/DE.
+
 ## [0.8.13] - 2026-04-25
 
 ### Fixed
