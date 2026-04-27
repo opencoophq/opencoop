@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { useAdmin } from '@/contexts/admin-context';
@@ -8,6 +8,7 @@ import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -17,7 +18,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { api } from '@/lib/api';
-import { Plus } from 'lucide-react';
+import {
+  applyColumnFiltersAndSort,
+  toggleColumnSort,
+  type ColumnSortState,
+} from '@/lib/table-utils';
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface ConversationParticipant {
   shareholder: {
@@ -52,6 +58,8 @@ interface ConversationsResponse {
   totalPages: number;
 }
 
+type MessageColumn = 'type' | 'subject' | 'body' | 'participants' | 'date';
+
 export default function AdminMessagesPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
@@ -59,6 +67,11 @@ export default function AdminMessagesPage() {
   const [data, setData] = useState<ConversationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<MessageColumn, string>>>({});
+  const [columnSort, setColumnSort] = useState<ColumnSortState<MessageColumn>>({
+    column: null,
+    direction: 'asc',
+  });
 
   const fetchConversations = useCallback(async () => {
     if (!selectedCoop) return;
@@ -79,6 +92,46 @@ export default function AdminMessagesPage() {
     fetchConversations();
   }, [fetchConversations]);
 
+  const conversations = useMemo(() => data?.conversations || [], [data?.conversations]);
+  const conversationParticipantsLabel = useCallback((conv: ConversationListItem): string => {
+    if (conv.type === 'BROADCAST') return t('messages.allShareholders');
+    const names = conv.participants.map((p) =>
+      p.shareholder.type === 'COMPANY'
+        ? (p.shareholder.companyName ?? '')
+        : `${p.shareholder.firstName} ${p.shareholder.lastName}`.trim(),
+    );
+    const total = conv._count.participants;
+    if (names.length === 0) return String(total);
+    const shown = names.slice(0, 2).join(', ');
+    return total > 2 ? `${shown}, ...` : shown;
+  }, [t]);
+
+  const visibleConversations = useMemo(
+    () =>
+      applyColumnFiltersAndSort(
+        conversations,
+        {
+          type: { accessor: (conv) => conv.type },
+          subject: { accessor: (conv) => conv.subject },
+          body: { accessor: (conv) => conv.messages[0]?.body || '' },
+          participants: { accessor: (conv) => conversationParticipantsLabel(conv) },
+          date: { accessor: (conv) => conv.updatedAt },
+        },
+        columnFilters,
+        columnSort,
+      ),
+    [conversations, columnFilters, columnSort, conversationParticipantsLabel],
+  );
+
+  const sortIcon = (column: MessageColumn) => {
+    if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+    return columnSort.direction === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
+  };
+
   if (!selectedCoop) {
     return (
       <div className="p-6">
@@ -95,8 +148,6 @@ export default function AdminMessagesPage() {
       </div>
     );
   }
-
-  const conversations = data?.conversations || [];
 
   return (
     <div className="space-y-6">
@@ -120,58 +171,119 @@ export default function AdminMessagesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('common.type')}</TableHead>
-                  <TableHead>{t('messages.subject')}</TableHead>
-                  <TableHead>{t('messages.body')}</TableHead>
-                  <TableHead>{t('messages.participants')}</TableHead>
-                  <TableHead>{t('common.date')}</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'type'))}>
+                      {t('common.type')}
+                      {sortIcon('type')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'subject'))}>
+                      {t('messages.subject')}
+                      {sortIcon('subject')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'body'))}>
+                      {t('messages.body')}
+                      {sortIcon('body')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'participants'))}>
+                      {t('messages.participants')}
+                      {sortIcon('participants')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'date'))}>
+                      {t('common.date')}
+                      {sortIcon('date')}
+                    </Button>
+                  </TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.type || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, type: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.subject || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, subject: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.body || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, body: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.participants || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, participants: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.date || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, date: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {conversations.map((conv) => {
-                  const lastMessage = conv.messages[0];
-                  const preview = lastMessage?.body
-                    ? lastMessage.body.length > 80
-                      ? lastMessage.body.slice(0, 80) + '...'
-                      : lastMessage.body
-                    : '';
-                  return (
-                    <TableRow key={conv.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell>
-                        <Badge variant={conv.type === 'BROADCAST' ? 'default' : 'secondary'}>
-                          {t(`messages.${conv.type.toLowerCase()}`)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <Link
-                          href={`/dashboard/admin/messages/${conv.id}`}
-                          className="hover:underline"
-                        >
-                          {conv.subject}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{preview}</TableCell>
-                      <TableCell>
-                        {conv.type === 'BROADCAST'
-                          ? t('messages.allShareholders')
-                          : (() => {
-                              const names = conv.participants.map((p) =>
-                                p.shareholder.type === 'COMPANY'
-                                  ? (p.shareholder.companyName ?? '')
-                                  : `${p.shareholder.firstName} ${p.shareholder.lastName}`.trim(),
-                              );
-                              const total = conv._count.participants;
-                              if (names.length === 0) return String(total);
-                              const shown = names.slice(0, 2).join(', ');
-                              return total > 2 ? `${shown}, ...` : shown;
-                            })()}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(conv.updatedAt).toLocaleDateString(locale)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {visibleConversations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                      {t('common.noResults')}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  visibleConversations.map((conv) => {
+                    const lastMessage = conv.messages[0];
+                    const preview = lastMessage?.body
+                      ? lastMessage.body.length > 80
+                        ? lastMessage.body.slice(0, 80) + '...'
+                        : lastMessage.body
+                      : '';
+                    return (
+                      <TableRow key={conv.id} className="cursor-pointer hover:bg-muted/50">
+                        <TableCell>
+                          <Badge variant={conv.type === 'BROADCAST' ? 'default' : 'secondary'}>
+                            {t(`messages.${conv.type.toLowerCase()}`)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <Link
+                            href={`/dashboard/admin/messages/${conv.id}`}
+                            className="hover:underline"
+                          >
+                            {conv.subject}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{preview}</TableCell>
+                        <TableCell>{conversationParticipantsLabel(conv)}</TableCell>
+                        <TableCell>
+                          {new Date(conv.updatedAt).toLocaleDateString(locale)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           )}

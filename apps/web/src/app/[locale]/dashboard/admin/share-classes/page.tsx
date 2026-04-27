@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
@@ -27,8 +27,13 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
+import {
+  applyColumnFiltersAndSort,
+  toggleColumnSort,
+  type ColumnSortState,
+} from '@/lib/table-utils';
 import { formatCurrency } from '@opencoop/shared';
-import { Plus, Pencil, Upload } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Plus, Pencil, Upload } from 'lucide-react';
 
 interface ShareClass {
   id: string;
@@ -53,6 +58,8 @@ interface FormState {
   isActive: boolean;
 }
 
+type ShareClassColumn = 'name' | 'code' | 'pricePerShare' | 'minShares' | 'maxShares' | 'voting' | 'status';
+
 export default function ShareClassesPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
@@ -73,6 +80,11 @@ export default function ShareClassesPage() {
     hasVotingRights: true,
     dividendRateOverride: '',
     isActive: true,
+  });
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<ShareClassColumn, string>>>({});
+  const [columnSort, setColumnSort] = useState<ColumnSortState<ShareClassColumn>>({
+    column: null,
+    direction: 'asc',
   });
 
   const loadData = useCallback(async () => {
@@ -166,6 +178,34 @@ export default function ShareClassesPage() {
     loadData();
   };
 
+  const visibleClasses = useMemo(
+    () =>
+      applyColumnFiltersAndSort(
+        classes,
+        {
+          name: { accessor: (sc) => sc.name },
+          code: { accessor: (sc) => sc.code },
+          pricePerShare: { accessor: (sc) => sc.pricePerShare },
+          minShares: { accessor: (sc) => sc.minShares },
+          maxShares: { accessor: (sc) => sc.maxShares ?? Number.MAX_SAFE_INTEGER },
+          voting: { accessor: (sc) => sc.hasVotingRights },
+          status: { accessor: (sc) => (sc.isActive ? 'active' : 'inactive') },
+        },
+        columnFilters,
+        columnSort,
+      ),
+    [classes, columnFilters, columnSort],
+  );
+
+  const renderSortIcon = (column: ShareClassColumn) => {
+    if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+    return columnSort.direction === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
+  };
+
   if (!selectedCoop) return <p className="text-muted-foreground">{t('admin.selectCoop')}</p>;
 
   return (
@@ -219,39 +259,141 @@ export default function ShareClassesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('common.name')}</TableHead>
-                  <TableHead>{t('admin.shareClasses.code')}</TableHead>
-                  <TableHead className="text-right">{t('shares.pricePerShare')}</TableHead>
-                  <TableHead className="text-right">{t('admin.shareClasses.minShares')}</TableHead>
-                  <TableHead className="text-right">{t('admin.shareClasses.maxShares')}</TableHead>
-                  <TableHead>{t('admin.shareClasses.votingRights')}</TableHead>
-                  <TableHead>{t('common.status')}</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'name'))}>
+                      {t('common.name')}
+                      {renderSortIcon('name')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'code'))}>
+                      {t('admin.shareClasses.code')}
+                      {renderSortIcon('code')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'pricePerShare'))}>
+                      {t('shares.pricePerShare')}
+                      {renderSortIcon('pricePerShare')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'minShares'))}>
+                      {t('admin.shareClasses.minShares')}
+                      {renderSortIcon('minShares')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'maxShares'))}>
+                      {t('admin.shareClasses.maxShares')}
+                      {renderSortIcon('maxShares')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'voting'))}>
+                      {t('admin.shareClasses.votingRights')}
+                      {renderSortIcon('voting')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'status'))}>
+                      {t('common.status')}
+                      {renderSortIcon('status')}
+                    </Button>
+                  </TableHead>
                   <TableHead>{t('common.actions')}</TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.name || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, name: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.code || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, code: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.pricePerShare || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, pricePerShare: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.minShares || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, minShares: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.maxShares || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, maxShares: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.voting || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, voting: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.status || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, status: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {classes.map((sc) => (
-                  <TableRow key={sc.id}>
-                    <TableCell className="font-medium">{sc.name}</TableCell>
-                    <TableCell>{sc.code}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(Number(sc.pricePerShare), locale)}
-                    </TableCell>
-                    <TableCell className="text-right">{sc.minShares}</TableCell>
-                    <TableCell className="text-right">{sc.maxShares ?? '\u221e'}</TableCell>
-                    <TableCell>{sc.hasVotingRights ? '\u2713' : '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant={sc.isActive ? 'default' : 'secondary'}>
-                        {sc.isActive ? t('common.active') : t('common.inactive')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(sc)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                {visibleClasses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
+                      {t('common.noResults')}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  visibleClasses.map((sc) => (
+                    <TableRow key={sc.id}>
+                      <TableCell className="font-medium">{sc.name}</TableCell>
+                      <TableCell>{sc.code}</TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(Number(sc.pricePerShare), locale)}
+                      </TableCell>
+                      <TableCell className="text-right">{sc.minShares}</TableCell>
+                      <TableCell className="text-right">{sc.maxShares ?? '\u221e'}</TableCell>
+                      <TableCell>{sc.hasVotingRights ? '\u2713' : '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={sc.isActive ? 'default' : 'secondary'}>
+                          {sc.isActive ? t('common.active') : t('common.inactive')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(sc)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           )}
