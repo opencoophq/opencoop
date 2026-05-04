@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.23] - 2026-05-04
+
+### Fixed
+- **Printable attendance sheet rows were too cramped to actually sign.** The signature column shared the row's ~34pt height with the text above it — fine for printed name + member number, not enough for a wet signature, especially on the 20 blank walk-in rows. Bumped row `minHeight` to 38 (≈50pt total) and pinned non-signature cells to `flex-start` so name/member#/via stay top-aligned and the new headroom all goes to the signature box.
+
 ## [0.8.22] - 2026-05-04
 
 ### Fixed
