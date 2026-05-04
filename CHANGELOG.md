@@ -2,6 +2,13 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.21] - 2026-05-04
+
+### Added
+- **Printable attendance sheet from the check-in page.** The `AttendanceSheetPdf` template already had a per-row signature column and 20 blank rows for walk-ins; this release wires it up to a "Printbare lijst" button that opens the PDF in a new tab, ready to print on the morning of the AGM. The endpoint (`GET /admin/coops/:coopId/meetings/:id/attendance-sheet`) is auth-guarded — fetched via bearer token + blob URL.
+- **Per-column sort + filter on the RSVP list and the check-in attendance list.** Replaces the previous single status dropdown with the same two-row sort/filter header used by admin transactions/team. Columns on the RSVP list: shareholder, email, RSVP status, delegate, RSVP timestamp. Columns on the check-in list: name, member #, RSVP status, ballots, proxy-for, checked-in time.
+- **Check-in row converted to sortable `<Table>`** while preserving the tap-to-check-in semantics — clicking any cell on the row still toggles the attendance.
+
 ## [0.8.20] - 2026-05-04
 
 ### Added
