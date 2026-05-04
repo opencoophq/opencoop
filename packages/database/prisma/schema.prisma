@@ -274,19 +274,19 @@ model User {
   termsVersion    String?
 
   // Relations
-  coopAdminOf                  CoopAdmin[]
-  shareholders                 Shareholder[]                  @relation("UserShareholder")
-  registeredShareholders       Shareholder[]                  @relation("RegisteredBy")
-  processedRegistrations       Registration[]
-  matchedPayments              Payment[]                      @relation("PaymentMatcher")
-  importedBankFiles            BankImport[]
-  magicLinkTokens              MagicLinkToken[]
-  webAuthnCredentials          WebAuthnCredential[]
-  auditLogs                    AuditLog[]
-  conversationsCreated         Conversation[]                 @relation("ConversationCreatedBy")
-  refreshTokens                RefreshToken[]
-  apiKeys                      ApiKey[]
-  emancipationTokensReceived   ShareholderEmancipationToken[] @relation("EmancipationRecipient")
+  coopAdminOf                CoopAdmin[]
+  shareholders               Shareholder[]                  @relation("UserShareholder")
+  registeredShareholders     Shareholder[]                  @relation("RegisteredBy")
+  processedRegistrations     Registration[]
+  matchedPayments            Payment[]                      @relation("PaymentMatcher")
+  importedBankFiles          BankImport[]
+  magicLinkTokens            MagicLinkToken[]
+  webAuthnCredentials        WebAuthnCredential[]
+  auditLogs                  AuditLog[]
+  conversationsCreated       Conversation[]                 @relation("ConversationCreatedBy")
+  refreshTokens              RefreshToken[]
+  apiKeys                    ApiKey[]
+  emancipationTokensReceived ShareholderEmancipationToken[] @relation("EmancipationRecipient")
 
   @@map("users")
 }
@@ -361,17 +361,36 @@ model CoopAdmin {
   id                  String   @id @default(cuid())
   userId              String
   coopId              String
-  roleId              String
+  // Deprecated: kept nullable for backward compat — admins now have N roles
+  // via the `roles` relation. Will be dropped in a follow-up migration once
+  // confidence is high. New writes leave this null.
+  roleId              String?
   permissionOverrides Json?
   createdAt           DateTime @default(now())
 
   user                 User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
   coop                 Coop                           @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  role                 CoopRole                       @relation(fields: [roleId], references: [id])
+  role                 CoopRole?                      @relation(fields: [roleId], references: [id])
+  roles                CoopAdminRole[]
   notificationSettings CoopAdminNotificationSettings?
 
   @@unique([userId, coopId])
   @@map("coop_admins")
+}
+
+// Join table giving a CoopAdmin N roles. Effective permissions are the
+// union (OR-merge) of every assigned role's permissions, with
+// `CoopAdmin.permissionOverrides` applied on top.
+model CoopAdminRole {
+  coopAdminId String
+  roleId      String
+  assignedAt  DateTime @default(now())
+
+  coopAdmin CoopAdmin @relation(fields: [coopAdminId], references: [id], onDelete: Cascade)
+  role      CoopRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([coopAdminId, roleId])
+  @@map("coop_admin_roles")
 }
 
 model CoopAdminNotificationSettings {
@@ -403,9 +422,10 @@ model CoopRole {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  coop        Coop              @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  coopAdmins  CoopAdmin[]
-  invitations AdminInvitation[]
+  coop           Coop              @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  coopAdmins     CoopAdmin[]
+  coopAdminRoles CoopAdminRole[]
+  invitations    AdminInvitation[]
 
   @@unique([coopId, name])
   @@map("coop_roles")
@@ -484,22 +504,22 @@ model Shareholder {
   referrals               Shareholder[] @relation("ReferredBy") // People this shareholder referred
 
   // Relations
-  coop                     Coop                      @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  channel                  Channel?                  @relation(fields: [channelId], references: [id], onDelete: SetNull)
-  user                     User?                     @relation("UserShareholder", fields: [userId], references: [id], onDelete: SetNull)
-  registeredBy             User?                     @relation("RegisteredBy", fields: [registeredByUserId], references: [id], onDelete: SetNull)
+  coop                     Coop                          @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  channel                  Channel?                      @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  user                     User?                         @relation("UserShareholder", fields: [userId], references: [id], onDelete: SetNull)
+  registeredBy             User?                         @relation("RegisteredBy", fields: [registeredByUserId], references: [id], onDelete: SetNull)
   beneficialOwners         BeneficialOwner[]
-  registrations            Registration[]            @relation("ShareholderRegistrations")
-  referralRegistrations    Registration[]            @relation("ReferralRegistration") // Registrations attributed to this referrer
-  transfersIn              Registration[]            @relation("TransferIn")
-  transfersOut             Registration[]            @relation("TransferOut")
+  registrations            Registration[]                @relation("ShareholderRegistrations")
+  referralRegistrations    Registration[]                @relation("ReferralRegistration") // Registrations attributed to this referrer
+  transfersIn              Registration[]                @relation("TransferIn")
+  transfersOut             Registration[]                @relation("TransferOut")
   dividendPayouts          DividendPayout[]
   documents                ShareholderDocument[]
   emancipationToken        ShareholderEmancipationToken?
-  claimedGifts             Registration[]            @relation("GiftClaimedBy")
+  claimedGifts             Registration[]                @relation("GiftClaimedBy")
   conversationParticipants ConversationParticipant[]
-  proxiesGranted           Proxy[]                   @relation("ProxyGrantor")
-  proxiesHeld              Proxy[]                   @relation("ProxyDelegate")
+  proxiesGranted           Proxy[]                       @relation("ProxyGrantor")
+  proxiesHeld              Proxy[]                       @relation("ProxyDelegate")
   meetingAttendances       MeetingAttendance[]
   votes                    Vote[]
 
@@ -1100,7 +1120,7 @@ model Meeting {
   convocationSentAt   DateTime?
   convocationDocUrl   String?
   convocationFailures Json?
-  customSubject       String?               // overrides default convocation email subject when set
+  customSubject       String? // overrides default convocation email subject when set
   customBody          String?               @db.Text // HTML; overrides default intro paragraph when set
   reminderDaysBefore  Int[]                 @default([3])
   remindersSent       Json?                 @default("{}")

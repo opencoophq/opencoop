@@ -1,11 +1,12 @@
 import { Injectable, UnauthorizedException, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
 import { CoopsService } from '../coops/coops.service';
-import { computeTotalPaid, computeVestedShares, TERMS_VERSION } from '@opencoop/shared';
+import { computeTotalPaid, computeVestedShares, TERMS_VERSION, DEFAULT_ROLES } from '@opencoop/shared';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -21,6 +22,28 @@ import { encryptMfaSecret, decryptMfaSecret, generateRecoveryCodes, hashRecovery
 import * as OTPAuth from 'otpauth';
 import * as QRCode from 'qrcode';
 import { AuditService } from '../audit/audit.service';
+/**
+ * OR-merge permissions across all roles assigned to a CoopAdmin, then apply
+ * the per-admin overrides on top. An admin with N roles has the union of
+ * their permissions: as soon as ANY role grants `canX`, the admin has `canX`.
+ * Overrides win unconditionally — a `false` override switches a granted
+ * permission off, a `true` override grants something no role provided.
+ */
+function mergeAdminPermissions(
+  rolePermissionsList: unknown[],
+  overrides: unknown,
+): Record<string, boolean> {
+  const merged: Record<string, boolean> = {};
+  for (const perms of rolePermissionsList) {
+    const obj = (perms ?? {}) as Record<string, boolean>;
+    for (const [key, value] of Object.entries(obj)) {
+      merged[key] = merged[key] || value === true;
+    }
+  }
+  const overrideObj = (overrides ?? {}) as Record<string, boolean>;
+  return { ...merged, ...overrideObj };
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -37,7 +60,7 @@ export class AuthService {
       where: { email: email.toLowerCase() },
       include: {
         coopAdminOf: {
-          select: { coopId: true, role: { select: { permissions: true } } },
+          select: { coopId: true, roles: { select: { role: { select: { permissions: true } } } } },
         },
       },
     });
@@ -66,7 +89,11 @@ export class AuthService {
     preferredLanguage: string;
     emailVerified: Date | null;
     mfaEnabled?: boolean;
-    coopAdminOf?: { coopId: string; permissionOverrides?: any; role: { permissions: any } }[];
+    coopAdminOf?: {
+      coopId: string;
+      permissionOverrides?: any;
+      roles: { role: { permissions: any } }[];
+    }[];
   }) {
     return this.issueJwtForUser(user);
   }
@@ -214,29 +241,27 @@ export class AuthService {
         },
       });
 
-      // Create default roles for the new coop
-      const defaultRoles = [
-        { name: 'Admin', permissions: { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
-        { name: 'Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: true, canViewReports: true, canViewShareholderRegister: true } },
-        { name: 'GDPR Viewer', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: false, canManageProjects: false, canManageDividends: false, canManageSettings: false, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
-        { name: 'GDPR Admin', permissions: { canManageShareholders: false, canManageTransactions: false, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: false, canViewPII: false, canViewReports: true, canViewShareholderRegister: false } },
-      ];
+      // Create default roles for the new coop, sourced from the single
+      // shared list so adding/removing a permission keeps preset roles
+      // consistent across the codebase.
       const roles = await Promise.all(
-        defaultRoles.map((r) =>
+        Object.entries(DEFAULT_ROLES).map(([name, permissions]) =>
           tx.coopRole.create({
-            data: { coopId: coop.id, name: r.name, permissions: r.permissions, isDefault: true },
+            data: { coopId: coop.id, name, permissions: permissions as unknown as Prisma.InputJsonValue, isDefault: true },
           }),
         ),
       );
 
       const adminRole = roles.find((r) => r.name === 'Admin')!;
 
-      await tx.coopAdmin.create({
+      const coopAdmin = await tx.coopAdmin.create({
         data: {
           userId: user.id,
           coopId: coop.id,
-          roleId: adminRole.id,
         },
+      });
+      await tx.coopAdminRole.create({
+        data: { coopAdminId: coopAdmin.id, roleId: adminRole.id },
       });
 
       // Create default channel for the new coop
@@ -270,7 +295,7 @@ export class AuthService {
       coopAdminOf: [{
         coopId: result.coop.id,
         permissionOverrides: null,
-        role: { permissions: adminPermissions },
+        roles: [{ role: { permissions: adminPermissions } }],
       }],
     });
 
@@ -732,7 +757,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, role: { select: { permissions: true } } } } },
+      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, roles: { select: { role: { select: { permissions: true } } } } } } },
     });
     if (!user || !user.mfaEnabled || !user.mfaSecret) {
       throw new UnauthorizedException('MFA not configured');
@@ -862,7 +887,7 @@ export class AuthService {
     // 1. Check if user already linked by provider ID
     let user = await this.prisma.user.findFirst({
       where: { [providerIdField]: data.providerId },
-      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, role: { select: { permissions: true } } } } },
+      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, roles: { select: { role: { select: { permissions: true } } } } } } },
     });
 
     if (user) {
@@ -884,7 +909,7 @@ export class AuthService {
     // 2. Check if user exists by email
     user = await this.prisma.user.findUnique({
       where: { email: data.email.toLowerCase() },
-      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, role: { select: { permissions: true } } } } },
+      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, roles: { select: { role: { select: { permissions: true } } } } } } },
     });
 
     if (user) {
@@ -1249,7 +1274,7 @@ export class AuthService {
         user: {
           include: {
             coopAdminOf: {
-              select: { coopId: true, role: { select: { permissions: true } } },
+              select: { coopId: true, roles: { select: { role: { select: { permissions: true } } } } },
             },
           },
         },
@@ -1577,7 +1602,11 @@ export class AuthService {
       include: {
         user: {
           include: {
-            coopAdminOf: { include: { role: true } },
+            coopAdminOf: {
+              include: {
+                roles: { include: { role: true } },
+              },
+            },
           },
         },
       },
@@ -1591,9 +1620,10 @@ export class AuthService {
     const coopIds = user.coopAdminOf.map((ca) => ca.coopId);
     const coopPermissions: Record<string, any> = {};
     for (const ca of user.coopAdminOf) {
-      const basePermissions = (ca.role.permissions ?? {}) as Record<string, boolean>;
-      const overrides = ((ca.permissionOverrides ?? {}) as Record<string, boolean>);
-      coopPermissions[ca.coopId] = { ...basePermissions, ...overrides };
+      coopPermissions[ca.coopId] = mergeAdminPermissions(
+        ca.roles.map((r) => r.role.permissions),
+        ca.permissionOverrides,
+      );
     }
 
     const payload = {
@@ -1625,16 +1655,21 @@ export class AuthService {
       preferredLanguage: string;
       emailVerified: Date | null;
       mfaEnabled?: boolean;
-      coopAdminOf?: { coopId: string; permissionOverrides?: any; role: { permissions: any } }[];
+      coopAdminOf?: {
+        coopId: string;
+        permissionOverrides?: any;
+        roles: { role: { permissions: any } }[];
+      }[];
     },
     mfaAlreadyVerified = false,
   ) {
     const coopIds = (user.coopAdminOf ?? []).map((ca) => ca.coopId);
     const coopPermissions: Record<string, any> = {};
     for (const ca of user.coopAdminOf ?? []) {
-      const basePermissions = ca.role.permissions ?? {};
-      const overrides = (ca.permissionOverrides as Record<string, boolean>) ?? {};
-      coopPermissions[ca.coopId] = { ...basePermissions, ...overrides };
+      coopPermissions[ca.coopId] = mergeAdminPermissions(
+        ca.roles.map((r) => r.role.permissions),
+        ca.permissionOverrides,
+      );
     }
 
     // If MFA is enabled and not yet verified, issue a short-lived mfa-pending token
