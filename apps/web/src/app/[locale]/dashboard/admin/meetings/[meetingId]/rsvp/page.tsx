@@ -9,13 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -26,10 +20,23 @@ import {
 } from '@/components/ui/table';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
-import { ArrowLeft, Copy, Download, Check } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  ArrowUpDown,
+  Copy,
+  Download,
+  Check,
+} from 'lucide-react';
 import type { MeetingDto, RSVPStatus, ProxyDto } from '@opencoop/shared';
+import {
+  applyColumnFiltersAndSort,
+  toggleColumnSort,
+  type ColumnSortState,
+} from '@/lib/table-utils';
 
-type FilterValue = RSVPStatus | 'ALL';
+type RsvpColumn = 'shareholder' | 'email' | 'rsvpStatus' | 'delegate' | 'rsvpAt';
 
 interface AttendanceRow {
   id: string;
@@ -60,7 +67,11 @@ export default function RsvpTrackerPage() {
   const [proxies, setProxies] = useState<ProxyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterValue>('ALL');
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<RsvpColumn, string>>>({});
+  const [columnSort, setColumnSort] = useState<ColumnSortState<RsvpColumn>>({
+    column: null,
+    direction: 'asc',
+  });
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
@@ -98,9 +109,39 @@ export default function RsvpTrackerPage() {
   }, [proxies]);
 
   const filtered = useMemo(() => {
-    if (filter === 'ALL') return rows;
-    return rows.filter((r) => r.rsvpStatus === filter);
-  }, [rows, filter]);
+    return applyColumnFiltersAndSort<AttendanceRow, RsvpColumn>(
+      rows,
+      {
+        shareholder: {
+          accessor: (r) =>
+            `${r.shareholder.firstName ?? ''} ${r.shareholder.lastName ?? ''}`.trim(),
+        },
+        email: { accessor: (r) => r.shareholder.email ?? '' },
+        rsvpStatus: { accessor: (r) => r.rsvpStatus },
+        delegate: {
+          accessor: (r) => {
+            if (r.rsvpStatus !== 'PROXY') return '';
+            const proxy = delegateByGrantor.get(r.shareholderId);
+            return proxy?.delegate
+              ? `${proxy.delegate.firstName ?? ''} ${proxy.delegate.lastName ?? ''}`.trim()
+              : '';
+          },
+        },
+        rsvpAt: { accessor: (r) => (r.rsvpAt ? new Date(r.rsvpAt) : null) },
+      },
+      columnFilters,
+      columnSort,
+    );
+  }, [rows, delegateByGrantor, columnFilters, columnSort]);
+
+  const sortIcon = (column: RsvpColumn) => {
+    if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+    return columnSort.direction === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
+  };
 
   const counts = useMemo(() => {
     const c: Record<RSVPStatus | 'TOTAL', number> = {
@@ -269,29 +310,10 @@ export default function RsvpTrackerPage() {
         </Card>
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">
-          {t('meetings.rsvp.filters.label')}:
-        </span>
-        <Select value={filter} onValueChange={(v) => setFilter(v as FilterValue)}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">{t('meetings.rsvp.filters.all')}</SelectItem>
-            <SelectItem value="ATTENDING">{t('meetings.rsvp.status.attending')}</SelectItem>
-            <SelectItem value="PROXY">{t('meetings.rsvp.status.proxy')}</SelectItem>
-            <SelectItem value="ABSENT">{t('meetings.rsvp.status.absent')}</SelectItem>
-            <SelectItem value="UNKNOWN">{t('meetings.rsvp.status.unknown')}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Table */}
       <Card>
         <CardContent className="pt-6">
-          {filtered.length === 0 ? (
+          {rows.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {t('meetings.rsvp.empty')}
             </div>
@@ -299,16 +321,90 @@ export default function RsvpTrackerPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('meetings.rsvp.columns.shareholder')}</TableHead>
-                  <TableHead>{t('meetings.rsvp.columns.email')}</TableHead>
-                  <TableHead>{t('meetings.rsvp.columns.rsvpStatus')}</TableHead>
-                  <TableHead>{t('meetings.rsvp.columns.delegate')}</TableHead>
-                  <TableHead>{t('meetings.rsvp.columns.rsvpAt')}</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'shareholder'))}>
+                      {t('meetings.rsvp.columns.shareholder')}
+                      {sortIcon('shareholder')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'email'))}>
+                      {t('meetings.rsvp.columns.email')}
+                      {sortIcon('email')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'rsvpStatus'))}>
+                      {t('meetings.rsvp.columns.rsvpStatus')}
+                      {sortIcon('rsvpStatus')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'delegate'))}>
+                      {t('meetings.rsvp.columns.delegate')}
+                      {sortIcon('delegate')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'rsvpAt'))}>
+                      {t('meetings.rsvp.columns.rsvpAt')}
+                      {sortIcon('rsvpAt')}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.shareholder || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, shareholder: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.email || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, email: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.rsvpStatus || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, rsvpStatus: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.delegate || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, delegate: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <Input
+                      value={columnFilters.rsvpAt || ''}
+                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, rsvpAt: e.target.value }))}
+                      placeholder={t('common.filter')}
+                      className="h-8"
+                    />
+                  </TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((row) => {
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                      {t('common.noResults')}
+                    </TableCell>
+                  </TableRow>
+                ) : filtered.map((row) => {
                   const proxy = delegateByGrantor.get(row.shareholderId);
                   const delegateName = proxy?.delegate
                     ? `${proxy.delegate.firstName ?? ''} ${proxy.delegate.lastName ?? ''}`.trim()

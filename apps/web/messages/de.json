@@ -2129,7 +2129,16 @@
       "toggleError": "Check-in konnte nicht aktualisiert werden",
       "kioskStartError": "Kiosk-Sitzung konnte nicht gestartet werden",
       "ballotCount": "{count, plural, one {# Stimmzettel} other {# Stimmzettel}}",
-      "proxyFor": "Vollmacht von:"
+      "proxyFor": "Vollmacht von:",
+      "printableSheet": "Druckbare Liste",
+      "columns": {
+        "name": "Name",
+        "memberNumber": "Nr.",
+        "rsvpStatus": "RSVP",
+        "ballots": "Stimmzettel",
+        "proxyFor": "Vollmacht von",
+        "checkedInAt": "Eingecheckt"
+      }
     },
     "voting": {
       "heading": "Abstimmung",
