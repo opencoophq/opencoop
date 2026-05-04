@@ -1359,7 +1359,7 @@ export default function AdminSettingsPage() {
 
       {/* Show new MCP key dialog */}
       <Dialog open={!!newMcpKey} onOpenChange={() => { setNewMcpKey(''); setMcpKeyCopied(false); setMcpConfigCopied(false); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t('admin.settings.apiKeys.created')}</DialogTitle>
             <DialogDescription>
@@ -1389,9 +1389,13 @@ export default function AdminSettingsPage() {
             <div>
               <Label className="text-sm font-medium">{t('admin.settings.apiKeys.claudeConfig')}</Label>
               <div className="relative mt-1">
-                <div className="overflow-x-auto rounded-md">
-                  <pre className="text-xs p-3 pr-12 bg-muted inline-block min-w-full">{getMcpConfigSnippet(newMcpKey)}</pre>
-                </div>
+                {/* Block-level pre with overflow-x-auto means the muted bg always
+                    spans the full dialog width even when content is short, and
+                    a scrollbar appears within the box if a line is too long
+                    (e.g. a really long bearer token). The previous
+                    `inline-block min-w-full` trick let the bg extend past the
+                    dialog when scrolling, which looked broken. */}
+                <pre className="text-xs p-3 pr-12 bg-muted rounded-md overflow-x-auto whitespace-pre">{getMcpConfigSnippet(newMcpKey)}</pre>
                 <button
                   onClick={async () => {
                     await navigator.clipboard.writeText(getMcpConfigSnippet(newMcpKey));
