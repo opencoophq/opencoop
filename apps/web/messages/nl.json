@@ -2130,7 +2130,9 @@
       "endKiosk": "Sessie beëindigen",
       "kioskInstructions": "Open deze URL op een tablet op locatie zodat aanwezigen zichzelf kunnen inchecken. Hou de tablet bij een beheerder — iedereen met de URL kan de kiosk gebruiken.",
       "toggleError": "Inchecken bijwerken mislukt",
-      "kioskStartError": "Kiosksessie starten mislukt"
+      "kioskStartError": "Kiosksessie starten mislukt",
+      "ballotCount": "{count, plural, one {# stembiljet} other {# stembiljetten}}",
+      "proxyFor": "Volmacht van:"
     },
     "voting": {
       "heading": "Stemming",

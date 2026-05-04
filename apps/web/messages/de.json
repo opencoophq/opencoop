@@ -2127,7 +2127,9 @@
       "endKiosk": "Sitzung beenden",
       "kioskInstructions": "Öffnen Sie diese URL auf einem Tablet vor Ort, damit Teilnehmende sich selbst einchecken können. Behalten Sie das Tablet bei einem Administrator — jeder mit der URL kann den Kiosk nutzen.",
       "toggleError": "Check-in konnte nicht aktualisiert werden",
-      "kioskStartError": "Kiosk-Sitzung konnte nicht gestartet werden"
+      "kioskStartError": "Kiosk-Sitzung konnte nicht gestartet werden",
+      "ballotCount": "{count, plural, one {# Stimmzettel} other {# Stimmzettel}}",
+      "proxyFor": "Vollmacht von:"
     },
     "voting": {
       "heading": "Abstimmung",
