@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.24] - 2026-05-04
+
+### Fixed
+- **Printable attendance sheet header looked disconnected from the new tall body rows.** v0.8.23 made body rows ~50pt with text pinned to flex-start, but the header stayed ~18pt with default vertical alignment — so reading down a column gave inconsistent positioning between header text and the first body row. Header now also pins to `flex-start` and gets `paddingVertical: 7` (was 4) for visual weight matching the body. The walk-in section header inherits the same style and updates together.
+
 ## [0.8.23] - 2026-05-04
 
 ### Fixed
