@@ -58,6 +58,7 @@ const PERMISSION_KEYS = [
   'canManageProjects',
   'canManageDividends',
   'canManageMessages',
+  'canManageMeetings',
   'canManageSettings',
   'canManageAdmins',
   'canViewPII',
