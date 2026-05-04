@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.25] - 2026-05-04
+
+### Added
+- **`canManageMeetings` permission and "Meeting Admin" role.** The meetings admin controller previously had no `@RequirePermission` gate, so any user with a `CoopAdmin` row could administer the AGM regardless of their role. Now there's a fine-grained permission. The new "Meeting Admin" preset role grants only meeting access + view PII + view shareholder register — for users who should run an AGM without seeing or changing financial data. Existing `CoopRole` rows are migrated with `canManageMeetings: true` so today's admins keep their access; coop admins can later edit roles like "Viewer" to drop meeting access.
+
+### Fixed
+- **Backward-compat in `PermissionGuard` for in-flight access tokens.** Tokens issued before this deploy don't have `canManageMeetings` in their payload — guard treats missing entries in `LEGACY_DEFAULT_TRUE` as `true` so the 15-min refresh window doesn't lock anyone out. Drop the entry in a follow-up once all sessions have rotated past this deploy.
+
 ## [0.8.24] - 2026-05-04
 
 ### Fixed
