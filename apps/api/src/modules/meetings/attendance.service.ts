@@ -70,24 +70,55 @@ export class AttendanceService {
 
   async list(coopId: string, meetingId: string) {
     await this.assertMeetingInCoop(meetingId, coopId);
-    return this.prisma.meetingAttendance.findMany({
-      where: { meetingId },
-      include: {
-        shareholder: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            companyName: true,
-            memberNumber: true,
-            email: true,
+
+    const [attendances, proxies] = await Promise.all([
+      this.prisma.meetingAttendance.findMany({
+        where: { meetingId },
+        include: {
+          shareholder: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              companyName: true,
+              memberNumber: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: [
-        { shareholder: { lastName: 'asc' } },
-        { shareholder: { firstName: 'asc' } },
-      ],
-    });
+        orderBy: [
+          { shareholder: { lastName: 'asc' } },
+          { shareholder: { firstName: 'asc' } },
+        ],
+      }),
+      this.prisma.proxy.findMany({
+        where: { meetingId, revokedAt: null },
+        select: {
+          delegateShareholderId: true,
+          grantor: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              companyName: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Group active proxies by the shareholder holding them so the registration
+    // desk can read "1 (self) + N (proxies held) ballots" off a single row.
+    const proxiesByDelegate = new Map<string, (typeof proxies)[number]['grantor'][]>();
+    for (const p of proxies) {
+      const list = proxiesByDelegate.get(p.delegateShareholderId) ?? [];
+      list.push(p.grantor);
+      proxiesByDelegate.set(p.delegateShareholderId, list);
+    }
+
+    return attendances.map((a) => ({
+      ...a,
+      proxiesHeld: proxiesByDelegate.get(a.shareholderId) ?? [],
+    }));
   }
 }

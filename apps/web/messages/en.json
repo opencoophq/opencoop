@@ -2130,7 +2130,9 @@
       "endKiosk": "End session",
       "kioskInstructions": "Open this URL on a tablet at the venue so attendees can self-check-in. Keep the tablet with an admin — anyone with the URL can use the kiosk.",
       "toggleError": "Failed to update check-in",
-      "kioskStartError": "Failed to start kiosk session"
+      "kioskStartError": "Failed to start kiosk session",
+      "ballotCount": "{count, plural, one {# ballot} other {# ballots}}",
+      "proxyFor": "Proxy for:"
     },
     "voting": {
       "heading": "Voting",

@@ -2127,7 +2127,9 @@
       "endKiosk": "Terminer la session",
       "kioskInstructions": "Ouvrez cette URL sur une tablette sur place pour que les participants puissent s'enregistrer eux-mêmes. Gardez la tablette auprès d'un administrateur — toute personne ayant l'URL peut utiliser le kiosque.",
       "toggleError": "Échec de la mise à jour de l'enregistrement",
-      "kioskStartError": "Échec du démarrage du kiosque"
+      "kioskStartError": "Échec du démarrage du kiosque",
+      "ballotCount": "{count, plural, one {# bulletin} other {# bulletins}}",
+      "proxyFor": "Procuration de :"
     },
     "voting": {
       "heading": "Vote",

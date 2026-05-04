@@ -31,6 +31,13 @@ import {
 } from 'lucide-react';
 import type { MeetingDto, RSVPStatus } from '@opencoop/shared';
 
+interface ProxyGrantor {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  companyName?: string | null;
+}
+
 interface AttendanceRow {
   id: string;
   shareholderId: string;
@@ -44,6 +51,7 @@ interface AttendanceRow {
     memberNumber?: string | null;
     email?: string | null;
   };
+  proxiesHeld: ProxyGrantor[];
 }
 
 interface LiveAttendance {
@@ -132,7 +140,11 @@ export default function CheckInPage() {
     };
   }, [selectedCoop, meetingId, fetchLive]);
 
-  const shName = (sh: AttendanceRow['shareholder']) => {
+  const shName = (sh: {
+    firstName?: string | null;
+    lastName?: string | null;
+    companyName?: string | null;
+  }) => {
     if (sh.companyName) return sh.companyName;
     return `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim() || '—';
   };
@@ -385,7 +397,20 @@ export default function CheckInPage() {
                               `meetings.rsvp.status.${row.rsvpStatus.toLowerCase()}` as 'meetings.rsvp.status.attending',
                             )}
                           </Badge>
+                          {row.proxiesHeld.length > 0 && (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-300">
+                              {t('meetings.checkIn.ballotCount', {
+                                count: 1 + row.proxiesHeld.length,
+                              })}
+                            </Badge>
+                          )}
                         </div>
+                        {row.proxiesHeld.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {t('meetings.checkIn.proxyFor')}{' '}
+                            {row.proxiesHeld.map((g) => shName(g)).join(', ')}
+                          </p>
+                        )}
                         {isCheckedIn && (
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {formatTime(row.checkedInAt)}
