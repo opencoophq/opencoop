@@ -2132,7 +2132,16 @@
       "toggleError": "Failed to update check-in",
       "kioskStartError": "Failed to start kiosk session",
       "ballotCount": "{count, plural, one {# ballot} other {# ballots}}",
-      "proxyFor": "Proxy for:"
+      "proxyFor": "Proxy for:",
+      "printableSheet": "Printable sheet",
+      "columns": {
+        "name": "Name",
+        "memberNumber": "Sh #",
+        "rsvpStatus": "RSVP",
+        "ballots": "Ballots",
+        "proxyFor": "Proxy for",
+        "checkedInAt": "Checked in"
+      }
     },
     "voting": {
       "heading": "Voting",

@@ -2129,7 +2129,16 @@
       "toggleError": "Échec de la mise à jour de l'enregistrement",
       "kioskStartError": "Échec du démarrage du kiosque",
       "ballotCount": "{count, plural, one {# bulletin} other {# bulletins}}",
-      "proxyFor": "Procuration de :"
+      "proxyFor": "Procuration de :",
+      "printableSheet": "Feuille imprimable",
+      "columns": {
+        "name": "Nom",
+        "memberNumber": "N° coop.",
+        "rsvpStatus": "RSVP",
+        "ballots": "Bulletins",
+        "proxyFor": "Procuration de",
+        "checkedInAt": "Présence"
+      }
     },
     "voting": {
       "heading": "Vote",
