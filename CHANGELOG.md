@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.26] - 2026-05-04
+
+### Added
+- **Multiple roles per CoopAdmin.** A single admin can now hold N roles (e.g. "Project Manager" + "Meeting Admin"). Effective permissions are the union (OR-merge) of every assigned role's permissions, with `permissionOverrides` applied on top. New `coop_admin_roles` join table; existing one-role admins are migrated into it without behavior change. Team page replaces the per-row role dropdown with a multi-select; the last role is non-removable (backend also enforces ≥1 role per admin). Override dialog's "base permission" is now the OR-merge across roles, mirroring backend logic.
+- **Bonus: onboarding now sources default roles from the shared `DEFAULT_ROLES` constant** instead of duplicated inline literals — fixes the drift where new coops weren't getting `canManageMeetings: true` on their seeded Admin role.
+
+### API
+- `PUT /admin/coops/:coopId/team/:adminId/role` (single `roleId`) → `PUT /admin/coops/:coopId/team/:adminId/roles` with `roleIds: string[]`.
+
+### Migration notes
+- `CoopAdmin.roleId` is kept (now nullable) for rollback safety; will be dropped in a follow-up after the rollout has stuck.
+
 ## [0.8.25] - 2026-05-04
 
 ### Added
