@@ -2,7 +2,7 @@
 
 All notable changes to OpenCoop are documented in this file.
 
-## [0.8.16] - 2026-05-04
+## [0.8.20] - 2026-05-04
 
 ### Added
 - **Ballot count visible at the AGM check-in desk.** When a shareholder holds active proxies, their attendance row now shows an amber "+N stembiljetten" badge (count = 1 self + N proxies) and a sub-line "Volmacht van: …" listing the grantor names. The registration desk reads the ballot count straight off the row instead of cross-referencing a separate proxy list. Backend `GET /admin/coops/:coopId/meetings/:id/attendance` now includes `proxiesHeld` per row — single extra query per request, grouped by delegate in-memory (not N+1). Translations updated for nl/en/fr/de.
