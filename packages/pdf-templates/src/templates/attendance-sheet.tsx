@@ -48,10 +48,15 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
+    // Match the body row's top-aligned layout so reading down a column
+    // (header → first data row) the text sits in the same vertical position.
+    alignItems: 'flex-start',
     backgroundColor: '#f0f4ff',
     borderTop: `1 solid ${BORDER_COLOR}`,
     borderBottom: `1 solid ${BORDER_COLOR}`,
-    paddingVertical: 4,
+    // Slightly more breathing room so the header has visual weight against
+    // the now-tall (38pt) signature-friendly body rows.
+    paddingVertical: 7,
     paddingHorizontal: 4,
     fontFamily: 'Helvetica-Bold',
     fontSize: 9,
