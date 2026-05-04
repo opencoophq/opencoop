@@ -58,10 +58,16 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: 'row',
+    // Pin text in non-signature columns to the top of the row so the
+    // signature column has the full row height free for a wet-ink signature.
+    alignItems: 'flex-start',
     borderBottom: `0.5 solid ${BORDER_COLOR}`,
     paddingVertical: 6,
     paddingHorizontal: 4,
-    minHeight: 22,
+    // Tall enough that an average wet signature fits without crowding the
+    // text row above. Walk-in rows reuse this style so blank rows are also
+    // signable.
+    minHeight: 38,
     fontSize: 9,
   },
   colNum: { width: '6%' },
