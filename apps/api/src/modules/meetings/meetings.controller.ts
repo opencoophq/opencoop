@@ -19,7 +19,9 @@ import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CoopGuard } from '../../common/guards/coop.guard';
+import { PermissionGuard } from '../../common/guards/permission.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermission } from '../../common/decorators/permissions.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { MeetingsService } from './meetings.service';
 import { AgendaService } from './agenda.service';
@@ -44,8 +46,9 @@ import { SendConvocationDto } from './dto/send-convocation.dto';
 @ApiTags('Meetings')
 @ApiBearerAuth()
 @Controller('admin/coops/:coopId/meetings')
-@UseGuards(JwtAuthGuard, RolesGuard, CoopGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, CoopGuard, PermissionGuard)
 @Roles('COOP_ADMIN', 'SYSTEM_ADMIN')
+@RequirePermission('canManageMeetings')
 export class MeetingsController {
   constructor(
     private meetings: MeetingsService,
