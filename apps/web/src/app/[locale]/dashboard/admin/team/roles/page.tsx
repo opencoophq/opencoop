@@ -58,7 +58,7 @@ interface Role {
   name: string;
   permissions: Permissions;
   isDefault: boolean;
-  _count?: { coopAdmins: number };
+  _count?: { coopAdminRoles: number };
 }
 
 const DEFAULT_PERMISSIONS: Permissions = {
@@ -228,7 +228,7 @@ export default function RolesPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
-                      {t('team.roles.adminCount', { count: role._count?.coopAdmins || 0 })}
+                      {t('team.roles.adminCount', { count: role._count?.coopAdminRoles || 0 })}
                     </span>
                   </div>
                 </div>

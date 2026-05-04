@@ -78,15 +78,15 @@ export class CoopAdminsController {
     return this.coopAdminsService.inviteAdmin(coopId, dto);
   }
 
-  @Put(':adminId/role')
+  @Put(':adminId/roles')
   @RequirePermission('canManageAdmins')
-  @ApiOperation({ summary: 'Change an admin\'s role' })
-  updateAdminRole(
+  @ApiOperation({ summary: "Replace the full set of roles assigned to an admin" })
+  updateAdminRoles(
     @Param('coopId') coopId: string,
     @Param('adminId') adminId: string,
-    @Body('roleId') roleId: string,
+    @Body('roleIds') roleIds: string[],
   ) {
-    return this.coopAdminsService.updateAdminRole(coopId, adminId, roleId);
+    return this.coopAdminsService.updateAdminRoles(coopId, adminId, roleIds);
   }
 
   @Put(':adminId/permissions')

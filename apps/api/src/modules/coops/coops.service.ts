@@ -717,7 +717,9 @@ export class CoopsService {
       data: {
         coopId,
         userId,
-        roleId: adminRole.id,
+        roles: {
+          create: { roleId: adminRole.id },
+        },
       },
     });
   }
