@@ -20,6 +20,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from '@/components/ui/dropdown-menu';
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -34,6 +40,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   Check,
+  ChevronDown,
   Circle,
   Copy,
   Printer,
@@ -50,6 +57,8 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type CheckInColumn = 'name' | 'memberNumber' | 'rsvpStatus' | 'ballots' | 'checkedInAt';
+
+const RSVP_STATUSES: RSVPStatus[] = ['ATTENDING', 'PROXY', 'ABSENT', 'UNKNOWN'];
 
 interface ProxyGrantor {
   id: string;
@@ -101,6 +110,7 @@ export default function CheckInPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Partial<Record<CheckInColumn, string>>>({});
+  const [statusFilter, setStatusFilter] = useState<Set<RSVPStatus>>(new Set());
   const [columnSort, setColumnSort] = useState<ColumnSortState<CheckInColumn>>({
     column: null,
     direction: 'asc',
@@ -174,24 +184,53 @@ export default function CheckInPage() {
     return `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim() || '—';
   };
 
-  const filtered = useMemo(
-    () =>
-      applyColumnFiltersAndSort<AttendanceRow, CheckInColumn>(
-        rows,
-        {
-          name: { accessor: (r) => shName(r.shareholder) },
-          memberNumber: { accessor: (r) => r.shareholder.memberNumber ?? '' },
-          rsvpStatus: { accessor: (r) => r.rsvpStatus },
-          ballots: { accessor: (r) => 1 + r.proxiesHeld.length },
-          checkedInAt: {
-            accessor: (r) => (r.checkedInAt ? new Date(r.checkedInAt) : null),
-          },
+  const filtered = useMemo(() => {
+    // Multi-select status filter is applied first; empty set = no filter (all
+    // statuses shown). Free-text column filters then run on the remaining rows.
+    const statusFiltered =
+      statusFilter.size === 0
+        ? rows
+        : rows.filter((r) => statusFilter.has(r.rsvpStatus));
+    return applyColumnFiltersAndSort<AttendanceRow, CheckInColumn>(
+      statusFiltered,
+      {
+        name: { accessor: (r) => shName(r.shareholder) },
+        memberNumber: { accessor: (r) => r.shareholder.memberNumber ?? '' },
+        rsvpStatus: {
+          // Accessor returns the translated label so column-sort orders by
+          // what the user sees, matching the cell render.
+          accessor: (r) =>
+            t(`meetings.rsvp.status.${r.rsvpStatus.toLowerCase()}` as 'meetings.rsvp.status.attending'),
         },
-        columnFilters,
-        columnSort,
-      ),
-    [rows, columnFilters, columnSort],
-  );
+        ballots: { accessor: (r) => 1 + r.proxiesHeld.length },
+        checkedInAt: {
+          accessor: (r) => (r.checkedInAt ? new Date(r.checkedInAt) : null),
+        },
+      },
+      columnFilters,
+      columnSort,
+    );
+  }, [rows, statusFilter, columnFilters, columnSort, t]);
+
+  const toggleStatusFilter = (status: RSVPStatus) => {
+    setStatusFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  };
+
+  const statusFilterLabel = () => {
+    if (statusFilter.size === 0 || statusFilter.size === RSVP_STATUSES.length) {
+      return t('common.filter');
+    }
+    return Array.from(statusFilter)
+      .map((s) =>
+        t(`meetings.rsvp.status.${s.toLowerCase()}` as 'meetings.rsvp.status.attending'),
+      )
+      .join(', ');
+  };
 
   const sortIcon = (column: CheckInColumn) => {
     if (columnSort.column !== column) return <ArrowUpDown className="h-4 w-4 ml-1" />;
@@ -485,12 +524,25 @@ export default function CheckInPage() {
                     />
                   </TableHead>
                   <TableHead>
-                    <Input
-                      value={columnFilters.rsvpStatus || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, rsvpStatus: e.target.value }))}
-                      placeholder={t('common.filter')}
-                      className="h-8"
-                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 w-full justify-between font-normal">
+                          <span className="truncate">{statusFilterLabel()}</span>
+                          <ChevronDown className="h-4 w-4 ml-1 flex-shrink-0" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        {RSVP_STATUSES.map((status) => (
+                          <DropdownMenuCheckboxItem
+                            key={status}
+                            checked={statusFilter.has(status)}
+                            onCheckedChange={() => toggleStatusFilter(status)}
+                          >
+                            {t(`meetings.rsvp.status.${status.toLowerCase()}` as 'meetings.rsvp.status.attending')}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableHead>
                   <TableHead>
                     <Input
