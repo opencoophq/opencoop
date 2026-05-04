@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.22] - 2026-05-04
+
+### Fixed
+- **RSVP-status filter on the RSVP list and check-in attendance list didn't match displayed labels.** The free-text filter input compared against the column accessor's output (raw enum: `ATTENDING`/`ABSENT`/etc.) while the cell rendered the translated label (`Aanwezig`/`Afwezig`/etc.) — so typing "aanwezig" never hit a row. Replaced the text input with a multi-select dropdown using `DropdownMenuCheckboxItem`: tick one or more statuses to filter, untick all to show every row. Selected statuses are listed comma-separated in the trigger button. The sort accessor still returns the translated label so column-sort orders by what the user sees.
+
 ## [0.8.21] - 2026-05-04
 
 ### Added
