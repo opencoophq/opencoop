@@ -155,12 +155,19 @@ async function main() {
   });
   console.log('  Default roles created');
 
-  // Link both admin users to the coop
+  // Link both admin users to the coop via the coop_admin_roles join
+  // table (the new source of truth for role membership). Legacy `roleId`
+  // is left null — auth code only reads from the join table.
   for (const user of [adminUser, coopAdminUser]) {
-    await prisma.coopAdmin.upsert({
+    const coopAdmin = await prisma.coopAdmin.upsert({
       where: { userId_coopId: { userId: user.id, coopId: coop.id } },
-      update: { roleId: adminRole.id },
-      create: { userId: user.id, coopId: coop.id, roleId: adminRole.id },
+      update: {},
+      create: { userId: user.id, coopId: coop.id },
+    });
+    await prisma.coopAdminRole.upsert({
+      where: { coopAdminId_roleId: { coopAdminId: coopAdmin.id, roleId: adminRole.id } },
+      update: {},
+      create: { coopAdminId: coopAdmin.id, roleId: adminRole.id },
     });
   }
   console.log('  Admins linked to coop');
