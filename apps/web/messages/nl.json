@@ -2132,7 +2132,16 @@
       "toggleError": "Inchecken bijwerken mislukt",
       "kioskStartError": "Kiosksessie starten mislukt",
       "ballotCount": "{count, plural, one {# stembiljet} other {# stembiljetten}}",
-      "proxyFor": "Volmacht van:"
+      "proxyFor": "Volmacht van:",
+      "printableSheet": "Printbare lijst",
+      "columns": {
+        "name": "Naam",
+        "memberNumber": "Vennoot #",
+        "rsvpStatus": "RSVP",
+        "ballots": "Stembiljetten",
+        "proxyFor": "Volmacht van",
+        "checkedInAt": "Ingecheckt"
+      }
     },
     "voting": {
       "heading": "Stemming",
