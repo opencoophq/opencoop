@@ -20,7 +20,9 @@ export class CoopAdminsService {
   async getRoles(coopId: string) {
     const roles = await this.prisma.coopRole.findMany({
       where: { coopId },
-      include: { _count: { select: { coopAdmins: true } } },
+      // `coopAdminRoles` is the new source of truth for role membership;
+      // `coopAdmins` (single-role legacy back-relation) is no longer written.
+      include: { _count: { select: { coopAdminRoles: true } } },
     });
 
     // Default roles in logical order, then custom roles alphabetically
@@ -70,7 +72,7 @@ export class CoopAdminsService {
   async deleteRole(coopId: string, roleId: string) {
     const role = await this.prisma.coopRole.findFirst({
       where: { id: roleId, coopId },
-      include: { _count: { select: { coopAdmins: true } } },
+      include: { _count: { select: { coopAdminRoles: true } } },
     });
     if (!role) {
       throw new NotFoundException('Role not found');
@@ -78,7 +80,7 @@ export class CoopAdminsService {
     if (role.isDefault) {
       throw new BadRequestException('Cannot delete a default role');
     }
-    if (role._count.coopAdmins > 0) {
+    if (role._count.coopAdminRoles > 0) {
       throw new BadRequestException('Reassign all administrators using this role before deleting it');
     }
 
@@ -97,8 +99,10 @@ export class CoopAdminsService {
         user: {
           select: { id: true, email: true, name: true, role: true },
         },
-        role: {
-          select: { id: true, name: true, permissions: true },
+        roles: {
+          select: {
+            role: { select: { id: true, name: true, permissions: true } },
+          },
         },
       },
       orderBy: { createdAt: 'asc' },
@@ -118,12 +122,18 @@ export class CoopAdminsService {
       data: { permissionOverrides: overrides === null ? Prisma.JsonNull : overrides },
       include: {
         user: { select: { id: true, email: true, name: true, role: true } },
-        role: { select: { id: true, name: true, permissions: true } },
+        roles: { select: { role: { select: { id: true, name: true, permissions: true } } } },
       },
     });
   }
 
-  async updateAdminRole(coopId: string, adminId: string, roleId: string) {
+  /**
+   * Replace the full set of roles assigned to an admin. Empty array is
+   * rejected — every admin must have at least one role (otherwise they'd
+   * have no permissions and just a stub `CoopAdmin` row that the auth
+   * service would issue an empty permissions object for).
+   */
+  async updateAdminRoles(coopId: string, adminId: string, roleIds: string[]) {
     const admin = await this.prisma.coopAdmin.findFirst({
       where: { id: adminId, coopId },
     });
@@ -131,19 +141,34 @@ export class CoopAdminsService {
       throw new NotFoundException('Admin not found');
     }
 
-    const role = await this.prisma.coopRole.findFirst({
-      where: { id: roleId, coopId },
-    });
-    if (!role) {
-      throw new NotFoundException('Role not found');
+    if (!Array.isArray(roleIds) || roleIds.length === 0) {
+      throw new BadRequestException('At least one role is required');
     }
 
-    return this.prisma.coopAdmin.update({
+    // Validate every role belongs to this coop so we can't assign a role
+    // from another coop.
+    const validRoles = await this.prisma.coopRole.findMany({
+      where: { id: { in: roleIds }, coopId },
+      select: { id: true },
+    });
+    if (validRoles.length !== roleIds.length) {
+      throw new NotFoundException('One or more roles not found in this cooperative');
+    }
+
+    // Replace: delete all existing assignments for this admin, then insert
+    // the new ones in a single transaction.
+    await this.prisma.$transaction([
+      this.prisma.coopAdminRole.deleteMany({ where: { coopAdminId: adminId } }),
+      this.prisma.coopAdminRole.createMany({
+        data: roleIds.map((roleId) => ({ coopAdminId: adminId, roleId })),
+      }),
+    ]);
+
+    return this.prisma.coopAdmin.findUnique({
       where: { id: adminId },
-      data: { roleId },
       include: {
         user: { select: { id: true, email: true, name: true, role: true } },
-        role: { select: { id: true, name: true, permissions: true } },
+        roles: { select: { role: { select: { id: true, name: true, permissions: true } } } },
       },
     });
   }
@@ -151,25 +176,30 @@ export class CoopAdminsService {
   async removeAdmin(coopId: string, adminId: string) {
     const admin = await this.prisma.coopAdmin.findFirst({
       where: { id: adminId, coopId },
-      include: { role: true },
+      include: { roles: { select: { role: { select: { permissions: true } } } } },
     });
     if (!admin) {
       throw new NotFoundException('Admin not found');
     }
 
-    // Check if this is the last admin with canManageAdmins permission
-    const adminsWithManagePermission = await this.prisma.coopAdmin.findMany({
+    // The last admin with `canManageAdmins` can't remove themselves —
+    // otherwise nobody is left who can manage admins. Compute effective
+    // permissions per admin via OR-merge across their roles.
+    const adminsWithRoles = await this.prisma.coopAdmin.findMany({
       where: { coopId },
-      include: { role: true },
+      include: { roles: { select: { role: { select: { permissions: true } } } } },
     });
-    const managingAdmins = adminsWithManagePermission.filter(
-      (a) => (a.role.permissions as any)?.canManageAdmins === true,
+    const canManageAdminsCount = adminsWithRoles.filter((a) =>
+      a.roles.some((r) => (r.role.permissions as any)?.canManageAdmins === true),
+    ).length;
+    const targetCanManageAdmins = admin.roles.some(
+      (r) => (r.role.permissions as any)?.canManageAdmins === true,
     );
-    if (managingAdmins.length <= 1 && (admin.role.permissions as any)?.canManageAdmins === true) {
+    if (canManageAdminsCount <= 1 && targetCanManageAdmins) {
       throw new BadRequestException('Cannot remove the last administrator with management permissions');
     }
 
-    // Delete CoopAdmin entry
+    // Delete CoopAdmin entry (cascades to coop_admin_roles)
     await this.prisma.coopAdmin.delete({ where: { id: adminId } });
 
     // Check if user still admins any other coop
@@ -372,12 +402,16 @@ export class CoopAdminsService {
   async acceptInvitation(token: string, userId: string) {
     const invitation = await this.getInvitationByToken(token);
 
-    // Create CoopAdmin entry
+    // Create CoopAdmin entry with the invitation's role attached via the
+    // join table. The admin can later be granted additional roles from
+    // the team UI.
     await this.prisma.coopAdmin.create({
       data: {
         userId,
         coopId: invitation.coopId,
-        roleId: invitation.roleId,
+        roles: {
+          create: { roleId: invitation.roleId },
+        },
       },
     });
 

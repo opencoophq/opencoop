@@ -25,6 +25,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from '@/components/ui/dropdown-menu';
+import {
   Table,
   TableBody,
   TableCell,
@@ -49,6 +55,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  ChevronDown,
 } from 'lucide-react';
 
 const PERMISSION_KEYS = [
@@ -71,16 +78,30 @@ type PermissionKey = (typeof PERMISSION_KEYS)[number];
 interface Admin {
   id: string;
   user: { id: string; name: string | null; email: string };
-  role: { id: string; name: string; permissions: Record<string, boolean> };
+  // An admin has N roles. Effective permissions are the union (OR-merge)
+  // of every assigned role's `permissions`, with `permissionOverrides`
+  // applied on top. The auth service does the same merge at JWT-issue
+  // time — keep both implementations in sync.
+  roles: { role: { id: string; name: string; permissions: Record<string, boolean> } }[];
   permissionOverrides: Record<string, boolean> | null;
   createdAt: string;
+}
+
+/**
+ * OR-merge `permissions` across every role assigned to an admin. Returns
+ * the effective base value for a given permission key — `true` if ANY
+ * role grants it, `false` otherwise. Per-admin overrides are applied
+ * separately by the caller.
+ */
+function getBasePermission(admin: Admin, key: string): boolean {
+  return admin.roles.some((r) => r.role.permissions[key] === true);
 }
 
 interface Role {
   id: string;
   name: string;
   isDefault: boolean;
-  _count?: { coopAdmins: number };
+  _count?: { coopAdminRoles: number };
 }
 
 interface Invitation {
@@ -139,7 +160,7 @@ export default function TeamPage() {
         {
           name: { accessor: (admin) => admin.user.name || '' },
           email: { accessor: (admin) => admin.user.email },
-          role: { accessor: (admin) => admin.role.name },
+          role: { accessor: (admin) => admin.roles.map((r) => r.role.name).join(', ') },
           date: { accessor: (admin) => admin.createdAt },
         },
         adminFilters,
@@ -215,17 +236,27 @@ export default function TeamPage() {
     }
   };
 
-  const handleRoleChange = async (adminId: string, roleId: string) => {
+  const handleRolesChange = async (adminId: string, roleIds: string[]) => {
     if (!coopId) return;
+    if (roleIds.length === 0) return; // backend enforces ≥1 role; UI guard avoids the round-trip
     try {
-      await api(`/admin/coops/${coopId}/team/${adminId}/role`, {
+      await api(`/admin/coops/${coopId}/team/${adminId}/roles`, {
         method: 'PUT',
-        body: { roleId },
+        body: { roleIds },
       });
       loadData();
     } catch {
       // silently fail
     }
+  };
+
+  const toggleAdminRole = (admin: Admin, roleId: string) => {
+    const currentIds = admin.roles.map((r) => r.role.id);
+    const next = currentIds.includes(roleId)
+      ? currentIds.filter((id) => id !== roleId)
+      : [...currentIds, roleId];
+    if (next.length === 0) return; // can't unassign the last role
+    handleRolesChange(admin.id, next);
   };
 
   const handleRemove = async () => {
@@ -254,7 +285,7 @@ export default function TeamPage() {
 
   const togglePermOverride = (key: PermissionKey) => {
     if (!permsAdmin) return;
-    const roleValue = permsAdmin.role.permissions[key] ?? false;
+    const roleValue = getBasePermission(permsAdmin, key);
     const hasOverride = permsOverrides[key] !== undefined;
     const effectiveValue = hasOverride ? permsOverrides[key] : roleValue;
     const newValue = !effectiveValue;
@@ -417,21 +448,37 @@ export default function TeamPage() {
                       </TableCell>
                       <TableCell>{admin.user.email}</TableCell>
                       <TableCell>
-                        <Select
-                          value={admin.role.id}
-                          onValueChange={(value) => handleRoleChange(admin.id, value)}
-                        >
-                          <SelectTrigger className="w-[160px] h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roles.map((role) => (
-                              <SelectItem key={role.id} value={role.id}>
-                                {role.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-[200px] h-8 justify-between font-normal">
+                              <span className="truncate">
+                                {admin.roles.length > 0
+                                  ? admin.roles.map((r) => r.role.name).join(', ')
+                                  : '—'}
+                              </span>
+                              <ChevronDown className="h-4 w-4 ml-1 flex-shrink-0" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            {roles.map((role) => {
+                              const checked = admin.roles.some((r) => r.role.id === role.id);
+                              const isOnlyRole = checked && admin.roles.length === 1;
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  key={role.id}
+                                  checked={checked}
+                                  // Block unticking the last role — admin
+                                  // must always have at least one (backend
+                                  // also enforces this).
+                                  disabled={isOnlyRole}
+                                  onCheckedChange={() => toggleAdminRole(admin, role.id)}
+                                >
+                                  {role.name}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {new Date(admin.createdAt).toLocaleDateString()}
@@ -652,7 +699,7 @@ export default function TeamPage() {
           {permsAdmin && (
             <div className="space-y-2 border rounded-md p-3 max-h-[400px] overflow-y-auto">
               {PERMISSION_KEYS.map((key) => {
-                const roleValue = permsAdmin.role.permissions[key] ?? false;
+                const roleValue = getBasePermission(permsAdmin, key);
                 const hasOverride = permsOverrides[key] !== undefined;
                 const effectiveValue = hasOverride ? permsOverrides[key] : roleValue;
 
