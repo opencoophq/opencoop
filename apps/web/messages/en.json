@@ -988,6 +988,7 @@
       "canManageProjects": "Manage projects",
       "canManageDividends": "Manage dividends",
       "canManageMessages": "Manage messages",
+      "canManageMeetings": "Manage meetings",
       "canManageSettings": "Manage settings",
       "canManageAdmins": "Manage team",
       "canViewPII": "View personal information",

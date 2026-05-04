@@ -10,6 +10,7 @@ interface CoopPermissions {
   canManageProjects: boolean;
   canManageDividends: boolean;
   canManageMessages: boolean;
+  canManageMeetings: boolean;
   canManageSettings: boolean;
   canManageAdmins: boolean;
   canViewPII: boolean;
@@ -48,6 +49,7 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
           canManageProjects: true,
           canManageDividends: true,
           canManageMessages: true,
+          canManageMeetings: true,
           canManageSettings: true,
           canManageAdmins: true,
           canViewPII: true,
@@ -68,6 +70,7 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
           canManageProjects: true,
           canManageDividends: true,
           canManageMessages: true,
+          canManageMeetings: true,
           canManageSettings: true,
           canManageAdmins: true,
           canViewPII: true,

@@ -28,6 +28,7 @@ const PERMISSION_KEYS = [
   'canManageProjects',
   'canManageDividends',
   'canManageMessages',
+  'canManageMeetings',
   'canManageSettings',
   'canManageAdmins',
   'canViewPII',
@@ -44,6 +45,7 @@ interface Permissions {
   canManageProjects: boolean;
   canManageDividends: boolean;
   canManageMessages: boolean;
+  canManageMeetings: boolean;
   canManageSettings: boolean;
   canManageAdmins: boolean;
   canViewPII: boolean;
@@ -66,6 +68,7 @@ const DEFAULT_PERMISSIONS: Permissions = {
   canManageProjects: false,
   canManageDividends: false,
   canManageMessages: false,
+  canManageMeetings: false,
   canManageSettings: false,
   canManageAdmins: false,
   canViewPII: false,

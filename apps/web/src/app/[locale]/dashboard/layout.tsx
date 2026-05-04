@@ -186,7 +186,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         hasPermission('canManageTransactions') && { href: '/dashboard/admin/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" />, badge: adminStats?.pendingRegistrations },
         hasPermission('canManageProjects') && { href: '/dashboard/admin/projects', label: t('admin.projects.title'), icon: <Building2 className="h-4 w-4" /> },
         hasPermission('canManageDividends') && { href: '/dashboard/admin/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
-        { href: '/dashboard/admin/meetings', label: t('meetings.title'), icon: <CalendarCheck className="h-4 w-4" /> },
+        hasPermission('canManageMeetings') && { href: '/dashboard/admin/meetings', label: t('meetings.title'), icon: <CalendarCheck className="h-4 w-4" /> },
         hasPermission('canManageMessages') && { href: '/dashboard/admin/messages', label: t('messages.title'), icon: <MailIcon className="h-4 w-4" /> },
         hasPermission('canManageTransactions') && { href: '/dashboard/admin/bank-import', label: t('admin.bankImport.title'), icon: <Upload className="h-4 w-4" />, badge: adminStats?.unmatchedBankTransactions },
         hasPermission('canViewReports') && { href: '/dashboard/admin/reports', label: t('reports.title'), icon: <BarChart3 className="h-4 w-4" /> },

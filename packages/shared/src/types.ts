@@ -81,6 +81,7 @@ export interface CoopPermissions {
   canManageProjects: boolean;
   canManageDividends: boolean;
   canManageMessages: boolean;
+  canManageMeetings: boolean;
   canManageSettings: boolean;
   canManageAdmins: boolean;
   canViewPII: boolean;
@@ -96,6 +97,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canManageProjects: true,
     canManageDividends: true,
     canManageMessages: true,
+    canManageMeetings: true,
     canManageSettings: true,
     canManageAdmins: true,
     canViewPII: true,
@@ -109,11 +111,27 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canManageProjects: false,
     canManageDividends: false,
     canManageMessages: false,
+    canManageMeetings: false,
     canManageSettings: false,
     canManageAdmins: false,
     canViewPII: true,
     canViewReports: true,
     canViewShareholderRegister: true,
+  },
+  'Meeting Admin': {
+    // Run AGMs without seeing or changing financial / shareholder data.
+    canManageShareholders: false,
+    canManageTransactions: false,
+    canManageShareClasses: false,
+    canManageProjects: false,
+    canManageDividends: false,
+    canManageMessages: false,
+    canManageMeetings: true,
+    canManageSettings: false,
+    canManageAdmins: false,
+    canViewPII: true, // needs names/addresses for the attendance sheet
+    canViewReports: false,
+    canViewShareholderRegister: true, // needs the register to verify proxies
   },
   'GDPR Viewer': {
     canManageShareholders: false,
@@ -122,6 +140,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canManageProjects: false,
     canManageDividends: false,
     canManageMessages: false,
+    canManageMeetings: false,
     canManageSettings: false,
     canManageAdmins: false,
     canViewPII: false,
@@ -135,6 +154,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canManageProjects: true,
     canManageDividends: true,
     canManageMessages: false,
+    canManageMeetings: false,
     canManageSettings: true,
     canManageAdmins: false,
     canViewPII: false,
