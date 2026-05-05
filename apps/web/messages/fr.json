@@ -965,6 +965,11 @@
       "customPermissionsDescription": "Remplacer les permissions du rôle pour {name}. Cliquez sur une permission pour l'activer/désactiver.",
       "overridden": "personnalisé",
       "overrideHint": "Cliquez sur une permission pour l'activer/désactiver indépendamment du rôle. Cliquez à nouveau pour revenir au défaut du rôle.",
+      "editUser": "Modifier l'utilisateur",
+      "editUserDescription": "Mettez à jour le nom, l'e-mail et la langue préférée de ce membre.",
+      "name": "Nom",
+      "preferredLanguage": "Langue préférée",
+      "emailChangeWarning": "Modifier l'e-mail oblige l'utilisateur à vérifier à nouveau la nouvelle adresse.",
       "roles": {
         "title": "Rôles",
         "createRole": "Créer un rôle",

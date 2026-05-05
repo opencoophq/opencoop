@@ -422,30 +422,48 @@ model CoopRole {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  coop           Coop              @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  coopAdmins     CoopAdmin[]
-  coopAdminRoles CoopAdminRole[]
-  invitations    AdminInvitation[]
+  coop                 Coop                  @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  coopAdmins           CoopAdmin[]
+  coopAdminRoles       CoopAdminRole[]
+  invitations          AdminInvitation[]
+  invitationRoles      AdminInvitationRole[]
 
   @@unique([coopId, name])
   @@map("coop_roles")
 }
 
 model AdminInvitation {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   coopId    String
   email     String
-  roleId    String
-  token     String   @unique
+  // Deprecated: kept nullable for backward compat — invitations now have
+  // N roles via the `roles` relation. Will be dropped in a follow-up
+  // migration once confidence is high. New writes leave this null.
+  roleId    String?
+  token     String    @unique
   expiresAt DateTime
-  accepted  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  accepted  Boolean   @default(false)
+  createdAt DateTime  @default(now())
 
-  coop Coop     @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  role CoopRole @relation(fields: [roleId], references: [id])
+  coop  Coop                  @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  role  CoopRole?             @relation(fields: [roleId], references: [id])
+  roles AdminInvitationRole[]
 
   @@unique([coopId, email])
   @@map("admin_invitations")
+}
+
+// Join table giving an invitation N roles. On acceptance, each row is
+// copied into `CoopAdminRole` for the new admin.
+model AdminInvitationRole {
+  invitationId String
+  roleId       String
+
+  invitation AdminInvitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  role       CoopRole        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([invitationId, roleId])
+  @@map("admin_invitation_roles")
 }
 
 // ============================================================================

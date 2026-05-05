@@ -100,6 +100,17 @@ export class CoopAdminsController {
     return this.coopAdminsService.updateAdminPermissionOverrides(coopId, adminId, overrides);
   }
 
+  @Patch(':adminId/user')
+  @RequirePermission('canManageAdmins')
+  @ApiOperation({ summary: "Update a team member's user profile (name, language, email)" })
+  updateAdminUser(
+    @Param('coopId') coopId: string,
+    @Param('adminId') adminId: string,
+    @Body() dto: { name?: string | null; preferredLanguage?: string; email?: string },
+  ) {
+    return this.coopAdminsService.updateAdminUser(coopId, adminId, dto);
+  }
+
   @Delete(':adminId')
   @RequirePermission('canManageAdmins')
   @ApiOperation({ summary: 'Remove an admin' })
@@ -152,6 +163,17 @@ export class CoopAdminsController {
     @Param('invitationId') invitationId: string,
   ) {
     return this.coopAdminsService.resendInvitation(coopId, invitationId);
+  }
+
+  @Put('invitations/:invitationId/roles')
+  @RequirePermission('canManageAdmins')
+  @ApiOperation({ summary: 'Replace the full set of roles attached to a pending invitation' })
+  updateInvitationRoles(
+    @Param('coopId') coopId: string,
+    @Param('invitationId') invitationId: string,
+    @Body('roleIds') roleIds: string[],
+  ) {
+    return this.coopAdminsService.updateInvitationRoles(coopId, invitationId, roleIds);
   }
 
   @Delete('invitations/:invitationId')
