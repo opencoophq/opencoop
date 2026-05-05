@@ -967,6 +967,11 @@
       "customPermissionsDescription": "Overschrijf rolrechten voor {name}. Klik op een recht om het aan/uit te schakelen.",
       "overridden": "aangepast",
       "overrideHint": "Klik op een recht om het onafhankelijk van de rol aan/uit te schakelen. Klik opnieuw om terug te keren naar de standaard van de rol.",
+      "editUser": "Gebruiker bewerken",
+      "editUserDescription": "Pas naam, e-mail en taalvoorkeur aan voor dit teamlid.",
+      "name": "Naam",
+      "preferredLanguage": "Voorkeurstaal",
+      "emailChangeWarning": "Bij wijziging van het e-mailadres moet de gebruiker zijn nieuwe adres opnieuw verifiëren.",
       "roles": {
         "title": "Rollen",
         "createRole": "Rol aanmaken",

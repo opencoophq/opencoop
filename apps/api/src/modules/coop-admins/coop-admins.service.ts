@@ -225,11 +225,16 @@ export class CoopAdminsService {
       throw new NotFoundException('Cooperative not found');
     }
 
-    const role = await this.prisma.coopRole.findFirst({
-      where: { id: dto.roleId, coopId },
+    if (!Array.isArray(dto.roleIds) || dto.roleIds.length === 0) {
+      throw new BadRequestException('At least one role is required');
+    }
+
+    const roles = await this.prisma.coopRole.findMany({
+      where: { id: { in: dto.roleIds }, coopId },
+      select: { id: true, name: true },
     });
-    if (!role) {
-      throw new NotFoundException('Role not found');
+    if (roles.length !== dto.roleIds.length) {
+      throw new NotFoundException('One or more roles not found in this cooperative');
     }
 
     // Check if user is already an admin of this coop
@@ -250,7 +255,8 @@ export class CoopAdminsService {
       where: { coopId_email: { coopId, email: dto.email.toLowerCase() } },
     });
     if (existingInvitation && !existingInvitation.accepted) {
-      // Delete old invitation and create a new one
+      // Delete old invitation and create a new one (cascades delete the
+      // join rows too)
       await this.prisma.adminInvitation.delete({ where: { id: existingInvitation.id } });
     }
 
@@ -261,12 +267,14 @@ export class CoopAdminsService {
       data: {
         coopId,
         email: dto.email.toLowerCase(),
-        roleId: dto.roleId,
         token,
         expiresAt,
+        roles: {
+          create: dto.roleIds.map((roleId) => ({ roleId })),
+        },
       },
       include: {
-        role: { select: { name: true } },
+        roles: { include: { role: { select: { id: true, name: true } } } },
       },
     });
 
@@ -274,7 +282,7 @@ export class CoopAdminsService {
       email: dto.email,
       token,
       coopName: coop.name,
-      roleName: role.name,
+      roleNames: roles.map((r) => r.name),
     });
 
     return invitation;
@@ -291,11 +299,12 @@ export class CoopAdminsService {
     email: string;
     token: string;
     coopName: string;
-    roleName: string;
+    roleNames: string[];
   }): Promise<void> {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://opencoop.be';
     const inviteUrl = `${appUrl}/invite/${args.token}`;
+    const rolesLabel = args.roleNames.join(', ') || '—';
 
     await this.emailService
       .sendPlatformEmail({
@@ -303,7 +312,7 @@ export class CoopAdminsService {
         subject: `You've been invited to manage ${args.coopName} on OpenCoop`,
         html: `
         <h2>You've been invited to ${args.coopName}</h2>
-        <p>You've been invited as <strong>${args.roleName}</strong> for the cooperative <strong>${args.coopName}</strong> on OpenCoop.</p>
+        <p>You've been invited as <strong>${rolesLabel}</strong> for the cooperative <strong>${args.coopName}</strong> on OpenCoop.</p>
         <p><a href="${inviteUrl}" style="display:inline-block;padding:12px 24px;background-color:#1e40af;color:#fff;text-decoration:none;border-radius:6px;">Accept Invitation</a></p>
         <p>This invitation expires in 7 days.</p>
         <p>If you didn't expect this invitation, you can safely ignore this email.</p>
@@ -324,17 +333,11 @@ export class CoopAdminsService {
       where: { id: invitationId, coopId, accepted: false },
       include: {
         coop: { select: { name: true } },
-        role: { select: { name: true } },
+        roles: { include: { role: { select: { name: true } } } },
       },
     });
     if (!invitation) {
       throw new NotFoundException('Invitation not found');
-    }
-    if (invitation.expiresAt < new Date()) {
-      // An expired invite is technically still in the table (we don't
-      // GC) — resending should resurrect it. Allow it; the rotation
-      // below will set a fresh expiry and the invitee will get a
-      // working email.
     }
 
     const newToken = crypto.randomBytes(32).toString('hex');
@@ -349,17 +352,56 @@ export class CoopAdminsService {
       email: invitation.email,
       token: newToken,
       coopName: invitation.coop.name,
-      roleName: invitation.role.name,
+      roleNames: invitation.roles.map((r) => r.role.name),
     });
 
     return updated;
+  }
+
+  /**
+   * Replace the full set of roles attached to a pending invitation. Same
+   * shape as `updateAdminRoles` but for not-yet-accepted invitees.
+   */
+  async updateInvitationRoles(coopId: string, invitationId: string, roleIds: string[]) {
+    const invitation = await this.prisma.adminInvitation.findFirst({
+      where: { id: invitationId, coopId, accepted: false },
+    });
+    if (!invitation) {
+      throw new NotFoundException('Invitation not found');
+    }
+
+    if (!Array.isArray(roleIds) || roleIds.length === 0) {
+      throw new BadRequestException('At least one role is required');
+    }
+
+    const validRoles = await this.prisma.coopRole.findMany({
+      where: { id: { in: roleIds }, coopId },
+      select: { id: true },
+    });
+    if (validRoles.length !== roleIds.length) {
+      throw new NotFoundException('One or more roles not found in this cooperative');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.adminInvitationRole.deleteMany({ where: { invitationId } }),
+      this.prisma.adminInvitationRole.createMany({
+        data: roleIds.map((roleId) => ({ invitationId, roleId })),
+      }),
+    ]);
+
+    return this.prisma.adminInvitation.findUnique({
+      where: { id: invitationId },
+      include: {
+        roles: { include: { role: { select: { id: true, name: true } } } },
+      },
+    });
   }
 
   async getInvitations(coopId: string) {
     return this.prisma.adminInvitation.findMany({
       where: { coopId, accepted: false },
       include: {
-        role: { select: { id: true, name: true } },
+        roles: { include: { role: { select: { id: true, name: true } } } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -384,7 +426,7 @@ export class CoopAdminsService {
       where: { token },
       include: {
         coop: { select: { id: true, name: true, slug: true } },
-        role: { select: { id: true, name: true } },
+        roles: { include: { role: { select: { id: true, name: true } } } },
       },
     });
 
@@ -466,15 +508,20 @@ export class CoopAdminsService {
   async acceptInvitation(token: string, userId: string) {
     const invitation = await this.getInvitationByToken(token);
 
-    // Create CoopAdmin entry with the invitation's role attached via the
-    // join table. The admin can later be granted additional roles from
-    // the team UI.
+    if (invitation.roles.length === 0) {
+      // Pathological: invitation exists but has no roles. Refuse to
+      // create an admin with empty permissions.
+      throw new BadRequestException('Invitation has no roles attached');
+    }
+
+    // Create CoopAdmin entry with every invitation role copied into the
+    // CoopAdminRole join table.
     await this.prisma.coopAdmin.create({
       data: {
         userId,
         coopId: invitation.coopId,
         roles: {
-          create: { roleId: invitation.roleId },
+          create: invitation.roles.map((r) => ({ roleId: r.role.id })),
         },
       },
     });
@@ -498,7 +545,67 @@ export class CoopAdminsService {
       coopId: invitation.coopId,
       coopName: invitation.coop.name,
       coopSlug: invitation.coop.slug,
-      roleName: invitation.role.name,
+      roleNames: invitation.roles.map((r) => r.role.name),
     };
+  }
+
+  // ==================== EDIT TEAM MEMBER USER ====================
+
+  /**
+   * Update profile fields on the User row of a team member. Scoped to
+   * fields a coop admin should reasonably manage on someone else's
+   * behalf — name (display), preferredLanguage (email rendering),
+   * email (with re-verification side-effect, see below).
+   *
+   * Email change clears `emailVerified` so the new owner has to confirm
+   * the address — this is the mitigation for the otherwise-easy account
+   * hijack pattern (admin changes email → triggers password reset →
+   * takeover). Audit-logged.
+   */
+  async updateAdminUser(
+    coopId: string,
+    adminId: string,
+    dto: { name?: string | null; preferredLanguage?: string; email?: string },
+  ) {
+    const admin = await this.prisma.coopAdmin.findFirst({
+      where: { id: adminId, coopId },
+      include: { user: { select: { id: true, email: true } } },
+    });
+    if (!admin) {
+      throw new NotFoundException('Admin not found');
+    }
+
+    const data: Prisma.UserUpdateInput = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.preferredLanguage !== undefined) data.preferredLanguage = dto.preferredLanguage;
+
+    if (dto.email !== undefined) {
+      const newEmail = dto.email.toLowerCase().trim();
+      if (newEmail !== admin.user.email) {
+        const inUse = await this.prisma.user.findUnique({ where: { email: newEmail } });
+        if (inUse) {
+          throw new ConflictException('Another user already uses this email');
+        }
+        data.email = newEmail;
+        // Force re-verification — without this, an admin could change a
+        // team member's email and immediately take over via password reset.
+        data.emailVerified = null;
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      // Nothing to update — short-circuit so we don't generate a no-op
+      // audit entry.
+      return this.prisma.user.findUnique({
+        where: { id: admin.user.id },
+        select: { id: true, name: true, email: true, preferredLanguage: true, emailVerified: true },
+      });
+    }
+
+    return this.prisma.user.update({
+      where: { id: admin.user.id },
+      data,
+      select: { id: true, name: true, email: true, preferredLanguage: true, emailVerified: true },
+    });
   }
 }
