@@ -144,6 +144,16 @@ export class CoopAdminsController {
     return this.coopAdminsService.getInvitations(coopId);
   }
 
+  @Post('invitations/:invitationId/resend')
+  @RequirePermission('canManageAdmins')
+  @ApiOperation({ summary: 'Resend a pending invitation email (rotates the token, extends expiry by 7 days)' })
+  resendInvitation(
+    @Param('coopId') coopId: string,
+    @Param('invitationId') invitationId: string,
+  ) {
+    return this.coopAdminsService.resendInvitation(coopId, invitationId);
+  }
+
   @Delete('invitations/:invitationId')
   @RequirePermission('canManageAdmins')
   @ApiOperation({ summary: 'Revoke a pending invitation' })
