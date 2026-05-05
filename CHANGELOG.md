@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.27] - 2026-05-05
+
+### Added
+- **Resend pending admin invitations.** A Send-icon button beside every pending invitation row re-fires the invitation email with a rotated token and a fresh 7-day expiry — handy when the original message ended up in spam or the invitee asks for a new link without the admin having to revoke + re-invite. Old links stop working after a resend (token is rotated).
+
+### Fixed
+- Seed scripts (`seed.ts`, `seed-demo.ts`) now write CoopAdmin role assignments through the `coop_admin_roles` join table introduced in v0.8.26 — fixes the 26 e2e admin test failures from PR #110. No prod impact (seeds don't run on prod; real admins were migrated by the SQL backfill).
+
 ## [0.8.26] - 2026-05-04
 
 ### Added
