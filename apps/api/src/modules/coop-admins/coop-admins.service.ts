@@ -270,25 +270,89 @@ export class CoopAdminsService {
       },
     });
 
-    // Send invitation email
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://opencoop.be';
-    const inviteUrl = `${appUrl}/invite/${token}`;
+    await this.sendInvitationEmail({
+      email: dto.email,
+      token,
+      coopName: coop.name,
+      roleName: role.name,
+    });
 
-    await this.emailService.sendPlatformEmail({
-      to: dto.email,
-      subject: `You've been invited to manage ${coop.name} on OpenCoop`,
-      html: `
-        <h2>You've been invited to ${coop.name}</h2>
-        <p>You've been invited as <strong>${role.name}</strong> for the cooperative <strong>${coop.name}</strong> on OpenCoop.</p>
+    return invitation;
+  }
+
+  /**
+   * Send (or re-send) the invitation email. Extracted so the resend flow
+   * can reuse the exact same template — no drift between first-send and
+   * follow-up. Failures are logged, not raised, because the invitation
+   * row already exists in the DB; the admin can hit Resend if the email
+   * provider was transiently down.
+   */
+  private async sendInvitationEmail(args: {
+    email: string;
+    token: string;
+    coopName: string;
+    roleName: string;
+  }): Promise<void> {
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://opencoop.be';
+    const inviteUrl = `${appUrl}/invite/${args.token}`;
+
+    await this.emailService
+      .sendPlatformEmail({
+        to: args.email,
+        subject: `You've been invited to manage ${args.coopName} on OpenCoop`,
+        html: `
+        <h2>You've been invited to ${args.coopName}</h2>
+        <p>You've been invited as <strong>${args.roleName}</strong> for the cooperative <strong>${args.coopName}</strong> on OpenCoop.</p>
         <p><a href="${inviteUrl}" style="display:inline-block;padding:12px 24px;background-color:#1e40af;color:#fff;text-decoration:none;border-radius:6px;">Accept Invitation</a></p>
         <p>This invitation expires in 7 days.</p>
         <p>If you didn't expect this invitation, you can safely ignore this email.</p>
       `,
-    }).catch((err) => {
-      console.error('Failed to send admin invitation email:', err.message);
+      })
+      .catch((err) => {
+        console.error('Failed to send admin invitation email:', err.message);
+      });
+  }
+
+  /**
+   * Resend a still-pending invitation. Rotates the token (so any old
+   * email link is invalidated — the invitee must use the latest one)
+   * and extends the expiry by another 7 days from now.
+   */
+  async resendInvitation(coopId: string, invitationId: string) {
+    const invitation = await this.prisma.adminInvitation.findFirst({
+      where: { id: invitationId, coopId, accepted: false },
+      include: {
+        coop: { select: { name: true } },
+        role: { select: { name: true } },
+      },
+    });
+    if (!invitation) {
+      throw new NotFoundException('Invitation not found');
+    }
+    if (invitation.expiresAt < new Date()) {
+      // An expired invite is technically still in the table (we don't
+      // GC) — resending should resurrect it. Allow it; the rotation
+      // below will set a fresh expiry and the invitee will get a
+      // working email.
+    }
+
+    const newToken = crypto.randomBytes(32).toString('hex');
+    const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const updated = await this.prisma.adminInvitation.update({
+      where: { id: invitation.id },
+      data: { token: newToken, expiresAt: newExpiry },
     });
 
-    return invitation;
+    await this.sendInvitationEmail({
+      email: invitation.email,
+      token: newToken,
+      coopName: invitation.coop.name,
+      roleName: invitation.role.name,
+    });
+
+    return updated;
   }
 
   async getInvitations(coopId: string) {

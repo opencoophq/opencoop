@@ -50,12 +50,14 @@ import {
   Trash2,
   Settings,
   Mail,
+  Send,
   X,
   Shield,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
   ChevronDown,
+  Check,
 } from 'lucide-react';
 
 const PERMISSION_KEYS = [
@@ -150,6 +152,9 @@ export default function TeamPage() {
   const [permsAdmin, setPermsAdmin] = useState<Admin | null>(null);
   const [permsOverrides, setPermsOverrides] = useState<Record<string, boolean | undefined>>({});
   const [permsSaving, setPermsSaving] = useState(false);
+
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resentId, setResentId] = useState<string | null>(null);
 
   const coopId = selectedCoop?.id;
 
@@ -330,6 +335,27 @@ export default function TeamPage() {
       loadData();
     } catch {
       // silently fail
+    }
+  };
+
+  const handleResendInvitation = async (invitationId: string) => {
+    if (!coopId || resendingId) return;
+    setResendingId(invitationId);
+    try {
+      await api(`/admin/coops/${coopId}/team/invitations/${invitationId}/resend`, {
+        method: 'POST',
+      });
+      setResentId(invitationId);
+      // Briefly show a checkmark, then refresh the list to pick up the
+      // new expiresAt the backend just set.
+      setTimeout(() => {
+        setResentId((id) => (id === invitationId ? null : id));
+        loadData();
+      }, 1500);
+    } catch {
+      // silently fail
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -598,14 +624,31 @@ export default function TeamPage() {
                         {new Date(inv.expiresAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => handleRevokeInvitation(inv.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title={t('team.resend')}
+                            disabled={resendingId === inv.id}
+                            onClick={() => handleResendInvitation(inv.id)}
+                          >
+                            {resentId === inv.id ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            title={t('team.revoke')}
+                            onClick={() => handleRevokeInvitation(inv.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
