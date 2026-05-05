@@ -2,6 +2,16 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.28] - 2026-05-05
+
+### Added
+- **Multi-role admin invitations.** New invitations can attach N roles via the same multi-select dropdown used for accepted admins. New `admin_invitation_roles` join table; existing pending invitations are migrated from the legacy single `roleId` without behavior change. On acceptance every invitation role becomes a `CoopAdminRole` for the new admin.
+- **Edit roles on a pending invitation.** New `PUT /admin/coops/:coopId/team/invitations/:invitationId/roles`; the pending invitation row's static role badge is now the same multi-select dropdown as accepted admins.
+- **Edit a team member's user profile.** New `PATCH /admin/coops/:coopId/team/:adminId/user`; pencil icon on each admin row opens a dialog to update name, email, and preferred language. Changing the email clears `emailVerified` so the new owner has to re-verify the address — mitigates the change-email → password-reset → account-takeover pattern.
+
+### Migration notes
+- `AdminInvitation.roleId` is kept (now nullable) for rollback safety; will be dropped in a follow-up.
+
 ## [0.8.27] - 2026-05-05
 
 ### Added
