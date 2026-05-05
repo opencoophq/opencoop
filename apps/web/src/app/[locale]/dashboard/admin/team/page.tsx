@@ -58,6 +58,7 @@ import {
   ArrowDown,
   ChevronDown,
   Check,
+  Pencil,
 } from 'lucide-react';
 
 const PERMISSION_KEYS = [
@@ -109,7 +110,7 @@ interface Role {
 interface Invitation {
   id: string;
   email: string;
-  role: { id: string; name: string };
+  roles: { role: { id: string; name: string } }[];
   expiresAt: string;
   createdAt: string;
 }
@@ -139,7 +140,7 @@ export default function TeamPage() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRoleId, setInviteRoleId] = useState('');
+  const [inviteRoleIds, setInviteRoleIds] = useState<string[]>([]);
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
 
@@ -155,6 +156,14 @@ export default function TeamPage() {
 
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resentId, setResentId] = useState<string | null>(null);
+
+  const [editUserOpen, setEditUserOpen] = useState(false);
+  const [editUserAdmin, setEditUserAdmin] = useState<Admin | null>(null);
+  const [editUserName, setEditUserName] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserLanguage, setEditUserLanguage] = useState('nl');
+  const [editUserSaving, setEditUserSaving] = useState(false);
+  const [editUserError, setEditUserError] = useState('');
 
   const coopId = selectedCoop?.id;
 
@@ -180,7 +189,7 @@ export default function TeamPage() {
         invitations,
         {
           email: { accessor: (inv) => inv.email },
-          role: { accessor: (inv) => inv.role.name },
+          role: { accessor: (inv) => inv.roles.map((r) => r.role.name).join(', ') },
           expiresAt: { accessor: (inv) => inv.expiresAt },
         },
         invitationFilters,
@@ -222,23 +231,51 @@ export default function TeamPage() {
   }, [loadData]);
 
   const handleInvite = async () => {
-    if (!coopId || !inviteEmail || !inviteRoleId) return;
+    if (!coopId || !inviteEmail || inviteRoleIds.length === 0) return;
     setInviting(true);
     setInviteError('');
     try {
       await api(`/admin/coops/${coopId}/team/invite`, {
         method: 'POST',
-        body: { email: inviteEmail, roleId: inviteRoleId },
+        body: { email: inviteEmail, roleIds: inviteRoleIds },
       });
       setInviteOpen(false);
       setInviteEmail('');
-      setInviteRoleId('');
+      setInviteRoleIds([]);
       loadData();
     } catch (err: any) {
       setInviteError(err.message || 'Failed to send invitation');
     } finally {
       setInviting(false);
     }
+  };
+
+  const toggleInviteRole = (roleId: string) => {
+    setInviteRoleIds((prev) =>
+      prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId],
+    );
+  };
+
+  const handleUpdateInvitationRoles = async (invitationId: string, roleIds: string[]) => {
+    if (!coopId || roleIds.length === 0) return;
+    try {
+      await api(`/admin/coops/${coopId}/team/invitations/${invitationId}/roles`, {
+        method: 'PUT',
+        body: { roleIds },
+      });
+      loadData();
+    } catch {
+      // silently fail
+    }
+  };
+
+  const toggleInvitationRole = (inv: Invitation, roleId: string) => {
+    const currentIds = inv.roles.map((r) => r.role.id);
+    const next = currentIds.includes(roleId)
+      ? currentIds.filter((id) => id !== roleId)
+      : [...currentIds, roleId];
+    if (next.length === 0) return; // backend rejects empty
+    handleUpdateInvitationRoles(inv.id, next);
   };
 
   const handleRolesChange = async (adminId: string, roleIds: string[]) => {
@@ -335,6 +372,44 @@ export default function TeamPage() {
       loadData();
     } catch {
       // silently fail
+    }
+  };
+
+  const openEditUserDialog = (admin: Admin) => {
+    setEditUserAdmin(admin);
+    setEditUserName(admin.user.name ?? '');
+    setEditUserEmail(admin.user.email);
+    // The admin row doesn't include preferredLanguage in the API
+    // response — default to 'nl' for the form. The backend only updates
+    // fields that were sent, so leaving it untouched is safe.
+    setEditUserLanguage('nl');
+    setEditUserError('');
+    setEditUserOpen(true);
+  };
+
+  const handleSaveEditUser = async () => {
+    if (!coopId || !editUserAdmin) return;
+    setEditUserSaving(true);
+    setEditUserError('');
+    try {
+      const body: Record<string, unknown> = {};
+      if (editUserName !== (editUserAdmin.user.name ?? '')) body.name = editUserName || null;
+      if (editUserEmail.toLowerCase() !== editUserAdmin.user.email.toLowerCase()) {
+        body.email = editUserEmail;
+      }
+      // Always send preferredLanguage (form default may differ from
+      // current value; backend only writes when supplied).
+      body.preferredLanguage = editUserLanguage;
+      await api(`/admin/coops/${coopId}/team/${editUserAdmin.id}/user`, {
+        method: 'PATCH',
+        body,
+      });
+      setEditUserOpen(false);
+      loadData();
+    } catch (err: any) {
+      setEditUserError(err.message || 'Failed to update user');
+    } finally {
+      setEditUserSaving(false);
     }
   };
 
@@ -515,6 +590,15 @@ export default function TeamPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
+                            title={t('team.editUser')}
+                            onClick={() => openEditUserDialog(admin)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
                             title={t('team.customPermissions')}
                             onClick={() => openPermsDialog(admin)}
                           >
@@ -618,7 +702,34 @@ export default function TeamPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{inv.role.name}</Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-[200px] h-8 justify-between font-normal">
+                              <span className="truncate">
+                                {inv.roles.length > 0
+                                  ? inv.roles.map((r) => r.role.name).join(', ')
+                                  : '—'}
+                              </span>
+                              <ChevronDown className="h-4 w-4 ml-1 flex-shrink-0" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            {roles.map((role) => {
+                              const checked = inv.roles.some((r) => r.role.id === role.id);
+                              const isOnlyRole = checked && inv.roles.length === 1;
+                              return (
+                                <DropdownMenuCheckboxItem
+                                  key={role.id}
+                                  checked={checked}
+                                  disabled={isOnlyRole}
+                                  onCheckedChange={() => toggleInvitationRole(inv, role.id)}
+                                >
+                                  {role.name}
+                                </DropdownMenuCheckboxItem>
+                              );
+                            })}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {new Date(inv.expiresAt).toLocaleDateString()}
@@ -677,19 +788,33 @@ export default function TeamPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>{t('team.role')}</Label>
-              <Select value={inviteRoleId} onValueChange={setInviteRoleId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('team.role')} />
-                </SelectTrigger>
-                <SelectContent>
+              <Label>{t('team.roles.title')}</Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal">
+                    <span className="truncate">
+                      {inviteRoleIds.length > 0
+                        ? roles
+                            .filter((r) => inviteRoleIds.includes(r.id))
+                            .map((r) => r.name)
+                            .join(', ')
+                        : t('team.role')}
+                    </span>
+                    <ChevronDown className="h-4 w-4 ml-1 flex-shrink-0" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
                   {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
+                    <DropdownMenuCheckboxItem
+                      key={role.id}
+                      checked={inviteRoleIds.includes(role.id)}
+                      onCheckedChange={() => toggleInviteRole(role.id)}
+                    >
                       {role.name}
-                    </SelectItem>
+                    </DropdownMenuCheckboxItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             {inviteError && (
               <p className="text-sm text-destructive">{inviteError}</p>
@@ -701,7 +826,7 @@ export default function TeamPage() {
             </Button>
             <Button
               onClick={handleInvite}
-              disabled={inviting || !inviteEmail || !inviteRoleId}
+              disabled={inviting || !inviteEmail || inviteRoleIds.length === 0}
             >
               {t('team.sendInvitation')}
             </Button>
@@ -725,6 +850,56 @@ export default function TeamPage() {
             </Button>
             <Button variant="destructive" onClick={handleRemove} disabled={removing}>
               {tc('delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit team member user dialog */}
+      <Dialog open={editUserOpen} onOpenChange={setEditUserOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('team.editUser')}</DialogTitle>
+            <DialogDescription>{t('team.editUserDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>{t('team.name')}</Label>
+              <Input value={editUserName} onChange={(e) => setEditUserName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('team.email')}</Label>
+              <Input
+                type="email"
+                value={editUserEmail}
+                onChange={(e) => setEditUserEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('team.emailChangeWarning')}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('team.preferredLanguage')}</Label>
+              <Select value={editUserLanguage} onValueChange={setEditUserLanguage}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nl">Nederlands</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="fr">Français</SelectItem>
+                  <SelectItem value="de">Deutsch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {editUserError && <p className="text-sm text-destructive">{editUserError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditUserOpen(false)}>
+              {tc('cancel')}
+            </Button>
+            <Button onClick={handleSaveEditUser} disabled={editUserSaving}>
+              {tc('save')}
             </Button>
           </DialogFooter>
         </DialogContent>

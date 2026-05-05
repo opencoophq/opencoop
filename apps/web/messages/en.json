@@ -967,6 +967,11 @@
       "customPermissionsDescription": "Override role permissions for {name}. Click a permission to toggle it. Overridden permissions are marked.",
       "overridden": "custom",
       "overrideHint": "Click a permission to toggle it on/off independently of the role. Click again to revert to the role default.",
+      "editUser": "Edit user",
+      "editUserDescription": "Update name, email, and language preference for this team member.",
+      "name": "Name",
+      "preferredLanguage": "Preferred language",
+      "emailChangeWarning": "Changing the email forces the user to re-verify the new address.",
       "roles": {
         "title": "Roles",
         "createRole": "Create role",

@@ -965,6 +965,11 @@
       "customPermissionsDescription": "Rollenberechtigungen für {name} überschreiben. Klicken Sie auf eine Berechtigung, um sie umzuschalten.",
       "overridden": "angepasst",
       "overrideHint": "Klicken Sie auf eine Berechtigung, um sie unabhängig von der Rolle ein-/auszuschalten. Klicken Sie erneut, um zum Rollenstandard zurückzukehren.",
+      "editUser": "Benutzer bearbeiten",
+      "editUserDescription": "Aktualisieren Sie Name, E-Mail und Sprachvorlieben für dieses Teammitglied.",
+      "name": "Name",
+      "preferredLanguage": "Bevorzugte Sprache",
+      "emailChangeWarning": "Beim Ändern der E-Mail muss der Benutzer die neue Adresse erneut verifizieren.",
       "roles": {
         "title": "Rollen",
         "createRole": "Rolle erstellen",
