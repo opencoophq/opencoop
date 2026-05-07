@@ -75,6 +75,9 @@ All notable changes to OpenCoop are documented in this file.
 - **CSV export support** for the new report via the existing export flow (`shareholders-per-project` report type).
 - **Translations** for the new report UI in NL/EN/FR/DE.
 
+### Fixed
+- **Shareholder sell action hidden for old holdings despite passing the holding period.** Sell eligibility in the shareholder dashboard and self-service sell endpoint now uses the earliest known acquisition date (`min(registerDate, firstPayment.bankDate)`) instead of only `registerDate`, preventing migrated registrations with newer register timestamps from being incorrectly blocked (e.g. 60-month coops).
+
 ## [0.8.13] - 2026-04-25
 
 ### Fixed

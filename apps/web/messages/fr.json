@@ -694,7 +694,14 @@
       "cancelTransaction": "Annuler la Transaction",
       "cancelTransactionDescription": "Ceci annulera la transaction. L'actionnaire ne recevra pas de parts. Vous pouvez optionnellement fournir une raison.",
       "cancelReasonPlaceholder": "Raison d'annulation (optionnel)...",
-      "confirmCancel": "Annuler la Transaction"
+      "confirmCancel": "Annuler la Transaction",
+      "addPayment": "Ajouter un Paiement",
+      "addPaymentDescription": "Enregistrez manuellement un paiement partiel pour cette inscription d'épargne en parts.",
+      "paymentAmount": "Montant du paiement (€)",
+      "paymentAmountPlaceholder": "ex. 25,00",
+      "savingsProgress": "{paid} payé sur {total}",
+      "confirmAddPayment": "Ajouter un Paiement",
+      "paymentAdded": "Paiement ajouté avec succès."
     },
     "shareClasses": {
       "title": "Classes de parts",
