@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.29] - 2026-05-07
+
+### Added
+- **Manual partial payments for savings share registrations.** Coop admins can now record individual installment payments against any `PENDING_PAYMENT` or `ACTIVE` BUY registration directly from the Transactions page — no bank import required. A new `+` button opens a dialog with amount and date fields. The system automatically advances the registration from `PENDING_PAYMENT → ACTIVE` on the first payment and to `COMPLETED` once fully paid.
+- **Savings share payment progress indicator.** The Transactions admin list now shows "€X paid of €Y" under the total amount for incomplete savings registrations, giving admins an at-a-glance view of how far along each installment plan is. The same indicator appears on the shareholder's own Shares page under the status badge.
+
+### Fixed
+- **Holding period uses earliest payment date for savings shares.** When checking whether a shareholder can sell, the minimum hold date is now anchored to the first payment's `bankDate` rather than the registration's `registerDate` — correctly reflecting when the shareholder actually started investing.
+
+### API
+- `POST /admin/coops/:coopId/registrations/:id/payments` — add a manual partial payment (`amount`, `bankDate`) to a registration.
+
 ## [0.8.28] - 2026-05-05
 
 ### Added
