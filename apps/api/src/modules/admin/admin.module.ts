@@ -14,6 +14,7 @@ import { CoopsModule } from '../coops/coops.module';
 import { ChannelsModule } from '../channels/channels.module';
 import { BillingModule } from '../billing/billing.module';
 import { MessagesModule } from '../messages/messages.module';
+import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MessagesModule } from '../messages/messages.module';
     ProjectsModule,
     RegistrationsModule,
     BankImportModule,
+    PaymentsModule,
     DividendsModule,
     DocumentsModule,
     MessagesModule,

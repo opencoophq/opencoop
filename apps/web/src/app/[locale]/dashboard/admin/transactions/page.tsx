@@ -56,6 +56,7 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  PlusCircle,
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
@@ -68,6 +69,7 @@ interface TransactionRow {
   totalAmount: number;
   createdAt: string;
   ogmCode?: string;
+  isSavings?: boolean;
   shareholder: {
     id: string;
     firstName?: string;
@@ -159,6 +161,13 @@ export default function AdminTransactionsPage() {
   const [matchSearch, setMatchSearch] = useState('');
   const [matchLoading, setMatchLoading] = useState(false);
   const [matching, setMatching] = useState(false);
+
+  // Add payment dialog state
+  const [addPaymentOpen, setAddPaymentOpen] = useState(false);
+  const [addPaymentTxId, setAddPaymentTxId] = useState('');
+  const [addPaymentAmount, setAddPaymentAmount] = useState('');
+  const [addPaymentDate, setAddPaymentDate] = useState('');
+  const [addingPayment, setAddingPayment] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!selectedCoop) return;
@@ -351,6 +360,39 @@ export default function AdminTransactionsPage() {
     if (tx.type === 'BUY' && ['PENDING', 'PENDING_PAYMENT'].includes(tx.status)) return true;
     if (tx.type === 'SELL' && tx.status === 'PENDING_PAYMENT') return true;
     return false;
+  };
+
+  const getTotalPaid = (tx: TransactionRow): number =>
+    (tx.payments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+
+  const canAddPayment = (tx: TransactionRow) =>
+    tx.type === 'BUY' && ['PENDING_PAYMENT', 'ACTIVE'].includes(tx.status);
+
+  const openAddPaymentDialog = (tx: TransactionRow) => {
+    setAddPaymentTxId(tx.id);
+    setAddPaymentAmount('');
+    setAddPaymentDate(new Date().toISOString().split('T')[0]);
+    setAddPaymentOpen(true);
+  };
+
+  const handleAddPayment = async () => {
+    if (!selectedCoop || !addPaymentTxId || !addPaymentAmount || !addPaymentDate) return;
+    const amount = parseFloat(addPaymentAmount);
+    if (isNaN(amount) || amount <= 0) return;
+    setAddingPayment(true);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${addPaymentTxId}/payments`, {
+        method: 'POST',
+        body: { amount, bankDate: addPaymentDate },
+      });
+      setAddPaymentOpen(false);
+      setSuccessMessage(t('admin.transactions.paymentAdded'));
+      loadData();
+    } catch {
+      setError(t('common.actionError'));
+    } finally {
+      setAddingPayment(false);
+    }
   };
 
   const filteredMatchRegistrations = matchRegistrations.filter((reg) => {
@@ -590,7 +632,17 @@ export default function AdminTransactionsPage() {
                           </TableCell>
                           <TableCell className="text-right">{tx.quantity}</TableCell>
                           <TableCell className="text-right">
-                            {formatCurrency(Number(tx.totalAmount), locale)}
+                            <div className="flex flex-col items-end gap-0.5">
+                              <span>{formatCurrency(Number(tx.totalAmount), locale)}</span>
+                              {tx.isSavings && tx.type === 'BUY' && tx.status !== 'COMPLETED' && (
+                                <span className="text-xs text-muted-foreground">
+                                  {t('admin.transactions.savingsProgress', {
+                                    paid: formatCurrency(getTotalPaid(tx), locale),
+                                    total: formatCurrency(Number(tx.totalAmount), locale),
+                                  })}
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             {new Date(tx.createdAt).toLocaleDateString(locale)}
@@ -681,6 +733,16 @@ export default function AdminTransactionsPage() {
                                   ) : (
                                     <QrCode className="h-4 w-4 text-blue-600" />
                                   )}
+                                </Button>
+                              )}
+                              {canAddPayment(tx) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openAddPaymentDialog(tx)}
+                                  title={t('admin.transactions.addPayment')}
+                                >
+                                  <PlusCircle className="h-4 w-4 text-green-600" />
                                 </Button>
                               )}
                             </div>
@@ -995,6 +1057,48 @@ export default function AdminTransactionsPage() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Payment Dialog */}
+      <Dialog open={addPaymentOpen} onOpenChange={setAddPaymentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.transactions.addPayment')}</DialogTitle>
+            <DialogDescription>{t('admin.transactions.addPaymentDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">{t('admin.transactions.paymentAmount')}</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder={t('admin.transactions.paymentAmountPlaceholder')}
+                value={addPaymentAmount}
+                onChange={(e) => setAddPaymentAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">{t('payments.paymentDate')}</label>
+              <Input
+                type="date"
+                value={addPaymentDate}
+                onChange={(e) => setAddPaymentDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddPaymentOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleAddPayment}
+              disabled={addingPayment || !addPaymentAmount || !addPaymentDate}
+            >
+              {t('admin.transactions.confirmAddPayment')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

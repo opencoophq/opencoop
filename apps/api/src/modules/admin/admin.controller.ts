@@ -41,6 +41,7 @@ import { ShareClassesService } from '../shares/share-classes.service';
 import { ProjectsService } from '../projects/projects.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { BankImportService } from '../bank-import/bank-import.service';
+import { PaymentsService } from '../payments/payments.service';
 import { DividendsService } from '../dividends/dividends.service';
 import { DocumentsService } from '../documents/documents.service';
 import { CreateShareholderDto } from '../shareholders/dto/create-shareholder.dto';
@@ -80,6 +81,7 @@ export class AdminController {
     private projectsService: ProjectsService,
     private registrationsService: RegistrationsService,
     private bankImportService: BankImportService,
+    private paymentsService: PaymentsService,
     private dividendsService: DividendsService,
     private documentsService: DocumentsService,
     private channelsService: ChannelsService,
@@ -716,6 +718,30 @@ export class AdminController {
       throw new BadRequestException('bankDate is required');
     }
     return this.registrationsService.updatePaymentDate(id, coopId, new Date(body.bankDate));
+  }
+
+  @Post('registrations/:id/payments')
+  @RequirePermission('canManageTransactions')
+  @ApiOperation({ summary: 'Manually add a partial payment to a registration (savings shares)' })
+  async addPayment(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: { amount: number; bankDate: string },
+  ) {
+    if (!body?.amount || body.amount <= 0) {
+      throw new BadRequestException('amount must be a positive number');
+    }
+    if (!body?.bankDate) {
+      throw new BadRequestException('bankDate is required');
+    }
+    return this.paymentsService.addPayment({
+      registrationId: id,
+      coopId,
+      amount: body.amount,
+      bankDate: new Date(body.bankDate),
+      matchedByUserId: user.id,
+    });
   }
 
   // ==================== BANK IMPORT ====================

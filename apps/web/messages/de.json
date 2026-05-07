@@ -694,7 +694,14 @@
       "cancelTransaction": "Transaktion Stornieren",
       "cancelTransactionDescription": "Dies storniert die Transaktion. Der Gesellschafter erhält keine Anteile. Sie können optional einen Grund angeben.",
       "cancelReasonPlaceholder": "Grund für die Stornierung (optional)...",
-      "confirmCancel": "Transaktion Stornieren"
+      "confirmCancel": "Transaktion Stornieren",
+      "addPayment": "Zahlung Hinzufügen",
+      "addPaymentDescription": "Erfassen Sie manuell eine Teilzahlung für diese Sparanteilsregistrierung.",
+      "paymentAmount": "Zahlungsbetrag (€)",
+      "paymentAmountPlaceholder": "z.B. 25,00",
+      "savingsProgress": "{paid} von {total} bezahlt",
+      "confirmAddPayment": "Zahlung Hinzufügen",
+      "paymentAdded": "Zahlung erfolgreich hinzugefügt."
     },
     "shareClasses": {
       "title": "Anteilsklassen",

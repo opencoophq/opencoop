@@ -696,7 +696,14 @@
       "cancelTransaction": "Transactie Annuleren",
       "cancelTransactionDescription": "Dit annuleert de transactie. De aandeelhouder ontvangt geen aandelen. U kunt optioneel een reden opgeven.",
       "cancelReasonPlaceholder": "Reden voor annulering (optioneel)...",
-      "confirmCancel": "Transactie Annuleren"
+      "confirmCancel": "Transactie Annuleren",
+      "addPayment": "Betaling Toevoegen",
+      "addPaymentDescription": "Registreer handmatig een gedeeltelijke betaling voor deze spaaraandelentransactie.",
+      "paymentAmount": "Betalingsbedrag (€)",
+      "paymentAmountPlaceholder": "bv. 25,00",
+      "savingsProgress": "{paid} betaald van {total}",
+      "confirmAddPayment": "Betaling Toevoegen",
+      "paymentAdded": "Betaling succesvol toegevoegd."
     },
     "shareClasses": {
       "title": "Aandelenklassen",

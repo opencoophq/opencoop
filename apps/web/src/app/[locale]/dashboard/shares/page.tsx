@@ -31,9 +31,14 @@ interface RegistrationData {
   type?: string;
   quantity: number;
   sharesOwned: number;
+  totalPaid?: number;
+  fullyPaid?: boolean;
+  isSavings?: boolean;
   pricePerShare: number;
+  totalAmount?: number;
   registerDate: string;
   status: string;
+  payments?: { bankDate: string }[];
   ogmCode?: string;
   isGift?: boolean;
   giftCode?: string;
@@ -247,6 +252,13 @@ export default function SharesPage() {
       case 'CANCELLED': return 'destructive' as const;
       default: return 'outline' as const;
     }
+  };
+
+  const getHoldingAcquisitionDate = (reg: RegistrationData): Date => {
+    const registerDate = new Date(reg.registerDate);
+    const firstPaymentDate = reg.payments?.[0]?.bankDate ? new Date(reg.payments[0].bankDate) : null;
+    if (firstPaymentDate && firstPaymentDate < registerDate) return firstPaymentDate;
+    return registerDate;
   };
 
   const handleGenerateCertificate = async (regId: string) => {
@@ -551,6 +563,14 @@ export default function SharesPage() {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <Badge variant={statusVariant(reg.status)}>{t(`transactions.statuses.${reg.status}`)}</Badge>
+                        {reg.isSavings && reg.totalPaid !== undefined && reg.totalAmount !== undefined && !reg.fullyPaid && (
+                          <span className="text-xs text-muted-foreground">
+                            {t('admin.transactions.savingsProgress', {
+                              paid: formatCurrency(Number(reg.totalPaid), locale),
+                              total: formatCurrency(Number(reg.totalAmount), locale),
+                            })}
+                          </span>
+                        )}
                         {reg.isGift && (
                           <Badge variant="outline" className="gap-1 text-amber-700 border-amber-300 bg-amber-50">
                             <Gift className="h-3 w-3" />
@@ -604,7 +624,7 @@ export default function SharesPage() {
                       )}
                       {!isPreviewMode && (reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && !reg.isGift && (() => {
                         const holdingMonths = shareholder?.coop?.minimumHoldingPeriod || 0;
-                        const minDate = new Date(reg.registerDate);
+                        const minDate = new Date(getHoldingAcquisitionDate(reg));
                         minDate.setMonth(minDate.getMonth() + holdingMonths);
                         const canSell = holdingMonths === 0 || new Date() >= minDate;
                         return canSell ? (
@@ -703,7 +723,7 @@ export default function SharesPage() {
                         <TableCell>
                           {!isPreviewMode && (reg.status === 'ACTIVE' || reg.status === 'COMPLETED') && (() => {
                             const holdingMonths = minor?.coop?.minimumHoldingPeriod || 0;
-                            const minDate = new Date(reg.registerDate);
+                            const minDate = new Date(getHoldingAcquisitionDate(reg));
                             minDate.setMonth(minDate.getMonth() + holdingMonths);
                             const canSell = holdingMonths === 0 || new Date() >= minDate;
                             return canSell ? (

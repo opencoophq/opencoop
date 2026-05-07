@@ -176,6 +176,12 @@ export class ShareholderActionsController {
     // Verify the buy registration belongs to this shareholder, is active, and check holding period
     const buyRegistration = await this.prisma.registration.findFirst({
       where: { id: dto.registrationId, shareholderId, type: 'BUY', status: { in: ['ACTIVE', 'COMPLETED'] } },
+      include: {
+        payments: {
+          select: { bankDate: true },
+          orderBy: { bankDate: 'asc' },
+        },
+      },
     });
 
     if (!buyRegistration) {
@@ -186,7 +192,13 @@ export class ShareholderActionsController {
     const holdingMonths = shareholder.coop.minimumHoldingPeriod;
     if (holdingMonths > 0) {
       const registerDate = new Date(buyRegistration.registerDate);
-      const minDate = new Date(registerDate);
+      const earliestPaymentDate = buyRegistration.payments?.[0]?.bankDate
+        ? new Date(buyRegistration.payments[0].bankDate)
+        : null;
+      const acquisitionDate = earliestPaymentDate && earliestPaymentDate < registerDate
+        ? earliestPaymentDate
+        : registerDate;
+      const minDate = new Date(acquisitionDate);
       minDate.setMonth(minDate.getMonth() + holdingMonths);
       if (new Date() < minDate) {
         throw new BadRequestException(

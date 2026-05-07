@@ -696,7 +696,14 @@
       "cancelTransaction": "Cancel Transaction",
       "cancelTransactionDescription": "This will cancel the transaction. The shareholder will not receive any shares. You can optionally provide a reason.",
       "cancelReasonPlaceholder": "Reason for cancellation (optional)...",
-      "confirmCancel": "Cancel Transaction"
+      "confirmCancel": "Cancel Transaction",
+      "addPayment": "Add Payment",
+      "addPaymentDescription": "Manually record a partial payment for this savings share registration.",
+      "paymentAmount": "Payment Amount (€)",
+      "paymentAmountPlaceholder": "e.g. 25.00",
+      "savingsProgress": "Paid {paid} of {total}",
+      "confirmAddPayment": "Add Payment",
+      "paymentAdded": "Payment added successfully."
     },
     "shareClasses": {
       "title": "Share Classes",
