@@ -1,8 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -12,7 +14,11 @@ function uploadDir(): string {
 
 @Injectable()
 export class MeetingDocumentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emails: EmailService,
+    private config: ConfigService,
+  ) {}
 
   async upload(
     coopId: string,
@@ -210,12 +216,68 @@ export class MeetingDocumentsService {
   }
 
   protected async enqueueDocumentsEmailJob(
-    meeting: { id: string; coopId: string },
+    meeting: {
+      id: string;
+      coopId: string;
+      scheduledAt: Date;
+      documentsSubject: string | null;
+      documentsIntro: string | null;
+      title: string;
+    },
     recipient: { id: string; shareholderId: string; rsvpToken: string },
     docs: Array<{ id: string; fileName: string }>,
   ): Promise<void> {
-    // Wired to EmailService.queueDocumentsEmail in Task 6 (next).
-    // Left abstract here so the service unit-tests can stub it.
-    throw new Error('enqueueDocumentsEmailJob must be injected via EmailService');
+    const shareholder = await this.prisma.shareholder.findUnique({
+      where: { id: recipient.shareholderId },
+      select: { email: true, firstName: true },
+    });
+
+    if (!shareholder?.email) {
+      await this.prisma.meetingAttendance.update({
+        where: { id: recipient.id },
+        data: { documentsEmailError: 'no email address' },
+      });
+      return;
+    }
+
+    const baseUrl = this.config.get<string>('PUBLIC_URL') || 'https://opencoop.be';
+    const apiBase = this.config.get<string>('API_PUBLIC_URL') || `${baseUrl}/api`;
+
+    const downloadBase = `${apiBase}/public/meetings/rsvp/${recipient.rsvpToken}/documents`;
+    const documents = docs.map((d) => ({
+      fileName: d.fileName,
+      downloadUrl: `${downloadBase}/${d.id}`,
+    }));
+
+    const subject = meeting.documentsSubject || `Documenten voor ${meeting.title}`;
+    const introHtml = (
+      meeting.documentsIntro ||
+      'Beste coöperant,\n\nIn aanloop naar onze algemene vergadering vind je hieronder de documenten ter inzage.'
+    )
+      .split('\n')
+      .map((p) => `<p>${escapeHtml(p)}</p>`)
+      .join('');
+
+    await this.emails.queueDocumentsEmail({
+      coopId: meeting.coopId,
+      to: shareholder.email,
+      subject,
+      templateData: {
+        introHtml,
+        documents,
+        meetingTitle: meeting.title,
+        meetingScheduledAt: meeting.scheduledAt.toLocaleString('nl-BE', {
+          dateStyle: 'long',
+          timeStyle: 'short',
+        }),
+        rsvpUrl: `${baseUrl}/meetings/rsvp/${recipient.rsvpToken}`,
+        pixelUrl: `${apiBase}/public/meetings/rsvp/${recipient.rsvpToken}/pixel.gif`,
+      },
+      attendanceId: recipient.id,
+    });
   }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

@@ -1,13 +1,16 @@
 import { Test } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { MeetingDocumentsService } from './meeting-documents.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 describe('MeetingDocumentsService', () => {
   let service: MeetingDocumentsService;
+  let emailService: { queueDocumentsEmail: jest.Mock };
   let prisma: {
     meeting: { findUnique: jest.Mock; update: jest.Mock };
     meetingDocument: {
@@ -19,6 +22,7 @@ describe('MeetingDocumentsService', () => {
       aggregate: jest.Mock;
     };
     meetingAttendance: { count: jest.Mock; findMany: jest.Mock; updateMany: jest.Mock };
+    shareholder: { findUnique: jest.Mock };
   };
   let tmpUploadDir: string;
   const ORIGINAL_UPLOAD_DIR = process.env.UPLOAD_DIR;
@@ -26,6 +30,16 @@ describe('MeetingDocumentsService', () => {
   beforeEach(async () => {
     tmpUploadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'opencoop-test-'));
     process.env.UPLOAD_DIR = tmpUploadDir;
+
+    emailService = { queueDocumentsEmail: jest.fn().mockResolvedValue(undefined) };
+
+    const configService = {
+      get: jest.fn().mockImplementation((k: string) => {
+        if (k === 'PUBLIC_URL') return 'https://opencoop.be';
+        if (k === 'API_PUBLIC_URL') return 'https://opencoop.be/api';
+        return null;
+      }),
+    };
 
     prisma = {
       meeting: { findUnique: jest.fn(), update: jest.fn() },
@@ -38,9 +52,15 @@ describe('MeetingDocumentsService', () => {
         aggregate: jest.fn(),
       },
       meetingAttendance: { count: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+      shareholder: { findUnique: jest.fn() },
     };
     const moduleRef = await Test.createTestingModule({
-      providers: [MeetingDocumentsService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        MeetingDocumentsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: EmailService, useValue: emailService },
+        { provide: ConfigService, useValue: configService },
+      ],
     }).compile();
     service = moduleRef.get(MeetingDocumentsService);
   });
@@ -229,6 +249,7 @@ describe('MeetingDocumentsService', () => {
       id: 'm1',
       coopId: 'c1',
       status: 'CONVOKED',
+      title: 'Algemene Vergadering 2026',
       scheduledAt: new Date('2026-05-09T10:00:00Z'),
       documentsEmailSentAt: null,
       documentsSubject: null,
@@ -262,20 +283,18 @@ describe('MeetingDocumentsService', () => {
     });
 
     it('first send: enqueues to all attendances', async () => {
-      const enqueue = jest.fn().mockResolvedValue(undefined);
-      (service as any).enqueueDocumentsEmailJob = enqueue;
-
-      prisma.meeting.findUnique.mockResolvedValue(baseMeeting);
+      prisma.meeting.findUnique.mockResolvedValue({ ...baseMeeting, title: 'AV', documentsSubject: null, documentsIntro: null });
       prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1', fileName: 'A.pdf' }]);
       prisma.meetingAttendance.findMany.mockResolvedValue([
         { id: 'a1', shareholderId: 's1', rsvpToken: 't1' },
         { id: 'a2', shareholderId: 's2', rsvpToken: 't2' },
       ]);
+      prisma.shareholder.findUnique.mockResolvedValue({ email: 'x@y.be', firstName: 'Jan' });
 
       const result = await service.sendEmail('c1', 'm1', 'admin1');
 
       expect(result.enqueued).toBe(2);
-      expect(enqueue).toHaveBeenCalledTimes(2);
+      expect(emailService.queueDocumentsEmail).toHaveBeenCalledTimes(2);
       expect(prisma.meeting.update).toHaveBeenCalledWith({
         where: { id: 'm1' },
         data: { documentsEmailSentAt: expect.any(Date) },
@@ -283,11 +302,11 @@ describe('MeetingDocumentsService', () => {
     });
 
     it('retry: enqueues only failed attendances and clears their error', async () => {
-      const enqueue = jest.fn().mockResolvedValue(undefined);
-      (service as any).enqueueDocumentsEmailJob = enqueue;
-
       prisma.meeting.findUnique.mockResolvedValue({
         ...baseMeeting,
+        title: 'AV',
+        documentsSubject: null,
+        documentsIntro: null,
         documentsEmailSentAt: new Date('2026-05-06T14:00:00Z'),
       });
       prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1', fileName: 'A.pdf' }]);
@@ -295,6 +314,7 @@ describe('MeetingDocumentsService', () => {
       prisma.meetingAttendance.findMany.mockResolvedValue([
         { id: 'a3', shareholderId: 's3', rsvpToken: 't3', documentsEmailError: 'bounce' },
       ]);
+      prisma.shareholder.findUnique.mockResolvedValue({ email: 'x@y.be', firstName: 'Jan' });
 
       const result = await service.sendEmail('c1', 'm1', 'admin1');
 

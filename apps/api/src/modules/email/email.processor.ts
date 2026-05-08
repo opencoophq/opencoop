@@ -22,6 +22,10 @@ interface EmailJob {
     filename: string;
     path: string;
   }>;
+  meta?: {
+    kind?: string;
+    attendanceId?: string;
+  };
 }
 
 @Processor('email')
@@ -110,6 +114,13 @@ export class EmailProcessor {
             sentAt: new Date(),
           },
         });
+
+        if (job.data.meta?.kind === 'documents-email' && job.data.meta?.attendanceId) {
+          await this.prisma.meetingAttendance.update({
+            where: { id: job.data.meta.attendanceId },
+            data: { documentsEmailSentAt: new Date(), documentsEmailError: null },
+          }).catch(() => undefined);
+        }
       } catch (error) {
         Sentry.captureException(error);
 
@@ -121,6 +132,14 @@ export class EmailProcessor {
             errorMessage: error instanceof Error ? error.message : 'Unknown error',
           },
         });
+
+        if (job.data.meta?.kind === 'documents-email' && job.data.meta?.attendanceId) {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          await this.prisma.meetingAttendance.update({
+            where: { id: job.data.meta.attendanceId },
+            data: { documentsEmailError: errMsg.slice(0, 500) },
+          }).catch(() => undefined);
+        }
 
         throw error;
       }
@@ -1122,6 +1141,41 @@ export class EmailProcessor {
         </p>
         ` : ''}
       `,
+      'agenda-documents': (d, _cn) => {
+        const subject = d.subject as string;
+        const introHtml = d.introHtml as string;
+        const documents = d.documents as Array<{ fileName: string; downloadUrl: string }>;
+        const meetingTitle = d.meetingTitle as string;
+        const meetingScheduledAt = d.meetingScheduledAt as string;
+        const rsvpUrl = d.rsvpUrl as string;
+        const pixelUrl = d.pixelUrl as string;
+
+        void subject; // included in outer envelope; not repeated in body
+
+        const docsList = documents
+          .map(
+            (doc) => `
+        <p style="margin: 8px 0;">
+          <a href="${doc.downloadUrl}" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            ${doc.fileName}
+          </a>
+        </p>`,
+          )
+          .join('\n');
+
+        return `
+    <h2>${meetingTitle}</h2>
+    <p>${meetingScheduledAt}</p>
+    ${introHtml}
+    <h3>Documenten</h3>
+    ${docsList}
+    <hr style="margin:24px 0;border:none;border-top:1px solid #e5e5e5;" />
+    <p style="font-size:14px;color:#666;">
+      Heb je je aanwezigheid nog niet bevestigd? <a href="${rsvpUrl}">Bevestig hier</a>.
+    </p>
+    <img src="${pixelUrl}" width="1" height="1" alt="" style="display:block" />
+  `;
+      },
     };
 
     const template = templates[templateKey];
