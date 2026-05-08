@@ -2,6 +2,16 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.36] - 2026-05-08
+
+### Added
+- **Documents page back-link.** Top of `/dashboard/admin/meetings/:id/documents` now shows a "← Terug naar vergadering" link, matching convocation/agenda/minutes pages.
+- **Sortable + filterable recipients status table.** Each column (recipient, sent, opened, downloaded) has a sort toggle and a filter input. Click a header to sort, type in the row below to narrow.
+- **Stat cards above the recipients table** showing live counters for Sent / Opened / Downloaded / Failed with N/total and percentage. Quick-glance summary; the table below remains for drill-down.
+
+### Changed
+- **Reply-To source switched from the new `replyTo` column (introduced in v0.8.35) to the existing `coopEmail` field.** The settings page already had a `coopEmail` input under coop info; that's the natural place to set the contact address. Member replies now route to `coopEmail` automatically. The `replyTo` schema column is annotated `@deprecated` and stays in place for now to avoid a destructive migration.
+
 ## [0.8.35] - 2026-05-08
 
 ### Added
