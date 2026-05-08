@@ -1141,13 +1141,17 @@ model Meeting {
   customSubject       String? // overrides default convocation email subject when set
   customBody          String?               @db.Text // HTML; overrides default intro paragraph when set
   reminderDaysBefore  Int[]                 @default([3])
-  remindersSent       Json?                 @default("{}")
-  status              MeetingStatus         @default(DRAFT)
-  agendaItems         AgendaItem[]
-  attendances         MeetingAttendance[]
-  proxies             Proxy[]
-  minutes             MeetingMinutes?
-  kioskSessions       MeetingKioskSession[]
+  remindersSent           Json?                 @default("{}")
+  documentsSubject        String?
+  documentsIntro          String?               @db.Text
+  documentsEmailSentAt    DateTime?
+  status                  MeetingStatus         @default(DRAFT)
+  agendaItems             AgendaItem[]
+  attendances             MeetingAttendance[]
+  proxies                 Proxy[]
+  minutes                 MeetingMinutes?
+  kioskSessions           MeetingKioskSession[]
+  documents               MeetingDocument[]
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
@@ -1244,7 +1248,11 @@ model MeetingAttendance {
   checkedInBy       String?
   checkInMethod     CheckInMethod?
   signatureImageUrl String?
-  proxyResolveAttempts Int @default(0)
+  proxyResolveAttempts   Int       @default(0)
+  documentsEmailSentAt   DateTime?
+  documentsEmailError    String?
+  documentsEmailOpenedAt DateTime?
+  documentsDownloadedAt  DateTime?
 
   @@unique([meetingId, shareholderId])
   @@map("meeting_attendances")
@@ -1261,6 +1269,22 @@ model MeetingMinutes {
   signedByName    String?
 
   @@map("meeting_minutes")
+}
+
+model MeetingDocument {
+  id         String   @id @default(cuid())
+  meetingId  String
+  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  fileName   String
+  fileUrl    String
+  fileSize   Int
+  order      Int
+  uploadedAt DateTime @default(now())
+  uploadedBy String
+
+  @@index([meetingId, order])
+  @@map("meeting_documents")
 }
 
 model MeetingKioskSession {
