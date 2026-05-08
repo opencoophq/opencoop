@@ -74,6 +74,12 @@ export class UpdateCoopDto {
   @IsString()
   smtpFrom?: string;
 
+  @ApiProperty({ required: false, description: 'Email address replies are routed to (Reply-To header).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  replyTo?: string;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()

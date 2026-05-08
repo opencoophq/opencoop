@@ -854,6 +854,8 @@
       "smtpPass": "SMTP-Passwort",
       "smtpPassPlaceholder": "Leer lassen, um aktuelles beizubehalten",
       "smtpFrom": "Absenderadresse",
+      "replyTo": "Antwortadresse",
+      "replyToHelp": "Antworten von Mitgliedern werden an diese Adresse gesendet (leer lassen, um die Absenderadresse zu verwenden).",
       "graphClientId": "Client-ID",
       "graphClientSecret": "Clientgeheimnis",
       "graphClientSecretPlaceholder": "Leer lassen, um aktuelles beizubehalten",
