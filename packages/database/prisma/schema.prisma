@@ -148,7 +148,8 @@ model Coop {
   smtpUser          String?
   smtpPass          String?
   smtpFrom          String?
-  replyTo           String?  // Email address that replies are routed to
+  /// @deprecated Unused — Reply-To is sourced from `coopEmail`. Column kept for backward compatibility; safe to drop in a future cleanup migration.
+  replyTo           String?
   graphClientId     String?
   graphClientSecret String?
   graphTenantId     String?

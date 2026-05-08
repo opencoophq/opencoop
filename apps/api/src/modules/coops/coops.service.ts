@@ -359,7 +359,6 @@ export class CoopsService {
         smtpPort: true,
         smtpUser: true,
         smtpFrom: true,
-        replyTo: true,
         graphClientId: true,
         graphTenantId: true,
         graphFromEmail: true,
@@ -461,7 +460,6 @@ export class CoopsService {
       data.smtpUser = null;
       data.smtpPass = null;
       data.smtpFrom = null;
-      data.replyTo = null;
       data.graphClientId = null;
       data.graphClientSecret = null;
       data.graphTenantId = null;
