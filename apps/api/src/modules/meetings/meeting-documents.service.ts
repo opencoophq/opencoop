@@ -25,9 +25,7 @@ export class MeetingDocumentsService {
     if (file.mimetype !== 'application/pdf') throw new BadRequestException('Only PDF files allowed');
     if (file.size > MAX_FILE_SIZE) throw new BadRequestException('File exceeds 10MB limit');
 
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
-    if (!meeting) throw new NotFoundException('Meeting not found');
-    if (meeting.coopId !== coopId) throw new ForbiddenException('Meeting belongs to different coop');
+    await this.assertMeetingInCoop(coopId, meetingId);
 
     const safeOriginalName = path.basename(file.originalname);
     const effectiveDisplayName = displayName?.trim() || safeOriginalName;
@@ -77,5 +75,54 @@ export class MeetingDocumentsService {
         uploadedBy: userId,
       },
     });
+  }
+
+  private async assertMeetingInCoop(coopId: string, meetingId: string) {
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.coopId !== coopId) throw new ForbiddenException('Meeting belongs to different coop');
+    return meeting;
+  }
+
+  async list(coopId: string, meetingId: string) {
+    await this.assertMeetingInCoop(coopId, meetingId);
+    return this.prisma.meetingDocument.findMany({
+      where: { meetingId },
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  async update(
+    coopId: string,
+    meetingId: string,
+    docId: string,
+    patch: { displayName?: string; order?: number },
+  ) {
+    await this.assertMeetingInCoop(coopId, meetingId);
+    const doc = await this.prisma.meetingDocument.findFirst({
+      where: { id: docId, meetingId },
+    });
+    if (!doc) throw new NotFoundException('Document not found in this meeting');
+
+    const data: { fileName?: string; order?: number } = {};
+    if (patch.displayName != null) data.fileName = patch.displayName;
+    if (patch.order != null) data.order = patch.order;
+
+    return this.prisma.meetingDocument.update({ where: { id: docId }, data });
+  }
+
+  async remove(coopId: string, meetingId: string, docId: string) {
+    await this.assertMeetingInCoop(coopId, meetingId);
+    const doc = await this.prisma.meetingDocument.findFirst({
+      where: { id: docId, meetingId },
+    });
+    if (!doc) throw new NotFoundException('Document not found in this meeting');
+
+    try {
+      fs.unlinkSync(path.join(uploadDir(), doc.fileUrl));
+    } catch {
+      // best-effort; orphan ENOENT is harmless
+    }
+    await this.prisma.meetingDocument.delete({ where: { id: docId } });
   }
 }

@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -126,6 +126,65 @@ describe('MeetingDocumentsService', () => {
         data: expect.objectContaining({ fileSize: 12, uploadedBy: 'admin1' }),
       });
       expect(fs.existsSync(path.join(tmpUploadDir, existingDoc.fileUrl))).toBe(false);
+    });
+  });
+
+  describe('list / update / remove', () => {
+    const meeting = { id: 'm1', coopId: 'c1' };
+
+    it('lists documents for a meeting in order', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(meeting);
+      prisma.meetingDocument.findMany.mockResolvedValue([
+        { id: 'd1', order: 0, fileName: 'A.pdf' },
+        { id: 'd2', order: 1, fileName: 'B.pdf' },
+      ]);
+
+      const docs = await service.list('c1', 'm1');
+
+      expect(docs).toHaveLength(2);
+      expect(prisma.meetingDocument.findMany).toHaveBeenCalledWith({
+        where: { meetingId: 'm1' },
+        orderBy: { order: 'asc' },
+      });
+    });
+
+    it('updates display name and order', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(meeting);
+      prisma.meetingDocument.findFirst.mockResolvedValue({ id: 'd1', meetingId: 'm1' });
+      prisma.meetingDocument.update.mockResolvedValue({ id: 'd1', fileName: 'New.pdf', order: 5 });
+
+      const result = await service.update('c1', 'm1', 'd1', { displayName: 'New.pdf', order: 5 });
+
+      expect(result.fileName).toBe('New.pdf');
+      expect(prisma.meetingDocument.update).toHaveBeenCalledWith({
+        where: { id: 'd1' },
+        data: { fileName: 'New.pdf', order: 5 },
+      });
+    });
+
+    it('removes a document and deletes file from disk', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(meeting);
+      const dir = path.join(tmpUploadDir, 'meeting-documents', 'm1');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'gone.pdf'), 'data');
+      prisma.meetingDocument.findFirst.mockResolvedValue({
+        id: 'd1',
+        meetingId: 'm1',
+        fileUrl: 'meeting-documents/m1/gone.pdf',
+      });
+      prisma.meetingDocument.delete.mockResolvedValue({ id: 'd1' });
+
+      await service.remove('c1', 'm1', 'd1');
+
+      expect(prisma.meetingDocument.delete).toHaveBeenCalledWith({ where: { id: 'd1' } });
+      expect(fs.existsSync(path.join(dir, 'gone.pdf'))).toBe(false);
+    });
+
+    it('rejects update when document is not in meeting', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(meeting);
+      prisma.meetingDocument.findFirst.mockResolvedValue(null);
+
+      await expect(service.update('c1', 'm1', 'dX', { displayName: 'x' })).rejects.toThrow(NotFoundException);
     });
   });
 });
