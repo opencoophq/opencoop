@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.38] - 2026-05-08
+
+### Fixed
+- **Stembiljetten download gaf 400 "Meeting has no RESOLUTION agenda items"** voor agenda's waar de items waren aangemaakt met default `type: INFORMATIONAL` maar wél een `Resolution` opgehangen kregen. De voting-pagina handelde dit al correct af; de ballot-generator nu ook. Match: `agendaItem.type === 'RESOLUTION'` OR `agendaItem.resolution != null`.
+
 ## [0.8.37] - 2026-05-08
 
 ### Added
