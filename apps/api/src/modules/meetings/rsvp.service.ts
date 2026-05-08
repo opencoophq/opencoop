@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, HttpException, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -6,6 +6,7 @@ import { EmailService } from '../email/email.service';
 import { ProxiesService } from './proxies.service';
 import { IcsService } from './ics.service';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
+import { matchByName } from './proxy-name-matcher';
 import { RSVPStatus } from '@opencoop/database';
 
 @Injectable()
@@ -225,22 +226,53 @@ export class RsvpService {
     return filePath;
   }
 
-  async listEligibleDelegates(token: string) {
+  async resolveDelegate(
+    token: string,
+    firstName: string,
+    lastName: string,
+  ): Promise<{ delegateShareholderId: string; displayName: string }> {
     const attendance = await this.resolveToken(token);
-    return this.prisma.shareholder.findMany({
+
+    // Atomic increment + read; refuse before doing any matching work.
+    const updated = await this.prisma.meetingAttendance.update({
+      where: { id: attendance.id },
+      data: { proxyResolveAttempts: { increment: 1 } },
+    });
+    if (updated.proxyResolveAttempts > 20) {
+      throw new HttpException({ code: 'rate_limited' }, 429);
+    }
+
+    const candidates = await this.prisma.shareholder.findMany({
       where: {
         coopId: attendance.meeting.coopId,
         status: 'ACTIVE',
         id: { not: attendance.shareholderId },
       },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        memberNumber: true,
-      },
-      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+      select: { id: true, firstName: true, lastName: true },
     });
+
+    const result = matchByName({ firstName, lastName }, candidates);
+    if (result.kind === 'not_found') {
+      throw new HttpException({ code: 'not_found' }, 404);
+    }
+    if (result.kind === 'ambiguous') {
+      throw new HttpException({ code: 'ambiguous' }, 409);
+    }
+
+    // result.kind === 'unique' — check delegate cap before returning success
+    const activeProxiesHeld = await this.prisma.proxy.count({
+      where: {
+        meetingId: attendance.meetingId,
+        delegateShareholderId: result.candidate.id,
+        revokedAt: null,
+      },
+    });
+    if (activeProxiesHeld >= attendance.meeting.maxProxiesPerPerson) {
+      throw new HttpException({ code: 'cap_reached' }, 400);
+    }
+
+    const displayName = `${result.candidate.firstName ?? ''} ${result.candidate.lastName ?? ''}`.trim();
+    return { delegateShareholderId: result.candidate.id, displayName };
   }
 
   async attachSignedVolmacht(token: string, fileUrl: string) {
