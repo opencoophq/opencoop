@@ -2,6 +2,16 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.33] - 2026-05-08
+
+### Added
+- **HTML editor for AGM documents email body.** The plain textarea is replaced with a `contentEditable` WYSIWYG editor (same pattern as the convocation flow). Admins can paste rich HTML — `<strong>`, `<a>`, `<p>`, formatted tables, etc. — and it renders as-is in the outgoing email.
+- **Live email preview** for AGM documents. A new endpoint `GET /admin/coops/:coopId/meetings/:id/documents-email/preview?shareholderId=…` returns the rendered HTML for one recipient; the documents page shows it inline in an iframe and refreshes after every save.
+- **Explicit "Save draft" button** with "Saving..." / "Saved at HH:MM:SS" indicator. The blur-autosave on subject/intro is removed so admins always see whether their edits were persisted.
+
+### Fixed
+- **"Unexpected end of JSON input" on document delete.** The `api()` helper now reads the response body as text first and only parses JSON when there's content. Our DELETE and `PATCH /documents-email` endpoints return `void`, which NestJS serves as `200` with an empty body — `response.json()` was throwing for any caller of those endpoints, surfacing as a confusing alert on delete and a silent failure on draft save. Fix is in the helper, so any other endpoint in the codebase that returns void benefits too.
+
 ## [0.8.32] - 2026-05-08
 
 ### Added
