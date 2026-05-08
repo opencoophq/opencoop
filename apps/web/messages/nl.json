@@ -856,8 +856,6 @@
       "smtpPass": "SMTP-wachtwoord",
       "smtpPassPlaceholder": "Laat leeg om huidig te behouden",
       "smtpFrom": "Afzenderadres",
-      "replyTo": "Reply-to adres",
-      "replyToHelp": "Antwoorden van leden komen op dit adres terecht (laat leeg om naar het verzendadres te laten gaan).",
       "graphClientId": "Client-ID",
       "graphClientSecret": "Clientgeheim",
       "graphClientSecretPlaceholder": "Laat leeg om huidig te behouden",
@@ -2327,7 +2325,10 @@
       "savingIndicator": "Opslaan...",
       "savedAt": "Opgeslagen om {time}",
       "previewTitle": "Voorbeeld",
-      "htmlEditorHelp": "Je kan HTML plakken voor opmaak (bijv. <strong>, <a>, <p>)."
+      "htmlEditorHelp": "Je kan HTML plakken voor opmaak (bijv. <strong>, <a>, <p>).",
+      "backToMeeting": "Terug naar vergadering",
+      "filterPlaceholder": "Filter",
+      "statusSummary": "{total} ontvangers — {sent} verstuurd, {failed} mislukt, {opened} geopend, {downloaded} gedownload"
     }
   },
   "emancipation": {
