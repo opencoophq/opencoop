@@ -148,6 +148,7 @@ model Coop {
   smtpUser          String?
   smtpPass          String?
   smtpFrom          String?
+  replyTo           String?  // Email address that replies are routed to
   graphClientId     String?
   graphClientSecret String?
   graphTenantId     String?
