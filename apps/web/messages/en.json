@@ -2311,6 +2311,7 @@
       "sentSummary": "Sent on {date} — {sent} of {total} successful",
       "resendFailed": "Resend to {count} failed",
       "statusTitle": "Status per member",
+      "status.shareholder": "Member",
       "status.sent": "Sent",
       "status.opened": "Opened",
       "status.downloaded": "Downloaded",

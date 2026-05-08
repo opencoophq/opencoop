@@ -375,6 +375,47 @@ describe('MeetingDocumentsService', () => {
     });
   });
 
+  describe('pixelHit', () => {
+    beforeEach(() => {
+      prisma.meetingAttendance = {
+        ...prisma.meetingAttendance,
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      } as any;
+    });
+
+    it('sets documentsEmailOpenedAt when token is valid and field is null', async () => {
+      prisma.meetingAttendance.findUnique.mockResolvedValue({
+        id: 'a1', meetingId: 'm1', documentsEmailOpenedAt: null,
+      });
+      prisma.meetingAttendance.update.mockResolvedValue({});
+
+      await service.pixelHit('t1');
+
+      expect(prisma.meetingAttendance.update).toHaveBeenCalledWith({
+        where: { id: 'a1' },
+        data: { documentsEmailOpenedAt: expect.any(Date) },
+      });
+    });
+
+    it('does NOT call update when documentsEmailOpenedAt is already set', async () => {
+      prisma.meetingAttendance.findUnique.mockResolvedValue({
+        id: 'a1', meetingId: 'm1', documentsEmailOpenedAt: new Date('2026-05-08T10:00:00Z'),
+      });
+
+      await service.pixelHit('t1');
+
+      expect(prisma.meetingAttendance.update).not.toHaveBeenCalled();
+    });
+
+    it('resolves without throwing and skips update on invalid token', async () => {
+      prisma.meetingAttendance.findUnique.mockResolvedValue(null);
+
+      await expect(service.pixelHit('invalid')).resolves.toBeUndefined();
+      expect(prisma.meetingAttendance.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('send', () => {
     const baseMeeting = {
       id: 'm1',
@@ -393,6 +434,13 @@ describe('MeetingDocumentsService', () => {
 
     it('rejects when meeting not CONVOKED', async () => {
       prisma.meeting.findUnique.mockResolvedValue({ ...baseMeeting, status: 'DRAFT' });
+      prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1' }]);
+      await expect(service.sendEmail('c1', 'm1', 'admin1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects when documentsEmailSentAt is within the 60-second concurrency window', async () => {
+      const recentlySent = { ...baseMeeting, documentsEmailSentAt: new Date(Date.now() - 30_000) };
+      prisma.meeting.findUnique.mockResolvedValue(recentlySent);
       prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1' }]);
       await expect(service.sendEmail('c1', 'm1', 'admin1')).rejects.toThrow(BadRequestException);
     });

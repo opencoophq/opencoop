@@ -283,7 +283,7 @@ export default function MeetingDetailPage() {
       status: t('meetings.documents.description'),
       done: false,
       cta: t('common.documents'),
-      href: `/${locale}/dashboard/admin/meetings/${meeting.id}/documents`,
+      href: `/dashboard/admin/meetings/${meeting.id}/documents`,
       disabled: meeting.status !== 'CONVOKED',
     },
   ];

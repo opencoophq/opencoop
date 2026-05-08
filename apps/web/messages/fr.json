@@ -2308,6 +2308,7 @@
       "sentSummary": "Verstuurd op {date} — {sent} van {total} succesvol",
       "resendFailed": "Opnieuw verzenden naar {count} falende",
       "statusTitle": "Status per coöperant",
+      "status.shareholder": "Coopérateur",
       "status.sent": "Verstuurd",
       "status.opened": "Geopend",
       "status.downloaded": "Gedownload",

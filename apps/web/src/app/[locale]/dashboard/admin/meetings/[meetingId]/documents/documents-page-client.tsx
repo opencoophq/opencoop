@@ -128,25 +128,35 @@ function DocumentList({
         body: fd,
       });
       onChange();
+    } catch (err: unknown) {
+      alert((err as Error)?.message || 'Er ging iets mis');
     } finally {
       setUploading(false);
     }
   };
 
   const handleRename = async (id: string, displayName: string) => {
-    await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents/${id}`, {
-      method: 'PATCH',
-      body: { displayName },
-    });
-    onChange();
+    try {
+      await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents/${id}`, {
+        method: 'PATCH',
+        body: { displayName },
+      });
+      onChange();
+    } catch (err: unknown) {
+      alert((err as Error)?.message || 'Er ging iets mis');
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm(t('confirmDelete'))) return;
-    await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents/${id}`, {
-      method: 'DELETE',
-    });
-    onChange();
+    try {
+      await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents/${id}`, {
+        method: 'DELETE',
+      });
+      onChange();
+    } catch (err: unknown) {
+      alert((err as Error)?.message || 'Er ging iets mis');
+    }
   };
 
   const handleDragEnd = async (e: DragEndEvent) => {
@@ -314,6 +324,8 @@ function MailDraftSection({
         method: 'POST',
       });
       await fetchDraft();
+    } catch (err: unknown) {
+      alert((err as Error)?.message || 'Er ging iets mis');
     } finally {
       setSending(false);
     }
@@ -415,7 +427,7 @@ function StatusTable({ coopId, meetingId }: { coopId: string; meetingId: string 
         <table className="w-full text-sm">
           <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-3 py-2">Coöperant</th>
+              <th className="px-3 py-2">{t('status.shareholder')}</th>
               <th className="px-3 py-2">{t('status.sent')}</th>
               <th className="px-3 py-2">{t('status.opened')}</th>
               <th className="px-3 py-2">{t('status.downloaded')}</th>
