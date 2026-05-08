@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.34] - 2026-05-08
+
+### Fixed
+- **Status table headers showing as raw keys** (`MEETINGS.DOCUMENTS.STATUS.SENT` etc.). The locale JSON had flat dotted keys but `next-intl` interprets dots as path navigation, so lookup silently failed. All four locale files now use a nested `status` object.
+- **Email shows wrong meeting time** (8:00 instead of 10:00 for a 10:00 Belgian AGM). Server formatted with the container's UTC timezone. Both `toLocaleString` calls in the documents email path now pass `timeZone: 'Europe/Brussels'`.
+- **Sender display name shows "OpenCoop" instead of the coop's name** for any email going through platform SMTP. Cause: `process.env.SMTP_FROM` was used as a complete `From:` override (display name + address), which shadowed the coop's name. Fix parses just the address from the env var and always uses the coop's name as the display name. Affects all platform-SMTP emails on the platform — convocation, dividend notices, magic-link, registration mails, etc. — not just AGM documents. DKIM/SPF alignment is on the address domain, so deliverability is unchanged.
+- **iframe title leaking as a visible badge** in some browsers/extensions on the documents-email preview. Title now uses the localized `previewTitle` key instead of the hardcoded English placeholder.
+
 ## [0.8.33] - 2026-05-08
 
 ### Added
