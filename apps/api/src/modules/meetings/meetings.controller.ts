@@ -426,4 +426,9 @@ export class MeetingsController {
   ) {
     return this.documents.sendEmail(coopId, id, user.id);
   }
+
+  @Get(':id/rsvp/attendance-statuses')
+  listAttendanceStatuses(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.documents.listAttendanceStatuses(coopId, id);
+  }
 }

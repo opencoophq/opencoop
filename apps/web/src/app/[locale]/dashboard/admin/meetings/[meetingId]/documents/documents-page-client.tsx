@@ -21,6 +21,23 @@ type MeetingDoc = {
   order: number;
 };
 
+type EmailDraft = {
+  subject: string | null;
+  intro: string | null;
+  sentAt: string | null;
+  recipientCount: number;
+  sentCount: number;
+  failedCount: number;
+};
+
+type AttendanceStatus = {
+  shareholderName: string;
+  documentsEmailSentAt: string | null;
+  documentsEmailError: string | null;
+  documentsEmailOpenedAt: string | null;
+  documentsDownloadedAt: string | null;
+};
+
 export function DocumentsPageClient() {
   const t = useTranslations('meetings.documents');
   const params = useParams();
@@ -70,7 +87,12 @@ export function DocumentsPageClient() {
         meetingId={meetingId}
         onChange={fetchDocs}
       />
-      {/* MailDraftSection + SendSection + StatusTable added in Task 12 */}
+      <MailDraftSection
+        coopId={selectedCoop.id}
+        meetingId={meetingId}
+        hasDocuments={docs.length > 0}
+      />
+      <StatusTable coopId={selectedCoop.id} meetingId={meetingId} />
     </div>
   );
 }
@@ -244,6 +266,196 @@ function SortableRow({
         {t('delete')}
       </button>
     </li>
+  );
+}
+
+function MailDraftSection({
+  coopId,
+  meetingId,
+  hasDocuments,
+}: {
+  coopId: string;
+  meetingId: string;
+  hasDocuments: boolean;
+}) {
+  const t = useTranslations('meetings.documents');
+  const [data, setData] = useState<EmailDraft | null>(null);
+  const [subject, setSubject] = useState('');
+  const [intro, setIntro] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const fetchDraft = useCallback(async () => {
+    const d = await api<EmailDraft>(
+      `/admin/coops/${coopId}/meetings/${meetingId}/documents-email`,
+    );
+    setData(d);
+    setSubject(d.subject ?? '');
+    setIntro(d.intro ?? '');
+  }, [coopId, meetingId]);
+
+  useEffect(() => {
+    fetchDraft();
+  }, [fetchDraft]);
+
+  const saveDraft = async () => {
+    await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents-email`, {
+      method: 'PATCH',
+      body: JSON.stringify({ subject, intro }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  const send = async () => {
+    const count = data?.recipientCount ?? 0;
+    if (!confirm(t('sendConfirm', { count }))) return;
+    setSending(true);
+    try {
+      await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents-email/send`, {
+        method: 'POST',
+      });
+      await fetchDraft();
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!data) return null;
+
+  const canSend = hasDocuments && data.recipientCount > 0;
+
+  return (
+    <section className="space-y-4 rounded border p-4">
+      <h2 className="text-lg font-medium">{t('subjectLabel')}</h2>
+
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1 block text-sm font-medium">{t('subjectLabel')}</label>
+          <input
+            type="text"
+            value={subject}
+            placeholder={t('subjectPlaceholder')}
+            onChange={(e) => setSubject(e.target.value)}
+            onBlur={saveDraft}
+            className="w-full rounded border px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">{t('introLabel')}</label>
+          <textarea
+            rows={4}
+            value={intro}
+            placeholder={t('introPlaceholder')}
+            onChange={(e) => setIntro(e.target.value)}
+            onBlur={saveDraft}
+            className="w-full rounded border px-3 py-2 text-sm"
+          />
+        </div>
+      </div>
+
+      <p className="text-sm text-muted-foreground">
+        {t('recipientCount', { count: data.recipientCount })}
+      </p>
+
+      {!data.sentAt && (
+        <button
+          onClick={send}
+          disabled={!canSend || sending}
+          className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50"
+        >
+          {sending ? '...' : t('sendCta')}
+        </button>
+      )}
+
+      {data.sentAt && data.failedCount > 0 && (
+        <button
+          onClick={send}
+          disabled={sending}
+          className="rounded bg-destructive px-4 py-2 text-sm text-destructive-foreground disabled:opacity-50"
+        >
+          {sending ? '...' : t('resendFailed', { count: data.failedCount })}
+        </button>
+      )}
+
+      {data.sentAt && (
+        <p className="text-sm text-muted-foreground">
+          {t('sentSummary', {
+            date: new Date(data.sentAt).toLocaleDateString(),
+            sent: data.sentCount,
+            total: data.recipientCount,
+          })}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function StatusTable({ coopId, meetingId }: { coopId: string; meetingId: string }) {
+  const t = useTranslations('meetings.documents');
+  const [rows, setRows] = useState<AttendanceStatus[]>([]);
+
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      const r = await api<AttendanceStatus[]>(
+        `/admin/coops/${coopId}/meetings/${meetingId}/rsvp/attendance-statuses`,
+      ).catch(() => [] as AttendanceStatus[]);
+      setRows(r);
+    };
+    fetchStatuses();
+    const id = setInterval(fetchStatuses, 10_000);
+    return () => clearInterval(id);
+  }, [coopId, meetingId]);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-lg font-medium">{t('statusTitle')}</h2>
+      <div className="overflow-x-auto rounded border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">Coöperant</th>
+              <th className="px-3 py-2">{t('status.sent')}</th>
+              <th className="px-3 py-2">{t('status.opened')}</th>
+              <th className="px-3 py-2">{t('status.downloaded')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {rows.map((row, idx) => (
+              <tr key={idx} className="hover:bg-muted/30">
+                <td className="px-3 py-2">{row.shareholderName}</td>
+                <td className="px-3 py-2">
+                  {row.documentsEmailError ? (
+                    <span className="text-red-600" title={row.documentsEmailError}>
+                      ✗ {row.documentsEmailError}
+                    </span>
+                  ) : row.documentsEmailSentAt ? (
+                    <span className="text-green-600">✓</span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {row.documentsEmailOpenedAt ? (
+                    <span className="text-green-600">✓</span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {row.documentsDownloadedAt ? (
+                    <span className="text-green-600">✓</span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

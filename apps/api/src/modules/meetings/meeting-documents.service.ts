@@ -249,6 +249,26 @@ export class MeetingDocumentsService {
     };
   }
 
+  async listAttendanceStatuses(coopId: string, meetingId: string) {
+    await this.assertMeetingInCoop(coopId, meetingId);
+    const rows = await this.prisma.meetingAttendance.findMany({
+      where: { meetingId },
+      include: {
+        shareholder: { select: { firstName: true, lastName: true, companyName: true } },
+      },
+      orderBy: { id: 'asc' },
+    });
+    return rows.map((r) => ({
+      shareholderName:
+        r.shareholder.companyName ??
+        `${r.shareholder.firstName ?? ''} ${r.shareholder.lastName ?? ''}`.trim(),
+      documentsEmailSentAt: r.documentsEmailSentAt,
+      documentsEmailError: r.documentsEmailError,
+      documentsEmailOpenedAt: r.documentsEmailOpenedAt,
+      documentsDownloadedAt: r.documentsDownloadedAt,
+    }));
+  }
+
   async pixelHit(token: string) {
     const attendance = await this.prisma.meetingAttendance.findUnique({
       where: { rsvpToken: token },

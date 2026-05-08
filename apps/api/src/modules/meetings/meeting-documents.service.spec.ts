@@ -336,6 +336,45 @@ describe('MeetingDocumentsService', () => {
     });
   });
 
+  describe('listAttendanceStatuses', () => {
+    it('returns mapped status rows for a meeting', async () => {
+      prisma.meeting.findUnique.mockResolvedValue({ id: 'm1', coopId: 'c1' });
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        {
+          id: 'a1',
+          documentsEmailSentAt: new Date('2026-05-08T10:00:00Z'),
+          documentsEmailError: null,
+          documentsEmailOpenedAt: new Date('2026-05-08T11:00:00Z'),
+          documentsDownloadedAt: null,
+          shareholder: { firstName: 'Jan', lastName: 'Peeters', companyName: null },
+        },
+        {
+          id: 'a2',
+          documentsEmailSentAt: null,
+          documentsEmailError: 'bounce',
+          documentsEmailOpenedAt: null,
+          documentsDownloadedAt: null,
+          shareholder: { firstName: null, lastName: null, companyName: 'BVBA Zon' },
+        },
+      ]);
+
+      const result = await service.listAttendanceStatuses('c1', 'm1');
+
+      expect(result).toHaveLength(2);
+      expect(result[0].shareholderName).toBe('Jan Peeters');
+      expect(result[0].documentsEmailSentAt).toEqual(new Date('2026-05-08T10:00:00Z'));
+      expect(result[1].shareholderName).toBe('BVBA Zon');
+      expect(result[1].documentsEmailError).toBe('bounce');
+      expect(prisma.meetingAttendance.findMany).toHaveBeenCalledWith({
+        where: { meetingId: 'm1' },
+        include: {
+          shareholder: { select: { firstName: true, lastName: true, companyName: true } },
+        },
+        orderBy: { id: 'asc' },
+      });
+    });
+  });
+
   describe('send', () => {
     const baseMeeting = {
       id: 'm1',
