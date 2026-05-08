@@ -2227,6 +2227,7 @@
       "proxyErrorAmbiguous": "Mehrere Mitglieder mit diesem Namen — bitte kontaktieren Sie Ihre Genossenschaft.",
       "proxyErrorCapReached": "Dieses Mitglied hat die maximale Anzahl an Vollmachten bereits erreicht.",
       "proxyErrorRateLimit": "Zu viele Versuche. Bitte kontaktieren Sie Ihre Genossenschaft.",
+      "proxyErrorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen oder Ihre Genossenschaft kontaktieren.",
       "confirmProxy": "Vollmacht bestätigen",
       "poweredBy": "Bereitgestellt von OpenCoop",
       "thanks": {

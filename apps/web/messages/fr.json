@@ -2227,6 +2227,7 @@
       "proxyErrorAmbiguous": "Plusieurs coopérateurs portent ce nom — contactez votre coopérative.",
       "proxyErrorCapReached": "Ce coopérateur a déjà atteint le nombre maximum de procurations.",
       "proxyErrorRateLimit": "Trop de tentatives. Contactez votre coopérative.",
+      "proxyErrorGeneric": "Une erreur est survenue. Veuillez réessayer ou contacter votre coopérative.",
       "confirmProxy": "Confirmer la procuration",
       "poweredBy": "Propulsé par OpenCoop",
       "thanks": {

@@ -2230,6 +2230,7 @@
       "proxyErrorAmbiguous": "Multiple shareholders with that name — please contact your cooperative.",
       "proxyErrorCapReached": "This shareholder has already reached the maximum number of proxies.",
       "proxyErrorRateLimit": "Too many attempts. Please contact your cooperative.",
+      "proxyErrorGeneric": "Something went wrong. Please try again or contact your cooperative.",
       "confirmProxy": "Confirm proxy",
       "poweredBy": "Powered by OpenCoop",
       "thanks": {

@@ -2230,6 +2230,7 @@
       "proxyErrorAmbiguous": "Meerdere vennoten met die naam — neem contact op met uw coöperatie.",
       "proxyErrorCapReached": "Deze vennoot heeft het maximumaantal volmachten al bereikt.",
       "proxyErrorRateLimit": "Te veel pogingen. Neem contact op met uw coöperatie.",
+      "proxyErrorGeneric": "Er ging iets mis. Probeer het opnieuw of neem contact op met uw coöperatie.",
       "confirmProxy": "Bevestig volmacht",
       "poweredBy": "Mogelijk gemaakt door OpenCoop",
       "thanks": {
