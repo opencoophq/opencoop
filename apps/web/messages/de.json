@@ -2292,8 +2292,8 @@
     "documents": {
       "title": "Documenten delen",
       "description": "Stuur jaarverslag, jaarrekening en andere bijlagen naar coöperanten in aanloop naar de algemene vergadering.",
-      "uploadCta": "PDF uploaden",
-      "dragDropHint": "Sleep een PDF hier of klik om te uploaden",
+      "uploadCta": "Bestand uploaden",
+      "dragDropHint": "Sleep PDFs of Excel-bestanden hier of klik om te uploaden",
       "rename": "Hernoemen",
       "delete": "Verwijderen",
       "confirmDelete": "Document verwijderen? Reeds verstuurde links worden ongeldig.",

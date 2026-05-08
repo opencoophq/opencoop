@@ -2295,8 +2295,8 @@
     "documents": {
       "title": "Share documents",
       "description": "Send the annual report, financial statements and other attachments to members ahead of the AGM.",
-      "uploadCta": "Upload PDF",
-      "dragDropHint": "Drop a PDF here or click to upload",
+      "uploadCta": "Upload file",
+      "dragDropHint": "Drop PDFs or Excel files here or click to upload",
       "rename": "Rename",
       "delete": "Delete",
       "confirmDelete": "Delete document? Already-sent links will stop working.",
