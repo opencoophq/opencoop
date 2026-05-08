@@ -342,6 +342,7 @@ export class MeetingDocumentsService {
       meetingScheduledAt: meeting.scheduledAt.toLocaleString('nl-BE', {
         dateStyle: 'long',
         timeStyle: 'short',
+        timeZone: 'Europe/Brussels',
       }),
       rsvpUrl: `${baseUrl}/meetings/rsvp/${sampleToken}`,
       pixelUrl: `${apiBase}/public/meetings/rsvp/${sampleToken}/pixel.gif`,
@@ -403,6 +404,7 @@ export class MeetingDocumentsService {
         meetingScheduledAt: meeting.scheduledAt.toLocaleString('nl-BE', {
           dateStyle: 'long',
           timeStyle: 'short',
+          timeZone: 'Europe/Brussels',
         }),
         rsvpUrl: `${baseUrl}/meetings/rsvp/${recipient.rsvpToken}`,
         pixelUrl: `${apiBase}/public/meetings/rsvp/${recipient.rsvpToken}/pixel.gif`,

@@ -157,7 +157,12 @@ export class EmailProcessor {
     const port = parseInt(process.env.SMTP_PORT || '587', 10);
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
-    const from = process.env.SMTP_FROM || `${coopName} <noreply@opencoop.be>`;
+
+    // Always use coop name as display name; extract address from SMTP_FROM
+    const envFrom = process.env.SMTP_FROM;
+    const addressMatch = envFrom?.match(/<([^>]+)>/);
+    const fromAddress = addressMatch ? addressMatch[1] : envFrom?.trim() || 'noreply@opencoop.be';
+    const from = `${coopName} <${fromAddress}>`;
 
     if (!host) {
       throw new Error('Platform SMTP not configured');

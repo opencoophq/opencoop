@@ -474,7 +474,7 @@ function MailDraftSection({
             </span>
           </div>
           <iframe
-            title="email-preview"
+            title={t('previewTitle')}
             srcDoc={`<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:system-ui,-apple-system,sans-serif;padding:16px;color:#111}</style></head><body>${preview.html}</body></html>`}
             className="w-full h-96 rounded border bg-white"
             sandbox=""
