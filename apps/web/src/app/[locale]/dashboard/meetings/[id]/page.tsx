@@ -360,7 +360,7 @@ export default function ShareholderMeetingDetailPage() {
                                     ? 'CapReached'
                                     : proxyError === 'rate_limited'
                                       ? 'RateLimit'
-                                      : 'NotFound'
+                                      : 'Generic'
                             }` as 'meetings.publicRsvp.proxyErrorNotFound',
                           )}
                         </AlertDescription>

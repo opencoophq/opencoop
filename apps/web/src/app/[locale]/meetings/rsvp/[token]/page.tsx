@@ -456,7 +456,7 @@ export default function PublicRsvpPage() {
                                     ? 'CapReached'
                                     : proxyError === 'rate_limited'
                                       ? 'RateLimit'
-                                      : 'NotFound'
+                                      : 'Generic'
                             }` as 'meetings.publicRsvp.proxyErrorNotFound',
                           )}
                         </AlertDescription>
