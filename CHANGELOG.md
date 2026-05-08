@@ -2,6 +2,26 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.30] - 2026-05-08
+
+### Changed
+- **Proxy assignment now uses typed-name resolution instead of a member-list dropdown.** Both the public RSVP page and the logged-in dashboard meeting page replace the searchable list of all coop shareholders with two text inputs (first name + last name) and a confirmation card. The server fuzzy-matches the typed name against active shareholders (case + diacritic insensitive, Levenshtein-bounded with a runner-up gap rule) and either returns the single match for confirmation, reports `not_found`/`ambiguous`, or rejects the attempt if the candidate has already reached `maxProxiesPerPerson`.
+
+### Fixed
+- **GDPR: RSVP token holders no longer receive the full member directory.** The previous flow returned every active shareholder's first name, last name, and member number to anyone holding a valid RSVP token (one per coop member). The list endpoint is removed; the new resolver only ever surfaces a single name — and only one the requester typed themselves.
+- **iPad: "Ik geef volmacht" no longer appears unresponsive.** Tapping the proxy CTA mounts a small input form rather than rendering 1000+ list items inside a scrollable card (which stalled iPad Safari). The page also auto-scrolls to the new section.
+- **Generic proxy errors surface their own message.** Server errors and unparseable responses no longer fall through to the "no shareholder found with that name" copy.
+
+### Security
+- **Per-token rate limit on proxy resolution.** New `MeetingAttendance.proxyResolveAttempts` counter caps each RSVP token at 20 lifetime resolve attempts to bound enumeration risk. The increment is atomic via Prisma's `{ increment: 1 }` op so concurrent calls can't bypass it.
+
+### API
+- New: `POST /public/meetings/rsvp/:token/proxy/resolve` with `{ firstName, lastName }` → `{ delegateShareholderId, displayName }` on success, or `{ code }` (`not_found` | `ambiguous` | `cap_reached` | `rate_limited`) on failure.
+- Removed: `GET /public/meetings/rsvp/:token/eligible-delegates`.
+
+### Migration notes
+- Adds nullable-default column `proxyResolveAttempts INTEGER NOT NULL DEFAULT 0` on `meeting_attendances`. No backfill required; existing rows pick up the default.
+
 ## [0.8.29] - 2026-05-07
 
 ### Added
