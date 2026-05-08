@@ -103,7 +103,7 @@ export class EmailProcessor {
         } else if (coop.emailProvider === 'smtp' && coop.smtpHost) {
           await this.sendViaSmtp(coop, to, subject, html, attachments);
         } else {
-          await this.sendViaPlatformSmtp(coop.name, to, subject, html, attachments);
+          await this.sendViaPlatformSmtp(coop.name, coop.replyTo, to, subject, html, attachments);
         }
 
         // Update email log
@@ -148,6 +148,7 @@ export class EmailProcessor {
 
   private async sendViaPlatformSmtp(
     coopName: string,
+    replyTo: string | null,
     to: string,
     subject: string,
     html: string,
@@ -177,6 +178,7 @@ export class EmailProcessor {
 
     await transporter.sendMail({
       from,
+      replyTo: replyTo ?? undefined,
       to,
       subject,
       html,
@@ -185,7 +187,7 @@ export class EmailProcessor {
   }
 
   private async sendViaSmtp(
-    coop: { smtpHost: string | null; smtpPort: number | null; smtpUser: string | null; smtpPass: string | null; smtpFrom: string | null; name: string },
+    coop: { smtpHost: string | null; smtpPort: number | null; smtpUser: string | null; smtpPass: string | null; smtpFrom: string | null; replyTo: string | null; name: string },
     to: string,
     subject: string,
     html: string,
@@ -206,6 +208,7 @@ export class EmailProcessor {
 
     await transporter.sendMail({
       from: coop.smtpFrom || `${coop.name} <noreply@opencoop.be>`,
+      replyTo: coop.replyTo ?? undefined,
       to,
       subject,
       html,
@@ -219,6 +222,7 @@ export class EmailProcessor {
       graphClientSecret: string | null;
       graphTenantId: string | null;
       graphFromEmail: string | null;
+      replyTo: string | null;
       name: string;
     },
     to: string,
@@ -254,6 +258,8 @@ export class EmailProcessor {
           emailAddress: { address: to },
         },
       ],
+      // replyTo routes member replies to the coop's preferred address
+      ...(coop.replyTo ? { replyTo: [{ emailAddress: { address: coop.replyTo } }] } : {}),
     };
 
     // Add attachments if present
