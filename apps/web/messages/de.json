@@ -2288,6 +2288,33 @@
       "save": "Änderungen speichern",
       "saving": "Speichern...",
       "notFound": "Versammlung nicht gefunden"
+    },
+    "documents": {
+      "title": "Documenten delen",
+      "description": "Stuur jaarverslag, jaarrekening en andere bijlagen naar coöperanten in aanloop naar de algemene vergadering.",
+      "uploadCta": "PDF uploaden",
+      "dragDropHint": "Sleep een PDF hier of klik om te uploaden",
+      "rename": "Hernoemen",
+      "delete": "Verwijderen",
+      "confirmDelete": "Document verwijderen? Reeds verstuurde links worden ongeldig.",
+      "subjectLabel": "Onderwerp",
+      "subjectPlaceholder": "Documenten voor onze AV",
+      "introLabel": "Intro",
+      "introPlaceholder": "Beste coöperant,\n\nIn aanloop naar onze algemene vergadering...",
+      "recipientCount": "Naar {count} coöperanten",
+      "previewCta": "Preview (testmail naar mij)",
+      "sendCta": "Versturen",
+      "sendConfirm": "Je staat op het punt {count} mails te versturen. Doorgaan?",
+      "sentSummary": "Verstuurd op {date} — {sent} van {total} succesvol",
+      "resendFailed": "Opnieuw verzenden naar {count} falende",
+      "statusTitle": "Status per coöperant",
+      "status.sent": "Verstuurd",
+      "status.opened": "Geopend",
+      "status.downloaded": "Gedownload",
+      "status.failed": "Gefaald",
+      "notReady": "Verstuur eerst de convocatie voor je documenten kunt delen.",
+      "defaultSubject": "Documenten voor de algemene vergadering van {coopName} op {date}",
+      "defaultIntro": "Beste coöperant,\n\nIn aanloop naar onze algemene vergadering vind je hieronder de relevante documenten ter inzage. Gelieve deze door te nemen voor de vergadering.\n\nMet vriendelijke groeten,\nHet bestuur"
     }
   },
   "emancipation": {
