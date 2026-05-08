@@ -221,7 +221,10 @@ export class MeetingPdfService {
       where: { id: meetingId },
       include: {
         coop: { select: { name: true, logoUrl: true } },
-        agendaItems: { orderBy: { order: 'asc' } },
+        agendaItems: {
+          orderBy: { order: 'asc' },
+          include: { resolution: true },
+        },
         attendances: { where: { rsvpStatus: { in: ['ATTENDING', 'PROXY'] as any } } },
       },
     });
@@ -237,12 +240,15 @@ export class MeetingPdfService {
       resolvedQuantity = Math.max(3, Math.ceil(rsvpCount * 1.1));
     }
 
+    // An item is votable if it either has type RESOLUTION or has a Resolution
+    // attached. The latter covers items created with default type INFORMATIONAL
+    // that admin later converted to a vote by adding a resolution.
     const resolutions = meeting.agendaItems
-      .filter((a) => a.type === 'RESOLUTION')
+      .filter((a) => a.type === 'RESOLUTION' || a.resolution != null)
       .map((a) => ({ order: a.order, title: a.title }));
 
     if (resolutions.length === 0) {
-      throw new BadRequestException('Meeting has no RESOLUTION agenda items');
+      throw new BadRequestException('Meeting has no agenda items with resolutions to vote on');
     }
 
     const meetingScheduledAt = meeting.scheduledAt.toLocaleString('nl-BE', {
