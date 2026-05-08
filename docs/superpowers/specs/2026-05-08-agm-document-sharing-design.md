@@ -128,10 +128,14 @@ Mailing draft + send:
                                         - optional body: { sendTestTo?: 'self' }
                                           → if 'self', also sends to admin's own email
   POST   /documents-email/send        sendDocumentsEmail
-                                        - body: { mode: 'all' | 'failed-only' }
-                                        - enqueues Bull jobs, returns 202
+                                        - first send: enqueues to all attendances
+                                        - if already sent: enqueues only to attendances with
+                                          documentsEmailError != null (retry failed)
+                                        - returns 202
                                         - reject 400 if meeting.status !== CONVOKED
                                         - reject 400 if no documents
+                                        - reject 400 if all attendances already have sentAt and no errors
+                                          (nothing to do)
 ```
 
 ### Public endpoints (token-auth, NO JWT)
@@ -162,21 +166,30 @@ GET /public/meetings/rsvp/:token/pixel.gif            trackOpen
 **`uploadDocument(coopId, meetingId, file, displayName?, userId)`**
 - Validate: `file.mimetype === 'application/pdf'`, `file.size <= 10MB`.
 - Sanitize filename via `path.basename`; replace bad chars.
-- Persist to `<UPLOAD_DIR>/meeting-documents/<meetingId>/<randomUUID>.pdf`.
-- Insert `MeetingDocument` with `order = max(order) + 1`.
-- Return created record.
+- Resolve effective `displayName`: explicit param OR `file.originalname`.
+- **Replace-in-place check**: if a `MeetingDocument` exists for this meeting with the same `displayName`:
+  - Delete its old file from disk (best-effort; log warning on ENOENT).
+  - Persist new file to `<UPLOAD_DIR>/meeting-documents/<meetingId>/<randomUUID>.pdf`.
+  - Update existing row: new `fileUrl`, `fileSize`, `uploadedAt`, `uploadedBy`. Keep `id`, `order`.
+  - Return updated record.
+- Otherwise (new document):
+  - Persist to `<UPLOAD_DIR>/meeting-documents/<meetingId>/<randomUUID>.pdf`.
+  - Insert `MeetingDocument` with `order = max(order) + 1`.
+  - Return created record.
 
-**`sendDocumentsEmail(coopId, meetingId, mode: 'all' | 'failed-only', adminUserId)`**
+**`sendDocumentsEmail(coopId, meetingId, adminUserId)`**
 - Validate: `meeting.status === CONVOKED`. Reject otherwise (no RSVP tokens yet).
 - Validate: at least 1 document exists. Reject otherwise.
 - Concurrency lock: reject if `documentsEmailSentAt > now - 1 minute` (in-flight protection).
 - Determine recipient set:
-  - `'all'`: every `MeetingAttendance` for the meeting → reset `sentAt/error/openedAt/downloadedAt` for these.
-  - `'failed-only'`: attendances where `documentsEmailError IS NOT NULL` → reset only their `error/sentAt`.
-- For each recipient, render HTML via `EmailProcessor.renderTemplate('agenda-documents', ...)` and enqueue Bull job.
+  - **First send** (`meeting.documentsEmailSentAt == null`): every `MeetingAttendance` for the meeting.
+  - **Retry** (`meeting.documentsEmailSentAt != null`): only attendances where `documentsEmailError IS NOT NULL`. If none, reject 400 ("nothing to retry").
+- Tracking fields are NEVER reset. Already-sent recipients keep their `sentAt/openedAt/downloadedAt`.
+- For each retry recipient: clear `documentsEmailError = null` before enqueueing.
+- For each recipient in the set, render HTML via `EmailProcessor.renderTemplate('agenda-documents', ...)` and enqueue Bull job.
 - On Bull job success: `attendance.documentsEmailSentAt = now()`.
 - On Bull job final failure: `attendance.documentsEmailError = err.message`.
-- Set `meeting.documentsEmailSentAt = now()`.
+- Set `meeting.documentsEmailSentAt = now()` after enqueue.
 - Return: `{ enqueued: N }`.
 
 ### Email template
@@ -268,7 +281,6 @@ Linked from the meeting overview "next-action checklist" as `"Documenten naar co
 │  [ Versturen → ]                                        │
 │                                                         │
 │  ℹ️ Verstuurd op 6 mei 2026 om 14:23 — 45/47 succesvol  │
-│  [ Opnieuw verzenden naar iedereen ]                    │
 │  [ Opnieuw verzenden naar 2 falende ]                   │
 ├─────────────────────────────────────────────────────────┤
 │  📊 Status                                              │
@@ -286,7 +298,7 @@ Linked from the meeting overview "next-action checklist" as `"Documenten naar co
 - **Inline rename**: click filename → input → blur saves.
 - **Preview**: opens dialog with rendered HTML mail in an iframe; "Verstuur testmail naar mijzelf" button uses `@CurrentUser()` email.
 - **Send button**: disabled if `documents.length === 0` OR `meeting.status !== CONVOKED`. Confirmation dialog: "Je gaat 47 mails versturen — weet je het zeker?".
-- **Re-send buttons**: appear after first send. Two distinct buttons ("Opnieuw verzenden naar iedereen" vs "Opnieuw verzenden naar N falende"). Each opens own confirm dialog.
+- **Re-send button**: appears after first send only if there are failures. Single button "Opnieuw verzenden naar N falende". Opens confirm dialog. Hidden when all sent successfully (no remaining work).
 - **Status table**: client-side polling via React Query (10s interval) until all statuses settled, then stops.
 
 ### i18n keys (new, under `meetings.documents.*` in all 4 locale files)
@@ -307,7 +319,6 @@ documents.previewCta
 documents.sendCta
 documents.sendConfirm
 documents.sentSummary
-documents.resendAll
 documents.resendFailed
 documents.statusTitle
 documents.status.sent
@@ -367,7 +378,7 @@ Templates render `<img src="${pixelUrl}" width="1" height="1" alt="" style="disp
 | Admin sends for `status=DRAFT` | Backend rejects 400 — no RSVP tokens exist |
 | Cooperant downloads after AV date | Works until `scheduledAt + 30 days`; after that → "link verlopen" page |
 | Admin deletes document after send | Document gone, links in already-sent mails return 404. UI shows warning before delete: "Documentlinks in al verzonden mails worden ongeldig." |
-| Admin re-uploads same filename | Both coexist (different ids/fileUrls). UI shows both. |
+| Admin re-uploads with same `displayName` | Replace-in-place: same `MeetingDocument.id`, file overwritten on disk, `fileSize`/`uploadedAt` updated. Already-sent download links continue working but serve the new content. |
 | 2 admins send simultaneously | Concurrency lock: reject if `documentsEmailSentAt > now - 1min`. Frontend shows "iemand anders is bezig met versturen". Lock is conservative for Bronsgroen-scale (~50 jobs flush in seconds); larger coops may need queue-introspection later. |
 | SMTP down during send | Bull retries 3x → on exhaustion: `documentsEmailError` set. Failure visible in UI status table. |
 | Cooperant has no email | `attendance.email == null` → mark as `documentsEmailError = 'no email address'`. Shown in failure rows. |
@@ -382,7 +393,8 @@ Templates render `<img src="${pixelUrl}" width="1" height="1" alt="" style="disp
 ### Unit tests
 1. `MeetingDocumentsService.uploadDocument` — PDF mimetype, size limit, filename sanitization, disk write to correct path.
 2. `MeetingDocumentsService.sendDocumentsEmail` — happy path, partial SMTP failure, reject on `status !== CONVOKED`, reject on no documents, concurrency lock.
-3. `MeetingDocumentsService.sendDocumentsEmail` — mode='all' resets all fields; mode='failed-only' only touches failed rows.
+3. `MeetingDocumentsService.sendDocumentsEmail` — first send enqueues all; retry enqueues only failed; tracking fields never reset; reject when no failures to retry.
+3b. `MeetingDocumentsService.uploadDocument` — re-upload with matching `displayName` replaces in-place (same `id`, file overwritten on disk, no orphan).
 4. Public download endpoint — valid token streams file; expiry checked against `scheduledAt + 30d`; cross-meeting token returns 403.
 5. Pixel endpoint — first hit sets `openedAt`, second hit no-op (idempotent), invalid token still returns valid GIF without DB write.
 
