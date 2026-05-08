@@ -7,16 +7,19 @@ import {
   Body,
   Header,
   Res,
+  Req,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { RsvpService } from './rsvp.service';
 import { IcsService } from './ics.service';
+import { MeetingDocumentsService } from './meeting-documents.service';
 import { RsvpUpdateDto } from './dto/rsvp-update.dto';
 import { ProxyResolveDto } from './dto/proxy-resolve.dto';
 import * as fs from 'fs';
@@ -31,7 +34,11 @@ const VOLMACHT_ALLOWED = new Set<string>(['application/pdf', 'image/png', 'image
 @Public()
 @Controller('public/meetings/rsvp')
 export class MeetingRsvpController {
-  constructor(private rsvp: RsvpService, private ics: IcsService) {}
+  constructor(
+    private rsvp: RsvpService,
+    private ics: IcsService,
+    private documents: MeetingDocumentsService,
+  ) {}
 
   @Get(':token')
   async getDetails(@Param('token') token: string) {
@@ -129,5 +136,37 @@ export class MeetingRsvpController {
 
     const fileUrl = `/uploads/volmachten/${att.meetingId}/${storedName}`;
     return this.rsvp.attachSignedVolmacht(token, fileUrl);
+  }
+
+  @Get(':token/documents/:docId')
+  async downloadDocument(
+    @Param('token') token: string,
+    @Param('docId') docId: string,
+    @Res() res: Response,
+    @Req() _req: Request,
+  ) {
+    const result = await this.documents.downloadByToken(token, docId);
+    if (!fs.existsSync(result.absolutePath)) {
+      throw new NotFoundException('File missing on disk');
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(result.fileName)}"`,
+    );
+    fs.createReadStream(result.absolutePath).pipe(res);
+  }
+
+  @Get(':token/pixel.gif')
+  async pixel(@Param('token') token: string, @Res() res: Response) {
+    await this.documents.pixelHit(token);
+    // 1×1 transparent GIF
+    const gif = Buffer.from(
+      'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+      'base64',
+    );
+    res.setHeader('Content-Type', 'image/gif');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(gif);
   }
 }

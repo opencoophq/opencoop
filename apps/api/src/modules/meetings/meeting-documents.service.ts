@@ -215,6 +215,53 @@ export class MeetingDocumentsService {
     return { enqueued: recipients.length };
   }
 
+  async downloadByToken(token: string, docId: string) {
+    const attendance = await this.prisma.meetingAttendance.findUnique({
+      where: { rsvpToken: token },
+      include: { meeting: true },
+    });
+    if (!attendance) throw new NotFoundException('Token not found');
+
+    const doc = await this.prisma.meetingDocument.findUnique({ where: { id: docId } });
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.meetingId !== attendance.meetingId) {
+      throw new ForbiddenException('Document not part of this meeting');
+    }
+
+    const expiry = new Date(attendance.meeting.scheduledAt.getTime() + 30 * 86_400_000);
+    if (Date.now() > expiry.getTime()) {
+      throw new ForbiddenException('Download window expired');
+    }
+
+    if (!attendance.documentsDownloadedAt) {
+      await this.prisma.meetingAttendance.update({
+        where: { id: attendance.id },
+        data: { documentsDownloadedAt: new Date() },
+      });
+    }
+
+    return {
+      absolutePath: path.join(uploadDir(), doc.fileUrl),
+      fileName: doc.fileName,
+      shareholderId: attendance.shareholderId,
+      meetingId: attendance.meetingId,
+      coopId: attendance.meeting.coopId,
+    };
+  }
+
+  async pixelHit(token: string) {
+    const attendance = await this.prisma.meetingAttendance.findUnique({
+      where: { rsvpToken: token },
+    });
+    // Always succeed silently for the GIF response; only update DB if valid + first hit.
+    if (attendance && !attendance.documentsEmailOpenedAt) {
+      await this.prisma.meetingAttendance.update({
+        where: { id: attendance.id },
+        data: { documentsEmailOpenedAt: new Date() },
+      }).catch(() => undefined);
+    }
+  }
+
   protected async enqueueDocumentsEmailJob(
     meeting: {
       id: string;

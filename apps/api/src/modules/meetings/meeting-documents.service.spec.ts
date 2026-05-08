@@ -16,12 +16,19 @@ describe('MeetingDocumentsService', () => {
     meetingDocument: {
       findFirst: jest.Mock;
       findMany: jest.Mock;
+      findUnique: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
       delete: jest.Mock;
       aggregate: jest.Mock;
     };
-    meetingAttendance: { count: jest.Mock; findMany: jest.Mock; updateMany: jest.Mock };
+    meetingAttendance: {
+      count: jest.Mock;
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
+      updateMany: jest.Mock;
+    };
     shareholder: { findUnique: jest.Mock };
   };
   let tmpUploadDir: string;
@@ -46,12 +53,19 @@ describe('MeetingDocumentsService', () => {
       meetingDocument: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
+        findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
         aggregate: jest.fn(),
       },
-      meetingAttendance: { count: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+      meetingAttendance: {
+        count: jest.fn(),
+        findMany: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn(),
+      },
       shareholder: { findUnique: jest.fn() },
     };
     const moduleRef = await Test.createTestingModule({
@@ -241,6 +255,84 @@ describe('MeetingDocumentsService', () => {
         where: { id: 'm1' },
         data: { documentsSubject: 'New', documentsIntro: 'Body' },
       });
+    });
+  });
+
+  describe('downloadByToken', () => {
+    const meetingFuture = {
+      id: 'm1',
+      coopId: 'c1',
+      scheduledAt: new Date(Date.now() + 86_400_000), // tomorrow
+    };
+
+    beforeEach(() => {
+      prisma.meetingAttendance = {
+        ...prisma.meetingAttendance,
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      } as any;
+      prisma.meetingDocument.findUnique = jest.fn();
+    });
+
+    it('rejects unknown token', async () => {
+      prisma.meetingAttendance.findUnique.mockResolvedValue(null);
+      await expect(service.downloadByToken('badtoken', 'd1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('rejects when document is not part of token meeting', async () => {
+      prisma.meetingAttendance.findUnique.mockResolvedValue({
+        id: 'a1', meetingId: 'm1', shareholderId: 's1', meeting: meetingFuture,
+      });
+      prisma.meetingDocument.findUnique.mockResolvedValue({ id: 'd1', meetingId: 'mOTHER', fileUrl: 'x.pdf', fileName: 'x.pdf' });
+      await expect(service.downloadByToken('t1', 'd1')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('rejects when past 30-day window', async () => {
+      const longAgo = { ...meetingFuture, scheduledAt: new Date(Date.now() - 31 * 86_400_000) };
+      prisma.meetingAttendance.findUnique.mockResolvedValue({
+        id: 'a1', meetingId: 'm1', shareholderId: 's1', meeting: longAgo,
+      });
+      prisma.meetingDocument.findUnique.mockResolvedValue({ id: 'd1', meetingId: 'm1', fileUrl: 'x.pdf', fileName: 'x.pdf' });
+      await expect(service.downloadByToken('t1', 'd1')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('returns file metadata and sets downloadedAt on first download', async () => {
+      const dir = path.join(tmpUploadDir, 'meeting-documents', 'm1');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'x.pdf'), 'PDF');
+
+      prisma.meetingAttendance.findUnique.mockResolvedValue({
+        id: 'a1', meetingId: 'm1', shareholderId: 's1', documentsDownloadedAt: null, meeting: meetingFuture,
+      });
+      prisma.meetingDocument.findUnique.mockResolvedValue({
+        id: 'd1', meetingId: 'm1', fileUrl: 'meeting-documents/m1/x.pdf', fileName: 'Jaarverslag 2025.pdf',
+      });
+
+      const result = await service.downloadByToken('t1', 'd1');
+
+      expect(result.absolutePath).toBe(path.join(tmpUploadDir, 'meeting-documents/m1/x.pdf'));
+      expect(result.fileName).toBe('Jaarverslag 2025.pdf');
+      expect(prisma.meetingAttendance.update).toHaveBeenCalledWith({
+        where: { id: 'a1' },
+        data: { documentsDownloadedAt: expect.any(Date) },
+      });
+    });
+
+    it('does not overwrite downloadedAt on second download', async () => {
+      fs.mkdirSync(path.join(tmpUploadDir, 'meeting-documents/m1'), { recursive: true });
+      fs.writeFileSync(path.join(tmpUploadDir, 'meeting-documents/m1/x.pdf'), 'PDF');
+
+      const earlier = new Date('2026-05-06T08:00:00Z');
+      prisma.meetingAttendance.findUnique.mockResolvedValue({
+        id: 'a1', meetingId: 'm1', shareholderId: 's1', documentsDownloadedAt: earlier, meeting: meetingFuture,
+      });
+      prisma.meetingDocument.findUnique.mockResolvedValue({
+        id: 'd1', meetingId: 'm1', fileUrl: 'meeting-documents/m1/x.pdf', fileName: 'x.pdf',
+      });
+
+      await service.downloadByToken('t1', 'd1');
+
+      expect(prisma.meetingAttendance.update).not.toHaveBeenCalled();
     });
   });
 
