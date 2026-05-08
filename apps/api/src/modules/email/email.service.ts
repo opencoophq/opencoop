@@ -447,7 +447,7 @@ export class EmailService {
       to: params.to,
       subject: params.subject,
       templateKey: 'agenda-documents',
-      templateData: { subject: params.subject, ...params.templateData },
+      templateData: params.templateData,
       meta: { kind: 'documents-email', attendanceId: params.attendanceId },
     });
   }

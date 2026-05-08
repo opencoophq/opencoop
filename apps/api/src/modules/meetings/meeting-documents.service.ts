@@ -229,7 +229,7 @@ export class MeetingDocumentsService {
   ): Promise<void> {
     const shareholder = await this.prisma.shareholder.findUnique({
       where: { id: recipient.shareholderId },
-      select: { email: true, firstName: true },
+      select: { email: true },
     });
 
     if (!shareholder?.email) {

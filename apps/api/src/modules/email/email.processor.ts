@@ -1142,7 +1142,6 @@ export class EmailProcessor {
         ` : ''}
       `,
       'agenda-documents': (d, _cn) => {
-        const subject = d.subject as string;
         const introHtml = d.introHtml as string;
         const documents = d.documents as Array<{ fileName: string; downloadUrl: string }>;
         const meetingTitle = d.meetingTitle as string;
@@ -1150,30 +1149,31 @@ export class EmailProcessor {
         const rsvpUrl = d.rsvpUrl as string;
         const pixelUrl = d.pixelUrl as string;
 
-        void subject; // included in outer envelope; not repeated in body
+        const esc = (s: string) =>
+          s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
         const docsList = documents
           .map(
             (doc) => `
         <p style="margin: 8px 0;">
-          <a href="${doc.downloadUrl}" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
-            ${doc.fileName}
+          <a href="${esc(doc.downloadUrl)}" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            ${esc(doc.fileName)}
           </a>
         </p>`,
           )
           .join('\n');
 
         return `
-    <h2>${meetingTitle}</h2>
-    <p>${meetingScheduledAt}</p>
+    <h2>${esc(meetingTitle)}</h2>
+    <p>${esc(meetingScheduledAt)}</p>
     ${introHtml}
     <h3>Documenten</h3>
     ${docsList}
     <hr style="margin:24px 0;border:none;border-top:1px solid #e5e5e5;" />
     <p style="font-size:14px;color:#666;">
-      Heb je je aanwezigheid nog niet bevestigd? <a href="${rsvpUrl}">Bevestig hier</a>.
+      Heb je je aanwezigheid nog niet bevestigd? <a href="${esc(rsvpUrl)}">Bevestig hier</a>.
     </p>
-    <img src="${pixelUrl}" width="1" height="1" alt="" style="display:block" />
+    <img src="${esc(pixelUrl)}" width="1" height="1" alt="" style="display:block" />
   `;
       },
     };
