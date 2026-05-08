@@ -16,6 +16,7 @@ import { KioskService } from './kiosk.service';
 import { AttendanceService } from './attendance.service';
 import { MinutesService } from './minutes.service';
 import { MeetingPdfService } from './pdf.service';
+import { MeetingDocumentsService } from './meeting-documents.service';
 import { ReminderProcessor } from './reminder.processor';
 import { ReminderScheduler } from './reminder.scheduler';
 
@@ -42,6 +43,7 @@ import { ReminderScheduler } from './reminder.scheduler';
     AttendanceService,
     MinutesService,
     MeetingPdfService,
+    MeetingDocumentsService,
     ReminderProcessor,
     ReminderScheduler,
   ],
@@ -57,6 +59,7 @@ import { ReminderScheduler } from './reminder.scheduler';
     AttendanceService,
     MinutesService,
     MeetingPdfService,
+    MeetingDocumentsService,
   ],
 })
 export class MeetingsModule {}

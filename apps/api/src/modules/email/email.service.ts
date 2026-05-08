@@ -417,6 +417,41 @@ export class EmailService {
     });
   }
 
+  async queueDocumentsEmail(params: {
+    coopId: string;
+    to: string;
+    subject: string;
+    templateData: {
+      introHtml: string;
+      documents: Array<{ fileName: string; downloadUrl: string }>;
+      meetingTitle: string;
+      meetingScheduledAt: string;
+      rsvpUrl: string;
+      pixelUrl: string;
+    };
+    attendanceId: string;
+  }): Promise<void> {
+    const emailLog = await this.prisma.emailLog.create({
+      data: {
+        coopId: params.coopId,
+        recipientEmail: params.to,
+        subject: params.subject,
+        templateKey: 'agenda-documents',
+        status: 'QUEUED',
+      },
+    });
+
+    await this.emailQueue.add('send', {
+      emailLogId: emailLog.id,
+      coopId: params.coopId,
+      to: params.to,
+      subject: params.subject,
+      templateKey: 'agenda-documents',
+      templateData: params.templateData,
+      meta: { kind: 'documents-email', attendanceId: params.attendanceId },
+    });
+  }
+
   async sendGiftCertificate(
     coopId: string,
     to: string,

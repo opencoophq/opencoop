@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CoopGuard } from '../../common/guards/coop.guard';
@@ -32,6 +32,7 @@ import { KioskService } from './kiosk.service';
 import { AttendanceService } from './attendance.service';
 import { MinutesService } from './minutes.service';
 import { MeetingPdfService } from './pdf.service';
+import { MeetingDocumentsService } from './meeting-documents.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
@@ -42,6 +43,9 @@ import { UpdateAgendaItemDto } from './dto/update-agenda-item.dto';
 import { CreateProxyDto } from './dto/create-proxy.dto';
 import { BulkRecordVotesDto } from './dto/record-vote.dto';
 import { SendConvocationDto } from './dto/send-convocation.dto';
+import { UploadMeetingDocumentDto } from './dto/upload-meeting-document.dto';
+import { UpdateMeetingDocumentDto } from './dto/update-meeting-document.dto';
+import { UpdateDocumentsEmailDraftDto } from './dto/update-documents-email-draft.dto';
 
 @ApiTags('Meetings')
 @ApiBearerAuth()
@@ -60,6 +64,7 @@ export class MeetingsController {
     private attendance: AttendanceService,
     private minutes: MinutesService,
     private pdf: MeetingPdfService,
+    private documents: MeetingDocumentsService,
   ) {}
 
   @Post()
@@ -350,5 +355,80 @@ export class MeetingsController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="minutes.pdf"');
     res.send(buf);
+  }
+
+  @Post(':id/documents')
+  @ApiOperation({ summary: 'Upload a meeting document (PDF)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        displayName: { type: 'string' },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  uploadDocument(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: UploadMeetingDocumentDto,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.documents.upload(coopId, id, file, body.displayName, user.id);
+  }
+
+  @Get(':id/documents')
+  listDocuments(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.documents.list(coopId, id);
+  }
+
+  @Patch(':id/documents/:docId')
+  updateDocument(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Param('docId') docId: string,
+    @Body() body: UpdateMeetingDocumentDto,
+  ) {
+    return this.documents.update(coopId, id, docId, body);
+  }
+
+  @Delete(':id/documents/:docId')
+  removeDocument(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Param('docId') docId: string,
+  ) {
+    return this.documents.remove(coopId, id, docId);
+  }
+
+  @Get(':id/documents-email')
+  getDocumentsEmailDraft(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.documents.getEmailDraft(coopId, id);
+  }
+
+  @Patch(':id/documents-email')
+  updateDocumentsEmailDraft(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Body() body: UpdateDocumentsEmailDraftDto,
+  ) {
+    return this.documents.updateEmailDraft(coopId, id, body);
+  }
+
+  @Post(':id/documents-email/send')
+  sendDocumentsEmail(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.documents.sendEmail(coopId, id, user.id);
+  }
+
+  @Get(':id/rsvp/attendance-statuses')
+  listAttendanceStatuses(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.documents.listAttendanceStatuses(coopId, id);
   }
 }
