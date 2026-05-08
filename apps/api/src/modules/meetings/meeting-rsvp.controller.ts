@@ -18,6 +18,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RsvpService } from './rsvp.service';
 import { IcsService } from './ics.service';
 import { RsvpUpdateDto } from './dto/rsvp-update.dto';
+import { ProxyResolveDto } from './dto/proxy-resolve.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
@@ -62,9 +63,9 @@ export class MeetingRsvpController {
     return this.rsvp.updateRsvp(token, dto.status, dto.delegateShareholderId);
   }
 
-  @Get(':token/eligible-delegates')
-  listDelegates(@Param('token') token: string) {
-    return this.rsvp.listEligibleDelegates(token);
+  @Post(':token/proxy/resolve')
+  resolveProxy(@Param('token') token: string, @Body() dto: ProxyResolveDto) {
+    return this.rsvp.resolveDelegate(token, dto.firstName, dto.lastName);
   }
 
   @Get(':token/ics')
