@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -11,8 +12,13 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ArrowLeft, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAdmin } from '@/contexts/admin-context';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { toggleColumnSort, type ColumnSortState } from '@/lib/table-utils';
 
 type MeetingDoc = {
   id: string;
@@ -81,6 +87,14 @@ export function DocumentsPageClient() {
 
   return (
     <div className="space-y-8 p-6">
+      <div className="flex items-center gap-3">
+        <Button asChild variant="ghost" size="sm">
+          <Link href={`/dashboard/admin/meetings/${meetingId}`}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t('backToMeeting')}
+          </Link>
+        </Button>
+      </div>
       <header>
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <p className="text-muted-foreground">{t('description')}</p>
@@ -519,9 +533,13 @@ function MailDraftSection({
   );
 }
 
+type StatusColumn = 'name' | 'sent' | 'opened' | 'downloaded';
+
 function StatusTable({ coopId, meetingId }: { coopId: string; meetingId: string }) {
   const t = useTranslations('meetings.documents');
   const [rows, setRows] = useState<AttendanceStatus[]>([]);
+  const [columnSort, setColumnSort] = useState<ColumnSortState<StatusColumn>>({ column: 'name', direction: 'asc' });
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<StatusColumn, string>>>({});
 
   useEffect(() => {
     const fetchStatuses = async () => {
@@ -535,55 +553,167 @@ function StatusTable({ coopId, meetingId }: { coopId: string; meetingId: string 
     return () => clearInterval(id);
   }, [coopId, meetingId]);
 
+  const visibleRows = useMemo(() => {
+    let filtered = rows;
+    if (columnFilters.name) {
+      const q = columnFilters.name.toLowerCase();
+      filtered = filtered.filter((r) => r.shareholderName.toLowerCase().includes(q));
+    }
+    if (columnFilters.sent) {
+      const q = columnFilters.sent.toLowerCase();
+      filtered = filtered.filter((r) => {
+        if (r.documentsEmailError) return `error ${r.documentsEmailError}`.toLowerCase().includes(q);
+        if (r.documentsEmailSentAt) return 'sent'.includes(q);
+        return ''.includes(q);
+      });
+    }
+    if (columnFilters.opened) {
+      const q = columnFilters.opened.toLowerCase();
+      filtered = filtered.filter((r) => (r.documentsEmailOpenedAt ? '✓' : '—').includes(q));
+    }
+    if (columnFilters.downloaded) {
+      const q = columnFilters.downloaded.toLowerCase();
+      filtered = filtered.filter((r) => (r.documentsDownloadedAt ? '✓' : '—').includes(q));
+    }
+    const sorted = [...filtered].sort((a, b) => {
+      const dir = columnSort.direction === 'asc' ? 1 : -1;
+      switch (columnSort.column) {
+        case 'name':
+          return dir * a.shareholderName.localeCompare(b.shareholderName);
+        case 'sent': {
+          const av = a.documentsEmailError ? -1 : a.documentsEmailSentAt ? new Date(a.documentsEmailSentAt).getTime() : 0;
+          const bv = b.documentsEmailError ? -1 : b.documentsEmailSentAt ? new Date(b.documentsEmailSentAt).getTime() : 0;
+          return dir * (av - bv);
+        }
+        case 'opened': {
+          const av = a.documentsEmailOpenedAt ? new Date(a.documentsEmailOpenedAt).getTime() : 0;
+          const bv = b.documentsEmailOpenedAt ? new Date(b.documentsEmailOpenedAt).getTime() : 0;
+          return dir * (av - bv);
+        }
+        case 'downloaded': {
+          const av = a.documentsDownloadedAt ? new Date(a.documentsDownloadedAt).getTime() : 0;
+          const bv = b.documentsDownloadedAt ? new Date(b.documentsDownloadedAt).getTime() : 0;
+          return dir * (av - bv);
+        }
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  }, [rows, columnFilters, columnSort]);
+
+  const renderSortIcon = (column: StatusColumn) => {
+    if (columnSort.column !== column) return <ArrowUpDown className="h-3 w-3 ml-1 inline" />;
+    return columnSort.direction === 'asc'
+      ? <ArrowUp className="h-3 w-3 ml-1 inline" />
+      : <ArrowDown className="h-3 w-3 ml-1 inline" />;
+  };
+
   if (rows.length === 0) return null;
+
+  const sentOk = rows.filter((r) => r.documentsEmailSentAt && !r.documentsEmailError).length;
+  const failed = rows.filter((r) => !!r.documentsEmailError).length;
+  const opened = rows.filter((r) => !!r.documentsEmailOpenedAt).length;
+  const downloaded = rows.filter((r) => !!r.documentsDownloadedAt).length;
 
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-medium">{t('statusTitle')}</h2>
-      <div className="overflow-x-auto rounded border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2">{t('status.shareholder')}</th>
-              <th className="px-3 py-2">{t('status.sent')}</th>
-              <th className="px-3 py-2">{t('status.opened')}</th>
-              <th className="px-3 py-2">{t('status.downloaded')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {rows.map((row, idx) => (
-              <tr key={idx} className="hover:bg-muted/30">
-                <td className="px-3 py-2">{row.shareholderName}</td>
-                <td className="px-3 py-2">
-                  {row.documentsEmailError ? (
-                    <span className="text-red-600" title={row.documentsEmailError}>
-                      ✗ {row.documentsEmailError}
-                    </span>
-                  ) : row.documentsEmailSentAt ? (
-                    <span className="text-green-600">✓</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  {row.documentsEmailOpenedAt ? (
-                    <span className="text-green-600">✓</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  {row.documentsDownloadedAt ? (
-                    <span className="text-green-600">✓</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        {t('statusSummary', { total: rows.length, sent: sentOk, failed, opened, downloaded })}
+      </p>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>
+              <Button variant="ghost" size="sm" onClick={() => setColumnSort((p) => toggleColumnSort(p, 'name'))}>
+                {t('status.shareholder')}{renderSortIcon('name')}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button variant="ghost" size="sm" onClick={() => setColumnSort((p) => toggleColumnSort(p, 'sent'))}>
+                {t('status.sent')}{renderSortIcon('sent')}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button variant="ghost" size="sm" onClick={() => setColumnSort((p) => toggleColumnSort(p, 'opened'))}>
+                {t('status.opened')}{renderSortIcon('opened')}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button variant="ghost" size="sm" onClick={() => setColumnSort((p) => toggleColumnSort(p, 'downloaded'))}>
+                {t('status.downloaded')}{renderSortIcon('downloaded')}
+              </Button>
+            </TableHead>
+          </TableRow>
+          <TableRow>
+            <TableHead>
+              <Input
+                value={columnFilters.name || ''}
+                onChange={(e) => setColumnFilters((p) => ({ ...p, name: e.target.value }))}
+                placeholder={t('filterPlaceholder')}
+                className="h-8"
+              />
+            </TableHead>
+            <TableHead>
+              <Input
+                value={columnFilters.sent || ''}
+                onChange={(e) => setColumnFilters((p) => ({ ...p, sent: e.target.value }))}
+                placeholder={t('filterPlaceholder')}
+                className="h-8"
+              />
+            </TableHead>
+            <TableHead>
+              <Input
+                value={columnFilters.opened || ''}
+                onChange={(e) => setColumnFilters((p) => ({ ...p, opened: e.target.value }))}
+                placeholder={t('filterPlaceholder')}
+                className="h-8"
+              />
+            </TableHead>
+            <TableHead>
+              <Input
+                value={columnFilters.downloaded || ''}
+                onChange={(e) => setColumnFilters((p) => ({ ...p, downloaded: e.target.value }))}
+                placeholder={t('filterPlaceholder')}
+                className="h-8"
+              />
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {visibleRows.map((row, idx) => (
+            <TableRow key={idx}>
+              <TableCell>{row.shareholderName}</TableCell>
+              <TableCell>
+                {row.documentsEmailError ? (
+                  <span className="text-destructive" title={row.documentsEmailError}>
+                    ✗ {row.documentsEmailError}
+                  </span>
+                ) : row.documentsEmailSentAt ? (
+                  <span className="text-green-600">✓</span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {row.documentsEmailOpenedAt ? (
+                  <span className="text-green-600">✓</span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {row.documentsDownloadedAt ? (
+                  <span className="text-green-600">✓</span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </section>
   );
 }

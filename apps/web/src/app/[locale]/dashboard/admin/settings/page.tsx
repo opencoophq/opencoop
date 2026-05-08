@@ -66,7 +66,6 @@ interface FormState {
   smtpUser: string;
   smtpPass: string;
   smtpFrom: string;
-  replyTo: string;
   graphClientId: string;
   graphClientSecret: string;
   graphTenantId: string;
@@ -102,7 +101,6 @@ interface SettingsResponse {
   smtpPort: number | null;
   smtpUser: string | null;
   smtpFrom: string | null;
-  replyTo: string | null;
   graphClientId: string | null;
   graphTenantId: string | null;
   graphFromEmail: string | null;
@@ -193,7 +191,6 @@ export default function AdminSettingsPage() {
     smtpUser: '',
     smtpPass: '',
     smtpFrom: '',
-    replyTo: '',
     graphClientId: '',
     graphClientSecret: '',
     graphTenantId: '',
@@ -310,7 +307,6 @@ export default function AdminSettingsPage() {
           smtpUser: settings.smtpUser || '',
           smtpPass: '',
           smtpFrom: settings.smtpFrom || '',
-          replyTo: settings.replyTo || '',
           graphClientId: settings.graphClientId || '',
           graphClientSecret: '',
           graphTenantId: settings.graphTenantId || '',
@@ -360,7 +356,6 @@ export default function AdminSettingsPage() {
         bankIban: form.bankIban,
         bankBic: form.bankBic,
         emailProvider: form.emailProvider === 'platform' ? null : form.emailProvider,
-        replyTo: form.replyTo || null,
         ecoPowerEnabled: form.ecoPowerEnabled,
         ecoPowerMinThresholdType: form.ecoPowerEnabled ? form.ecoPowerMinThresholdType : null,
         ecoPowerMinThreshold: form.ecoPowerEnabled ? (parseFloat(form.ecoPowerMinThreshold) || null) : null,
@@ -1153,18 +1148,6 @@ export default function AdminSettingsPage() {
                         onChange={(e) => setForm({ ...form, smtpFrom: e.target.value })}
                         placeholder="noreply@example.com"
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t('admin.settings.replyTo')}</Label>
-                      <Input
-                        type="email"
-                        value={form.replyTo}
-                        onChange={(e) => setForm({ ...form, replyTo: e.target.value })}
-                        placeholder="info@example.com"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {t('admin.settings.replyToHelp')}
-                      </p>
                     </div>
                   </div>
                 )}

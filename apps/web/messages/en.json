@@ -856,8 +856,6 @@
       "smtpPass": "SMTP Password",
       "smtpPassPlaceholder": "Leave blank to keep current",
       "smtpFrom": "From Address",
-      "replyTo": "Reply-to address",
-      "replyToHelp": "Member replies will go to this address (leave empty to default to the From address).",
       "graphClientId": "Client ID",
       "graphClientSecret": "Client Secret",
       "graphClientSecretPlaceholder": "Leave blank to keep current",
@@ -2327,7 +2325,10 @@
       "savingIndicator": "Saving...",
       "savedAt": "Saved at {time}",
       "previewTitle": "Preview",
-      "htmlEditorHelp": "You can paste HTML for formatting (e.g. <strong>, <a>, <p>)."
+      "htmlEditorHelp": "You can paste HTML for formatting (e.g. <strong>, <a>, <p>).",
+      "backToMeeting": "Back to meeting",
+      "filterPlaceholder": "Filter",
+      "statusSummary": "{total} recipients — {sent} sent, {failed} failed, {opened} opened, {downloaded} downloaded"
     }
   },
   "emancipation": {
