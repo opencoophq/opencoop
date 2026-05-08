@@ -2,6 +2,29 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.31] - 2026-05-08
+
+### Added
+- **Share AGM agenda documents with members ahead of the meeting.** Coop admins can upload PDFs (jaarverslag, jaarrekening, begroting, etc.) per AGM, edit a per-meeting mailing (subject + intro), and send token-protected download links to every attendance via the existing email queue. Documents are reorderable (drag-and-drop) and replace-in-place when re-uploaded with the same display name, so links from already-sent mails keep working.
+- **Per-recipient email tracking.** A 1×1 transparent tracking pixel embedded in the mail records `documentsEmailOpenedAt` per attendance. The download endpoint records `documentsDownloadedAt` on first hit. Send failures land in `documentsEmailError`. The admin status table polls every 10 seconds.
+- **30-day post-AGM download window.** Download links remain valid until `meeting.scheduledAt + 30 days`, separate from the RSVP token expiry — members who couldn't attend can still review the documents afterwards.
+
+### Security
+- **Token-scoped public download endpoint.** `GET /public/meetings/rsvp/:token/documents/:docId` validates the token, checks the document belongs to the token's meeting, and enforces the 30-day window before streaming the PDF. Cross-meeting access returns 403.
+- **HTML escaping on email template.** All admin-supplied or DB-stored fields (meeting title, document filenames, URLs) are escaped before interpolation into the `agenda-documents` template.
+- **Single-send concurrency lock.** `documentsEmailSentAt` set within the last 60 seconds rejects further send attempts on the same meeting to prevent double-sends.
+
+### API
+- New (admin, COOP_ADMIN + canManageMeetings): `POST/GET /admin/coops/:coopId/meetings/:id/documents`, `PATCH/DELETE /admin/coops/:coopId/meetings/:id/documents/:docId`, `GET/PATCH /admin/coops/:coopId/meetings/:id/documents-email`, `POST /admin/coops/:coopId/meetings/:id/documents-email/send`, `GET /admin/coops/:coopId/meetings/:id/rsvp/attendance-statuses`.
+- New (public, token-auth): `GET /public/meetings/rsvp/:token/documents/:docId` (PDF stream), `GET /public/meetings/rsvp/:token/pixel.gif` (open tracking).
+
+### Migration notes
+- Adds one new table (`meeting_documents`) and seven nullable columns across `meetings` and `meeting_attendances`. Additive only — safe rollback.
+- Stores PDFs at `<UPLOAD_DIR>/meeting-documents/<meetingId>/<uuid>.pdf` on the API container's filesystem. Bronsgroen-scale workload (~50 attendances × few MB PDFs) is well within current Docker volume capacity.
+
+### Privacy
+- The tracking pixel must be disclosed in the coop's privacy policy. For Bronsgroen specifically, this requires an update to bronsgroen.be/privacy before the first send (manual step).
+
 ## [0.8.30] - 2026-05-08
 
 ### Changed
