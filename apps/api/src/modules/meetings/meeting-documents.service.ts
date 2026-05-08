@@ -5,6 +5,7 @@ import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { EmailProcessor } from '../email/email.processor';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -29,6 +30,7 @@ export class MeetingDocumentsService {
   constructor(
     private prisma: PrismaService,
     private emails: EmailService,
+    private emailProcessor: EmailProcessor,
     private config: ConfigService,
   ) {}
 
@@ -295,6 +297,62 @@ export class MeetingDocumentsService {
     }
   }
 
+  async previewEmail(
+    coopId: string,
+    meetingId: string,
+    shareholderId: string,
+  ) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: { coop: { select: { name: true } } },
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.coopId !== coopId) throw new ForbiddenException('Meeting belongs to different coop');
+
+    const sh = await this.prisma.shareholder.findUnique({
+      where: { id: shareholderId },
+      select: { id: true, email: true, firstName: true, lastName: true, coopId: true },
+    });
+    if (!sh || sh.coopId !== coopId) throw new NotFoundException('Shareholder not found');
+
+    const docs = await this.prisma.meetingDocument.findMany({
+      where: { meetingId },
+      orderBy: { order: 'asc' },
+      select: { id: true, fileName: true },
+    });
+
+    const baseUrl = this.config.get<string>('PUBLIC_URL') || 'https://opencoop.be';
+    const apiBase = this.config.get<string>('API_PUBLIC_URL') || `${baseUrl}/api`;
+    const sampleToken = 'preview-token-not-real';
+
+    const introHtml = meeting.documentsIntro
+      ? meeting.documentsIntro
+      : '<p>Beste coöperant,</p><p>In aanloop naar onze algemene vergadering vind je hieronder de documenten ter inzage.</p>';
+
+    const subject = meeting.documentsSubject || `Documenten voor ${meeting.title}`;
+    const documents = docs.map((d) => ({
+      fileName: d.fileName,
+      downloadUrl: `${apiBase}/public/meetings/rsvp/${sampleToken}/documents/${d.id}`,
+    }));
+
+    const html = this.emailProcessor.renderTemplate('agenda-documents', {
+      introHtml,
+      documents,
+      meetingTitle: meeting.title,
+      meetingScheduledAt: meeting.scheduledAt.toLocaleString('nl-BE', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+      }),
+      rsvpUrl: `${baseUrl}/meetings/rsvp/${sampleToken}`,
+      pixelUrl: `${apiBase}/public/meetings/rsvp/${sampleToken}/pixel.gif`,
+    }, meeting.coop.name);
+
+    const recipientEmail = sh.email;
+    const shareholderName = `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim();
+
+    return { subject, html, recipientEmail, shareholderName };
+  }
+
   protected async enqueueDocumentsEmailJob(
     meeting: {
       id: string;
@@ -330,13 +388,9 @@ export class MeetingDocumentsService {
     }));
 
     const subject = meeting.documentsSubject || `Documenten voor ${meeting.title}`;
-    const introHtml = (
-      meeting.documentsIntro ||
-      'Beste coöperant,\n\nIn aanloop naar onze algemene vergadering vind je hieronder de documenten ter inzage.'
-    )
-      .split('\n')
-      .map((p) => `<p>${escapeHtml(p)}</p>`)
-      .join('');
+    const introHtml = meeting.documentsIntro
+      ? meeting.documentsIntro
+      : '<p>Beste coöperant,</p><p>In aanloop naar onze algemene vergadering vind je hieronder de documenten ter inzage.</p>';
 
     await this.emails.queueDocumentsEmail({
       coopId: meeting.coopId,
@@ -356,8 +410,4 @@ export class MeetingDocumentsService {
       attendanceId: recipient.id,
     });
   }
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

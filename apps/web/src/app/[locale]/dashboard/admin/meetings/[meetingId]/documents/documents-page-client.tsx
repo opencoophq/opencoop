@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
@@ -28,6 +28,13 @@ type EmailDraft = {
   recipientCount: number;
   sentCount: number;
   failedCount: number;
+};
+
+type EmailPreview = {
+  subject: string;
+  html: string;
+  recipientEmail: string | null;
+  shareholderName: string;
 };
 
 type AttendanceStatus = {
@@ -299,6 +306,11 @@ function MailDraftSection({
   const [subject, setSubject] = useState('');
   const [intro, setIntro] = useState('');
   const [sending, setSending] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [preview, setPreview] = useState<EmailPreview | null>(null);
+  const [firstShareholderId, setFirstShareholderId] = useState<string | null>(null);
 
   const fetchDraft = useCallback(async () => {
     const d = await api<EmailDraft>(
@@ -307,18 +319,74 @@ function MailDraftSection({
     setData(d);
     setSubject(d.subject ?? '');
     setIntro(d.intro ?? '');
+    // Fetch first shareholder to enable email preview
+    try {
+      const sh = await api<{ items: Array<{ id: string }> }>(
+        `/admin/coops/${coopId}/shareholders?pageSize=1&page=1`,
+      );
+      setFirstShareholderId(sh.items?.[0]?.id ?? null);
+    } catch {
+      setFirstShareholderId(null);
+    }
   }, [coopId, meetingId]);
 
   useEffect(() => {
     fetchDraft();
   }, [fetchDraft]);
 
+  // Sync contentEditable when intro state changes from outside (initial load)
+  useEffect(() => {
+    if (!editorRef.current) return;
+    if (document.activeElement === editorRef.current) return;
+    if (editorRef.current.innerHTML === intro) return;
+    const parsed = new DOMParser().parseFromString(intro, 'text/html');
+    editorRef.current.replaceChildren(...Array.from(parsed.body.childNodes));
+  }, [intro]);
+
+  // Load initial preview once shareholder is known
+  useEffect(() => {
+    if (!firstShareholderId) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const p = await api<EmailPreview>(
+          `/admin/coops/${coopId}/meetings/${meetingId}/documents-email/preview?shareholderId=${firstShareholderId}`,
+        );
+        if (!cancelled) setPreview(p);
+      } catch {
+        // ignore — preview is best-effort
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [coopId, meetingId, firstShareholderId]);
+
   const saveDraft = async () => {
-    await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents-email`, {
-      method: 'PATCH',
-      body: JSON.stringify({ subject, intro }),
-      headers: { 'Content-Type': 'application/json' },
-    });
+    setSaving(true);
+    try {
+      await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents-email`, {
+        method: 'PATCH',
+        body: { subject, intro },
+      });
+      setSavedAt(new Date());
+      // Reload preview so it reflects the saved state
+      if (firstShareholderId) {
+        try {
+          const p = await api<EmailPreview>(
+            `/admin/coops/${coopId}/meetings/${meetingId}/documents-email/preview?shareholderId=${firstShareholderId}`,
+          );
+          setPreview(p);
+        } catch {
+          // Non-fatal — preview is best-effort
+        }
+      }
+    } catch (err: unknown) {
+      alert((err as Error)?.message || 'Er ging iets mis');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const send = async () => {
@@ -353,23 +421,66 @@ function MailDraftSection({
             value={subject}
             placeholder={t('subjectPlaceholder')}
             onChange={(e) => setSubject(e.target.value)}
-            onBlur={saveDraft}
             className="w-full rounded border px-3 py-2 text-sm"
           />
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium">{t('introLabel')}</label>
-          <textarea
-            rows={4}
-            value={intro}
-            placeholder={t('introPlaceholder')}
-            onChange={(e) => setIntro(e.target.value)}
-            onBlur={saveDraft}
-            className="w-full rounded border px-3 py-2 text-sm"
+          {/* contentEditable HTML editor — admin-only, content from our own template renderer */}
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={(e) => setIntro(e.currentTarget.innerHTML)}
+            className="prose prose-sm dark:prose-invert max-w-none w-full rounded border px-3 py-2 text-sm bg-background min-h-[150px] focus:outline-none focus:ring-2 focus:ring-ring"
           />
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t('htmlEditorHelp')}
+          </p>
         </div>
       </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={saveDraft}
+          disabled={saving}
+          className="rounded border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+        >
+          {saving ? t('savingIndicator') : t('saveDraftCta')}
+        </button>
+        {savedAt && !saving && (
+          <span className="text-xs text-muted-foreground">
+            {t('savedAt', { time: savedAt.toLocaleTimeString() })}
+          </span>
+        )}
+      </div>
+
+      {/* Email preview iframe — content from our own server-side template renderer,
+          sandbox="" disables all JavaScript execution */}
+      {preview && (
+        <div className="space-y-2 rounded border p-3">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t('previewTitle')}
+          </div>
+          <div>
+            <span className="text-xs text-muted-foreground">Subject:</span>{' '}
+            <span className="text-sm font-medium">{preview.subject}</span>
+          </div>
+          <div>
+            <span className="text-xs text-muted-foreground">To:</span>{' '}
+            <span className="text-sm">
+              {preview.recipientEmail ?? `(${preview.shareholderName})`}
+            </span>
+          </div>
+          <iframe
+            title="email-preview"
+            srcDoc={`<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:system-ui,-apple-system,sans-serif;padding:16px;color:#111}</style></head><body>${preview.html}</body></html>`}
+            className="w-full h-96 rounded border bg-white"
+            sandbox=""
+          />
+        </div>
+      )}
 
       <p className="text-sm text-muted-foreground">
         {t('recipientCount', { count: data.recipientCount })}

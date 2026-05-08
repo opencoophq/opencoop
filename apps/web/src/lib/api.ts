@@ -129,12 +129,14 @@ export async function api<T = unknown>(
     throw new Error(error.message || `HTTP ${response.status}`);
   }
 
-  // Handle empty responses (204 No Content)
+  // Handle empty responses (204 No Content, or 200 with empty body)
   if (response.status === 204) {
     return undefined as T;
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 export async function apiFetch(

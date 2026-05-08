@@ -7,10 +7,12 @@ import * as os from 'os';
 import { MeetingDocumentsService } from './meeting-documents.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { EmailProcessor } from '../email/email.processor';
 
 describe('MeetingDocumentsService', () => {
   let service: MeetingDocumentsService;
   let emailService: { queueDocumentsEmail: jest.Mock };
+  let emailProcessor: { renderTemplate: jest.Mock };
   let prisma: {
     meeting: { findUnique: jest.Mock; update: jest.Mock };
     meetingDocument: {
@@ -39,6 +41,7 @@ describe('MeetingDocumentsService', () => {
     process.env.UPLOAD_DIR = tmpUploadDir;
 
     emailService = { queueDocumentsEmail: jest.fn().mockResolvedValue(undefined) };
+    emailProcessor = { renderTemplate: jest.fn().mockReturnValue('<html>preview</html>') };
 
     const configService = {
       get: jest.fn().mockImplementation((k: string) => {
@@ -73,6 +76,7 @@ describe('MeetingDocumentsService', () => {
         MeetingDocumentsService,
         { provide: PrismaService, useValue: prisma },
         { provide: EmailService, useValue: emailService },
+        { provide: EmailProcessor, useValue: emailProcessor },
         { provide: ConfigService, useValue: configService },
       ],
     }).compile();
@@ -452,6 +456,42 @@ describe('MeetingDocumentsService', () => {
 
       await expect(service.pixelHit('invalid')).resolves.toBeUndefined();
       expect(prisma.meetingAttendance.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('previewEmail', () => {
+    it('returns rendered html, subject, and recipient', async () => {
+      prisma.meeting.findUnique.mockResolvedValue({
+        id: 'm1',
+        coopId: 'c1',
+        title: 'AV',
+        documentsSubject: null,
+        documentsIntro: null,
+        scheduledAt: new Date('2026-05-09T10:00:00Z'),
+        coop: { name: 'TestCoop' },
+      });
+      prisma.shareholder.findUnique = jest.fn().mockResolvedValue({
+        id: 's1',
+        email: 'a@b.be',
+        firstName: 'Jan',
+        lastName: 'P',
+        coopId: 'c1',
+      });
+      prisma.meetingDocument.findMany.mockResolvedValue([
+        { id: 'd1', fileName: 'A.pdf' },
+      ]);
+
+      const result = await service.previewEmail('c1', 'm1', 's1');
+
+      expect(result.subject).toContain('AV');
+      expect(result.recipientEmail).toBe('a@b.be');
+      expect(result.shareholderName).toBe('Jan P');
+      expect(typeof result.html).toBe('string');
+      expect(emailProcessor.renderTemplate).toHaveBeenCalledWith(
+        'agenda-documents',
+        expect.objectContaining({ meetingTitle: 'AV' }),
+        'TestCoop',
+      );
     });
   });
 
