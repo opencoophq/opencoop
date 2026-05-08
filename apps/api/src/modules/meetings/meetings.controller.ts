@@ -418,6 +418,15 @@ export class MeetingsController {
     return this.documents.updateEmailDraft(coopId, id, body);
   }
 
+  @Get(':id/documents-email/preview')
+  previewDocumentsEmail(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Query('shareholderId') shareholderId: string,
+  ) {
+    return this.documents.previewEmail(coopId, id, shareholderId);
+  }
+
   @Post(':id/documents-email/send')
   sendDocumentsEmail(
     @Param('coopId') coopId: string,

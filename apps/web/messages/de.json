@@ -2315,7 +2315,12 @@
       "status.failed": "Gefaald",
       "notReady": "Verstuur eerst de convocatie voor je documenten kunt delen.",
       "defaultSubject": "Documenten voor de algemene vergadering van {coopName} op {date}",
-      "defaultIntro": "Beste coöperant,\n\nIn aanloop naar onze algemene vergadering vind je hieronder de relevante documenten ter inzage. Gelieve deze door te nemen voor de vergadering.\n\nMet vriendelijke groeten,\nHet bestuur"
+      "defaultIntro": "Beste coöperant,\n\nIn aanloop naar onze algemene vergadering vind je hieronder de relevante documenten ter inzage. Gelieve deze door te nemen voor de vergadering.\n\nMet vriendelijke groeten,\nHet bestuur",
+      "saveDraftCta": "Concept opslaan",
+      "savingIndicator": "Opslaan...",
+      "savedAt": "Opgeslagen om {time}",
+      "previewTitle": "Voorbeeld",
+      "htmlEditorHelp": "Je kan HTML plakken voor opmaak (bijv. <strong>, <a>, <p>)."
     }
   },
   "emancipation": {
