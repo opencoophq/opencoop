@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAdmin } from '@/contexts/admin-context';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import type {
   AgendaItemDto,
   MajorityType,
@@ -68,6 +69,35 @@ export default function VotingPage() {
   const [dialogResolutionId, setDialogResolutionId] = useState<string | null>(null);
   const [ballot, setBallot] = useState<Record<string, VoteChoice>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  const [ballotQuantity, setBallotQuantity] = useState<number | ''>('');
+  const [downloadingBallots, setDownloadingBallots] = useState(false);
+
+  const downloadBallots = async () => {
+    if (!selectedCoop || !meetingId) return;
+    setDownloadingBallots(true);
+    try {
+      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/coops/${selectedCoop.id}/meetings/${meetingId}/ballots${ballotQuantity ? `?quantity=${ballotQuantity}` : ''}`;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'stembiljetten.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      alert((err as Error).message || 'Download mislukt');
+    } finally {
+      setDownloadingBallots(false);
+    }
+  };
 
   const fetchAll = useCallback(async () => {
     if (!selectedCoop || !meetingId) return;
@@ -182,9 +212,28 @@ export default function VotingPage() {
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold">{t('meetings.voting.heading')}</h1>
-        <p className="text-sm text-muted-foreground">{meeting.title}</p>
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{t('meetings.voting.heading')}</h1>
+          <p className="text-sm text-muted-foreground">{meeting.title}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Input
+            type="number"
+            min={3}
+            step={3}
+            value={ballotQuantity}
+            onChange={(e) =>
+              setBallotQuantity(e.target.value === '' ? '' : Number(e.target.value))
+            }
+            placeholder={t('meetings.voting.ballotQuantityPlaceholder')}
+            className="w-36"
+          />
+          <Button onClick={downloadBallots} disabled={downloadingBallots} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            {downloadingBallots ? t('common.loading') : t('meetings.voting.downloadBallots')}
+          </Button>
+        </div>
       </div>
 
       {error && (

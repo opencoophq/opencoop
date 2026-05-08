@@ -2184,7 +2184,10 @@
       "noCheckedIn": "No shareholders are checked in yet",
       "columns": {
         "shareholder": "Shareholder"
-      }
+      },
+      "downloadBallots": "Download ballots",
+      "ballotQuantityPlaceholder": "Quantity (auto)",
+      "ballotQuantityHelp": "Leave empty to auto-size based on RSVPs."
     },
     "minutes": {
       "heading": "Minutes",
