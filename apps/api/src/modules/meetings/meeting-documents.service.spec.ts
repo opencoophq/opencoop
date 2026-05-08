@@ -124,6 +124,45 @@ describe('MeetingDocumentsService', () => {
       await expect(service.upload('c1', 'm1', bad, undefined, 'admin1')).rejects.toThrow(BadRequestException);
     });
 
+    it('accepts xlsx files', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(meeting);
+      prisma.meetingDocument.findFirst.mockResolvedValue(null);
+      prisma.meetingDocument.aggregate.mockResolvedValue({ _max: { order: null } });
+      prisma.meetingDocument.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'd2', ...data }),
+      );
+      const xlsx = {
+        ...file,
+        mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        originalname: 'Jaarrekening.xlsx',
+      } as Express.Multer.File;
+
+      await service.upload('c1', 'm1', xlsx, undefined, 'admin1');
+
+      const fileUrl = (prisma.meetingDocument.create as jest.Mock).mock.calls[0][0].data.fileUrl;
+      expect(fileUrl).toMatch(/\.xlsx$/);
+      expect(fs.existsSync(path.join(tmpUploadDir, fileUrl))).toBe(true);
+    });
+
+    it('accepts legacy .xls files', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(meeting);
+      prisma.meetingDocument.findFirst.mockResolvedValue(null);
+      prisma.meetingDocument.aggregate.mockResolvedValue({ _max: { order: null } });
+      prisma.meetingDocument.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'd3', ...data }),
+      );
+      const xls = {
+        ...file,
+        mimetype: 'application/vnd.ms-excel',
+        originalname: 'Old.xls',
+      } as Express.Multer.File;
+
+      await service.upload('c1', 'm1', xls, undefined, 'admin1');
+
+      const fileUrl = (prisma.meetingDocument.create as jest.Mock).mock.calls[0][0].data.fileUrl;
+      expect(fileUrl).toMatch(/\.xls$/);
+    });
+
     it('rejects file >10MB', async () => {
       const bad = { ...file, size: 11 * 1024 * 1024 } as Express.Multer.File;
       await expect(service.upload('c1', 'm1', bad, undefined, 'admin1')).rejects.toThrow(BadRequestException);

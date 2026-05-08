@@ -8,6 +8,18 @@ import { EmailService } from '../email/email.service';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel',                                          // .xls
+]);
+
+const EXTENSION_BY_MIME: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.ms-excel': 'xls',
+};
+
 function uploadDir(): string {
   return process.env.UPLOAD_DIR || './uploads';
 }
@@ -28,7 +40,7 @@ export class MeetingDocumentsService {
     userId: string,
   ) {
     if (!file?.buffer) throw new BadRequestException('No file provided');
-    if (file.mimetype !== 'application/pdf') throw new BadRequestException('Only PDF files allowed');
+    if (!ALLOWED_MIME_TYPES.has(file.mimetype)) throw new BadRequestException('Only PDF and Excel files allowed');
     if (file.size > MAX_FILE_SIZE) throw new BadRequestException('File exceeds 10MB limit');
 
     await this.assertMeetingInCoop(coopId, meetingId);
@@ -42,7 +54,8 @@ export class MeetingDocumentsService {
 
     const dir = path.join(uploadDir(), 'meeting-documents', meetingId);
     fs.mkdirSync(dir, { recursive: true });
-    const storedFilename = `${randomUUID()}.pdf`;
+    const extension = EXTENSION_BY_MIME[file.mimetype] ?? 'bin';
+    const storedFilename = `${randomUUID()}.${extension}`;
     const relativeUrl = path.posix.join('meeting-documents', meetingId, storedFilename);
     fs.writeFileSync(path.join(dir, storedFilename), file.buffer);
 
