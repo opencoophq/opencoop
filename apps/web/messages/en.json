@@ -2318,7 +2318,12 @@
       "status.failed": "Failed",
       "notReady": "Send the convocation first before sharing documents.",
       "defaultSubject": "Documents for the {coopName} general meeting on {date}",
-      "defaultIntro": "Dear member,\n\nAhead of our general meeting, please find the relevant documents below for your review.\n\nKind regards,\nThe board"
+      "defaultIntro": "Dear member,\n\nAhead of our general meeting, please find the relevant documents below for your review.\n\nKind regards,\nThe board",
+      "saveDraftCta": "Save draft",
+      "savingIndicator": "Saving...",
+      "savedAt": "Saved at {time}",
+      "previewTitle": "Preview",
+      "htmlEditorHelp": "You can paste HTML for formatting (e.g. <strong>, <a>, <p>)."
     }
   },
   "emancipation": {
