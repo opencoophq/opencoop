@@ -3,6 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { api } from '@/lib/api';
 import { useAdmin } from '@/contexts/admin-context';
 
@@ -56,24 +64,27 @@ export function DocumentsPageClient() {
 
       <DocumentList
         docs={docs}
+        setDocs={setDocs}
         loading={loading}
         coopId={selectedCoop.id}
         meetingId={meetingId}
         onChange={fetchDocs}
       />
-      {/* MailDraftSection + SendSection + StatusTable added in Tasks 11–12 */}
+      {/* MailDraftSection + SendSection + StatusTable added in Task 12 */}
     </div>
   );
 }
 
 function DocumentList({
   docs,
+  setDocs,
   loading,
   coopId,
   meetingId,
   onChange,
 }: {
   docs: MeetingDoc[];
+  setDocs: React.Dispatch<React.SetStateAction<MeetingDoc[]>>;
   loading: boolean;
   coopId: string;
   meetingId: string;
@@ -100,20 +111,65 @@ function DocumentList({
     }
   };
 
+  const handleRename = async (id: string, displayName: string) => {
+    await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents/${id}`, {
+      method: 'PATCH',
+      body: { displayName },
+    });
+    onChange();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm(t('confirmDelete'))) return;
+    await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents/${id}`, {
+      method: 'DELETE',
+    });
+    onChange();
+  };
+
+  const handleDragEnd = async (e: DragEndEvent) => {
+    if (!e.over || e.active.id === e.over.id) return;
+    const oldIdx = docs.findIndex((d) => d.id === e.active.id);
+    const newIdx = docs.findIndex((d) => d.id === e.over!.id);
+    const reordered = arrayMove(docs, oldIdx, newIdx);
+    // Optimistic update
+    setDocs(reordered);
+    // Persist changed orders
+    await Promise.all(
+      reordered
+        .map((d, idx) => ({ ...d, newOrder: idx }))
+        .filter((d) => d.order !== d.newOrder)
+        .map((d) =>
+          api(`/admin/coops/${coopId}/meetings/${meetingId}/documents/${d.id}`, {
+            method: 'PATCH',
+            body: { order: d.newOrder },
+          }),
+        ),
+    );
+    // Sync server state (updates `order` fields on docs)
+    onChange();
+  };
+
   return (
     <section className="space-y-4">
       <h2 className="text-lg font-medium">{t('title')}</h2>
       {loading ? (
         <div className="animate-pulse h-20 rounded bg-muted" />
       ) : (
-        <ul className="divide-y rounded border">
-          {docs.map((d) => (
-            <li key={d.id} className="flex items-center justify-between p-3">
-              <span>{d.fileName}</span>
-              <span className="text-sm text-muted-foreground">{formatSize(d.fileSize)}</span>
-            </li>
-          ))}
-        </ul>
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={docs.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+            <ul className="divide-y rounded border">
+              {docs.map((d) => (
+                <SortableRow
+                  key={d.id}
+                  doc={d}
+                  onRename={handleRename}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
       <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <span>{uploading ? '...' : t('uploadCta')}</span>
@@ -126,6 +182,68 @@ function DocumentList({
         />
       </label>
     </section>
+  );
+}
+
+function SortableRow({
+  doc,
+  onRename,
+  onDelete,
+}: {
+  doc: MeetingDoc;
+  onRename: (id: string, name: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const t = useTranslations('meetings.documents');
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: doc.id,
+  });
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(doc.fileName);
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className="flex items-center gap-3 border-b p-3 last:border-b-0"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab text-muted-foreground"
+        aria-label="reorder"
+      >
+        ⋮⋮
+      </button>
+      {editing ? (
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => {
+            setEditing(false);
+            if (name.trim() && name !== doc.fileName) onRename(doc.id, name.trim());
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+          className="flex-1 rounded border px-2 py-1 text-sm"
+        />
+      ) : (
+        <button
+          className="flex-1 text-left text-sm hover:underline"
+          onClick={() => setEditing(true)}
+          title={t('rename')}
+        >
+          {doc.fileName}
+        </button>
+      )}
+      <span className="text-sm text-muted-foreground">{formatSize(doc.fileSize)}</span>
+      <button
+        onClick={() => onDelete(doc.id)}
+        className="text-sm text-red-600 hover:text-red-800"
+      >
+        {t('delete')}
+      </button>
+    </li>
   );
 }
 
