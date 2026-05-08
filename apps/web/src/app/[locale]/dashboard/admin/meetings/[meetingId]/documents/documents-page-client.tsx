@@ -116,23 +116,28 @@ function DocumentList({
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
     setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents`, {
-        method: 'POST',
-        body: fd,
-      });
-      onChange();
-    } catch (err: unknown) {
-      alert((err as Error)?.message || 'Er ging iets mis');
-    } finally {
-      setUploading(false);
+    const errors: string[] = [];
+    for (const f of files) {
+      try {
+        const fd = new FormData();
+        fd.append('file', f);
+        await api(`/admin/coops/${coopId}/meetings/${meetingId}/documents`, {
+          method: 'POST',
+          body: fd,
+        });
+      } catch (err) {
+        errors.push(`${f.name}: ${(err as Error).message ?? 'upload failed'}`);
+      }
     }
+    setUploading(false);
+    e.target.value = '';
+    if (errors.length > 0) {
+      alert(`Sommige bestanden konden niet worden geüpload:\n\n${errors.join('\n')}`);
+    }
+    onChange();
   };
 
   const handleRename = async (id: string, displayName: string) => {
@@ -207,7 +212,8 @@ function DocumentList({
         <span>{uploading ? '...' : t('uploadCta')}</span>
         <input
           type="file"
-          accept="application/pdf"
+          accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+          multiple
           className="hidden"
           disabled={uploading}
           onChange={handleFileChange}
