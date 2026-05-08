@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -9,6 +9,7 @@ import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   ArrowLeft,
@@ -33,11 +34,16 @@ interface MyAttendance {
   rsvpToken: string;
 }
 
-interface DelegateOption {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  memberNumber?: number | null;
+type ProxyResolveError =
+  | 'not_found'
+  | 'ambiguous'
+  | 'cap_reached'
+  | 'rate_limited'
+  | 'generic';
+
+interface ResolvedDelegate {
+  delegateShareholderId: string;
+  displayName: string;
 }
 
 interface ShareholderMeetingDetail extends MeetingDto {
@@ -58,9 +64,12 @@ export default function ShareholderMeetingDetailPage() {
   const [submitting, setSubmitting] = useState<RsvpStatus | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showProxy, setShowProxy] = useState(false);
-  const [delegates, setDelegates] = useState<DelegateOption[]>([]);
-  const [delegatesLoading, setDelegatesLoading] = useState(false);
-  const [delegateQuery, setDelegateQuery] = useState('');
+  const [proxyFirstName, setProxyFirstName] = useState('');
+  const [proxyLastName, setProxyLastName] = useState('');
+  const [resolving, setResolving] = useState(false);
+  const [resolved, setResolved] = useState<ResolvedDelegate | null>(null);
+  const [proxyError, setProxyError] = useState<ProxyResolveError | null>(null);
+  const proxySectionRef = useRef<HTMLDivElement | null>(null);
 
   const fetchMeeting = useCallback(() => {
     if (!id) return;
@@ -102,34 +111,57 @@ export default function ShareholderMeetingDetailPage() {
     }
   };
 
-  const openProxySection = async () => {
+  const openProxySection = () => {
     if (!meeting?.myAttendance?.rsvpToken) return;
     setShowProxy(true);
-    if (delegates.length > 0) return;
-    setDelegatesLoading(true);
-    try {
-      const res = await fetch(
-        `${API_URL}/public/meetings/rsvp/${meeting.myAttendance.rsvpToken}/eligible-delegates`,
-      );
-      if (res.ok) {
-        const data = (await res.json()) as DelegateOption[];
-        setDelegates(data);
-      }
-    } catch {
-      /* ignore */
-    } finally {
-      setDelegatesLoading(false);
-    }
+    requestAnimationFrame(() => {
+      proxySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
-  const filteredDelegates = useMemo(() => {
-    const q = delegateQuery.trim().toLowerCase();
-    if (!q) return delegates;
-    return delegates.filter((d) => {
-      const full = `${d.firstName ?? ''} ${d.lastName ?? ''}`.toLowerCase();
-      return full.includes(q);
-    });
-  }, [delegates, delegateQuery]);
+  const resetProxy = () => {
+    setResolved(null);
+    setProxyError(null);
+  };
+
+  const findDelegate = async () => {
+    if (!meeting?.myAttendance?.rsvpToken) return;
+    if (!proxyFirstName.trim() || !proxyLastName.trim()) return;
+    setResolving(true);
+    setProxyError(null);
+    try {
+      const res = await fetch(
+        `${API_URL}/public/meetings/rsvp/${meeting.myAttendance.rsvpToken}/proxy/resolve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: proxyFirstName.trim(),
+            lastName: proxyLastName.trim(),
+          }),
+        },
+      );
+      if (res.ok) {
+        const data = (await res.json()) as ResolvedDelegate;
+        setResolved(data);
+        return;
+      }
+      const body = await res.json().catch(() => ({}));
+      const code = body?.code as ProxyResolveError | undefined;
+      setProxyError(
+        code === 'not_found' ||
+          code === 'ambiguous' ||
+          code === 'cap_reached' ||
+          code === 'rate_limited'
+          ? code
+          : 'generic',
+      );
+    } catch {
+      setProxyError('generic');
+    } finally {
+      setResolving(false);
+    }
+  };
 
   const downloadIcs = () => {
     if (!meeting?.myAttendance?.rsvpToken) return;
@@ -274,44 +306,117 @@ export default function ShareholderMeetingDetailPage() {
 
             {/* Proxy delegate picker */}
             {showProxy && (
-              <div className="border-t pt-4 space-y-2">
+              <div ref={proxySectionRef} className="border-t pt-4 space-y-4">
                 <p className="text-sm font-medium">
                   {t('meetings.publicRsvp.proxyHeading')}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {t('meetings.publicRsvp.proxyHelp')}
-                </p>
-                <input
-                  type="text"
-                  value={delegateQuery}
-                  onChange={(e) => setDelegateQuery(e.target.value)}
-                  placeholder={t('meetings.publicRsvp.proxySearchPlaceholder')}
-                  className="w-full rounded border px-3 py-2 text-sm bg-background"
-                />
-                {delegatesLoading ? (
-                  <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
-                ) : filteredDelegates.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    {t('meetings.publicRsvp.proxyEmpty')}
-                  </p>
+
+                {!resolved ? (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      {t('meetings.publicRsvp.proxyHelp')}
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          {t('meetings.publicRsvp.proxyFirstNameLabel')}
+                        </label>
+                        <Input
+                          autoComplete="off"
+                          autoCapitalize="words"
+                          value={proxyFirstName}
+                          onChange={(e) => {
+                            setProxyFirstName(e.target.value);
+                            if (proxyError) setProxyError(null);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          {t('meetings.publicRsvp.proxyLastNameLabel')}
+                        </label>
+                        <Input
+                          autoComplete="off"
+                          autoCapitalize="words"
+                          value={proxyLastName}
+                          onChange={(e) => {
+                            setProxyLastName(e.target.value);
+                            if (proxyError) setProxyError(null);
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {proxyError && (
+                      <Alert variant="destructive">
+                        <AlertDescription>
+                          {t(
+                            `meetings.publicRsvp.proxyError${
+                              proxyError === 'not_found'
+                                ? 'NotFound'
+                                : proxyError === 'ambiguous'
+                                  ? 'Ambiguous'
+                                  : proxyError === 'cap_reached'
+                                    ? 'CapReached'
+                                    : proxyError === 'rate_limited'
+                                      ? 'RateLimit'
+                                      : 'Generic'
+                            }` as 'meetings.publicRsvp.proxyErrorNotFound',
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button
+                      size="lg"
+                      disabled={
+                        resolving || !proxyFirstName.trim() || !proxyLastName.trim()
+                      }
+                      onClick={findDelegate}
+                      className="w-full h-12"
+                    >
+                      {resolving && (
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      )}
+                      {t('meetings.publicRsvp.proxyFindButton')}
+                    </Button>
+                  </>
                 ) : (
-                  <div className="max-h-64 overflow-y-auto border rounded">
-                    {filteredDelegates.map((d) => (
-                      <button
-                        key={d.id}
-                        onClick={() => submitRsvp('PROXY', d.id)}
+                  <>
+                    <h3 className="text-base font-semibold">
+                      {t('meetings.publicRsvp.proxyConfirmHeading')}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {t('meetings.publicRsvp.proxyConfirmPrompt', {
+                        name: resolved.displayName,
+                      })}
+                    </p>
+                    <div className="rounded-md border bg-muted/30 px-4 py-3 text-center font-medium">
+                      {resolved.displayName}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-12"
+                        onClick={resetProxy}
                         disabled={!!submitting}
-                        className="w-full text-left px-3 py-2 hover:bg-muted disabled:opacity-50 border-b last:border-b-0 text-sm"
                       >
-                        {d.firstName} {d.lastName}
-                        {d.memberNumber ? (
-                          <span className="text-xs text-muted-foreground ml-2">
-                            #{d.memberNumber}
-                          </span>
-                        ) : null}
-                      </button>
-                    ))}
-                  </div>
+                        {t('meetings.publicRsvp.proxyConfirmCancel')}
+                      </Button>
+                      <Button
+                        className="flex-1 h-12"
+                        onClick={() =>
+                          submitRsvp('PROXY', resolved.delegateShareholderId)
+                        }
+                        disabled={!!submitting}
+                      >
+                        {submitting === 'PROXY' && (
+                          <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        )}
+                        {t('meetings.publicRsvp.confirmProxy')}
+                      </Button>
+                    </div>
+                  </>
                 )}
               </div>
             )}
