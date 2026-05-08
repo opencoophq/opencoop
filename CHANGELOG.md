@@ -2,6 +2,14 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.35] - 2026-05-08
+
+### Added
+- **Per-coop Reply-To address.** Coop admins can now configure a `Reply-To` address from the admin settings page. When set, every outgoing email for that coop carries a `Reply-To:` header — member replies route to the configured mailbox instead of the generic `noreply@opencoop.be`. Wired through all three send paths (platform SMTP, custom SMTP, Microsoft Graph). DKIM/SPF unaffected since alignment is on the From-address domain.
+
+### Migration notes
+- Adds nullable `replyTo TEXT` column to `coops`. No backfill needed — coops without a Reply-To configured fall back to the From address (existing behavior).
+
 ## [0.8.34] - 2026-05-08
 
 ### Fixed
