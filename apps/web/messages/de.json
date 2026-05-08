@@ -2181,7 +2181,10 @@
       "noCheckedIn": "Noch keine Mitglieder eingecheckt",
       "columns": {
         "shareholder": "Mitglied"
-      }
+      },
+      "downloadBallots": "Stembiljetten downloaden",
+      "ballotQuantityPlaceholder": "Aantal (auto)",
+      "ballotQuantityHelp": "Laat leeg om aantal automatisch te bepalen op basis van RSVPs."
     },
     "minutes": {
       "heading": "Protokoll",

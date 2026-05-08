@@ -333,6 +333,20 @@ export class MeetingsController {
     res.send(buf);
   }
 
+  @Get(':id/ballots')
+  async ballotsPdf(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Query('quantity') quantity: string | undefined,
+    @Res() res: Response,
+  ) {
+    const q = quantity ? parseInt(quantity, 10) : undefined;
+    const buf = await this.pdf.ballotSheet(coopId, id, Number.isFinite(q) ? q : undefined);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="stembiljetten.pdf"');
+    res.send(buf);
+  }
+
   @Get(':id/convocation/preview')
   async previewConvocation(
     @Param('coopId') coopId: string,

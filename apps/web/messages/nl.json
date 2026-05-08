@@ -2184,7 +2184,10 @@
       "noCheckedIn": "Nog geen vennoten ingecheckt",
       "columns": {
         "shareholder": "Vennoot"
-      }
+      },
+      "downloadBallots": "Stembiljetten downloaden",
+      "ballotQuantityPlaceholder": "Aantal (auto)",
+      "ballotQuantityHelp": "Laat leeg om aantal automatisch te bepalen op basis van RSVPs."
     },
     "minutes": {
       "heading": "Notulen",

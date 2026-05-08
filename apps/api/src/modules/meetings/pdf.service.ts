@@ -1,11 +1,12 @@
 import React from 'react';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { renderToBuffer } from '@react-pdf/renderer';
 import {
   ConvocationPdf,
   VolmachtFormPdf,
   AttendanceSheetPdf,
   MeetingMinutesPdf,
+  BallotSheetPdf,
 } from '@opencoop/pdf-templates';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -211,6 +212,52 @@ export class MeetingPdfService {
       },
       rsvps,
       language: 'nl',
+    });
+    return renderToBuffer(element as any);
+  }
+
+  async ballotSheet(coopId: string, meetingId: string, quantity?: number): Promise<Buffer> {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: {
+        coop: { select: { name: true, logoUrl: true } },
+        agendaItems: { orderBy: { order: 'asc' } },
+        attendances: { where: { rsvpStatus: { in: ['ATTENDING', 'PROXY'] as any } } },
+      },
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.coopId !== coopId) throw new ForbiddenException();
+
+    // Resolve quantity: explicit param OR RSVP count + 10% buffer
+    let resolvedQuantity: number;
+    if (typeof quantity === 'number' && quantity > 0) {
+      resolvedQuantity = quantity;
+    } else {
+      const rsvpCount = meeting.attendances.length;
+      resolvedQuantity = Math.max(3, Math.ceil(rsvpCount * 1.1));
+    }
+
+    const resolutions = meeting.agendaItems
+      .filter((a) => a.type === 'RESOLUTION')
+      .map((a) => ({ order: a.order, title: a.title }));
+
+    if (resolutions.length === 0) {
+      throw new BadRequestException('Meeting has no RESOLUTION agenda items');
+    }
+
+    const meetingScheduledAt = meeting.scheduledAt.toLocaleString('nl-BE', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+      timeZone: 'Europe/Brussels',
+    });
+
+    const element = React.createElement(BallotSheetPdf, {
+      coopName: meeting.coop.name,
+      coopLogoUrl: meeting.coop.logoUrl ?? null,
+      meetingTitle: meeting.title,
+      meetingScheduledAt,
+      resolutions,
+      quantity: resolvedQuantity,
     });
     return renderToBuffer(element as any);
   }

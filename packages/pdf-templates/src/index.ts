@@ -16,3 +16,4 @@ export { ConvocationPdf, type ConvocationProps } from './templates/convocation';
 export { VolmachtFormPdf, type VolmachtFormProps } from './templates/volmacht-form';
 export { AttendanceSheetPdf, type AttendanceSheetProps } from './templates/attendance-sheet';
 export { MeetingMinutesPdf, type MeetingMinutesPdfProps } from './templates/meeting-minutes';
+export { BallotSheetPdf, type BallotSheetProps } from './templates/ballot-sheet';
