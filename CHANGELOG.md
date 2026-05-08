@@ -2,6 +2,11 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.37] - 2026-05-08
+
+### Added
+- **Paper-ballot PDF generator** for the AGM. Admins click "Stembiljetten downloaden" on the Voting page and get a print-ready PDF with **3 anonymous ballots per A4**, stacked vertically with dashed cut-lines. Each ballot lists every `RESOLUTION`-type agenda item with VOOR / TEGEN / ONTHOUDING checkboxes. Quantity auto-sizes from RSVP'd attendees + 10% buffer (admin can override). Print, cut, distribute on the day; tally the results back into the system afterwards via the existing voting flow.
+
 ## [0.8.36] - 2026-05-08
 
 ### Added
