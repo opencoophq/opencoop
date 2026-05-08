@@ -35,6 +35,7 @@ import {
   XCircle,
   Trash2,
   Pencil,
+  FileText,
 } from 'lucide-react';
 import type {
   MeetingDto,
@@ -53,8 +54,9 @@ export default function MeetingDetailPage() {
   const router = useRouter();
   const params = useParams();
   const meetingId = (params?.meetingId as string) || '';
+  const locale = (params?.locale as string) || 'en';
   const { selectedCoop } = useAdmin();
-  const { locale } = useLocale();
+  const { locale: dateLocale } = useLocale();
 
   const [meeting, setMeeting] = useState<MeetingDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,7 +122,7 @@ export default function MeetingDetailPage() {
   };
 
   const formatDateTime = (iso: string) =>
-    new Date(iso).toLocaleString(locale, {
+    new Date(iso).toLocaleString(dateLocale, {
       dateStyle: 'long',
       timeStyle: 'short',
     });
@@ -273,6 +275,16 @@ export default function MeetingDetailPage() {
       done: minutesSigned,
       cta: t('meetings.detail.goToMinutes'),
       href: `/dashboard/admin/meetings/${meeting.id}/minutes`,
+    },
+    {
+      key: 'documents',
+      icon: <FileText className="h-5 w-5" />,
+      title: t('meetings.documents.title'),
+      status: t('meetings.documents.description'),
+      done: false,
+      cta: t('common.documents'),
+      href: `/dashboard/admin/meetings/${meeting.id}/documents`,
+      disabled: meeting.status !== 'CONVOKED',
     },
   ];
 
