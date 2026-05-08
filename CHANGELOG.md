@@ -2,6 +2,12 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.8.32] - 2026-05-08
+
+### Added
+- **Multi-file upload for AGM documents.** The picker on the AGM documents page now accepts multiple files at once. Uploads run sequentially with per-file error reporting — a single bad file (wrong type, oversize) doesn't block the rest.
+- **Excel file support (`.xlsx` and legacy `.xls`)** alongside `.pdf` for AGM documents — useful for sharing the jaarrekening spreadsheet directly. 10MB per-file limit unchanged. Replace-in-place semantics unchanged (matches on display name regardless of extension).
+
 ## [0.8.31] - 2026-05-08
 
 ### Added
