@@ -9,7 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 describe('MeetingDocumentsService', () => {
   let service: MeetingDocumentsService;
   let prisma: {
-    meeting: { findUnique: jest.Mock };
+    meeting: { findUnique: jest.Mock; update: jest.Mock };
     meetingDocument: {
       findFirst: jest.Mock;
       findMany: jest.Mock;
@@ -18,6 +18,7 @@ describe('MeetingDocumentsService', () => {
       delete: jest.Mock;
       aggregate: jest.Mock;
     };
+    meetingAttendance: { count: jest.Mock; findMany: jest.Mock; updateMany: jest.Mock };
   };
   let tmpUploadDir: string;
   const ORIGINAL_UPLOAD_DIR = process.env.UPLOAD_DIR;
@@ -27,7 +28,7 @@ describe('MeetingDocumentsService', () => {
     process.env.UPLOAD_DIR = tmpUploadDir;
 
     prisma = {
-      meeting: { findUnique: jest.fn() },
+      meeting: { findUnique: jest.fn(), update: jest.fn() },
       meetingDocument: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
@@ -36,6 +37,7 @@ describe('MeetingDocumentsService', () => {
         delete: jest.fn(),
         aggregate: jest.fn(),
       },
+      meetingAttendance: { count: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
     };
     const moduleRef = await Test.createTestingModule({
       providers: [MeetingDocumentsService, { provide: PrismaService, useValue: prisma }],
@@ -185,6 +187,122 @@ describe('MeetingDocumentsService', () => {
       prisma.meetingDocument.findFirst.mockResolvedValue(null);
 
       await expect(service.update('c1', 'm1', 'dX', { displayName: 'x' })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('email draft', () => {
+    it('returns current draft with computed counts', async () => {
+      prisma.meeting.findUnique.mockResolvedValue({
+        id: 'm1',
+        coopId: 'c1',
+        documentsSubject: 'Custom subj',
+        documentsIntro: 'Custom intro',
+        documentsEmailSentAt: null,
+      });
+      prisma.meetingAttendance = {
+        count: jest.fn().mockResolvedValueOnce(47).mockResolvedValueOnce(0).mockResolvedValueOnce(0),
+      } as any;
+
+      const draft = await service.getEmailDraft('c1', 'm1');
+
+      expect(draft.subject).toBe('Custom subj');
+      expect(draft.recipientCount).toBe(47);
+      expect(draft.sentCount).toBe(0);
+      expect(draft.failedCount).toBe(0);
+    });
+
+    it('updates subject and intro', async () => {
+      prisma.meeting.findUnique.mockResolvedValue({ id: 'm1', coopId: 'c1' });
+      prisma.meeting.update = jest.fn().mockResolvedValue({});
+
+      await service.updateEmailDraft('c1', 'm1', { subject: 'New', intro: 'Body' });
+
+      expect(prisma.meeting.update).toHaveBeenCalledWith({
+        where: { id: 'm1' },
+        data: { documentsSubject: 'New', documentsIntro: 'Body' },
+      });
+    });
+  });
+
+  describe('send', () => {
+    const baseMeeting = {
+      id: 'm1',
+      coopId: 'c1',
+      status: 'CONVOKED',
+      scheduledAt: new Date('2026-05-09T10:00:00Z'),
+      documentsEmailSentAt: null,
+      documentsSubject: null,
+      documentsIntro: null,
+    };
+
+    beforeEach(() => {
+      prisma.meeting.update = jest.fn().mockResolvedValue({});
+    });
+
+    it('rejects when meeting not CONVOKED', async () => {
+      prisma.meeting.findUnique.mockResolvedValue({ ...baseMeeting, status: 'DRAFT' });
+      prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1' }]);
+      await expect(service.sendEmail('c1', 'm1', 'admin1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects when no documents', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(baseMeeting);
+      prisma.meetingDocument.findMany.mockResolvedValue([]);
+      await expect(service.sendEmail('c1', 'm1', 'admin1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects retry when nothing failed', async () => {
+      prisma.meeting.findUnique.mockResolvedValue({
+        ...baseMeeting,
+        documentsEmailSentAt: new Date(),
+      });
+      prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1' }]);
+      prisma.meetingAttendance.count.mockResolvedValue(0); // no failures
+      await expect(service.sendEmail('c1', 'm1', 'admin1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('first send: enqueues to all attendances', async () => {
+      const enqueue = jest.fn().mockResolvedValue(undefined);
+      (service as any).enqueueDocumentsEmailJob = enqueue;
+
+      prisma.meeting.findUnique.mockResolvedValue(baseMeeting);
+      prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1', fileName: 'A.pdf' }]);
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        { id: 'a1', shareholderId: 's1', rsvpToken: 't1' },
+        { id: 'a2', shareholderId: 's2', rsvpToken: 't2' },
+      ]);
+
+      const result = await service.sendEmail('c1', 'm1', 'admin1');
+
+      expect(result.enqueued).toBe(2);
+      expect(enqueue).toHaveBeenCalledTimes(2);
+      expect(prisma.meeting.update).toHaveBeenCalledWith({
+        where: { id: 'm1' },
+        data: { documentsEmailSentAt: expect.any(Date) },
+      });
+    });
+
+    it('retry: enqueues only failed attendances and clears their error', async () => {
+      const enqueue = jest.fn().mockResolvedValue(undefined);
+      (service as any).enqueueDocumentsEmailJob = enqueue;
+
+      prisma.meeting.findUnique.mockResolvedValue({
+        ...baseMeeting,
+        documentsEmailSentAt: new Date('2026-05-06T14:00:00Z'),
+      });
+      prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1', fileName: 'A.pdf' }]);
+      prisma.meetingAttendance.count.mockResolvedValue(1);
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        { id: 'a3', shareholderId: 's3', rsvpToken: 't3', documentsEmailError: 'bounce' },
+      ]);
+
+      const result = await service.sendEmail('c1', 'm1', 'admin1');
+
+      expect(result.enqueued).toBe(1);
+      expect(prisma.meetingAttendance.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['a3'] } },
+        data: { documentsEmailError: null },
+      });
     });
   });
 });

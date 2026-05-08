@@ -125,4 +125,97 @@ export class MeetingDocumentsService {
     }
     await this.prisma.meetingDocument.delete({ where: { id: docId } });
   }
+
+  async getEmailDraft(coopId: string, meetingId: string) {
+    const meeting = await this.assertMeetingInCoop(coopId, meetingId);
+    const [recipientCount, sentCount, failedCount] = await Promise.all([
+      this.prisma.meetingAttendance.count({ where: { meetingId } }),
+      this.prisma.meetingAttendance.count({
+        where: { meetingId, documentsEmailSentAt: { not: null } },
+      }),
+      this.prisma.meetingAttendance.count({
+        where: { meetingId, documentsEmailError: { not: null } },
+      }),
+    ]);
+    return {
+      subject: meeting.documentsSubject,
+      intro: meeting.documentsIntro,
+      sentAt: meeting.documentsEmailSentAt,
+      recipientCount,
+      sentCount,
+      failedCount,
+    };
+  }
+
+  async updateEmailDraft(
+    coopId: string,
+    meetingId: string,
+    patch: { subject?: string; intro?: string },
+  ) {
+    await this.assertMeetingInCoop(coopId, meetingId);
+    const data: { documentsSubject?: string; documentsIntro?: string } = {};
+    if (patch.subject !== undefined) data.documentsSubject = patch.subject;
+    if (patch.intro !== undefined) data.documentsIntro = patch.intro;
+    await this.prisma.meeting.update({ where: { id: meetingId }, data });
+  }
+
+  async sendEmail(coopId: string, meetingId: string, adminUserId: string) {
+    const meeting = await this.assertMeetingInCoop(coopId, meetingId);
+    if (meeting.status !== 'CONVOKED') {
+      throw new BadRequestException('Meeting must be CONVOKED to send documents');
+    }
+    const docs = await this.prisma.meetingDocument.findMany({ where: { meetingId } });
+    if (docs.length === 0) throw new BadRequestException('No documents to send');
+
+    // Concurrency lock
+    if (meeting.documentsEmailSentAt) {
+      const ageMs = Date.now() - new Date(meeting.documentsEmailSentAt).getTime();
+      if (ageMs < 60_000) {
+        throw new BadRequestException('Send already in progress; try again in a minute');
+      }
+    }
+
+    const isRetry = meeting.documentsEmailSentAt != null;
+
+    if (isRetry) {
+      const failedCount = await this.prisma.meetingAttendance.count({
+        where: { meetingId, documentsEmailError: { not: null } },
+      });
+      if (failedCount === 0) throw new BadRequestException('No failed sends to retry');
+    }
+
+    const recipients = await this.prisma.meetingAttendance.findMany({
+      where: isRetry
+        ? { meetingId, documentsEmailError: { not: null } }
+        : { meetingId },
+    });
+
+    if (isRetry) {
+      await this.prisma.meetingAttendance.updateMany({
+        where: { id: { in: recipients.map((r) => r.id) } },
+        data: { documentsEmailError: null },
+      });
+    }
+
+    for (const recipient of recipients) {
+      await this.enqueueDocumentsEmailJob(meeting, recipient, docs);
+    }
+
+    await this.prisma.meeting.update({
+      where: { id: meetingId },
+      data: { documentsEmailSentAt: new Date() },
+    });
+
+    return { enqueued: recipients.length };
+  }
+
+  protected async enqueueDocumentsEmailJob(
+    meeting: { id: string; coopId: string },
+    recipient: { id: string; shareholderId: string; rsvpToken: string },
+    docs: Array<{ id: string; fileName: string }>,
+  ): Promise<void> {
+    // Wired to EmailService.queueDocumentsEmail in Task 6 (next).
+    // Left abstract here so the service unit-tests can stub it.
+    throw new Error('enqueueDocumentsEmailJob must be injected via EmailService');
+  }
 }
