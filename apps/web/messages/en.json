@@ -2311,11 +2311,13 @@
       "sentSummary": "Sent on {date} — {sent} of {total} successful",
       "resendFailed": "Resend to {count} failed",
       "statusTitle": "Status per member",
-      "status.shareholder": "Member",
-      "status.sent": "Sent",
-      "status.opened": "Opened",
-      "status.downloaded": "Downloaded",
-      "status.failed": "Failed",
+      "status": {
+        "shareholder": "Member",
+        "sent": "Sent",
+        "opened": "Opened",
+        "downloaded": "Downloaded",
+        "failed": "Failed"
+      },
       "notReady": "Send the convocation first before sharing documents.",
       "defaultSubject": "Documents for the {coopName} general meeting on {date}",
       "defaultIntro": "Dear member,\n\nAhead of our general meeting, please find the relevant documents below for your review.\n\nKind regards,\nThe board",
