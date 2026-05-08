@@ -619,9 +619,12 @@ function StatusTable({ coopId, meetingId }: { coopId: string; meetingId: string 
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-medium">{t('statusTitle')}</h2>
-      <p className="text-sm text-muted-foreground">
-        {t('statusSummary', { total: rows.length, sent: sentOk, failed, opened, downloaded })}
-      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label={t('status.sent')} value={sentOk} total={rows.length} />
+        <StatCard label={t('status.opened')} value={opened} total={rows.length} />
+        <StatCard label={t('status.downloaded')} value={downloaded} total={rows.length} />
+        <StatCard label={t('status.failed')} value={failed} total={rows.length} variant={failed > 0 ? 'destructive' : 'muted'} />
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -722,4 +725,34 @@ function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function StatCard({
+  label,
+  value,
+  total,
+  variant = 'default',
+}: {
+  label: string;
+  value: number;
+  total: number;
+  variant?: 'default' | 'destructive' | 'muted';
+}) {
+  const valueClass =
+    variant === 'destructive' && value > 0
+      ? 'text-destructive'
+      : variant === 'muted'
+        ? 'text-muted-foreground'
+        : 'text-foreground';
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <div className="rounded border p-3">
+      <div className={`text-2xl font-semibold ${valueClass}`}>
+        {value}
+        <span className="text-sm font-normal text-muted-foreground"> / {total}</span>
+      </div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{pct}%</div>
+    </div>
+  );
 }
