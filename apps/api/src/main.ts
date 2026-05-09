@@ -9,6 +9,12 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
 
+  // Default Express body-parser limit is 100KB. Kiosk signature PNGs from an
+  // iPad routinely exceed this; raise both JSON and urlencoded limits so the
+  // KioskService's own 2MB signature cap is the binding constraint.
+  app.useBodyParser('json', { limit: '5mb' });
+  app.useBodyParser('urlencoded', { limit: '5mb', extended: true });
+
   // Trust exactly 2 proxy hops (Cloudflare edge → Caddy → API container) so req.ip
   // reflects the real client IP instead of the Docker internal proxy address. Using a
   // specific count instead of `true` prevents X-Forwarded-For spoofing beyond the

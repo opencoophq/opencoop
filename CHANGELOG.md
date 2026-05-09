@@ -29,6 +29,14 @@ original SemVer-style tags.
   environment, so none had been stored.
 - A missing or malformed `FRONTEND_URL` now stops the API at startup with an explicit
   message instead of quietly falling back to `localhost`.
+- **AGM kiosk check-in could not submit signatures.** NestJS Express body-parser
+  defaulted to a 100KB JSON limit, but signature PNGs from an iPad routinely exceed
+  that. The `KioskService`'s own 2MB cap was unreachable: requests were rejected
+  with HTTP 413 before the controller ran. Bumped the JSON/urlencoded limit to 5MB
+  so the service-level limit is the binding constraint. Hardened the kiosk submit
+  handler to wrap `signaturePad.toDataURL()` inside the existing try/catch — a
+  synchronous throw there previously escaped as an unhandled rejection and surfaced
+  as a Next.js "Application error".
 
 ## [2026.30.1] - 2026-07-21
 
