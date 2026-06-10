@@ -29,6 +29,7 @@ import {
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { ArrowLeft, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { formatDateTime } from '@opencoop/shared';
 import type { MeetingDto, ProxyDto } from '@opencoop/shared';
 
 interface ProxyListItem extends ProxyDto {
@@ -180,11 +181,6 @@ export default function ProxiesPage() {
     }
   };
 
-  const formatDate = (iso?: string | null) =>
-    iso
-      ? new Date(iso).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })
-      : '—';
-
   if (!selectedCoop) {
     return (
       <div className="p-6">
@@ -267,7 +263,11 @@ export default function ProxiesPage() {
                         <Badge variant="outline">{t('meetings.proxies.notSigned')}</Badge>
                       )}
                     </TableCell>
-                    <TableCell>{formatDate(p.grantedAt)}</TableCell>
+                    <TableCell>
+                      {p.grantedAt
+                        ? formatDateTime(p.grantedAt, locale, { dateStyle: 'short', timeStyle: 'short' })
+                        : '—'}
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"

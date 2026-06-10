@@ -37,6 +37,7 @@ import {
   Pencil,
   FileText,
 } from 'lucide-react';
+import { formatDateTime } from '@opencoop/shared';
 import type {
   MeetingDto,
   MeetingStatus,
@@ -120,12 +121,6 @@ export default function MeetingDetailPage() {
       setDeleting(false);
     }
   };
-
-  const formatDateTime = (iso: string) =>
-    new Date(iso).toLocaleString(dateLocale, {
-      dateStyle: 'long',
-      timeStyle: 'short',
-    });
 
   const statusBadgeVariant = (
     status: MeetingStatus,
@@ -224,7 +219,10 @@ export default function MeetingDetailPage() {
       title: t('meetings.detail.convocation'),
       status: convocationDone
         ? t('meetings.detail.convocationSent', {
-            date: formatDateTime(meeting.convocationSentAt as string),
+            date: formatDateTime(meeting.convocationSentAt as string, dateLocale, {
+              dateStyle: 'long',
+              timeStyle: 'short',
+            }),
           })
         : t('meetings.detail.convocationPending'),
       done: convocationDone,
@@ -311,7 +309,7 @@ export default function MeetingDetailPage() {
             <div className="space-y-1">
               <CardTitle className="text-2xl">{meeting.title}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {formatDateTime(meeting.scheduledAt)}
+                {formatDateTime(meeting.scheduledAt, dateLocale, { dateStyle: 'long', timeStyle: 'short' })}
               </p>
             </div>
             <Badge variant={statusBadgeVariant(meeting.status)}>

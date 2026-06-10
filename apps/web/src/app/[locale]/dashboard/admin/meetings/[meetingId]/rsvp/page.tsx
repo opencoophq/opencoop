@@ -36,6 +36,7 @@ import {
   Download,
   Check,
 } from 'lucide-react';
+import { formatDateTime } from '@opencoop/shared';
 import type { MeetingDto, RSVPStatus, ProxyDto } from '@opencoop/shared';
 import {
   applyColumnFiltersAndSort,
@@ -199,11 +200,6 @@ export default function RsvpTrackerPage() {
 
   const shName = (sh: AttendanceRow['shareholder']) =>
     `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim() || '—';
-
-  const formatDate = (iso?: string | null) =>
-    iso
-      ? new Date(iso).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })
-      : '—';
 
   const rsvpVariant = (
     s: RSVPStatus,
@@ -478,7 +474,11 @@ export default function RsvpTrackerPage() {
                       <TableCell>
                         {row.rsvpStatus === 'PROXY' ? delegateName || '—' : '—'}
                       </TableCell>
-                      <TableCell>{formatDate(row.rsvpAt ?? null)}</TableCell>
+                      <TableCell>
+                        {row.rsvpAt
+                          ? formatDateTime(row.rsvpAt, locale, { dateStyle: 'short', timeStyle: 'short' })
+                          : '—'}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"

@@ -21,6 +21,7 @@ import {
   FileText,
   Upload,
 } from 'lucide-react';
+import { formatDateTime } from '@opencoop/shared';
 import type { MeetingDto, MeetingMinutesDto } from '@opencoop/shared';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -187,9 +188,6 @@ export default function MinutesPage() {
     );
   }
 
-  const formatDate = (iso?: string | null) =>
-    iso ? new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) : '';
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -287,7 +285,7 @@ export default function MinutesPage() {
                   </a>
                   {minutes.signedAt && (
                     <p className="text-sm text-muted-foreground">
-                      {t('meetings.minutes.signedAt')}: {formatDate(minutes.signedAt)}
+                      {t('meetings.minutes.signedAt')}: {formatDateTime(minutes.signedAt, locale, { dateStyle: 'medium', timeStyle: 'short' })}
                     </p>
                   )}
                   {minutes.signedByName && (
