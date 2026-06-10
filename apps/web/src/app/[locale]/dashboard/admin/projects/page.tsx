@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
+import { formatDate } from '@opencoop/shared';
 import { api } from '@/lib/api';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
@@ -227,10 +228,6 @@ export default function ProjectsPage() {
     } catch {
       setError(t('common.error'));
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale);
   };
 
   const getTypeBadgeVariant = (type: string) => {
@@ -481,8 +478,8 @@ export default function ProjectsPage() {
                       <TableCell className="text-right">
                         {project.estimatedAnnualMwh ? `${project.estimatedAnnualMwh} MWh` : '-'}
                       </TableCell>
-                      <TableCell>{project.startDate ? formatDate(project.startDate) : '-'}</TableCell>
-                      <TableCell>{project.endDate ? formatDate(project.endDate) : '-'}</TableCell>
+                      <TableCell>{project.startDate ? formatDate(project.startDate, locale) : '-'}</TableCell>
+                      <TableCell>{project.endDate ? formatDate(project.endDate, locale) : '-'}</TableCell>
                       <TableCell>
                         <Badge variant={project.isActive ? 'default' : 'secondary'}>
                           {project.isActive ? t('admin.projects.active') : t('admin.projects.inactive')}

@@ -29,7 +29,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useLocale } from '@/contexts/locale-context';
-import { formatCurrency } from '@opencoop/shared';
+import { formatCurrency, formatDate } from '@opencoop/shared';
 import { Plus, Edit, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -140,9 +140,6 @@ export default function CoopsManagementPage() {
 
   const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale);
-  };
 
   return (
     <div className="space-y-6">
@@ -213,7 +210,7 @@ export default function CoopsManagementPage() {
                         </Badge>
                       ) : coop.trialEndsAt ? (
                         <span className="text-sm text-muted-foreground">
-                          Trial ends {formatDate(coop.trialEndsAt)}
+                          Trial ends {formatDate(coop.trialEndsAt, locale)}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">—</span>
@@ -235,7 +232,7 @@ export default function CoopsManagementPage() {
                     </TableCell>
                     <TableCell className="text-right">{coop.shareholdersCount}</TableCell>
                     <TableCell className="text-right">{fmtCurrency(coop.totalCapital)}</TableCell>
-                    <TableCell>{formatDate(coop.createdAt)}</TableCell>
+                    <TableCell>{formatDate(coop.createdAt, locale)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => openEditDialog(coop)}>

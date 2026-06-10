@@ -31,7 +31,7 @@ import {
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { DatePicker } from '@/components/ui/date-picker';
-import { formatCurrency } from '@opencoop/shared';
+import { formatCurrency, formatDate } from '@opencoop/shared';
 import {
   applyColumnFiltersAndSort,
   toggleColumnSort,
@@ -197,10 +197,6 @@ export default function DividendsListPage() {
     } catch {
       setError(t('common.error'));
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale);
   };
 
   const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
@@ -417,7 +413,7 @@ export default function DividendsListPage() {
                     <TableRow key={period.id}>
                       <TableCell className="font-medium">{period.name}</TableCell>
                       <TableCell>{period.year}</TableCell>
-                      <TableCell>{formatDate(period.exDividendDate)}</TableCell>
+                      <TableCell>{formatDate(period.exDividendDate, locale)}</TableCell>
                       <TableCell className="text-right">{(period.dividendRate * 100).toFixed(2)}%</TableCell>
                       <TableCell className="text-right">
                         {period.totalGross > 0 ? fmtCurrency(period.totalGross) : '-'}
