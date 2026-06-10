@@ -18,6 +18,12 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { WaitlistDto } from './dto/waitlist.dto';
 import { MfaEnableDto, MfaVerifyDto, MfaDisableDto } from './dto/mfa.dto';
+import {
+  WebAuthnRegisterVerifyDto,
+  WebAuthnAuthenticateOptionsDto,
+  WebAuthnAuthenticateVerifyDto,
+  WebAuthnRenameCredentialDto,
+} from './dto/webauthn.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -307,7 +313,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify WebAuthn registration response' })
   async webauthnRegisterVerify(
     @CurrentUser() user: CurrentUserData,
-    @Body() body: { response: Record<string, unknown>; friendlyName?: string },
+    @Body() body: WebAuthnRegisterVerifyDto,
   ) {
     return this.webAuthnService.verifyRegistration(user.id, body.response as any, body.friendlyName);
   }
@@ -315,7 +321,7 @@ export class AuthController {
   @Public()
   @Post('webauthn/authenticate-options')
   @ApiOperation({ summary: 'Generate WebAuthn authentication options' })
-  async webauthnAuthenticateOptions(@Body() body: { email?: string }) {
+  async webauthnAuthenticateOptions(@Body() body: WebAuthnAuthenticateOptionsDto) {
     return this.webAuthnService.generateAuthenticationOptions(body.email);
   }
 
@@ -323,7 +329,7 @@ export class AuthController {
   @Post('webauthn/authenticate-verify')
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: 'Verify WebAuthn authentication response' })
-  async webauthnAuthenticateVerify(@Body() body: { response: Record<string, unknown> }, @Req() req: Request) {
+  async webauthnAuthenticateVerify(@Body() body: WebAuthnAuthenticateVerifyDto, @Req() req: Request) {
     const user = await this.webAuthnService.verifyAuthentication(body.response as any);
     await this.auditService.log({
       entity: 'Auth',
@@ -363,7 +369,7 @@ export class AuthController {
   async webauthnRenameCredential(
     @CurrentUser() user: CurrentUserData,
     @Param('id') credentialId: string,
-    @Body() body: { friendlyName: string },
+    @Body() body: WebAuthnRenameCredentialDto,
   ) {
     return this.webAuthnService.renameCredential(user.id, credentialId, body.friendlyName);
   }

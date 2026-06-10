@@ -19,6 +19,7 @@ import { BillingService } from '../billing/billing.service';
 import { CreateCoopDto } from '../coops/dto/create-coop.dto';
 import { UpdateCoopDto } from '../coops/dto/update-coop.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UpdateCoopBillingDto } from './dto/update-coop-billing.dto';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -181,7 +182,7 @@ export class SystemController {
   @ApiOperation({ summary: 'Update coop billing (extend trial, change plan)' })
   async updateCoopBilling(
     @Param('id') id: string,
-    @Body() data: { plan?: string; trialEndsAt?: string; extendTrialDays?: number },
+    @Body() data: UpdateCoopBillingDto,
   ) {
     return this.billingService.adminUpdateBilling(id, data);
   }
