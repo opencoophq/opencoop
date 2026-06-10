@@ -164,93 +164,12 @@ export function parseOgmCode(formatted: string): string {
 }
 
 /**
- * Format a Belgian national ID (rijksregisternummer).
- * Input: "90020112345" -> Output: "90.02.01-123.45"
- */
-export function formatNationalId(id: string): string {
-  const cleaned = id.replace(/[\s.-]/g, '');
-  if (cleaned.length !== 11) return id;
-  return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 4)}.${cleaned.slice(4, 6)}-${cleaned.slice(6, 9)}.${cleaned.slice(9)}`;
-}
-
-/**
- * Validate a Belgian national ID (rijksregisternummer).
- * Uses modulo 97 check.
- */
-export function validateNationalId(id: string): boolean {
-  const cleaned = id.replace(/[\s.-]/g, '');
-  if (cleaned.length !== 11) return false;
-  if (!/^\d{11}$/.test(cleaned)) return false;
-
-  const checkDigit = parseInt(cleaned.slice(9), 10);
-
-  // Try both with and without 2000 prefix
-  const base = parseInt(cleaned.slice(0, 9), 10);
-  const check1 = 97 - (base % 97);
-
-  if (check1 === checkDigit) return true;
-
-  // For people born in 2000+, prefix with 2
-  const base2000 = parseInt('2' + cleaned.slice(0, 9), 10);
-  const check2 = 97 - (base2000 % 97);
-
-  return check2 === checkDigit;
-}
-
-/**
- * Format a Belgian VAT number.
- * Input: "0123456789" -> Output: "BE 0123.456.789"
- */
-export function formatVatNumber(vat: string): string {
-  const cleaned = vat.replace(/[\s.BE]/g, '');
-  if (cleaned.length !== 10) return vat;
-  return `BE ${cleaned.slice(0, 4)}.${cleaned.slice(4, 7)}.${cleaned.slice(7)}`;
-}
-
-/**
- * Validate a Belgian VAT number (basic format check).
- */
-export function validateVatNumber(vat: string): boolean {
-  const cleaned = vat.replace(/[\s.BE]/g, '');
-  if (cleaned.length !== 10) return false;
-  if (!/^\d{10}$/.test(cleaned)) return false;
-  // First digit must be 0 or 1
-  return cleaned[0] === '0' || cleaned[0] === '1';
-}
-
-/**
  * Format an IBAN for display.
  * Input: "BE68539007547034" -> Output: "BE68 5390 0754 7034"
  */
 export function formatIban(iban: string): string {
   const cleaned = iban.replace(/\s/g, '').toUpperCase();
   return cleaned.replace(/(.{4})/g, '$1 ').trim();
-}
-
-/**
- * Validate an IBAN using ISO 7064 Mod 97-10 checksum.
- * Supports any country IBAN format.
- */
-export function validateIban(iban: string): boolean {
-  const cleaned = iban.replace(/\s/g, '').toUpperCase();
-
-  // Basic format check: 2 letters + 2 digits + up to 30 alphanumeric
-  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$/.test(cleaned)) return false;
-
-  // Move first 4 chars to end and convert letters to numbers (A=10, B=11, ...)
-  const rearranged = cleaned.slice(4) + cleaned.slice(0, 4);
-  const numeric = rearranged.replace(/[A-Z]/g, (ch) =>
-    (ch.charCodeAt(0) - 55).toString(),
-  );
-
-  // Mod 97 check (process in chunks to avoid BigInt for portability)
-  let remainder = numeric;
-  while (remainder.length > 2) {
-    const block = remainder.slice(0, 9);
-    remainder = (parseInt(block, 10) % 97).toString() + remainder.slice(block.length);
-  }
-
-  return parseInt(remainder, 10) % 97 === 1;
 }
 
 /**
