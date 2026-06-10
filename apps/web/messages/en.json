@@ -25,6 +25,7 @@
     "loading": "Loading...",
     "error": "An error occurred",
     "loadError": "Failed to load data",
+    "retry": "Try again",
     "actionError": "Action failed. Please try again.",
     "success": "Success",
     "save": "Save",

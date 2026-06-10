@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ErrorState } from '@/components/ui/error-state';
 import { CreditCard, Check, Clock, AlertTriangle, ExternalLink, Loader2 } from 'lucide-react';
 
 interface BillingInfo {
@@ -32,20 +33,26 @@ export default function BillingPage() {
   const searchParams = useSearchParams();
   const [billing, setBilling] = useState<BillingInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
   const success = searchParams.get('success');
   const canceled = searchParams.get('canceled');
 
-  useEffect(() => {
+  const loadBilling = useCallback(() => {
     if (!selectedCoop) return;
     setLoading(true);
+    setError(null);
     api<BillingInfo>(`/admin/coops/${selectedCoop.id}/billing`)
       .then(setBilling)
-      .catch(() => {})
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
   }, [selectedCoop]);
+
+  useEffect(() => {
+    loadBilling();
+  }, [loadBilling]);
 
   const handleCheckout = async (plan: 'ESSENTIALS' | 'PROFESSIONAL', billingPeriod: 'MONTHLY' | 'YEARLY') => {
     if (!selectedCoop) return;
@@ -82,6 +89,15 @@ export default function BillingPage() {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
+        <ErrorState onRetry={loadBilling} />
       </div>
     );
   }

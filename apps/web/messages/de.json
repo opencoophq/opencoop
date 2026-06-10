@@ -25,6 +25,7 @@
     "loading": "Wird geladen...",
     "error": "Ein Fehler ist aufgetreten",
     "loadError": "Laden der Daten fehlgeschlagen",
+    "retry": "Erneut versuchen",
     "actionError": "Aktion fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "success": "Erfolgreich",
     "save": "Speichern",

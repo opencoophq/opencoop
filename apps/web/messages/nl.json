@@ -25,6 +25,7 @@
     "loading": "Laden...",
     "error": "Er is een fout opgetreden",
     "loadError": "Laden van gegevens mislukt",
+    "retry": "Opnieuw proberen",
     "actionError": "Actie mislukt. Probeer het opnieuw.",
     "success": "Succes",
     "save": "Opslaan",
