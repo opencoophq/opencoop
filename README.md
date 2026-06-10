@@ -37,7 +37,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-The API runs on http://localhost:3001 (Swagger: http://localhost:3001/api/docs).
+The API runs on http://localhost:3001 (Swagger: http://localhost:3001/docs, disabled when `NODE_ENV=production`).
 The web app runs on http://localhost:3002.
 The docs app runs on http://localhost:3003.
 
@@ -70,10 +70,10 @@ opencoop/
 
 ## Production
 
-```bash
-docker compose up -d
-docker compose exec api npx prisma migrate deploy
-```
+Deploys are automated: GitHub Actions builds GHCR Docker images and ships them over SSH
+to fsn1 (push to `main` → acc, tag `v*` → prod). A dedicated one-shot migrate container
+runs `prisma migrate deploy` before the API starts, and Caddy handles the reverse proxy —
+there is no manual migrate step.
 
 ## Demo Credentials
 
