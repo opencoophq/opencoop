@@ -35,5 +35,8 @@ COPY --from=build /app/CHANGELOG.md ./CHANGELOG.md
 
 RUN mkdir -p /app/uploads/logos
 
+RUN addgroup -S app && adduser -S app -G app && chown -R app:app /app/uploads
+USER app
+
 EXPOSE 3001
 CMD ["node", "dist/main"]
