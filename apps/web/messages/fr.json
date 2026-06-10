@@ -25,6 +25,7 @@
     "loading": "Chargement...",
     "error": "Une erreur est survenue",
     "loadError": "Échec du chargement des données",
+    "retry": "Réessayer",
     "actionError": "Action échouée. Veuillez réessayer.",
     "success": "Succès",
     "save": "Enregistrer",

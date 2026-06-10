@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { api } from '@/lib/api';
+import { ErrorState } from '@/components/ui/error-state';
 import { History, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface AuditChange {
@@ -79,11 +80,13 @@ export default function SystemAuditPage() {
   const { locale } = useLocale();
   const [data, setData] = useState<AuditLogResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [entityFilter, setEntityFilter] = useState<string>('All');
 
   const fetchLogs = useCallback(() => {
     setLoading(true);
+    setError(null);
 
     const params = new URLSearchParams();
     params.set('page', String(page));
@@ -94,7 +97,7 @@ export default function SystemAuditPage() {
 
     api<AuditLogResponse>(`/system/audit-logs?${params.toString()}`)
       .then(setData)
-      .catch(() => {})
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
   }, [page, entityFilter]);
 
@@ -157,6 +160,8 @@ export default function SystemAuditPage() {
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
+          ) : error ? (
+            <ErrorState onRetry={fetchLogs} />
           ) : !data || data.items.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
               {t('audit.noChanges')}
