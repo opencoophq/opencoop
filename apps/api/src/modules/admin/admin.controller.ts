@@ -48,6 +48,9 @@ import { CreateShareholderDto } from '../shareholders/dto/create-shareholder.dto
 import { UpdateShareholderDto } from '../shareholders/dto/update-shareholder.dto';
 import { CreateBuyDto } from '../registrations/dto/create-buy.dto';
 import { CreateSellDto } from '../registrations/dto/create-sell.dto';
+import { CompleteRegistrationDto } from '../registrations/dto/complete-registration.dto';
+import { UpdatePaymentDateDto } from '../registrations/dto/update-payment-date.dto';
+import { AddPaymentDto } from '../registrations/dto/add-payment.dto';
 import { CreateShareClassDto } from '../shares/dto/create-share-class.dto';
 import { UpdateShareClassDto } from '../shares/dto/update-share-class.dto';
 import { CreateProjectDto } from '../projects/dto/create-project.dto';
@@ -700,7 +703,7 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
-    @Body() body: { bankDate?: string },
+    @Body() body: CompleteRegistrationDto,
   ) {
     const paymentDate = body?.bankDate ? new Date(body.bankDate) : undefined;
     return this.registrationsService.complete(id, user.id, paymentDate, coopId);
@@ -712,11 +715,8 @@ export class AdminController {
   async updatePaymentDate(
     @Param('coopId') coopId: string,
     @Param('id') id: string,
-    @Body() body: { bankDate: string },
+    @Body() body: UpdatePaymentDateDto,
   ) {
-    if (!body?.bankDate) {
-      throw new BadRequestException('bankDate is required');
-    }
     return this.registrationsService.updatePaymentDate(id, coopId, new Date(body.bankDate));
   }
 
@@ -727,14 +727,8 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
-    @Body() body: { amount: number; bankDate: string },
+    @Body() body: AddPaymentDto,
   ) {
-    if (!body?.amount || body.amount <= 0) {
-      throw new BadRequestException('amount must be a positive number');
-    }
-    if (!body?.bankDate) {
-      throw new BadRequestException('bankDate is required');
-    }
     return this.paymentsService.addPayment({
       registrationId: id,
       coopId,
