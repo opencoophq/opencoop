@@ -18,7 +18,7 @@ OpenCoop is a **multi-tenant SaaS platform** for managing cooperative shareholdi
 | **Monorepo** | pnpm workspaces + Turbo |
 | **Backend** | NestJS 10, Prisma 6, PostgreSQL 16 |
 | **Frontend** | Next.js 14 (App Router), React 18, Tailwind CSS |
-| **Auth** | JWT (Passport.js), next-auth |
+| **Auth** | JWT (Passport.js) on the API; access/refresh tokens in localStorage on the web (see `lib/api.ts`) |
 | **Queue** | Bull + Redis |
 | **i18n** | next-intl (EN/NL/FR/DE) |
 | **PDF** | @react-pdf/renderer |
@@ -83,8 +83,8 @@ export class ShareholdersController {
 ### Frontend (Next.js)
 
 - **Routing**: App Router with `[locale]` dynamic segment for i18n
-- **Auth**: next-auth with JWT strategy
-- **State**: React Query for server state, React Context for UI state
+- **Auth**: custom JWT — access/refresh tokens stored in localStorage and attached by the `api()` helper in `lib/api.ts` (no next-auth)
+- **State**: client components fetch via `useEffect` + the `api()` helper into React state (no React Query); React Context for shared UI state
 - **Components**: Radix UI primitives wrapped in `components/ui/`
 - **API calls**: Use `api()` helper from `@/lib/api` (handles auth, JSON, 401 redirect) instead of raw `fetch`
 
@@ -98,7 +98,7 @@ app/[locale]/
 ### Database (Prisma)
 
 - **Schema location**: `packages/database/prisma/schema.prisma`
-- **27 models** with multi-tenant isolation via `coopId` foreign key
+- **48 models** with multi-tenant isolation via `coopId` foreign key
 - **Key enums**: `Role`, `ShareholderType`, `TransactionStatus`, `PaymentStatus`
 
 ## Key Files Reference
@@ -147,11 +147,11 @@ Controls whether the pricing page CTAs link to `/onboarding` or open a waitlist 
 
 ## API Documentation
 
-Swagger UI available at: `http://localhost:3001/api/docs`
+Swagger UI available at: `http://localhost:3001/docs` (mounted via `SwaggerModule.setup('docs', ...)` in `main.ts`). Disabled when `NODE_ENV=production`, so there is no Swagger in prod.
 
 ## AI Integration
 
-- **MCP Server:** `POST /mcp` — Streamable HTTP transport, public, no auth. Tools: `list_coops`, `get_coop_info`, `list_projects`, `list_share_classes`, `get_share_purchase_url`
+- **MCP Server:** `POST /mcp` — Streamable HTTP transport. Requires a coop API key via `Authorization: Bearer <key>` (enforced by `McpAuthMiddleware`, see `app.module.ts`), with per-key tenant scoping. Tools: `list_coops`, `get_coop_info`, `list_projects`, `list_share_classes`, `get_share_purchase_url`
 - **llms.txt:** `GET /llms.txt` — Plain text API overview for LLMs
 - **llms-full.txt:** `GET /llms-full.txt` — Full public data dump (cached 5 min)
 
@@ -249,15 +249,16 @@ A demo coop exists in production for showcasing the platform:
 
 ## Deployment
 
-Production uses Docker Compose with:
+CI/CD builds GHCR Docker images via GitHub Actions, then deploys them over SSH to fsn1
+(push to `main` → acc, tag `v*` → prod). The stack runs under Docker Compose:
 - PostgreSQL 16
 - Redis 7
 - NestJS API (multi-stage build)
 - Next.js Web (standalone output)
-- Nginx reverse proxy
+- A dedicated one-shot migrate container that runs `prisma migrate deploy` **before** the API starts
+- Caddy reverse proxy on fsn1 (shared `proxy` network, not bundled in this compose file)
 
-```bash
-docker-compose up -d
-docker-compose exec api npx prisma migrate deploy
-```
+Deploys recreate containers without touching volumes (`--force-recreate`); the migrate
+container applies pending migrations, so there is no manual `docker compose exec api ...`
+migrate step.
 
