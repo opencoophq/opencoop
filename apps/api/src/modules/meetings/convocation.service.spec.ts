@@ -1,6 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { getQueueToken } from '@nestjs/bull';
 import { ConvocationService } from './convocation.service';
+import { ConvocationProcessor } from './convocation.processor';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { EmailProcessor } from '../email/email.processor';
@@ -27,6 +29,7 @@ describe('ConvocationService', () => {
   let emailService: any;
   let emailProcessor: any;
   let pdfService: any;
+  let convocationQueue: any;
 
   const FAR_FUTURE = new Date(Date.now() + 30 * 24 * 3600 * 1000);
 
@@ -51,6 +54,7 @@ describe('ConvocationService', () => {
     emailService = { send: jest.fn().mockResolvedValue(undefined) };
     emailProcessor = { renderTemplate: jest.fn().mockReturnValue('<html>preview</html>') };
     pdfService = { convocation: jest.fn().mockResolvedValue(Buffer.from('pdf-bytes')) };
+    convocationQueue = { add: jest.fn().mockResolvedValue(undefined) };
     prisma = {
       meeting: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({}) },
       coop: { findUnique: jest.fn().mockResolvedValue({ logoUrl: null }) },
@@ -75,6 +79,7 @@ describe('ConvocationService', () => {
         { provide: EmailService, useValue: emailService },
         { provide: EmailProcessor, useValue: emailProcessor },
         { provide: MeetingPdfService, useValue: pdfService },
+        { provide: getQueueToken('meetings-convocation'), useValue: convocationQueue },
       ],
     }).compile();
     service = moduleRef.get(ConvocationService);
@@ -112,10 +117,51 @@ describe('ConvocationService', () => {
       const scheduledAt = new Date(Date.now() + 10 * 24 * 3600 * 1000);
       prisma.meeting.findUnique.mockResolvedValue(makeMeeting({ scheduledAt }));
       prisma.shareholder.findMany.mockResolvedValue([]);
-      const result = await service.send('c1', 'm1', { confirmShortNotice: true });
+      // processSend is where the actual work runs; short notice is allowed by
+      // the time the job is processed (the queue carries confirmShortNotice).
+      const result = await service.processSend('c1', 'm1', { confirmShortNotice: true });
       // No shareholders to send to → returns alreadySent for empty needsSend set.
       expect(prisma.meeting.update).not.toHaveBeenCalled();
       expect(result).toEqual({ alreadySent: true });
+    });
+  });
+
+  describe('send() enqueues the convocation job', () => {
+    it('enqueues a send job and returns { queued: true } after validation passes', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+
+      const result = await service.send('c1', 'm1', { confirmShortNotice: true });
+
+      expect(result).toEqual({ queued: true });
+      expect(convocationQueue.add).toHaveBeenCalledTimes(1);
+      const [name, data, jobOpts] = convocationQueue.add.mock.calls[0];
+      expect(name).toBe('send');
+      expect(data).toEqual({
+        coopId: 'c1',
+        meetingId: 'm1',
+        opts: { confirmShortNotice: true },
+      });
+      expect(jobOpts).toEqual(
+        expect.objectContaining({
+          attempts: 2,
+          backoff: { type: 'exponential', delay: 60_000 },
+          removeOnComplete: true,
+          removeOnFail: 200,
+        }),
+      );
+      // No heavy work should run synchronously in the request thread.
+      expect(prisma.shareholder.findMany).not.toHaveBeenCalled();
+      expect(emailService.send).not.toHaveBeenCalled();
+    });
+
+    it('throws short-notice validation synchronously and does NOT enqueue', async () => {
+      const scheduledAt = new Date(Date.now() + 10 * 24 * 3600 * 1000);
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting({ scheduledAt }));
+
+      await expect(service.send('c1', 'm1', { confirmShortNotice: false })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(convocationQueue.add).not.toHaveBeenCalled();
     });
   });
 
@@ -129,7 +175,7 @@ describe('ConvocationService', () => {
         { shareholderId: 's1', rsvpToken: 'tok-s1', convocationSentAt: new Date() },
       ]);
 
-      const res = await service.send('c1', 'm1', {});
+      const res = await service.processSend('c1', 'm1', {});
 
       expect(res).toEqual({ alreadySent: true });
       expect(emailService.send).not.toHaveBeenCalled();
@@ -150,7 +196,7 @@ describe('ConvocationService', () => {
         { shareholderId: 's3', rsvpToken: 'tok-s3', convocationSentAt: null },
       ]);
 
-      const res = await service.send('c1', 'm1', {});
+      const res = await service.processSend('c1', 'm1', {});
       const sent = (res as any).sent as Array<{ to: string; shareholderIds: string[] }>;
 
       expect(sent.map((s) => s.to).sort()).toEqual(['b@x.com', 'c@x.com']);
@@ -167,7 +213,7 @@ describe('ConvocationService', () => {
         { shareholderId: 's1', rsvpToken: 'persisted-token', convocationSentAt: null },
       ]);
 
-      await service.send('c1', 'm1', {});
+      await service.processSend('c1', 'm1', {});
 
       expect(prisma.meetingAttendance.upsert).not.toHaveBeenCalled();
       const sentCall = emailService.send.mock.calls[0][0];
@@ -183,7 +229,7 @@ describe('ConvocationService', () => {
       // No prior attendances → both will be created fresh.
       prisma.meetingAttendance.findMany.mockResolvedValue([]);
 
-      await service.send('c1', 'm1', { confirmShortNotice: true });
+      await service.processSend('c1', 'm1', { confirmShortNotice: true });
 
       expect(prisma.meetingAttendance.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -201,7 +247,7 @@ describe('ConvocationService', () => {
       prisma.meetingAttendance.findMany.mockResolvedValue([]);
       emailService.send.mockRejectedValueOnce(new Error('SMTP exploded'));
 
-      const res = await service.send('c1', 'm1', { confirmShortNotice: true });
+      const res = await service.processSend('c1', 'm1', { confirmShortNotice: true });
 
       expect(prisma.meetingAttendance.updateMany).not.toHaveBeenCalled();
       const failures = (res as any).failures;
@@ -287,7 +333,7 @@ describe('ConvocationService', () => {
         { id: 's3', email: null, user: { email: 'piet@x.com' }, firstName: 'Piet', lastName: 'C', coopId: 'c1' },
       ]);
 
-      const result = await service.send('c1', 'm1', { confirmShortNotice: true });
+      const result = await service.processSend('c1', 'm1', { confirmShortNotice: true });
 
       expect(result).toHaveProperty('sent');
       const sent = (result as any).sent as Array<{ to: string; shareholderIds: string[] }>;
@@ -310,7 +356,7 @@ describe('ConvocationService', () => {
         { id: 's2', email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'B', coopId: 'c1' },
       ]);
 
-      await service.send('c1', 'm1', { confirmShortNotice: true });
+      await service.processSend('c1', 'm1', { confirmShortNotice: true });
 
       // Two shareholders sharing one inbox => one email with two attachments
       expect(emailService.send).toHaveBeenCalledTimes(1);
@@ -331,7 +377,7 @@ describe('ConvocationService', () => {
       ]);
       pdfService.convocation.mockRejectedValueOnce(new Error('renderToBuffer crashed'));
 
-      const res = await service.send('c1', 'm1', { confirmShortNotice: true });
+      const res = await service.processSend('c1', 'm1', { confirmShortNotice: true });
 
       expect(emailService.send).toHaveBeenCalledTimes(1);
       const call = emailService.send.mock.calls[0][0];
@@ -347,13 +393,49 @@ describe('ConvocationService', () => {
         { id: 's3', email: null, user: { email: null }, firstName: 'Also', lastName: 'Postal', coopId: 'c1' },
       ]);
 
-      const result = await service.send('c1', 'm1', { confirmShortNotice: true });
+      const result = await service.processSend('c1', 'm1', { confirmShortNotice: true });
       const sent = (result as any).sent as Array<{ to: string; shareholderIds: string[] }>;
 
       expect(sent.map((s) => s.to)).not.toContain(null);
       expect(sent).toHaveLength(1);
       expect(sent[0].to).toBe('real@x.com');
       expect(emailService.send).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('ConvocationProcessor', () => {
+    it('calls processSend with the job data and returns its result', async () => {
+      const processSend = jest
+        .fn()
+        .mockResolvedValue({ alreadySent: false, sent: [], failures: [] });
+      const processor = new ConvocationProcessor({ processSend } as any);
+
+      const job: any = {
+        attemptsMade: 0,
+        data: { coopId: 'c1', meetingId: 'm1', opts: { confirmShortNotice: true } },
+      };
+      const result = await processor.send(job);
+
+      expect(processSend).toHaveBeenCalledWith('c1', 'm1', { confirmShortNotice: true });
+      expect(result).toEqual({ alreadySent: false, sent: [], failures: [] });
+    });
+
+    it('defaults opts to {} when the job omits them', async () => {
+      const processSend = jest.fn().mockResolvedValue({ alreadySent: true });
+      const processor = new ConvocationProcessor({ processSend } as any);
+
+      await processor.send({ attemptsMade: 1, data: { coopId: 'c1', meetingId: 'm1' } } as any);
+
+      expect(processSend).toHaveBeenCalledWith('c1', 'm1', {});
+    });
+
+    it('re-throws so Bull retries when processSend fails', async () => {
+      const processSend = jest.fn().mockRejectedValue(new Error('worker boom'));
+      const processor = new ConvocationProcessor({ processSend } as any);
+
+      await expect(
+        processor.send({ attemptsMade: 0, data: { coopId: 'c1', meetingId: 'm1' } } as any),
+      ).rejects.toThrow('worker boom');
     });
   });
 });

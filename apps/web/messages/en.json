@@ -2050,7 +2050,7 @@
       "preview": "Preview",
       "send": "Send convocation",
       "sendConfirm": "This will email the convocation to all active shareholders. Continue?",
-      "sendSuccess": "Convocation sent",
+      "sendSuccess": "Convocation is being sent in the background",
       "sendFailure": "Failed to send convocation",
       "daysUntil": "Days until meeting",
       "daysBefore": "{days} days",

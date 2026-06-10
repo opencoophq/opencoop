@@ -19,11 +19,13 @@ import { MeetingPdfService } from './pdf.service';
 import { MeetingDocumentsService } from './meeting-documents.service';
 import { ReminderProcessor } from './reminder.processor';
 import { ReminderScheduler } from './reminder.scheduler';
+import { ConvocationProcessor } from './convocation.processor';
 
 @Module({
   imports: [
     EmailModule,
     BullModule.registerQueue({ name: 'meetings-reminder' }),
+    BullModule.registerQueue({ name: 'meetings-convocation' }),
   ],
   controllers: [
     MeetingsController,
@@ -46,6 +48,7 @@ import { ReminderScheduler } from './reminder.scheduler';
     MeetingDocumentsService,
     ReminderProcessor,
     ReminderScheduler,
+    ConvocationProcessor,
   ],
   exports: [
     MeetingsService,
