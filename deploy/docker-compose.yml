@@ -105,6 +105,7 @@ services:
       NEXTAUTH_URL: ${FRONTEND_URL}
       NEXTAUTH_SECRET: ${JWT_SECRET}
       LAUNCH_MODE: ${LAUNCH_MODE:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:
       - api
     networks:
