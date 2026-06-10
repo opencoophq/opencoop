@@ -52,6 +52,15 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
         host: new URL(process.env.REDIS_URL || 'redis://localhost:6379').hostname,
         port: parseInt(new URL(process.env.REDIS_URL || 'redis://localhost:6379').port || '6379', 10),
       },
+      // Retry transient failures (e.g. SMTP blips) and stop unbounded Redis growth.
+      // Email jobs are idempotent: the EmailLog row is created before enqueue and
+      // updated by id in the processor, so a retry re-sends without duplicating logs.
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 30_000 },
+        removeOnComplete: true,
+        removeOnFail: 500,
+      },
     }),
     PrismaModule,
     AuditModule,
