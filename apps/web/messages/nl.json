@@ -2050,7 +2050,7 @@
       "preview": "Voorbeeld",
       "send": "Oproeping versturen",
       "sendConfirm": "Hiermee wordt de oproeping per e-mail verstuurd naar alle actieve vennoten. Doorgaan?",
-      "sendSuccess": "Oproeping verstuurd",
+      "sendSuccess": "Oproeping wordt op de achtergrond verstuurd",
       "sendFailure": "Kon oproeping niet versturen",
       "daysUntil": "Dagen tot vergadering",
       "daysBefore": "{days} dagen",

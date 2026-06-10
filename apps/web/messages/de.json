@@ -2047,7 +2047,7 @@
       "preview": "Vorschau",
       "send": "Einberufung senden",
       "sendConfirm": "Die Einberufung wird per E-Mail an alle aktiven Mitglieder gesendet. Fortfahren?",
-      "sendSuccess": "Einberufung versandt",
+      "sendSuccess": "Einberufung wird im Hintergrund versandt",
       "sendFailure": "Einberufung konnte nicht gesendet werden",
       "daysUntil": "Tage bis zur Versammlung",
       "daysBefore": "{days} Tage",

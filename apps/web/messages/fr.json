@@ -2047,7 +2047,7 @@
       "preview": "Aperçu",
       "send": "Envoyer la convocation",
       "sendConfirm": "Ceci enverra la convocation par e-mail à tous les coopérateurs actifs. Continuer ?",
-      "sendSuccess": "Convocation envoyée",
+      "sendSuccess": "La convocation est envoyée en arrière-plan",
       "sendFailure": "Échec de l'envoi de la convocation",
       "daysUntil": "Jours avant l'assemblée",
       "daysBefore": "{days} jours",
