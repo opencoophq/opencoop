@@ -39,6 +39,8 @@ jobs:
           pnpm --filter @opencoop/web exec next lint
       - name: Unit tests (api)
         run: pnpm --filter @opencoop/api test
+      - name: Dependency audit (report only)
+        run: pnpm audit --prod || true
 
   e2e:
     runs-on: ubuntu-latest
