@@ -796,6 +796,7 @@ model BankTransaction {
   bankImport     BankImport? @relation(fields: [bankImportId], references: [id], onDelete: Cascade)
   matchedPayment Payment?
 
+  @@index([coopId, matchStatus])
   @@map("bank_transactions")
 }
 
@@ -845,6 +846,7 @@ model DividendPayout {
   shareholder    Shareholder    @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
 
   @@unique([dividendPeriodId, shareholderId])
+  @@index([shareholderId])
   @@map("dividend_payouts")
 }
 
@@ -865,6 +867,7 @@ model EmailLog {
 
   coop Coop @relation(fields: [coopId], references: [id], onDelete: Cascade)
 
+  @@index([coopId])
   @@map("email_logs")
 }
 
