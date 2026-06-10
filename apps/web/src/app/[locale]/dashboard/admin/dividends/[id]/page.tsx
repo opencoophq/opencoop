@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
-import { formatCurrency } from '@opencoop/shared';
+import { formatCurrency, formatDate } from '@opencoop/shared';
 import { ChevronLeft, Calculator, Check, Download } from 'lucide-react';
 
 interface DividendPayout {
@@ -137,10 +137,6 @@ export default function DividendDetailPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale);
-  };
-
   const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
 
   const getShareholderName = (shareholder: DividendPayout['shareholder']) => {
@@ -206,7 +202,7 @@ export default function DividendDetailPage() {
           <div>
             <h1 className="text-2xl font-bold">{period.name}</h1>
             <p className="text-muted-foreground">
-              {period.year} - {formatDate(period.exDividendDate)}
+              {period.year} - {formatDate(period.exDividendDate, locale)}
             </p>
           </div>
         </div>

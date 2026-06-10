@@ -25,6 +25,7 @@ import {
   type ColumnSortState,
 } from '@/lib/table-utils';
 import { Plus, Eye, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { formatDateTime } from '@opencoop/shared';
 import type { MeetingDto, MeetingStatus, MeetingType } from '@opencoop/shared';
 
 interface MeetingListItem extends MeetingDto {
@@ -66,13 +67,6 @@ export default function MeetingsListPage() {
   useEffect(() => {
     fetchMeetings();
   }, [fetchMeetings]);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString(locale, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-  };
 
   const statusBadgeVariant = (
     status: MeetingStatus,
@@ -259,7 +253,7 @@ export default function MeetingsListPage() {
                           {meeting.title}
                         </Link>
                       </TableCell>
-                      <TableCell>{formatDate(meeting.scheduledAt)}</TableCell>
+                      <TableCell>{formatDateTime(meeting.scheduledAt, locale, { dateStyle: 'medium', timeStyle: 'short' })}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{typeLabel(meeting.type)}</Badge>
                       </TableCell>

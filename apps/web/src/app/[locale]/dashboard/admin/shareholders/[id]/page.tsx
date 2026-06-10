@@ -39,7 +39,7 @@ import {
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { DatePicker } from '@/components/ui/date-picker';
-import { formatCurrency, formatIban } from '@opencoop/shared';
+import { formatCurrency, formatDate, formatIban } from '@opencoop/shared';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -610,10 +610,6 @@ export default function ShareholderDetailPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale);
-  };
-
   const fmtCurrency = (amount: number) => formatCurrency(amount, locale);
 
   const getPaymentDate = (reg: Registration): string | null => {
@@ -1075,7 +1071,7 @@ export default function ShareholderDetailPage() {
                         <TableCell className="text-right">
                           {fmtCurrency((reg.sharesOwned ?? reg.quantity) * reg.shareClass.pricePerShare)}
                         </TableCell>
-                        <TableCell>{formatDate(reg.registerDate)}</TableCell>
+                        <TableCell>{formatDate(reg.registerDate, locale)}</TableCell>
                         <TableCell>
                           {reg.status === 'COMPLETED' && editingDateId === reg.id ? (
                             <Input
@@ -1097,7 +1093,7 @@ export default function ShareholderDetailPage() {
                               className={reg.status === 'COMPLETED' ? 'cursor-pointer hover:underline' : ''}
                               onClick={() => reg.status === 'COMPLETED' && setEditingDateId(reg.id)}
                             >
-                              {payDate ? formatDate(payDate) : '-'}
+                              {payDate ? formatDate(payDate, locale) : '-'}
                             </span>
                           )}
                         </TableCell>
@@ -1155,7 +1151,7 @@ export default function ShareholderDetailPage() {
                   const payDate = getPaymentDate(reg);
                   return (
                   <TableRow key={reg.id}>
-                    <TableCell>{formatDate(reg.createdAt)}</TableCell>
+                    <TableCell>{formatDate(reg.createdAt, locale)}</TableCell>
                     <TableCell>
                       {reg.status === 'COMPLETED' && editingDateId === reg.id ? (
                         <Input
@@ -1177,7 +1173,7 @@ export default function ShareholderDetailPage() {
                           className={reg.status === 'COMPLETED' ? 'cursor-pointer hover:underline' : ''}
                           onClick={() => reg.status === 'COMPLETED' && setEditingDateId(reg.id)}
                         >
-                          {payDate ? formatDate(payDate) : '-'}
+                          {payDate ? formatDate(payDate, locale) : '-'}
                         </span>
                       )}
                     </TableCell>
@@ -1275,7 +1271,7 @@ export default function ShareholderDetailPage() {
                 {auditLogs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="whitespace-nowrap">
-                      {formatDate(log.createdAt)}
+                      {formatDate(log.createdAt, locale)}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">

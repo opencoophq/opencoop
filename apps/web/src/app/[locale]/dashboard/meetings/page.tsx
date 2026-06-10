@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Eye, Loader2 } from 'lucide-react';
+import { formatDateTime } from '@opencoop/shared';
 import type { MeetingDto } from '@opencoop/shared';
 
 interface ShareholderMeeting extends MeetingDto {
@@ -27,12 +28,6 @@ export default function ShareholderMeetingsPage() {
       .catch(() => setMeetings([]))
       .finally(() => setLoading(false));
   }, []);
-
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleString(locale, {
-      dateStyle: 'long',
-      timeStyle: 'short',
-    });
 
   if (loading) {
     return (
@@ -73,7 +68,7 @@ export default function ShareholderMeetingsPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      {formatDate(m.scheduledAt)}
+                      {formatDateTime(m.scheduledAt, locale, { dateStyle: 'long', timeStyle: 'short' })}
                     </span>
                     {m.location && (
                       <span className="flex items-center gap-1">

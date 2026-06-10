@@ -1,4 +1,37 @@
 /**
+ * Format an ISO date string as a localized date (e.g. "31/12/2026" for nl-BE).
+ * Returns '' for nullish/invalid input. An optional Intl.DateTimeFormatOptions
+ * lets callers control the rendered style (e.g. { dateStyle: 'long' }).
+ */
+export function formatDate(
+  iso: string | null | undefined,
+  locale = 'nl-BE',
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(locale, options);
+}
+
+/**
+ * Format an ISO date string as a localized date + time using a single combined
+ * format (toLocaleString). Returns '' for nullish/invalid input. The default
+ * options match { dateStyle: 'medium', timeStyle: 'short' }; callers can pass
+ * their own to control the rendered style.
+ */
+export function formatDateTime(
+  iso: string | null | undefined,
+  locale = 'nl-BE',
+  options: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' },
+): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString(locale, options);
+}
+
+/**
  * Compute total paid from a list of payments.
  */
 export function computeTotalPaid(payments: { amount: number | string | { toString(): string } }[]): number {

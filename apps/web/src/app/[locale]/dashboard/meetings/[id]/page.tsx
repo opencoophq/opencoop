@@ -21,6 +21,7 @@ import {
   X,
   Users,
 } from 'lucide-react';
+import { formatDateTime } from '@opencoop/shared';
 import type { MeetingDto, AgendaItemDto } from '@opencoop/shared';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -194,12 +195,6 @@ export default function ShareholderMeetingDetailPage() {
     );
   }
 
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleString(locale, {
-      dateStyle: 'full',
-      timeStyle: 'short',
-    });
-
   return (
     <div className="space-y-6">
       <Button asChild variant="ghost" size="sm">
@@ -223,7 +218,7 @@ export default function ShareholderMeetingDetailPage() {
         <CardContent className="pt-6 space-y-3 text-sm">
           <div className="flex items-start gap-2">
             <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
-            <span>{formatDate(meeting.scheduledAt)}</span>
+            <span>{formatDateTime(meeting.scheduledAt, locale, { dateStyle: 'full', timeStyle: 'short' })}</span>
           </div>
           {meeting.location && (
             <div className="flex items-start gap-2">
@@ -249,7 +244,7 @@ export default function ShareholderMeetingDetailPage() {
                   </div>
                   {meeting.myAttendance.rsvpAt && (
                     <div className="text-xs text-muted-foreground">
-                      {new Date(meeting.myAttendance.rsvpAt).toLocaleString(locale, {
+                      {formatDateTime(meeting.myAttendance.rsvpAt, locale, {
                         dateStyle: 'long',
                         timeStyle: 'short',
                       })}

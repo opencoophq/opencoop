@@ -29,6 +29,7 @@ import {
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { ArrowLeft, Mail, Eye, AlertTriangle, Send, BellRing } from 'lucide-react';
+import { formatDateTime } from '@opencoop/shared';
 import type { MeetingDto, RSVPStatus } from '@opencoop/shared';
 
 type MeetingWithCoop = MeetingDto & {
@@ -408,13 +409,6 @@ export default function ConvocationPage() {
     }
   };
 
-  const formatDateTime = (iso?: string | null) =>
-    iso
-      ? new Date(iso).toLocaleString(locale, { dateStyle: 'long', timeStyle: 'short' })
-      : '—';
-
-  const formatDate = (iso?: string | null) =>
-    iso ? new Date(iso).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' }) : '—';
 
   const shName = (sh: ConvocationStatusItem['shareholder']) =>
     `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim() || '—';
@@ -489,7 +483,7 @@ export default function ConvocationPage() {
           <dl className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <dt className="text-muted-foreground">{t('meetings.detail.scheduled')}</dt>
-              <dd className="font-medium">{formatDateTime(meeting.scheduledAt)}</dd>
+              <dd className="font-medium">{formatDateTime(meeting.scheduledAt, locale, { dateStyle: 'long', timeStyle: 'short' })}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">{t('meetings.detail.status')}</dt>
@@ -641,7 +635,7 @@ export default function ConvocationPage() {
               <Badge className="bg-green-600 hover:bg-green-600">
                 {t('meetings.convocation.alreadyConvoked')}{' '}
                 {meeting.convocationSentAt &&
-                  `— ${formatDateTime(meeting.convocationSentAt)}`}
+                  `— ${formatDateTime(meeting.convocationSentAt, locale, { dateStyle: 'long', timeStyle: 'short' })}`}
               </Badge>
             ) : (
               <Button onClick={() => setSendOpen(true)}>
@@ -727,7 +721,11 @@ export default function ConvocationPage() {
                         )}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatDate(row.rsvpAt ?? null)}</TableCell>
+                    <TableCell>
+                      {row.rsvpAt
+                        ? formatDateTime(row.rsvpAt, locale, { dateStyle: 'short', timeStyle: 'short' })
+                        : '—'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { CheckCircle2, XCircle, UserCheck, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { formatDateTime } from '@opencoop/shared';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -103,12 +104,6 @@ export default function PublicRsvpPage() {
       .catch(() => setLoadError('generic'))
       .finally(() => setLoading(false));
   }, [token]);
-
-  const formatDateTime = (iso: string) =>
-    new Date(iso).toLocaleString(locale, {
-      dateStyle: 'full',
-      timeStyle: 'short',
-    });
 
   const submitRsvp = async (
     status: RsvpStatus,
@@ -282,7 +277,7 @@ export default function PublicRsvpPage() {
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-start gap-2">
                 <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>{formatDateTime(details.meeting.scheduledAt)}</span>
+                <span>{formatDateTime(details.meeting.scheduledAt, locale, { dateStyle: 'full', timeStyle: 'short' })}</span>
               </div>
               {details.meeting.location && (
                 <div className="flex items-start gap-2">
