@@ -380,7 +380,9 @@ export class ShareholderImportService {
       address: buildAddress(row) ? JSON.parse(JSON.stringify(buildAddress(row))) : undefined,
     });
 
-    // Create shareholders and audit log in a single transaction
+    // Create shareholders and audit log in a single transaction.
+    // Explicit timeout: this is an interactive transaction with one write per row;
+    // Prisma's default 5s timeout would abort large imports mid-way.
     await this.prisma.$transaction(async (tx) => {
       // Pass 1: create primary (non-linked) rows
       for (const item of primaryRows) {
@@ -445,7 +447,7 @@ export class ShareholderImportService {
           userAgent: userAgent || null,
         },
       });
-    });
+    }, { timeout: 120_000, maxWait: 15_000 });
 
     result.created = validRows.length;
 
