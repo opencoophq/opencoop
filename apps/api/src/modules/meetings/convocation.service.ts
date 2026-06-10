@@ -5,6 +5,8 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { EmailProcessor } from '../email/email.processor';
@@ -46,6 +48,8 @@ export type SendConvocationResult =
       failures: Array<{ to: string; shareholderIds?: string[]; error: string }>;
     };
 
+export type EnqueueConvocationResult = { queued: true };
+
 @Injectable()
 export class ConvocationService {
   private readonly logger = new Logger(ConvocationService.name);
@@ -55,6 +59,7 @@ export class ConvocationService {
     private email: EmailService,
     private emailProcessor: EmailProcessor,
     private pdf: MeetingPdfService,
+    @InjectQueue('meetings-convocation') private convocationQueue: Queue,
   ) {}
 
   /**
@@ -147,7 +152,22 @@ export class ConvocationService {
     };
   }
 
-  async send(coopId: string, meetingId: string, opts: SendConvocationOpts = {}): Promise<SendConvocationResult> {
+  /**
+   * Validate the convocation request synchronously (so the admin gets immediate
+   * errors for not-found / wrong-coop / short-notice) and then enqueue the heavy
+   * work — per-shareholder PDF rendering and email sending — onto the
+   * `meetings-convocation` Bull queue. The job runs in a worker via
+   * {@link processSend}, keeping the HTTP request fast and giving the send
+   * automatic retries on transient failures.
+   *
+   * The actual send is idempotent (guarded by `convocationSentAt`), so a retry
+   * only re-mails groups not yet marked sent.
+   */
+  async send(
+    coopId: string,
+    meetingId: string,
+    opts: SendConvocationOpts = {},
+  ): Promise<EnqueueConvocationResult> {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
       include: {
@@ -166,6 +186,47 @@ export class ConvocationService {
         `Meeting is less than ${minDays} days away (this coop's configured minimum convocation notice). Set confirmShortNotice=true to override.`,
       );
     }
+
+    await this.convocationQueue.add(
+      'send',
+      { coopId, meetingId, opts },
+      {
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 60_000 },
+        removeOnComplete: true,
+        removeOnFail: 200,
+      },
+    );
+
+    return { queued: true };
+  }
+
+  /**
+   * The heavy convocation send, executed by the `meetings-convocation` queue
+   * worker (see {@link ConvocationProcessor}). Re-queries the meeting (the job
+   * runs later than the enqueueing request) and performs the full send:
+   * resolves active shareholders, upserts attendance/RSVP tokens, groups by
+   * inbox, renders one PDF per shareholder, emails each group, marks
+   * `convocationSentAt`, and flips the meeting to CONVOKED.
+   *
+   * Idempotent: shareholders already marked `convocationSentAt` are skipped, so
+   * a retried job only re-sends to the remainder.
+   */
+  async processSend(
+    coopId: string,
+    meetingId: string,
+    opts: SendConvocationOpts = {},
+  ): Promise<SendConvocationResult> {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: {
+        coop: true,
+        agendaItems: { orderBy: { order: 'asc' }, include: { resolution: true } },
+      },
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.coopId !== coopId)
+      throw new ForbiddenException('Meeting does not belong to this coop');
 
     const shareholders = await this.prisma.shareholder.findMany({
       where: { coopId, status: ShareholderStatus.ACTIVE },
