@@ -149,7 +149,7 @@ jobs:
         with:
           context: .
           file: apps/api/Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-api:${{ github.sha }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
@@ -159,7 +159,7 @@ jobs:
         with:
           context: .
           file: apps/web/Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-web:${{ github.sha }}
           build-args: NEXT_PUBLIC_API_URL=/api
           cache-from: type=gha,scope=web
@@ -170,14 +170,14 @@ jobs:
         with:
           context: .
           file: deploy/migrate.Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-migrate:${{ github.sha }}
           cache-from: type=gha,scope=migrate
           cache-to: type=gha,mode=max,scope=migrate
 
   deploy-acc:
     needs: [build, e2e, test]
-    if: github.ref_type == 'branch'
+    if: github.event_name == 'push' && github.ref_type == 'branch'
     runs-on: ubuntu-latest
     environment: acc
     steps:
@@ -202,7 +202,7 @@ jobs:
 
   deploy-prod:
     needs: [build, e2e, test]
-    if: github.ref_type == 'tag'
+    if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment: prod
     steps:
