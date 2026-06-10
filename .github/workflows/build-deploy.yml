@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths-ignore: ["apps/docs/**"]
     tags: ["v*"]
+  pull_request:
+    branches: [main]
+    paths-ignore: ["apps/docs/**"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,6 +18,28 @@ env:
   OWNER: opencoophq
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm db:generate
+      - name: Build workspace dependencies (shared, pdf-templates)
+        run: pnpm --filter "@opencoop/api^..." build
+      - name: Lint (api + web)
+        run: |
+          pnpm --filter @opencoop/api lint
+          pnpm --filter @opencoop/web exec next lint
+      - name: Unit tests (api)
+        run: pnpm --filter @opencoop/api test
+
   e2e:
     runs-on: ubuntu-latest
     services:
@@ -124,7 +149,7 @@ jobs:
         with:
           context: .
           file: apps/api/Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-api:${{ github.sha }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
@@ -134,7 +159,7 @@ jobs:
         with:
           context: .
           file: apps/web/Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-web:${{ github.sha }}
           build-args: NEXT_PUBLIC_API_URL=/api
           cache-from: type=gha,scope=web
@@ -145,14 +170,14 @@ jobs:
         with:
           context: .
           file: deploy/migrate.Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-migrate:${{ github.sha }}
           cache-from: type=gha,scope=migrate
           cache-to: type=gha,mode=max,scope=migrate
 
   deploy-acc:
-    needs: [build]
-    if: github.ref_type == 'branch'
+    needs: [build, e2e, test]
+    if: github.event_name == 'push' && github.ref_type == 'branch'
     runs-on: ubuntu-latest
     environment: acc
     steps:
@@ -176,8 +201,8 @@ jobs:
             docker compose up -d
 
   deploy-prod:
-    needs: [build]
-    if: github.ref_type == 'tag'
+    needs: [build, e2e, test]
+    if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment: prod
     steps:
