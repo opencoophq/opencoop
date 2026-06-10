@@ -6,6 +6,7 @@ import {
   calculateDividend,
   computeVestedShares,
   computeTotalPaid,
+  apportionWithholdingTax,
 } from './utils';
 
 describe('OGM mod-97', () => {
@@ -64,5 +65,33 @@ describe('computeVestedShares', () => {
 describe('computeTotalPaid', () => {
   it('sums mixed numeric/string amounts', () => {
     expect(computeTotalPaid([{ amount: '10.5' }, { amount: 4.5 }])).toBe(15);
+  });
+});
+
+describe('apportionWithholdingTax (period-level rounding)', () => {
+  it('sum of per-payout tax equals the rounded period total', () => {
+    const grosses = [33.33, 33.33, 33.34]; // €100 total
+    const rate = 0.3;
+    const taxes = apportionWithholdingTax(grosses, rate);
+    const periodTarget = Math.round(100 * rate * 100) / 100; // 30.00
+    const sum = Math.round(taxes.reduce((a, b) => a + b, 0) * 100) / 100;
+    expect(sum).toBe(periodTarget);
+    taxes.forEach((t) => expect(Number.isInteger(Math.round(t * 100))).toBe(true)); // whole cents
+  });
+
+  it('handles a single payout exactly', () => {
+    expect(apportionWithholdingTax([50], 0.3)).toEqual([15]);
+  });
+
+  it('handles an empty list', () => {
+    expect(apportionWithholdingTax([], 0.3)).toEqual([]);
+  });
+
+  it('every payout tax is a non-negative whole-cent value', () => {
+    const taxes = apportionWithholdingTax([10.01, 20.02, 30.03, 5.55], 0.3);
+    taxes.forEach((t) => {
+      expect(t).toBeGreaterThanOrEqual(0);
+      expect(Math.round(t * 100)).toBeCloseTo(t * 100, 6);
+    });
   });
 });
