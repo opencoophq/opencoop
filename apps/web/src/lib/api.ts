@@ -86,28 +86,31 @@ function buildBody(body: unknown, isFormData: boolean): BodyInit | undefined {
   return undefined;
 }
 
-export async function api<T = unknown>(
-  path: string,
-  options: FetchOptions = {},
-): Promise<T> {
+/**
+ * Shared core: fetch with the auth header, transparently refresh the access
+ * token once on 401 and retry, redirect to login if the refresh fails, and
+ * surface subscription-required errors. Returns the raw Response (the caller
+ * decides how to interpret a non-ok status). Used by both `api()` and `apiFetch()`
+ * so the security-sensitive refresh flow lives in exactly one place.
+ */
+async function fetchWithAuth(path: string, options: FetchOptions = {}): Promise<Response> {
   const { body, headers: customHeaders, ...rest } = options;
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
-  let response = await fetch(`${API_URL}${path}`, {
-    ...rest,
-    headers: buildHeaders(customHeaders as Record<string, string>, isFormData),
-    body: buildBody(body, isFormData),
-  });
+  const doFetch = () =>
+    fetch(`${API_URL}${path}`, {
+      ...rest,
+      headers: buildHeaders(customHeaders as Record<string, string>, isFormData),
+      body: buildBody(body, isFormData),
+    });
+
+  let response = await doFetch();
 
   // On 401, attempt token refresh and retry once
   if (response.status === 401 && typeof window !== 'undefined') {
     const refreshed = await tryRefreshToken();
     if (refreshed) {
-      response = await fetch(`${API_URL}${path}`, {
-        ...rest,
-        headers: buildHeaders(customHeaders as Record<string, string>, isFormData),
-        body: buildBody(body, isFormData),
-      });
+      response = await doFetch();
     }
 
     if (response.status === 401) {
@@ -116,16 +119,26 @@ export async function api<T = unknown>(
     }
   }
 
+  // Surface subscription-required errors to the UI. Clone the response so its
+  // body stays readable by the caller's own error handling below.
+  if (!response.ok && response.status === 403 && typeof window !== 'undefined') {
+    const error = await response.clone().json().catch(() => ({}));
+    if (error.code === 'SUBSCRIPTION_REQUIRED') {
+      window.dispatchEvent(new CustomEvent('subscription-required'));
+    }
+  }
+
+  return response;
+}
+
+export async function api<T = unknown>(
+  path: string,
+  options: FetchOptions = {},
+): Promise<T> {
+  const response = await fetchWithAuth(path, options);
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Request failed' }));
-
-    // Handle subscription-required errors
-    if (response.status === 403 && error.code === 'SUBSCRIPTION_REQUIRED') {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('subscription-required'));
-      }
-    }
-
     throw new Error(error.message || `HTTP ${response.status}`);
   }
 
@@ -143,39 +156,9 @@ export async function apiFetch(
   path: string,
   options: FetchOptions = {},
 ): Promise<Response> {
-  const { body, headers: customHeaders, ...rest } = options;
-  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
-
-  let response = await fetch(`${API_URL}${path}`, {
-    ...rest,
-    headers: buildHeaders(customHeaders as Record<string, string>, isFormData),
-    body: buildBody(body, isFormData),
-  });
-
-  // On 401, attempt token refresh and retry once
-  if (response.status === 401 && typeof window !== 'undefined') {
-    const refreshed = await tryRefreshToken();
-    if (refreshed) {
-      response = await fetch(`${API_URL}${path}`, {
-        ...rest,
-        headers: buildHeaders(customHeaders as Record<string, string>, isFormData),
-        body: buildBody(body, isFormData),
-      });
-    }
-
-    if (response.status === 401) {
-      clearAuthAndRedirect();
-      throw new Error('Unauthorized');
-    }
-  }
+  const response = await fetchWithAuth(path, options);
 
   if (!response.ok) {
-    if (response.status === 403) {
-      const error = await response.clone().json().catch(() => ({}));
-      if (error.code === 'SUBSCRIPTION_REQUIRED' && typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('subscription-required'));
-      }
-    }
     throw new Error(`HTTP ${response.status}`);
   }
 
