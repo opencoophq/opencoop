@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { KioskService } from './kiosk.service';
+import { KioskCheckInDto } from './dto/kiosk-check-in.dto';
 
 @ApiTags('Public — Kiosk')
 @Public()
@@ -37,13 +38,7 @@ export class MeetingKioskController {
   }
 
   @Post(':token/check-in')
-  checkIn(
-    @Param('token') token: string,
-    @Body() body: { shareholderId: string; signaturePngDataUrl: string },
-  ) {
-    if (!body?.shareholderId || !body?.signaturePngDataUrl) {
-      throw new BadRequestException('shareholderId and signaturePngDataUrl required');
-    }
+  checkIn(@Param('token') token: string, @Body() body: KioskCheckInDto) {
     return this.kiosk.checkIn(token, body.shareholderId, body.signaturePngDataUrl);
   }
 }
