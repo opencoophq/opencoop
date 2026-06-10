@@ -199,6 +199,14 @@ jobs:
             sed -i 's/^TAG=.*/TAG=${{ github.sha }}/' .env
             docker compose pull
             docker compose up -d
+            echo "Waiting for API to report healthy..."
+            ok=false
+            for i in $(seq 1 30); do
+              if curl -fsS https://acc.opencoop.be/api/health >/dev/null 2>&1; then ok=true; break; fi
+              sleep 2
+            done
+            if [ "$ok" != true ]; then echo "::error::acc API did not become healthy after deploy"; exit 1; fi
+            echo "acc API healthy"
 
   deploy-prod:
     needs: [build, e2e, test]
@@ -224,3 +232,11 @@ jobs:
             sed -i 's/^TAG=.*/TAG=${{ github.sha }}/' .env
             docker compose pull
             docker compose up -d
+            echo "Waiting for API to report healthy..."
+            ok=false
+            for i in $(seq 1 30); do
+              if curl -fsS https://opencoop.be/api/health >/dev/null 2>&1; then ok=true; break; fi
+              sleep 2
+            done
+            if [ "$ok" != true ]; then echo "::error::prod API did not become healthy after deploy"; exit 1; fi
+            echo "prod API healthy"
