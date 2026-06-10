@@ -49,7 +49,8 @@ export class PaymentsService {
       include: { payments: true },
     });
 
-    if (!registration) {
+    if (!registration || registration.coopId !== data.coopId) {
+      // C4-style: do not confirm a foreign registration exists
       throw new NotFoundException('Registration not found');
     }
 
