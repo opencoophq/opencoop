@@ -1,4 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { CreateFeatureRequestDto } from './dto/create-feature-request.dto';
@@ -11,6 +12,7 @@ export class FeatureRequestsController {
 
   @Public()
   @Post()
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Submit a feature request' })
   create(@Body() dto: CreateFeatureRequestDto) {
     return this.featureRequestsService.create(dto);
