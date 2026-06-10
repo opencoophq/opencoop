@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ConflictException }
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateDividendPeriodDto } from './dto/create-dividend-period.dto';
-import { calculateDividend } from '@opencoop/shared';
+import { calculateDividend, apportionWithholdingTax } from '@opencoop/shared';
 import { resolveShareholderEmailWithSource } from '../shareholders/shareholder-email.resolver';
 
 @Injectable()
@@ -44,9 +44,10 @@ export class DividendsService {
     });
   }
 
-  async findById(id: string) {
-    const period = await this.prisma.dividendPeriod.findUnique({
-      where: { id },
+  // C4: Added coopId for tenant isolation
+  async findById(id: string, coopId: string) {
+    const period = await this.prisma.dividendPeriod.findFirst({
+      where: { id, coopId },
       include: {
         payouts: {
           include: {
@@ -148,9 +149,10 @@ export class DividendsService {
     return period;
   }
 
-  async calculate(periodId: string, actorId?: string, ip?: string, userAgent?: string) {
-    const period = await this.prisma.dividendPeriod.findUnique({
-      where: { id: periodId },
+  // C4: Added coopId for tenant isolation
+  async calculate(periodId: string, coopId: string, actorId?: string, ip?: string, userAgent?: string) {
+    const period = await this.prisma.dividendPeriod.findFirst({
+      where: { id: periodId, coopId },
     });
 
     if (!period) {
@@ -261,20 +263,29 @@ export class DividendsService {
 
       if (calculationDetails.length === 0) continue;
 
-      // Actually use the sum
-      const sumGross = calculationDetails.reduce((sum, d) => sum + d.dividendAmount, 0);
-      const tax = sumGross * Number(period.withholdingTaxRate);
-      const net = sumGross - tax;
+      // Sum gross, rounded to whole cents. Tax/net are deferred to period-level
+      // apportionment below so the per-payout taxes reconcile exactly.
+      const sumGross = Math.round(calculationDetails.reduce((sum, d) => sum + d.dividendAmount, 0) * 100) / 100;
 
       payouts.push({
         dividendPeriodId: periodId,
         shareholderId,
         grossAmount: sumGross,
-        withholdingTax: tax,
-        netAmount: net,
+        withholdingTax: 0,
+        netAmount: 0,
         calculationDetails,
       });
     }
+
+    // Period-level rounding: apportion withholding tax so payouts reconcile to round(totalGross * rate)
+    const apportioned = apportionWithholdingTax(
+      payouts.map((p) => p.grossAmount),
+      Number(period.withholdingTaxRate),
+    );
+    payouts.forEach((p, idx) => {
+      p.withholdingTax = apportioned[idx];
+      p.netAmount = Math.round((p.grossAmount - apportioned[idx]) * 100) / 100;
+    });
 
     // Create payouts
     await this.prisma.dividendPayout.createMany({
@@ -308,12 +319,13 @@ export class DividendsService {
       userAgent,
     });
 
-    return this.findById(periodId);
+    return this.findById(periodId, coopId);
   }
 
-  async markAsPaid(periodId: string, paymentReference?: string, actorId?: string, ip?: string, userAgent?: string) {
-    const period = await this.prisma.dividendPeriod.findUnique({
-      where: { id: periodId },
+  // C4: Added coopId for tenant isolation
+  async markAsPaid(periodId: string, coopId: string, paymentReference?: string, actorId?: string, ip?: string, userAgent?: string) {
+    const period = await this.prisma.dividendPeriod.findFirst({
+      where: { id: periodId, coopId },
     });
 
     if (!period) {
@@ -355,7 +367,7 @@ export class DividendsService {
       userAgent,
     });
 
-    return this.findById(periodId);
+    return this.findById(periodId, coopId);
   }
 
   async getPayoutsByShareholder(shareholderId: string) {
@@ -382,9 +394,10 @@ export class DividendsService {
     });
   }
 
-  async exportToCsv(periodId: string): Promise<string> {
-    const period = await this.prisma.dividendPeriod.findUnique({
-      where: { id: periodId },
+  // C4: Added coopId for tenant isolation
+  async exportToCsv(periodId: string, coopId: string): Promise<string> {
+    const period = await this.prisma.dividendPeriod.findFirst({
+      where: { id: periodId, coopId },
       include: {
         coop: {
           select: { name: true },

@@ -43,6 +43,34 @@ export function calculateDividend(
 }
 
 /**
+ * Apportion withholding tax across payouts so the per-payout taxes sum exactly to
+ * the period-level target round(sum(gross) * rate). Largest-remainder method.
+ * @param grossAmounts per-payout gross amounts (euros, already rounded to cents)
+ * @param rate withholding tax rate (e.g. 0.30)
+ * @returns per-payout tax amounts in euros (whole cents), same order as input
+ */
+export function apportionWithholdingTax(grossAmounts: number[], rate: number): number[] {
+  if (grossAmounts.length === 0) return [];
+  const totalGrossCents = grossAmounts.reduce((a, g) => a + Math.round(g * 100), 0);
+  const targetTaxCents = Math.round(totalGrossCents * rate);
+
+  const exact = grossAmounts.map((g) => Math.round(g * 100) * rate); // cents, fractional
+  const floored = exact.map((x) => Math.floor(x));
+  const allocated = floored.reduce((a, b) => a + b, 0);
+  let remainder = targetTaxCents - allocated;
+
+  const order = exact
+    .map((x, i) => ({ i, frac: x - Math.floor(x) }))
+    .sort((a, b) => b.frac - a.frac || a.i - b.i);
+
+  const cents = [...floored];
+  for (let k = 0; remainder > 0 && k < order.length; k++, remainder--) {
+    cents[order[k].i] += 1;
+  }
+  return cents.map((c) => c / 100);
+}
+
+/**
  * Generate a Belgian OGM (gestructureerde mededeling) code.
  * Format: +++XXX/XXXX/XXXXX+++
  * The last 2 digits are a modulo 97 check digit.

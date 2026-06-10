@@ -830,8 +830,8 @@ export class AdminController {
   @Get('dividends/:id')
   @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Get dividend period details' })
-  async getDividendPeriod(@Param('id') id: string) {
-    return this.dividendsService.findById(id);
+  async getDividendPeriod(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.dividendsService.findById(id, coopId);
   }
 
   @Post('dividends')
@@ -850,33 +850,36 @@ export class AdminController {
   @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Calculate dividends for a period' })
   async calculateDividends(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
     @Req() req: Request,
   ) {
-    return this.dividendsService.calculate(id, user.id, req.ip, req.headers['user-agent']);
+    return this.dividendsService.calculate(id, coopId, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Post('dividends/:id/mark-paid')
   @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Mark dividend period as paid' })
   async markDividendsPaid(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
     @Req() req: Request,
     @Body('paymentReference') paymentReference?: string,
   ) {
-    return this.dividendsService.markAsPaid(id, paymentReference, user.id, req.ip, req.headers['user-agent']);
+    return this.dividendsService.markAsPaid(id, coopId, paymentReference, user.id, req.ip, req.headers['user-agent']);
   }
 
   @Get('dividends/:id/export')
   @RequirePermission('canManageDividends')
   @ApiOperation({ summary: 'Export dividend payouts as CSV for bank transfer' })
   async exportDividends(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @Res() res: Response,
   ) {
-    const csv = await this.dividendsService.exportToCsv(id);
+    const csv = await this.dividendsService.exportToCsv(id, coopId);
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="dividend-payouts-${id}.csv"`);
     res.send(csv);
