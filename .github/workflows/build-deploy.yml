@@ -163,7 +163,9 @@ jobs:
           file: apps/web/Dockerfile
           push: ${{ github.event_name == 'push' }}
           tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-web:${{ github.sha }}
-          build-args: NEXT_PUBLIC_API_URL=/api
+          build-args: |
+            NEXT_PUBLIC_API_URL=/api
+            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 

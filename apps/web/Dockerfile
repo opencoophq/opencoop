@@ -19,6 +19,11 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+# Client-side Sentry DSN — inlined at build time (Next.js NEXT_PUBLIC_*).
+# Empty when the build-arg is unset, so Sentry no-ops.
+ARG NEXT_PUBLIC_SENTRY_DSN
+ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+
 RUN pnpm --filter @opencoop/shared build
 RUN pnpm --filter @opencoop/web build
 
