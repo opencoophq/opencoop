@@ -95,7 +95,6 @@ export class KioskService {
         lastName: true,
         companyName: true,
         memberNumber: true,
-        address: true,
       },
       take: 10,
     });
