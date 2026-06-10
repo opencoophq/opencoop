@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ErrorState } from '@/components/ui/error-state';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
 import { Users, TrendingUp, ArrowLeftRight, UserCheck, UserPlus } from 'lucide-react';
@@ -45,12 +46,14 @@ export default function AdminPage() {
   const { locale } = useLocale();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>('month');
   const [referralStats, setReferralStats] = useState<ReferralAnalytics | null>(null);
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
     if (!selectedCoop) return;
     setLoading(true);
+    setError(null);
     Promise.all([
       api<Stats>(`/admin/coops/${selectedCoop.id}/stats`),
       api<ReferralAnalytics>(`/admin/coops/${selectedCoop.id}/analytics/referrals`).catch(() => null),
@@ -59,9 +62,13 @@ export default function AdminPage() {
         setStats(statsData);
         setReferralStats(referralData);
       })
-      .catch(() => {})
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
   }, [selectedCoop]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
   if (!selectedCoop) {
     return <p className="text-muted-foreground">{t('admin.selectCoop')}</p>;
@@ -71,6 +78,17 @@ export default function AdminPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">
+          {selectedCoop.name} - {t('common.overview')}
+        </h1>
+        <ErrorState onRetry={loadStats} />
       </div>
     );
   }
