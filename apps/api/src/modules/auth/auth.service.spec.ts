@@ -10,6 +10,7 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
+import { AuthEmailService } from './auth-email.service';
 import { CoopsService } from '../coops/coops.service';
 import { AuditService } from '../audit/audit.service';
 
@@ -104,6 +105,16 @@ describe('AuthService — requestMagicLink with household shareholders', () => {
     const usersService = {};
     const coopsService = {};
     const auditService = { log: jest.fn().mockResolvedValue(undefined) };
+    const authEmailService = {
+      getMagicLinkContent: jest.fn().mockReturnValue({
+        subject: 's', heading: 'h', body: 'b', button: 'btn', expiry: 'e', footer: 'f',
+      }),
+      getPasswordResetContent: jest.fn().mockReturnValue({
+        subject: 's', heading: 'h', body: 'b', ignore: 'i', expiry: 'e', footer: 'f',
+      }),
+      sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+      sendWaitlistConfirmationEmail: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -112,6 +123,7 @@ describe('AuthService — requestMagicLink with household shareholders', () => {
         { provide: UsersService, useValue: usersService },
         { provide: JwtService, useValue: jwtService },
         { provide: EmailService, useValue: emailService },
+        { provide: AuthEmailService, useValue: authEmailService },
         { provide: CoopsService, useValue: coopsService },
         { provide: AuditService, useValue: auditService },
       ],
