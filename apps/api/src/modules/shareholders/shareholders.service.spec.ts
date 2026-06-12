@@ -80,6 +80,76 @@ describe('ShareholdersService', () => {
     service = new ShareholdersService(prismaService, auditService);
   });
 
+  describe('findAll — lean list payload', () => {
+    it('returns lean rows with server-precomputed sharesOwned (sum of quantity over ACTIVE/COMPLETED BUY regs) and memberSince (earliest registerDate), and drops nested data', async () => {
+      const row = {
+        id: 'sh-1',
+        type: 'INDIVIDUAL',
+        status: 'ACTIVE',
+        firstName: 'Jan',
+        lastName: 'Peeters',
+        companyName: null,
+        email: 'jan@x.com',
+        isEcoPowerClient: false,
+        channelId: null,
+        createdAt: new Date('2024-06-01T00:00:00Z'),
+        registrations: [
+          { quantity: 5, status: 'ACTIVE', registerDate: new Date('2023-02-01T00:00:00Z') },
+          { quantity: 3, status: 'COMPLETED', registerDate: new Date('2022-01-15T00:00:00Z') },
+          // PENDING_PAYMENT contributes to memberSince but NOT to sharesOwned,
+          // matching the previous client-side derivation exactly.
+          { quantity: 100, status: 'PENDING_PAYMENT', registerDate: new Date('2024-03-01T00:00:00Z') },
+        ],
+      };
+
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValueOnce([row]);
+      (prismaService.shareholder.count as jest.Mock).mockResolvedValueOnce(1);
+
+      const result = await service.findAll('coop-1', { pageSize: 10000 });
+
+      expect(result.total).toBe(1);
+      const item = result.items[0] as Record<string, unknown>;
+
+      // Parity: sum of quantity over ACTIVE + COMPLETED only (5 + 3), PENDING_PAYMENT excluded.
+      expect(item.sharesOwned).toBe(8);
+      // memberSince = earliest registerDate across ALL fetched regs (incl PENDING_PAYMENT).
+      expect(item.memberSince).toEqual(new Date('2022-01-15T00:00:00Z'));
+      expect(item.firstRegistrationDate).toEqual(new Date('2022-01-15T00:00:00Z'));
+
+      // Lean: nested arrays are not leaked into the response.
+      expect(item.registrations).toBeUndefined();
+      expect(item.beneficialOwners).toBeUndefined();
+      expect(item.nationalId).toBeUndefined();
+    });
+
+    it('falls back to createdAt for memberSince when there are no registrations', async () => {
+      const createdAt = new Date('2024-06-01T00:00:00Z');
+      const row = {
+        id: 'sh-2',
+        type: 'INDIVIDUAL',
+        status: 'PENDING',
+        firstName: 'Els',
+        lastName: 'Devos',
+        companyName: null,
+        email: 'els@x.com',
+        isEcoPowerClient: false,
+        channelId: null,
+        createdAt,
+        registrations: [],
+      };
+
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValueOnce([row]);
+      (prismaService.shareholder.count as jest.Mock).mockResolvedValueOnce(1);
+
+      const result = await service.findAll('coop-1', {});
+      const item = result.items[0] as Record<string, unknown>;
+
+      expect(item.sharesOwned).toBe(0);
+      expect(item.memberSince).toEqual(createdAt);
+      expect(item.firstRegistrationDate).toBeNull();
+    });
+  });
+
   describe('update — household email dedup', () => {
     it('update rejects setting email to a value already taken in the coop, even within the same household', async () => {
       // Fixture: user1 owns s1 (email='shared@x.com', userId='user-1') and

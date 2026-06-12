@@ -67,20 +67,57 @@ export class ShareholdersService {
         where,
         skip,
         take: pageSize,
-        include: {
+        // LEAN list payload: select only the columns the admin list table renders,
+        // plus a minimal registrations slice used solely to precompute the derived
+        // fields (sharesOwned / memberSince). Full nested registrations, payments,
+        // shareClass and beneficialOwners are intentionally NOT returned, and
+        // nationalId is NOT decrypted here (it is never shown in the list — see the
+        // edit dialog / detail page which fetch via findById). This keeps each row
+        // tiny so the frontend can still sort/filter/paginate client-side cheaply.
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          firstName: true,
+          lastName: true,
+          companyName: true,
+          email: true,
+          isEcoPowerClient: true,
+          channelId: true,
+          createdAt: true,
           registrations: {
             where: { type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
-            include: { shareClass: true, payments: true },
+            select: { quantity: true, status: true, registerDate: true },
           },
-          beneficialOwners: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.shareholder.count({ where }),
     ]);
 
+    // Precompute derived fields server-side, then drop the registrations slice so
+    // each returned row contains only scalars the table needs. Parity note:
+    // `sharesOwned` replicates the EXACT logic the list previously ran client-side
+    // (sum of `quantity` over ACTIVE/COMPLETED BUY registrations — the old list
+    // never received a per-registration `sharesOwned`, so it fell back to quantity).
+    // `memberSince` mirrors the old min(registerDate) ?? createdAt derivation.
+    const leanItems = items.map(({ registrations, ...rest }) => {
+      const sharesOwned = registrations
+        .filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED')
+        .reduce((sum, r) => sum + r.quantity, 0);
+
+      const registerDates = registrations.map((r) => r.registerDate).filter(Boolean);
+      const firstRegistrationDate =
+        registerDates.length > 0
+          ? registerDates.reduce((earliest, d) => (d < earliest ? d : earliest))
+          : null;
+      const memberSince = firstRegistrationDate ?? rest.createdAt;
+
+      return { ...rest, sharesOwned, firstRegistrationDate, memberSince };
+    });
+
     return {
-      items: items.map((item) => this.decryptShareholder(item)),
+      items: leanItems,
       total,
       page,
       pageSize,
