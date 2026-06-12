@@ -5,6 +5,8 @@ import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
 import { MfaService } from './mfa.service';
+import { OAuthService } from './oauth.service';
+import { MagicLinkService } from './magic-link.service';
 import { EmancipationService } from './emancipation.service';
 import { EmancipateDto } from './dto/emancipate.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -46,6 +48,8 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly tokenService: TokenService,
     private readonly mfaService: MfaService,
+    private readonly oauthService: OAuthService,
+    private readonly magicLinkService: MagicLinkService,
     private readonly emancipationService: EmancipationService,
     private readonly webAuthnService: WebAuthnService,
     private readonly coopAdminsService: CoopAdminsService,
@@ -223,7 +227,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Request a magic link login email' })
   @ApiResponse({ status: 200, description: 'If an account exists, a login link has been sent' })
   async requestMagicLink(@Body() requestMagicLinkDto: RequestMagicLinkDto) {
-    return this.authService.requestMagicLink(requestMagicLinkDto);
+    return this.magicLinkService.requestMagicLink(requestMagicLinkDto);
   }
 
   @Public()
@@ -232,7 +236,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 400, description: 'Invalid, expired, or already used token' })
   async verifyMagicLink(@Body() verifyMagicLinkDto: VerifyMagicLinkDto, @Req() req: Request) {
-    return this.authService.verifyMagicLink(verifyMagicLinkDto, req.ip, req.headers['user-agent']);
+    return this.magicLinkService.verifyMagicLink(verifyMagicLinkDto, req.ip, req.headers['user-agent']);
   }
 
   // ============================================================================
@@ -419,7 +423,7 @@ export class AuthController {
     }
 
     const { googleId, email, name } = req.user;
-    const result = await this.authService.handleOAuthLogin('google', {
+    const result = await this.oauthService.handleOAuthLogin('google', {
       providerId: googleId,
       email,
       name,
@@ -473,7 +477,7 @@ export class AuthController {
     }
 
     const { appleId, email, name } = req.user;
-    const result = await this.authService.handleOAuthLogin('apple', {
+    const result = await this.oauthService.handleOAuthLogin('apple', {
       providerId: appleId,
       email,
       name,
