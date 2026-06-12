@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
+import { ErrorState } from '@/components/ui/error-state';
 
 interface UserRow {
   id: string;
@@ -25,12 +26,14 @@ export default function SystemUsersPage() {
   const { locale } = useLocale();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadUsers = () => {
     setLoading(true);
+    setError(null);
     api<UserRow[]>('/system/users')
       .then(setUsers)
-      .catch(() => {})
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
   };
 
@@ -56,6 +59,8 @@ export default function SystemUsersPage() {
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+          ) : error ? (
+            <ErrorState message={error} onRetry={loadUsers} />
           ) : users.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">{t('common.noResults')}</p>
           ) : (

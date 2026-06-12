@@ -341,7 +341,9 @@ export default function AdminSettingsPage() {
     // Load MCP API keys
     api<Array<{ id: string; prefix: string; name: string; createdAt: string; lastUsedAt: string | null }>>(
       `/admin/coops/${selectedCoop.id}/api-keys`
-    ).then(setMcpApiKeys).catch(() => {});
+    )
+      .then(setMcpApiKeys)
+      .catch(() => setError(t('admin.settings.error')));
   }, [selectedCoop, t]);
 
   const handleSave = async () => {

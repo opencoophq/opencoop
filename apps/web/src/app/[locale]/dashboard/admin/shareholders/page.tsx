@@ -257,7 +257,9 @@ export default function ShareholdersPage() {
     if (!selectedCoop) return;
     api<{ ecoPowerEnabled: boolean }>(`/admin/coops/${selectedCoop.id}/settings`)
       .then((settings) => setEcoPowerEnabled(settings.ecoPowerEnabled || false))
-      .catch(() => {});
+      .catch(() => {
+        /* fire-and-forget: ecoPower flag toggles an optional column; defaults to off */
+      });
   }, [selectedCoop]);
 
   const getName = (sh: ShareholderRow) =>

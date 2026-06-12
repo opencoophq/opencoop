@@ -117,10 +117,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           if (data.shareholders?.[0]) {
             api<{ count: number }>(`/shareholders/${data.shareholders[0].id}/unread-count`)
               .then((res) => setUnreadCount(res.count))
-              .catch(() => {});
+              .catch(() => {
+                /* fire-and-forget: unread badge count is optional, falls back to 0 */
+              });
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          /* fire-and-forget: profile hydration is non-blocking; layout renders from cached user */
+        });
     } catch {
       router.push('/login');
     }
@@ -133,11 +137,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       .then((data) => {
         if (data) setAdminStats(data);
       })
-      .catch(() => {});
+      .catch(() => {
+        /* fire-and-forget: stats drive optional attention dots, not primary nav content */
+      });
   }, [selectedCoop]);
 
   const handleLogout = () => {
-    api('/auth/logout', { method: 'POST' }).catch(() => {});
+    api('/auth/logout', { method: 'POST' }).catch(() => {
+      /* fire-and-forget: local session is cleared below regardless of server response */
+    });
     if (activeSessionId) removeSession(activeSessionId);
     const remaining = getAllSessions();
     if (remaining.length > 0) {

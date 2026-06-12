@@ -55,9 +55,9 @@ export default function AdminComposeMessagePage() {
         const list = Array.isArray(result) ? result : result.data || [];
         setShareholders(list);
       })
-      .catch(() => {})
+      .catch(() => setError(t('common.error')))
       .finally(() => setLoadingShareholders(false));
-  }, [selectedCoop, type]);
+  }, [selectedCoop, type, t]);
 
   const handleSend = async () => {
     if (!selectedCoop || !subject.trim() || !body.trim()) return;

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+import { ErrorState } from '@/components/ui/error-state';
 
 interface ChangelogSection {
   type: string;
@@ -40,12 +41,19 @@ export default function ChangelogPage() {
   const t = useTranslations('changelog');
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadChangelog = () => {
+    setLoading(true);
+    setError(null);
     api<ChangelogEntry[]>('/changelog')
       .then(setEntries)
-      .catch(() => {})
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadChangelog();
   }, []);
 
   if (loading) {
@@ -62,6 +70,8 @@ export default function ChangelogPage() {
         <h1 className="text-2xl font-bold">{t('title')}</h1>
         <p className="text-muted-foreground mt-1">{t('description')}</p>
       </div>
+
+      {error && <ErrorState message={error} onRetry={loadChangelog} />}
 
       <div className="space-y-8">
         {entries.map((entry, i) => (

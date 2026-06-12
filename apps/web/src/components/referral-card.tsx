@@ -29,7 +29,9 @@ export function ReferralCard({ shareholderId, coopName }: { shareholderId: strin
   useEffect(() => {
     api<ReferralStats>(`/shareholders/${shareholderId}/referral-stats`)
       .then(setStats)
-      .catch(() => {});
+      .catch(() => {
+        /* fire-and-forget: optional promo card hides itself (returns null) when stats are absent */
+      });
   }, [shareholderId]);
 
   if (!stats?.referralCode) return null;
