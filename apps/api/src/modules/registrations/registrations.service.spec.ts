@@ -24,7 +24,12 @@ describe('RegistrationsService', () => {
       sendGiftCertificate: jest.fn().mockResolvedValue(undefined),
     };
     prisma = {
-      registration: { findFirst: jest.fn(), findUnique: jest.fn() },
+      registration: {
+        findFirst: jest.fn(),
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        count: jest.fn(),
+      },
       coop: { findUnique: jest.fn().mockResolvedValue({ bankIban: null, bankBic: null }) },
     };
 
@@ -38,6 +43,83 @@ describe('RegistrationsService', () => {
       ],
     }).compile();
     service = moduleRef.get(RegistrationsService);
+  });
+
+  describe('findAll — lean list payload', () => {
+    it('returns lean rows with server-precomputed lastPaymentDate (max bankDate) and totalPaid (sum of amounts), and drops the full payments array', async () => {
+      const row = {
+        id: 'r1',
+        type: 'BUY',
+        status: 'COMPLETED',
+        quantity: 10,
+        pricePerShare: 25,
+        totalAmount: 250,
+        ogmCode: '+++123/4567/89012+++',
+        isSavings: true,
+        createdAt: new Date('2024-06-01T00:00:00Z'),
+        shareholder: {
+          id: 'sh-1',
+          type: 'INDIVIDUAL',
+          firstName: 'Jan',
+          lastName: 'Peeters',
+          companyName: null,
+        },
+        shareClass: { name: 'A' },
+        // Ordered bankDate ASC by the query; last element is the MAX date.
+        payments: [
+          { bankDate: new Date('2024-02-01T00:00:00Z'), amount: '100' },
+          { bankDate: new Date('2024-03-15T00:00:00Z'), amount: 150.5 },
+        ],
+      };
+
+      prisma.registration.findMany.mockResolvedValueOnce([row]);
+      prisma.registration.count.mockResolvedValueOnce(1);
+
+      const result = await service.findAll('coop-1', { pageSize: 10000 });
+
+      expect(result.total).toBe(1);
+      expect(result.totalPages).toBe(1);
+      const item = result.items[0] as Record<string, unknown>;
+
+      // Parity: lastPaymentDate = last (max) payment bankDate after ASC ordering.
+      expect(item.lastPaymentDate).toEqual(new Date('2024-03-15T00:00:00Z'));
+      // Parity: totalPaid = sum of Number(amount) — mixed string/number, like the old client-side reduce.
+      expect(item.totalPaid).toBe(250.5);
+
+      // Lean: the full payments array is not leaked into the response.
+      expect(item.payments).toBeUndefined();
+      // Scalars the table renders are preserved.
+      expect(item.totalAmount).toBe(250);
+      expect((item.shareholder as Record<string, unknown>).firstName).toBe('Jan');
+      expect((item.shareClass as Record<string, unknown>).name).toBe('A');
+    });
+
+    it('returns lastPaymentDate=null and totalPaid=0 when there are no payments', async () => {
+      const row = {
+        id: 'r2',
+        type: 'BUY',
+        status: 'PENDING_PAYMENT',
+        quantity: 1,
+        pricePerShare: 25,
+        totalAmount: 25,
+        ogmCode: null,
+        isSavings: false,
+        createdAt: new Date('2024-06-01T00:00:00Z'),
+        shareholder: { id: 'sh-2', type: 'INDIVIDUAL', firstName: 'Els', lastName: 'Devos', companyName: null },
+        shareClass: { name: 'A' },
+        payments: [],
+      };
+
+      prisma.registration.findMany.mockResolvedValueOnce([row]);
+      prisma.registration.count.mockResolvedValueOnce(1);
+
+      const result = await service.findAll('coop-1', {});
+      const item = result.items[0] as Record<string, unknown>;
+
+      expect(item.lastPaymentDate).toBeNull();
+      expect(item.totalPaid).toBe(0);
+      expect(item.payments).toBeUndefined();
+    });
   });
 
   describe('resendPaymentEmail', () => {

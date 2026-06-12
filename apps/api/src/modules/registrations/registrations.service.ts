@@ -37,6 +37,37 @@ export class RegistrationsService {
     payments: { orderBy: { bankDate: 'asc' as const } },
   };
 
+  // LEAN list payload (admin transactions page). Selects only the columns the
+  // admin transactions table renders, plus a minimal payments slice used solely
+  // to precompute the derived display fields (lastPaymentDate / totalPaid). The
+  // full payments array, project and the heavy shareholder bank/email fields are
+  // intentionally NOT returned here — the payment-matching / complete dialogs
+  // fetch per-registration details separately via findById (payment-details).
+  private readonly leanListSelect = {
+    id: true,
+    type: true,
+    status: true,
+    quantity: true,
+    pricePerShare: true,
+    totalAmount: true,
+    ogmCode: true,
+    isSavings: true,
+    createdAt: true,
+    shareholder: {
+      select: {
+        id: true,
+        type: true,
+        firstName: true,
+        lastName: true,
+        companyName: true,
+      },
+    },
+    shareClass: { select: { name: true } },
+    // Narrow payments slice, ordered the same way the old defaultInclude was,
+    // so lastPaymentDate replicates the previous client-side derivation exactly.
+    payments: { select: { bankDate: true, amount: true }, orderBy: { bankDate: 'asc' as const } },
+  };
+
   async findAll(
     coopId: string,
     params: {
@@ -72,14 +103,28 @@ export class RegistrationsService {
         where,
         skip,
         take: pageSize,
-        include: this.defaultInclude,
+        select: this.leanListSelect,
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.registration.count({ where }),
     ]);
 
+    // Precompute the payment-derived display fields server-side, then drop the
+    // full payments array so each returned row contains only what the table needs.
+    // Parity notes:
+    //  - lastPaymentDate replicates the old client-side `getPaymentDate`:
+    //    payments[payments.length - 1].bankDate. Since payments are ordered
+    //    bankDate ASC, the last element is the MAX bankDate.
+    //  - totalPaid replicates the old client-side `getTotalPaid`:
+    //    sum of Number(p.amount) — identical to computeTotalPaid().
+    const leanItems = items.map(({ payments, ...rest }) => {
+      const lastPaymentDate = payments.length > 0 ? payments[payments.length - 1].bankDate : null;
+      const totalPaid = computeTotalPaid(payments);
+      return { ...rest, lastPaymentDate, totalPaid };
+    });
+
     return {
-      items,
+      items: leanItems,
       total,
       page,
       pageSize,
