@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TokenService } from './token.service';
 import { AuthEmailService } from './auth-email.service';
 import { MfaService } from './mfa.service';
 import { EmancipationService } from './emancipation.service';
@@ -49,6 +50,7 @@ if (process.env.APPLE_CLIENT_ID) {
   controllers: [AuthController],
   providers: [
     AuthService,
+    TokenService,
     AuthEmailService,
     MfaService,
     EmancipationService,
