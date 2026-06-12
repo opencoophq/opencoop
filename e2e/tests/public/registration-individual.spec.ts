@@ -7,13 +7,6 @@ test.describe('Public registration - Individual', () => {
   test('can register as a new individual shareholder', async ({ page }) => {
     const uniqueEmail = `e2e-ind-${Date.now()}@test.be`;
 
-    // Capture any alert dialogs (registration errors surface via native alert())
-    let dialogMessage = '';
-    page.on('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.dismiss();
-    });
-
     // Navigate to registration page
     await page.goto('/nl/demo/default/register');
 
@@ -52,22 +45,29 @@ test.describe('Public registration - Individual', () => {
     // Accept privacy policy (coop terms checkbox only shown when channel has termsUrl)
     await page.locator('#privacy').click();
 
-    // Click "Registratie voltooien"
+    // Submit registration and wait for the actual API response rather than a fixed
+    // sleep. This is deterministic and lets us surface the real failure reason.
+    const registerResponse = page.waitForResponse(
+      (resp) => resp.url().includes('/register') && resp.request().method() === 'POST',
+      { timeout: 15_000 },
+    );
     await page.getByRole('button', { name: 'Registratie voltooien' }).click();
+    const resp = await registerResponse;
 
-    // Wait for navigation to Payment step or dialog error
-    await page.waitForTimeout(3_000);
-
-    // If a dialog appeared, the API call failed — fail with useful message
-    if (dialogMessage) {
-      throw new Error(`Registration API failed: ${dialogMessage}`);
+    // On failure the funnel shows an inline error banner (role="alert"); surface its
+    // text so a CI failure points at the real cause instead of a generic timeout.
+    if (!resp.ok()) {
+      const banner = page.locator('[role="alert"]');
+      const detail = (await banner.count())
+        ? (await banner.first().textContent())?.trim()
+        : `HTTP ${resp.status()}`;
+      throw new Error(`Registration API failed: ${detail}`);
     }
 
-    // Step 4: Payment confirmation
+    // Step 4: Payment confirmation — assert the DB-visible outcome of the purchase:
+    // a confirmed order with a generated OGM payment code (+++XXX/XXXX/XXXXX+++).
     await expect(page.getByText('Je bestelling is bevestigd')).toBeVisible({ timeout: 15_000 });
-
-    // Verify bank payment details are shown (OGM code format: +++XXX/XXXX/XXXXX+++)
-    await expect(page.getByText('+++')).toBeVisible();
+    await expect(page.getByText(/\+\+\+\d{3}\/\d{4}\/\d{5}\+\+\+/)).toBeVisible();
   });
 
   test('channel landing page shows share classes and navigation', async ({ page }) => {
