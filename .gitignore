@@ -75,3 +75,16 @@ apps/*/source.config.js
 apps/*/source.config.d.ts
 apps/*/mdx-components.js
 apps/*/mdx-components.d.ts
+
+# Agent scratch + local memory (never commit — historically leaked member PII here)
+agents/
+memory/
+
+# Editor / OS / temp
+*.tmp
+.~lock.*#
+
+# One-off prisma maintenance scripts' compiled output (the .ts are local-only)
+packages/database/prisma/*.js
+packages/database/prisma/*.d.ts
+!packages/database/prisma/seed*.js
