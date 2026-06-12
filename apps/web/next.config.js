@@ -7,11 +7,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const nextConfig = {
   output: 'standalone',
   transpilePackages: ['@opencoop/shared'],
-  // Next 14.2: the instrumentation hook (src/instrumentation.ts) is experimental.
-  // Required for Sentry server/edge init to run.
-  experimental: {
-    instrumentationHook: true,
-  },
+  // Next 15: the instrumentation hook (src/instrumentation.ts) is stable and enabled
+  // by default — no experimental flag needed. Sentry server/edge init runs from there.
   async headers() {
     return [
       {
