@@ -18,8 +18,12 @@ setup('authenticate as admin', async ({ page }) => {
   // Wait for redirect to dashboard
   await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
 
-  // Wait for the coop context to load (admin page should be accessible)
-  await page.waitForTimeout(2_000);
+  // Wait for the JWT to be persisted before snapshotting storageState. This is the
+  // exact artifact storageState captures, so polling for it (instead of a fixed
+  // sleep) makes the snapshot deterministic on slow CI runners.
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('accessToken')), { timeout: 10_000 })
+    .not.toBeNull();
 
   // Dismiss cookie notice so it doesn't block E2E interactions
   await page.evaluate(() => localStorage.setItem('opencoop-cookie-notice-dismissed', '1'));
@@ -40,7 +44,10 @@ setup('authenticate as shareholder', async ({ page }) => {
   await page.getByRole('button', { name: 'Inloggen' }).click();
 
   await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
-  await page.waitForTimeout(2_000);
+  // Wait for the JWT to be persisted before snapshotting storageState (was a fixed sleep).
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('accessToken')), { timeout: 10_000 })
+    .not.toBeNull();
 
   // Dismiss cookie notice so it doesn't block E2E interactions
   await page.evaluate(() => localStorage.setItem('opencoop-cookie-notice-dismissed', '1'));
