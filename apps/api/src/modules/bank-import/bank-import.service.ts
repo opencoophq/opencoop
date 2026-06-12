@@ -74,6 +74,29 @@ export class BankImportService {
     let unmatchedCount = 0;
     const completedGiftRegistrationIds: string[] = [];
 
+    // Batch the OGM lookups: extract every OGM from the rows (same regex the loop
+    // uses), dedupe, and fetch all matching registrations in ONE query instead of
+    // a findUnique per row (N+1). Keyed by ogmCode for O(1) lookup in the loop.
+    const OGM_REGEX = /\+\+\+\d{3}\/\d{4}\/\d{5}\+\+\+/;
+    const uniqueOgms = Array.from(
+      new Set(
+        rows
+          .filter((r) => r.amount > 0)
+          .map((r) => r.reference?.match(OGM_REGEX)?.[0])
+          .filter((o): o is string => !!o),
+      ),
+    );
+
+    const registrationMap = new Map<string, { id: string; coopId: string; status: string; totalAmount: unknown; isGift: boolean }>();
+    if (uniqueOgms.length > 0) {
+      const registrations = await this.prisma.registration.findMany({
+        where: { ogmCode: { in: uniqueOgms } },
+      });
+      for (const reg of registrations) {
+        if (reg.ogmCode) registrationMap.set(reg.ogmCode, reg);
+      }
+    }
+
     for (const row of rows) {
       if (row.amount <= 0) {
         await this.prisma.bankTransaction.create({
@@ -92,14 +115,15 @@ export class BankImportService {
         continue;
       }
 
-      const ogmMatch = row.reference?.match(/\+\+\+\d{3}\/\d{4}\/\d{5}\+\+\+/);
+      const ogmMatch = row.reference?.match(OGM_REGEX);
       const ogmCode = ogmMatch ? ogmMatch[0] : null;
       let matchStatus: 'UNMATCHED' | 'AUTO_MATCHED' = 'UNMATCHED';
 
       if (ogmCode) {
-        const registration = await this.prisma.registration.findUnique({
-          where: { ogmCode },
-        });
+        // Pre-fetched (was findUnique per row). The cached entry is kept in sync
+        // with each successful match below, so a SECOND row for the same OGM sees
+        // the registration's UPDATED status — exactly as a fresh DB read would.
+        const registration = registrationMap.get(ogmCode);
 
         if (
           registration &&
@@ -149,6 +173,9 @@ export class BankImportService {
                   processedAt: new Date(),
                 },
               });
+              // Keep the cached entry in sync: a later same-OGM row must see
+              // COMPLETED (which the gate excludes), as a fresh DB read would.
+              registration.status = 'COMPLETED';
 
               if (registration.isGift) {
                 completedGiftRegistrationIds.push(registration.id);
@@ -158,6 +185,9 @@ export class BankImportService {
                 where: { id: registration.id },
                 data: { status: 'ACTIVE' },
               });
+              // Keep the cached entry in sync: a partial payment flips
+              // PENDING_PAYMENT -> ACTIVE, which a later same-OGM row must see.
+              registration.status = 'ACTIVE';
             }
           });
 
