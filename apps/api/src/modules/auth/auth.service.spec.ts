@@ -7,6 +7,7 @@ jest.mock('../documents/documents.service', () => ({
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
+import { TokenService } from './token.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
@@ -126,6 +127,14 @@ describe('AuthService — requestMagicLink with household shareholders', () => {
         { provide: AuthEmailService, useValue: authEmailService },
         { provide: CoopsService, useValue: coopsService },
         { provide: AuditService, useValue: auditService },
+        {
+          provide: TokenService,
+          useValue: {
+            issueJwtForUser: jest.fn(),
+            refreshAccessToken: jest.fn(),
+            revokeRefreshTokens: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

@@ -22,27 +22,8 @@ import { hashToken } from '../../common/crypto/hash-token';
 import { decryptMfaSecret, hashRecoveryCode } from '../../common/crypto';
 import * as OTPAuth from 'otpauth';
 import { AuditService } from '../audit/audit.service';
-/**
- * OR-merge permissions across all roles assigned to a CoopAdmin, then apply
- * the per-admin overrides on top. An admin with N roles has the union of
- * their permissions: as soon as ANY role grants `canX`, the admin has `canX`.
- * Overrides win unconditionally — a `false` override switches a granted
- * permission off, a `true` override grants something no role provided.
- */
-function mergeAdminPermissions(
-  rolePermissionsList: unknown[],
-  overrides: unknown,
-): Record<string, boolean> {
-  const merged: Record<string, boolean> = {};
-  for (const perms of rolePermissionsList) {
-    const obj = (perms ?? {}) as Record<string, boolean>;
-    for (const [key, value] of Object.entries(obj)) {
-      merged[key] = merged[key] || value === true;
-    }
-  }
-  const overrideObj = (overrides ?? {}) as Record<string, boolean>;
-  return { ...merged, ...overrideObj };
-}
+import { TokenService } from './token.service';
+import { computeIsReadOnly } from './compute-readonly';
 
 @Injectable()
 export class AuthService {
@@ -54,6 +35,7 @@ export class AuthService {
     private authEmail: AuthEmailService,
     private coopsService: CoopsService,
     private auditService: AuditService,
+    private tokenService: TokenService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -96,7 +78,7 @@ export class AuthService {
       roles: { role: { permissions: any } }[];
     }[];
   }) {
-    return this.issueJwtForUser(user);
+    return this.tokenService.issueJwtForUser(user);
   }
 
   async login(loginDto: LoginDto, ip?: string, userAgent?: string) {
@@ -128,7 +110,7 @@ export class AuthService {
       console.error('Failed to link orphan shareholders:', err.message),
     );
 
-    return this.issueJwtForUser(user);
+    return this.tokenService.issueJwtForUser(user);
   }
 
   async register(registerDto: RegisterDto, ip?: string, userAgent?: string) {
@@ -174,7 +156,7 @@ export class AuthService {
       console.error('Failed to link orphan shareholders:', err.message),
     );
 
-    return this.issueJwtForUser({
+    return this.tokenService.issueJwtForUser({
       ...user,
       emailVerified: null,
       coopAdminOf: [],
@@ -286,7 +268,7 @@ export class AuthService {
     // New coop creator gets full Admin permissions
     const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true };
 
-    const tokenResult = await this.issueJwtForUser({
+    const tokenResult = await this.tokenService.issueJwtForUser({
       id: result.user.id,
       email: result.user.email,
       name: result.user.name,
@@ -557,7 +539,7 @@ export class AuthService {
           where: { id: coop.id },
           select: { plan: true, trialEndsAt: true, subscription: { select: { status: true } } },
         });
-        const isReadOnly = full ? this.computeIsReadOnly(full) : false;
+        const isReadOnly = full ? computeIsReadOnly(full) : false;
         const { channels, ...rest } = coop as typeof coop & { channels?: { logoUrl: string | null }[] };
         return {
           ...rest,
@@ -760,7 +742,7 @@ export class AuthService {
     });
 
     // Issue full JWT with permissions and refresh token (mfaAlreadyVerified = true skips the MFA gate)
-    return this.issueJwtForUser(user, true);
+    return this.tokenService.issueJwtForUser(user, true);
   }
 
   // ============================================================================
@@ -789,7 +771,7 @@ export class AuthService {
         ipAddress: ip,
         userAgent,
       });
-      return this.issueJwtForUser(user);
+      return this.tokenService.issueJwtForUser(user);
     }
 
     // 2. Check if user exists by email
@@ -816,7 +798,7 @@ export class AuthService {
         ipAddress: ip,
         userAgent,
       });
-      return this.issueJwtForUser(user);
+      return this.tokenService.issueJwtForUser(user);
     }
 
     // 3. Create new user (no password, OAuth-only)
@@ -843,7 +825,7 @@ export class AuthService {
       userAgent,
     });
 
-    return this.issueJwtForUser({
+    return this.tokenService.issueJwtForUser({
       ...newUser,
       coopAdminOf: [],
     });
@@ -985,7 +967,7 @@ export class AuthService {
       return user;
     });
 
-    const tokenResult = await this.issueJwtForUser({
+    const tokenResult = await this.tokenService.issueJwtForUser({
       ...result,
       emailVerified: new Date(),
       coopAdminOf: [],
@@ -1208,7 +1190,7 @@ export class AuthService {
       userAgent,
     });
 
-    return this.issueJwtForUser(magicLinkToken.user);
+    return this.tokenService.issueJwtForUser(magicLinkToken.user);
   }
 
   // ============================================================================
@@ -1277,141 +1259,6 @@ export class AuthService {
       where: { email: { equals: email, mode: 'insensitive' }, userId: null },
       data: { userId },
     });
-  }
-
-  async refreshAccessToken(refreshToken: string) {
-    const tokenHash = hashToken(refreshToken);
-    const storedToken = await this.prisma.refreshToken.findUnique({
-      where: { tokenHash },
-      include: {
-        user: {
-          include: {
-            coopAdminOf: {
-              include: {
-                roles: { include: { role: true } },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!storedToken || storedToken.revokedAt || storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
-    }
-
-    const user = storedToken.user;
-    const coopIds = user.coopAdminOf.map((ca) => ca.coopId);
-    const coopPermissions: Record<string, any> = {};
-    for (const ca of user.coopAdminOf) {
-      coopPermissions[ca.coopId] = mergeAdminPermissions(
-        ca.roles.map((r) => r.role.permissions),
-        ca.permissionOverrides,
-      );
-    }
-
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      ...(coopIds.length > 0 && { coopIds }),
-      ...(Object.keys(coopPermissions).length > 0 && { coopPermissions }),
-    };
-
-    return {
-      accessToken: this.jwtService.sign(payload, { expiresIn: '15m' }),
-    };
-  }
-
-  async revokeRefreshTokens(userId: string) {
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
-  }
-
-  private async issueJwtForUser(
-    user: {
-      id: string;
-      email: string;
-      name: string | null;
-      role: string;
-      preferredLanguage: string;
-      emailVerified: Date | null;
-      mfaEnabled?: boolean;
-      coopAdminOf?: {
-        coopId: string;
-        permissionOverrides?: any;
-        roles: { role: { permissions: any } }[];
-      }[];
-    },
-    mfaAlreadyVerified = false,
-  ) {
-    const coopIds = (user.coopAdminOf ?? []).map((ca) => ca.coopId);
-    const coopPermissions: Record<string, any> = {};
-    for (const ca of user.coopAdminOf ?? []) {
-      coopPermissions[ca.coopId] = mergeAdminPermissions(
-        ca.roles.map((r) => r.role.permissions),
-        ca.permissionOverrides,
-      );
-    }
-
-    // If MFA is enabled and not yet verified, issue a short-lived mfa-pending token
-    if (user.mfaEnabled && !mfaAlreadyVerified) {
-      const mfaPayload = {
-        sub: user.id,
-        type: 'mfa-pending',
-      };
-      return {
-        requiresMfa: true,
-        mfaToken: this.jwtService.sign(mfaPayload, { expiresIn: '5m' }),
-      };
-    }
-
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      ...(coopIds.length > 0 && { coopIds }),
-      ...(Object.keys(coopPermissions).length > 0 && { coopPermissions }),
-    };
-
-    // Generate refresh token
-    const rawRefreshToken = randomBytes(32).toString('hex');
-    const refreshTokenHash = hashToken(rawRefreshToken);
-    const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-
-    await this.prisma.refreshToken.create({
-      data: {
-        tokenHash: refreshTokenHash,
-        userId: user.id,
-        expiresAt: refreshExpiresAt,
-      },
-    });
-
-    return {
-      accessToken: this.jwtService.sign(payload, { expiresIn: '15m' }),
-      refreshToken: rawRefreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        preferredLanguage: user.preferredLanguage,
-        emailVerified: !!user.emailVerified,
-      },
-    };
-  }
-
-  private computeIsReadOnly(coop: {
-    plan: string;
-    trialEndsAt: Date | null;
-    subscription: { status: string } | null;
-  }): boolean {
-    if (coop.plan === 'FREE') return false;
-    if (coop.subscription?.status === 'ACTIVE') return false;
-    if (coop.trialEndsAt && coop.trialEndsAt > new Date()) return false;
-    return true;
   }
 
 }

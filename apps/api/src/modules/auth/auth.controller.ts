@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
+import { TokenService } from './token.service';
 import { MfaService } from './mfa.service';
 import { EmancipationService } from './emancipation.service';
 import { EmancipateDto } from './dto/emancipate.dto';
@@ -43,6 +44,7 @@ function isSafeRedirectPath(path: string): boolean {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly tokenService: TokenService,
     private readonly mfaService: MfaService,
     private readonly emancipationService: EmancipationService,
     private readonly webAuthnService: WebAuthnService,
@@ -87,7 +89,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'New access token issued' })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
-    return this.authService.refreshAccessToken(refreshTokenDto.refreshToken);
+    return this.tokenService.refreshAccessToken(refreshTokenDto.refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -96,7 +98,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout and revoke all refresh tokens' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
   async logout(@CurrentUser() user: CurrentUserData) {
-    await this.authService.revokeRefreshTokens(user.id);
+    await this.tokenService.revokeRefreshTokens(user.id);
     return { message: 'Logged out successfully' };
   }
 
