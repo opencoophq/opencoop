@@ -384,14 +384,17 @@ export class ShareholderImportService {
     // Explicit timeout: this is an interactive transaction with one write per row;
     // Prisma's default 5s timeout would abort large imports mid-way.
     await this.prisma.$transaction(async (tx) => {
-      // Pass 1: create primary (non-linked) rows
-      for (const item of primaryRows) {
-        const row = item.data;
-        await tx.shareholder.create({
-          data: {
-            ...buildBaseData(row, coopId),
-            email: row.email?.trim()?.toLowerCase() || null,
-          },
+      // Pass 1: create primary (non-linked) rows in a single batch.
+      // These rows are independent — no per-row return value is used — so a single
+      // createMany is equivalent to the per-row loop but far cheaper on round-trips.
+      // No skipDuplicates: a unique-constraint violation must still throw and roll back,
+      // exactly as the per-row create loop did.
+      if (primaryRows.length > 0) {
+        await tx.shareholder.createMany({
+          data: primaryRows.map((item) => ({
+            ...buildBaseData(item.data, coopId),
+            email: item.data.email?.trim()?.toLowerCase() || null,
+          })),
         });
       }
 

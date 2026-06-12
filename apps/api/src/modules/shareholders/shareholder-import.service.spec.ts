@@ -21,6 +21,7 @@ describe('ShareholderImportService', () => {
         findMany: jest.fn(),
         findFirst: jest.fn(),
         create: jest.fn(),
+        createMany: jest.fn(),
       },
       auditLog: {
         create: jest.fn(),
@@ -209,14 +210,16 @@ describe('ShareholderImportService', () => {
 
     it('should create shareholders when not dry-run', async () => {
       (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
-      (prismaService.shareholder.create as jest.Mock).mockResolvedValue({});
+      (prismaService.shareholder.createMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       const csv = 'type,firstName,lastName,email\nINDIVIDUAL,Jan,Peeters,jan@test.be\n';
       const result = await service.importShareholders('coop-1', makeFile(csv), false, 'user-1');
 
       expect(result.dryRun).toBe(false);
       expect(result.created).toBe(1);
-      expect(prismaService.shareholder.create).toHaveBeenCalledTimes(1);
+      // Primary rows are batched into a single createMany; per-row create is not used.
+      expect(prismaService.shareholder.createMany).toHaveBeenCalledTimes(1);
+      expect(prismaService.shareholder.create).not.toHaveBeenCalled();
       expect((prismaService as any).auditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -229,7 +232,7 @@ describe('ShareholderImportService', () => {
 
     it('should skip invalid rows and create valid ones', async () => {
       (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
-      (prismaService.shareholder.create as jest.Mock).mockResolvedValue({});
+      (prismaService.shareholder.createMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       const csv =
         'type,firstName,lastName,email\nINDIVIDUAL,Jan,Peeters,jan@test.be\nINDIVIDUAL,,,\n';
@@ -242,18 +245,20 @@ describe('ShareholderImportService', () => {
 
     it('should encrypt nationalId', async () => {
       (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
-      (prismaService.shareholder.create as jest.Mock).mockResolvedValue({});
+      (prismaService.shareholder.createMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       const csv =
         'type,firstName,lastName,email,nationalId\nINDIVIDUAL,Jan,Peeters,jan@test.be,85031512345\n';
       const result = await service.importShareholders('coop-1', makeFile(csv), false, 'user-1');
 
       expect(result.created).toBe(1);
-      expect(prismaService.shareholder.create).toHaveBeenCalledWith(
+      expect(prismaService.shareholder.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            nationalId: 'encrypted:85031512345',
-          }),
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              nationalId: 'encrypted:85031512345',
+            }),
+          ]),
         }),
       );
     });
@@ -283,8 +288,10 @@ describe('ShareholderImportService', () => {
     it('accepts duplicate email when second row has linkedTo pointing to first', async () => {
       // No pre-existing shareholders in coop
       (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
-      // Jan is created first (primary); findFirst returns Jan's record (with userId) for Marie's linkedTo resolution
-      (prismaService.shareholder.create as jest.Mock).mockResolvedValue({ id: 'sh-jan', userId: 'user-jan' });
+      // Jan (primary) is created via the Pass-1 createMany batch
+      (prismaService.shareholder.createMany as jest.Mock).mockResolvedValue({ count: 1 });
+      // Marie (linked) is created via per-row create in Pass 2
+      (prismaService.shareholder.create as jest.Mock).mockResolvedValue({ id: 'sh-marie', userId: 'user-jan' });
       (prismaService.shareholder.findFirst as jest.Mock).mockResolvedValue({
         userId: 'user-jan',
         email: 'jan@x.com',
@@ -298,8 +305,9 @@ describe('ShareholderImportService', () => {
       const result = await service.importShareholders('coop-1', makeFile(csv), false, 'user-admin');
 
       expect(result.errors).toHaveLength(0);
-      // Jan created as normal, Marie created with email=null and userId=primary's userId
-      expect(prismaService.shareholder.create).toHaveBeenCalledTimes(2);
+      // Jan batched into Pass-1 createMany; Marie created individually in Pass 2.
+      expect(prismaService.shareholder.createMany).toHaveBeenCalledTimes(1);
+      expect(prismaService.shareholder.create).toHaveBeenCalledTimes(1);
       // Marie's create call should have email: null and userId: 'user-jan'
       const createCalls = (prismaService.shareholder.create as jest.Mock).mock.calls;
       const marieCall = createCalls.find((call) => call[0]?.data?.userId === 'user-jan');
@@ -357,6 +365,64 @@ describe('ShareholderImportService', () => {
       expect(result.created).toBe(0);
       const allMessages = result.errors.flatMap((e) => e.errors);
       expect(allMessages.some((msg) => /primary@x\.com/.test(msg) && /no user account/i.test(msg))).toBe(true);
+    });
+  });
+
+  describe('Pass 1 batching (createMany)', () => {
+    const makeFile = (csv: string) =>
+      ({
+        originalname: 'test.csv',
+        buffer: Buffer.from(csv),
+      }) as Express.Multer.File;
+
+    it('issues a single createMany for multiple independent primary rows', async () => {
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
+      (prismaService.shareholder.createMany as jest.Mock).mockResolvedValue({ count: 3 });
+
+      const csv =
+        'type,firstName,lastName,email,companyName\n' +
+        'INDIVIDUAL,Jan,Peeters,jan@test.be,\n' +
+        'INDIVIDUAL,Marie,Claes,marie@test.be,\n' +
+        'COMPANY,,,info@bakkerij.be,Bakkerij BVBA\n';
+
+      const result = await service.importShareholders('coop-1', makeFile(csv), false, 'user-1');
+
+      expect(result.created).toBe(3);
+      // A single batched insert for all three primaries.
+      expect(prismaService.shareholder.createMany).toHaveBeenCalledTimes(1);
+      const callArg = (prismaService.shareholder.createMany as jest.Mock).mock.calls[0][0];
+      expect(callArg.data).toHaveLength(3);
+      expect(callArg.data.map((d: any) => d.email)).toEqual([
+        'jan@test.be',
+        'marie@test.be',
+        'info@bakkerij.be',
+      ]);
+      // skipDuplicates must NOT be set — duplicates should still throw/roll back.
+      expect(callArg.skipDuplicates).toBeUndefined();
+      // Per-row create is never used for primaries.
+      expect(prismaService.shareholder.create).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException from Pass 2 when an in-flight linkedTo primary is unresolvable at runtime', async () => {
+      // existing email check (validateRows) -> none; pre-flight linkedTo lookup -> none.
+      // The primary (jan@x.com) is in-flight in this import, so pre-flight defers to runtime.
+      (prismaService.shareholder.findMany as jest.Mock)
+        .mockResolvedValueOnce([]) // validateRows existing-email check
+        .mockResolvedValueOnce([]); // pre-flight linkedTo DB lookup (in-flight primary deferred)
+      (prismaService.shareholder.createMany as jest.Mock).mockResolvedValue({ count: 1 });
+      // Pass 2 findFirst fails to locate the (mock) primary -> runtime BadRequestException.
+      (prismaService.shareholder.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const csv =
+        'type,firstName,lastName,email,linkedTo\n' +
+        'INDIVIDUAL,Jan,Janssens,jan@x.com,\n' +
+        'INDIVIDUAL,Marie,Janssens,,jan@x.com\n';
+
+      await expect(
+        service.importShareholders('coop-1', makeFile(csv), false, 'user-admin'),
+      ).rejects.toThrow(/Row 3.*jan@x\.com/);
+      // Pass 1 still batched the primary before Pass 2 threw.
+      expect(prismaService.shareholder.createMany).toHaveBeenCalledTimes(1);
     });
   });
 });
