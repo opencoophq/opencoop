@@ -2,6 +2,75 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## [0.9.0] - 2026-06-12
+
+Repo-wide hardening release from a full audit of the codebase. Broad security,
+performance, reliability and tooling improvements; one framework upgrade. No
+breaking changes for cooperatives or members — most of this is invisible by design.
+
+### Security
+- **Closed two cross-tenant data-exposure holes (IDOR).** The dividends and payments
+  endpoints could be addressed with another cooperative's record IDs; they now scope
+  every lookup to the caller's `coopId` and return a generic not-found rather than
+  confirming a foreign resource exists.
+- **Fixed shareholder-list PII masking.** Coop admins without the view-PII permission
+  were still seeing member names/emails because the mask checked the wrong response
+  shape — it was a silent no-op. Names, emails and company data are now masked.
+- **HTML-escaped user-controlled values in emails**, removing an injection vector in
+  transactional email templates.
+- **Validated 9 endpoints** that previously accepted inline-typed request bodies with
+  proper DTOs, and added DTO validation across the public submit surface.
+- **Rate-limited the public submit endpoints** (3/min) and dropped the address field
+  from the kiosk check-in search projection.
+- **Containers now run as a non-privileged user** (api, web, migrate) instead of root.
+- **Dependency burn-down**: bumped multer, nodemailer, the MCP SDK, undici and Next
+  14.2; `pnpm audit` now runs in CI.
+
+### Performance
+- **Bank import** no longer does an N+1 query per CSV row — OGM lookups are batched
+  into a single query (parity with the per-row behaviour preserved, including
+  same-OGM rows in one file).
+- **Shareholder import** batches independent rows into one `createMany`, and the
+  large-import transaction timeout was raised so big files no longer abort midway.
+- **Leaner admin lists**: the shareholders and transactions lists precompute their
+  derived fields server-side and drop heavy nested includes / list-time decryption.
+- **New database indexes** on `BankTransaction(coopId, matchStatus)`,
+  `DividendPayout(shareholderId)` and `EmailLog(coopId)`.
+- **AGM convocations** send through a Bull queue (fast request + automatic retries),
+  and failed email jobs retry 3× with completed jobs auto-cleaned from Redis.
+
+### Added
+- **Next.js 15** (web), retaining React 18 — closes the Next-only security advisories.
+- **Dashboard pages now show a load error with a retry** instead of a silently empty
+  table when a request fails.
+- **Inline error in the registration funnel.** A failed share purchase now shows a
+  clear inline message next to the button instead of a jarring browser pop-up.
+- **Daily data-retention job** prunes expired tokens and old email logs.
+- **Sentry error tracking** (no-op when no DSN is configured).
+- **Post-deploy health gate + operations runbook** (deploy / rollback / restore).
+
+### Changed
+- **Auth module refactor.** The large auth service was split into focused services
+  (token issuance/refresh, MFA, OAuth, magic-link, transactional email) with no
+  behavioural change. Email template copy moved into per-locale JSON files
+  (byte-identical, snapshot-locked).
+- **Unified the two HTTP client helpers** (`api()` / `apiFetch()`) onto one core, and
+  **consolidated date formatting** into the shared package.
+- **Period-level dividend rounding** so withholding-tax remainders apportion correctly
+  across a payout period.
+- Truthed-up `CLAUDE.md` / `README` / `.env.example` to match the codebase.
+
+### Fixed
+- Handled or explicitly annotated the remaining silent `catch()` sites so failures
+  surface instead of vanishing.
+- Removed dead Belgian IBAN/VAT/national-ID validators that were never wired in.
+
+### Internal
+- **CI now gates every PR on lint + unit tests and requires the e2e + test suites to
+  pass before any deploy.** Added test coverage for tenant-isolation guards, the
+  shared OGM/dividend/vesting math, the registration lifecycle and bank-import
+  matching. Hardened `.gitignore` and removed committed PII from git history.
+
 ## [0.8.38] - 2026-05-08
 
 ### Fixed
