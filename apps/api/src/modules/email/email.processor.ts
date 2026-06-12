@@ -11,6 +11,21 @@ import {
   TokenCredentialAuthenticationProvider,
 } from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
 
+/**
+ * Escape HTML-significant characters so user/coop-controlled free text can be
+ * safely interpolated into email HTML without allowing markup/script injection
+ * (audit Q5). Only use for plain-text values — never for trusted URLs, numbers,
+ * system-generated codes, or intentionally pre-rendered HTML.
+ */
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 interface EmailJob {
   emailLogId: string;
   coopId: string;
@@ -287,29 +302,31 @@ export class EmailProcessor {
     const templates: Record<string, (data: Record<string, unknown>, coopName: string) => string> = {
       welcome: (d, cn) => {
         const lang = (d.language as string) || 'nl';
+        const sn = escapeHtml(d.shareholderName);
+        const ecn = escapeHtml(cn);
         const t = {
           nl: {
-            title: `Welkom bij ${cn}!`,
-            dear: `Beste ${d.shareholderName},`,
-            thanks: `Bedankt om aandeelhouder te worden van ${cn}.`,
+            title: `Welkom bij ${ecn}!`,
+            dear: `Beste ${sn},`,
+            thanks: `Bedankt om aandeelhouder te worden van ${ecn}.`,
             login: 'Je kan inloggen in je dashboard om je aandelen en documenten te bekijken.',
           },
           en: {
-            title: `Welcome to ${cn}!`,
-            dear: `Dear ${d.shareholderName},`,
-            thanks: `Thank you for becoming a shareholder of ${cn}.`,
+            title: `Welcome to ${ecn}!`,
+            dear: `Dear ${sn},`,
+            thanks: `Thank you for becoming a shareholder of ${ecn}.`,
             login: 'You can log in to your dashboard to view your shares and documents.',
           },
           fr: {
-            title: `Bienvenue chez ${cn} !`,
-            dear: `Cher/Chère ${d.shareholderName},`,
-            thanks: `Merci de devenir actionnaire de ${cn}.`,
+            title: `Bienvenue chez ${ecn} !`,
+            dear: `Cher/Chère ${sn},`,
+            thanks: `Merci de devenir actionnaire de ${ecn}.`,
             login: 'Vous pouvez vous connecter à votre tableau de bord pour consulter vos actions et documents.',
           },
           de: {
-            title: `Willkommen bei ${cn}!`,
-            dear: `Liebe/r ${d.shareholderName},`,
-            thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} werden.`,
+            title: `Willkommen bei ${ecn}!`,
+            dear: `Liebe/r ${sn},`,
+            thanks: `Vielen Dank, dass Sie Anteilseigner von ${ecn} werden.`,
             login: 'Sie können sich in Ihrem Dashboard anmelden, um Ihre Anteile und Dokumente einzusehen.',
           },
         };
@@ -323,11 +340,13 @@ export class EmailProcessor {
       },
       'share-purchase': (d, cn) => {
         const lang = (d.language as string) || 'nl';
+        const sn = escapeHtml(d.shareholderName);
+        const ecn = escapeHtml(cn);
         const t = {
           nl: {
             title: 'Je bestelling is bevestigd',
-            dear: `Beste ${d.shareholderName},`,
-            intro: `Bedankt voor je bestelling bij ${cn}. We hebben deze goed ontvangen — je hoeft niets meer te doen op onze website. Onderstaande gegevens heb je nodig om het bedrag over te schrijven via je bank-app.`,
+            dear: `Beste ${sn},`,
+            intro: `Bedankt voor je bestelling bij ${ecn}. We hebben deze goed ontvangen — je hoeft niets meer te doen op onze website. Onderstaande gegevens heb je nodig om het bedrag over te schrijven via je bank-app.`,
             orderTitle: 'Je bestelling',
             shareClass: 'Aandelenklasse',
             quantity: 'Aantal',
@@ -342,12 +361,12 @@ export class EmailProcessor {
             step2: 'Schrijf het bedrag over via je bank-app met de bovenstaande gegevens',
             step3: `Je ontvangt een tweede e-mail zodra we je betaling gematcht hebben (doorgaans binnen 1 à 2 werkdagen). Pas daarna zijn je aandelen actief.`,
             noHaste: 'Er is geen haast bij — je kunt nog steeds betalen wanneer het jou uitkomt.',
-            thanks: `Bedankt om te investeren in ${cn}!`,
+            thanks: `Bedankt om te investeren in ${ecn}!`,
           },
           en: {
             title: 'Your order is confirmed',
-            dear: `Dear ${d.shareholderName},`,
-            intro: `Thank you for your order with ${cn}. We've received it — there's nothing more to do on our website. Use the details below to transfer the amount via your banking app.`,
+            dear: `Dear ${sn},`,
+            intro: `Thank you for your order with ${ecn}. We've received it — there's nothing more to do on our website. Use the details below to transfer the amount via your banking app.`,
             orderTitle: 'Your order',
             shareClass: 'Share class',
             quantity: 'Quantity',
@@ -362,12 +381,12 @@ export class EmailProcessor {
             step2: 'Transfer the amount via your banking app using the details above',
             step3: `You'll get a second email once we've matched your payment (usually within 1–2 business days). Only then are your shares active.`,
             noHaste: "No rush — you can still pay whenever it suits you.",
-            thanks: `Thank you for investing in ${cn}!`,
+            thanks: `Thank you for investing in ${ecn}!`,
           },
           fr: {
             title: 'Votre commande est confirmée',
-            dear: `Cher/Chère ${d.shareholderName},`,
-            intro: `Merci pour votre commande auprès de ${cn}. Nous l'avons bien reçue — vous n'avez plus rien à faire sur notre site. Utilisez les informations ci-dessous pour effectuer le virement via votre application bancaire.`,
+            dear: `Cher/Chère ${sn},`,
+            intro: `Merci pour votre commande auprès de ${ecn}. Nous l'avons bien reçue — vous n'avez plus rien à faire sur notre site. Utilisez les informations ci-dessous pour effectuer le virement via votre application bancaire.`,
             orderTitle: 'Votre commande',
             shareClass: "Classe d'actions",
             quantity: 'Quantité',
@@ -382,12 +401,12 @@ export class EmailProcessor {
             step2: 'Effectuez le virement via votre application bancaire avec les informations ci-dessus',
             step3: `Vous recevrez un second e-mail dès que nous aurons réconcilié votre paiement (généralement sous 1 à 2 jours ouvrables). Vos actions seront alors actives.`,
             noHaste: 'Pas de précipitation — vous pouvez encore payer quand cela vous convient.',
-            thanks: `Merci d'investir dans ${cn} !`,
+            thanks: `Merci d'investir dans ${ecn} !`,
           },
           de: {
             title: 'Ihre Bestellung ist bestätigt',
-            dear: `Liebe/r ${d.shareholderName},`,
-            intro: `Vielen Dank für Ihre Bestellung bei ${cn}. Wir haben sie erhalten — auf unserer Website müssen Sie nichts weiter tun. Mit den untenstehenden Daten überweisen Sie den Betrag über Ihre Banking-App.`,
+            dear: `Liebe/r ${sn},`,
+            intro: `Vielen Dank für Ihre Bestellung bei ${ecn}. Wir haben sie erhalten — auf unserer Website müssen Sie nichts weiter tun. Mit den untenstehenden Daten überweisen Sie den Betrag über Ihre Banking-App.`,
             orderTitle: 'Ihre Bestellung',
             shareClass: 'Anteilsklasse',
             quantity: 'Anzahl',
@@ -402,7 +421,7 @@ export class EmailProcessor {
             step2: 'Überweisen Sie den Betrag über Ihre Banking-App mit den obigen Angaben',
             step3: `Sobald wir Ihre Zahlung zugeordnet haben (in der Regel innerhalb von 1–2 Werktagen), erhalten Sie eine zweite E-Mail. Erst dann sind Ihre Anteile aktiv.`,
             noHaste: 'Kein Stress — Sie können auch später zahlen, wann es Ihnen passt.',
-            thanks: `Vielen Dank für Ihre Investition in ${cn}!`,
+            thanks: `Vielen Dank für Ihre Investition in ${ecn}!`,
           },
         };
         const s = t[lang as keyof typeof t] || t['nl'];
@@ -414,14 +433,14 @@ export class EmailProcessor {
 
     <h2>${s.orderTitle}</h2>
     <ul>
-      <li>${s.shareClass}: ${d.shareClassName}</li>
+      <li>${s.shareClass}: ${escapeHtml(d.shareClassName)}</li>
       <li>${s.quantity}: ${d.quantity}</li>
       <li>${s.totalAmount}: €${amount}</li>
     </ul>
 
     ${d.bankIban || d.ogmCode ? `
     <h2>${s.paymentDetailsTitle}</h2>
-    <p>${s.beneficiary}: <strong>${cn}</strong></p>
+    <p>${s.beneficiary}: <strong>${ecn}</strong></p>
     ${d.bankIban ? `<p>${s.iban}: <strong>${d.bankIban}</strong></p>` : ''}
     <p>${s.amount}: <strong>€${amount}</strong></p>
     ${d.ogmCode ? `<p>${s.ogm}: <strong>${d.ogmCode}</strong></p>` : ''}
@@ -440,38 +459,40 @@ export class EmailProcessor {
       },
       'payment-confirmed': (d, cn) => {
         const lang = (d.language as string) || 'nl';
+        const sn = escapeHtml(d.shareholderName);
+        const ecn = escapeHtml(cn);
         const t = {
           nl: {
             title: 'Betaling bevestigd',
-            dear: `Beste ${d.shareholderName},`,
+            dear: `Beste ${sn},`,
             received: `We hebben uw betaling van €${(d.amount as number).toFixed(2)} ontvangen.`,
             active: 'Uw aandelen zijn nu actief. Uw aandeelhoudersattest vindt u als bijlage.',
             dashboard: 'Bekijk mijn dashboard',
-            thanks: `Bedankt om aandeelhouder te zijn van ${cn}!`,
+            thanks: `Bedankt om aandeelhouder te zijn van ${ecn}!`,
           },
           en: {
             title: 'Payment Confirmed',
-            dear: `Dear ${d.shareholderName},`,
+            dear: `Dear ${sn},`,
             received: `We have received your payment of €${(d.amount as number).toFixed(2)}.`,
             active: 'Your shares are now active. Please find your share certificate attached.',
             dashboard: 'View my dashboard',
-            thanks: `Thank you for being a shareholder of ${cn}!`,
+            thanks: `Thank you for being a shareholder of ${ecn}!`,
           },
           fr: {
             title: 'Paiement confirmé',
-            dear: `Cher/Chère ${d.shareholderName},`,
+            dear: `Cher/Chère ${sn},`,
             received: `Nous avons reçu votre paiement de €${(d.amount as number).toFixed(2)}.`,
             active: "Vos actions sont maintenant actives. Veuillez trouver votre certificat d'actionnaire en pièce jointe.",
             dashboard: 'Voir mon tableau de bord',
-            thanks: `Merci d'être actionnaire de ${cn}!`,
+            thanks: `Merci d'être actionnaire de ${ecn}!`,
           },
           de: {
             title: 'Zahlung bestätigt',
-            dear: `Liebe/r ${d.shareholderName},`,
+            dear: `Liebe/r ${sn},`,
             received: `Wir haben Ihre Zahlung von €${(d.amount as number).toFixed(2)} erhalten.`,
             active: 'Ihre Anteile sind jetzt aktiv. Bitte finden Sie Ihr Anteilszertifikat im Anhang.',
             dashboard: 'Mein Dashboard anzeigen',
-            thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
+            thanks: `Vielen Dank, dass Sie Anteilseigner von ${ecn} sind!`,
           },
         };
         const s = t[lang as keyof typeof t] || t['nl'];
@@ -494,34 +515,36 @@ export class EmailProcessor {
       },
       'dividend-statement': (d, cn) => {
         const lang = (d.language as string) || 'nl';
+        const sn = escapeHtml(d.shareholderName);
+        const ecn = escapeHtml(cn);
         const t = {
           nl: {
             title: `Dividendafrekening ${d.year}`,
-            dear: `Beste ${d.shareholderName},`,
+            dear: `Beste ${sn},`,
             attached: `In bijlage vind je je dividendafrekening voor ${d.year}.`,
             net: 'Netto dividendbedrag',
-            thanks: `Bedankt om aandeelhouder te zijn van ${cn}!`,
+            thanks: `Bedankt om aandeelhouder te zijn van ${ecn}!`,
           },
           en: {
             title: `Dividend Statement ${d.year}`,
-            dear: `Dear ${d.shareholderName},`,
+            dear: `Dear ${sn},`,
             attached: `Please find attached your dividend statement for ${d.year}.`,
             net: 'Net dividend amount',
-            thanks: `Thank you for being a shareholder of ${cn}!`,
+            thanks: `Thank you for being a shareholder of ${ecn}!`,
           },
           fr: {
             title: `Relevé de dividendes ${d.year}`,
-            dear: `Cher/Chère ${d.shareholderName},`,
+            dear: `Cher/Chère ${sn},`,
             attached: `Veuillez trouver ci-joint votre relevé de dividendes pour ${d.year}.`,
             net: 'Montant net du dividende',
-            thanks: `Merci d'être actionnaire de ${cn} !`,
+            thanks: `Merci d'être actionnaire de ${ecn} !`,
           },
           de: {
             title: `Dividendenabrechnung ${d.year}`,
-            dear: `Liebe/r ${d.shareholderName},`,
+            dear: `Liebe/r ${sn},`,
             attached: `Bitte finden Sie im Anhang Ihre Dividendenabrechnung für ${d.year}.`,
             net: 'Netto-Dividendenbetrag',
-            thanks: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
+            thanks: `Vielen Dank, dass Sie Anteilseigner von ${ecn} sind!`,
           },
         };
         const s = t[lang as keyof typeof t] || t['nl'];
@@ -620,9 +643,9 @@ export class EmailProcessor {
   `;
       },
       'minor-turned-adult': (d, cn) => `
-        <h1>Welkom bij ${cn}, ${d.firstName}!</h1>
+        <h1>Welkom bij ${escapeHtml(cn)}, ${escapeHtml(d.firstName)}!</h1>
         <p>Gefeliciteerd met je 18de verjaardag! 🎉</p>
-        <p>Je bent nu volwassen en beheert voortaan zelf je aandelen bij ${cn}.</p>
+        <p>Je bent nu volwassen en beheert voortaan zelf je aandelen bij ${escapeHtml(cn)}.</p>
         <p>Log in op je account om je aandelen te bekijken:</p>
         <p style="text-align: center; margin: 30px 0;">
           <a href="${d.loginUrl}"
@@ -633,16 +656,16 @@ export class EmailProcessor {
         </p>
       `,
       'parent-minor-turned-adult': (d, cn) => `
-        <h1>${d.minorFirstName} beheert nu zelf de aandelen</h1>
+        <h1>${escapeHtml(d.minorFirstName)} beheert nu zelf de aandelen</h1>
         <p>Beste ouder/voogd,</p>
-        <p>${d.minorFirstName} ${d.minorLastName} is 18 geworden en beheert voortaan zelf de aandelen bij ${cn}.</p>
-        <p>U hoeft hier verder niets voor te doen. ${d.minorFirstName} kan nu zelfstandig inloggen.</p>
+        <p>${escapeHtml(d.minorFirstName)} ${escapeHtml(d.minorLastName)} is 18 geworden en beheert voortaan zelf de aandelen bij ${escapeHtml(cn)}.</p>
+        <p>U hoeft hier verder niets voor te doen. ${escapeHtml(d.minorFirstName)} kan nu zelfstandig inloggen.</p>
       `,
       'minor-upgrade-notification': (d, cn) => `
-        <h1>${d.minorFirstName} is 18 geworden</h1>
+        <h1>${escapeHtml(d.minorFirstName)} is 18 geworden</h1>
         <p>Beste ouder/voogd,</p>
-        <p>${d.minorFirstName} ${d.minorLastName} is 18 geworden en kan nu een eigen account aanmaken bij ${cn}.</p>
-        <p>Omdat er geen e-mailadres gekend is voor ${d.minorFirstName}, vragen we u om onderstaande link door te geven:</p>
+        <p>${escapeHtml(d.minorFirstName)} ${escapeHtml(d.minorLastName)} is 18 geworden en kan nu een eigen account aanmaken bij ${escapeHtml(cn)}.</p>
+        <p>Omdat er geen e-mailadres gekend is voor ${escapeHtml(d.minorFirstName)}, vragen we u om onderstaande link door te geven:</p>
         <p style="text-align: center; margin: 30px 0;">
           <a href="${d.upgradeUrl}"
              style="background-color: #1e40af; color: white; padding: 12px 24px;
@@ -655,9 +678,9 @@ export class EmailProcessor {
         </p>
       `,
       'minor-upgrade-reminder': (d, cn) => `
-        <h1>Herinnering: account aanmaken voor ${d.minorFirstName}</h1>
+        <h1>Herinnering: account aanmaken voor ${escapeHtml(d.minorFirstName)}</h1>
         <p>Beste ouder/voogd,</p>
-        <p>We hebben u eerder gevraagd om onderstaande link door te geven aan ${d.minorFirstName} ${d.minorLastName} voor het aanmaken van een eigen account bij ${cn}.</p>
+        <p>We hebben u eerder gevraagd om onderstaande link door te geven aan ${escapeHtml(d.minorFirstName)} ${escapeHtml(d.minorLastName)} voor het aanmaken van een eigen account bij ${escapeHtml(cn)}.</p>
         <p>De link is nog ${d.daysRemaining} dagen geldig:</p>
         <p style="text-align: center; margin: 30px 0;">
           <a href="${d.upgradeUrl}"
@@ -668,10 +691,10 @@ export class EmailProcessor {
         </p>
       `,
       'set-minor-email-reminder': (d, cn) => `
-        <h1>E-mailadres toevoegen voor ${d.minorFirstName}</h1>
+        <h1>E-mailadres toevoegen voor ${escapeHtml(d.minorFirstName)}</h1>
         <p>Beste ouder/voogd,</p>
-        <p>${d.minorFirstName} ${d.minorLastName} is aandeelhouder bij ${cn} en wordt over ${d.yearsUntil18} jaar 18.</p>
-        <p>Op dat moment krijgt ${d.minorFirstName} een eigen account. Om dit automatisch te laten verlopen, kunt u nu al een e-mailadres toevoegen in het dashboard:</p>
+        <p>${escapeHtml(d.minorFirstName)} ${escapeHtml(d.minorLastName)} is aandeelhouder bij ${escapeHtml(cn)} en wordt over ${d.yearsUntil18} jaar 18.</p>
+        <p>Op dat moment krijgt ${escapeHtml(d.minorFirstName)} een eigen account. Om dit automatisch te laten verlopen, kunt u nu al een e-mailadres toevoegen in het dashboard:</p>
         <p style="text-align: center; margin: 30px 0;">
           <a href="${d.dashboardUrl}"
              style="background-color: #1e40af; color: white; padding: 12px 24px;
@@ -680,59 +703,61 @@ export class EmailProcessor {
           </a>
         </p>
         <p style="color: #666; font-size: 12px;">
-          Als ${d.minorFirstName} nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
+          Als ${escapeHtml(d.minorFirstName)} nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
         </p>
       `,
       'gift-certificate': (d, cn) => {
         const lang = (d.language as string) || 'nl';
+        const bn = escapeHtml(d.buyerName);
+        const ecn = escapeHtml(cn);
         const t = {
           nl: {
             title: 'Je cadeaubon',
-            dear: `Beste ${d.buyerName},`,
-            thanks: `Bedankt voor het aankopen van een cadeaubon bij ${cn}!`,
+            dear: `Beste ${bn},`,
+            thanks: `Bedankt voor het aankopen van een cadeaubon bij ${ecn}!`,
             received: 'Je betaling is ontvangen en de cadeaubon is als bijlage toegevoegd.',
             shareClass: 'Aandelenklasse',
             quantity: 'Aantal',
             totalValue: 'Totale waarde',
             giftCode: 'Cadeaucode',
             share: 'Deel de cadeaubon met de ontvanger. Ze kunnen de code of QR-code gebruiken om hun aandelen op te vragen.',
-            thanksEnd: `Bedankt om aandeelhouder te zijn van ${cn}!`,
+            thanksEnd: `Bedankt om aandeelhouder te zijn van ${ecn}!`,
           },
           en: {
             title: 'Your Gift Certificate',
-            dear: `Dear ${d.buyerName},`,
-            thanks: `Thank you for purchasing a gift certificate at ${cn}!`,
+            dear: `Dear ${bn},`,
+            thanks: `Thank you for purchasing a gift certificate at ${ecn}!`,
             received: 'Your payment has been received and the gift certificate is attached to this email.',
             shareClass: 'Share Class',
             quantity: 'Quantity',
             totalValue: 'Total Value',
             giftCode: 'Gift code',
             share: 'Share this certificate with the recipient. They can use the code or QR code to claim their shares.',
-            thanksEnd: `Thank you for being a shareholder of ${cn}!`,
+            thanksEnd: `Thank you for being a shareholder of ${ecn}!`,
           },
           fr: {
             title: 'Votre bon cadeau',
-            dear: `Cher/Chère ${d.buyerName},`,
-            thanks: `Merci d'avoir acheté un bon cadeau chez ${cn} !`,
+            dear: `Cher/Chère ${bn},`,
+            thanks: `Merci d'avoir acheté un bon cadeau chez ${ecn} !`,
             received: 'Votre paiement a été reçu et le bon cadeau est joint à cet e-mail.',
             shareClass: "Classe d'actions",
             quantity: 'Quantité',
             totalValue: 'Valeur totale',
             giftCode: 'Code cadeau',
             share: 'Partagez ce bon avec le destinataire. Il peut utiliser le code ou le QR code pour réclamer ses actions.',
-            thanksEnd: `Merci d'être actionnaire de ${cn} !`,
+            thanksEnd: `Merci d'être actionnaire de ${ecn} !`,
           },
           de: {
             title: 'Ihr Geschenkgutschein',
-            dear: `Liebe/r ${d.buyerName},`,
-            thanks: `Vielen Dank für den Kauf eines Geschenkgutscheins bei ${cn}!`,
+            dear: `Liebe/r ${bn},`,
+            thanks: `Vielen Dank für den Kauf eines Geschenkgutscheins bei ${ecn}!`,
             received: 'Ihre Zahlung wurde erhalten und der Geschenkgutschein ist dieser E-Mail beigefügt.',
             shareClass: 'Anteilsklasse',
             quantity: 'Anzahl',
             totalValue: 'Gesamtwert',
             giftCode: 'Geschenkcode',
             share: 'Teilen Sie diesen Gutschein mit dem Empfänger. Er kann den Code oder QR-Code verwenden, um seine Anteile einzulösen.',
-            thanksEnd: `Vielen Dank, dass Sie Anteilseigner von ${cn} sind!`,
+            thanksEnd: `Vielen Dank, dass Sie Anteilseigner von ${ecn} sind!`,
           },
         };
         const s = t[lang as keyof typeof t] || t['nl'];
@@ -742,7 +767,7 @@ export class EmailProcessor {
     <p>${s.thanks}</p>
     <p>${s.received}</p>
     <ul>
-      <li>${s.shareClass}: ${d.shareClassName}</li>
+      <li>${s.shareClass}: ${escapeHtml(d.shareClassName)}</li>
       <li>${s.quantity}: ${d.quantity}</li>
       <li>${s.totalValue}: €${(d.totalValue as number).toFixed(2)}</li>
     </ul>
@@ -753,32 +778,34 @@ export class EmailProcessor {
       },
       'message-notification': (d, cn) => {
         const lang = (d.language as string) || 'nl';
+        const sn = escapeHtml(d.shareholderName);
+        const ecn = escapeHtml(cn);
         const t = {
           nl: {
-            title: `Nieuw bericht van ${cn}`,
-            dear: `Beste ${d.shareholderName},`,
-            body: `U heeft een nieuw bericht ontvangen van ${cn}.`,
+            title: `Nieuw bericht van ${ecn}`,
+            dear: `Beste ${sn},`,
+            body: `U heeft een nieuw bericht ontvangen van ${ecn}.`,
             subject: 'Onderwerp',
             viewMessage: 'Bekijk het bericht',
           },
           en: {
-            title: `New message from ${cn}`,
-            dear: `Dear ${d.shareholderName},`,
-            body: `You have received a new message from ${cn}.`,
+            title: `New message from ${ecn}`,
+            dear: `Dear ${sn},`,
+            body: `You have received a new message from ${ecn}.`,
             subject: 'Subject',
             viewMessage: 'View message',
           },
           fr: {
-            title: `Nouveau message de ${cn}`,
-            dear: `Cher/Chère ${d.shareholderName},`,
-            body: `Vous avez reçu un nouveau message de ${cn}.`,
+            title: `Nouveau message de ${ecn}`,
+            dear: `Cher/Chère ${sn},`,
+            body: `Vous avez reçu un nouveau message de ${ecn}.`,
             subject: 'Sujet',
             viewMessage: 'Voir le message',
           },
           de: {
-            title: `Neue Nachricht von ${cn}`,
-            dear: `Liebe/r ${d.shareholderName},`,
-            body: `Sie haben eine neue Nachricht von ${cn} erhalten.`,
+            title: `Neue Nachricht von ${ecn}`,
+            dear: `Liebe/r ${sn},`,
+            body: `Sie haben eine neue Nachricht von ${ecn} erhalten.`,
             subject: 'Betreff',
             viewMessage: 'Nachricht anzeigen',
           },
@@ -788,9 +815,9 @@ export class EmailProcessor {
           <h1>${s.title}</h1>
           <p>${s.dear}</p>
           <p>${s.body}</p>
-          <p><strong>${s.subject}:</strong> ${d.messageSubject}</p>
+          <p><strong>${s.subject}:</strong> ${escapeHtml(d.messageSubject)}</p>
           <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
-            ${d.messagePreview}
+            ${escapeHtml(d.messagePreview)}
           </blockquote>
           <p style="text-align: center; margin: 30px 0;">
             <a href="${d.inboxUrl}"
@@ -803,11 +830,11 @@ export class EmailProcessor {
       },
       'admin-message-notification': (d, cn) => `
         <h1>Nieuw bericht ontvangen</h1>
-        <p>Beste ${d.adminName},</p>
-        <p>Er is een nieuw bericht ontvangen in ${cn}.</p>
-        <p><strong>Onderwerp:</strong> ${d.messageSubject}</p>
+        <p>Beste ${escapeHtml(d.adminName)},</p>
+        <p>Er is een nieuw bericht ontvangen in ${escapeHtml(cn)}.</p>
+        <p><strong>Onderwerp:</strong> ${escapeHtml(d.messageSubject)}</p>
         <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
-          ${d.messagePreview}...
+          ${escapeHtml(d.messagePreview)}...
         </blockquote>
         <p>Log in op het dashboard om het bericht te bekijken en te beantwoorden.</p>
       `,
@@ -823,16 +850,16 @@ export class EmailProcessor {
         const label = eventLabels[event] || event;
 
         const details: string[] = [];
-        if (data.shareholderName) details.push(`<li><strong>Shareholder:</strong> ${data.shareholderName}</li>`);
-        if (data.shareClassName) details.push(`<li><strong>Share class:</strong> ${data.shareClassName}</li>`);
+        if (data.shareholderName) details.push(`<li><strong>Shareholder:</strong> ${escapeHtml(data.shareholderName)}</li>`);
+        if (data.shareClassName) details.push(`<li><strong>Share class:</strong> ${escapeHtml(data.shareClassName)}</li>`);
         if (data.quantity) details.push(`<li><strong>Quantity:</strong> ${data.quantity}</li>`);
         if (data.totalAmount !== undefined) details.push(`<li><strong>Total amount:</strong> €${(data.totalAmount as number).toFixed(2)}</li>`);
         if (data.paymentAmount !== undefined) details.push(`<li><strong>Payment amount:</strong> €${(data.paymentAmount as number).toFixed(2)}</li>`);
 
         return `
           <h1>${label}</h1>
-          <p>Dear ${d.adminName},</p>
-          <p>A new event has occurred in <strong>${d.coopName}</strong>:</p>
+          <p>Dear ${escapeHtml(d.adminName)},</p>
+          <p>A new event has occurred in <strong>${escapeHtml(d.coopName)}</strong>:</p>
           <ul>${details.join('')}</ul>
           <p style="color: #666; font-size: 12px;">
             You are receiving this because you enabled this notification in your admin profile.
@@ -853,8 +880,8 @@ export class EmailProcessor {
 
         const rows = events.map((e) => {
           const parts: string[] = [];
-          if (e.data.shareholderName) parts.push(`${e.data.shareholderName}`);
-          if (e.data.shareClassName) parts.push(`${e.data.quantity ?? ''} × ${e.data.shareClassName}`);
+          if (e.data.shareholderName) parts.push(`${escapeHtml(e.data.shareholderName)}`);
+          if (e.data.shareClassName) parts.push(`${e.data.quantity ?? ''} × ${escapeHtml(e.data.shareClassName)}`);
           if (e.data.totalAmount !== undefined) parts.push(`€${(e.data.totalAmount as number).toFixed(2)}`);
           if (e.data.paymentAmount !== undefined) parts.push(`€${(e.data.paymentAmount as number).toFixed(2)}`);
           return `<tr>
@@ -864,9 +891,9 @@ export class EmailProcessor {
         }).join('');
 
         return `
-          <h1>Your ${label} digest for ${d.coopName}</h1>
-          <p>Dear ${d.adminName},</p>
-          <p>Here is a summary of activity in <strong>${d.coopName}</strong> over the past ${frequency === 'DAILY' ? '24 hours' : '7 days'}:</p>
+          <h1>Your ${label} digest for ${escapeHtml(d.coopName)}</h1>
+          <p>Dear ${escapeHtml(d.adminName)},</p>
+          <p>Here is a summary of activity in <strong>${escapeHtml(d.coopName)}</strong> over the past ${frequency === 'DAILY' ? '24 hours' : '7 days'}:</p>
           <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
             <thead>
               <tr>
@@ -885,69 +912,73 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const customBody = (d.customBody as string) || '';
         const coopName = (d.coopName as string) || cn;
+        const ecoopName = escapeHtml(coopName);
+        const sn = escapeHtml(d.shareholderName);
+        const meetingTitle = escapeHtml(d.meetingTitle);
+        const meetingLocation = escapeHtml(d.meetingLocation);
         const coopLogoUrl = (d.coopLogoUrl as string) || '';
         const brandColor = (d.coopPrimaryColor as string) || '#1e40af';
         const humanDate = this.formatMeetingDate(d.meetingDate, lang);
 
         const t = {
           nl: {
-            title: `Oproeping ${coopName}`,
+            title: `Oproeping ${ecoopName}`,
             subtitle: 'Algemene Vergadering',
-            dear: `Beste ${d.shareholderName},`,
-            intro: `Namens <strong>${coopName}</strong> nodigen wij u uit voor de <strong>${d.meetingTitle}</strong> op <strong>${humanDate}</strong> te <strong>${d.meetingLocation || 'nader te bepalen'}</strong>.`,
+            dear: `Beste ${sn},`,
+            intro: `Namens <strong>${ecoopName}</strong> nodigen wij u uit voor de <strong>${meetingTitle}</strong> op <strong>${humanDate}</strong> te <strong>${meetingLocation || 'nader te bepalen'}</strong>.`,
             agendaTitle: 'Agenda',
             cta: 'Reageer op de oproeping',
             proxy: 'Klik op de knop hierboven om aan te geven of u aanwezig zult zijn, niet aanwezig zult zijn, of om uw stem te delegeren aan een andere aandeelhouder (volmacht).',
             attachment: 'In bijlage vindt u de officiële oproeping als PDF.',
             closing: 'Met vriendelijke groet,',
-            signoff: `Het bestuur van ${coopName}`,
+            signoff: `Het bestuur van ${ecoopName}`,
           },
           en: {
-            title: `Notice — ${coopName}`,
+            title: `Notice — ${ecoopName}`,
             subtitle: 'General Meeting',
-            dear: `Dear ${d.shareholderName},`,
-            intro: `On behalf of <strong>${coopName}</strong>, you are invited to the <strong>${d.meetingTitle}</strong> on <strong>${humanDate}</strong> at <strong>${d.meetingLocation || 'to be determined'}</strong>.`,
+            dear: `Dear ${sn},`,
+            intro: `On behalf of <strong>${ecoopName}</strong>, you are invited to the <strong>${meetingTitle}</strong> on <strong>${humanDate}</strong> at <strong>${meetingLocation || 'to be determined'}</strong>.`,
             agendaTitle: 'Agenda',
             cta: 'Respond to the notice',
             proxy: 'Click the button above to indicate whether you will attend, will not attend, or to delegate your vote to another shareholder (proxy).',
             attachment: 'The official notice is attached as a PDF.',
             closing: 'Kind regards,',
-            signoff: `The board of ${coopName}`,
+            signoff: `The board of ${ecoopName}`,
           },
           fr: {
-            title: `Convocation — ${coopName}`,
+            title: `Convocation — ${ecoopName}`,
             subtitle: 'Assemblée Générale',
-            dear: `Cher/Chère ${d.shareholderName},`,
-            intro: `Au nom de <strong>${coopName}</strong>, vous êtes invité(e) à <strong>${d.meetingTitle}</strong> le <strong>${humanDate}</strong> à <strong>${d.meetingLocation || 'à déterminer'}</strong>.`,
+            dear: `Cher/Chère ${sn},`,
+            intro: `Au nom de <strong>${ecoopName}</strong>, vous êtes invité(e) à <strong>${meetingTitle}</strong> le <strong>${humanDate}</strong> à <strong>${meetingLocation || 'à déterminer'}</strong>.`,
             agendaTitle: 'Ordre du jour',
             cta: 'Répondre à la convocation',
             proxy: "Cliquez sur le bouton ci-dessus pour indiquer si vous serez présent(e), absent(e), ou pour déléguer votre voix à un autre actionnaire (procuration).",
             attachment: "La convocation officielle est jointe en PDF.",
             closing: 'Cordialement,',
-            signoff: `Le conseil d'administration de ${coopName}`,
+            signoff: `Le conseil d'administration de ${ecoopName}`,
           },
           de: {
-            title: `Einladung — ${coopName}`,
+            title: `Einladung — ${ecoopName}`,
             subtitle: 'Generalversammlung',
-            dear: `Liebe/r ${d.shareholderName},`,
-            intro: `Im Namen von <strong>${coopName}</strong> laden wir Sie zur <strong>${d.meetingTitle}</strong> am <strong>${humanDate}</strong> in <strong>${d.meetingLocation || 'noch zu bestimmen'}</strong> ein.`,
+            dear: `Liebe/r ${sn},`,
+            intro: `Im Namen von <strong>${ecoopName}</strong> laden wir Sie zur <strong>${meetingTitle}</strong> am <strong>${humanDate}</strong> in <strong>${meetingLocation || 'noch zu bestimmen'}</strong> ein.`,
             agendaTitle: 'Tagesordnung',
             cta: 'Auf die Einladung antworten',
             proxy: 'Klicken Sie oben auf die Schaltfläche, um anzugeben, ob Sie teilnehmen werden, nicht teilnehmen werden, oder Ihre Stimme an einen anderen Anteilseigner zu delegieren (Vollmacht).',
             attachment: 'Die offizielle Einladung ist als PDF beigefügt.',
             closing: 'Mit freundlichen Grüßen,',
-            signoff: `Der Vorstand von ${coopName}`,
+            signoff: `Der Vorstand von ${ecoopName}`,
           },
         };
         const s = t[lang as keyof typeof t] || t['nl'];
         const items = (d.agendaItems as Array<{ order: number; title: string; description?: string }>) || [];
         const agendaHtml = items
           .sort((a, b) => a.order - b.order)
-          .map((i) => `<li><strong>${i.title}</strong>${i.description ? `<br><span style="color:#555;">${i.description}</span>` : ''}</li>`)
+          .map((i) => `<li><strong>${escapeHtml(i.title)}</strong>${i.description ? `<br><span style="color:#555;">${escapeHtml(i.description)}</span>` : ''}</li>`)
           .join('');
         const logoBlock = coopLogoUrl
           ? `<div style="text-align: center; margin-bottom: 24px;">
-               <img src="${coopLogoUrl}" alt="${coopName}" style="max-height: 80px; max-width: 240px;" />
+               <img src="${coopLogoUrl}" alt="${ecoopName}" style="max-height: 80px; max-width: 240px;" />
              </div>`
           : '';
         const headerBlock = `
@@ -973,12 +1004,12 @@ export class EmailProcessor {
         if (customBody) {
           const substituted = customBody
             .replaceAll('{{rsvpUrl}}', String(d.rsvpUrl ?? ''))
-            .replaceAll('{{shareholderName}}', String(d.shareholderName ?? ''))
-            .replaceAll('{{meetingTitle}}', String(d.meetingTitle ?? ''))
+            .replaceAll('{{shareholderName}}', sn)
+            .replaceAll('{{meetingTitle}}', meetingTitle)
             .replaceAll('{{meetingDate}}', humanDate)
-            .replaceAll('{{meetingLocation}}', String(d.meetingLocation ?? ''))
+            .replaceAll('{{meetingLocation}}', meetingLocation)
             .replaceAll('{{agendaList}}', agendaHtml ? `<ol>${agendaHtml}</ol>` : '')
-            .replaceAll('{{coopName}}', coopName);
+            .replaceAll('{{coopName}}', ecoopName);
           const hasRsvpLink = /rsvpurl|\/meetings\/rsvp\//i.test(substituted);
           return headerBlock + substituted + (hasRsvpLink ? '' : ctaButton);
         }
@@ -998,64 +1029,68 @@ export class EmailProcessor {
       'meeting-rsvp-confirmation': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const status = (d.rsvpStatus as string) || 'ATTENDING';
-        const delegateName = (d.delegateName as string) || '';
+        const delegateName = escapeHtml(d.delegateName);
         const coopName = (d.coopName as string) || cn;
+        const ecoopName = escapeHtml(coopName);
+        const sn = escapeHtml(d.shareholderName);
+        const meetingTitle = escapeHtml(d.meetingTitle);
+        const meetingLocation = escapeHtml(d.meetingLocation);
         const coopLogoUrl = (d.coopLogoUrl as string) || '';
         const brandColor = (d.coopPrimaryColor as string) || '#1e40af';
         const humanDate = this.formatMeetingDate(d.meetingDate, lang);
 
         const t = {
           nl: {
-            title: `Bevestiging — ${coopName}`,
+            title: `Bevestiging — ${ecoopName}`,
             subtitle: `Algemene Vergadering`,
-            dear: `Beste ${d.shareholderName},`,
-            meeting: `<strong>${d.meetingTitle}</strong> op <strong>${humanDate}</strong>${d.meetingLocation ? ` te <strong>${d.meetingLocation}</strong>` : ''}.`,
+            dear: `Beste ${sn},`,
+            meeting: `<strong>${meetingTitle}</strong> op <strong>${humanDate}</strong>${d.meetingLocation ? ` te <strong>${meetingLocation}</strong>` : ''}.`,
             attending: 'Bedankt voor uw bevestiging. We kijken uit naar uw aanwezigheid.',
             absent: 'We hebben genoteerd dat u niet aanwezig kunt zijn.',
             proxy: `U heeft uw stem gedelegeerd aan <strong>${delegateName}</strong>.`,
             attachment: 'In bijlage vindt u een agenda-uitnodiging (.ics) die u kan toevoegen aan Apple Calendar, Google Calendar, Outlook of Thunderbird.',
             change: 'Wijzig uw antwoord',
             closing: 'Met vriendelijke groet,',
-            signoff: `Het bestuur van ${coopName}`,
+            signoff: `Het bestuur van ${ecoopName}`,
           },
           en: {
-            title: `Confirmation — ${coopName}`,
+            title: `Confirmation — ${ecoopName}`,
             subtitle: 'General Meeting',
-            dear: `Dear ${d.shareholderName},`,
-            meeting: `<strong>${d.meetingTitle}</strong> on <strong>${humanDate}</strong>${d.meetingLocation ? ` at <strong>${d.meetingLocation}</strong>` : ''}.`,
+            dear: `Dear ${sn},`,
+            meeting: `<strong>${meetingTitle}</strong> on <strong>${humanDate}</strong>${d.meetingLocation ? ` at <strong>${meetingLocation}</strong>` : ''}.`,
             attending: 'Thank you for confirming. We look forward to your attendance.',
             absent: 'We have noted that you will not be able to attend.',
             proxy: `You have delegated your vote to <strong>${delegateName}</strong>.`,
             attachment: 'A calendar invite (.ics) is attached — works with Apple Calendar, Google Calendar, Outlook, and Thunderbird.',
             change: 'Change your answer',
             closing: 'Kind regards,',
-            signoff: `The board of ${coopName}`,
+            signoff: `The board of ${ecoopName}`,
           },
           fr: {
-            title: `Confirmation — ${coopName}`,
+            title: `Confirmation — ${ecoopName}`,
             subtitle: 'Assemblée Générale',
-            dear: `Cher/Chère ${d.shareholderName},`,
-            meeting: `<strong>${d.meetingTitle}</strong> le <strong>${humanDate}</strong>${d.meetingLocation ? ` à <strong>${d.meetingLocation}</strong>` : ''}.`,
+            dear: `Cher/Chère ${sn},`,
+            meeting: `<strong>${meetingTitle}</strong> le <strong>${humanDate}</strong>${d.meetingLocation ? ` à <strong>${meetingLocation}</strong>` : ''}.`,
             attending: 'Merci pour votre confirmation. Nous attendons votre présence.',
             absent: 'Nous avons noté que vous ne pourrez pas être présent(e).',
             proxy: `Vous avez délégué votre vote à <strong>${delegateName}</strong>.`,
             attachment: "Une invitation calendrier (.ics) est jointe — compatible Apple Calendar, Google Calendar, Outlook et Thunderbird.",
             change: 'Modifier votre réponse',
             closing: 'Cordialement,',
-            signoff: `Le conseil d'administration de ${coopName}`,
+            signoff: `Le conseil d'administration de ${ecoopName}`,
           },
           de: {
-            title: `Bestätigung — ${coopName}`,
+            title: `Bestätigung — ${ecoopName}`,
             subtitle: 'Generalversammlung',
-            dear: `Liebe/r ${d.shareholderName},`,
-            meeting: `<strong>${d.meetingTitle}</strong> am <strong>${humanDate}</strong>${d.meetingLocation ? ` in <strong>${d.meetingLocation}</strong>` : ''}.`,
+            dear: `Liebe/r ${sn},`,
+            meeting: `<strong>${meetingTitle}</strong> am <strong>${humanDate}</strong>${d.meetingLocation ? ` in <strong>${meetingLocation}</strong>` : ''}.`,
             attending: 'Vielen Dank für Ihre Bestätigung. Wir freuen uns auf Ihre Teilnahme.',
             absent: 'Wir haben vermerkt, dass Sie nicht teilnehmen können.',
             proxy: `Sie haben Ihre Stimme an <strong>${delegateName}</strong> delegiert.`,
             attachment: 'Eine Kalendereinladung (.ics) ist angehängt — funktioniert mit Apple Calendar, Google Kalender, Outlook und Thunderbird.',
             change: 'Antwort ändern',
             closing: 'Mit freundlichen Grüßen,',
-            signoff: `Der Vorstand von ${coopName}`,
+            signoff: `Der Vorstand von ${ecoopName}`,
           },
         };
         const s = t[lang as keyof typeof t] || t['nl'];
@@ -1064,7 +1099,7 @@ export class EmailProcessor {
 
         const logoBlock = coopLogoUrl
           ? `<div style="text-align: center; margin-bottom: 24px;">
-               <img src="${coopLogoUrl}" alt="${coopName}" style="max-height: 80px; max-width: 240px;" />
+               <img src="${coopLogoUrl}" alt="${ecoopName}" style="max-height: 80px; max-width: 240px;" />
              </div>`
           : '';
         const headerBlock = `
@@ -1097,29 +1132,31 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const days = (d.daysUntil as number) ?? 0;
         const humanDate = this.formatMeetingDate(d.meetingDate, lang);
+        const sn = escapeHtml(d.shareholderName);
+        const meetingTitle = escapeHtml(d.meetingTitle);
         const t = {
           nl: {
             title: 'Herinnering: Algemene Vergadering',
-            dear: `Beste ${d.shareholderName},`,
-            body: `Herinnering: de <strong>${d.meetingTitle}</strong> vindt plaats over <strong>${days}</strong> dag(en) op <strong>${humanDate}</strong>. U heeft nog niet geantwoord. Gelieve te bevestigen:`,
+            dear: `Beste ${sn},`,
+            body: `Herinnering: de <strong>${meetingTitle}</strong> vindt plaats over <strong>${days}</strong> dag(en) op <strong>${humanDate}</strong>. U heeft nog niet geantwoord. Gelieve te bevestigen:`,
             cta: 'RSVP hier',
           },
           en: {
             title: 'Reminder: General Meeting',
-            dear: `Dear ${d.shareholderName},`,
-            body: `Reminder: the <strong>${d.meetingTitle}</strong> is in <strong>${days}</strong> day(s) on <strong>${humanDate}</strong>. You haven't yet responded. Please RSVP:`,
+            dear: `Dear ${sn},`,
+            body: `Reminder: the <strong>${meetingTitle}</strong> is in <strong>${days}</strong> day(s) on <strong>${humanDate}</strong>. You haven't yet responded. Please RSVP:`,
             cta: 'RSVP here',
           },
           fr: {
             title: 'Rappel : Assemblée Générale',
-            dear: `Cher/Chère ${d.shareholderName},`,
-            body: `Rappel : <strong>${d.meetingTitle}</strong> aura lieu dans <strong>${days}</strong> jour(s), le <strong>${humanDate}</strong>. Vous n'avez pas encore répondu. Veuillez confirmer :`,
+            dear: `Cher/Chère ${sn},`,
+            body: `Rappel : <strong>${meetingTitle}</strong> aura lieu dans <strong>${days}</strong> jour(s), le <strong>${humanDate}</strong>. Vous n'avez pas encore répondu. Veuillez confirmer :`,
             cta: 'Répondre ici',
           },
           de: {
             title: 'Erinnerung: Generalversammlung',
-            dear: `Liebe/r ${d.shareholderName},`,
-            body: `Erinnerung: die <strong>${d.meetingTitle}</strong> findet in <strong>${days}</strong> Tag(en) am <strong>${humanDate}</strong> statt. Sie haben noch nicht geantwortet. Bitte bestätigen Sie:`,
+            dear: `Liebe/r ${sn},`,
+            body: `Erinnerung: die <strong>${meetingTitle}</strong> findet in <strong>${days}</strong> Tag(en) am <strong>${humanDate}</strong> statt. Sie haben noch nicht geantwortet. Bitte bestätigen Sie:`,
             cta: 'Hier antworten',
           },
         };
@@ -1139,9 +1176,9 @@ export class EmailProcessor {
       },
       'referral-success': (d, cn) => `
         <h1>Iemand heeft je uitnodiging aanvaard!</h1>
-        <p>Beste ${d.referrerName},</p>
-        <p><strong>${d.referredName}</strong> heeft zich via jouw persoonlijke link aangemeld als coöperant bij ${cn}.</p>
-        <p>Bedankt om ${cn} te helpen groeien! Deel je link gerust verder om meer mensen te bereiken.</p>
+        <p>Beste ${escapeHtml(d.referrerName)},</p>
+        <p><strong>${escapeHtml(d.referredName)}</strong> heeft zich via jouw persoonlijke link aangemeld als coöperant bij ${escapeHtml(cn)}.</p>
+        <p>Bedankt om ${escapeHtml(cn)} te helpen groeien! Deel je link gerust verder om meer mensen te bereiken.</p>
         ${d.dashboardUrl ? `
         <p style="text-align: center; margin: 30px 0;">
           <a href="${d.dashboardUrl}"
@@ -1191,7 +1228,7 @@ export class EmailProcessor {
 
     const template = templates[templateKey];
     if (!template) {
-      return `<p>Email template not found: ${templateKey}</p>`;
+      return `<p>Email template not found: ${escapeHtml(templateKey)}</p>`;
     }
 
     const content = template(data, coopName);
@@ -1211,7 +1248,7 @@ export class EmailProcessor {
         ${content}
         <hr>
         <p style="color: #666; font-size: 12px;">
-          This email was sent by ${coopName} via OpenCoop.
+          This email was sent by ${escapeHtml(coopName)} via OpenCoop.
         </p>
       </body>
       </html>
