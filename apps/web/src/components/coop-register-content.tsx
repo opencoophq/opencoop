@@ -297,6 +297,9 @@ export function CoopRegisterContent({
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  // Inline submit error (replaces a native alert() — fits the multi-step form better
+  // than a transient toast, which can auto-dismiss before the user reads it).
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedShareholder, setSelectedShareholder] = useState<ExistingShareholder | null>(null);
   const [allShareholders, setAllShareholders] = useState<ExistingShareholder[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -618,6 +621,7 @@ export function CoopRegisterContent({
     if (!form.getValues('acceptPrivacy')) return;
 
     setSubmitting(true);
+    setSubmitError(null);
 
     try {
       const values = form.getValues();
@@ -714,7 +718,7 @@ export function CoopRegisterContent({
       setStep(STEP.PAYMENT);
     } catch (error) {
       console.error('Registration failed:', error);
-      alert(error instanceof Error ? error.message : 'Registration failed');
+      setSubmitError(error instanceof Error ? error.message : 'Registration failed');
     } finally {
       setSubmitting(false);
     }
@@ -1304,6 +1308,15 @@ export function CoopRegisterContent({
             </a>
           </Label>
         </div>
+
+        {submitError && (
+          <div
+            className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
+            {submitError}
+          </div>
+        )}
 
         <div className="flex gap-4 mt-6">
           <Button type="button" variant="outline" onClick={() => setStep(STEP.DETAILS)}>
