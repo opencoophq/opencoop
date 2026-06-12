@@ -46,7 +46,9 @@ describe('BankImportService — importCsv OGM matching', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
       registration: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        // Batched lookup: one findMany({ where: { ogmCode: { in: [...] } } })
+        // returns the matching registrations for the rows in this import.
+        findMany: jest.fn().mockResolvedValue([]),
         update: jest.fn().mockResolvedValue({}),
       },
       $transaction: jest.fn((cb: any) => cb(prisma)),
@@ -72,25 +74,35 @@ describe('BankImportService — importCsv OGM matching', () => {
       'utf-8',
     );
 
+  // Build a generic-preset CSV with several data rows.
+  const csvRows = (rows: [string, string, string, string][]) =>
+    Buffer.from(
+      ['date;amount;counterparty;reference', ...rows.map((r) => r.join(';'))].join('\n'),
+      'utf-8',
+    );
+
   it('sanity: the test OGM is a valid Belgian structured-communication code', () => {
     expect(validateOgmCode(OGM)).toBe(true);
   });
 
   it('AUTO_MATCHES a credit row whose reference contains an OGM for a PENDING_PAYMENT registration', async () => {
-    prisma.registration.findUnique.mockResolvedValue({
-      id: 'reg-1',
-      coopId: COOP_ID,
-      status: 'PENDING_PAYMENT',
-      totalAmount: 100,
-      isGift: false,
-    });
+    prisma.registration.findMany.mockResolvedValue([
+      {
+        id: 'reg-1',
+        coopId: COOP_ID,
+        status: 'PENDING_PAYMENT',
+        totalAmount: 100,
+        isGift: false,
+        ogmCode: OGM,
+      },
+    ]);
     // Payment just booked equals total -> registration completes
     prisma.payment.findMany.mockResolvedValue([{ amount: 100 }]);
 
     await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-01-15', '100', 'Jan Peeters', OGM), 'generic');
 
-    // Looked up by the extracted OGM
-    expect(prisma.registration.findUnique).toHaveBeenCalledWith({ where: { ogmCode: OGM } });
+    // Outcome: the row was matched and a payment booked against reg-1.
+    // (We assert the real effects below, not the lookup mechanic.)
 
     // Bank transaction recorded as AUTO_MATCHED with the OGM
     expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
@@ -129,13 +141,16 @@ describe('BankImportService — importCsv OGM matching', () => {
   });
 
   it('flips PENDING_PAYMENT to ACTIVE (not COMPLETED) on a partial payment', async () => {
-    prisma.registration.findUnique.mockResolvedValue({
-      id: 'reg-1',
-      coopId: COOP_ID,
-      status: 'PENDING_PAYMENT',
-      totalAmount: 100,
-      isGift: false,
-    });
+    prisma.registration.findMany.mockResolvedValue([
+      {
+        id: 'reg-1',
+        coopId: COOP_ID,
+        status: 'PENDING_PAYMENT',
+        totalAmount: 100,
+        isGift: false,
+        ogmCode: OGM,
+      },
+    ]);
     // Only a partial payment so far
     prisma.payment.findMany.mockResolvedValue([{ amount: 60 }]);
 
@@ -158,7 +173,7 @@ describe('BankImportService — importCsv OGM matching', () => {
       'generic',
     );
 
-    expect(prisma.registration.findUnique).not.toHaveBeenCalled();
+    // Outcome: no payment booked, transaction recorded UNMATCHED with no OGM.
     expect(prisma.payment.create).not.toHaveBeenCalled();
     expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -171,11 +186,12 @@ describe('BankImportService — importCsv OGM matching', () => {
   });
 
   it('leaves a row UNMATCHED when its OGM matches no registration', async () => {
-    prisma.registration.findUnique.mockResolvedValue(null);
+    // The batched findMany returns no registration for this OGM.
+    prisma.registration.findMany.mockResolvedValue([]);
 
     await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-01-15', '100', 'Jan', OGM), 'generic');
 
-    expect(prisma.registration.findUnique).toHaveBeenCalledWith({ where: { ogmCode: OGM } });
+    // Outcome: no payment booked.
     expect(prisma.payment.create).not.toHaveBeenCalled();
     // OGM is still recorded on the transaction even though it didn't match
     expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
@@ -189,13 +205,16 @@ describe('BankImportService — importCsv OGM matching', () => {
   });
 
   it('leaves a row UNMATCHED when the OGM belongs to a different coop (tenant isolation)', async () => {
-    prisma.registration.findUnique.mockResolvedValue({
-      id: 'reg-other',
-      coopId: 'some-other-coop',
-      status: 'PENDING_PAYMENT',
-      totalAmount: 100,
-      isGift: false,
-    });
+    prisma.registration.findMany.mockResolvedValue([
+      {
+        id: 'reg-other',
+        coopId: 'some-other-coop',
+        status: 'PENDING_PAYMENT',
+        totalAmount: 100,
+        isGift: false,
+        ogmCode: OGM,
+      },
+    ]);
 
     await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-01-15', '100', 'Jan', OGM), 'generic');
 
@@ -203,5 +222,100 @@ describe('BankImportService — importCsv OGM matching', () => {
     expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ matchStatus: 'UNMATCHED' }) }),
     );
+  });
+
+  // Map-staleness guard. The OLD code re-read the registration fresh per row, so a
+  // later same-OGM row saw the UPDATED status. With a single pre-fetched findMany,
+  // the cached entry must be mutated after each match or a later row would see a
+  // STALE status and double-book money. Three rows toward ONE registration:
+  //   row1 (60) -> total 60  < 100 -> ACTIVE     (PENDING_PAYMENT -> ACTIVE)
+  //   row2 (60) -> total 120 >= 100 -> COMPLETED (ACTIVE -> COMPLETED)
+  //   row3 (60) -> registration now COMPLETED -> gate excludes it -> UNMATCHED, no payment
+  // A fresh DB read would produce exactly this. If the map were NOT kept in sync,
+  // row3 would still see PENDING_PAYMENT and wrongly book a 3rd payment.
+  it('keeps the cached registration in sync across same-OGM rows (no stale double-book)', async () => {
+    prisma.registration.findMany.mockResolvedValue([
+      {
+        id: 'reg-1',
+        coopId: COOP_ID,
+        status: 'PENDING_PAYMENT',
+        totalAmount: 100,
+        isGift: false,
+        ogmCode: OGM,
+      },
+    ]);
+
+    // computeTotalPaid reads cumulative payments from the DB per match. Simulate
+    // the cumulative totals a fresh DB read would return for rows 1 and 2.
+    prisma.payment.findMany
+      .mockResolvedValueOnce([{ amount: 60 }]) // after row1: 60
+      .mockResolvedValueOnce([{ amount: 60 }, { amount: 60 }]); // after row2: 120
+
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'test.csv',
+      csvRows([
+        ['2026-01-15', '60', 'Jan', OGM],
+        ['2026-01-16', '60', 'Jan', OGM],
+        ['2026-01-17', '60', 'Jan', OGM],
+      ]),
+      'generic',
+    );
+
+    // Only rows 1 and 2 booked a payment; row 3 hit a COMPLETED reg and did NOT.
+    expect(prisma.payment.create).toHaveBeenCalledTimes(2);
+
+    // Row 1 flipped PENDING_PAYMENT -> ACTIVE; row 2 flipped ACTIVE -> COMPLETED.
+    expect(prisma.registration.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'reg-1' }, data: { status: 'ACTIVE' } }),
+    );
+    expect(prisma.registration.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'reg-1' },
+        data: expect.objectContaining({ status: 'COMPLETED' }),
+      }),
+    );
+    // Exactly two status updates (ACTIVE then COMPLETED) — row 3 made none.
+    expect(prisma.registration.update).toHaveBeenCalledTimes(2);
+
+    // The completed registration's onCompleted hook is not double-fired.
+    // Outcome tally: two matched (rows 1-2), one unmatched (row 3).
+    expect(prisma.bankImport.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ matchedCount: 2, unmatchedCount: 1 }),
+      }),
+    );
+
+    // Row 3 recorded as UNMATCHED (the gate excluded the now-COMPLETED reg),
+    // but the OGM is still stored on the transaction.
+    expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ matchStatus: 'UNMATCHED', ogmCode: OGM }),
+      }),
+    );
+  });
+
+  it('issues ONE batched findMany for all OGMs (no per-row N+1 lookup)', async () => {
+    const OGM2 = generateOgmCode('002', 7);
+    prisma.registration.findMany.mockResolvedValue([]);
+
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'test.csv',
+      csvRows([
+        ['2026-01-15', '100', 'A', OGM],
+        ['2026-01-16', '100', 'B', OGM2],
+        ['2026-01-17', '100', 'C', OGM], // duplicate OGM -> deduped
+      ]),
+      'generic',
+    );
+
+    expect(prisma.registration.findMany).toHaveBeenCalledTimes(1);
+    const arg = prisma.registration.findMany.mock.calls[0][0];
+    expect(arg.where.ogmCode.in).toEqual(expect.arrayContaining([OGM, OGM2]));
+    // Deduped: two unique OGMs, not three.
+    expect(arg.where.ogmCode.in).toHaveLength(2);
   });
 });
