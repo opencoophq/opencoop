@@ -5,14 +5,11 @@ jest.mock('../documents/documents.service', () => ({
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
-import { AuthService } from './auth.service';
+import { MagicLinkService } from './magic-link.service';
 import { TokenService } from './token.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
 import { AuthEmailService } from './auth-email.service';
-import { CoopsService } from '../coops/coops.service';
 import { AuditService } from '../audit/audit.service';
 
 // ============================================================================
@@ -66,8 +63,8 @@ const orphanShareholder = {
 // Test suite
 // ============================================================================
 
-describe('AuthService — requestMagicLink with household shareholders', () => {
-  let service: AuthService;
+describe('MagicLinkService — requestMagicLink with household shareholders', () => {
+  let service: MagicLinkService;
   let prisma: any;
   let emailService: any;
 
@@ -102,9 +99,6 @@ describe('AuthService — requestMagicLink with household shareholders', () => {
       sendPlatformEmail: jest.fn().mockResolvedValue(undefined),
     };
 
-    const jwtService = { sign: jest.fn().mockReturnValue('jwt-token') };
-    const usersService = {};
-    const coopsService = {};
     const auditService = { log: jest.fn().mockResolvedValue(undefined) };
     const authEmailService = {
       getMagicLinkContent: jest.fn().mockReturnValue({
@@ -119,13 +113,10 @@ describe('AuthService — requestMagicLink with household shareholders', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AuthService,
+        MagicLinkService,
         { provide: PrismaService, useValue: prisma },
-        { provide: UsersService, useValue: usersService },
-        { provide: JwtService, useValue: jwtService },
         { provide: EmailService, useValue: emailService },
         { provide: AuthEmailService, useValue: authEmailService },
-        { provide: CoopsService, useValue: coopsService },
         { provide: AuditService, useValue: auditService },
         {
           provide: TokenService,
@@ -138,7 +129,7 @@ describe('AuthService — requestMagicLink with household shareholders', () => {
       ],
     }).compile();
 
-    service = module.get<AuthService>(AuthService);
+    service = module.get<MagicLinkService>(MagicLinkService);
   });
 
   // --------------------------------------------------------------------------

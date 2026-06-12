@@ -6,6 +6,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
 import { AuthEmailService } from './auth-email.service';
+import { OAuthService } from './oauth.service';
+import { MagicLinkService } from './magic-link.service';
 import { MfaService } from './mfa.service';
 import { EmancipationService } from './emancipation.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -52,6 +54,8 @@ if (process.env.APPLE_CLIENT_ID) {
     AuthService,
     TokenService,
     AuthEmailService,
+    OAuthService,
+    MagicLinkService,
     MfaService,
     EmancipationService,
     JwtStrategy,
