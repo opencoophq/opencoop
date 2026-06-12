@@ -69,7 +69,12 @@ interface ShareholderRow {
   companyName?: string;
   email?: string;
   createdAt: string;
-  registrations: Array<{ quantity: number; sharesOwned: number; status: string; registerDate: string }>;
+  // Precomputed server-side (lean list payload). `sharesOwned` = sum of quantity
+  // across ACTIVE/COMPLETED BUY registrations; `memberSince` = earliest
+  // registerDate (falls back to createdAt). Nested registrations are no longer
+  // returned by the list endpoint.
+  sharesOwned: number;
+  memberSince: string;
   isEcoPowerClient?: boolean;
 }
 
@@ -260,14 +265,10 @@ export default function ShareholdersPage() {
       ? sh.companyName || ''
       : `${sh.firstName || ''} ${sh.lastName || ''}`.trim();
 
-  const activeShares = (sh: ShareholderRow) =>
-    sh.registrations?.filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED').reduce((sum, r) => sum + (r.sharesOwned ?? r.quantity), 0) || 0;
+  // sharesOwned and memberSince are precomputed server-side (lean list payload).
+  const activeShares = (sh: ShareholderRow) => sh.sharesOwned ?? 0;
 
-  const memberSince = (sh: ShareholderRow) => {
-    const dates = sh.registrations?.map((r) => r.registerDate).filter(Boolean) || [];
-    if (dates.length === 0) return sh.createdAt;
-    return dates.reduce((earliest, d) => (d < earliest ? d : earliest));
-  };
+  const memberSince = (sh: ShareholderRow) => sh.memberSince ?? sh.createdAt;
 
   const visibleShareholders = useMemo(
     () =>
