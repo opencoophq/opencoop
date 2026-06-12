@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
+import { MfaService } from './mfa.service';
 import { EmancipationService } from './emancipation.service';
 import { EmancipateDto } from './dto/emancipate.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -42,6 +43,7 @@ function isSafeRedirectPath(path: string): boolean {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly mfaService: MfaService,
     private readonly emancipationService: EmancipationService,
     private readonly webAuthnService: WebAuthnService,
     private readonly coopAdminsService: CoopAdminsService,
@@ -241,7 +243,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Generate TOTP secret and QR code for MFA setup' })
   @ApiResponse({ status: 200, description: 'QR code and secret returned' })
   async mfaSetup(@CurrentUser() user: CurrentUserData) {
-    return this.authService.mfaSetup(user.id);
+    return this.mfaService.mfaSetup(user.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -253,7 +255,7 @@ export class AuthController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: MfaEnableDto,
   ) {
-    return this.authService.mfaEnable(user.id, dto.code);
+    return this.mfaService.mfaEnable(user.id, dto.code);
   }
 
   @Public()
@@ -274,7 +276,7 @@ export class AuthController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: MfaDisableDto,
   ) {
-    return this.authService.mfaDisable(user.id, dto.password);
+    return this.mfaService.mfaDisable(user.id, dto.password);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -283,7 +285,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Regenerate MFA recovery codes' })
   @ApiResponse({ status: 200, description: 'New recovery codes returned' })
   async mfaRegenerateRecoveryCodes(@CurrentUser() user: CurrentUserData) {
-    return this.authService.mfaRegenerateRecoveryCodes(user.id);
+    return this.mfaService.mfaRegenerateRecoveryCodes(user.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -292,7 +294,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get MFA status' })
   @ApiResponse({ status: 200, description: 'MFA status returned' })
   async mfaStatus(@CurrentUser() user: CurrentUserData) {
-    return this.authService.mfaStatus(user.id);
+    return this.mfaService.mfaStatus(user.id);
   }
 
   // ============================================================================

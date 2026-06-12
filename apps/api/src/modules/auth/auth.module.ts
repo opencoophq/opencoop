@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthEmailService } from './auth-email.service';
+import { MfaService } from './mfa.service';
 import { EmancipationService } from './emancipation.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
@@ -49,6 +50,7 @@ if (process.env.APPLE_CLIENT_ID) {
   providers: [
     AuthService,
     AuthEmailService,
+    MfaService,
     EmancipationService,
     JwtStrategy,
     LocalStrategy,
