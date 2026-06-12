@@ -80,7 +80,11 @@ interface TransactionRow {
   shareClass?: {
     name: string;
   };
-  payments?: { bankDate: string; amount: number }[];
+  // Precomputed server-side (lean list payload). `lastPaymentDate` = bankDate of
+  // the most recent payment (max bankDate); `totalPaid` = sum of payment amounts.
+  // The full payments array is no longer returned by the list endpoint.
+  lastPaymentDate?: string | null;
+  totalPaid?: number;
 }
 
 interface PaymentDetails {
@@ -289,10 +293,8 @@ export default function AdminTransactionsPage() {
     }
   };
 
-  const getPaymentDate = (tx: TransactionRow): string | null => {
-    if (!tx.payments?.length) return null;
-    return tx.payments[tx.payments.length - 1].bankDate;
-  };
+  // lastPaymentDate is precomputed server-side (lean list payload).
+  const getPaymentDate = (tx: TransactionRow): string | null => tx.lastPaymentDate ?? null;
 
   const handleInlineDateSave = async (regId: string, newDate: string) => {
     if (!selectedCoop || !newDate) return;
@@ -362,8 +364,8 @@ export default function AdminTransactionsPage() {
     return false;
   };
 
-  const getTotalPaid = (tx: TransactionRow): number =>
-    (tx.payments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+  // totalPaid is precomputed server-side (lean list payload).
+  const getTotalPaid = (tx: TransactionRow): number => tx.totalPaid ?? 0;
 
   const canAddPayment = (tx: TransactionRow) =>
     tx.type === 'BUY' && ['PENDING_PAYMENT', 'ACTIVE'].includes(tx.status);
