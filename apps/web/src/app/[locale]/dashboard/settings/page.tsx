@@ -77,19 +77,25 @@ export default function SettingsPage() {
     }
     api<{ mfaEnabled: boolean }>('/auth/mfa/status').then((res) => {
       setMfaEnabled(res.mfaEnabled);
-    }).catch(() => {});
+    }).catch(() => {
+      /* fire-and-forget: MFA status hydrates an optional toggle; defaults to disabled */
+    });
     api<{ hasPassword: boolean; googleLinked: boolean; appleLinked: boolean }>('/auth/me').then((res) => {
       setHasPassword(res.hasPassword);
       setGoogleLinked(res.googleLinked);
       setAppleLinked(res.appleLinked);
-    }).catch(() => {});
+    }).catch(() => {
+      /* fire-and-forget: linked-account status hydrates optional UI; falls back to defaults */
+    });
   }, []);
 
   useEffect(() => {
     if (!selectedCoop) return;
     api<NotificationSettings>(`/admin/coops/${selectedCoop.id}/team/me/notifications`)
       .then((res) => setNotifSettings(res))
-      .catch(() => {});
+      .catch(() => {
+        /* fire-and-forget: notification prefs fall back to sensible defaults if unavailable */
+      });
   }, [selectedCoop?.id]);
 
   const handleNotifSave = async () => {

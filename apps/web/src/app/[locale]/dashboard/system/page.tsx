@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { ErrorState } from '@/components/ui/error-state';
 import { formatCurrency } from '@opencoop/shared';
 import { Building2, Users, UserCheck, TrendingUp } from 'lucide-react';
 
@@ -21,12 +22,19 @@ export default function SystemPage() {
   const { locale } = useLocale();
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadStats = () => {
+    setLoading(true);
+    setError(null);
     api<SystemStats>('/system/stats')
       .then(setStats)
-      .catch(() => {})
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadStats();
   }, []);
 
   if (loading) {
@@ -47,6 +55,11 @@ export default function SystemPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">{t('system.title')}</h1>
+      {error && (
+        <div className="mb-6">
+          <ErrorState message={error} onRetry={loadStats} />
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card) => (
           <Card key={card.title}>
