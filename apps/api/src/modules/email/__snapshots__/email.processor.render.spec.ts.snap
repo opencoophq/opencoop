@@ -1,0 +1,3489 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-convocation (custom body) in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Einladung — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Generalversammlung</p>
+          </div><p>Beste Jan Peeters, kom naar Algemene Vergadering 2026 op Samstag, 9. Mai 2026 um 10:00 te Theresiastraat 29, 3500 Hasselt.</p><ol><li><strong>Eerste punt</strong><br><span style="color:#555;">Beschrijving een</span></li></ol><p>Groeten van Coöp &amp; Co.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;
+                      font-weight: 600;">
+              Auf die Einladung antworten
+            </a>
+          </p>
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-convocation (custom body) in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Notice — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">General Meeting</p>
+          </div><p>Beste Jan Peeters, kom naar Algemene Vergadering 2026 op Saturday, May 9, 2026 at 10:00 AM te Theresiastraat 29, 3500 Hasselt.</p><ol><li><strong>Eerste punt</strong><br><span style="color:#555;">Beschrijving een</span></li></ol><p>Groeten van Coöp &amp; Co.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;
+                      font-weight: 600;">
+              Respond to the notice
+            </a>
+          </p>
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-convocation (custom body) in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Convocation — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Assemblée Générale</p>
+          </div><p>Beste Jan Peeters, kom naar Algemene Vergadering 2026 op samedi 9 mai 2026 à 10:00 te Theresiastraat 29, 3500 Hasselt.</p><ol><li><strong>Eerste punt</strong><br><span style="color:#555;">Beschrijving een</span></li></ol><p>Groeten van Coöp &amp; Co.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;
+                      font-weight: 600;">
+              Répondre à la convocation
+            </a>
+          </p>
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-convocation (custom body) in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Oproeping Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Algemene Vergadering</p>
+          </div><p>Beste Jan Peeters, kom naar Algemene Vergadering 2026 op zaterdag 9 mei 2026 om 10:00 te Theresiastraat 29, 3500 Hasselt.</p><ol><li><strong>Eerste punt</strong><br><span style="color:#555;">Beschrijving een</span></li></ol><p>Groeten van Coöp &amp; Co.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;
+                      font-weight: 600;">
+              Reageer op de oproeping
+            </a>
+          </p>
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-rsvp-confirmation (absent) in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Bestätigung — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Generalversammlung</p>
+          </div>
+          <p>Liebe/r Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> am <strong>Samstag, 9. Mai 2026 um 10:00</strong> in <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <p><strong>Wir haben vermerkt, dass Sie nicht teilnehmen können.</strong></p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+               <a href="https://opencoop.test/meetings/rsvp/token"
+                  style="background-color: #1e40af; color: white; padding: 12px 24px;
+                         text-decoration: none; border-radius: 6px; display: inline-block;
+                         font-weight: 600;">
+                 Antwort ändern
+               </a>
+             </p>
+          <p>Mit freundlichen Grüßen,<br><strong>Der Vorstand von Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-rsvp-confirmation (absent) in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Confirmation — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">General Meeting</p>
+          </div>
+          <p>Dear Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> on <strong>Saturday, May 9, 2026 at 10:00 AM</strong> at <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <p><strong>We have noted that you will not be able to attend.</strong></p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+               <a href="https://opencoop.test/meetings/rsvp/token"
+                  style="background-color: #1e40af; color: white; padding: 12px 24px;
+                         text-decoration: none; border-radius: 6px; display: inline-block;
+                         font-weight: 600;">
+                 Change your answer
+               </a>
+             </p>
+          <p>Kind regards,<br><strong>The board of Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-rsvp-confirmation (absent) in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Confirmation — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Assemblée Générale</p>
+          </div>
+          <p>Cher/Chère Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> le <strong>samedi 9 mai 2026 à 10:00</strong> à <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <p><strong>Nous avons noté que vous ne pourrez pas être présent(e).</strong></p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+               <a href="https://opencoop.test/meetings/rsvp/token"
+                  style="background-color: #1e40af; color: white; padding: 12px 24px;
+                         text-decoration: none; border-radius: 6px; display: inline-block;
+                         font-weight: 600;">
+                 Modifier votre réponse
+               </a>
+             </p>
+          <p>Cordialement,<br><strong>Le conseil d'administration de Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-rsvp-confirmation (absent) in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Bevestiging — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Algemene Vergadering</p>
+          </div>
+          <p>Beste Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> op <strong>zaterdag 9 mei 2026 om 10:00</strong> te <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <p><strong>We hebben genoteerd dat u niet aanwezig kunt zijn.</strong></p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+               <a href="https://opencoop.test/meetings/rsvp/token"
+                  style="background-color: #1e40af; color: white; padding: 12px 24px;
+                         text-decoration: none; border-radius: 6px; display: inline-block;
+                         font-weight: 600;">
+                 Wijzig uw antwoord
+               </a>
+             </p>
+          <p>Met vriendelijke groet,<br><strong>Het bestuur van Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-rsvp-confirmation (attending, no location/logo) in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Bestätigung — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Generalversammlung</p>
+          </div>
+          <p>Liebe/r Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> am <strong>Samstag, 9. Mai 2026 um 10:00</strong>.</p>
+          <p><strong>Vielen Dank für Ihre Bestätigung. Wir freuen uns auf Ihre Teilnahme.</strong></p>
+          <p style="color: #666; font-size: 12px;">Eine Kalendereinladung (.ics) ist angehängt — funktioniert mit Apple Calendar, Google Kalender, Outlook und Thunderbird.</p>
+          
+          <p>Mit freundlichen Grüßen,<br><strong>Der Vorstand von Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-rsvp-confirmation (attending, no location/logo) in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Confirmation — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">General Meeting</p>
+          </div>
+          <p>Dear Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> on <strong>Saturday, May 9, 2026 at 10:00 AM</strong>.</p>
+          <p><strong>Thank you for confirming. We look forward to your attendance.</strong></p>
+          <p style="color: #666; font-size: 12px;">A calendar invite (.ics) is attached — works with Apple Calendar, Google Calendar, Outlook, and Thunderbird.</p>
+          
+          <p>Kind regards,<br><strong>The board of Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-rsvp-confirmation (attending, no location/logo) in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Confirmation — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Assemblée Générale</p>
+          </div>
+          <p>Cher/Chère Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> le <strong>samedi 9 mai 2026 à 10:00</strong>.</p>
+          <p><strong>Merci pour votre confirmation. Nous attendons votre présence.</strong></p>
+          <p style="color: #666; font-size: 12px;">Une invitation calendrier (.ics) est jointe — compatible Apple Calendar, Google Calendar, Outlook et Thunderbird.</p>
+          
+          <p>Cordialement,<br><strong>Le conseil d'administration de Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-rsvp-confirmation (attending, no location/logo) in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #1e40af; padding-bottom: 14px; margin-bottom: 22px;">
+            
+            <h1 style="margin: 0; color: #1e40af; font-size: 22px;">Bevestiging — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Algemene Vergadering</p>
+          </div>
+          <p>Beste Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> op <strong>zaterdag 9 mei 2026 om 10:00</strong>.</p>
+          <p><strong>Bedankt voor uw bevestiging. We kijken uit naar uw aanwezigheid.</strong></p>
+          <p style="color: #666; font-size: 12px;">In bijlage vindt u een agenda-uitnodiging (.ics) die u kan toevoegen aan Apple Calendar, Google Calendar, Outlook of Thunderbird.</p>
+          
+          <p>Met vriendelijke groet,<br><strong>Het bestuur van Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-digest" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Your weekly digest for Coöp &amp; Co</h1>
+          <p>Dear Beheerder,</p>
+          <p>Here is a summary of activity in <strong>Coöp &amp; Co</strong> over the past 7 days:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Event</th>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Details</th>
+              </tr>
+            </thead>
+            <tbody><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">New shareholder registered</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Jan Peeters</td>
+          </tr><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">Share purchase</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Marie Dubois — 2 × Aandeel A — €50.00</td>
+          </tr><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">Payment received</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Marie Dubois — €50.00</td>
+          </tr></tbody>
+          </table>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this weekly digest because you enabled it in your admin profile.
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-digest" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Your weekly digest for Coöp &amp; Co</h1>
+          <p>Dear Beheerder,</p>
+          <p>Here is a summary of activity in <strong>Coöp &amp; Co</strong> over the past 7 days:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Event</th>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Details</th>
+              </tr>
+            </thead>
+            <tbody><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">New shareholder registered</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Jan Peeters</td>
+          </tr><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">Share purchase</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Marie Dubois — 2 × Aandeel A — €50.00</td>
+          </tr><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">Payment received</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Marie Dubois — €50.00</td>
+          </tr></tbody>
+          </table>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this weekly digest because you enabled it in your admin profile.
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-digest" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Your weekly digest for Coöp &amp; Co</h1>
+          <p>Dear Beheerder,</p>
+          <p>Here is a summary of activity in <strong>Coöp &amp; Co</strong> over the past 7 days:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Event</th>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Details</th>
+              </tr>
+            </thead>
+            <tbody><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">New shareholder registered</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Jan Peeters</td>
+          </tr><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">Share purchase</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Marie Dubois — 2 × Aandeel A — €50.00</td>
+          </tr><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">Payment received</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Marie Dubois — €50.00</td>
+          </tr></tbody>
+          </table>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this weekly digest because you enabled it in your admin profile.
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-digest" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Your weekly digest for Coöp &amp; Co</h1>
+          <p>Dear Beheerder,</p>
+          <p>Here is a summary of activity in <strong>Coöp &amp; Co</strong> over the past 7 days:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Event</th>
+                <th style="text-align: left; padding: 8px; background: #f5f5f5; border-bottom: 2px solid #ddd;">Details</th>
+              </tr>
+            </thead>
+            <tbody><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">New shareholder registered</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Jan Peeters</td>
+          </tr><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">Share purchase</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Marie Dubois — 2 × Aandeel A — €50.00</td>
+          </tr><tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">Payment received</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #555;">Marie Dubois — €50.00</td>
+          </tr></tbody>
+          </table>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this weekly digest because you enabled it in your admin profile.
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-event-notification" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Share purchase</h1>
+          <p>Dear Beheerder,</p>
+          <p>A new event has occurred in <strong>Coöp &amp; Co</strong>:</p>
+          <ul><li><strong>Shareholder:</strong> Jan Peeters</li><li><strong>Share class:</strong> Aandeel A</li><li><strong>Quantity:</strong> 3</li><li><strong>Total amount:</strong> €75.00</li><li><strong>Payment amount:</strong> €75.00</li></ul>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this because you enabled this notification in your admin profile.
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-event-notification" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Share purchase</h1>
+          <p>Dear Beheerder,</p>
+          <p>A new event has occurred in <strong>Coöp &amp; Co</strong>:</p>
+          <ul><li><strong>Shareholder:</strong> Jan Peeters</li><li><strong>Share class:</strong> Aandeel A</li><li><strong>Quantity:</strong> 3</li><li><strong>Total amount:</strong> €75.00</li><li><strong>Payment amount:</strong> €75.00</li></ul>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this because you enabled this notification in your admin profile.
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-event-notification" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Share purchase</h1>
+          <p>Dear Beheerder,</p>
+          <p>A new event has occurred in <strong>Coöp &amp; Co</strong>:</p>
+          <ul><li><strong>Shareholder:</strong> Jan Peeters</li><li><strong>Share class:</strong> Aandeel A</li><li><strong>Quantity:</strong> 3</li><li><strong>Total amount:</strong> €75.00</li><li><strong>Payment amount:</strong> €75.00</li></ul>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this because you enabled this notification in your admin profile.
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-event-notification" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Share purchase</h1>
+          <p>Dear Beheerder,</p>
+          <p>A new event has occurred in <strong>Coöp &amp; Co</strong>:</p>
+          <ul><li><strong>Shareholder:</strong> Jan Peeters</li><li><strong>Share class:</strong> Aandeel A</li><li><strong>Quantity:</strong> 3</li><li><strong>Total amount:</strong> €75.00</li><li><strong>Payment amount:</strong> €75.00</li></ul>
+          <p style="color: #666; font-size: 12px;">
+            You are receiving this because you enabled this notification in your admin profile.
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-message-notification" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Nieuw bericht ontvangen</h1>
+        <p>Beste Beheerder,</p>
+        <p>Er is een nieuw bericht ontvangen in Coöp &amp; Co.</p>
+        <p><strong>Onderwerp:</strong> Belangrijk nieuws</p>
+        <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+          Dit is een voorbeeld van een bericht....
+        </blockquote>
+        <p>Log in op het dashboard om het bericht te bekijken en te beantwoorden.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-message-notification" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Nieuw bericht ontvangen</h1>
+        <p>Beste Beheerder,</p>
+        <p>Er is een nieuw bericht ontvangen in Coöp &amp; Co.</p>
+        <p><strong>Onderwerp:</strong> Belangrijk nieuws</p>
+        <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+          Dit is een voorbeeld van een bericht....
+        </blockquote>
+        <p>Log in op het dashboard om het bericht te bekijken en te beantwoorden.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-message-notification" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Nieuw bericht ontvangen</h1>
+        <p>Beste Beheerder,</p>
+        <p>Er is een nieuw bericht ontvangen in Coöp &amp; Co.</p>
+        <p><strong>Onderwerp:</strong> Belangrijk nieuws</p>
+        <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+          Dit is een voorbeeld van een bericht....
+        </blockquote>
+        <p>Log in op het dashboard om het bericht te bekijken en te beantwoorden.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-message-notification" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Nieuw bericht ontvangen</h1>
+        <p>Beste Beheerder,</p>
+        <p>Er is een nieuw bericht ontvangen in Coöp &amp; Co.</p>
+        <p><strong>Onderwerp:</strong> Belangrijk nieuws</p>
+        <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+          Dit is een voorbeeld van een bericht....
+        </blockquote>
+        <p>Log in op het dashboard om het bericht te bekijken en te beantwoorden.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "agenda-documents" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h2>Algemene Vergadering 2026</h2>
+    <p>9 mei 2026 om 10:00</p>
+    <p>Beste aandeelhouder, hier zijn de documenten.</p>
+    <h3>Documenten</h3>
+    
+        <p style="margin: 8px 0;">
+          <a href="https://opencoop.test/doc/1" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Jaarverslag.pdf
+          </a>
+        </p>
+
+        <p style="margin: 8px 0;">
+          <a href="https://opencoop.test/doc/2" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Balans.xlsx
+          </a>
+        </p>
+    <hr style="margin:24px 0;border:none;border-top:1px solid #e5e5e5;" />
+    <p style="font-size:14px;color:#666;">
+      Heb je je aanwezigheid nog niet bevestigd? <a href="https://opencoop.test/meetings/rsvp/token">Bevestig hier</a>.
+    </p>
+    <img src="https://opencoop.test/pixel.gif" width="1" height="1" alt="" style="display:block" />
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "agenda-documents" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h2>Algemene Vergadering 2026</h2>
+    <p>9 mei 2026 om 10:00</p>
+    <p>Beste aandeelhouder, hier zijn de documenten.</p>
+    <h3>Documenten</h3>
+    
+        <p style="margin: 8px 0;">
+          <a href="https://opencoop.test/doc/1" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Jaarverslag.pdf
+          </a>
+        </p>
+
+        <p style="margin: 8px 0;">
+          <a href="https://opencoop.test/doc/2" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Balans.xlsx
+          </a>
+        </p>
+    <hr style="margin:24px 0;border:none;border-top:1px solid #e5e5e5;" />
+    <p style="font-size:14px;color:#666;">
+      Heb je je aanwezigheid nog niet bevestigd? <a href="https://opencoop.test/meetings/rsvp/token">Bevestig hier</a>.
+    </p>
+    <img src="https://opencoop.test/pixel.gif" width="1" height="1" alt="" style="display:block" />
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "agenda-documents" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h2>Algemene Vergadering 2026</h2>
+    <p>9 mei 2026 om 10:00</p>
+    <p>Beste aandeelhouder, hier zijn de documenten.</p>
+    <h3>Documenten</h3>
+    
+        <p style="margin: 8px 0;">
+          <a href="https://opencoop.test/doc/1" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Jaarverslag.pdf
+          </a>
+        </p>
+
+        <p style="margin: 8px 0;">
+          <a href="https://opencoop.test/doc/2" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Balans.xlsx
+          </a>
+        </p>
+    <hr style="margin:24px 0;border:none;border-top:1px solid #e5e5e5;" />
+    <p style="font-size:14px;color:#666;">
+      Heb je je aanwezigheid nog niet bevestigd? <a href="https://opencoop.test/meetings/rsvp/token">Bevestig hier</a>.
+    </p>
+    <img src="https://opencoop.test/pixel.gif" width="1" height="1" alt="" style="display:block" />
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "agenda-documents" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h2>Algemene Vergadering 2026</h2>
+    <p>9 mei 2026 om 10:00</p>
+    <p>Beste aandeelhouder, hier zijn de documenten.</p>
+    <h3>Documenten</h3>
+    
+        <p style="margin: 8px 0;">
+          <a href="https://opencoop.test/doc/1" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Jaarverslag.pdf
+          </a>
+        </p>
+
+        <p style="margin: 8px 0;">
+          <a href="https://opencoop.test/doc/2" style="background:#0E7C66;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Balans.xlsx
+          </a>
+        </p>
+    <hr style="margin:24px 0;border:none;border-top:1px solid #e5e5e5;" />
+    <p style="font-size:14px;color:#666;">
+      Heb je je aanwezigheid nog niet bevestigd? <a href="https://opencoop.test/meetings/rsvp/token">Bevestig hier</a>.
+    </p>
+    <img src="https://opencoop.test/pixel.gif" width="1" height="1" alt="" style="display:block" />
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividend-statement" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Dividendenabrechnung 2025</h1>
+    <p>Liebe/r Jan Peeters,</p>
+    <p>Bitte finden Sie im Anhang Ihre Dividendenabrechnung für 2025.</p>
+    <p>Netto-Dividendenbetrag: €42.50</p>
+    <p>Vielen Dank, dass Sie Anteilseigner von Coöp &amp; Co sind!</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividend-statement" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Dividend Statement 2025</h1>
+    <p>Dear Jan Peeters,</p>
+    <p>Please find attached your dividend statement for 2025.</p>
+    <p>Net dividend amount: €42.50</p>
+    <p>Thank you for being a shareholder of Coöp &amp; Co!</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividend-statement" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Relevé de dividendes 2025</h1>
+    <p>Cher/Chère Jan Peeters,</p>
+    <p>Veuillez trouver ci-joint votre relevé de dividendes pour 2025.</p>
+    <p>Montant net du dividende: €42.50</p>
+    <p>Merci d'être actionnaire de Coöp &amp; Co !</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividend-statement" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Dividendafrekening 2025</h1>
+    <p>Beste Jan Peeters,</p>
+    <p>In bijlage vind je je dividendafrekening voor 2025.</p>
+    <p>Netto dividendbedrag: €42.50</p>
+    <p>Bedankt om aandeelhouder te zijn van Coöp &amp; Co!</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "gift-certificate" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Ihr Geschenkgutschein</h1>
+    <p>Liebe/r Marie Dubois,</p>
+    <p>Vielen Dank für den Kauf eines Geschenkgutscheins bei Coöp &amp; Co!</p>
+    <p>Ihre Zahlung wurde erhalten und der Geschenkgutschein ist dieser E-Mail beigefügt.</p>
+    <ul>
+      <li>Anteilsklasse: Aandeel A</li>
+      <li>Anzahl: 2</li>
+      <li>Gesamtwert: €50.00</li>
+    </ul>
+    <p>Geschenkcode: <strong>GIFT-1234</strong></p>
+    <p>Teilen Sie diesen Gutschein mit dem Empfänger. Er kann den Code oder QR-Code verwenden, um seine Anteile einzulösen.</p>
+    <p>Vielen Dank, dass Sie Anteilseigner von Coöp &amp; Co sind!</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "gift-certificate" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Your Gift Certificate</h1>
+    <p>Dear Marie Dubois,</p>
+    <p>Thank you for purchasing a gift certificate at Coöp &amp; Co!</p>
+    <p>Your payment has been received and the gift certificate is attached to this email.</p>
+    <ul>
+      <li>Share Class: Aandeel A</li>
+      <li>Quantity: 2</li>
+      <li>Total Value: €50.00</li>
+    </ul>
+    <p>Gift code: <strong>GIFT-1234</strong></p>
+    <p>Share this certificate with the recipient. They can use the code or QR code to claim their shares.</p>
+    <p>Thank you for being a shareholder of Coöp &amp; Co!</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "gift-certificate" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Votre bon cadeau</h1>
+    <p>Cher/Chère Marie Dubois,</p>
+    <p>Merci d'avoir acheté un bon cadeau chez Coöp &amp; Co !</p>
+    <p>Votre paiement a été reçu et le bon cadeau est joint à cet e-mail.</p>
+    <ul>
+      <li>Classe d'actions: Aandeel A</li>
+      <li>Quantité: 2</li>
+      <li>Valeur totale: €50.00</li>
+    </ul>
+    <p>Code cadeau: <strong>GIFT-1234</strong></p>
+    <p>Partagez ce bon avec le destinataire. Il peut utiliser le code ou le QR code pour réclamer ses actions.</p>
+    <p>Merci d'être actionnaire de Coöp &amp; Co !</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "gift-certificate" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Je cadeaubon</h1>
+    <p>Beste Marie Dubois,</p>
+    <p>Bedankt voor het aankopen van een cadeaubon bij Coöp &amp; Co!</p>
+    <p>Je betaling is ontvangen en de cadeaubon is als bijlage toegevoegd.</p>
+    <ul>
+      <li>Aandelenklasse: Aandeel A</li>
+      <li>Aantal: 2</li>
+      <li>Totale waarde: €50.00</li>
+    </ul>
+    <p>Cadeaucode: <strong>GIFT-1234</strong></p>
+    <p>Deel de cadeaubon met de ontvanger. Ze kunnen de code of QR-code gebruiken om hun aandelen op te vragen.</p>
+    <p>Bedankt om aandeelhouder te zijn van Coöp &amp; Co!</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-link" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Anmeldung bei OpenCoop</h1>
+    <p>Klicken Sie auf die Schaltfläche unten, um sich anzumelden:</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="https://opencoop.test/magic?token=abc123"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        Anmelden
+      </a>
+    </p>
+    <p style="color: #666; font-size: 12px;">
+      Dieser Link läuft in 15 Minuten ab. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.
+    </p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-link" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Login to OpenCoop</h1>
+    <p>Click the button below to log in:</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="https://opencoop.test/magic?token=abc123"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        Log In
+      </a>
+    </p>
+    <p style="color: #666; font-size: 12px;">
+      This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.
+    </p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-link" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Connexion à OpenCoop</h1>
+    <p>Cliquez sur le bouton ci-dessous pour vous connecter :</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="https://opencoop.test/magic?token=abc123"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        Se connecter
+      </a>
+    </p>
+    <p style="color: #666; font-size: 12px;">
+      Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.
+    </p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-link" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Inloggen bij OpenCoop</h1>
+    <p>Klik op de knop hieronder om in te loggen:</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="https://opencoop.test/magic?token=abc123"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        Inloggen
+      </a>
+    </p>
+    <p style="color: #666; font-size: 12px;">
+      Deze link vervalt binnen 15 minuten. Als je dit niet hebt aangevraagd, kan je deze e-mail veilig negeren.
+    </p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-convocation" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #0E7C66; padding-bottom: 14px; margin-bottom: 22px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+               <img src="https://opencoop.test/logo.png" alt="Coöp &amp; Co" style="max-height: 80px; max-width: 240px;" />
+             </div>
+            <h1 style="margin: 0; color: #0E7C66; font-size: 22px;">Einladung — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Generalversammlung</p>
+          </div>
+          <p>Liebe/r Jan Peeters,</p>
+          <p>Im Namen von <strong>Coöp &amp; Co</strong> laden wir Sie zur <strong>Algemene Vergadering 2026</strong> am <strong>Samstag, 9. Mai 2026 um 10:00</strong> in <strong>Theresiastraat 29, 3500 Hasselt</strong> ein.</p>
+          <h2 style="color: #0E7C66;">Tagesordnung</h2>
+          <ol><li><strong>Eerste punt</strong><br><span style="color:#555;">Beschrijving een</span></li><li><strong>Tweede punt</strong><br><span style="color:#555;">Beschrijving twee</span></li></ol>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token?a=1&b=2"
+               style="background-color: #0E7C66; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;
+                      font-weight: 600;">
+              Auf die Einladung antworten
+            </a>
+          </p>
+          <p>Klicken Sie oben auf die Schaltfläche, um anzugeben, ob Sie teilnehmen werden, nicht teilnehmen werden, oder Ihre Stimme an einen anderen Anteilseigner zu delegieren (Vollmacht).</p>
+          <p style="color: #666; font-size: 12px;">Die offizielle Einladung ist als PDF beigefügt.</p>
+          <p>Mit freundlichen Grüßen,<br><strong>Der Vorstand von Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-convocation" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #0E7C66; padding-bottom: 14px; margin-bottom: 22px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+               <img src="https://opencoop.test/logo.png" alt="Coöp &amp; Co" style="max-height: 80px; max-width: 240px;" />
+             </div>
+            <h1 style="margin: 0; color: #0E7C66; font-size: 22px;">Notice — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">General Meeting</p>
+          </div>
+          <p>Dear Jan Peeters,</p>
+          <p>On behalf of <strong>Coöp &amp; Co</strong>, you are invited to the <strong>Algemene Vergadering 2026</strong> on <strong>Saturday, May 9, 2026 at 10:00 AM</strong> at <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <h2 style="color: #0E7C66;">Agenda</h2>
+          <ol><li><strong>Eerste punt</strong><br><span style="color:#555;">Beschrijving een</span></li><li><strong>Tweede punt</strong><br><span style="color:#555;">Beschrijving twee</span></li></ol>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token?a=1&b=2"
+               style="background-color: #0E7C66; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;
+                      font-weight: 600;">
+              Respond to the notice
+            </a>
+          </p>
+          <p>Click the button above to indicate whether you will attend, will not attend, or to delegate your vote to another shareholder (proxy).</p>
+          <p style="color: #666; font-size: 12px;">The official notice is attached as a PDF.</p>
+          <p>Kind regards,<br><strong>The board of Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-convocation" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #0E7C66; padding-bottom: 14px; margin-bottom: 22px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+               <img src="https://opencoop.test/logo.png" alt="Coöp &amp; Co" style="max-height: 80px; max-width: 240px;" />
+             </div>
+            <h1 style="margin: 0; color: #0E7C66; font-size: 22px;">Convocation — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Assemblée Générale</p>
+          </div>
+          <p>Cher/Chère Jan Peeters,</p>
+          <p>Au nom de <strong>Coöp &amp; Co</strong>, vous êtes invité(e) à <strong>Algemene Vergadering 2026</strong> le <strong>samedi 9 mai 2026 à 10:00</strong> à <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <h2 style="color: #0E7C66;">Ordre du jour</h2>
+          <ol><li><strong>Eerste punt</strong><br><span style="color:#555;">Beschrijving een</span></li><li><strong>Tweede punt</strong><br><span style="color:#555;">Beschrijving twee</span></li></ol>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token?a=1&b=2"
+               style="background-color: #0E7C66; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;
+                      font-weight: 600;">
+              Répondre à la convocation
+            </a>
+          </p>
+          <p>Cliquez sur le bouton ci-dessus pour indiquer si vous serez présent(e), absent(e), ou pour déléguer votre voix à un autre actionnaire (procuration).</p>
+          <p style="color: #666; font-size: 12px;">La convocation officielle est jointe en PDF.</p>
+          <p>Cordialement,<br><strong>Le conseil d'administration de Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-convocation" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #0E7C66; padding-bottom: 14px; margin-bottom: 22px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+               <img src="https://opencoop.test/logo.png" alt="Coöp &amp; Co" style="max-height: 80px; max-width: 240px;" />
+             </div>
+            <h1 style="margin: 0; color: #0E7C66; font-size: 22px;">Oproeping Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Algemene Vergadering</p>
+          </div>
+          <p>Beste Jan Peeters,</p>
+          <p>Namens <strong>Coöp &amp; Co</strong> nodigen wij u uit voor de <strong>Algemene Vergadering 2026</strong> op <strong>zaterdag 9 mei 2026 om 10:00</strong> te <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <h2 style="color: #0E7C66;">Agenda</h2>
+          <ol><li><strong>Eerste punt</strong><br><span style="color:#555;">Beschrijving een</span></li><li><strong>Tweede punt</strong><br><span style="color:#555;">Beschrijving twee</span></li></ol>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token?a=1&b=2"
+               style="background-color: #0E7C66; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;
+                      font-weight: 600;">
+              Reageer op de oproeping
+            </a>
+          </p>
+          <p>Klik op de knop hierboven om aan te geven of u aanwezig zult zijn, niet aanwezig zult zijn, of om uw stem te delegeren aan een andere aandeelhouder (volmacht).</p>
+          <p style="color: #666; font-size: 12px;">In bijlage vindt u de officiële oproeping als PDF.</p>
+          <p>Met vriendelijke groet,<br><strong>Het bestuur van Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-reminder" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Erinnerung: Generalversammlung</h1>
+          <p>Liebe/r Jan Peeters,</p>
+          <p>Erinnerung: die <strong>Algemene Vergadering 2026</strong> findet in <strong>3</strong> Tag(en) am <strong>Samstag, 9. Mai 2026 um 10:00</strong> statt. Sie haben noch nicht geantwortet. Bitte bestätigen Sie:</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Hier antworten
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-reminder" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Reminder: General Meeting</h1>
+          <p>Dear Jan Peeters,</p>
+          <p>Reminder: the <strong>Algemene Vergadering 2026</strong> is in <strong>3</strong> day(s) on <strong>Saturday, May 9, 2026 at 10:00 AM</strong>. You haven't yet responded. Please RSVP:</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              RSVP here
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-reminder" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Rappel : Assemblée Générale</h1>
+          <p>Cher/Chère Jan Peeters,</p>
+          <p>Rappel : <strong>Algemene Vergadering 2026</strong> aura lieu dans <strong>3</strong> jour(s), le <strong>samedi 9 mai 2026 à 10:00</strong>. Vous n'avez pas encore répondu. Veuillez confirmer :</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Répondre ici
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-reminder" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Herinnering: Algemene Vergadering</h1>
+          <p>Beste Jan Peeters,</p>
+          <p>Herinnering: de <strong>Algemene Vergadering 2026</strong> vindt plaats over <strong>3</strong> dag(en) op <strong>zaterdag 9 mei 2026 om 10:00</strong>. U heeft nog niet geantwoord. Gelieve te bevestigen:</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/meetings/rsvp/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              RSVP hier
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-rsvp-confirmation" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #0E7C66; padding-bottom: 14px; margin-bottom: 22px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+               <img src="https://opencoop.test/logo.png" alt="Coöp &amp; Co" style="max-height: 80px; max-width: 240px;" />
+             </div>
+            <h1 style="margin: 0; color: #0E7C66; font-size: 22px;">Bestätigung — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Generalversammlung</p>
+          </div>
+          <p>Liebe/r Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> am <strong>Samstag, 9. Mai 2026 um 10:00</strong> in <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <p><strong>Sie haben Ihre Stimme an <strong>Marie Dubois</strong> delegiert.</strong></p>
+          <p style="color: #666; font-size: 12px;">Eine Kalendereinladung (.ics) ist angehängt — funktioniert mit Apple Calendar, Google Kalender, Outlook und Thunderbird.</p>
+          <p style="text-align: center; margin: 30px 0;">
+               <a href="https://opencoop.test/meetings/rsvp/token"
+                  style="background-color: #0E7C66; color: white; padding: 12px 24px;
+                         text-decoration: none; border-radius: 6px; display: inline-block;
+                         font-weight: 600;">
+                 Antwort ändern
+               </a>
+             </p>
+          <p>Mit freundlichen Grüßen,<br><strong>Der Vorstand von Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-rsvp-confirmation" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #0E7C66; padding-bottom: 14px; margin-bottom: 22px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+               <img src="https://opencoop.test/logo.png" alt="Coöp &amp; Co" style="max-height: 80px; max-width: 240px;" />
+             </div>
+            <h1 style="margin: 0; color: #0E7C66; font-size: 22px;">Confirmation — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">General Meeting</p>
+          </div>
+          <p>Dear Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> on <strong>Saturday, May 9, 2026 at 10:00 AM</strong> at <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <p><strong>You have delegated your vote to <strong>Marie Dubois</strong>.</strong></p>
+          <p style="color: #666; font-size: 12px;">A calendar invite (.ics) is attached — works with Apple Calendar, Google Calendar, Outlook, and Thunderbird.</p>
+          <p style="text-align: center; margin: 30px 0;">
+               <a href="https://opencoop.test/meetings/rsvp/token"
+                  style="background-color: #0E7C66; color: white; padding: 12px 24px;
+                         text-decoration: none; border-radius: 6px; display: inline-block;
+                         font-weight: 600;">
+                 Change your answer
+               </a>
+             </p>
+          <p>Kind regards,<br><strong>The board of Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-rsvp-confirmation" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #0E7C66; padding-bottom: 14px; margin-bottom: 22px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+               <img src="https://opencoop.test/logo.png" alt="Coöp &amp; Co" style="max-height: 80px; max-width: 240px;" />
+             </div>
+            <h1 style="margin: 0; color: #0E7C66; font-size: 22px;">Confirmation — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Assemblée Générale</p>
+          </div>
+          <p>Cher/Chère Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> le <strong>samedi 9 mai 2026 à 10:00</strong> à <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <p><strong>Vous avez délégué votre vote à <strong>Marie Dubois</strong>.</strong></p>
+          <p style="color: #666; font-size: 12px;">Une invitation calendrier (.ics) est jointe — compatible Apple Calendar, Google Calendar, Outlook et Thunderbird.</p>
+          <p style="text-align: center; margin: 30px 0;">
+               <a href="https://opencoop.test/meetings/rsvp/token"
+                  style="background-color: #0E7C66; color: white; padding: 12px 24px;
+                         text-decoration: none; border-radius: 6px; display: inline-block;
+                         font-weight: 600;">
+                 Modifier votre réponse
+               </a>
+             </p>
+          <p>Cordialement,<br><strong>Le conseil d'administration de Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "meeting-rsvp-confirmation" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          
+          <div style="border-bottom: 3px solid #0E7C66; padding-bottom: 14px; margin-bottom: 22px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+               <img src="https://opencoop.test/logo.png" alt="Coöp &amp; Co" style="max-height: 80px; max-width: 240px;" />
+             </div>
+            <h1 style="margin: 0; color: #0E7C66; font-size: 22px;">Bevestiging — Coöp &amp; Co</h1>
+            <p style="margin: 4px 0 0; color: #555; font-size: 14px;">Algemene Vergadering</p>
+          </div>
+          <p>Beste Jan Peeters,</p>
+          <p><strong>Algemene Vergadering 2026</strong> op <strong>zaterdag 9 mei 2026 om 10:00</strong> te <strong>Theresiastraat 29, 3500 Hasselt</strong>.</p>
+          <p><strong>U heeft uw stem gedelegeerd aan <strong>Marie Dubois</strong>.</strong></p>
+          <p style="color: #666; font-size: 12px;">In bijlage vindt u een agenda-uitnodiging (.ics) die u kan toevoegen aan Apple Calendar, Google Calendar, Outlook of Thunderbird.</p>
+          <p style="text-align: center; margin: 30px 0;">
+               <a href="https://opencoop.test/meetings/rsvp/token"
+                  style="background-color: #0E7C66; color: white; padding: 12px 24px;
+                         text-decoration: none; border-radius: 6px; display: inline-block;
+                         font-weight: 600;">
+                 Wijzig uw antwoord
+               </a>
+             </p>
+          <p>Met vriendelijke groet,<br><strong>Het bestuur van Coöp &amp; Co</strong></p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "message-notification" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Neue Nachricht von Coöp &amp; Co</h1>
+          <p>Liebe/r Jan Peeters,</p>
+          <p>Sie haben eine neue Nachricht von Coöp &amp; Co erhalten.</p>
+          <p><strong>Betreff:</strong> Belangrijk nieuws</p>
+          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+            Dit is een voorbeeld van een bericht.
+          </blockquote>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/inbox/1"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Nachricht anzeigen
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "message-notification" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>New message from Coöp &amp; Co</h1>
+          <p>Dear Jan Peeters,</p>
+          <p>You have received a new message from Coöp &amp; Co.</p>
+          <p><strong>Subject:</strong> Belangrijk nieuws</p>
+          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+            Dit is een voorbeeld van een bericht.
+          </blockquote>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/inbox/1"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              View message
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "message-notification" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Nouveau message de Coöp &amp; Co</h1>
+          <p>Cher/Chère Jan Peeters,</p>
+          <p>Vous avez reçu un nouveau message de Coöp &amp; Co.</p>
+          <p><strong>Sujet:</strong> Belangrijk nieuws</p>
+          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+            Dit is een voorbeeld van een bericht.
+          </blockquote>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/inbox/1"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Voir le message
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "message-notification" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Nieuw bericht van Coöp &amp; Co</h1>
+          <p>Beste Jan Peeters,</p>
+          <p>U heeft een nieuw bericht ontvangen van Coöp &amp; Co.</p>
+          <p><strong>Onderwerp:</strong> Belangrijk nieuws</p>
+          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
+            Dit is een voorbeeld van een bericht.
+          </blockquote>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/inbox/1"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Bekijk het bericht
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-turned-adult" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Welkom bij Coöp &amp; Co, Lotte!</h1>
+        <p>Gefeliciteerd met je 18de verjaardag! 🎉</p>
+        <p>Je bent nu volwassen en beheert voortaan zelf je aandelen bij Coöp &amp; Co.</p>
+        <p>Log in op je account om je aandelen te bekijken:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/login"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Inloggen
+          </a>
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-turned-adult" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Welkom bij Coöp &amp; Co, Lotte!</h1>
+        <p>Gefeliciteerd met je 18de verjaardag! 🎉</p>
+        <p>Je bent nu volwassen en beheert voortaan zelf je aandelen bij Coöp &amp; Co.</p>
+        <p>Log in op je account om je aandelen te bekijken:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/login"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Inloggen
+          </a>
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-turned-adult" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Welkom bij Coöp &amp; Co, Lotte!</h1>
+        <p>Gefeliciteerd met je 18de verjaardag! 🎉</p>
+        <p>Je bent nu volwassen en beheert voortaan zelf je aandelen bij Coöp &amp; Co.</p>
+        <p>Log in op je account om je aandelen te bekijken:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/login"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Inloggen
+          </a>
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-turned-adult" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Welkom bij Coöp &amp; Co, Lotte!</h1>
+        <p>Gefeliciteerd met je 18de verjaardag! 🎉</p>
+        <p>Je bent nu volwassen en beheert voortaan zelf je aandelen bij Coöp &amp; Co.</p>
+        <p>Log in op je account om je aandelen te bekijken:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/login"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Inloggen
+          </a>
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-upgrade-notification" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte is 18 geworden</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is 18 geworden en kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Omdat er geen e-mailadres gekend is voor Lotte, vragen we u om onderstaande link door te geven:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/upgrade?token=abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 90 dagen geldig.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-upgrade-notification" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte is 18 geworden</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is 18 geworden en kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Omdat er geen e-mailadres gekend is voor Lotte, vragen we u om onderstaande link door te geven:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/upgrade?token=abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 90 dagen geldig.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-upgrade-notification" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte is 18 geworden</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is 18 geworden en kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Omdat er geen e-mailadres gekend is voor Lotte, vragen we u om onderstaande link door te geven:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/upgrade?token=abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 90 dagen geldig.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-upgrade-notification" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte is 18 geworden</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is 18 geworden en kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Omdat er geen e-mailadres gekend is voor Lotte, vragen we u om onderstaande link door te geven:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/upgrade?token=abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 90 dagen geldig.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-upgrade-reminder" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Herinnering: account aanmaken voor Lotte</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>We hebben u eerder gevraagd om onderstaande link door te geven aan Lotte Janssens voor het aanmaken van een eigen account bij Coöp &amp; Co.</p>
+        <p>De link is nog 30 dagen geldig:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/upgrade?token=abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-upgrade-reminder" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Herinnering: account aanmaken voor Lotte</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>We hebben u eerder gevraagd om onderstaande link door te geven aan Lotte Janssens voor het aanmaken van een eigen account bij Coöp &amp; Co.</p>
+        <p>De link is nog 30 dagen geldig:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/upgrade?token=abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-upgrade-reminder" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Herinnering: account aanmaken voor Lotte</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>We hebben u eerder gevraagd om onderstaande link door te geven aan Lotte Janssens voor het aanmaken van een eigen account bij Coöp &amp; Co.</p>
+        <p>De link is nog 30 dagen geldig:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/upgrade?token=abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "minor-upgrade-reminder" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Herinnering: account aanmaken voor Lotte</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>We hebben u eerder gevraagd om onderstaande link door te geven aan Lotte Janssens voor het aanmaken van een eigen account bij Coöp &amp; Co.</p>
+        <p>De link is nog 30 dagen geldig:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/upgrade?token=abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "parent-minor-turned-adult" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte beheert nu zelf de aandelen</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is 18 geworden en beheert voortaan zelf de aandelen bij Coöp &amp; Co.</p>
+        <p>U hoeft hier verder niets voor te doen. Lotte kan nu zelfstandig inloggen.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "parent-minor-turned-adult" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte beheert nu zelf de aandelen</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is 18 geworden en beheert voortaan zelf de aandelen bij Coöp &amp; Co.</p>
+        <p>U hoeft hier verder niets voor te doen. Lotte kan nu zelfstandig inloggen.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "parent-minor-turned-adult" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte beheert nu zelf de aandelen</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is 18 geworden en beheert voortaan zelf de aandelen bij Coöp &amp; Co.</p>
+        <p>U hoeft hier verder niets voor te doen. Lotte kan nu zelfstandig inloggen.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "parent-minor-turned-adult" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte beheert nu zelf de aandelen</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is 18 geworden en beheert voortaan zelf de aandelen bij Coöp &amp; Co.</p>
+        <p>U hoeft hier verder niets voor te doen. Lotte kan nu zelfstandig inloggen.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "password-reset" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Passwort zurücksetzen</h1>
+    <p>Sie haben eine Passwort-Zurücksetzung angefordert.</p>
+    <p>Klicken Sie auf den folgenden Link, um Ihr Passwort zurückzusetzen:</p>
+    <p><a href="https://opencoop.test/reset?token=abc123">https://opencoop.test/reset?token=abc123</a></p>
+    <p>Wenn Sie dies nicht angefordert haben, ignorieren Sie diese E-Mail.</p>
+    <p>Dieser Link läuft in 1 Stunde ab.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "password-reset" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Password Reset Request</h1>
+    <p>You have requested to reset your password.</p>
+    <p>Click the link below to reset your password:</p>
+    <p><a href="https://opencoop.test/reset?token=abc123">https://opencoop.test/reset?token=abc123</a></p>
+    <p>If you did not request this, please ignore this email.</p>
+    <p>This link will expire in 1 hour.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "password-reset" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Demande de réinitialisation du mot de passe</h1>
+    <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+    <p>Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
+    <p><a href="https://opencoop.test/reset?token=abc123">https://opencoop.test/reset?token=abc123</a></p>
+    <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.</p>
+    <p>Ce lien expirera dans 1 heure.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "password-reset" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Wachtwoord resetten</h1>
+    <p>Je hebt een wachtwoord reset aangevraagd.</p>
+    <p>Klik op onderstaande link om je wachtwoord te resetten:</p>
+    <p><a href="https://opencoop.test/reset?token=abc123">https://opencoop.test/reset?token=abc123</a></p>
+    <p>Als je dit niet hebt aangevraagd, kan je deze e-mail negeren.</p>
+    <p>Deze link vervalt binnen 1 uur.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "payment-confirmed" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Zahlung bestätigt</h1>
+          <p>Liebe/r Jan Peeters,</p>
+          <p>Wir haben Ihre Zahlung von €75.00 erhalten.</p>
+          <p>Ihre Anteile sind jetzt aktiv. Bitte finden Sie Ihr Anteilszertifikat im Anhang.</p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/dashboard"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Mein Dashboard anzeigen
+            </a>
+          </p>
+          
+          <p>Vielen Dank, dass Sie Anteilseigner von Coöp &amp; Co sind!</p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "payment-confirmed" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Payment Confirmed</h1>
+          <p>Dear Jan Peeters,</p>
+          <p>We have received your payment of €75.00.</p>
+          <p>Your shares are now active. Please find your share certificate attached.</p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/dashboard"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              View my dashboard
+            </a>
+          </p>
+          
+          <p>Thank you for being a shareholder of Coöp &amp; Co!</p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "payment-confirmed" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Paiement confirmé</h1>
+          <p>Cher/Chère Jan Peeters,</p>
+          <p>Nous avons reçu votre paiement de €75.00.</p>
+          <p>Vos actions sont maintenant actives. Veuillez trouver votre certificat d'actionnaire en pièce jointe.</p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/dashboard"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Voir mon tableau de bord
+            </a>
+          </p>
+          
+          <p>Merci d'être actionnaire de Coöp &amp; Co!</p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "payment-confirmed" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Betaling bevestigd</h1>
+          <p>Beste Jan Peeters,</p>
+          <p>We hebben uw betaling van €75.00 ontvangen.</p>
+          <p>Uw aandelen zijn nu actief. Uw aandeelhoudersattest vindt u als bijlage.</p>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/dashboard"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Bekijk mijn dashboard
+            </a>
+          </p>
+          
+          <p>Bedankt om aandeelhouder te zijn van Coöp &amp; Co!</p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "referral-success" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Iemand heeft je uitnodiging aanvaard!</h1>
+        <p>Beste Jan Peeters,</p>
+        <p><strong>Marie Dubois</strong> heeft zich via jouw persoonlijke link aangemeld als coöperant bij Coöp &amp; Co.</p>
+        <p>Bedankt om Coöp &amp; Co te helpen groeien! Deel je link gerust verder om meer mensen te bereiken.</p>
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/dashboard"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Bekijk je doorverwijzingen
+          </a>
+        </p>
+        
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "referral-success" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Iemand heeft je uitnodiging aanvaard!</h1>
+        <p>Beste Jan Peeters,</p>
+        <p><strong>Marie Dubois</strong> heeft zich via jouw persoonlijke link aangemeld als coöperant bij Coöp &amp; Co.</p>
+        <p>Bedankt om Coöp &amp; Co te helpen groeien! Deel je link gerust verder om meer mensen te bereiken.</p>
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/dashboard"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Bekijk je doorverwijzingen
+          </a>
+        </p>
+        
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "referral-success" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Iemand heeft je uitnodiging aanvaard!</h1>
+        <p>Beste Jan Peeters,</p>
+        <p><strong>Marie Dubois</strong> heeft zich via jouw persoonlijke link aangemeld als coöperant bij Coöp &amp; Co.</p>
+        <p>Bedankt om Coöp &amp; Co te helpen groeien! Deel je link gerust verder om meer mensen te bereiken.</p>
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/dashboard"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Bekijk je doorverwijzingen
+          </a>
+        </p>
+        
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "referral-success" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Iemand heeft je uitnodiging aanvaard!</h1>
+        <p>Beste Jan Peeters,</p>
+        <p><strong>Marie Dubois</strong> heeft zich via jouw persoonlijke link aangemeld als coöperant bij Coöp &amp; Co.</p>
+        <p>Bedankt om Coöp &amp; Co te helpen groeien! Deel je link gerust verder om meer mensen te bereiken.</p>
+        
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/dashboard"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Bekijk je doorverwijzingen
+          </a>
+        </p>
+        
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "set-minor-email-reminder" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>E-mailadres toevoegen voor Lotte</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is aandeelhouder bij Coöp &amp; Co en wordt over 4 jaar 18.</p>
+        <p>Op dat moment krijgt Lotte een eigen account. Om dit automatisch te laten verlopen, kunt u nu al een e-mailadres toevoegen in het dashboard:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/dashboard"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Naar dashboard
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Als Lotte nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "set-minor-email-reminder" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>E-mailadres toevoegen voor Lotte</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is aandeelhouder bij Coöp &amp; Co en wordt over 4 jaar 18.</p>
+        <p>Op dat moment krijgt Lotte een eigen account. Om dit automatisch te laten verlopen, kunt u nu al een e-mailadres toevoegen in het dashboard:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/dashboard"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Naar dashboard
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Als Lotte nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "set-minor-email-reminder" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>E-mailadres toevoegen voor Lotte</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is aandeelhouder bij Coöp &amp; Co en wordt over 4 jaar 18.</p>
+        <p>Op dat moment krijgt Lotte een eigen account. Om dit automatisch te laten verlopen, kunt u nu al een e-mailadres toevoegen in het dashboard:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/dashboard"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Naar dashboard
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Als Lotte nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "set-minor-email-reminder" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>E-mailadres toevoegen voor Lotte</h1>
+        <p>Beste ouder/voogd,</p>
+        <p>Lotte Janssens is aandeelhouder bij Coöp &amp; Co en wordt over 4 jaar 18.</p>
+        <p>Op dat moment krijgt Lotte een eigen account. Om dit automatisch te laten verlopen, kunt u nu al een e-mailadres toevoegen in het dashboard:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/dashboard"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Naar dashboard
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Als Lotte nog geen e-mailadres heeft, kunt u dit later alsnog doen. We sturen u jaarlijks een herinnering.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "share-purchase" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Ihre Bestellung ist bestätigt</h1>
+    <p>Liebe/r Jan Peeters,</p>
+    <p>Vielen Dank für Ihre Bestellung bei Coöp &amp; Co. Wir haben sie erhalten — auf unserer Website müssen Sie nichts weiter tun. Mit den untenstehenden Daten überweisen Sie den Betrag über Ihre Banking-App.</p>
+
+    <h2>Ihre Bestellung</h2>
+    <ul>
+      <li>Anteilsklasse: Aandeel A</li>
+      <li>Anzahl: 3</li>
+      <li>Gesamtbetrag: €75.00</li>
+    </ul>
+
+    
+    <h2>Zahlungsdetails</h2>
+    <p>Empfänger: <strong>Coöp &amp; Co</strong></p>
+    <p>IBAN: <strong>BE68 5390 0754 7034</strong></p>
+    <p>Betrag: <strong>€75.00</strong></p>
+    <p>Strukturierte Mitteilung: <strong>+++123/4567/89012+++</strong></p>
+    
+
+    <h2>Wie geht es weiter?</h2>
+    <ol>
+      <li>Ihre Bestellung ist erfasst</li>
+      <li>Überweisen Sie den Betrag über Ihre Banking-App mit den obigen Angaben</li>
+      <li>Sobald wir Ihre Zahlung zugeordnet haben (in der Regel innerhalb von 1–2 Werktagen), erhalten Sie eine zweite E-Mail. Erst dann sind Ihre Anteile aktiv.</li>
+    </ol>
+    <p><em>Kein Stress — Sie können auch später zahlen, wann es Ihnen passt.</em></p>
+
+    <p>Vielen Dank für Ihre Investition in Coöp &amp; Co!</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "share-purchase" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Your order is confirmed</h1>
+    <p>Dear Jan Peeters,</p>
+    <p>Thank you for your order with Coöp &amp; Co. We've received it — there's nothing more to do on our website. Use the details below to transfer the amount via your banking app.</p>
+
+    <h2>Your order</h2>
+    <ul>
+      <li>Share class: Aandeel A</li>
+      <li>Quantity: 3</li>
+      <li>Total amount: €75.00</li>
+    </ul>
+
+    
+    <h2>Payment details</h2>
+    <p>Beneficiary: <strong>Coöp &amp; Co</strong></p>
+    <p>IBAN: <strong>BE68 5390 0754 7034</strong></p>
+    <p>Amount: <strong>€75.00</strong></p>
+    <p>Structured communication: <strong>+++123/4567/89012+++</strong></p>
+    
+
+    <h2>What happens next?</h2>
+    <ol>
+      <li>Your order is recorded</li>
+      <li>Transfer the amount via your banking app using the details above</li>
+      <li>You'll get a second email once we've matched your payment (usually within 1–2 business days). Only then are your shares active.</li>
+    </ol>
+    <p><em>No rush — you can still pay whenever it suits you.</em></p>
+
+    <p>Thank you for investing in Coöp &amp; Co!</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "share-purchase" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Votre commande est confirmée</h1>
+    <p>Cher/Chère Jan Peeters,</p>
+    <p>Merci pour votre commande auprès de Coöp &amp; Co. Nous l'avons bien reçue — vous n'avez plus rien à faire sur notre site. Utilisez les informations ci-dessous pour effectuer le virement via votre application bancaire.</p>
+
+    <h2>Votre commande</h2>
+    <ul>
+      <li>Classe d'actions: Aandeel A</li>
+      <li>Quantité: 3</li>
+      <li>Montant total: €75.00</li>
+    </ul>
+
+    
+    <h2>Détails de paiement</h2>
+    <p>Bénéficiaire: <strong>Coöp &amp; Co</strong></p>
+    <p>IBAN: <strong>BE68 5390 0754 7034</strong></p>
+    <p>Montant: <strong>€75.00</strong></p>
+    <p>Communication structurée: <strong>+++123/4567/89012+++</strong></p>
+    
+
+    <h2>Et maintenant ?</h2>
+    <ol>
+      <li>Votre commande est enregistrée</li>
+      <li>Effectuez le virement via votre application bancaire avec les informations ci-dessus</li>
+      <li>Vous recevrez un second e-mail dès que nous aurons réconcilié votre paiement (généralement sous 1 à 2 jours ouvrables). Vos actions seront alors actives.</li>
+    </ol>
+    <p><em>Pas de précipitation — vous pouvez encore payer quand cela vous convient.</em></p>
+
+    <p>Merci d'investir dans Coöp &amp; Co !</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "share-purchase" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Je bestelling is bevestigd</h1>
+    <p>Beste Jan Peeters,</p>
+    <p>Bedankt voor je bestelling bij Coöp &amp; Co. We hebben deze goed ontvangen — je hoeft niets meer te doen op onze website. Onderstaande gegevens heb je nodig om het bedrag over te schrijven via je bank-app.</p>
+
+    <h2>Je bestelling</h2>
+    <ul>
+      <li>Aandelenklasse: Aandeel A</li>
+      <li>Aantal: 3</li>
+      <li>Totaalbedrag: €75.00</li>
+    </ul>
+
+    
+    <h2>Betalingsgegevens</h2>
+    <p>Begunstigde: <strong>Coöp &amp; Co</strong></p>
+    <p>IBAN: <strong>BE68 5390 0754 7034</strong></p>
+    <p>Bedrag: <strong>€75.00</strong></p>
+    <p>Gestructureerde mededeling: <strong>+++123/4567/89012+++</strong></p>
+    
+
+    <h2>Wat gebeurt er nu?</h2>
+    <ol>
+      <li>Je bestelling is geregistreerd</li>
+      <li>Schrijf het bedrag over via je bank-app met de bovenstaande gegevens</li>
+      <li>Je ontvangt een tweede e-mail zodra we je betaling gematcht hebben (doorgaans binnen 1 à 2 werkdagen). Pas daarna zijn je aandelen actief.</li>
+    </ol>
+    <p><em>Er is geen haast bij — je kunt nog steeds betalen wanneer het jou uitkomt.</em></p>
+
+    <p>Bedankt om te investeren in Coöp &amp; Co!</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "welcome" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Willkommen bei Coöp &amp; Co!</h1>
+    <p>Liebe/r Jan Peeters,</p>
+    <p>Vielen Dank, dass Sie Anteilseigner von Coöp &amp; Co werden.</p>
+    <p>Sie können sich in Ihrem Dashboard anmelden, um Ihre Anteile und Dokumente einzusehen.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "welcome" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Welcome to Coöp &amp; Co!</h1>
+    <p>Dear Jan Peeters,</p>
+    <p>Thank you for becoming a shareholder of Coöp &amp; Co.</p>
+    <p>You can log in to your dashboard to view your shares and documents.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "welcome" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Bienvenue chez Coöp &amp; Co !</h1>
+    <p>Cher/Chère Jan Peeters,</p>
+    <p>Merci de devenir actionnaire de Coöp &amp; Co.</p>
+    <p>Vous pouvez vous connecter à votre tableau de bord pour consulter vos actions et documents.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "welcome" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Welkom bij Coöp &amp; Co!</h1>
+    <p>Beste Jan Peeters,</p>
+    <p>Bedankt om aandeelhouder te worden van Coöp &amp; Co.</p>
+    <p>Je kan inloggen in je dashboard om je aandelen en documenten te bekijken.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;

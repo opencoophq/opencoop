@@ -10,6 +10,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import {
   TokenCredentialAuthenticationProvider,
 } from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
+import { buildCopy, getCopy } from './email-copy';
 
 /**
  * Escape HTML-significant characters so user/coop-controlled free text can be
@@ -304,33 +305,7 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const sn = escapeHtml(d.shareholderName);
         const ecn = escapeHtml(cn);
-        const t = {
-          nl: {
-            title: `Welkom bij ${ecn}!`,
-            dear: `Beste ${sn},`,
-            thanks: `Bedankt om aandeelhouder te worden van ${ecn}.`,
-            login: 'Je kan inloggen in je dashboard om je aandelen en documenten te bekijken.',
-          },
-          en: {
-            title: `Welcome to ${ecn}!`,
-            dear: `Dear ${sn},`,
-            thanks: `Thank you for becoming a shareholder of ${ecn}.`,
-            login: 'You can log in to your dashboard to view your shares and documents.',
-          },
-          fr: {
-            title: `Bienvenue chez ${ecn} !`,
-            dear: `Cher/Chère ${sn},`,
-            thanks: `Merci de devenir actionnaire de ${ecn}.`,
-            login: 'Vous pouvez vous connecter à votre tableau de bord pour consulter vos actions et documents.',
-          },
-          de: {
-            title: `Willkommen bei ${ecn}!`,
-            dear: `Liebe/r ${sn},`,
-            thanks: `Vielen Dank, dass Sie Anteilseigner von ${ecn} werden.`,
-            login: 'Sie können sich in Ihrem Dashboard anmelden, um Ihre Anteile und Dokumente einzusehen.',
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('welcome', lang, { coopName: ecn, shareholderName: sn });
         return `
     <h1>${s.title}</h1>
     <p>${s.dear}</p>
@@ -342,89 +317,7 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const sn = escapeHtml(d.shareholderName);
         const ecn = escapeHtml(cn);
-        const t = {
-          nl: {
-            title: 'Je bestelling is bevestigd',
-            dear: `Beste ${sn},`,
-            intro: `Bedankt voor je bestelling bij ${ecn}. We hebben deze goed ontvangen — je hoeft niets meer te doen op onze website. Onderstaande gegevens heb je nodig om het bedrag over te schrijven via je bank-app.`,
-            orderTitle: 'Je bestelling',
-            shareClass: 'Aandelenklasse',
-            quantity: 'Aantal',
-            totalAmount: 'Totaalbedrag',
-            paymentDetailsTitle: 'Betalingsgegevens',
-            iban: 'IBAN',
-            ogm: 'Gestructureerde mededeling',
-            amount: 'Bedrag',
-            beneficiary: 'Begunstigde',
-            nextTitle: 'Wat gebeurt er nu?',
-            step1: 'Je bestelling is geregistreerd',
-            step2: 'Schrijf het bedrag over via je bank-app met de bovenstaande gegevens',
-            step3: `Je ontvangt een tweede e-mail zodra we je betaling gematcht hebben (doorgaans binnen 1 à 2 werkdagen). Pas daarna zijn je aandelen actief.`,
-            noHaste: 'Er is geen haast bij — je kunt nog steeds betalen wanneer het jou uitkomt.',
-            thanks: `Bedankt om te investeren in ${ecn}!`,
-          },
-          en: {
-            title: 'Your order is confirmed',
-            dear: `Dear ${sn},`,
-            intro: `Thank you for your order with ${ecn}. We've received it — there's nothing more to do on our website. Use the details below to transfer the amount via your banking app.`,
-            orderTitle: 'Your order',
-            shareClass: 'Share class',
-            quantity: 'Quantity',
-            totalAmount: 'Total amount',
-            paymentDetailsTitle: 'Payment details',
-            iban: 'IBAN',
-            ogm: 'Structured communication',
-            amount: 'Amount',
-            beneficiary: 'Beneficiary',
-            nextTitle: "What happens next?",
-            step1: 'Your order is recorded',
-            step2: 'Transfer the amount via your banking app using the details above',
-            step3: `You'll get a second email once we've matched your payment (usually within 1–2 business days). Only then are your shares active.`,
-            noHaste: "No rush — you can still pay whenever it suits you.",
-            thanks: `Thank you for investing in ${ecn}!`,
-          },
-          fr: {
-            title: 'Votre commande est confirmée',
-            dear: `Cher/Chère ${sn},`,
-            intro: `Merci pour votre commande auprès de ${ecn}. Nous l'avons bien reçue — vous n'avez plus rien à faire sur notre site. Utilisez les informations ci-dessous pour effectuer le virement via votre application bancaire.`,
-            orderTitle: 'Votre commande',
-            shareClass: "Classe d'actions",
-            quantity: 'Quantité',
-            totalAmount: 'Montant total',
-            paymentDetailsTitle: 'Détails de paiement',
-            iban: 'IBAN',
-            ogm: 'Communication structurée',
-            amount: 'Montant',
-            beneficiary: 'Bénéficiaire',
-            nextTitle: 'Et maintenant ?',
-            step1: 'Votre commande est enregistrée',
-            step2: 'Effectuez le virement via votre application bancaire avec les informations ci-dessus',
-            step3: `Vous recevrez un second e-mail dès que nous aurons réconcilié votre paiement (généralement sous 1 à 2 jours ouvrables). Vos actions seront alors actives.`,
-            noHaste: 'Pas de précipitation — vous pouvez encore payer quand cela vous convient.',
-            thanks: `Merci d'investir dans ${ecn} !`,
-          },
-          de: {
-            title: 'Ihre Bestellung ist bestätigt',
-            dear: `Liebe/r ${sn},`,
-            intro: `Vielen Dank für Ihre Bestellung bei ${ecn}. Wir haben sie erhalten — auf unserer Website müssen Sie nichts weiter tun. Mit den untenstehenden Daten überweisen Sie den Betrag über Ihre Banking-App.`,
-            orderTitle: 'Ihre Bestellung',
-            shareClass: 'Anteilsklasse',
-            quantity: 'Anzahl',
-            totalAmount: 'Gesamtbetrag',
-            paymentDetailsTitle: 'Zahlungsdetails',
-            iban: 'IBAN',
-            ogm: 'Strukturierte Mitteilung',
-            amount: 'Betrag',
-            beneficiary: 'Empfänger',
-            nextTitle: 'Wie geht es weiter?',
-            step1: 'Ihre Bestellung ist erfasst',
-            step2: 'Überweisen Sie den Betrag über Ihre Banking-App mit den obigen Angaben',
-            step3: `Sobald wir Ihre Zahlung zugeordnet haben (in der Regel innerhalb von 1–2 Werktagen), erhalten Sie eine zweite E-Mail. Erst dann sind Ihre Anteile aktiv.`,
-            noHaste: 'Kein Stress — Sie können auch später zahlen, wann es Ihnen passt.',
-            thanks: `Vielen Dank für Ihre Investition in ${ecn}!`,
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('share-purchase', lang, { coopName: ecn, shareholderName: sn });
         const amount = (d.totalAmount as number).toFixed(2);
         return `
     <h1>${s.title}</h1>
@@ -461,41 +354,11 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const sn = escapeHtml(d.shareholderName);
         const ecn = escapeHtml(cn);
-        const t = {
-          nl: {
-            title: 'Betaling bevestigd',
-            dear: `Beste ${sn},`,
-            received: `We hebben uw betaling van €${(d.amount as number).toFixed(2)} ontvangen.`,
-            active: 'Uw aandelen zijn nu actief. Uw aandeelhoudersattest vindt u als bijlage.',
-            dashboard: 'Bekijk mijn dashboard',
-            thanks: `Bedankt om aandeelhouder te zijn van ${ecn}!`,
-          },
-          en: {
-            title: 'Payment Confirmed',
-            dear: `Dear ${sn},`,
-            received: `We have received your payment of €${(d.amount as number).toFixed(2)}.`,
-            active: 'Your shares are now active. Please find your share certificate attached.',
-            dashboard: 'View my dashboard',
-            thanks: `Thank you for being a shareholder of ${ecn}!`,
-          },
-          fr: {
-            title: 'Paiement confirmé',
-            dear: `Cher/Chère ${sn},`,
-            received: `Nous avons reçu votre paiement de €${(d.amount as number).toFixed(2)}.`,
-            active: "Vos actions sont maintenant actives. Veuillez trouver votre certificat d'actionnaire en pièce jointe.",
-            dashboard: 'Voir mon tableau de bord',
-            thanks: `Merci d'être actionnaire de ${ecn}!`,
-          },
-          de: {
-            title: 'Zahlung bestätigt',
-            dear: `Liebe/r ${sn},`,
-            received: `Wir haben Ihre Zahlung von €${(d.amount as number).toFixed(2)} erhalten.`,
-            active: 'Ihre Anteile sind jetzt aktiv. Bitte finden Sie Ihr Anteilszertifikat im Anhang.',
-            dashboard: 'Mein Dashboard anzeigen',
-            thanks: `Vielen Dank, dass Sie Anteilseigner von ${ecn} sind!`,
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('payment-confirmed', lang, {
+          coopName: ecn,
+          shareholderName: sn,
+          amount: (d.amount as number).toFixed(2),
+        });
         return `
           <h1>${s.title}</h1>
           <p>${s.dear}</p>
@@ -517,37 +380,11 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const sn = escapeHtml(d.shareholderName);
         const ecn = escapeHtml(cn);
-        const t = {
-          nl: {
-            title: `Dividendafrekening ${d.year}`,
-            dear: `Beste ${sn},`,
-            attached: `In bijlage vind je je dividendafrekening voor ${d.year}.`,
-            net: 'Netto dividendbedrag',
-            thanks: `Bedankt om aandeelhouder te zijn van ${ecn}!`,
-          },
-          en: {
-            title: `Dividend Statement ${d.year}`,
-            dear: `Dear ${sn},`,
-            attached: `Please find attached your dividend statement for ${d.year}.`,
-            net: 'Net dividend amount',
-            thanks: `Thank you for being a shareholder of ${ecn}!`,
-          },
-          fr: {
-            title: `Relevé de dividendes ${d.year}`,
-            dear: `Cher/Chère ${sn},`,
-            attached: `Veuillez trouver ci-joint votre relevé de dividendes pour ${d.year}.`,
-            net: 'Montant net du dividende',
-            thanks: `Merci d'être actionnaire de ${ecn} !`,
-          },
-          de: {
-            title: `Dividendenabrechnung ${d.year}`,
-            dear: `Liebe/r ${sn},`,
-            attached: `Bitte finden Sie im Anhang Ihre Dividendenabrechnung für ${d.year}.`,
-            net: 'Netto-Dividendenbetrag',
-            thanks: `Vielen Dank, dass Sie Anteilseigner von ${ecn} sind!`,
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('dividend-statement', lang, {
+          coopName: ecn,
+          shareholderName: sn,
+          year: String(d.year),
+        });
         return `
     <h1>${s.title}</h1>
     <p>${s.dear}</p>
@@ -558,37 +395,7 @@ export class EmailProcessor {
       },
       'password-reset': (d, _cn) => {
         const lang = (d.language as string) || 'nl';
-        const t = {
-          nl: {
-            title: 'Wachtwoord resetten',
-            requested: 'Je hebt een wachtwoord reset aangevraagd.',
-            click: 'Klik op onderstaande link om je wachtwoord te resetten:',
-            ignore: 'Als je dit niet hebt aangevraagd, kan je deze e-mail negeren.',
-            expires: 'Deze link vervalt binnen 1 uur.',
-          },
-          en: {
-            title: 'Password Reset Request',
-            requested: 'You have requested to reset your password.',
-            click: 'Click the link below to reset your password:',
-            ignore: 'If you did not request this, please ignore this email.',
-            expires: 'This link will expire in 1 hour.',
-          },
-          fr: {
-            title: 'Demande de réinitialisation du mot de passe',
-            requested: 'Vous avez demandé la réinitialisation de votre mot de passe.',
-            click: 'Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :',
-            ignore: "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.",
-            expires: 'Ce lien expirera dans 1 heure.',
-          },
-          de: {
-            title: 'Passwort zurücksetzen',
-            requested: 'Sie haben eine Passwort-Zurücksetzung angefordert.',
-            click: 'Klicken Sie auf den folgenden Link, um Ihr Passwort zurückzusetzen:',
-            ignore: 'Wenn Sie dies nicht angefordert haben, ignorieren Sie diese E-Mail.',
-            expires: 'Dieser Link läuft in 1 Stunde ab.',
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('password-reset', lang);
         return `
     <h1>${s.title}</h1>
     <p>${s.requested}</p>
@@ -600,33 +407,7 @@ export class EmailProcessor {
       },
       'magic-link': (d, _cn) => {
         const lang = (d.language as string) || 'nl';
-        const t = {
-          nl: {
-            title: 'Inloggen bij OpenCoop',
-            click: 'Klik op de knop hieronder om in te loggen:',
-            button: 'Inloggen',
-            expires: 'Deze link vervalt binnen 15 minuten. Als je dit niet hebt aangevraagd, kan je deze e-mail veilig negeren.',
-          },
-          en: {
-            title: 'Login to OpenCoop',
-            click: 'Click the button below to log in:',
-            button: 'Log In',
-            expires: "This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.",
-          },
-          fr: {
-            title: 'Connexion à OpenCoop',
-            click: 'Cliquez sur le bouton ci-dessous pour vous connecter :',
-            button: 'Se connecter',
-            expires: "Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.",
-          },
-          de: {
-            title: 'Anmeldung bei OpenCoop',
-            click: 'Klicken Sie auf die Schaltfläche unten, um sich anzumelden:',
-            button: 'Anmelden',
-            expires: 'Dieser Link läuft in 15 Minuten ab. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.',
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('magic-link', lang);
         return `
     <h1>${s.title}</h1>
     <p>${s.click}</p>
@@ -710,57 +491,7 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const bn = escapeHtml(d.buyerName);
         const ecn = escapeHtml(cn);
-        const t = {
-          nl: {
-            title: 'Je cadeaubon',
-            dear: `Beste ${bn},`,
-            thanks: `Bedankt voor het aankopen van een cadeaubon bij ${ecn}!`,
-            received: 'Je betaling is ontvangen en de cadeaubon is als bijlage toegevoegd.',
-            shareClass: 'Aandelenklasse',
-            quantity: 'Aantal',
-            totalValue: 'Totale waarde',
-            giftCode: 'Cadeaucode',
-            share: 'Deel de cadeaubon met de ontvanger. Ze kunnen de code of QR-code gebruiken om hun aandelen op te vragen.',
-            thanksEnd: `Bedankt om aandeelhouder te zijn van ${ecn}!`,
-          },
-          en: {
-            title: 'Your Gift Certificate',
-            dear: `Dear ${bn},`,
-            thanks: `Thank you for purchasing a gift certificate at ${ecn}!`,
-            received: 'Your payment has been received and the gift certificate is attached to this email.',
-            shareClass: 'Share Class',
-            quantity: 'Quantity',
-            totalValue: 'Total Value',
-            giftCode: 'Gift code',
-            share: 'Share this certificate with the recipient. They can use the code or QR code to claim their shares.',
-            thanksEnd: `Thank you for being a shareholder of ${ecn}!`,
-          },
-          fr: {
-            title: 'Votre bon cadeau',
-            dear: `Cher/Chère ${bn},`,
-            thanks: `Merci d'avoir acheté un bon cadeau chez ${ecn} !`,
-            received: 'Votre paiement a été reçu et le bon cadeau est joint à cet e-mail.',
-            shareClass: "Classe d'actions",
-            quantity: 'Quantité',
-            totalValue: 'Valeur totale',
-            giftCode: 'Code cadeau',
-            share: 'Partagez ce bon avec le destinataire. Il peut utiliser le code ou le QR code pour réclamer ses actions.',
-            thanksEnd: `Merci d'être actionnaire de ${ecn} !`,
-          },
-          de: {
-            title: 'Ihr Geschenkgutschein',
-            dear: `Liebe/r ${bn},`,
-            thanks: `Vielen Dank für den Kauf eines Geschenkgutscheins bei ${ecn}!`,
-            received: 'Ihre Zahlung wurde erhalten und der Geschenkgutschein ist dieser E-Mail beigefügt.',
-            shareClass: 'Anteilsklasse',
-            quantity: 'Anzahl',
-            totalValue: 'Gesamtwert',
-            giftCode: 'Geschenkcode',
-            share: 'Teilen Sie diesen Gutschein mit dem Empfänger. Er kann den Code oder QR-Code verwenden, um seine Anteile einzulösen.',
-            thanksEnd: `Vielen Dank, dass Sie Anteilseigner von ${ecn} sind!`,
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('gift-certificate', lang, { coopName: ecn, buyerName: bn });
         return `
     <h1>${s.title}</h1>
     <p>${s.dear}</p>
@@ -780,37 +511,7 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const sn = escapeHtml(d.shareholderName);
         const ecn = escapeHtml(cn);
-        const t = {
-          nl: {
-            title: `Nieuw bericht van ${ecn}`,
-            dear: `Beste ${sn},`,
-            body: `U heeft een nieuw bericht ontvangen van ${ecn}.`,
-            subject: 'Onderwerp',
-            viewMessage: 'Bekijk het bericht',
-          },
-          en: {
-            title: `New message from ${ecn}`,
-            dear: `Dear ${sn},`,
-            body: `You have received a new message from ${ecn}.`,
-            subject: 'Subject',
-            viewMessage: 'View message',
-          },
-          fr: {
-            title: `Nouveau message de ${ecn}`,
-            dear: `Cher/Chère ${sn},`,
-            body: `Vous avez reçu un nouveau message de ${ecn}.`,
-            subject: 'Sujet',
-            viewMessage: 'Voir le message',
-          },
-          de: {
-            title: `Neue Nachricht von ${ecn}`,
-            dear: `Liebe/r ${sn},`,
-            body: `Sie haben eine neue Nachricht von ${ecn} erhalten.`,
-            subject: 'Betreff',
-            viewMessage: 'Nachricht anzeigen',
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('message-notification', lang, { coopName: ecn, shareholderName: sn });
         return `
           <h1>${s.title}</h1>
           <p>${s.dear}</p>
@@ -920,57 +621,16 @@ export class EmailProcessor {
         const brandColor = (d.coopPrimaryColor as string) || '#1e40af';
         const humanDate = this.formatMeetingDate(d.meetingDate, lang);
 
-        const t = {
-          nl: {
-            title: `Oproeping ${ecoopName}`,
-            subtitle: 'Algemene Vergadering',
-            dear: `Beste ${sn},`,
-            intro: `Namens <strong>${ecoopName}</strong> nodigen wij u uit voor de <strong>${meetingTitle}</strong> op <strong>${humanDate}</strong> te <strong>${meetingLocation || 'nader te bepalen'}</strong>.`,
-            agendaTitle: 'Agenda',
-            cta: 'Reageer op de oproeping',
-            proxy: 'Klik op de knop hierboven om aan te geven of u aanwezig zult zijn, niet aanwezig zult zijn, of om uw stem te delegeren aan een andere aandeelhouder (volmacht).',
-            attachment: 'In bijlage vindt u de officiële oproeping als PDF.',
-            closing: 'Met vriendelijke groet,',
-            signoff: `Het bestuur van ${ecoopName}`,
-          },
-          en: {
-            title: `Notice — ${ecoopName}`,
-            subtitle: 'General Meeting',
-            dear: `Dear ${sn},`,
-            intro: `On behalf of <strong>${ecoopName}</strong>, you are invited to the <strong>${meetingTitle}</strong> on <strong>${humanDate}</strong> at <strong>${meetingLocation || 'to be determined'}</strong>.`,
-            agendaTitle: 'Agenda',
-            cta: 'Respond to the notice',
-            proxy: 'Click the button above to indicate whether you will attend, will not attend, or to delegate your vote to another shareholder (proxy).',
-            attachment: 'The official notice is attached as a PDF.',
-            closing: 'Kind regards,',
-            signoff: `The board of ${ecoopName}`,
-          },
-          fr: {
-            title: `Convocation — ${ecoopName}`,
-            subtitle: 'Assemblée Générale',
-            dear: `Cher/Chère ${sn},`,
-            intro: `Au nom de <strong>${ecoopName}</strong>, vous êtes invité(e) à <strong>${meetingTitle}</strong> le <strong>${humanDate}</strong> à <strong>${meetingLocation || 'à déterminer'}</strong>.`,
-            agendaTitle: 'Ordre du jour',
-            cta: 'Répondre à la convocation',
-            proxy: "Cliquez sur le bouton ci-dessus pour indiquer si vous serez présent(e), absent(e), ou pour déléguer votre voix à un autre actionnaire (procuration).",
-            attachment: "La convocation officielle est jointe en PDF.",
-            closing: 'Cordialement,',
-            signoff: `Le conseil d'administration de ${ecoopName}`,
-          },
-          de: {
-            title: `Einladung — ${ecoopName}`,
-            subtitle: 'Generalversammlung',
-            dear: `Liebe/r ${sn},`,
-            intro: `Im Namen von <strong>${ecoopName}</strong> laden wir Sie zur <strong>${meetingTitle}</strong> am <strong>${humanDate}</strong> in <strong>${meetingLocation || 'noch zu bestimmen'}</strong> ein.`,
-            agendaTitle: 'Tagesordnung',
-            cta: 'Auf die Einladung antworten',
-            proxy: 'Klicken Sie oben auf die Schaltfläche, um anzugeben, ob Sie teilnehmen werden, nicht teilnehmen werden, oder Ihre Stimme an einen anderen Anteilseigner zu delegieren (Vollmacht).',
-            attachment: 'Die offizielle Einladung ist als PDF beigefügt.',
-            closing: 'Mit freundlichen Grüßen,',
-            signoff: `Der Vorstand von ${ecoopName}`,
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        // Location uses a language-specific fallback when empty; resolve it from
+        // the raw copy first so it can feed the {meetingLocation} token.
+        const locationTbd = getCopy('meeting-convocation', lang).locationTbd ?? '';
+        const s = buildCopy('meeting-convocation', lang, {
+          coopName: ecoopName,
+          shareholderName: sn,
+          meetingTitle,
+          humanDate,
+          meetingLocation: meetingLocation || locationTbd,
+        });
         const items = (d.agendaItems as Array<{ order: number; title: string; description?: string }>) || [];
         const agendaHtml = items
           .sort((a, b) => a.order - b.order)
@@ -1039,61 +699,17 @@ export class EmailProcessor {
         const brandColor = (d.coopPrimaryColor as string) || '#1e40af';
         const humanDate = this.formatMeetingDate(d.meetingDate, lang);
 
-        const t = {
-          nl: {
-            title: `Bevestiging — ${ecoopName}`,
-            subtitle: `Algemene Vergadering`,
-            dear: `Beste ${sn},`,
-            meeting: `<strong>${meetingTitle}</strong> op <strong>${humanDate}</strong>${d.meetingLocation ? ` te <strong>${meetingLocation}</strong>` : ''}.`,
-            attending: 'Bedankt voor uw bevestiging. We kijken uit naar uw aanwezigheid.',
-            absent: 'We hebben genoteerd dat u niet aanwezig kunt zijn.',
-            proxy: `U heeft uw stem gedelegeerd aan <strong>${delegateName}</strong>.`,
-            attachment: 'In bijlage vindt u een agenda-uitnodiging (.ics) die u kan toevoegen aan Apple Calendar, Google Calendar, Outlook of Thunderbird.',
-            change: 'Wijzig uw antwoord',
-            closing: 'Met vriendelijke groet,',
-            signoff: `Het bestuur van ${ecoopName}`,
-          },
-          en: {
-            title: `Confirmation — ${ecoopName}`,
-            subtitle: 'General Meeting',
-            dear: `Dear ${sn},`,
-            meeting: `<strong>${meetingTitle}</strong> on <strong>${humanDate}</strong>${d.meetingLocation ? ` at <strong>${meetingLocation}</strong>` : ''}.`,
-            attending: 'Thank you for confirming. We look forward to your attendance.',
-            absent: 'We have noted that you will not be able to attend.',
-            proxy: `You have delegated your vote to <strong>${delegateName}</strong>.`,
-            attachment: 'A calendar invite (.ics) is attached — works with Apple Calendar, Google Calendar, Outlook, and Thunderbird.',
-            change: 'Change your answer',
-            closing: 'Kind regards,',
-            signoff: `The board of ${ecoopName}`,
-          },
-          fr: {
-            title: `Confirmation — ${ecoopName}`,
-            subtitle: 'Assemblée Générale',
-            dear: `Cher/Chère ${sn},`,
-            meeting: `<strong>${meetingTitle}</strong> le <strong>${humanDate}</strong>${d.meetingLocation ? ` à <strong>${meetingLocation}</strong>` : ''}.`,
-            attending: 'Merci pour votre confirmation. Nous attendons votre présence.',
-            absent: 'Nous avons noté que vous ne pourrez pas être présent(e).',
-            proxy: `Vous avez délégué votre vote à <strong>${delegateName}</strong>.`,
-            attachment: "Une invitation calendrier (.ics) est jointe — compatible Apple Calendar, Google Calendar, Outlook et Thunderbird.",
-            change: 'Modifier votre réponse',
-            closing: 'Cordialement,',
-            signoff: `Le conseil d'administration de ${ecoopName}`,
-          },
-          de: {
-            title: `Bestätigung — ${ecoopName}`,
-            subtitle: 'Generalversammlung',
-            dear: `Liebe/r ${sn},`,
-            meeting: `<strong>${meetingTitle}</strong> am <strong>${humanDate}</strong>${d.meetingLocation ? ` in <strong>${meetingLocation}</strong>` : ''}.`,
-            attending: 'Vielen Dank für Ihre Bestätigung. Wir freuen uns auf Ihre Teilnahme.',
-            absent: 'Wir haben vermerkt, dass Sie nicht teilnehmen können.',
-            proxy: `Sie haben Ihre Stimme an <strong>${delegateName}</strong> delegiert.`,
-            attachment: 'Eine Kalendereinladung (.ics) ist angehängt — funktioniert mit Apple Calendar, Google Kalender, Outlook und Thunderbird.',
-            change: 'Antwort ändern',
-            closing: 'Mit freundlichen Grüßen,',
-            signoff: `Der Vorstand von ${ecoopName}`,
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('meeting-rsvp-confirmation', lang, {
+          coopName: ecoopName,
+          shareholderName: sn,
+          meetingTitle,
+          humanDate,
+          meetingLocation,
+          delegateName,
+        });
+        // Location is conditionally rendered; pick the matching copy variant so
+        // output stays byte-identical to the previous inline ternary.
+        s.meeting = d.meetingLocation ? s.meetingWithLocation : s.meetingNoLocation;
         const body = status === 'PROXY' ? s.proxy : status === 'ABSENT' ? s.absent : s.attending;
         const showAttachment = status === 'ATTENDING' || status === 'PROXY';
 
@@ -1134,33 +750,12 @@ export class EmailProcessor {
         const humanDate = this.formatMeetingDate(d.meetingDate, lang);
         const sn = escapeHtml(d.shareholderName);
         const meetingTitle = escapeHtml(d.meetingTitle);
-        const t = {
-          nl: {
-            title: 'Herinnering: Algemene Vergadering',
-            dear: `Beste ${sn},`,
-            body: `Herinnering: de <strong>${meetingTitle}</strong> vindt plaats over <strong>${days}</strong> dag(en) op <strong>${humanDate}</strong>. U heeft nog niet geantwoord. Gelieve te bevestigen:`,
-            cta: 'RSVP hier',
-          },
-          en: {
-            title: 'Reminder: General Meeting',
-            dear: `Dear ${sn},`,
-            body: `Reminder: the <strong>${meetingTitle}</strong> is in <strong>${days}</strong> day(s) on <strong>${humanDate}</strong>. You haven't yet responded. Please RSVP:`,
-            cta: 'RSVP here',
-          },
-          fr: {
-            title: 'Rappel : Assemblée Générale',
-            dear: `Cher/Chère ${sn},`,
-            body: `Rappel : <strong>${meetingTitle}</strong> aura lieu dans <strong>${days}</strong> jour(s), le <strong>${humanDate}</strong>. Vous n'avez pas encore répondu. Veuillez confirmer :`,
-            cta: 'Répondre ici',
-          },
-          de: {
-            title: 'Erinnerung: Generalversammlung',
-            dear: `Liebe/r ${sn},`,
-            body: `Erinnerung: die <strong>${meetingTitle}</strong> findet in <strong>${days}</strong> Tag(en) am <strong>${humanDate}</strong> statt. Sie haben noch nicht geantwortet. Bitte bestätigen Sie:`,
-            cta: 'Hier antworten',
-          },
-        };
-        const s = t[lang as keyof typeof t] || t['nl'];
+        const s = buildCopy('meeting-reminder', lang, {
+          shareholderName: sn,
+          meetingTitle,
+          days: String(days),
+          humanDate,
+        });
         return `
           <h1>${s.title}</h1>
           <p>${s.dear}</p>

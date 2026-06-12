@@ -1,0 +1,108 @@
+{
+  "welcome": {
+    "title": "Bienvenue chez {coopName} !",
+    "dear": "Cher/Chère {shareholderName},",
+    "thanks": "Merci de devenir actionnaire de {coopName}.",
+    "login": "Vous pouvez vous connecter à votre tableau de bord pour consulter vos actions et documents."
+  },
+  "share-purchase": {
+    "title": "Votre commande est confirmée",
+    "dear": "Cher/Chère {shareholderName},",
+    "intro": "Merci pour votre commande auprès de {coopName}. Nous l'avons bien reçue — vous n'avez plus rien à faire sur notre site. Utilisez les informations ci-dessous pour effectuer le virement via votre application bancaire.",
+    "orderTitle": "Votre commande",
+    "shareClass": "Classe d'actions",
+    "quantity": "Quantité",
+    "totalAmount": "Montant total",
+    "paymentDetailsTitle": "Détails de paiement",
+    "iban": "IBAN",
+    "ogm": "Communication structurée",
+    "amount": "Montant",
+    "beneficiary": "Bénéficiaire",
+    "nextTitle": "Et maintenant ?",
+    "step1": "Votre commande est enregistrée",
+    "step2": "Effectuez le virement via votre application bancaire avec les informations ci-dessus",
+    "step3": "Vous recevrez un second e-mail dès que nous aurons réconcilié votre paiement (généralement sous 1 à 2 jours ouvrables). Vos actions seront alors actives.",
+    "noHaste": "Pas de précipitation — vous pouvez encore payer quand cela vous convient.",
+    "thanks": "Merci d'investir dans {coopName} !"
+  },
+  "payment-confirmed": {
+    "title": "Paiement confirmé",
+    "dear": "Cher/Chère {shareholderName},",
+    "received": "Nous avons reçu votre paiement de €{amount}.",
+    "active": "Vos actions sont maintenant actives. Veuillez trouver votre certificat d'actionnaire en pièce jointe.",
+    "dashboard": "Voir mon tableau de bord",
+    "thanks": "Merci d'être actionnaire de {coopName}!"
+  },
+  "dividend-statement": {
+    "title": "Relevé de dividendes {year}",
+    "dear": "Cher/Chère {shareholderName},",
+    "attached": "Veuillez trouver ci-joint votre relevé de dividendes pour {year}.",
+    "net": "Montant net du dividende",
+    "thanks": "Merci d'être actionnaire de {coopName} !"
+  },
+  "password-reset": {
+    "title": "Demande de réinitialisation du mot de passe",
+    "requested": "Vous avez demandé la réinitialisation de votre mot de passe.",
+    "click": "Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :",
+    "ignore": "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.",
+    "expires": "Ce lien expirera dans 1 heure."
+  },
+  "magic-link": {
+    "title": "Connexion à OpenCoop",
+    "click": "Cliquez sur le bouton ci-dessous pour vous connecter :",
+    "button": "Se connecter",
+    "expires": "Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité."
+  },
+  "gift-certificate": {
+    "title": "Votre bon cadeau",
+    "dear": "Cher/Chère {buyerName},",
+    "thanks": "Merci d'avoir acheté un bon cadeau chez {coopName} !",
+    "received": "Votre paiement a été reçu et le bon cadeau est joint à cet e-mail.",
+    "shareClass": "Classe d'actions",
+    "quantity": "Quantité",
+    "totalValue": "Valeur totale",
+    "giftCode": "Code cadeau",
+    "share": "Partagez ce bon avec le destinataire. Il peut utiliser le code ou le QR code pour réclamer ses actions.",
+    "thanksEnd": "Merci d'être actionnaire de {coopName} !"
+  },
+  "message-notification": {
+    "title": "Nouveau message de {coopName}",
+    "dear": "Cher/Chère {shareholderName},",
+    "body": "Vous avez reçu un nouveau message de {coopName}.",
+    "subject": "Sujet",
+    "viewMessage": "Voir le message"
+  },
+  "meeting-convocation": {
+    "title": "Convocation — {coopName}",
+    "subtitle": "Assemblée Générale",
+    "dear": "Cher/Chère {shareholderName},",
+    "intro": "Au nom de <strong>{coopName}</strong>, vous êtes invité(e) à <strong>{meetingTitle}</strong> le <strong>{humanDate}</strong> à <strong>{meetingLocation}</strong>.",
+    "locationTbd": "à déterminer",
+    "agendaTitle": "Ordre du jour",
+    "cta": "Répondre à la convocation",
+    "proxy": "Cliquez sur le bouton ci-dessus pour indiquer si vous serez présent(e), absent(e), ou pour déléguer votre voix à un autre actionnaire (procuration).",
+    "attachment": "La convocation officielle est jointe en PDF.",
+    "closing": "Cordialement,",
+    "signoff": "Le conseil d'administration de {coopName}"
+  },
+  "meeting-rsvp-confirmation": {
+    "title": "Confirmation — {coopName}",
+    "subtitle": "Assemblée Générale",
+    "dear": "Cher/Chère {shareholderName},",
+    "meetingWithLocation": "<strong>{meetingTitle}</strong> le <strong>{humanDate}</strong> à <strong>{meetingLocation}</strong>.",
+    "meetingNoLocation": "<strong>{meetingTitle}</strong> le <strong>{humanDate}</strong>.",
+    "attending": "Merci pour votre confirmation. Nous attendons votre présence.",
+    "absent": "Nous avons noté que vous ne pourrez pas être présent(e).",
+    "proxy": "Vous avez délégué votre vote à <strong>{delegateName}</strong>.",
+    "attachment": "Une invitation calendrier (.ics) est jointe — compatible Apple Calendar, Google Calendar, Outlook et Thunderbird.",
+    "change": "Modifier votre réponse",
+    "closing": "Cordialement,",
+    "signoff": "Le conseil d'administration de {coopName}"
+  },
+  "meeting-reminder": {
+    "title": "Rappel : Assemblée Générale",
+    "dear": "Cher/Chère {shareholderName},",
+    "body": "Rappel : <strong>{meetingTitle}</strong> aura lieu dans <strong>{days}</strong> jour(s), le <strong>{humanDate}</strong>. Vous n'avez pas encore répondu. Veuillez confirmer :",
+    "cta": "Répondre ici"
+  }
+}

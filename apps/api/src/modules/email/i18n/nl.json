@@ -1,0 +1,108 @@
+{
+  "welcome": {
+    "title": "Welkom bij {coopName}!",
+    "dear": "Beste {shareholderName},",
+    "thanks": "Bedankt om aandeelhouder te worden van {coopName}.",
+    "login": "Je kan inloggen in je dashboard om je aandelen en documenten te bekijken."
+  },
+  "share-purchase": {
+    "title": "Je bestelling is bevestigd",
+    "dear": "Beste {shareholderName},",
+    "intro": "Bedankt voor je bestelling bij {coopName}. We hebben deze goed ontvangen — je hoeft niets meer te doen op onze website. Onderstaande gegevens heb je nodig om het bedrag over te schrijven via je bank-app.",
+    "orderTitle": "Je bestelling",
+    "shareClass": "Aandelenklasse",
+    "quantity": "Aantal",
+    "totalAmount": "Totaalbedrag",
+    "paymentDetailsTitle": "Betalingsgegevens",
+    "iban": "IBAN",
+    "ogm": "Gestructureerde mededeling",
+    "amount": "Bedrag",
+    "beneficiary": "Begunstigde",
+    "nextTitle": "Wat gebeurt er nu?",
+    "step1": "Je bestelling is geregistreerd",
+    "step2": "Schrijf het bedrag over via je bank-app met de bovenstaande gegevens",
+    "step3": "Je ontvangt een tweede e-mail zodra we je betaling gematcht hebben (doorgaans binnen 1 à 2 werkdagen). Pas daarna zijn je aandelen actief.",
+    "noHaste": "Er is geen haast bij — je kunt nog steeds betalen wanneer het jou uitkomt.",
+    "thanks": "Bedankt om te investeren in {coopName}!"
+  },
+  "payment-confirmed": {
+    "title": "Betaling bevestigd",
+    "dear": "Beste {shareholderName},",
+    "received": "We hebben uw betaling van €{amount} ontvangen.",
+    "active": "Uw aandelen zijn nu actief. Uw aandeelhoudersattest vindt u als bijlage.",
+    "dashboard": "Bekijk mijn dashboard",
+    "thanks": "Bedankt om aandeelhouder te zijn van {coopName}!"
+  },
+  "dividend-statement": {
+    "title": "Dividendafrekening {year}",
+    "dear": "Beste {shareholderName},",
+    "attached": "In bijlage vind je je dividendafrekening voor {year}.",
+    "net": "Netto dividendbedrag",
+    "thanks": "Bedankt om aandeelhouder te zijn van {coopName}!"
+  },
+  "password-reset": {
+    "title": "Wachtwoord resetten",
+    "requested": "Je hebt een wachtwoord reset aangevraagd.",
+    "click": "Klik op onderstaande link om je wachtwoord te resetten:",
+    "ignore": "Als je dit niet hebt aangevraagd, kan je deze e-mail negeren.",
+    "expires": "Deze link vervalt binnen 1 uur."
+  },
+  "magic-link": {
+    "title": "Inloggen bij OpenCoop",
+    "click": "Klik op de knop hieronder om in te loggen:",
+    "button": "Inloggen",
+    "expires": "Deze link vervalt binnen 15 minuten. Als je dit niet hebt aangevraagd, kan je deze e-mail veilig negeren."
+  },
+  "gift-certificate": {
+    "title": "Je cadeaubon",
+    "dear": "Beste {buyerName},",
+    "thanks": "Bedankt voor het aankopen van een cadeaubon bij {coopName}!",
+    "received": "Je betaling is ontvangen en de cadeaubon is als bijlage toegevoegd.",
+    "shareClass": "Aandelenklasse",
+    "quantity": "Aantal",
+    "totalValue": "Totale waarde",
+    "giftCode": "Cadeaucode",
+    "share": "Deel de cadeaubon met de ontvanger. Ze kunnen de code of QR-code gebruiken om hun aandelen op te vragen.",
+    "thanksEnd": "Bedankt om aandeelhouder te zijn van {coopName}!"
+  },
+  "message-notification": {
+    "title": "Nieuw bericht van {coopName}",
+    "dear": "Beste {shareholderName},",
+    "body": "U heeft een nieuw bericht ontvangen van {coopName}.",
+    "subject": "Onderwerp",
+    "viewMessage": "Bekijk het bericht"
+  },
+  "meeting-convocation": {
+    "title": "Oproeping {coopName}",
+    "subtitle": "Algemene Vergadering",
+    "dear": "Beste {shareholderName},",
+    "intro": "Namens <strong>{coopName}</strong> nodigen wij u uit voor de <strong>{meetingTitle}</strong> op <strong>{humanDate}</strong> te <strong>{meetingLocation}</strong>.",
+    "locationTbd": "nader te bepalen",
+    "agendaTitle": "Agenda",
+    "cta": "Reageer op de oproeping",
+    "proxy": "Klik op de knop hierboven om aan te geven of u aanwezig zult zijn, niet aanwezig zult zijn, of om uw stem te delegeren aan een andere aandeelhouder (volmacht).",
+    "attachment": "In bijlage vindt u de officiële oproeping als PDF.",
+    "closing": "Met vriendelijke groet,",
+    "signoff": "Het bestuur van {coopName}"
+  },
+  "meeting-rsvp-confirmation": {
+    "title": "Bevestiging — {coopName}",
+    "subtitle": "Algemene Vergadering",
+    "dear": "Beste {shareholderName},",
+    "meetingWithLocation": "<strong>{meetingTitle}</strong> op <strong>{humanDate}</strong> te <strong>{meetingLocation}</strong>.",
+    "meetingNoLocation": "<strong>{meetingTitle}</strong> op <strong>{humanDate}</strong>.",
+    "attending": "Bedankt voor uw bevestiging. We kijken uit naar uw aanwezigheid.",
+    "absent": "We hebben genoteerd dat u niet aanwezig kunt zijn.",
+    "proxy": "U heeft uw stem gedelegeerd aan <strong>{delegateName}</strong>.",
+    "attachment": "In bijlage vindt u een agenda-uitnodiging (.ics) die u kan toevoegen aan Apple Calendar, Google Calendar, Outlook of Thunderbird.",
+    "change": "Wijzig uw antwoord",
+    "closing": "Met vriendelijke groet,",
+    "signoff": "Het bestuur van {coopName}"
+  },
+  "meeting-reminder": {
+    "title": "Herinnering: Algemene Vergadering",
+    "dear": "Beste {shareholderName},",
+    "body": "Herinnering: de <strong>{meetingTitle}</strong> vindt plaats over <strong>{days}</strong> dag(en) op <strong>{humanDate}</strong>. U heeft nog niet geantwoord. Gelieve te bevestigen:",
+    "cta": "RSVP hier"
+  }
+}
