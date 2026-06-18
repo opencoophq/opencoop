@@ -8,8 +8,10 @@
 
 Keep an external email-marketing audience (Brevo, later Mailchimp) in sync with a
 coop's shareholders, automatically. A single idempotent **reconcile engine** makes
-the provider's lists match OpenCoop's source of truth: active members land in a
-"members" list, resigned members are moved to a "resigned" list.
+the provider's lists match OpenCoop's source of truth: active members are kept in the
+coop's **existing** members list (reused, not created), and resigned members are removed
+from it (optionally moved to a separate resigned list if one is configured). Contacts are
+never deleted from the provider.
 
 The engine has two entry points that share all their logic — `reconcileOne(shareholderId)`
 (one contact) and `reconcileAll(coopId)` (the whole coop) — driven by a deliberate
@@ -130,11 +132,17 @@ testable.
 
 Each shareholder with a resolvable email maps to exactly one destination:
 
-| OpenCoop status         | Destination                                   |
-|-------------------------|-----------------------------------------------|
-| `ACTIVE`                | members list                                  |
-| `INACTIVE` (was synced) | resigned list (and removed from members list) |
-| `PENDING` / no email    | skipped                                        |
+| OpenCoop status         | Destination                                                        |
+|-------------------------|-------------------------------------------------------------------|
+| `ACTIVE`                | existing members list (reused)                                    |
+| `INACTIVE` (was synced) | removed from members list; moved to resigned list **iff** one is configured |
+| `PENDING` / no email    | skipped                                                           |
+
+The members list is the coop's **pre-existing** list (e.g. the current "coöperanten"
+list) — referenced by ID, never created by OpenCoop. A resigned list is **optional**:
+if `brevoResignedListId` is set, resigned contacts are moved there; otherwise they are
+simply unlisted from the members list. Either way the contact is retained in the provider
+(GDPR-safe, reversible).
 
 "Active" = `Shareholder.status === 'ACTIVE'`. Email is resolved via the existing
 fallback chain (`resolveShareholderEmail`: `User.email ?? Shareholder.email ?? null`,
@@ -143,9 +151,9 @@ deduplicated by resolved email.
 
 Reconcile = compute the desired mapping for the coop, then issue the minimal provider
 operations to make it true:
-- Bulk-upsert active members into the members list (with attributes).
-- For each newly-`INACTIVE` previously-synced contact: add to resigned list + unlink
-  from members list.
+- Bulk-upsert active members into the (existing) members list with attributes.
+- For each newly-`INACTIVE` previously-synced contact: remove from the members list, and
+  add to the resigned list only if `brevoResignedListId` is configured.
 
 ### 3. Email-change handling (no duplicates)
 
@@ -166,6 +174,7 @@ which identifier is used.)
 
 - **`EmailAudienceProvider`** (interface — the seam). Methods, all provider-agnostic:
   - `verifyConnection(): Promise<{ ok: boolean; detail?: string }>`
+  - `listLists(): Promise<{ id: string; name: string }[]>` (for the settings list picker)
   - `upsertContacts(contacts, listId): Promise<UpsertResult>` (bulk)
   - `renameContact(oldEmail, newEmail): Promise<void>`
   - `setContactLists(email, { addListIds, removeListIds }): Promise<void>`
@@ -195,8 +204,10 @@ which identifier is used.)
 - **Provider factory** — `getAudienceProvider(coop): EmailAudienceProvider` returns
   `BrevoProvider` for `'brevo'`; throws for unimplemented providers (`'mailchimp'`).
 - **Settings UI section** — enable toggle, provider select, API key (write-only /
-  masked like `smtpPass`), members + resigned list IDs, "Test connection" + "Sync now"
-  buttons, and last-run status (counts + errors from the latest `BrevoSyncRun`).
+  masked like `smtpPass`), members list ID (required) + optional resigned list ID,
+  "Test connection" + "Sync now" buttons, and last-run status (counts + errors from the
+  latest `BrevoSyncRun`). A list picker can populate IDs from the provider's existing
+  lists so admins select their current "coöperanten" list rather than typing an ID.
 
 ### 5. Data model additions
 
@@ -204,8 +215,8 @@ which identifier is used.)
 // Coop — per-coop audience-sync config (follows the existing SMTP/Graph/Ponto pattern)
 emailAudienceProvider String?   // "brevo" | "mailchimp" | null (off). Drives cron + factory.
 brevoApiKey           String?   // AES-256-GCM encrypted at rest; never returned to client
-brevoMembersListId    String?
-brevoResignedListId   String?
+brevoMembersListId    String?   // the coop's EXISTING list (reused) — required when enabled
+brevoResignedListId   String?   // OPTIONAL — if null, resigned contacts are just unlisted
 brevoLastSyncAt       DateTime?
 brevoLastSyncStatus   String?   // "OK" | "PARTIAL" | "ERROR" | "RUNNING"
 
@@ -237,16 +248,20 @@ model BrevoSyncRun {
 
 ### 6. Synced contact attributes (v1 fixed map)
 
-| Provider attribute | Source                                  |
+| Provider field     | Source                                  |
 |--------------------|-----------------------------------------|
+| email (contact key)| `resolveShareholderEmail(shareholder)`  |
 | `FIRSTNAME`        | `Shareholder.firstName`                 |
 | `LASTNAME`         | `Shareholder.lastName` / `companyName`  |
-| `LANGUAGE`         | shareholder / user locale               |
-| `SHARES`           | active share quantity (sum)             |
-| `MEMBER_SINCE`     | first active registration date          |
 
-Enough for mail-merge personalization and basic segmentation. A configurable mapping
-is a future iteration.
+Deliberately limited to email + Brevo's **two built-in default attributes**
+(`FIRSTNAME`, `LASTNAME`) so v1 depends on **no custom attributes** and cannot fail on a
+missing merge field. The live account's attribute schema was not introspectable from the
+codebase (no API key present; `brevo-analysis.html` covers campaign *attribution*, not
+contact fields) — confirm via `GET /v3/contacts/attributes` if richer fields are wanted.
+
+Richer attributes (`LANGUAGE`, `SHARES`, `MEMBER_SINCE`, …) are a future iteration,
+gated on confirming/creating the matching custom attributes in the coop's Brevo account.
 
 ### 7. Error handling & safety
 
