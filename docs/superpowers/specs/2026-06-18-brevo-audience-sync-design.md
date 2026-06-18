@@ -287,6 +287,13 @@ gated on confirming/creating the matching custom attributes in the coop's Brevo 
   per coop; there is no shared list, key, or contact path between coops.
 - **Concurrency.** A coop's `brevoLastSyncStatus = "RUNNING"` (or a job-dedup key)
   prevents overlapping runs for the same coop (cron + button at once).
+- **Brevo IP allowlisting (deploy prerequisite).** The Bronsgroen Brevo key has
+  authorised-IP restriction enabled — calls from un-listed IPs get `401 unauthorized`
+  ("unrecognised IP address"). **The fsn1 production/acc server IP must be added to
+  Brevo's authorised IPs** (app.brevo.com → Security → Authorised IPs) before the sync
+  works in deployed environments, or every call 401s. The "Test connection" action
+  surfaces this clearly (it will report the 401 + offending IP). Document the server IP
+  in the coop's onboarding checklist.
 
 ### 8. Testing
 
