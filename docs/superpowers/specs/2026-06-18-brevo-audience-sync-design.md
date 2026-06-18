@@ -135,8 +135,12 @@ Each shareholder with a resolvable email maps to exactly one destination:
 | OpenCoop status         | Destination                                                        |
 |-------------------------|-------------------------------------------------------------------|
 | `ACTIVE`                | existing members list (reused)                                    |
-| `INACTIVE` (was synced) | removed from members list; moved to resigned list **iff** one is configured |
+| `INACTIVE`              | removed from members list; moved to resigned list **iff** one is configured |
 | `PENDING` / no email    | skipped                                                           |
+
+(No local "was synced" flag is needed — removing an `ext_id` that isn't on a list is an
+idempotent no-op, so `INACTIVE` shareholders are reconciled the same whether or not they
+were ever pushed.)
 
 The members list is the coop's **pre-existing** list (e.g. the current "coöperanten"
 list) — referenced by ID, never created by OpenCoop. A resigned list is **optional**:
@@ -155,30 +159,45 @@ operations to make it true:
 - For each newly-`INACTIVE` previously-synced contact: remove from the members list, and
   add to the resigned list only if `brevoResignedListId` is configured.
 
-### 3. Email-change handling (no duplicates)
+### 3. Identity & email-change handling (no duplicates) — via `EXT_ID`
 
-Provider contacts are keyed by email address, so a naive "upsert by email" would
-create a **second** contact when a member's email changes, orphaning the old one.
+Provider contacts are keyed by email, so a naive "upsert by email" would create a
+**second** contact when a member's email changes, orphaning the old one.
 
-Fix: store `Shareholder.brevoSyncedEmail` — the email we last pushed. On reconcile,
-if `resolvedEmail !== brevoSyncedEmail` and `brevoSyncedEmail` is set, first call the
-provider's *rename* operation (Brevo: `PUT /v3/contacts/{oldEmail}` with
-`{ email: newEmail }`) to move the existing contact to the new address, then upsert
-normally. After a successful push, `brevoSyncedEmail` is updated to the current email.
+Fix (confirmed against the live account): the Bronsgroen Brevo account already exposes
+the built-in **`EXT_ID`** contact attribute, and Brevo can identify/update a contact by
+it (`identifierType=ext_id`). We store the **OpenCoop shareholder ID** in `EXT_ID` on
+every upsert, making the *immutable shareholder ID* — not the mutable email — the
+identity anchor:
 
-(Storing the provider's numeric `contactId` is an alternative anchor;
-`brevoSyncedEmail` is lighter and avoids an extra lookup. The provider interface hides
-which identifier is used.)
+- **Normal upsert:** create/update the contact addressed by `ext_id = shareholder.id`,
+  setting email + attributes + list membership. Idempotent.
+- **Email change:** just push the new email on the `ext_id`-addressed update
+  (`PUT /v3/contacts/{shareholderId}?identifierType=ext_id` with `{ email: newEmail }`).
+  Brevo moves the existing contact to the new address — no orphan, and OpenCoop needs to
+  remember nothing about the old email.
+- **First sync of pre-existing contacts:** the ~732 contacts already in the Coöperanten
+  list predate `EXT_ID`. The initial reconcile matches them by email (updateEnabled) and
+  *sets* their `EXT_ID`; subsequent runs address them by `ext_id`. (If a contact's new
+  email collides with a different existing contact, Brevo errors → logged as a
+  per-contact failure, never aborts the batch.)
+
+This removes the need for a `Shareholder.brevoSyncedEmail` shadow column — there is **no
+schema change on `Shareholder`**. "Was this shareholder ever synced?" is answered
+idempotently by the provider (removing a non-present contact from a list is a no-op), not
+by local state.
 
 ### 4. Units (each independently testable)
 
 - **`EmailAudienceProvider`** (interface — the seam). Methods, all provider-agnostic:
   - `verifyConnection(): Promise<{ ok: boolean; detail?: string }>`
   - `listLists(): Promise<{ id: string; name: string }[]>` (for the settings list picker)
-  - `upsertContacts(contacts, listId): Promise<UpsertResult>` (bulk)
-  - `renameContact(oldEmail, newEmail): Promise<void>`
-  - `setContactLists(email, { addListIds, removeListIds }): Promise<void>`
-  Knows nothing about shareholders or coops.
+  - `upsertContacts(contacts, listId): Promise<UpsertResult>` (bulk; each contact carries
+    `extId`, `email`, `attributes` — provider identifies by `extId`, falling back to
+    email on first touch)
+  - `setContactLists(extId, { addListIds, removeListIds }): Promise<void>`
+  Identity is `extId` (the OpenCoop shareholder ID); email is a mutable attribute. Knows
+  nothing about shareholders or coops.
 - **`BrevoProvider`** — implements the interface against the Brevo REST API. The only
   file that knows Brevo exists. Uses the bulk import endpoint for the members push and
   single calls for renames/moves. Handles Brevo rate limits and maps Brevo errors to a
@@ -215,13 +234,13 @@ which identifier is used.)
 // Coop — per-coop audience-sync config (follows the existing SMTP/Graph/Ponto pattern)
 emailAudienceProvider String?   // "brevo" | "mailchimp" | null (off). Drives cron + factory.
 brevoApiKey           String?   // AES-256-GCM encrypted at rest; never returned to client
-brevoMembersListId    String?   // the coop's EXISTING list (reused) — required when enabled
+brevoMembersListId    String?   // the coop's EXISTING list (reused). Bronsgroen = "3" (Coöperanten)
 brevoResignedListId   String?   // OPTIONAL — if null, resigned contacts are just unlisted
 brevoLastSyncAt       DateTime?
 brevoLastSyncStatus   String?   // "OK" | "PARTIAL" | "ERROR" | "RUNNING"
 
-// Shareholder — identity anchor for rename-on-email-change
-brevoSyncedEmail      String?
+// NOTE: no change to `Shareholder` — identity lives in Brevo's EXT_ID (= shareholder.id),
+// so no brevoSyncedEmail shadow column is needed (see §3).
 
 // New table — one row per reconcile run, for the settings UI + audit trail
 model BrevoSyncRun {
@@ -246,22 +265,23 @@ model BrevoSyncRun {
 > **Migration note:** per repo convention use `prisma migrate dev --name ...` and
 > commit the migration (db push alone does not reach acc/prod).
 
-### 6. Synced contact attributes (v1 fixed map)
+### 6. Synced contact fields (v1 fixed map) — confirmed against the live account
 
-| Provider field     | Source                                  |
-|--------------------|-----------------------------------------|
-| email (contact key)| `resolveShareholderEmail(shareholder)`  |
-| `FIRSTNAME`        | `Shareholder.firstName`                 |
-| `LASTNAME`         | `Shareholder.lastName` / `companyName`  |
+| Provider field | Source                                  | Role                       |
+|----------------|-----------------------------------------|----------------------------|
+| `EXT_ID`       | `Shareholder.id`                        | identity anchor (§3)       |
+| email          | `resolveShareholderEmail(shareholder)`  | contact email (mutable)    |
+| `FIRSTNAME`    | `Shareholder.firstName`                 | merge field                |
+| `LASTNAME`     | `Shareholder.lastName` / `companyName`  | merge field                |
 
-Deliberately limited to email + Brevo's **two built-in default attributes**
-(`FIRSTNAME`, `LASTNAME`) so v1 depends on **no custom attributes** and cannot fail on a
-missing merge field. The live account's attribute schema was not introspectable from the
-codebase (no API key present; `brevo-analysis.html` covers campaign *attribution*, not
-contact fields) — confirm via `GET /v3/contacts/attributes` if richer fields are wanted.
+Verified live (`GET /v3/contacts/attributes`, Bronsgroen CV, 2026-06-18) — the account's
+editable attributes are `FIRSTNAME`, `LASTNAME`, `SMS`, `EXT_ID`, `LANDLINE_NUMBER`,
+`CONTACT_TIMEZONE`, `JOB_TITLE`, `LINKEDIN` (plus computed globals `BLACKLIST`,
+`READERS`, `CLICKERS`). There is **no** `LANGUAGE` / `SHARES` / `MEMBER_SINCE` attribute,
+so v1 maps only the fields that already exist.
 
-Richer attributes (`LANGUAGE`, `SHARES`, `MEMBER_SINCE`, …) are a future iteration,
-gated on confirming/creating the matching custom attributes in the coop's Brevo account.
+Richer attributes are a future iteration, gated on first **creating** the matching custom
+attributes in the coop's Brevo account (`POST /v3/contacts/attributes`).
 
 ### 7. Error handling & safety
 
@@ -277,7 +297,9 @@ gated on confirming/creating the matching custom attributes in the coop's Brevo 
   existing Bull retry (3× exponential backoff).
 - **Never force-resubscribe.** Upserts set attributes and list membership but rely on
   the provider's own unsubscribe state — re-importing will not revive an unsubscribed
-  contact. GDPR-safe.
+  contact. GDPR-safe. This is concrete, not theoretical: the Coöperanten list already
+  holds **59 blacklisted (unsubscribed)** contacts that the first sync will touch and
+  must preserve. Provider upserts MUST NOT set `emailBlacklisted: false`.
 - **One-way only.** OpenCoop is the source of truth; the sync never reads audience data
   back into OpenCoop.
 - **Secrets.** API key AES-256-GCM encrypted at rest (same helper as `smtpPass` /
