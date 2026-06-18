@@ -34,6 +34,17 @@ Brevo offers no "before campaign send" webhook (its marketing webhooks are all
 post-event), so the design does not hang the sync off the mailing. Instead the audience
 is kept continuously fresh (per-change + nightly), so it is correct at every send time.
 
+**Channel boundary (marketing only).** The Brevo-synced list carries **marketing**
+communications only (newsletters, campaigns), where a member's unsubscribe must be
+honored. **Statutory member communications** — AV/AGM convocations, annual results,
+dividend notices — MUST continue to go through OpenCoop's own transactional email
+(`EmailService`, e.g. `meetings/convocation.service.ts`), which already reaches **all
+`ACTIVE` shareholders regardless of any Brevo opt-out** and has no marketing-suppression
+filter. A Brevo unsubscribe is a single global blacklist — routing a convocation through
+the Brevo list would silently fail to convene unsubscribed members, which can invalidate
+AV decisions under Belgian cooperative law. The two channels are deliberately separate;
+this sync never touches the statutory path.
+
 ## Motivation
 
 - A coop's mailing audience drifts from its real membership. `brevo-analysis.html`
@@ -83,6 +94,10 @@ is kept continuously fresh (per-change + nightly), so it is correct at every sen
 - Custom per-coop attribute mapping UI (v1 uses a fixed attribute set).
 - Reading engagement data back from the provider (sync is strictly one-way:
   OpenCoop → provider).
+- **Statutory member communications** (AV/AGM convocations, results, dividend notices).
+  These are NOT marketing and must reach every member regardless of marketing opt-out —
+  they stay on OpenCoop's existing transactional email path (`meetings` module /
+  `EmailService`). The Brevo list is marketing-only; see the Channel boundary above.
 
 ## Design
 
