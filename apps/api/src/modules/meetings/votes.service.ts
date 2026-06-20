@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MajorityType, VotingWeight, VoteChoice } from '@opencoop/database';
+import { MajorityType, RegistrationType, VotingWeight, VoteChoice } from '@opencoop/database';
 import { RecordVoteDto } from './dto/record-vote.dto';
 
 export interface OutcomeInput {
@@ -15,9 +15,47 @@ export interface OutcomeInput {
   votesAbstain: number;
 }
 
+type VoteRegistration = {
+  type: RegistrationType;
+  quantity: number;
+  shareholderId: string;
+  fromShareholderId: string | null;
+  toShareholderId: string | null;
+};
+
 @Injectable()
 export class VotesService {
   constructor(private prisma: PrismaService) {}
+
+  private computePerShareWeight(shareholderId: string, registrations: VoteRegistration[]) {
+    let total = 0;
+    let incomingTransferBuyQuantity = 0;
+    let incomingTransferSellQuantity = 0;
+
+    for (const r of registrations) {
+      if (r.type === RegistrationType.BUY && r.shareholderId === shareholderId) {
+        total += r.quantity;
+        if (r.fromShareholderId) incomingTransferBuyQuantity += r.quantity;
+      } else if (r.type === RegistrationType.SELL && r.shareholderId === shareholderId) {
+        total -= r.quantity;
+      }
+
+      if (
+        r.type === RegistrationType.SELL &&
+        r.toShareholderId === shareholderId &&
+        r.shareholderId !== shareholderId
+      ) {
+        incomingTransferSellQuantity += r.quantity;
+      }
+    }
+
+    const incomingTransfersWithoutBuy = Math.max(
+      incomingTransferSellQuantity - incomingTransferBuyQuantity,
+      0,
+    );
+
+    return Math.max(total + incomingTransfersWithoutBuy, 0);
+  }
 
   /**
    * Pure majority math. Abstentions are excluded from both the numerator AND
@@ -97,17 +135,22 @@ export class VotesService {
         if (perShare) {
           const registrations = await tx.registration.findMany({
             where: {
-              shareholderId: v.shareholderId,
+              OR: [
+                { shareholderId: v.shareholderId },
+                { type: 'SELL', toShareholderId: v.shareholderId },
+              ],
               status: { in: ['ACTIVE', 'COMPLETED'] },
               type: { in: ['BUY', 'SELL'] },
             },
-            select: { type: true, quantity: true },
+            select: {
+              type: true,
+              quantity: true,
+              shareholderId: true,
+              fromShareholderId: true,
+              toShareholderId: true,
+            },
           });
-          let total = 0;
-          for (const r of registrations) {
-            total += r.type === 'BUY' ? r.quantity : -r.quantity;
-          }
-          weight = Math.max(total, 1);
+          weight = this.computePerShareWeight(v.shareholderId, registrations);
         }
 
         await tx.vote.upsert({
