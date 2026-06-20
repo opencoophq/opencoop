@@ -537,7 +537,7 @@ export class ConvocationService {
             email: true,
             firstName: true,
             lastName: true,
-            user: { select: { email: true } },
+            user: { select: { email: true, preferredLanguage: true } },
           },
         },
       },
@@ -569,6 +569,7 @@ export class ConvocationService {
           subject: `Herinnering — ${meeting.title}`,
           templateKey: 'meeting-reminder',
           templateData: {
+            language: primaryAtt.shareholder.user?.preferredLanguage ?? 'nl',
             shareholderName: `${primaryAtt.shareholder.firstName ?? ''} ${primaryAtt.shareholder.lastName ?? ''}`.trim(),
             meetingTitle: meeting.title,
             meetingDate: meeting.scheduledAt.toISOString(),

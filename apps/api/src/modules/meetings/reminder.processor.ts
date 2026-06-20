@@ -28,7 +28,7 @@ export class ReminderProcessor {
                 email: true,
                 firstName: true,
                 lastName: true,
-                user: { select: { email: true } },
+                user: { select: { email: true, preferredLanguage: true } },
               },
             },
           },
@@ -72,7 +72,7 @@ export class ReminderProcessor {
                 subject: `Herinnering — ${meeting.title}`,
                 templateKey: 'meeting-reminder',
                 templateData: {
-                  language: 'nl',
+                  language: primaryA.shareholder.user?.preferredLanguage ?? 'nl',
                   shareholderName: `${primaryA.shareholder.firstName ?? ''} ${primaryA.shareholder.lastName ?? ''}`.trim(),
                   meetingTitle: meeting.title,
                   meetingDate: meeting.scheduledAt.toISOString(),

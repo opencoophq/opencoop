@@ -275,17 +275,32 @@ describe('ConvocationService', () => {
         {
           rsvpToken: 'token-s1',
           shareholderId: 's1',
-          shareholder: { email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'A' },
+          shareholder: {
+            email: null,
+            user: { email: 'jan@x.com', preferredLanguage: 'fr' },
+            firstName: 'Jan',
+            lastName: 'A',
+          },
         },
         {
           rsvpToken: 'token-s2',
           shareholderId: 's2',
-          shareholder: { email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'B' },
+          shareholder: {
+            email: null,
+            user: { email: 'jan@x.com', preferredLanguage: 'nl' },
+            firstName: 'Jan',
+            lastName: 'B',
+          },
         },
         {
           rsvpToken: 'token-s3',
           shareholderId: 's3',
-          shareholder: { email: null, user: { email: 'piet@x.com' }, firstName: 'Piet', lastName: 'C' },
+          shareholder: {
+            email: null,
+            user: { email: 'piet@x.com', preferredLanguage: null },
+            firstName: 'Piet',
+            lastName: 'C',
+          },
         },
       ]);
 
@@ -299,6 +314,10 @@ describe('ConvocationService', () => {
 
       const janCall = emailService.send.mock.calls.find((c: any[]) => c[0].to === 'jan@x.com');
       expect(janCall[0].templateData.rsvpUrl).toContain('token-s1');
+      expect(janCall[0].templateData.language).toBe('fr');
+
+      const pietCall = emailService.send.mock.calls.find((c: any[]) => c[0].to === 'piet@x.com');
+      expect(pietCall[0].templateData.language).toBe('nl');
     });
 
     it('skips postal-only shareholders in reminders', async () => {
