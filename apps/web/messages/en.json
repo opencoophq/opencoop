@@ -2087,6 +2087,17 @@
       "empty": "No RSVPs to show",
       "copyLink": "Copy link",
       "copied": "Copied",
+      "edit": {
+        "button": "Edit RSVP",
+        "title": "Edit RSVP",
+        "statusLabel": "RSVP status",
+        "delegateLabel": "Delegate",
+        "delegatePlaceholder": "Select delegate",
+        "delegateRequired": "Select a delegate for proxy RSVPs.",
+        "save": "Save",
+        "saving": "Saving...",
+        "saveError": "Failed to update RSVP"
+      },
       "filters": {
         "label": "Filter",
         "all": "All"

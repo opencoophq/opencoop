@@ -2084,6 +2084,17 @@
       "empty": "Aucun RSVP à afficher",
       "copyLink": "Copier le lien",
       "copied": "Copié",
+      "edit": {
+        "button": "Modifier RSVP",
+        "title": "Modifier RSVP",
+        "statusLabel": "Statut RSVP",
+        "delegateLabel": "Mandataire",
+        "delegatePlaceholder": "Sélectionner un mandataire",
+        "delegateRequired": "Sélectionnez un mandataire pour les RSVPs par procuration.",
+        "save": "Enregistrer",
+        "saving": "Enregistrement...",
+        "saveError": "Échec de la mise à jour du RSVP"
+      },
       "filters": {
         "label": "Filtre",
         "all": "Tous"

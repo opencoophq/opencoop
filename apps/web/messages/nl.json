@@ -2087,6 +2087,17 @@
       "empty": "Geen RSVPs om te tonen",
       "copyLink": "Link kopiëren",
       "copied": "Gekopieerd",
+      "edit": {
+        "button": "RSVP bewerken",
+        "title": "RSVP bewerken",
+        "statusLabel": "RSVP-status",
+        "delegateLabel": "Gemachtigde",
+        "delegatePlaceholder": "Selecteer gemachtigde",
+        "delegateRequired": "Selecteer een gemachtigde voor volmacht-RSVPs.",
+        "save": "Opslaan",
+        "saving": "Opslaan...",
+        "saveError": "RSVP bijwerken mislukt"
+      },
       "filters": {
         "label": "Filter",
         "all": "Alle"
