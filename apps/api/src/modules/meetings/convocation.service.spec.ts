@@ -404,6 +404,51 @@ describe('ConvocationService', () => {
       expect((res as any).sent).toHaveLength(1);
     });
 
+    it('passes the primary shareholder preferred language to the convocation template', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        {
+          id: 's1',
+          email: null,
+          user: { email: 'jan@x.com', preferredLanguage: 'fr' },
+          firstName: 'Jan',
+          lastName: 'A',
+          coopId: 'c1',
+        },
+      ]);
+
+      await service.processSend('c1', 'm1', { confirmShortNotice: true });
+
+      expect(prisma.shareholder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({
+            user: { select: { email: true, preferredLanguage: true } },
+          }),
+        }),
+      );
+      expect(emailService.send).toHaveBeenCalledTimes(1);
+      expect(emailService.send.mock.calls[0][0].templateData.language).toBe('fr');
+    });
+
+    it('falls back to Dutch when the primary shareholder has no preferred language', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        {
+          id: 's1',
+          email: null,
+          user: { email: 'jan@x.com', preferredLanguage: null },
+          firstName: 'Jan',
+          lastName: 'A',
+          coopId: 'c1',
+        },
+      ]);
+
+      await service.processSend('c1', 'm1', { confirmShortNotice: true });
+
+      expect(emailService.send).toHaveBeenCalledTimes(1);
+      expect(emailService.send.mock.calls[0][0].templateData.language).toBe('nl');
+    });
+
     it('skips attendees whose shareholders have no resolvable email (postal-only)', async () => {
       prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
       prisma.shareholder.findMany.mockResolvedValue([

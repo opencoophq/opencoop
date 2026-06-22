@@ -235,7 +235,7 @@ export class ConvocationService {
         firstName: true,
         lastName: true,
         email: true,
-        user: { select: { email: true } },
+        user: { select: { email: true, preferredLanguage: true } },
       },
     });
 
@@ -357,7 +357,10 @@ export class ConvocationService {
           to: email,
           subject: this.buildSubject(meeting, coopForTemplate.name),
           templateKey: 'meeting-convocation',
-          templateData: this.buildTemplateData(meeting, coopForTemplate, shareholderName, primaryToken),
+          templateData: {
+            ...this.buildTemplateData(meeting, coopForTemplate, shareholderName, primaryToken),
+            language: group[0].user?.preferredLanguage ?? 'nl',
+          },
           attachments: attachments.length ? attachments : undefined,
         });
         // Mark this inbox group as sent. Future send() calls won't re-mail them.
