@@ -18,43 +18,24 @@ export interface OutcomeInput {
 type VoteRegistration = {
   type: RegistrationType;
   quantity: number;
-  shareholderId: string;
-  fromShareholderId: string | null;
-  toShareholderId: string | null;
 };
 
 @Injectable()
 export class VotesService {
   constructor(private prisma: PrismaService) {}
 
-  private computePerShareWeight(shareholderId: string, registrations: VoteRegistration[]) {
+  private computePerShareWeight(registrations: VoteRegistration[]) {
     let total = 0;
-    let incomingTransferBuyQuantity = 0;
-    let incomingTransferSellQuantity = 0;
 
     for (const r of registrations) {
-      if (r.type === RegistrationType.BUY && r.shareholderId === shareholderId) {
+      if (r.type === RegistrationType.BUY) {
         total += r.quantity;
-        if (r.fromShareholderId) incomingTransferBuyQuantity += r.quantity;
-      } else if (r.type === RegistrationType.SELL && r.shareholderId === shareholderId) {
+      } else if (r.type === RegistrationType.SELL) {
         total -= r.quantity;
-      }
-
-      if (
-        r.type === RegistrationType.SELL &&
-        r.toShareholderId === shareholderId &&
-        r.shareholderId !== shareholderId
-      ) {
-        incomingTransferSellQuantity += r.quantity;
       }
     }
 
-    const incomingTransfersWithoutBuy = Math.max(
-      incomingTransferSellQuantity - incomingTransferBuyQuantity,
-      0,
-    );
-
-    return Math.max(total + incomingTransfersWithoutBuy, 0);
+    return Math.max(total, 0);
   }
 
   /**
@@ -135,22 +116,16 @@ export class VotesService {
         if (perShare) {
           const registrations = await tx.registration.findMany({
             where: {
-              OR: [
-                { shareholderId: v.shareholderId },
-                { type: 'SELL', toShareholderId: v.shareholderId },
-              ],
+              shareholderId: v.shareholderId,
               status: { in: ['ACTIVE', 'COMPLETED'] },
               type: { in: ['BUY', 'SELL'] },
             },
             select: {
               type: true,
               quantity: true,
-              shareholderId: true,
-              fromShareholderId: true,
-              toShareholderId: true,
             },
           });
-          weight = this.computePerShareWeight(v.shareholderId, registrations);
+          weight = this.computePerShareWeight(registrations);
         }
 
         await tx.vote.upsert({

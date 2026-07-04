@@ -6,9 +6,6 @@ import { MajorityType, RegistrationType, VoteChoice, VotingWeight } from '@openc
 type VoteRegistrationFixture = {
   type: RegistrationType;
   quantity: number;
-  shareholderId: string;
-  fromShareholderId: string | null;
-  toShareholderId: string | null;
 };
 
 describe('VotesService.computeOutcome', () => {
@@ -121,9 +118,7 @@ describe('VotesService.recordVotes', () => {
     const tx = {
       registration: {
         findMany: jest.fn(({ where }) => {
-          const shareholderId =
-            where?.OR?.find((clause: Record<string, string>) => clause.shareholderId)?.shareholderId ??
-            where?.shareholderId;
+          const shareholderId = where?.shareholderId;
           return Promise.resolve(registrationRowsByShareholder[shareholderId] ?? []);
         }),
       },
@@ -189,16 +184,10 @@ describe('VotesService.recordVotes', () => {
     };
   };
 
-  it('weights incoming transfer shares for the recipient in PER_SHARE meetings', async () => {
+  it('weights transfer recipients from their own BUY row in PER_SHARE meetings', async () => {
     const { service, tx, storedVotes } = await createService({
       'shareholder-recipient': [
-        {
-          type: RegistrationType.SELL,
-          quantity: 7,
-          shareholderId: 'shareholder-sender',
-          fromShareholderId: null,
-          toShareholderId: 'shareholder-recipient',
-        },
+        { type: RegistrationType.BUY, quantity: 7 },
       ],
     });
 
@@ -208,19 +197,13 @@ describe('VotesService.recordVotes', () => {
 
     expect(tx.registration.findMany).toHaveBeenCalledWith({
       where: {
-        OR: [
-          { shareholderId: 'shareholder-recipient' },
-          { type: 'SELL', toShareholderId: 'shareholder-recipient' },
-        ],
+        shareholderId: 'shareholder-recipient',
         status: { in: ['ACTIVE', 'COMPLETED'] },
         type: { in: ['BUY', 'SELL'] },
       },
       select: {
         type: true,
         quantity: true,
-        shareholderId: true,
-        fromShareholderId: true,
-        toShareholderId: true,
       },
     });
     expect(storedVotes[0].weight).toBe(7);
@@ -233,16 +216,10 @@ describe('VotesService.recordVotes', () => {
         {
           type: RegistrationType.BUY,
           quantity: 5,
-          shareholderId: 'shareholder-former',
-          fromShareholderId: null,
-          toShareholderId: null,
         },
         {
           type: RegistrationType.SELL,
           quantity: 5,
-          shareholderId: 'shareholder-former',
-          fromShareholderId: null,
-          toShareholderId: null,
         },
       ],
     });
@@ -255,31 +232,4 @@ describe('VotesService.recordVotes', () => {
     expect(result.votesAgainst).toBe(0);
   });
 
-  it('does not double-count transfer-in BUY rows that also have an outgoing transfer row', async () => {
-    const { service, storedVotes } = await createService({
-      'shareholder-recipient': [
-        {
-          type: RegistrationType.SELL,
-          quantity: 7,
-          shareholderId: 'shareholder-sender',
-          fromShareholderId: null,
-          toShareholderId: 'shareholder-recipient',
-        },
-        {
-          type: RegistrationType.BUY,
-          quantity: 7,
-          shareholderId: 'shareholder-recipient',
-          fromShareholderId: 'shareholder-sender',
-          toShareholderId: null,
-        },
-      ],
-    });
-
-    const result = await service.recordVotes('coop-1', 'resolution-1', [
-      { shareholderId: 'shareholder-recipient', choice: VoteChoice.FOR },
-    ]);
-
-    expect(storedVotes[0].weight).toBe(7);
-    expect(result.votesFor).toBe(7);
-  });
 });
