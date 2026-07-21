@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateShareholderDto } from './dto/create-shareholder.dto';
@@ -8,7 +10,22 @@ import { generateReferralCode, computeTotalPaid, computeVestedShares } from '@op
 
 @Injectable()
 export class ShareholdersService {
-  constructor(private prisma: PrismaService, private auditService: AuditService) {}
+  private readonly logger = new Logger(ShareholdersService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+    @InjectQueue('audience-sync') private readonly audienceQueue: Queue,
+  ) {}
+
+  /** Best-effort: a queue failure must never fail the shareholder mutation. */
+  private async enqueueAudienceSync(coopId: string, shareholderId: string): Promise<void> {
+    try {
+      await this.audienceQueue.add('reconcile-one', { coopId, shareholderId });
+    } catch (err) {
+      this.logger.warn(`audience-sync enqueue failed for ${shareholderId}: ${(err as Error).message}`);
+    }
+  }
 
   private decryptShareholder<T extends { nationalId?: string | null; beneficialOwners?: Array<{ nationalId?: string | null }> }>(
     shareholder: T,
@@ -289,6 +306,8 @@ export class ShareholdersService {
       }
     }
 
+    await this.enqueueAudienceSync(coopId, created!.id);
+
     await this.auditService.log({
       coopId,
       entity: 'Shareholder',
@@ -424,6 +443,15 @@ export class ShareholdersService {
         }),
       },
     });
+
+    if (
+      dto.status !== undefined ||
+      dto.email !== undefined ||
+      dto.firstName !== undefined ||
+      dto.lastName !== undefined
+    ) {
+      await this.enqueueAudienceSync(coopId, id);
+    }
 
     const changes = this.auditService.diff(existing as Record<string, unknown>, dto as Record<string, unknown>);
     if (changes.length > 0) {

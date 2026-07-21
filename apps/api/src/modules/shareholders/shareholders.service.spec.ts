@@ -50,6 +50,14 @@ describe('ShareholdersService', () => {
   let service: ShareholdersService;
   let prismaService: jest.Mocked<PrismaService>;
   let auditService: jest.Mocked<AuditService>;
+  let audienceQueue: { add: jest.Mock };
+
+  const validCreateDto = {
+    type: 'INDIVIDUAL' as const,
+    firstName: 'Jan',
+    lastName: 'Peeters',
+    email: 'jan@example.be',
+  };
 
   beforeEach(() => {
     prismaService = {
@@ -77,7 +85,9 @@ describe('ShareholdersService', () => {
       diff: jest.fn().mockReturnValue([]),
     } as unknown as jest.Mocked<AuditService>;
 
-    service = new ShareholdersService(prismaService, auditService);
+    audienceQueue = { add: jest.fn().mockResolvedValue(undefined) };
+
+    service = new ShareholdersService(prismaService, auditService, audienceQueue as never);
   });
 
   describe('findAll — lean list payload', () => {
@@ -184,6 +194,84 @@ describe('ShareholdersService', () => {
       await expect(
         service.update('sh-2', 'coop-1', { email: 'taken@x.com' }),
       ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('audience-sync emit points', () => {
+    it('enqueues reconcile-one after creating a shareholder', async () => {
+      (prismaService.shareholder.findFirst as jest.Mock)
+        // email uniqueness check
+        .mockResolvedValueOnce(null)
+        // referral-code uniqueness check
+        .mockResolvedValueOnce(null);
+      (prismaService.shareholder.create as jest.Mock).mockResolvedValueOnce(
+        makeShareholder({ id: 'sh9', coopId: 'c1', email: 'jan@example.be' }),
+      );
+      (auditService.log as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await service.create('c1', validCreateDto);
+      expect(audienceQueue.add).toHaveBeenCalledWith('reconcile-one', {
+        coopId: 'c1',
+        shareholderId: 'sh9',
+      });
+    });
+
+    it('enqueues reconcile-one when email/status/name changes on update', async () => {
+      const existing = makeShareholder({ id: 'sh1', coopId: 'c1', email: 'old@x.be' });
+      (prismaService.shareholder.findFirst as jest.Mock)
+        // findById (load existing)
+        .mockResolvedValueOnce(existing)
+        // email collision check — free
+        .mockResolvedValueOnce(null)
+        // findById (return after update)
+        .mockResolvedValueOnce({ ...existing, email: 'new@x.be' });
+      (prismaService.shareholder.update as jest.Mock).mockResolvedValueOnce({
+        ...existing,
+        email: 'new@x.be',
+      });
+      (auditService.diff as jest.Mock).mockReturnValueOnce([
+        { field: 'email', oldValue: 'old@x.be', newValue: 'new@x.be' },
+      ]);
+      (auditService.log as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await service.update('sh1', 'c1', { email: 'new@x.be' } as any);
+      expect(audienceQueue.add).toHaveBeenCalledWith('reconcile-one', {
+        coopId: 'c1',
+        shareholderId: 'sh1',
+      });
+    });
+
+    it('does NOT enqueue when an update changes only non-synced fields', async () => {
+      const existing = makeShareholder({ id: 'sh1', coopId: 'c1' });
+      (prismaService.shareholder.findFirst as jest.Mock)
+        // findById (load existing)
+        .mockResolvedValueOnce(existing)
+        // findById (return after update)
+        .mockResolvedValueOnce({ ...existing, phone: '0499' });
+      (prismaService.shareholder.update as jest.Mock).mockResolvedValueOnce({
+        ...existing,
+        phone: '0499',
+      });
+      (auditService.diff as jest.Mock).mockReturnValueOnce([
+        { field: 'phone', oldValue: null, newValue: '0499' },
+      ]);
+      (auditService.log as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await service.update('sh1', 'c1', { phone: '0499' } as any);
+      expect(audienceQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('still commits the mutation when the queue throws (best-effort)', async () => {
+      audienceQueue.add.mockRejectedValueOnce(new Error('redis down'));
+      (prismaService.shareholder.findFirst as jest.Mock)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+      (prismaService.shareholder.create as jest.Mock).mockResolvedValueOnce(
+        makeShareholder({ id: 'sh9', coopId: 'c1', email: 'jan@example.be' }),
+      );
+      (auditService.log as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await expect(service.create('c1', validCreateDto)).resolves.toBeDefined();
     });
   });
 });
