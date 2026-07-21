@@ -15,6 +15,29 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.30.0] - 2026-07-21
+
+First CalVer release.
+
+### Added
+- **Brevo audience sync** (per coop, opt-in): keeps a cooperative's Brevo marketing
+  list in sync with its shareholders. Active members are upserted into the configured
+  members list (identity anchor `EXT_ID` = shareholder id); resigned members are
+  removed (and optionally moved to a "resigned" list), never re-created and never
+  force-resubscribed — existing unsubscribe/blacklist state in Brevo is always
+  preserved. Sync runs per change (best-effort, queued) with a nightly full
+  reconcile at 03:00 as backstop, and every run is recorded with counters for
+  auditability.
+- **Audience-sync admin panel** in coop settings: provider toggle, write-only API
+  key (AES-256-GCM encrypted at rest, never returned to the client, masked in audit
+  logs), list pickers, test-connection and sync-now buttons, last-sync status.
+  Available in all four languages.
+- New admin endpoints: trigger sync, test connection, list Brevo lists — all
+  coop-scoped and admin-guarded.
+
+Statutory communications (AV convocations, dividend notices) are unaffected and
+stay on OpenCoop's own transactional email.
+
 ## [0.9.0] - 2026-06-12
 
 Repo-wide hardening release from a full audit of the codebase. Broad security,
