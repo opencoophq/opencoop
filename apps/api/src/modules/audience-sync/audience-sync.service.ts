@@ -67,8 +67,8 @@ export class AudienceSyncService {
       return summary;
     }
 
-    const shareholder = await this.prisma.shareholder.findUnique({
-      where: { id: shareholderId },
+    const shareholder = await this.prisma.shareholder.findFirst({
+      where: { id: shareholderId, coopId },
       select: SHAREHOLDER_SELECT,
     });
     if (!shareholder) {
@@ -93,36 +93,67 @@ export class AudienceSyncService {
       where: { id: coopId },
       data: { brevoLastSyncStatus: 'RUNNING' },
     });
-    const provider = this.providerFor(coop);
 
-    const shareholders = await this.prisma.shareholder.findMany({
-      where: { coopId, status: { in: ['ACTIVE', 'INACTIVE'] } },
-      select: SHAREHOLDER_SELECT,
-    });
-    for (const shareholder of shareholders) {
-      await this.applyOne(provider, coop, shareholder, summary);
+    try {
+      const provider = this.providerFor(coop);
+
+      const shareholders = await this.prisma.shareholder.findMany({
+        where: { coopId, status: { in: ['ACTIVE', 'INACTIVE'] } },
+        select: SHAREHOLDER_SELECT,
+      });
+      for (const shareholder of shareholders) {
+        await this.applyOne(provider, coop, shareholder, summary);
+      }
+
+      const status = summary.failed > 0 ? 'PARTIAL' : 'OK';
+      await this.prisma.brevoSyncRun.create({
+        data: {
+          coopId,
+          trigger,
+          status,
+          finishedAt: new Date(),
+          added: summary.added,
+          updated: summary.updated,
+          moved: summary.moved,
+          skipped: summary.skipped,
+          failed: summary.failed,
+          errors: summary.errors.length ? summary.errors : undefined,
+        },
+      });
+      await this.prisma.coop.update({
+        where: { id: coopId },
+        data: { brevoLastSyncAt: new Date(), brevoLastSyncStatus: status },
+      });
+      return summary;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      try {
+        await this.prisma.coop.update({
+          where: { id: coopId },
+          data: { brevoLastSyncAt: new Date(), brevoLastSyncStatus: 'ERROR' },
+        });
+      } catch (recoveryErr) {
+        const recoveryMessage =
+          recoveryErr instanceof Error ? recoveryErr.message : String(recoveryErr);
+        this.logger.error(`audience-sync recovery coop update failed: ${recoveryMessage}`);
+      }
+      try {
+        await this.prisma.brevoSyncRun.create({
+          data: {
+            coopId,
+            trigger,
+            finishedAt: new Date(),
+            status: 'ERROR',
+            errors: [{ message }],
+          },
+        });
+      } catch (recoveryErr) {
+        const recoveryMessage =
+          recoveryErr instanceof Error ? recoveryErr.message : String(recoveryErr);
+        this.logger.error(`audience-sync recovery run create failed: ${recoveryMessage}`);
+      }
+      throw err;
     }
-
-    const status = summary.failed > 0 ? 'PARTIAL' : 'OK';
-    await this.prisma.brevoSyncRun.create({
-      data: {
-        coopId,
-        trigger,
-        status,
-        finishedAt: new Date(),
-        added: summary.added,
-        updated: summary.updated,
-        moved: summary.moved,
-        skipped: summary.skipped,
-        failed: summary.failed,
-        errors: summary.errors.length ? summary.errors : undefined,
-      },
-    });
-    await this.prisma.coop.update({
-      where: { id: coopId },
-      data: { brevoLastSyncAt: new Date(), brevoLastSyncStatus: status },
-    });
-    return summary;
   }
 
   private async applyOne(

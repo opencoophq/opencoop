@@ -29,7 +29,7 @@ describe('AudienceSyncService', () => {
 
     prisma = {
       coop: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({}) },
-      shareholder: { findUnique: jest.fn(), findMany: jest.fn() },
+      shareholder: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
       brevoSyncRun: { create: jest.fn().mockResolvedValue({}) },
     };
 
@@ -41,7 +41,7 @@ describe('AudienceSyncService', () => {
 
   it('reconcileOne upserts an ACTIVE member into the members list', async () => {
     prisma.coop.findUnique.mockResolvedValue(COOP);
-    prisma.shareholder.findUnique.mockResolvedValue(makeShareholder());
+    prisma.shareholder.findFirst.mockResolvedValue(makeShareholder());
     const s = await service.reconcileOne('c1', 'sh1');
     expect(s.updated).toBe(1);
     const input = upsert.mock.calls[0][0];
@@ -54,7 +54,7 @@ describe('AudienceSyncService', () => {
 
   it('reconcileOne moves an INACTIVE member off the members list, no create', async () => {
     prisma.coop.findUnique.mockResolvedValue(COOP);
-    prisma.shareholder.findUnique.mockResolvedValue(makeShareholder({ status: 'INACTIVE' }));
+    prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ status: 'INACTIVE' }));
     upsert.mockResolvedValue('noop');
     const s = await service.reconcileOne('c1', 'sh1');
     expect(s.moved).toBe(1);
@@ -65,15 +65,27 @@ describe('AudienceSyncService', () => {
 
   it('reconcileOne skips when no email can be resolved', async () => {
     prisma.coop.findUnique.mockResolvedValue(COOP);
-    prisma.shareholder.findUnique.mockResolvedValue(makeShareholder({ email: null, user: null }));
+    prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ email: null, user: null }));
     const s = await service.reconcileOne('c1', 'sh1');
     expect(s.skipped).toBe(1);
     expect(upsert).not.toHaveBeenCalled();
   });
 
+  it('reconcileOne skips shareholders outside the requested coop', async () => {
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    prisma.shareholder.findFirst.mockResolvedValue(null);
+    const s = await service.reconcileOne('c1', 'sh1');
+    expect(upsert).not.toHaveBeenCalled();
+    expect(s.skipped).toBe(1);
+    expect(prisma.shareholder.findFirst).toHaveBeenCalledWith({
+      where: { id: 'sh1', coopId: 'c1' },
+      select: expect.anything(),
+    });
+  });
+
   it('reconcileOne is a no-op when the coop has no provider', async () => {
     prisma.coop.findUnique.mockResolvedValue({ ...COOP, emailAudienceProvider: null });
-    prisma.shareholder.findUnique.mockResolvedValue(makeShareholder());
+    prisma.shareholder.findFirst.mockResolvedValue(makeShareholder());
     const s = await service.reconcileOne('c1', 'sh1');
     expect(s.skipped).toBe(1);
     expect(upsert).not.toHaveBeenCalled();
@@ -81,7 +93,7 @@ describe('AudienceSyncService', () => {
 
   it('reconcileOne prefers User.email over Shareholder.email', async () => {
     prisma.coop.findUnique.mockResolvedValue(COOP);
-    prisma.shareholder.findUnique.mockResolvedValue(
+    prisma.shareholder.findFirst.mockResolvedValue(
       makeShareholder({ email: 'old@x.be', user: { email: 'new@x.be' } }),
     );
     await service.reconcileOne('c1', 'sh1');
@@ -101,5 +113,29 @@ describe('AudienceSyncService', () => {
     expect(prisma.brevoSyncRun.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: 'PARTIAL', trigger: 'cron' }) }),
     );
+  });
+
+  it('reconcileAll records ERROR and rethrows when provider creation fails', async () => {
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    jest.spyOn(factory, 'getAudienceProvider').mockImplementation(() => {
+      throw new Error('factory boom');
+    });
+    await expect(service.reconcileAll('c1', 'cron')).rejects.toThrow('factory boom');
+    expect(prisma.coop.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'c1' },
+        data: expect.objectContaining({ brevoLastSyncStatus: 'ERROR' }),
+      }),
+    );
+    expect(prisma.brevoSyncRun.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'ERROR',
+          trigger: 'cron',
+          errors: expect.arrayContaining([expect.objectContaining({ message: 'factory boom' })]),
+        }),
+      }),
+    );
+    expect(prisma.shareholder.findMany).not.toHaveBeenCalled();
   });
 });
