@@ -448,7 +448,8 @@ export class ShareholdersService {
       dto.status !== undefined ||
       dto.email !== undefined ||
       dto.firstName !== undefined ||
-      dto.lastName !== undefined
+      dto.lastName !== undefined ||
+      dto.companyName !== undefined
     ) {
       await this.enqueueAudienceSync(coopId, id);
     }

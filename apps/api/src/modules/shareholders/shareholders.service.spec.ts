@@ -241,6 +241,36 @@ describe('ShareholdersService', () => {
       });
     });
 
+    it('enqueues reconcile-one when only companyName changes on update', async () => {
+      const existing = makeShareholder({
+        id: 'sh1',
+        coopId: 'c1',
+        type: 'COMPANY',
+        companyName: 'OldCo NV',
+        firstName: null,
+        lastName: null,
+      });
+      (prismaService.shareholder.findFirst as jest.Mock)
+        // findById (load existing)
+        .mockResolvedValueOnce(existing)
+        // findById (return after update)
+        .mockResolvedValueOnce({ ...existing, companyName: 'NewCo BV' });
+      (prismaService.shareholder.update as jest.Mock).mockResolvedValueOnce({
+        ...existing,
+        companyName: 'NewCo BV',
+      });
+      (auditService.diff as jest.Mock).mockReturnValueOnce([
+        { field: 'companyName', oldValue: 'OldCo NV', newValue: 'NewCo BV' },
+      ]);
+      (auditService.log as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await service.update('sh1', 'c1', { companyName: 'NewCo BV' } as any);
+      expect(audienceQueue.add).toHaveBeenCalledWith('reconcile-one', {
+        coopId: 'c1',
+        shareholderId: 'sh1',
+      });
+    });
+
     it('does NOT enqueue when an update changes only non-synced fields', async () => {
       const existing = makeShareholder({ id: 'sh1', coopId: 'c1' });
       (prismaService.shareholder.findFirst as jest.Mock)
