@@ -1890,6 +1890,7 @@
     "syncQueued": "Sync started.",
     "testOk": "Connection OK.",
     "testFail": "Connection failed",
+    "loadListsFail": "Could not load lists",
     "error": "Something went wrong."
   },
   "cookies": {

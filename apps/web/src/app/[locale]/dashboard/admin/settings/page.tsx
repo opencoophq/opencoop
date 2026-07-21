@@ -245,7 +245,8 @@ export default function AdminSettingsPage() {
     status: null,
   });
   const [audienceLists, setAudienceLists] = useState<{ id: string; name: string }[]>([]);
-  const [audienceMsg, setAudienceMsg] = useState('');
+  const [audienceMsg, setAudienceMsg] = useState<{ text: string; error: boolean } | null>(null);
+  const [audienceLoading, setAudienceLoading] = useState(false);
 
   // Ecopower API key state
   const [apiKeyPrefix, setApiKeyPrefix] = useState<string | null>(null);
@@ -304,6 +305,22 @@ export default function AdminSettingsPage() {
     }
   }, [searchParams, showMessage, t]);
 
+  const handleLoadLists = useCallback(async () => {
+    if (!selectedCoop) return;
+    setAudienceLoading(true);
+    try {
+      setAudienceLists(
+        await api<{ id: string; name: string }[]>(
+          `/admin/coops/${selectedCoop.id}/audience-sync/lists`
+        )
+      );
+    } catch {
+      setAudienceMsg({ text: t('brevo.loadListsFail'), error: true });
+    } finally {
+      setAudienceLoading(false);
+    }
+  }, [selectedCoop, t]);
+
   useEffect(() => {
     if (!selectedCoop) return;
     setLoading(true);
@@ -361,6 +378,9 @@ export default function AdminSettingsPage() {
         if (ponto) {
           setPontoStatus(ponto);
         }
+        if (settings.emailAudienceProvider === 'brevo' && settings.brevoMembersListId) {
+          void handleLoadLists();
+        }
       })
       .catch(() => {
         setError(t('admin.settings.error'));
@@ -373,7 +393,7 @@ export default function AdminSettingsPage() {
     )
       .then(setMcpApiKeys)
       .catch(() => setError(t('admin.settings.error')));
-  }, [selectedCoop, t]);
+  }, [selectedCoop, t, handleLoadLists]);
 
   const handleSave = async () => {
     if (!selectedCoop) return;
@@ -523,39 +543,36 @@ export default function AdminSettingsPage() {
 
   const handleTestAudience = async () => {
     if (!selectedCoop) return;
+    setAudienceLoading(true);
     try {
       const r = await api<{ ok: boolean; detail?: string }>(
         `/admin/coops/${selectedCoop.id}/audience-sync/test`,
         { method: 'POST' }
       );
-      setAudienceMsg(r.ok ? t('brevo.testOk') : `${t('brevo.testFail')}: ${r.detail ?? ''}`);
-    } catch {
-      setAudienceMsg(t('brevo.testFail'));
-    }
-  };
-
-  const handleLoadLists = async () => {
-    if (!selectedCoop) return;
-    try {
-      setAudienceLists(
-        await api<{ id: string; name: string }[]>(
-          `/admin/coops/${selectedCoop.id}/audience-sync/lists`
-        )
+      setAudienceMsg(
+        r.ok
+          ? { text: t('brevo.testOk'), error: false }
+          : { text: `${t('brevo.testFail')}: ${r.detail ?? ''}`, error: true }
       );
     } catch {
-      setAudienceMsg(t('brevo.testFail'));
+      setAudienceMsg({ text: t('brevo.testFail'), error: true });
+    } finally {
+      setAudienceLoading(false);
     }
   };
 
   const handleSyncNow = async () => {
     if (!selectedCoop) return;
+    setAudienceLoading(true);
     try {
       await api<{ queued: boolean }>(`/admin/coops/${selectedCoop.id}/audience-sync/run`, {
         method: 'POST',
       });
-      setAudienceMsg(t('brevo.syncQueued'));
+      setAudienceMsg({ text: t('brevo.syncQueued'), error: false });
     } catch {
-      setAudienceMsg(t('brevo.error'));
+      setAudienceMsg({ text: t('brevo.error'), error: true });
+    } finally {
+      setAudienceLoading(false);
     }
   };
 
@@ -1152,10 +1169,20 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" type="button" onClick={handleLoadLists}>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={handleLoadLists}
+                    disabled={audienceLoading}
+                  >
                     {t('brevo.loadLists')}
                   </Button>
-                  <Button variant="outline" type="button" onClick={handleTestAudience}>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={handleTestAudience}
+                    disabled={audienceLoading}
+                  >
                     {t('brevo.testConnection')}
                   </Button>
                 </div>
@@ -1189,7 +1216,7 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button type="button" onClick={handleSyncNow}>
+                  <Button type="button" onClick={handleSyncNow} disabled={audienceLoading}>
                     {t('brevo.syncNow')}
                   </Button>
                 </div>
@@ -1204,8 +1231,8 @@ export default function AdminSettingsPage() {
                 </p>
 
                 {audienceMsg && (
-                  <Alert>
-                    <AlertDescription>{audienceMsg}</AlertDescription>
+                  <Alert variant={audienceMsg.error ? 'destructive' : undefined}>
+                    <AlertDescription>{audienceMsg.text}</AlertDescription>
                   </Alert>
                 )}
               </div>

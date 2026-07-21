@@ -1887,6 +1887,7 @@
     "syncQueued": "Synchronisation gestartet.",
     "testOk": "Verbindung OK.",
     "testFail": "Verbindung fehlgeschlagen",
+    "loadListsFail": "Listen konnten nicht geladen werden",
     "error": "Etwas ist schiefgelaufen."
   },
   "cookies": {

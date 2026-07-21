@@ -1890,6 +1890,7 @@
     "syncQueued": "Synchronisatie gestart.",
     "testOk": "Verbinding OK.",
     "testFail": "Verbinding mislukt",
+    "loadListsFail": "Kon lijsten niet laden",
     "error": "Er ging iets mis."
   },
   "cookies": {

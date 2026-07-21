@@ -1887,6 +1887,7 @@
     "syncQueued": "Synchronisation démarrée.",
     "testOk": "Connexion OK.",
     "testFail": "Échec de la connexion",
+    "loadListsFail": "Impossible de charger les listes",
     "error": "Une erreur s'est produite."
   },
   "cookies": {
