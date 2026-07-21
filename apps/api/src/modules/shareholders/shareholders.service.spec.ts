@@ -197,6 +197,50 @@ describe('ShareholdersService', () => {
     });
   });
 
+  describe('update — email clear semantics', () => {
+    it('update with email: null clears the email', async () => {
+      const existing = makeShareholder({ id: 'sh-1', email: 'old@x.be' });
+      const cleared = { ...existing, email: null };
+
+      (prismaService.shareholder.findFirst as jest.Mock)
+        // findById (load existing)
+        .mockResolvedValueOnce(existing)
+        // findById (return after update)
+        .mockResolvedValueOnce(cleared);
+      (prismaService.shareholder.update as jest.Mock).mockResolvedValueOnce(cleared);
+      (auditService.diff as jest.Mock).mockReturnValueOnce([
+        { field: 'email', oldValue: 'old@x.be', newValue: null },
+      ]);
+      (auditService.log as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await service.update('sh-1', 'coop-1', { email: null } as any);
+
+      expect(prismaService.shareholder.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ email: null }) }),
+      );
+    });
+
+    it('update without email field leaves email untouched', async () => {
+      const existing = makeShareholder({ id: 'sh-1', email: 'old@x.be' });
+      const updated = { ...existing, firstName: 'NewName' };
+
+      (prismaService.shareholder.findFirst as jest.Mock)
+        // findById (load existing)
+        .mockResolvedValueOnce(existing)
+        // findById (return after update)
+        .mockResolvedValueOnce(updated);
+      (prismaService.shareholder.update as jest.Mock).mockResolvedValueOnce(updated);
+      (auditService.diff as jest.Mock).mockReturnValueOnce([
+        { field: 'firstName', oldValue: 'Jan', newValue: 'NewName' },
+      ]);
+      (auditService.log as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await service.update('sh-1', 'coop-1', { firstName: 'NewName' } as any);
+
+      expect((prismaService.shareholder.update as jest.Mock).mock.calls[0][0].data.email).toBeUndefined();
+    });
+  });
+
   describe('audience-sync emit points', () => {
     it('enqueues reconcile-one after creating a shareholder', async () => {
       (prismaService.shareholder.findFirst as jest.Mock)

@@ -427,7 +427,7 @@ export class ShareholdersService {
       data: {
         ...rest,
         ...(rest.nationalId !== undefined && { nationalId }),
-        email: rest.email?.toLowerCase(),
+        email: rest.email === null ? null : rest.email?.toLowerCase(),
         ...(address !== undefined && { address: address ? JSON.parse(JSON.stringify(address)) : null }),
         ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
         ...((registeredByUserId !== undefined || registeredByShareholderId !== undefined) && {
