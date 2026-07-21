@@ -1,0 +1,10 @@
+- generic [active] [ref=e1]:
+  - paragraph [ref=e3]: Laden...
+  - alert [ref=e4]
+  - generic [ref=e5]:
+    - img [ref=e6]
+    - paragraph [ref=e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=e10] [cursor=pointer]

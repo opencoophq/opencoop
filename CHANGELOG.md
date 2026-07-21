@@ -15,6 +15,13 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.30.1] - 2026-07-21
+
+### Fixed
+- Admins can now clear a shareholder's email address (explicit `null` in the update
+  API previously left the stored email unchanged, making bad addresses impossible
+  to remove from the dashboard or API).
+
 ## [2026.30.0] - 2026-07-21
 
 First CalVer release.
