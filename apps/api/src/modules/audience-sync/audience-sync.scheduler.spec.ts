@@ -19,7 +19,8 @@ describe('AudienceSyncScheduler', () => {
     await mod.get(AudienceSyncScheduler).nightlyTick();
 
     expect(prisma.coop.findMany).toHaveBeenCalledWith({
-      where: { emailAudienceProvider: { not: null } }, select: { id: true },
+      where: { emailAudienceProvider: { not: null } },
+      select: { id: true },
     });
     expect(queue.add).toHaveBeenCalledTimes(2);
     expect(queue.add).toHaveBeenCalledWith('reconcile-all', { coopId: 'a', trigger: 'cron' });
@@ -32,10 +33,7 @@ describe('AudienceSyncScheduler', () => {
       },
     };
     const queue = {
-      add: jest
-        .fn()
-        .mockRejectedValueOnce(new Error('boom'))
-        .mockResolvedValue(undefined),
+      add: jest.fn().mockRejectedValueOnce(new Error('boom')).mockResolvedValue(undefined),
     };
     const mod = await Test.createTestingModule({
       providers: [
