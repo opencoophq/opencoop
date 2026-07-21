@@ -9,6 +9,7 @@ const SENSITIVE_FIELDS = new Set([
   'nationalId',
   'smtpPass',
   'graphClientSecret',
+  'brevoApiKey',
 ]);
 
 interface Change {

@@ -8,6 +8,7 @@ import { ShareholdersService } from '../shareholders/shareholders.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
+import { encryptField } from '../../common/crypto/field-encryption';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import sharp from 'sharp';
 import * as path from 'path';
@@ -362,7 +363,12 @@ export class CoopsService {
         graphClientId: true,
         graphTenantId: true,
         graphFromEmail: true,
-        // Secrets (smtpPass, graphClientSecret) intentionally excluded
+        // Secrets (smtpPass, graphClientSecret, brevoApiKey) intentionally excluded
+        emailAudienceProvider: true,
+        brevoMembersListId: true,
+        brevoResignedListId: true,
+        brevoLastSyncAt: true,
+        brevoLastSyncStatus: true,
         // Coop info
         legalForm: true,
         foundedDate: true,
@@ -452,6 +458,8 @@ export class CoopsService {
     // Don't overwrite secrets with empty strings
     if (!data.smtpPass) delete data.smtpPass;
     if (!data.graphClientSecret) delete data.graphClientSecret;
+    if (!data.brevoApiKey) delete data.brevoApiKey;
+    else data.brevoApiKey = encryptField(data.brevoApiKey as string);
 
     // When switching to platform (null), clear all custom email fields
     if (data.emailProvider === null) {
@@ -484,6 +492,11 @@ export class CoopsService {
         ipAddress: ip,
         userAgent,
       });
+    }
+
+    // Never return the Brevo API key (plaintext or ciphertext) in the HTTP response
+    if (updated && typeof updated === 'object' && 'brevoApiKey' in updated) {
+      delete (updated as Record<string, unknown>).brevoApiKey;
     }
 
     return updated;
