@@ -32,6 +32,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { CoopAdminsModule } from './modules/coop-admins/coop-admins.module';
 import { AdminNotificationsModule } from './modules/admin-notifications/admin-notifications.module';
 import { PontoModule } from './modules/ponto/ponto.module';
+import { AudienceSyncModule } from './modules/audience-sync/audience-sync.module';
 import { ExternalApiModule } from './modules/external-api/external-api.module';
 import { ChangelogModule } from './modules/changelog/changelog.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
@@ -74,6 +75,7 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
     PaymentsModule,
     BankImportModule,
     PontoModule,
+    AudienceSyncModule,
     DividendsModule,
     MeetingsModule,
     DocumentsModule,
