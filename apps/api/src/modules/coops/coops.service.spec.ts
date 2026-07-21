@@ -11,12 +11,14 @@ jest.mock('../../common/crypto/field-encryption', () => ({
 process.env.FIELD_ENCRYPTION_KEY = 'a'.repeat(64);
 
 import { Test } from '@nestjs/testing';
+import { getQueueToken } from '@nestjs/bull';
 import { CoopsService } from './coops.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ShareholdersService } from '../shareholders/shareholders.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
+import * as factory from '../audience-sync/audience-provider.factory';
 
 describe('CoopsService.publicRegister — orphan-shareholder preflight', () => {
   let service: CoopsService;
@@ -52,6 +54,7 @@ describe('CoopsService.publicRegister — orphan-shareholder preflight', () => {
         { provide: RegistrationsService, useValue: registrationsService },
         { provide: AuditService, useValue: {} },
         { provide: EmailService, useValue: { sendReferralSuccessNotification: jest.fn() } },
+        { provide: getQueueToken('audience-sync'), useValue: { add: jest.fn() } },
       ],
     }).compile();
     service = moduleRef.get(CoopsService);
@@ -125,6 +128,7 @@ describe('CoopsService.publicRegister — orphan-shareholder preflight', () => {
 
 describe('CoopsService — Brevo audience-sync config', () => {
   let service: CoopsService;
+  let audienceQueue: { add: jest.Mock };
   let prisma: {
     coop: {
       findUnique: jest.Mock;
@@ -144,6 +148,7 @@ describe('CoopsService — Brevo audience-sync config', () => {
         create: jest.fn().mockResolvedValue({}),
       },
     };
+    audienceQueue = { add: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -159,10 +164,13 @@ describe('CoopsService — Brevo audience-sync config', () => {
           },
         },
         { provide: EmailService, useValue: {} },
+        { provide: getQueueToken('audience-sync'), useValue: audienceQueue },
       ],
     }).compile();
     service = moduleRef.get(CoopsService);
   });
+
+  afterEach(() => jest.restoreAllMocks());
 
   it('encrypts brevoApiKey before persisting and preserves it when blank', async () => {
     prisma.coop.findUnique.mockResolvedValue({ id: 'c1' });
@@ -235,5 +243,18 @@ describe('CoopsService — Brevo audience-sync config', () => {
     expect(brevoChange).toEqual({ field: 'brevoApiKey', oldValue: '***', newValue: '***' });
     const nameChange = stored.find((c) => c.field === 'name');
     expect(nameChange).toEqual({ field: 'name', oldValue: 'A', newValue: 'B' });
+  });
+
+  it('triggerAudienceSync enqueues a manual reconcile-all', async () => {
+    await service.triggerAudienceSync('c1');
+    expect(audienceQueue.add).toHaveBeenCalledWith('reconcile-all', { coopId: 'c1', trigger: 'manual' });
+  });
+
+  it('testAudienceConnection returns the provider verify result', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ id: 'c1', emailAudienceProvider: 'brevo', brevoApiKey: 'enc' });
+    jest.spyOn(factory, 'getAudienceProvider').mockReturnValue({
+      verifyConnection: jest.fn().mockResolvedValue({ ok: true }), listLists: jest.fn(), upsertContact: jest.fn(),
+    } as any);
+    expect(await service.testAudienceConnection('c1')).toEqual({ ok: true });
   });
 });

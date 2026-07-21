@@ -1,4 +1,6 @@
 import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCoopDto } from './dto/create-coop.dto';
 import { UpdateCoopDto } from './dto/update-coop.dto';
@@ -8,6 +10,7 @@ import { ShareholdersService } from '../shareholders/shareholders.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
+import { getAudienceProvider } from '../audience-sync/audience-provider.factory';
 import { encryptField } from '../../common/crypto/field-encryption';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import sharp from 'sharp';
@@ -30,6 +33,7 @@ export class CoopsService {
     private registrationsService: RegistrationsService,
     private auditService: AuditService,
     private emailService: EmailService,
+    @InjectQueue('audience-sync') private readonly audienceQueue: Queue,
   ) {}
 
   async findAll() {
@@ -334,6 +338,23 @@ export class CoopsService {
       totalShares,
       projectCount,
     };
+  }
+
+  async triggerAudienceSync(coopId: string) {
+    await this.audienceQueue.add('reconcile-all', { coopId, trigger: 'manual' });
+    return { queued: true };
+  }
+
+  async testAudienceConnection(coopId: string) {
+    const coop = await this.prisma.coop.findUnique({ where: { id: coopId } });
+    if (!coop) throw new NotFoundException('Cooperative not found');
+    return getAudienceProvider(coop).verifyConnection();
+  }
+
+  async listAudienceLists(coopId: string) {
+    const coop = await this.prisma.coop.findUnique({ where: { id: coopId } });
+    if (!coop) throw new NotFoundException('Cooperative not found');
+    return getAudienceProvider(coop).listLists();
   }
 
   async getSettings(id: string) {
