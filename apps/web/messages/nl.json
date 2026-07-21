@@ -1874,6 +1874,24 @@
     "ecoPowerIdPlaceholder": "bv. 2079183",
     "filterEcoPowerClient": "Ecopower-klanten"
   },
+  "brevo": {
+    "title": "Brevo nieuwsbrief-synchronisatie",
+    "description": "Houd je Brevo-lijst automatisch gelijk met je actieve coöperanten. Alleen marketing — statutaire communicatie (AV) verloopt via OpenCoop.",
+    "enable": "Synchronisatie inschakelen",
+    "apiKey": "Brevo API-sleutel",
+    "apiKeyNote": "Wordt versleuteld opgeslagen en nooit getoond. Laat leeg om ongewijzigd te laten.",
+    "loadLists": "Lijsten laden",
+    "testConnection": "Verbinding testen",
+    "membersList": "Ledenlijst",
+    "resignedList": "Lijst voor uitgetreden leden (optioneel)",
+    "pickList": "Kies een lijst",
+    "optional": "Optioneel",
+    "syncNow": "Nu synchroniseren",
+    "syncQueued": "Synchronisatie gestart.",
+    "testOk": "Verbinding OK.",
+    "testFail": "Verbinding mislukt",
+    "error": "Er ging iets mis."
+  },
   "cookies": {
     "banner": "Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.",
     "dismiss": "OK",

@@ -85,6 +85,10 @@ interface FormState {
   coopAddressPostalCode: string;
   coopAddressCity: string;
   coopAddressCountry: string;
+  emailAudienceProvider: string;
+  brevoApiKey: string;
+  brevoMembersListId: string;
+  brevoResignedListId: string;
 }
 
 interface SettingsResponse {
@@ -117,6 +121,11 @@ interface SettingsResponse {
   coopEmail: string | null;
   coopWebsite: string | null;
   vatNumber: string | null;
+  emailAudienceProvider: string | null;
+  brevoMembersListId: string | null;
+  brevoResignedListId: string | null;
+  brevoLastSyncAt: string | null;
+  brevoLastSyncStatus: string | null;
 }
 
 interface PontoConnection {
@@ -210,6 +219,10 @@ export default function AdminSettingsPage() {
     coopAddressPostalCode: '',
     coopAddressCity: '',
     coopAddressCountry: '',
+    emailAudienceProvider: '',
+    brevoApiKey: '',
+    brevoMembersListId: '',
+    brevoResignedListId: '',
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -225,6 +238,14 @@ export default function AdminSettingsPage() {
   const [pontoStatus, setPontoStatus] = useState<PontoStatus | null>(null);
   const [pontoLoading, setPontoLoading] = useState(false);
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
+
+  // Brevo audience sync state
+  const [brevoLastSync, setBrevoLastSync] = useState<{ at: string | null; status: string | null }>({
+    at: null,
+    status: null,
+  });
+  const [audienceLists, setAudienceLists] = useState<{ id: string; name: string }[]>([]);
+  const [audienceMsg, setAudienceMsg] = useState('');
 
   // Ecopower API key state
   const [apiKeyPrefix, setApiKeyPrefix] = useState<string | null>(null);
@@ -326,9 +347,17 @@ export default function AdminSettingsPage() {
           coopAddressPostalCode: (settings.coopAddress as CoopAddress)?.postalCode || '',
           coopAddressCity: (settings.coopAddress as CoopAddress)?.city || '',
           coopAddressCountry: (settings.coopAddress as CoopAddress)?.country || '',
+          emailAudienceProvider: settings.emailAudienceProvider || '',
+          brevoApiKey: '',
+          brevoMembersListId: settings.brevoMembersListId || '',
+          brevoResignedListId: settings.brevoResignedListId || '',
         });
         setSignatureUrl(settings.certificateSignatureUrl || null);
         setApiKeyPrefix(settings.apiKeyPrefix || null);
+        setBrevoLastSync({
+          at: settings.brevoLastSyncAt,
+          status: settings.brevoLastSyncStatus,
+        });
         if (ponto) {
           setPontoStatus(ponto);
         }
@@ -397,6 +426,11 @@ export default function AdminSettingsPage() {
         body.graphFromEmail = form.graphFromEmail;
         if (form.graphClientSecret) body.graphClientSecret = form.graphClientSecret;
       }
+
+      body.emailAudienceProvider = form.emailAudienceProvider || null;
+      body.brevoMembersListId = form.brevoMembersListId || null;
+      body.brevoResignedListId = form.brevoResignedListId || null;
+      if (form.brevoApiKey) body.brevoApiKey = form.brevoApiKey;
 
       await api(`/admin/coops/${selectedCoop.id}/settings`, { method: 'PUT', body });
       showMessage(t('admin.settings.saved'));
@@ -484,6 +518,44 @@ export default function AdminSettingsPage() {
     } catch {
       setError(t('admin.settings.pontoError'));
       setPontoLoading(false);
+    }
+  };
+
+  const handleTestAudience = async () => {
+    if (!selectedCoop) return;
+    try {
+      const r = await api<{ ok: boolean; detail?: string }>(
+        `/admin/coops/${selectedCoop.id}/audience-sync/test`,
+        { method: 'POST' }
+      );
+      setAudienceMsg(r.ok ? t('brevo.testOk') : `${t('brevo.testFail')}: ${r.detail ?? ''}`);
+    } catch {
+      setAudienceMsg(t('brevo.testFail'));
+    }
+  };
+
+  const handleLoadLists = async () => {
+    if (!selectedCoop) return;
+    try {
+      setAudienceLists(
+        await api<{ id: string; name: string }[]>(
+          `/admin/coops/${selectedCoop.id}/audience-sync/lists`
+        )
+      );
+    } catch {
+      setAudienceMsg(t('brevo.testFail'));
+    }
+  };
+
+  const handleSyncNow = async () => {
+    if (!selectedCoop) return;
+    try {
+      await api<{ queued: boolean }>(`/admin/coops/${selectedCoop.id}/audience-sync/run`, {
+        method: 'POST',
+      });
+      setAudienceMsg(t('brevo.syncQueued'));
+    } catch {
+      setAudienceMsg(t('brevo.error'));
     }
   };
 
@@ -1044,6 +1116,98 @@ export default function AdminSettingsPage() {
                     {t('ecopower.regenerateApiKey')}
                   </Button>
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Brevo audience sync */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('brevo.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t('brevo.description')}</p>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={form.emailAudienceProvider === 'brevo'}
+                onCheckedChange={(c) =>
+                  setForm({ ...form, emailAudienceProvider: c ? 'brevo' : '' })
+                }
+              />
+              <Label>{t('brevo.enable')}</Label>
+            </div>
+
+            {form.emailAudienceProvider === 'brevo' && (
+              <div className="space-y-4 pl-6 border-l-2 border-muted">
+                <div>
+                  <Label>{t('brevo.apiKey')}</Label>
+                  <Input
+                    type="password"
+                    value={form.brevoApiKey}
+                    placeholder="xkeysib-…"
+                    onChange={(e) => setForm({ ...form, brevoApiKey: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{t('brevo.apiKeyNote')}</p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button variant="outline" type="button" onClick={handleLoadLists}>
+                    {t('brevo.loadLists')}
+                  </Button>
+                  <Button variant="outline" type="button" onClick={handleTestAudience}>
+                    {t('brevo.testConnection')}
+                  </Button>
+                </div>
+
+                <div>
+                  <Label>{t('brevo.membersList')}</Label>
+                  <Select
+                    value={form.brevoMembersListId}
+                    onValueChange={(v) => setForm({ ...form, brevoMembersListId: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('brevo.pickList')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {audienceLists.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.name} (#{l.id})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>{t('brevo.resignedList')}</Label>
+                  <Input
+                    value={form.brevoResignedListId}
+                    placeholder={t('brevo.optional')}
+                    onChange={(e) => setForm({ ...form, brevoResignedListId: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button type="button" onClick={handleSyncNow}>
+                    {t('brevo.syncNow')}
+                  </Button>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  {t('admin.settings.lastSync')}:{' '}
+                  {brevoLastSync.at
+                    ? `${formatRelativeTime(brevoLastSync.at, intlLocale)}${
+                        brevoLastSync.status ? ` (${brevoLastSync.status})` : ''
+                      }`
+                    : t('admin.settings.never')}
+                </p>
+
+                {audienceMsg && (
+                  <Alert>
+                    <AlertDescription>{audienceMsg}</AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
           </CardContent>
