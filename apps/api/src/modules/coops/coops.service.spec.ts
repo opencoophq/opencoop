@@ -10,6 +10,7 @@ jest.mock('../../common/crypto/field-encryption', () => ({
 
 process.env.FIELD_ENCRYPTION_KEY = 'a'.repeat(64);
 
+import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
 import { CoopsService } from './coops.service';
@@ -256,5 +257,28 @@ describe('CoopsService — Brevo audience-sync config', () => {
       verifyConnection: jest.fn().mockResolvedValue({ ok: true }), listLists: jest.fn(), upsertContact: jest.fn(),
     } as any);
     expect(await service.testAudienceConnection('c1')).toEqual({ ok: true });
+  });
+
+  it('listAudienceLists returns provider lists for an existing coop', async () => {
+    const coop = { id: 'c1', emailAudienceProvider: 'brevo', brevoApiKey: 'enc' };
+    prisma.coop.findUnique.mockResolvedValue(coop);
+    const listLists = jest.fn().mockResolvedValue([{ id: '3', name: 'Coöperanten' }]);
+    jest.spyOn(factory, 'getAudienceProvider').mockReturnValue({
+      verifyConnection: jest.fn(), listLists, upsertContact: jest.fn(),
+    } as any);
+
+    expect(await service.listAudienceLists('c1')).toEqual([{ id: '3', name: 'Coöperanten' }]);
+    expect(factory.getAudienceProvider).toHaveBeenCalledTimes(1);
+    expect(factory.getAudienceProvider).toHaveBeenCalledWith(coop);
+    expect(listLists).toHaveBeenCalledTimes(1);
+    expect(listLists).toHaveBeenCalledWith();
+  });
+
+  it('listAudienceLists throws NotFoundException when coop is missing', async () => {
+    prisma.coop.findUnique.mockResolvedValue(null);
+    jest.spyOn(factory, 'getAudienceProvider');
+
+    await expect(service.listAudienceLists('c1')).rejects.toThrow(NotFoundException);
+    expect(factory.getAudienceProvider).not.toHaveBeenCalled();
   });
 });
