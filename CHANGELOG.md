@@ -2,6 +2,18 @@
 
 All notable changes to OpenCoop are documented in this file.
 
+## Versioning scheme
+
+As of July 2026, OpenCoop uses **CalVer** with the scheme `vYYYY.WW.MICRO`:
+ISO week-year, ISO week number (zero-padded), and a per-week release counter.
+Example: `v2026.30.1` is the first release of week 30 of 2026, `v2026.30.2` the
+second. Generate the year/week pair with `date +%G.%V` (always `%G`, never `%Y` —
+they differ around New Year). Tags keep the `v` prefix; a `v*` tag still triggers
+the production deploy.
+
+Releases up to and including `v0.9.0` predate this scheme and keep their
+original SemVer-style tags.
+
 ## [0.9.0] - 2026-06-12
 
 Repo-wide hardening release from a full audit of the codebase. Broad security,
