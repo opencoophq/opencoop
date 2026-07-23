@@ -111,6 +111,26 @@ export class UpdateCoopDto {
   @IsNumber()
   ecoPowerMinThreshold?: number | null;
 
+  @ApiProperty({ required: false, description: 'Audience sync provider: null or "brevo"' })
+  @IsOptional()
+  @IsIn([null, 'brevo'])
+  emailAudienceProvider?: string | null;
+
+  @ApiProperty({ required: false, description: 'Brevo API key (write-only; encrypted at rest)' })
+  @IsOptional()
+  @IsString()
+  brevoApiKey?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  brevoMembersListId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  brevoResignedListId?: string;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
