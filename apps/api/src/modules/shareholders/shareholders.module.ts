@@ -10,9 +10,17 @@ import { EmailModule } from '../email/email.module';
 import { RegistrationsModule } from '../registrations/registrations.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { MessagesModule } from '../messages/messages.module';
+import { AudienceSyncModule } from '../audience-sync/audience-sync.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule), EmailModule, RegistrationsModule, DocumentsModule, MessagesModule],
+  imports: [
+    forwardRef(() => AuthModule),
+    EmailModule,
+    RegistrationsModule,
+    DocumentsModule,
+    MessagesModule,
+    AudienceSyncModule,
+  ],
   controllers: [ShareholderActionsController, HouseholdController],
   providers: [ShareholdersService, ShareholderImportService, BirthdaySchedulerService, HouseholdService],
   exports: [ShareholdersService, ShareholderImportService],
