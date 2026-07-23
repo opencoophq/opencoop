@@ -155,6 +155,15 @@ model Coop {
   graphTenantId     String?
   graphFromEmail    String?
 
+  // --- Email audience sync (Brevo) ---
+  emailAudienceProvider String?   // "brevo" | null (off). Drives cron + provider factory.
+  brevoApiKey           String?   // AES-256-GCM encrypted at rest; never returned to client
+  brevoMembersListId    String?   // existing list reused (Bronsgroen = "3" Coöperanten)
+  brevoResignedListId   String?   // optional; if null, resigned contacts are just unlisted
+  brevoLastSyncAt       DateTime?
+  brevoLastSyncStatus   String?   // "OK" | "PARTIAL" | "ERROR" | "RUNNING"
+  brevoSyncRuns         BrevoSyncRun[]
+
   // Bank details for shareholders
   bankName String?
   bankIban String?
@@ -1304,4 +1313,26 @@ model MeetingKioskSession {
 
   @@index([meetingId, active])
   @@map("meeting_kiosk_sessions")
+}
+
+// ============================================================================
+// EMAIL AUDIENCE SYNC
+// ============================================================================
+
+model BrevoSyncRun {
+  id         String    @id @default(cuid())
+  coopId     String
+  coop       Coop      @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  status     String    // "OK" | "PARTIAL" | "ERROR"
+  trigger    String    // "cron" | "manual"
+  added      Int       @default(0)
+  updated    Int       @default(0)
+  moved      Int       @default(0)
+  skipped    Int       @default(0)
+  failed     Int       @default(0)
+  errors     Json?     // [{ shareholderId, email, message }]
+
+  @@index([coopId, startedAt])
 }

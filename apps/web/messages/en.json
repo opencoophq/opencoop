@@ -1874,6 +1874,25 @@
     "ecoPowerIdPlaceholder": "e.g. 2079183",
     "filterEcoPowerClient": "Ecopower clients"
   },
+  "brevo": {
+    "title": "Brevo newsletter sync",
+    "description": "Keep your Brevo list automatically in sync with your active co-op members. Marketing only — statutory communication (e.g. general assembly convocations) stays on OpenCoop's transactional email.",
+    "enable": "Enable sync",
+    "apiKey": "Brevo API key",
+    "apiKeyNote": "Stored encrypted and never shown again. Leave blank to keep it unchanged.",
+    "loadLists": "Load lists",
+    "testConnection": "Test connection",
+    "membersList": "Members list",
+    "resignedList": "Resigned members list (optional)",
+    "pickList": "Choose a list",
+    "optional": "Optional",
+    "syncNow": "Sync now",
+    "syncQueued": "Sync started.",
+    "testOk": "Connection OK.",
+    "testFail": "Connection failed",
+    "loadListsFail": "Could not load lists",
+    "error": "Something went wrong."
+  },
   "cookies": {
     "banner": "This website uses essential cookies for functionality. No tracking or advertising cookies are used.",
     "dismiss": "OK",

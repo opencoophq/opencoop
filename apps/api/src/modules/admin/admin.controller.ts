@@ -128,6 +128,27 @@ export class AdminController {
     return this.coopsService.regenerateApiKey(coopId, user.id, req.ip, req.headers['user-agent']);
   }
 
+  @Post('audience-sync/run')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Trigger a Brevo audience reconcile now' })
+  async runAudienceSync(@Param('coopId') coopId: string) {
+    return this.coopsService.triggerAudienceSync(coopId);
+  }
+
+  @Post('audience-sync/test')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Test the audience provider connection' })
+  async testAudienceSync(@Param('coopId') coopId: string) {
+    return this.coopsService.testAudienceConnection(coopId);
+  }
+
+  @Get('audience-sync/lists')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'List the provider contact lists (for the settings picker)' })
+  async listAudienceLists(@Param('coopId') coopId: string) {
+    return this.coopsService.listAudienceLists(coopId);
+  }
+
   @Put('branding')
   @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Update coop branding' })
