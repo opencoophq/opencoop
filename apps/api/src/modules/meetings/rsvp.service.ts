@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, HttpException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  HttpException,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -57,7 +64,56 @@ export class RsvpService {
 
   async updateRsvp(token: string, status: RSVPStatus, delegateShareholderId?: string) {
     const attendance = await this.resolveToken(token);
+    return this.persistRsvp(attendance, status, delegateShareholderId);
+  }
 
+  async updateRsvpForShareholder(
+    coopId: string,
+    meetingId: string,
+    shareholderId: string,
+    status: RSVPStatus,
+    delegateShareholderId?: string,
+  ) {
+    const attendance = await this.prisma.meetingAttendance.findUnique({
+      where: { meetingId_shareholderId: { meetingId, shareholderId } },
+      include: {
+        shareholder: {
+          include: {
+            user: { select: { email: true, preferredLanguage: true } },
+          },
+        },
+        meeting: {
+          include: {
+            coop: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                logoUrl: true,
+                coopEmail: true,
+              },
+            },
+            agendaItems: {
+              orderBy: { order: 'asc' },
+              include: { resolution: true, attachments: true },
+            },
+          },
+        },
+      },
+    });
+    if (!attendance) throw new NotFoundException('Shareholder is not on the attendance list');
+    if (attendance.meeting.coopId !== coopId) {
+      throw new ForbiddenException('Meeting does not belong to this coop');
+    }
+
+    return this.persistRsvp(attendance, status, delegateShareholderId);
+  }
+
+  private async persistRsvp(
+    attendance: Awaited<ReturnType<RsvpService['resolveToken']>>,
+    status: RSVPStatus,
+    delegateShareholderId?: string,
+  ) {
     if (status === RSVPStatus.PROXY) {
       if (!delegateShareholderId) {
         throw new BadRequestException('Delegate required for PROXY RSVP');
@@ -90,6 +146,15 @@ export class RsvpService {
           delegateShareholderId,
         );
       }
+    } else {
+      await this.prisma.proxy.updateMany({
+        where: {
+          meetingId: attendance.meetingId,
+          grantorShareholderId: attendance.shareholderId,
+          revokedAt: null,
+        },
+        data: { revokedAt: new Date() },
+      });
     }
 
     const updated = await this.prisma.meetingAttendance.update({
@@ -123,7 +188,8 @@ export class RsvpService {
     if (!recipient) return; // postal-only — skip
 
     const language = attendance.shareholder.user?.preferredLanguage ?? 'nl';
-    const shareholderName = `${attendance.shareholder.firstName ?? ''} ${attendance.shareholder.lastName ?? ''}`.trim();
+    const shareholderName =
+      `${attendance.shareholder.firstName ?? ''} ${attendance.shareholder.lastName ?? ''}`.trim();
 
     let delegateName = '';
     if (status === RSVPStatus.PROXY && delegateShareholderId) {
@@ -216,9 +282,7 @@ export class RsvpService {
       start: meeting.scheduledAt,
       durationMinutes: meeting.durationMinutes,
       location: meeting.location ?? '',
-      description: meeting.agendaItems
-        .map((a) => `${a.order}. ${a.title}`)
-        .join('\n'),
+      description: meeting.agendaItems.map((a) => `${a.order}. ${a.title}`).join('\n'),
       organizerName: meeting.coop.name,
       organizerEmail: meeting.coop.coopEmail ?? 'noreply@opencoop.be',
     });
@@ -271,7 +335,8 @@ export class RsvpService {
       throw new HttpException({ code: 'cap_reached' }, 400);
     }
 
-    const displayName = `${result.candidate.firstName ?? ''} ${result.candidate.lastName ?? ''}`.trim();
+    const displayName =
+      `${result.candidate.firstName ?? ''} ${result.candidate.lastName ?? ''}`.trim();
     return { delegateShareholderId: result.candidate.id, displayName };
   }
 

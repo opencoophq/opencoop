@@ -2103,6 +2103,17 @@
       "empty": "Keine RSVPs anzuzeigen",
       "copyLink": "Link kopieren",
       "copied": "Kopiert",
+      "edit": {
+        "button": "RSVP bearbeiten",
+        "title": "RSVP bearbeiten",
+        "statusLabel": "RSVP-Status",
+        "delegateLabel": "Bevollmächtigter",
+        "delegatePlaceholder": "Bevollmächtigten auswählen",
+        "delegateRequired": "Wählen Sie einen Bevollmächtigten für Vollmacht-RSVPs aus.",
+        "save": "Speichern",
+        "saving": "Speichern...",
+        "saveError": "RSVP konnte nicht aktualisiert werden"
+      },
       "filters": {
         "label": "Filter",
         "all": "Alle"
