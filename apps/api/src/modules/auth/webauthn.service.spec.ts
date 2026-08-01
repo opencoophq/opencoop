@@ -62,6 +62,12 @@ describe('WebAuthnService relying party config', () => {
     await expect(buildService({ FRONTEND_URL: 'opencoop.be' })).rejects.toThrow(/FRONTEND_URL/);
   });
 
+  // docker-compose interpolates an unset ${FRONTEND_URL} to the empty string rather than
+  // leaving it absent, so this — not `undefined` — is the shape a misconfigured deploy takes.
+  it('fails fast when FRONTEND_URL is empty rather than silently using localhost', async () => {
+    await expect(buildService({ FRONTEND_URL: '' })).rejects.toThrow(/FRONTEND_URL/);
+  });
+
   it('uses WEBAUTHN_RP_NAME for the display name only', async () => {
     const service = await buildService({
       FRONTEND_URL: 'https://opencoop.be',
