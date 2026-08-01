@@ -15,6 +15,21 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.31.0] - 2026-08-01
+
+### Fixed
+- **Passkeys now work in deployed environments.** Sign-in with a passkey, and
+  registering one, failed on both acceptance and production: the relying-party ID and
+  expected origin were documented in the deployment templates but never passed through
+  to the API container, so the server checked every response against `localhost` and
+  rejected it. Both values are now derived from `FRONTEND_URL`, which every environment
+  already sets correctly — a passkey is bound to the hostname you actually visit, so
+  there is no longer a second setting that can drift out of step with the first. No
+  existing passkeys were affected: registration had never succeeded in a deployed
+  environment, so none had been stored.
+- A missing or malformed `FRONTEND_URL` now stops the API at startup with an explicit
+  message instead of quietly falling back to `localhost`.
+
 ## [2026.30.1] - 2026-07-21
 
 ### Fixed
