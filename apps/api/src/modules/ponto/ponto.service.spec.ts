@@ -10,7 +10,11 @@ jest.mock('@react-pdf/renderer', () => ({
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { PontoService } from './ponto.service';
 import { PontoClient } from './ponto.client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -84,6 +88,7 @@ describe('PontoService', () => {
   };
 
   const mockPontoClient = {
+    assertOAuthConfigured: jest.fn(),
     generateAuthorizationUrl: jest.fn(),
     exchangeAuthorizationCode: jest.fn(),
     refreshAccessToken: jest.fn(),
@@ -210,6 +215,109 @@ describe('PontoService', () => {
           status: 'PENDING',
         }),
       });
+    });
+  });
+
+  describe('PONTO_REDIRECT_URI configuration', () => {
+    let originalRedirectUri: string | undefined;
+
+    beforeEach(() => {
+      originalRedirectUri = process.env.PONTO_REDIRECT_URI;
+    });
+
+    afterEach(() => {
+      if (originalRedirectUri === undefined) {
+        delete process.env.PONTO_REDIRECT_URI;
+      } else {
+        process.env.PONTO_REDIRECT_URI = originalRedirectUri;
+      }
+    });
+
+    it('should fail loudly when PONTO_REDIRECT_URI is empty', async () => {
+      process.env.PONTO_REDIRECT_URI = '';
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        id: 'coop-1',
+        pontoEnabled: true,
+      });
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.pontoConnection.create.mockResolvedValue({
+        id: 'conn-new',
+        status: 'PENDING',
+      });
+
+      await expect(service.initiateConnection('coop-1')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+      await expect(service.initiateConnection('coop-1')).rejects.toThrow(
+        'PONTO_REDIRECT_URI',
+      );
+    });
+
+    // The happy path deletes any stale connection and creates a PENDING one. A server that
+    // cannot finish the handshake must not start it, or a misconfigured deploy would destroy
+    // an existing connection and strand a PENDING row on every attempt.
+    it('should not touch the database when the redirect URI is missing', async () => {
+      process.env.PONTO_REDIRECT_URI = '';
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        id: 'coop-1',
+        pontoEnabled: true,
+      });
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue({
+        id: 'conn-stale',
+        status: 'PENDING',
+      });
+
+      await expect(service.initiateConnection('coop-1')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+
+      expect(mockPrisma.pontoConnection.delete).not.toHaveBeenCalled();
+      expect(mockPrisma.pontoConnection.create).not.toHaveBeenCalled();
+    });
+
+    it('should not touch the database when the client credentials are missing', async () => {
+      process.env.PONTO_REDIRECT_URI = 'https://opencoop.be/api/ponto/callback';
+      mockPontoClient.assertOAuthConfigured.mockImplementationOnce(() => {
+        throw new ServiceUnavailableException(
+          'Ponto is not configured on this server: PONTO_CLIENT_ID is not set.',
+        );
+      });
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        id: 'coop-1',
+        pontoEnabled: true,
+      });
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue({
+        id: 'conn-stale',
+        status: 'PENDING',
+      });
+
+      await expect(service.initiateConnection('coop-1')).rejects.toThrow('PONTO_CLIENT_ID');
+
+      expect(mockPrisma.pontoConnection.delete).not.toHaveBeenCalled();
+      expect(mockPrisma.pontoConnection.create).not.toHaveBeenCalled();
+    });
+
+    it('should pass PONTO_REDIRECT_URI through unchanged', async () => {
+      const redirectUri = 'https://opencoop.be/api/ponto/callback';
+      process.env.PONTO_REDIRECT_URI = redirectUri;
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        id: 'coop-1',
+        pontoEnabled: true,
+      });
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.pontoConnection.create.mockResolvedValue({
+        id: 'conn-new',
+        status: 'PENDING',
+      });
+      mockPontoClient.generateAuthorizationUrl.mockReturnValue(
+        'https://ponto.example.com/auth',
+      );
+
+      await service.initiateConnection('coop-1');
+
+      expect(mockPontoClient.generateAuthorizationUrl.mock.calls[0][0]).toBe(
+        redirectUri,
+      );
     });
   });
 

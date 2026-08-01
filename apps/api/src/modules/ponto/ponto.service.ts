@@ -3,6 +3,7 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomBytes, createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -22,6 +23,16 @@ export class PontoService {
     private readonly emailService: EmailService,
   ) {}
 
+  private getRedirectUri(): string {
+    const redirectUri = process.env.PONTO_REDIRECT_URI;
+    if (!redirectUri) {
+      throw new ServiceUnavailableException(
+        'Ponto is not configured on this server: PONTO_REDIRECT_URI is not set.',
+      );
+    }
+    return redirectUri;
+  }
+
   // -------------------------------------------------------------------------
   // OAuth Flow
   // -------------------------------------------------------------------------
@@ -38,6 +49,11 @@ export class PontoService {
     if (!coop.pontoEnabled) {
       throw new BadRequestException('Ponto is not enabled for this cooperative');
     }
+
+    // Validate before touching anything: the steps below delete any stale connection and
+    // create a PENDING one, so a server that cannot finish the handshake must not start it.
+    const redirectUri = this.getRedirectUri();
+    this.pontoClient.assertOAuthConfigured();
 
     // Check for existing connection
     const existing = await this.prisma.pontoConnection.findUnique({
@@ -75,10 +91,6 @@ export class PontoService {
         status: 'PENDING',
       },
     });
-
-    const redirectUri =
-      process.env.PONTO_REDIRECT_URI ||
-      `${process.env.API_URL || 'http://localhost:3001'}/admin/ponto/callback`;
 
     const authorizationUrl = this.pontoClient.generateAuthorizationUrl(
       redirectUri,
@@ -134,9 +146,7 @@ export class PontoService {
     code: string,
     codeVerifier: string,
   ): Promise<void> {
-    const redirectUri =
-      process.env.PONTO_REDIRECT_URI ||
-      `${process.env.API_URL || 'http://localhost:3001'}/admin/ponto/callback`;
+    const redirectUri = this.getRedirectUri();
 
     const tokens = await this.pontoClient.exchangeAuthorizationCode(
       code,
