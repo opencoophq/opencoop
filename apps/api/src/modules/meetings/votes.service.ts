@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MajorityType, VotingWeight, VoteChoice } from '@opencoop/database';
+import { MajorityType, RegistrationType, VotingWeight, VoteChoice } from '@opencoop/database';
 import { RecordVoteDto } from './dto/record-vote.dto';
 
 export interface OutcomeInput {
@@ -15,9 +15,28 @@ export interface OutcomeInput {
   votesAbstain: number;
 }
 
+type VoteRegistration = {
+  type: RegistrationType;
+  quantity: number;
+};
+
 @Injectable()
 export class VotesService {
   constructor(private prisma: PrismaService) {}
+
+  private computePerShareWeight(registrations: VoteRegistration[]) {
+    let total = 0;
+
+    for (const r of registrations) {
+      if (r.type === RegistrationType.BUY) {
+        total += r.quantity;
+      } else if (r.type === RegistrationType.SELL) {
+        total -= r.quantity;
+      }
+    }
+
+    return Math.max(total, 0);
+  }
 
   /**
    * Pure majority math. Abstentions are excluded from both the numerator AND
@@ -101,13 +120,12 @@ export class VotesService {
               status: { in: ['ACTIVE', 'COMPLETED'] },
               type: { in: ['BUY', 'SELL'] },
             },
-            select: { type: true, quantity: true },
+            select: {
+              type: true,
+              quantity: true,
+            },
           });
-          let total = 0;
-          for (const r of registrations) {
-            total += r.type === 'BUY' ? r.quantity : -r.quantity;
-          }
-          weight = Math.max(total, 1);
+          weight = this.computePerShareWeight(registrations);
         }
 
         await tx.vote.upsert({
