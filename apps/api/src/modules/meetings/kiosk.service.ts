@@ -12,6 +12,7 @@ import * as path from 'path';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 const SIGNATURE_MAX_BYTES = 2 * 1024 * 1024; // 2MB
+const KIOSK_SESSION_EXPIRY_MS = 6 * 60 * 60 * 1000;
 
 @Injectable()
 export class KioskService {
@@ -63,6 +64,9 @@ export class KioskService {
     });
     if (!session) throw new NotFoundException('Kiosk session invalid');
     if (!session.active) throw new BadRequestException('Kiosk session ended');
+    if (Date.now() > session.meeting.scheduledAt.getTime() + KIOSK_SESSION_EXPIRY_MS) {
+      throw new BadRequestException('Kiosk session expired');
+    }
     return session;
   }
 
