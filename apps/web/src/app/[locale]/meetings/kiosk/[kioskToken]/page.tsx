@@ -120,14 +120,18 @@ export default function KioskPage() {
 
   const handleSubmitCheckIn = async () => {
     if (!selected || !sigRef.current) return;
-    if (sigRef.current.isEmpty()) {
-      setError(t('meetings.kiosk.signatureRequired'));
-      return;
-    }
-    const dataUrl = sigRef.current.toDataURL('image/png');
     setSubmitting(true);
     setError(null);
     try {
+      // toDataURL/isEmpty live inside try: signature_pad can throw a refNullError
+      // if the canvas has unmounted between the click and the read, and an
+      // uncaught throw here crashes the React tree (Application error).
+      if (sigRef.current.isEmpty()) {
+        setError(t('meetings.kiosk.signatureRequired'));
+        setSubmitting(false);
+        return;
+      }
+      const dataUrl = sigRef.current.toDataURL('image/png');
       const res = await fetch(
         `${API_URL}/public/meetings/kiosk/${token}/check-in`,
         {
@@ -146,7 +150,8 @@ export default function KioskPage() {
         return;
       }
       setState('WELCOME');
-    } catch {
+    } catch (err) {
+      console.error('kiosk check-in failed', err);
       setError(t('meetings.kiosk.checkInError'));
     } finally {
       setSubmitting(false);
