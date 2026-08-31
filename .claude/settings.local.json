@@ -1,0 +1,62 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Users/wouterhermans/Developer/opencoop/scripts/paperclip-issue-update.sh:*)",
+      "Bash(/Users/wouterhermans/Developer/opencoop/scripts/paperclip:*)",
+      "Bash(DATABASE_URL=\"postgresql://opencoop:opencoop@localhost:5432/opencoop\" pnpm --filter @opencoop/database run seed:*)",
+      "Bash(DATABASE_URL=\"postgresql://opencoop:opencoop_dev_password@localhost:5433/opencoop?schema=public\" npx prisma db push:*)",
+      "Bash(DATABASE_URL=\"postgresql://opencoop:opencoop_dev_password@localhost:5433/opencoop?schema=public\" pnpm --filter @opencoop/database run seed:*)",
+      "Bash(DATABASE_URL=\"postgresql://opencoop:opencoop_dev_password@localhost:5433/opencoop?schema=public\" pnpm --filter @opencoop/database seed:*)",
+      "Bash(DATABASE_URL=\"postgresql://opencoop:opencoop_dev_password@localhost:5433/opencoop?schema=public\" pnpm db:push:*)",
+      "Bash(DATABASE_URL=\"postgresql://opencoop:opencoop_dev_password@localhost:5433/opencoop?schema=public\" pnpm push:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWw3dzJtNXowMDAwODF3eHl0OHJ6dDhhIiwiZW1haWwiOiJhZG1pbkBvcGVuY29vcC5iZSIsInJvbGUiOiJTWVNURU1fQURNSU4iLCJjb29wSWRzIjpbImNtbDd3Mm02NjAwMDE4MXd4a2FqemJxZHoiXSwiaWF0IjoxNzcwMjE1MzM3LCJleHAiOjE3NzA4MjAxMzd9.32uPxY-hVyjzNE5hVWmod5SSMB5CpZ2hQjIUc6RLtVw\")",
+      "Bash(curl:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker-compose:*)",
+      "Bash(env)",
+      "Bash(env:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd CLAUDE.md project documentation\n\nDocument project structure, tech stack, commands, and patterns for Claude Code.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git init:*)",
+      "Bash(git status:*)",
+      "Bash(ls:*)",
+      "Bash(lsof:*)",
+      "Bash(npx prisma db execute:*)",
+      "Bash(npx prisma db seed:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pgrep:*)",
+      "Bash(pkill:*)",
+      "Bash(pnpm --filter @opencoop/api add:*)",
+      "Bash(pnpm --filter @opencoop/database add -D @types/node)",
+      "Bash(pnpm --filter @opencoop/database build:*)",
+      "Bash(pnpm --filter @opencoop/database db:seed:*)",
+      "Bash(pnpm --filter @opencoop/database run seed:*)",
+      "Bash(pnpm --filter @opencoop/pdf-templates build:*)",
+      "Bash(pnpm --filter @opencoop/shared build:*)",
+      "Bash(pnpm --filter web build:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm db:generate:*)",
+      "Bash(pnpm db:push:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm install:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(xargs kill -9)"
+    ],
+    "additionalDirectories": [
+      "/Users/wouterhermans/.paperclip/instances/default/companies/8d456e44-bba9-48e2-975e-9a16c8efdc73",
+      "/Users/wouterhermans/.paperclip/instances/default/companies/8d456e44-bba9-48e2-975e-9a16c8efdc73/acp-engine/agents/de58cc6a-0478-4f5b-a270-4509cd00f70c",
+      "/Users/wouterhermans/.paperclip/instances/default/workspaces/de58cc6a-0478-4f5b-a270-4509cd00f70c"
+    ],
+    "defaultMode": "default"
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "browser-server",
+    "filesystem",
+    "memory",
+    "fetch"
+  ]
+}
