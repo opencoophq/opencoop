@@ -200,7 +200,8 @@
     "statuses": {
       "PENDING": "Ausstehend",
       "ACTIVE": "Aktiv",
-      "INACTIVE": "Inaktiv"
+      "INACTIVE": "Inaktiv",
+      "derivedFromPaidShares": "Abgeleitet aus bezahlten Anteilen"
     },
     "memberSince": "Mitglied seit"
   },

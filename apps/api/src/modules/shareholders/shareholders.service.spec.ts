@@ -254,13 +254,15 @@ describe('ShareholdersService', () => {
       (auditService.log as jest.Mock).mockResolvedValueOnce(undefined);
 
       await service.create('c1', validCreateDto);
+      const createData = (prismaService.shareholder.create as jest.Mock).mock.calls[0][0].data;
+      expect(createData).not.toHaveProperty('status');
       expect(audienceQueue.add).toHaveBeenCalledWith('reconcile-one', {
         coopId: 'c1',
         shareholderId: 'sh9',
       });
     });
 
-    it('enqueues reconcile-one when email/status/name changes on update', async () => {
+    it('enqueues reconcile-one when email/name changes on update', async () => {
       const existing = makeShareholder({ id: 'sh1', coopId: 'c1', email: 'old@x.be' });
       (prismaService.shareholder.findFirst as jest.Mock)
         // findById (load existing)

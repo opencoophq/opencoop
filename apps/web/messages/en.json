@@ -200,7 +200,8 @@
     "statuses": {
       "PENDING": "Pending",
       "ACTIVE": "Active",
-      "INACTIVE": "Inactive"
+      "INACTIVE": "Inactive",
+      "derivedFromPaidShares": "Derived from paid shares"
     },
     "memberSince": "Member since"
   },

@@ -282,7 +282,6 @@ export class ShareholdersService {
             coopId,
             email: rest.email?.toLowerCase(),
             birthDate: birthDate ? new Date(birthDate) : null,
-            status: 'ACTIVE',
             referralCode,
             address: address ? JSON.parse(JSON.stringify(address)) : undefined,
             beneficialOwners: encryptedBeneficialOwners?.length
@@ -445,7 +444,6 @@ export class ShareholdersService {
     });
 
     if (
-      dto.status !== undefined ||
       dto.email !== undefined ||
       dto.firstName !== undefined ||
       dto.lastName !== undefined ||

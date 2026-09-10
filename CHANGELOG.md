@@ -15,6 +15,24 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [Unreleased]
+
+### Changed
+- **Shareholder status is now derived from paid shares.** A shareholder is ACTIVE when
+  their paid BUY registrations minus completed SELL registrations leave more than zero
+  shares, INACTIVE when they once held shares and now hold none, and PENDING when they
+  never held paid shares. Admins can no longer set the status by hand: the detail page
+  shows it as a read-only badge, the update endpoint ignores it, and the CSV import no
+  longer accepts a status column. New shareholders start as PENDING until their first
+  payment lands. The status is recomputed after every payment, bank match, completion,
+  and transfer, and a nightly job at 02:30 (Europe/Brussels) reconciles every row as a
+  safety net before the Brevo audience sync runs.
+- **Backfill.** A data migration recomputes the status of every existing shareholder on
+  deploy. On production this moves 28 Bronsgroen records from ACTIVE to PENDING (no paid
+  shares), 6 from ACTIVE to INACTIVE (sold everything in 2026), and 1 from INACTIVE to
+  ACTIVE (a sale still awaiting payout). The dashboard's "active shareholders" tile and
+  the growth chart now agree.
+
 ## [2026.31.0] - 2026-08-01
 
 ### Fixed

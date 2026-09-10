@@ -8,6 +8,7 @@ import { Test } from '@nestjs/testing';
 import { BankImportService } from './bank-import.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
+import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 import { generateOgmCode, validateOgmCode } from '@opencoop/shared';
 
 /**
@@ -26,6 +27,7 @@ describe('BankImportService — importCsv OGM matching', () => {
   let service: BankImportService;
   let prisma: any;
   let registrationsService: any;
+  let shareholderStatus: any;
 
   // A real, checksum-valid OGM produced the same way the app generates them.
   const OGM = generateOgmCode('001', 42);
@@ -40,6 +42,7 @@ describe('BankImportService — importCsv OGM matching', () => {
       },
       bankTransaction: {
         create: jest.fn().mockResolvedValue({ id: 'btx-1' }),
+        update: jest.fn().mockResolvedValue({}),
       },
       payment: {
         create: jest.fn().mockResolvedValue({ id: 'pay-1' }),
@@ -56,12 +59,17 @@ describe('BankImportService — importCsv OGM matching', () => {
     registrationsService = {
       onRegistrationCompleted: jest.fn().mockResolvedValue(null),
     };
+    shareholderStatus = {
+      recompute: jest.fn().mockResolvedValue(null),
+      recomputeMany: jest.fn().mockResolvedValue(undefined),
+    };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         BankImportService,
         { provide: PrismaService, useValue: prisma },
         { provide: RegistrationsService, useValue: registrationsService },
+        { provide: ShareholderStatusService, useValue: shareholderStatus },
       ],
     }).compile();
     service = moduleRef.get(BankImportService);
@@ -90,6 +98,7 @@ describe('BankImportService — importCsv OGM matching', () => {
       {
         id: 'reg-1',
         coopId: COOP_ID,
+        shareholderId: 'sh-1',
         status: 'PENDING_PAYMENT',
         totalAmount: 100,
         isGift: false,
@@ -145,6 +154,7 @@ describe('BankImportService — importCsv OGM matching', () => {
       {
         id: 'reg-1',
         coopId: COOP_ID,
+        shareholderId: 'sh-1',
         status: 'PENDING_PAYMENT',
         totalAmount: 100,
         isGift: false,
@@ -162,6 +172,7 @@ describe('BankImportService — importCsv OGM matching', () => {
     expect(prisma.registration.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: 'ACTIVE' } }),
     );
+    expect(shareholderStatus.recomputeMany).toHaveBeenCalledWith(['sh-1']);
   });
 
   it('leaves a row with no OGM in the reference UNMATCHED', async () => {
@@ -238,6 +249,7 @@ describe('BankImportService — importCsv OGM matching', () => {
       {
         id: 'reg-1',
         coopId: COOP_ID,
+        shareholderId: 'sh-1',
         status: 'PENDING_PAYMENT',
         totalAmount: 100,
         isGift: false,
@@ -317,5 +329,26 @@ describe('BankImportService — importCsv OGM matching', () => {
     expect(arg.where.ogmCode.in).toEqual(expect.arrayContaining([OGM, OGM2]));
     // Deduped: two unique OGMs, not three.
     expect(arg.where.ogmCode.in).toHaveLength(2);
+  });
+
+  it('recomputes status after a manual partial-payment match commits', async () => {
+    prisma.bankTransaction.findUnique = jest.fn().mockResolvedValue({
+      id: 'btx-1',
+      matchStatus: 'UNMATCHED',
+      amount: 60,
+      date: new Date('2026-01-15'),
+    });
+    prisma.registration.findUnique = jest.fn().mockResolvedValue({
+      id: 'reg-1',
+      coopId: COOP_ID,
+      shareholderId: 'sh-1',
+      status: 'PENDING_PAYMENT',
+      totalAmount: 100,
+    });
+    prisma.payment.findMany.mockResolvedValue([{ amount: 60 }]);
+
+    await service.manualMatch('btx-1', 'reg-1', IMPORTER_ID);
+
+    expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh-1');
   });
 });

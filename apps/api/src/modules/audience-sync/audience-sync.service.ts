@@ -98,7 +98,7 @@ export class AudienceSyncService {
       const provider = this.providerFor(coop);
 
       const shareholders = await this.prisma.shareholder.findMany({
-        where: { coopId, status: { in: ['ACTIVE', 'INACTIVE'] } },
+        where: { coopId },
         select: SHAREHOLDER_SELECT,
       });
       for (const shareholder of shareholders) {
@@ -166,11 +166,11 @@ export class AudienceSyncService {
     const membersList = coop.brevoMembersListId ? Number(coop.brevoMembersListId) : null;
     const resignedList = coop.brevoResignedListId ? Number(coop.brevoResignedListId) : null;
 
-    if (shareholder.status === 'PENDING' || !membersList) {
+    if (!membersList) {
       summary.skipped++;
       return;
     }
-    if (shareholder.status === 'ACTIVE' && !email) {
+    if ((shareholder.status === 'ACTIVE' || shareholder.status === 'PENDING') && !email) {
       summary.skipped++;
       return;
     }
@@ -190,7 +190,7 @@ export class AudienceSyncService {
         removeListIds: resignedList ? [resignedList] : [],
         createIfMissing: true,
       };
-    } else {
+    } else if (shareholder.status === 'INACTIVE') {
       // INACTIVE: remove from members, move to resigned iff configured; never create.
       input = {
         extId: shareholder.id,
@@ -200,11 +200,21 @@ export class AudienceSyncService {
         removeListIds: [membersList],
         createIfMissing: false,
       };
+    } else {
+      // PENDING: never held paid shares; remove from members, never resigned, never create.
+      input = {
+        extId: shareholder.id,
+        email,
+        attributes,
+        addListIds: [],
+        removeListIds: [membersList],
+        createIfMissing: false,
+      };
     }
 
     try {
       const result = await provider.upsertContact(input);
-      if (shareholder.status === 'INACTIVE') {
+      if (shareholder.status === 'INACTIVE' || shareholder.status === 'PENDING') {
         summary.moved++;
       } else if (result === 'created') {
         summary.added++;
