@@ -348,6 +348,8 @@ model ApiKey {
   createdAt  DateTime  @default(now())
   revokedAt  DateTime?
 
+  draftConversations Conversation[] @relation("ConversationCreatedByApiKey")
+
   @@index([keyHash])
   @@map("api_keys")
 }
@@ -652,9 +654,10 @@ model Project {
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
-  coop          Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  registrations Registration[]
-  channels      ChannelProject[]
+  coop                  Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  registrations         Registration[]
+  channels              ChannelProject[]
+  audienceConversations Conversation[]   @relation("ConversationAudienceProject")
 
   @@unique([coopId, name])
   @@map("projects")
@@ -889,6 +892,23 @@ enum ConversationType {
   DIRECT
 }
 
+enum ConversationStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+}
+
+enum AudienceType {
+  ALL
+  PROJECT
+  SELECTED
+}
+
+enum MessageFormat {
+  TEXT
+  HTML
+}
+
 model Conversation {
   id        String           @id @default(cuid())
   coopId    String
@@ -899,13 +919,26 @@ model Conversation {
 
   createdById String
 
-  coop         Coop                      @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  createdBy    User                      @relation("ConversationCreatedBy", fields: [createdById], references: [id])
-  messages     Message[]
-  participants ConversationParticipant[]
+  status                 ConversationStatus @default(SENT)
+  scheduledAt            DateTime?
+  sentAt                 DateTime?
+  sendAttempts           Int                @default(0)
+  audienceType           AudienceType       @default(ALL)
+  audienceProjectId      String?
+  audienceShareholderIds String[]           @default([])
+  createdByApiKeyId      String?
+
+  coop            Coop                      @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  createdBy       User                      @relation("ConversationCreatedBy", fields: [createdById], references: [id])
+  audienceProject Project?                  @relation("ConversationAudienceProject", fields: [audienceProjectId], references: [id], onDelete: SetNull)
+  createdByApiKey ApiKey?                   @relation("ConversationCreatedByApiKey", fields: [createdByApiKeyId], references: [id], onDelete: SetNull)
+  messages        Message[]
+  participants    ConversationParticipant[]
 
   @@index([coopId])
   @@index([createdById])
+  @@index([coopId, status])
+  @@index([status, scheduledAt])
   @@map("conversations")
 }
 
@@ -930,6 +963,7 @@ model Message {
   senderType     String // "ADMIN" | "SHAREHOLDER"
   senderId       String // userId (for admin) or shareholderId (for shareholder)
   body           String
+  format         MessageFormat @default(TEXT)
   createdAt      DateTime @default(now())
 
   conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
