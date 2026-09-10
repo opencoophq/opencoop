@@ -15,7 +15,9 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
-## [2026.37.0] - 2026-09-10
+## [2026.37.1] - 2026-09-10
+
+Note: tag `v2026.37.0` points at the same commit as `v2026.31.0` and shipped nothing new.
 
 ### Changed
 - **Shareholder status is now derived from paid shares.** A shareholder is ACTIVE when
