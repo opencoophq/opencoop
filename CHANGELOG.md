@@ -19,19 +19,20 @@ original SemVer-style tags.
 
 ### Changed
 - **Shareholder status is now derived from paid shares.** A shareholder is ACTIVE when
-  their paid BUY registrations minus completed SELL registrations leave more than zero
-  shares, INACTIVE when they once held shares and now hold none, and PENDING when they
-  never held paid shares. Admins can no longer set the status by hand: the detail page
-  shows it as a read-only badge, the update endpoint ignores it, and the CSV import no
-  longer accepts a status column. New shareholders start as PENDING until their first
-  payment lands. The status is recomputed after every payment, bank match, completion,
-  and transfer, and a nightly job at 02:30 (Europe/Brussels) reconciles every row as a
-  safety net before the Brevo audience sync runs.
+  paid BUY shares minus completed SELL shares is above zero. INACTIVE means they once
+  held shares and now hold none. PENDING means they never held paid shares. Admins can
+  no longer set the status by hand. The detail page shows it as a read-only badge, the
+  update endpoint rejects it, and the CSV import no longer accepts a status column. New
+  shareholders start as PENDING until their first payment lands. The status is recomputed
+  after every payment, bank match, completion, and transfer. A nightly job at 02:30
+  (Europe/Brussels) reconciles every row before the Brevo audience sync runs.
+- **Brevo sync removes PENDING shareholders from the members list.** Before, a contact
+  added while ACTIVE stayed on the list forever.
 - **Backfill.** A data migration recomputes the status of every existing shareholder on
-  deploy. On production this moves 28 Bronsgroen records from ACTIVE to PENDING (no paid
-  shares), 6 from ACTIVE to INACTIVE (sold everything in 2026), and 1 from INACTIVE to
-  ACTIVE (a sale still awaiting payout). The dashboard's "active shareholders" tile and
-  the growth chart now agree.
+  deploy. On production, 28 Bronsgroen records move from ACTIVE to PENDING because they
+  hold no paid shares. 6 move from ACTIVE to INACTIVE because they sold everything in
+  2026. 1 moves from INACTIVE to ACTIVE because the sale still awaits payout. The
+  dashboard's "active shareholders" tile and the growth chart now agree.
 
 ## [2026.31.0] - 2026-08-01
 

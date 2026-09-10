@@ -73,14 +73,16 @@ describe('AudienceSyncService', () => {
     }));
   });
 
-  it('reconcileOne skips a PENDING shareholder without an email', async () => {
+  it('reconcileOne still removes a PENDING shareholder without an email from members', async () => {
     prisma.coop.findUnique.mockResolvedValue(COOP);
     prisma.shareholder.findFirst.mockResolvedValue(
       makeShareholder({ status: 'PENDING', email: null, user: null }),
     );
     const s = await service.reconcileOne('c1', 'sh1');
-    expect(s.skipped).toBe(1);
-    expect(upsert).not.toHaveBeenCalled();
+    expect(s.moved).toBe(1);
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
+      email: null, removeListIds: [3], createIfMissing: false,
+    }));
   });
 
   it('reconcileOne skips when no email can be resolved', async () => {

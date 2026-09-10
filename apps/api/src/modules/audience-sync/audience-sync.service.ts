@@ -170,7 +170,7 @@ export class AudienceSyncService {
       summary.skipped++;
       return;
     }
-    if ((shareholder.status === 'ACTIVE' || shareholder.status === 'PENDING') && !email) {
+    if (shareholder.status === 'ACTIVE' && !email) {
       summary.skipped++;
       return;
     }

@@ -11,11 +11,11 @@ test.describe('Shareholder status read-only', () => {
     await row.getByRole('link').click();
     await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
 
-    const statusBadge = page
-      .locator('div.inline-flex')
-      .filter({ hasText: /^Actief$|^In behandeling$|^Inactief$/ })
-      .last();
-    await expect(statusBadge).toBeVisible();
+    // The status field is the container that holds the "derived from paid shares" helper text.
+    const statusField = page.getByText('Afgeleid van betaalde aandelen').locator('..');
+    await expect(
+      statusField.getByText(/^Actief$|^In behandeling$|^Inactief$/),
+    ).toBeVisible();
     await expect(
       page.locator('button[role="combobox"]').filter({ hasText: /Actief|In behandeling|Inactief/ }),
     ).toHaveCount(0);

@@ -238,7 +238,6 @@ export default function ShareholderDetailPage() {
 
   const form = useForm<ShareholderForm>({
     resolver: zodResolver(shareholderSchema),
-    defaultValues: {},
   });
 
   const fetchShareholder = useCallback(async () => {

@@ -13,17 +13,11 @@ export function deriveShareholderStatus(
   const sellQuantity = registrations
     .filter((registration) => registration.type === 'SELL' && registration.status === 'COMPLETED')
     .reduce((total, registration) => total + registration.quantity, 0);
-  const hasActiveBuy = registrations.some(
-    (registration) =>
-      registration.type === 'BUY' &&
-      (registration.status === 'ACTIVE' || registration.status === 'COMPLETED'),
-  );
-
   if (buyQuantity - sellQuantity > 0) {
     return ShareholderStatus.ACTIVE;
   }
 
-  if (hasActiveBuy) {
+  if (buyQuantity > 0) {
     return ShareholderStatus.INACTIVE;
   }
 
