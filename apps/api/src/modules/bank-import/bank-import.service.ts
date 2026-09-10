@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
+import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 import { computeTotalPaid } from '@opencoop/shared';
 import { BankPreset, BANK_PRESETS } from './bank-presets';
 
@@ -9,6 +10,7 @@ export class BankImportService {
   constructor(
     private prisma: PrismaService,
     private registrationsService: RegistrationsService,
+    private shareholderStatus: ShareholderStatusService,
   ) {}
 
   async getImports(coopId: string) {
@@ -73,6 +75,7 @@ export class BankImportService {
     let matchedCount = 0;
     let unmatchedCount = 0;
     const completedGiftRegistrationIds: string[] = [];
+    const shareholderIdsToRecompute: string[] = [];
 
     // Batch the OGM lookups: extract every OGM from the rows (same regex the loop
     // uses), dedupe, and fetch all matching registrations in ONE query instead of
@@ -87,7 +90,17 @@ export class BankImportService {
       ),
     );
 
-    const registrationMap = new Map<string, { id: string; coopId: string; status: string; totalAmount: unknown; isGift: boolean }>();
+    const registrationMap = new Map<
+      string,
+      {
+        id: string;
+        coopId: string;
+        shareholderId: string;
+        status: string;
+        totalAmount: unknown;
+        isGift: boolean;
+      }
+    >();
     if (uniqueOgms.length > 0) {
       const registrations = await this.prisma.registration.findMany({
         where: { ogmCode: { in: uniqueOgms } },
@@ -176,6 +189,7 @@ export class BankImportService {
               // Keep the cached entry in sync: a later same-OGM row must see
               // COMPLETED (which the gate excludes), as a fresh DB read would.
               registration.status = 'COMPLETED';
+              shareholderIdsToRecompute.push(registration.shareholderId);
 
               if (registration.isGift) {
                 completedGiftRegistrationIds.push(registration.id);
@@ -188,6 +202,7 @@ export class BankImportService {
               // Keep the cached entry in sync: a partial payment flips
               // PENDING_PAYMENT -> ACTIVE, which a later same-OGM row must see.
               registration.status = 'ACTIVE';
+              shareholderIdsToRecompute.push(registration.shareholderId);
             }
           });
 
@@ -212,6 +227,8 @@ export class BankImportService {
         },
       });
     }
+
+    await this.shareholderStatus.recomputeMany(shareholderIdsToRecompute);
 
     for (const regId of completedGiftRegistrationIds) {
       await this.registrationsService.onRegistrationCompleted(regId);
@@ -395,6 +412,7 @@ export class BankImportService {
       });
 
       let isCompleted = false;
+      let isActive = false;
       if (
         registration.status === 'PENDING_PAYMENT' ||
         registration.status === 'ACTIVE'
@@ -419,14 +437,17 @@ export class BankImportService {
             where: { id: registrationId },
             data: { status: 'ACTIVE' },
           });
+          isActive = true;
         }
       }
 
-      return { success: true, isCompleted };
+      return { success: true, isCompleted, isActive, shareholderId: registration.shareholderId };
     });
 
     if (result.isCompleted) {
       await this.registrationsService.onRegistrationCompleted(registrationId);
+    } else if (result.isActive) {
+      await this.shareholderStatus.recompute(result.shareholderId);
     }
 
     return { success: true };

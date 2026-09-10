@@ -18,6 +18,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  ShareholderStatusBadge,
+  type ShareholderStatus,
+} from '@/components/shareholder-status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,7 +67,7 @@ import {
 interface ShareholderRow {
   id: string;
   type: string;
-  status: string;
+  status: ShareholderStatus;
   firstName?: string;
   lastName?: string;
   companyName?: string;
@@ -697,17 +701,7 @@ export default function ShareholdersPage() {
                       <TableCell className="text-muted-foreground">{sh.email || '-'}</TableCell>
                       <TableCell className="text-right">{activeShares(sh)}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            sh.status === 'ACTIVE'
-                              ? 'default'
-                              : sh.status === 'PENDING'
-                                ? 'secondary'
-                                : 'destructive'
-                          }
-                        >
-                          {t(`shareholder.statuses.${sh.status}`)}
-                        </Badge>
+                        <ShareholderStatusBadge status={sh.status} />
                       </TableCell>
                       {ecoPowerEnabled && (
                         <TableCell>

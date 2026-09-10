@@ -200,7 +200,8 @@
     "statuses": {
       "PENDING": "In behandeling",
       "ACTIVE": "Actief",
-      "INACTIVE": "Inactief"
+      "INACTIVE": "Inactief",
+      "derivedFromPaidShares": "Afgeleid van betaalde aandelen"
     },
     "memberSince": "Lid sinds"
   },

@@ -5,6 +5,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { EmailService } from '../email/email.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
+import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 
 @Injectable()
 export class RegistrationsService {
@@ -14,6 +15,7 @@ export class RegistrationsService {
     private documentsService: DocumentsService,
     private emailService: EmailService,
     private adminNotificationsService: AdminNotificationsService,
+    private shareholderStatus: ShareholderStatusService,
   ) {}
 
   private readonly defaultInclude = {
@@ -776,7 +778,7 @@ export class RegistrationsService {
     const totalAmount = data.quantity * pricePerShare;
     const now = new Date();
 
-    return this.prisma.$transaction(async (tx) => {
+    const transferIn = await this.prisma.$transaction(async (tx) => {
       // SELL registration for the from-shareholder
       const sellReg = await tx.registration.create({
         data: {
@@ -842,6 +844,10 @@ export class RegistrationsService {
 
       return transferIn;
     });
+
+    await this.shareholderStatus.recomputeMany([data.fromShareholderId, data.toShareholderId]);
+
+    return transferIn;
   }
 
   /**
@@ -891,6 +897,8 @@ export class RegistrationsService {
     if (!registration) {
       return null;
     }
+
+    await this.shareholderStatus.recompute(registration.shareholderId);
 
     const shareholder = registration.shareholder;
 

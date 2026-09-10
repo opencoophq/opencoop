@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
+import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 import { computeTotalPaid } from '@opencoop/shared';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private registrationsService: RegistrationsService,
     private adminNotificationsService: AdminNotificationsService,
+    private shareholderStatus: ShareholderStatusService,
   ) {}
 
   async findByRegistration(registrationId: string) {
@@ -105,6 +107,7 @@ export class PaymentsService {
         where: { id: data.registrationId },
         data: { status: 'ACTIVE' },
       });
+      await this.shareholderStatus.recompute(registration.shareholderId);
     }
 
     return payment;

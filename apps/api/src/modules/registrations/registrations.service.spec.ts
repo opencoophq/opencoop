@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { DocumentsService } from '../documents/documents.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
+import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 
 describe('RegistrationsService', () => {
   let service: RegistrationsService;
@@ -40,6 +41,10 @@ describe('RegistrationsService', () => {
         { provide: EmailService, useValue: emailService },
         { provide: DocumentsService, useValue: {} },
         { provide: AdminNotificationsService, useValue: {} },
+        {
+          provide: ShareholderStatusService,
+          useValue: { recompute: jest.fn().mockResolvedValue(null), recomputeMany: jest.fn() },
+        },
       ],
     }).compile();
     service = moduleRef.get(RegistrationsService);
