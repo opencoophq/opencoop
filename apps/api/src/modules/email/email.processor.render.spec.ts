@@ -95,7 +95,8 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
     'message-notification': {
       shareholderName: 'Jan Peeters',
       messageSubject: 'Belangrijk nieuws',
-      messagePreview: 'Dit is een voorbeeld van een bericht.',
+      messageBody: '<p>Dit is een voorbeeld van een bericht.</p>',
+      hasAttachments: false,
       inboxUrl: 'https://opencoop.test/inbox/1',
     },
     'admin-message-notification': {
@@ -258,5 +259,25 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
         expect(html).toMatchSnapshot();
       });
     });
+  });
+
+  it('renders message-notification with the full body', () => {
+    const processor = createProcessor();
+    const data = {
+      coopName: 'Bronsgroen',
+      shareholderName: 'Christiane',
+      messageSubject: 'Uw aandelen',
+      messageBody: '<h2>Wat er is beslist</h2><p>Een <strong>vet</strong> woord.</p>',
+      hasAttachments: true,
+      inboxUrl: 'https://opencoop.be/nl/dashboard/inbox/c1',
+      language: 'nl',
+    };
+    const html = processor.renderTemplate('message-notification', data, 'Bronsgroen');
+
+    expect(html).toMatchSnapshot();
+    expect(html).toContain('<h2>Wat er is beslist</h2><p>Een <strong>vet</strong> woord.</p>');
+    expect(html).toContain('Beste Christiane,');
+    expect(html).toContain('Dit bericht bevat bijlagen.');
+    expect(html).not.toContain('&lt;h2&gt;');
   });
 });
