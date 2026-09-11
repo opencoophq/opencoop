@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { ConflictException } from '@nestjs/common';
 import { MessagesScheduler } from './messages.scheduler';
 import { MessagesService } from './messages.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -67,6 +68,14 @@ describe('MessagesScheduler', () => {
         templateData: expect.objectContaining({ adminName: 'Admin', messageSubject: 'A' }),
       }),
     );
+  });
+
+  it('skips a conversation that was already sent by another tick without counting a failure', async () => {
+    prisma.conversation.findMany.mockResolvedValue([{ id: 'a', coopId: 'c', createdById: 'u1', subject: 'A', sendAttempts: 2 }]);
+    messages.send.mockRejectedValueOnce(new ConflictException('Conversation already sent'));
+    await scheduler.tick();
+    expect(prisma.conversation.update).not.toHaveBeenCalled();
+    expect(email.send).not.toHaveBeenCalled();
   });
 
   it('keeps going when one conversation fails', async () => {

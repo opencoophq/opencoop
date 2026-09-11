@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -34,6 +34,10 @@ export class MessagesScheduler {
         await this.messages.send(conv.id, conv.coopId, { userId: conv.createdById });
         this.logger.log(`Sent scheduled conversation ${conv.id}`);
       } catch (error) {
+        if (error instanceof ConflictException) {
+          this.logger.log(`Scheduled conversation ${conv.id} was already sent (409); skipping`);
+          continue;
+        }
         Sentry.captureException(error);
         const attempts = conv.sendAttempts + 1;
         this.logger.error(`Scheduled send failed for ${conv.id} (attempt ${attempts}): ${error.message}`);
