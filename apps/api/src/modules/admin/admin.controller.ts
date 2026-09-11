@@ -5,6 +5,7 @@ import {
   Put,
   Patch,
   Delete,
+  HttpCode,
   Body,
   Param,
   Query,
@@ -65,6 +66,10 @@ import { UpdateChannelDto } from '../channels/dto/update-channel.dto';
 import { MessagesService } from '../messages/messages.service';
 import { CreateConversationDto } from '../messages/dto/create-conversation.dto';
 import { CreateMessageDto } from '../messages/dto/create-message.dto';
+import { UpdateDraftDto } from '../messages/dto/update-draft.dto';
+import { ScheduleConversationDto } from '../messages/dto/schedule-conversation.dto';
+import { AudienceDto } from '../messages/dto/audience.dto';
+import { AudienceService } from '../messages/audience.service';
 
 @ApiTags('admin')
 @Controller('admin/coops/:coopId')
@@ -89,6 +94,7 @@ export class AdminController {
     private documentsService: DocumentsService,
     private channelsService: ChannelsService,
     private messagesService: MessagesService,
+    private readonly audienceService: AudienceService,
   ) {}
 
   // ==================== COOP SETTINGS ====================
@@ -1162,6 +1168,85 @@ export class AdminController {
     return this.messagesService.createConversation(
       coopId, dto, user.id, req.ip, req.headers['user-agent'] as string,
     );
+  }
+
+  @Post('conversations/audience-preview')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'Count the recipients an audience resolves to' })
+  async previewAudience(@Param('coopId') coopId: string, @Body() audience: AudienceDto) {
+    const { shareholderIds } = await this.audienceService.resolve(coopId, audience);
+    return { count: shareholderIds.length };
+  }
+
+  @Get('conversations/:conversationId/recipient-count')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'Recipient count of a conversation (resolved for drafts)' })
+  async recipientCount(
+    @Param('coopId') coopId: string,
+    @Param('conversationId') conversationId: string,
+  ) {
+    return { count: await this.messagesService.countRecipients(conversationId, coopId) };
+  }
+
+  @Patch('conversations/:conversationId')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'Edit a draft conversation' })
+  async updateDraft(
+    @Param('coopId') coopId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: UpdateDraftDto,
+  ) {
+    return this.messagesService.updateDraft(conversationId, coopId, dto, user.id);
+  }
+
+  @Delete('conversations/:conversationId')
+  @RequirePermission('canManageMessages')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Delete a draft conversation' })
+  async deleteDraft(
+    @Param('coopId') coopId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    await this.messagesService.deleteDraft(conversationId, coopId, user.id);
+  }
+
+  @Post('conversations/:conversationId/send')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'Send a draft now' })
+  async sendConversation(
+    @Param('coopId') coopId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+  ) {
+    return this.messagesService.send(conversationId, coopId, {
+      userId: user.id, ip: req.ip, userAgent: req.headers['user-agent'] as string,
+    });
+  }
+
+  @Post('conversations/:conversationId/schedule')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'Schedule a draft' })
+  async scheduleConversation(
+    @Param('coopId') coopId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: ScheduleConversationDto,
+  ) {
+    return this.messagesService.schedule(conversationId, coopId, new Date(dto.scheduledAt), user.id);
+  }
+
+  @Post('conversations/:conversationId/cancel-schedule')
+  @RequirePermission('canManageMessages')
+  @ApiOperation({ summary: 'Cancel a scheduled send, back to draft' })
+  async cancelSchedule(
+    @Param('coopId') coopId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.messagesService.cancelSchedule(conversationId, coopId, user.id);
   }
 
   @Get('conversations/:conversationId')
