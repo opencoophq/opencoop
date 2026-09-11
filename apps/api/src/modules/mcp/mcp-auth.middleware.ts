@@ -22,7 +22,7 @@ export class McpAuthMiddleware implements NestMiddleware {
       throw new UnauthorizedException('Invalid or revoked API key');
     }
 
-    this.mcpAuthStore.run(result, () => {
+    this.mcpAuthStore.run({ userId: result.userId, coopId: result.coopId, apiKeyId: result.apiKeyId }, () => {
       next();
     });
   }

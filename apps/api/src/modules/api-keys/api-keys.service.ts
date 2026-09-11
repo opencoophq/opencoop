@@ -21,7 +21,7 @@ export class ApiKeysService {
     return { ...apiKey, rawKey };
   }
 
-  async validate(rawKey: string): Promise<{ userId: string; coopId: string } | null> {
+  async validate(rawKey: string): Promise<{ userId: string; coopId: string; apiKeyId: string } | null> {
     const keyHash = createHash('sha256').update(rawKey).digest('hex');
 
     const apiKey = await this.prisma.apiKey.findUnique({
@@ -34,7 +34,7 @@ export class ApiKeysService {
     const { user } = apiKey;
     if (user.role === 'SYSTEM_ADMIN') {
       this.touchLastUsed(apiKey.id);
-      return { userId: apiKey.userId, coopId: apiKey.coopId };
+      return { userId: apiKey.userId, coopId: apiKey.coopId, apiKeyId: apiKey.id };
     }
 
     if (user.role === 'COOP_ADMIN') {
@@ -44,7 +44,7 @@ export class ApiKeysService {
       if (!membership) return null;
 
       this.touchLastUsed(apiKey.id);
-      return { userId: apiKey.userId, coopId: apiKey.coopId };
+      return { userId: apiKey.userId, coopId: apiKey.coopId, apiKeyId: apiKey.id };
     }
 
     return null;

@@ -105,7 +105,7 @@ describe('ApiKeysService', () => {
 
       const result = await service.validate(rawKey);
 
-      expect(result).toEqual({ userId: 'user1', coopId: 'coop1' });
+      expect(result).toEqual({ userId: 'user1', coopId: 'coop1', apiKeyId: 'key1' });
     });
 
     it('should return userId and coopId for a valid key with SYSTEM_ADMIN role', async () => {
@@ -124,7 +124,7 @@ describe('ApiKeysService', () => {
 
       const result = await service.validate(rawKey);
 
-      expect(result).toEqual({ userId: 'admin1', coopId: 'coop1' });
+      expect(result).toEqual({ userId: 'admin1', coopId: 'coop1', apiKeyId: 'key2' });
       // Should NOT check coopAdmin membership for system admins
       expect(mockPrisma.coopAdmin.findFirst).not.toHaveBeenCalled();
     });

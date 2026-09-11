@@ -4,6 +4,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 interface McpAuthContext {
   userId: string;
   coopId: string;
+  apiKeyId?: string;
 }
 
 @Injectable()
@@ -24,5 +25,9 @@ export class McpAuthStore {
     const ctx = this.storage.getStore();
     if (!ctx) throw new Error('No MCP auth context — is the request authenticated?');
     return ctx.userId;
+  }
+
+  getApiKeyId(): string | undefined {
+    return this.storage.getStore()?.apiKeyId;
   }
 }
