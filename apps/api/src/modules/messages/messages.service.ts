@@ -208,11 +208,20 @@ export class MessagesService {
       const first = await this.prisma.message.findFirst({
         where: { conversationId, senderType: 'ADMIN' },
         orderBy: { createdAt: 'asc' },
-        select: { id: true },
+        select: { id: true, body: true, format: true },
       });
       if (!first) throw new NotFoundException('Draft message not found');
       const format = dto.format ?? 'HTML';
-      const body = format === 'HTML' ? sanitizeMessageHtml(dto.body ?? '') : (dto.body ?? '');
+      let body: string;
+      if (dto.body !== undefined) {
+        body = format === 'HTML' ? sanitizeMessageHtml(dto.body) : dto.body;
+      } else if (format === 'HTML' && first.format !== 'HTML') {
+        // Format-only change turning an existing TEXT body into HTML: sanitise it once, on the way in.
+        body = sanitizeMessageHtml(first.body);
+      } else {
+        // Format-only change (or no change): keep the existing body as-is.
+        body = first.body;
+      }
       if (!body) throw new BadRequestException('Message body is empty');
       await this.prisma.message.update({ where: { id: first.id }, data: { body, format } });
     }

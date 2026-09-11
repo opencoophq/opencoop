@@ -168,6 +168,16 @@ describe('MessagesService drafts and sending', () => {
       });
     });
 
+    it('updates only the format of a draft and keeps the body', async () => {
+      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'DRAFT' });
+      prisma.message.findFirst.mockResolvedValueOnce({ id: 'm1', body: '<p>keep</p>', format: 'HTML' });
+      await service.updateDraft('c1', 'coop1', { format: 'HTML' }, 'u1');
+      expect(prisma.message.update).toHaveBeenCalledWith({
+        where: { id: 'm1' },
+        data: { body: '<p>keep</p>', format: 'HTML' },
+      });
+    });
+
     it('refuses to update or delete a sent conversation', async () => {
       prisma.conversation.findUnique.mockResolvedValue({ id: 'c1', coopId: 'coop1', status: 'SENT' });
       await expect(service.updateDraft('c1', 'coop1', { subject: 'x' }, 'u1')).rejects.toThrow(ConflictException);
