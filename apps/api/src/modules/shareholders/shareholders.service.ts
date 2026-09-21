@@ -104,7 +104,7 @@ export class ShareholdersService {
           createdAt: true,
           registrations: {
             where: { type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
-            select: { quantity: true, status: true, registerDate: true },
+            select: { quantity: true, status: true, registerDate: true, isGift: true },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -129,8 +129,9 @@ export class ShareholdersService {
           ? registerDates.reduce((earliest, d) => (d < earliest ? d : earliest))
           : null;
       const memberSince = firstRegistrationDate ?? rest.createdAt;
+      const giftBuyer = registrations.some((r) => r.isGift);
 
-      return { ...rest, sharesOwned, firstRegistrationDate, memberSince };
+      return { ...rest, sharesOwned, firstRegistrationDate, memberSince, giftBuyer };
     });
 
     return {

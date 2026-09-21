@@ -62,6 +62,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Gift,
 } from 'lucide-react';
 
 interface ShareholderRow {
@@ -78,6 +79,7 @@ interface ShareholderRow {
   // registerDate (falls back to createdAt). Nested registrations are no longer
   // returned by the list endpoint.
   sharesOwned: number;
+  giftBuyer?: boolean;
   memberSince: string;
   isEcoPowerClient?: boolean;
 }
@@ -696,7 +698,17 @@ export default function ShareholdersPage() {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{t(`shareholder.types.${sh.type}`)}</Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline">{t(`shareholder.types.${sh.type}`)}</Badge>
+                          {sh.giftBuyer && (
+                            <span title={t('registration.beneficiaryType.gift')}>
+                              <Gift
+                                className="h-4 w-4 text-muted-foreground"
+                                aria-label={t('registration.beneficiaryType.gift')}
+                              />
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{sh.email || '-'}</TableCell>
                       <TableCell className="text-right">{activeShares(sh)}</TableCell>

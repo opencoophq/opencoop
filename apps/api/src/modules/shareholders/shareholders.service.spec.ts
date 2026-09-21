@@ -104,11 +104,26 @@ describe('ShareholdersService', () => {
         channelId: null,
         createdAt: new Date('2024-06-01T00:00:00Z'),
         registrations: [
-          { quantity: 5, status: 'ACTIVE', registerDate: new Date('2023-02-01T00:00:00Z') },
-          { quantity: 3, status: 'COMPLETED', registerDate: new Date('2022-01-15T00:00:00Z') },
+          {
+            quantity: 5,
+            status: 'ACTIVE',
+            registerDate: new Date('2023-02-01T00:00:00Z'),
+            isGift: true,
+          },
+          {
+            quantity: 3,
+            status: 'COMPLETED',
+            registerDate: new Date('2022-01-15T00:00:00Z'),
+            isGift: false,
+          },
           // PENDING_PAYMENT contributes to memberSince but NOT to sharesOwned,
           // matching the previous client-side derivation exactly.
-          { quantity: 100, status: 'PENDING_PAYMENT', registerDate: new Date('2024-03-01T00:00:00Z') },
+          {
+            quantity: 100,
+            status: 'PENDING_PAYMENT',
+            registerDate: new Date('2024-03-01T00:00:00Z'),
+            isGift: false,
+          },
         ],
       };
 
@@ -122,6 +137,7 @@ describe('ShareholdersService', () => {
 
       // Parity: sum of quantity over ACTIVE + COMPLETED only (5 + 3), PENDING_PAYMENT excluded.
       expect(item.sharesOwned).toBe(8);
+      expect(item.giftBuyer).toBe(true);
       // memberSince = earliest registerDate across ALL fetched regs (incl PENDING_PAYMENT).
       expect(item.memberSince).toEqual(new Date('2022-01-15T00:00:00Z'));
       expect(item.firstRegistrationDate).toEqual(new Date('2022-01-15T00:00:00Z'));
@@ -155,6 +171,7 @@ describe('ShareholdersService', () => {
       const item = result.items[0] as Record<string, unknown>;
 
       expect(item.sharesOwned).toBe(0);
+      expect(item.giftBuyer).toBe(false);
       expect(item.memberSince).toEqual(createdAt);
       expect(item.firstRegistrationDate).toBeNull();
     });
