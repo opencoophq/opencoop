@@ -104,11 +104,26 @@ describe('ShareholdersService', () => {
         channelId: null,
         createdAt: new Date('2024-06-01T00:00:00Z'),
         registrations: [
-          { quantity: 5, status: 'ACTIVE', registerDate: new Date('2023-02-01T00:00:00Z') },
-          { quantity: 3, status: 'COMPLETED', registerDate: new Date('2022-01-15T00:00:00Z') },
+          {
+            quantity: 5,
+            status: 'ACTIVE',
+            registerDate: new Date('2023-02-01T00:00:00Z'),
+            isGift: true,
+          },
+          {
+            quantity: 3,
+            status: 'COMPLETED',
+            registerDate: new Date('2022-01-15T00:00:00Z'),
+            isGift: false,
+          },
           // PENDING_PAYMENT contributes to memberSince but NOT to sharesOwned,
           // matching the previous client-side derivation exactly.
-          { quantity: 100, status: 'PENDING_PAYMENT', registerDate: new Date('2024-03-01T00:00:00Z') },
+          {
+            quantity: 100,
+            status: 'PENDING_PAYMENT',
+            registerDate: new Date('2024-03-01T00:00:00Z'),
+            isGift: false,
+          },
         ],
       };
 
@@ -122,6 +137,7 @@ describe('ShareholdersService', () => {
 
       // Parity: sum of quantity over ACTIVE + COMPLETED only (5 + 3), PENDING_PAYMENT excluded.
       expect(item.sharesOwned).toBe(8);
+      expect(item.giftBuyer).toBe(true);
       // memberSince = earliest registerDate across ALL fetched regs (incl PENDING_PAYMENT).
       expect(item.memberSince).toEqual(new Date('2022-01-15T00:00:00Z'));
       expect(item.firstRegistrationDate).toEqual(new Date('2022-01-15T00:00:00Z'));
@@ -155,6 +171,7 @@ describe('ShareholdersService', () => {
       const item = result.items[0] as Record<string, unknown>;
 
       expect(item.sharesOwned).toBe(0);
+      expect(item.giftBuyer).toBe(false);
       expect(item.memberSince).toEqual(createdAt);
       expect(item.firstRegistrationDate).toBeNull();
     });
@@ -238,6 +255,53 @@ describe('ShareholdersService', () => {
       await service.update('sh-1', 'coop-1', { firstName: 'NewName' } as any);
 
       expect((prismaService.shareholder.update as jest.Mock).mock.calls[0][0].data.email).toBeUndefined();
+    });
+  });
+
+  describe('create validation', () => {
+    beforeEach(() => {
+      (prismaService.shareholder.create as jest.Mock).mockResolvedValue(makeShareholder());
+      (auditService.log as jest.Mock).mockResolvedValue(undefined);
+    });
+
+    it('rejects an individual shareholder without a last name', async () => {
+      await expect(
+        service.create('c1', { ...validCreateDto, lastName: '   ' }),
+      ).rejects.toThrow('firstName and lastName are required for individual shareholders');
+      expect(prismaService.shareholder.findFirst).not.toHaveBeenCalled();
+      expect(prismaService.shareholder.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a minor shareholder without a first name', async () => {
+      await expect(
+        service.create('c1', {
+          ...validCreateDto,
+          type: 'MINOR',
+          firstName: '  ',
+          birthDate: '2015-01-01',
+        }),
+      ).rejects.toThrow('firstName and lastName are required for individual shareholders');
+      expect(prismaService.shareholder.findFirst).not.toHaveBeenCalled();
+      expect(prismaService.shareholder.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a company shareholder without a company name', async () => {
+      await expect(
+        service.create('c1', { ...validCreateDto, type: 'COMPANY', companyName: '\t' }),
+      ).rejects.toThrow('companyName is required for company shareholders');
+      expect(prismaService.shareholder.findFirst).not.toHaveBeenCalled();
+      expect(prismaService.shareholder.create).not.toHaveBeenCalled();
+    });
+
+    it('creates a company shareholder without first or last name', async () => {
+      await expect(
+        service.create('c1', {
+          type: 'COMPANY',
+          companyName: 'Coop BV',
+          email: 'company@example.be',
+        }),
+      ).resolves.toBeDefined();
+      expect(prismaService.shareholder.create).toHaveBeenCalled();
     });
   });
 
