@@ -238,6 +238,13 @@ export class ShareholdersService {
   }
 
   async create(coopId: string, dto: CreateShareholderDto, actorId?: string, ip?: string, userAgent?: string) {
+    if (dto.type !== 'COMPANY' && (!dto.firstName?.trim() || !dto.lastName?.trim())) {
+      throw new BadRequestException('firstName and lastName are required for individual shareholders');
+    }
+    if (dto.type === 'COMPANY' && !dto.companyName?.trim()) {
+      throw new BadRequestException('companyName is required for company shareholders');
+    }
+
     if (dto.email) {
       const existing = await this.prisma.shareholder.findFirst({
         where: { coopId, email: dto.email.toLowerCase() },

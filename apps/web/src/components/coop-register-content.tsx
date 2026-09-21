@@ -595,7 +595,9 @@ export function CoopRegisterContent({
     // Validate required fields based on beneficiary type
     let fieldsToValidate: (keyof RegistrationForm)[];
     if (watchBeneficiaryType === 'gift') {
-      fieldsToValidate = isLoggedIn ? [] : ['email'];
+      fieldsToValidate = isLoggedIn
+        ? []
+        : ['firstName', 'lastName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
     } else if (watchBeneficiaryType === 'company') {
       fieldsToValidate = ['companyName', 'email', 'street', 'number', 'postalCode', 'city', 'country'];
     } else {
@@ -843,6 +845,67 @@ export function CoopRegisterContent({
     </Card>
   );
 
+  // Individual buyer/beneficiary fields. Shared by the self/family branch and the
+  // gift branch: a gift buyer holds the shares until the recipient claims them, so the
+  // buyer must be a complete register entry (name + address), not just an email.
+  const renderIndividualFields = (emailLabel: string) => (
+    <>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>{t('shareholder.fields.firstName')} *</Label>
+          <Input {...form.register('firstName')} />
+        </div>
+        <div className="space-y-2">
+          <Label>{t('shareholder.fields.lastName')} *</Label>
+          <Input {...form.register('lastName')} />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>{t('shareholder.fields.birthDate')} *</Label>
+        <DatePicker
+          value={form.watch('birthDate')}
+          onChange={(value) => form.setValue('birthDate', value || '')}
+          placeholder={t('shareholder.fields.birthDate')}
+          captionLayout="dropdown"
+          fromYear={1920}
+          toYear={new Date().getFullYear()}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>{emailLabel} *</Label>
+        <Input type="email" {...form.register('email')} />
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('common.phone')}</Label>
+        <Input type="tel" {...form.register('phone')} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="col-span-2 space-y-2">
+          <Label>{t('common.street')} *</Label>
+          <Input {...form.register('street')} />
+        </div>
+        <div className="space-y-2">
+          <Label>{t('common.houseNumber')} *</Label>
+          <Input {...form.register('number')} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>{t('common.postalCode')} *</Label>
+          <Input {...form.register('postalCode')} />
+        </div>
+        <div className="space-y-2">
+          <Label>{t('common.city')} *</Label>
+          <Input {...form.register('city')} />
+        </div>
+      </div>
+    </>
+  );
+
   const renderStep1NewUser = () => (
     <>
     <Card>
@@ -910,7 +973,7 @@ export function CoopRegisterContent({
           )}
 
           {watchBeneficiaryType === 'gift' ? (
-            /* Gift flow: explanation + buyer email (only if not logged in) */
+            /* Gift flow: explanation + full buyer details (logged-in buyers reuse their record) */
             <>
               <div className="flex items-start gap-3 bg-muted/50 p-4 rounded-md">
                 <Gift className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
@@ -918,12 +981,7 @@ export function CoopRegisterContent({
                   {t('registration.giftExplanation')}
                 </p>
               </div>
-              {!isLoggedIn && (
-                <div className="space-y-2">
-                  <Label>{t('registration.giftBuyerEmail')} *</Label>
-                  <Input type="email" {...form.register('email')} />
-                </div>
-              )}
+              {!isLoggedIn && renderIndividualFields(t('registration.giftBuyerEmail'))}
             </>
           ) : watchBeneficiaryType === 'company' ? (
             <>
@@ -973,61 +1031,7 @@ export function CoopRegisterContent({
               </div>
             </>
           ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t('shareholder.fields.firstName')} *</Label>
-                  <Input {...form.register('firstName')} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('shareholder.fields.lastName')} *</Label>
-                  <Input {...form.register('lastName')} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>{t('shareholder.fields.birthDate')} *</Label>
-                <DatePicker
-                  value={form.watch('birthDate')}
-                  onChange={(value) => form.setValue('birthDate', value || '')}
-                  placeholder={t('shareholder.fields.birthDate')}
-                  captionLayout="dropdown"
-                  fromYear={1920}
-                  toYear={new Date().getFullYear()}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('common.email')} *</Label>
-                <Input type="email" {...form.register('email')} />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('common.phone')}</Label>
-                <Input type="tel" {...form.register('phone')} />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2 space-y-2">
-                  <Label>{t('common.street')} *</Label>
-                  <Input {...form.register('street')} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('common.houseNumber')} *</Label>
-                  <Input {...form.register('number')} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t('common.postalCode')} *</Label>
-                  <Input {...form.register('postalCode')} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('common.city')} *</Label>
-                  <Input {...form.register('city')} />
-                </div>
-              </div>
-            </>
+            renderIndividualFields(t('common.email'))
           )}
         </div>
 

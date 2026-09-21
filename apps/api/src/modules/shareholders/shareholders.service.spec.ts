@@ -241,6 +241,53 @@ describe('ShareholdersService', () => {
     });
   });
 
+  describe('create validation', () => {
+    beforeEach(() => {
+      (prismaService.shareholder.create as jest.Mock).mockResolvedValue(makeShareholder());
+      (auditService.log as jest.Mock).mockResolvedValue(undefined);
+    });
+
+    it('rejects an individual shareholder without a last name', async () => {
+      await expect(
+        service.create('c1', { ...validCreateDto, lastName: '   ' }),
+      ).rejects.toThrow('firstName and lastName are required for individual shareholders');
+      expect(prismaService.shareholder.findFirst).not.toHaveBeenCalled();
+      expect(prismaService.shareholder.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a minor shareholder without a first name', async () => {
+      await expect(
+        service.create('c1', {
+          ...validCreateDto,
+          type: 'MINOR',
+          firstName: '  ',
+          birthDate: '2015-01-01',
+        }),
+      ).rejects.toThrow('firstName and lastName are required for individual shareholders');
+      expect(prismaService.shareholder.findFirst).not.toHaveBeenCalled();
+      expect(prismaService.shareholder.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a company shareholder without a company name', async () => {
+      await expect(
+        service.create('c1', { ...validCreateDto, type: 'COMPANY', companyName: '\t' }),
+      ).rejects.toThrow('companyName is required for company shareholders');
+      expect(prismaService.shareholder.findFirst).not.toHaveBeenCalled();
+      expect(prismaService.shareholder.create).not.toHaveBeenCalled();
+    });
+
+    it('creates a company shareholder without first or last name', async () => {
+      await expect(
+        service.create('c1', {
+          type: 'COMPANY',
+          companyName: 'Coop BV',
+          email: 'company@example.be',
+        }),
+      ).resolves.toBeDefined();
+      expect(prismaService.shareholder.create).toHaveBeenCalled();
+    });
+  });
+
   describe('audience-sync emit points', () => {
     it('enqueues reconcile-one after creating a shareholder', async () => {
       (prismaService.shareholder.findFirst as jest.Mock)

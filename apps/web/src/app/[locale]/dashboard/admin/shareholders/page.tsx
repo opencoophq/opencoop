@@ -267,9 +267,9 @@ export default function ShareholdersPage() {
   }, [selectedCoop]);
 
   const getName = (sh: ShareholderRow) =>
-    sh.type === 'COMPANY'
-      ? sh.companyName || ''
-      : `${sh.firstName || ''} ${sh.lastName || ''}`.trim();
+    (sh.type === 'COMPANY' ? sh.companyName || '' : `${sh.firstName || ''} ${sh.lastName || ''}`.trim()) ||
+    sh.email ||
+    '—';
 
   // sharesOwned and memberSince are precomputed server-side (lean list payload).
   const activeShares = (sh: ShareholderRow) => sh.sharesOwned ?? 0;
