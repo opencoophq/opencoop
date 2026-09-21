@@ -259,21 +259,25 @@ export class BankImportService {
     const rows = dataLines.slice(1);
 
     const colIndex = (name: string) => headers.indexOf(name);
-    const dateIdx = colIndex(preset.dateColumn);
+    const colIndexes = (names: string | string[]) =>
+      (Array.isArray(names) ? names : [names]).map(colIndex).filter((idx) => idx >= 0);
+    const dateIdxs = colIndexes(preset.dateColumn);
     const amountIdx = colIndex(preset.amountColumn);
-    const counterpartyIdx = colIndex(preset.counterpartyColumn);
+    const counterpartyIdxs = colIndexes(preset.counterpartyColumn);
     const referenceIdx = colIndex(preset.referenceColumn);
     const signIdx = preset.amountSign ? colIndex(preset.amountSign.column) : -1;
 
-    if (dateIdx === -1 || amountIdx === -1) return [];
+    if (dateIdxs.length === 0 || amountIdx === -1) return [];
 
     const result: { date: Date; amount: number; counterparty: string; reference: string }[] = [];
 
     for (const line of rows) {
       const fields = this.splitCsvLine(line, preset.delimiter);
-      if (fields.length <= Math.max(dateIdx, amountIdx)) continue;
+      if (fields.length <= Math.max(...dateIdxs, amountIdx)) continue;
 
-      const date = this.parseDate(fields[dateIdx], preset.dateFormat);
+      const date = dateIdxs
+        .map((idx) => this.parseDate(fields[idx], preset.dateFormat))
+        .find((parsed): parsed is Date => parsed !== null);
       let amount = this.parseAmount(fields[amountIdx], preset.decimalSeparator);
 
       if (!date || amount === null) continue;
@@ -290,7 +294,7 @@ export class BankImportService {
       result.push({
         date,
         amount,
-        counterparty: counterpartyIdx >= 0 ? fields[counterpartyIdx]?.trim() || '' : '',
+        counterparty: counterpartyIdxs.map((idx) => fields[idx]?.trim()).filter(Boolean).join(' - '),
         reference: referenceIdx >= 0 ? fields[referenceIdx]?.trim() || '' : '',
       });
     }

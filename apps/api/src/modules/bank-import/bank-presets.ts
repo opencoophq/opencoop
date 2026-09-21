@@ -4,11 +4,11 @@ export interface BankPreset {
   delimiter: string;
   encoding: BufferEncoding;
   skipRows: number;
-  dateColumn: string;
+  dateColumn: string | string[];
   dateFormat: string;
   amountColumn: string;
   decimalSeparator: ',' | '.';
-  counterpartyColumn: string;
+  counterpartyColumn: string | string[];
   referenceColumn: string;
   /** For banks where amount sign is in a separate column (e.g. ING "Af Bij") */
   amountSign?: {
@@ -23,14 +23,14 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     id: 'belfius',
     name: 'Belfius',
     delimiter: ';',
-    encoding: 'utf-8',
+    encoding: 'latin1',
     skipRows: 12,
-    dateColumn: 'Datum',
+    dateColumn: ['Valutadatum', 'Boekingsdatum'],
     dateFormat: 'DD/MM/YYYY',
     amountColumn: 'Bedrag',
     decimalSeparator: ',',
-    counterpartyColumn: 'Tegenrekening',
-    referenceColumn: 'Mededeling',
+    counterpartyColumn: ['Rekening tegenpartij', 'Naam tegenpartij bevat'],
+    referenceColumn: 'Mededelingen',
   },
   kbc: {
     id: 'kbc',

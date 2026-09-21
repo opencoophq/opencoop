@@ -785,7 +785,8 @@
       "matchTransaction": "Match Transaction",
       "reference": "Reference",
       "selectRegistration": "Select a registration to match",
-      "noRegistrations": "No pending registrations found"
+      "noRegistrations": "No pending registrations found",
+      "belfiusExportLimit": "Belfius CSV exports include about 340 rows and silently omit the oldest transactions. Export smaller date ranges if you need a complete import."
     },
     "dividends": {
       "title": "Dividend Management",

@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
-import { Upload, Link2 } from 'lucide-react';
+import { AlertCircle, Upload, Link2 } from 'lucide-react';
 
 const BANK_PRESETS = [
   { id: 'belfius', name: 'Belfius' },
@@ -198,6 +198,12 @@ export default function BankImportPage() {
           </Button>
         </div>
       </div>
+      {selectedPreset === 'belfius' && (
+        <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-none" />
+          <p>{t('admin.bankImport.belfiusExportLimit')}</p>
+        </div>
+      )}
 
       <Card>
         <CardContent className="pt-6">

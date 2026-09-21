@@ -783,7 +783,8 @@
       "matchTransaction": "Rapprocher la transaction",
       "reference": "Communication",
       "selectRegistration": "Sélectionnez une inscription à rapprocher",
-      "noRegistrations": "Aucune inscription en attente trouvée"
+      "noRegistrations": "Aucune inscription en attente trouvée",
+      "belfiusExportLimit": "Les exports CSV Belfius contiennent environ 340 lignes et omettent silencieusement les transactions les plus anciennes. Exportez des périodes plus courtes pour un import complet."
     },
     "dividends": {
       "title": "Gestion des dividendes",

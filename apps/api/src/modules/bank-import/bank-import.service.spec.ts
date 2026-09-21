@@ -196,6 +196,81 @@ describe('BankImportService — importCsv OGM matching', () => {
     );
   });
 
+  it('imports a real-header Belfius CSV after the 12-line preamble', async () => {
+    prisma.registration.findMany.mockResolvedValue([
+      {
+        id: 'reg-1',
+        coopId: COOP_ID,
+        shareholderId: 'sh-1',
+        status: 'PENDING_PAYMENT',
+        totalAmount: 100,
+        isGift: false,
+        ogmCode: OGM,
+      },
+    ]);
+    prisma.payment.findMany.mockResolvedValue([{ amount: 100 }]);
+
+    const header = [
+      'Rekening',
+      'Boekingsdatum',
+      'Rekeninguittrekselnummer',
+      'Transactienummer',
+      'Rekening tegenpartij',
+      'Naam tegenpartij bevat',
+      'Straat en nummer',
+      'Postcode en plaats',
+      'Transactie',
+      'Valutadatum',
+      'Bedrag',
+      'Devies',
+      'BIC',
+      'Landcode',
+      'Mededelingen',
+    ].join(';');
+    const row = [
+      'BE11001122334455',
+      '12/03/2026',
+      '2026-001',
+      '1',
+      'BE22001122334455',
+      'Café René',
+      '',
+      '',
+      'Overschrijving',
+      '13/03/2026',
+      '100,00',
+      'EUR',
+      'GKCCBEBB',
+      'BE',
+      `betaling ${OGM}`,
+    ].join(';');
+    const belfiusCsv = Buffer.from(
+      [...Array.from({ length: 12 }, (_, i) => `Preamble ${i + 1}`), header, row].join('\n'),
+      'latin1',
+    );
+
+    await service.importCsv(COOP_ID, IMPORTER_ID, 'belfius.csv', belfiusCsv, 'belfius');
+
+    expect(prisma.bankImport.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ rowCount: 1 }) }),
+    );
+    expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          date: new Date(2026, 2, 13),
+          amount: 100,
+          counterparty: 'BE22001122334455 - Café René',
+          referenceText: `betaling ${OGM}`,
+          matchStatus: 'AUTO_MATCHED',
+          ogmCode: OGM,
+        }),
+      }),
+    );
+    expect(prisma.bankImport.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ matchedCount: 1, unmatchedCount: 0 }) }),
+    );
+  });
+
   it('leaves a row UNMATCHED when its OGM matches no registration', async () => {
     // The batched findMany returns no registration for this OGM.
     prisma.registration.findMany.mockResolvedValue([]);
