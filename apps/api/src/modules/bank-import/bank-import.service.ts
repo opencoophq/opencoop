@@ -244,14 +244,14 @@ export class BankImportService {
     csvContent: string,
     preset: BankPreset,
   ): { date: Date; amount: number; counterparty: string; reference: string }[] {
-    const lines = csvContent.split(/\r?\n/).filter((l) => l.trim());
+    const lines = csvContent.split(/\r?\n/);
 
     if (preset.id === 'generic') {
-      return this.parseGenericCsv(lines);
+      return this.parseGenericCsv(lines.filter((l) => l.trim()));
     }
 
     // Header-based parsing for bank presets
-    const dataLines = lines.slice(preset.skipRows);
+    const dataLines = lines.slice(preset.skipRows).filter((l) => l.trim());
     if (dataLines.length < 2) return [];
 
     const headerLine = dataLines[0];

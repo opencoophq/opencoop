@@ -244,8 +244,22 @@ describe('BankImportService — importCsv OGM matching', () => {
       'BE',
       `betaling ${OGM}`,
     ].join(';');
+    const preamble = [
+      'Preamble 1',
+      'Preamble 2',
+      'Preamble 3',
+      'Preamble 4',
+      'Preamble 5',
+      '',
+      'Preamble 7',
+      'Preamble 8',
+      'Preamble 9',
+      'Preamble 10',
+      'Preamble 11',
+      'Preamble 12',
+    ];
     const belfiusCsv = Buffer.from(
-      [...Array.from({ length: 12 }, (_, i) => `Preamble ${i + 1}`), header, row].join('\n'),
+      [...preamble, header, row].join('\n'),
       'latin1',
     );
 
