@@ -15,6 +15,21 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.39.0] - 2026-09-21
+
+### Fixed
+- **Gift purchases no longer create nameless shareholders.** The public purchase form's
+  gift option asked the buyer for an email only. The buyer holds the shares until the
+  recipient claims the gift code, so the buyer must be a complete register entry. The
+  gift form now asks for name, birth date, email, phone and address, and the API rejects
+  a new individual without a first and last name, or a company without a company name.
+- **Admin shareholder list rows are always clickable.** When the name is empty, the link
+  shows the email instead of nothing.
+
+### Added
+- **Gift icon in the admin shareholder list.** Shareholders who bought shares as a gift
+  get a gift icon next to their type badge.
+
 ## [2026.37.1] - 2026-09-10
 
 Note: tag `v2026.37.0` points at the same commit as `v2026.31.0` and shipped nothing new.
