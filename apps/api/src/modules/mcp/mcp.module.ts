@@ -12,6 +12,7 @@ import { AdminModule } from '../admin/admin.module';
 import { MessagesModule } from '../messages/messages.module';
 import { CoopPermissionsService } from '../../common/utils/coop-permissions';
 import { BillingModule } from '../billing/billing.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { McpToolkit } from './mcp-toolkit';
 
 @Module({
@@ -25,6 +26,7 @@ import { McpToolkit } from './mcp-toolkit';
     AdminModule,
     MessagesModule,
     BillingModule,
+    PaymentsModule,
   ],
   providers: [
     McpAuthStore,

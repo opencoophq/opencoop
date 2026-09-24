@@ -17,6 +17,7 @@ import { ReportsService } from '../admin/reports.service';
 import { ApiKeysService } from '../api-keys/api-keys.service';
 import { BillingService } from '../billing/billing.service';
 import { MessagesService } from '../messages/messages.service';
+import { PaymentsService } from '../payments/payments.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { ShareholdersService } from '../shareholders/shareholders.service';
 import { McpAuthMiddleware } from './mcp-auth.middleware';
@@ -37,6 +38,9 @@ jest.mock('../admin/analytics.service', () => ({
 jest.mock('../messages/messages.service', () => ({
   MessagesService: class MessagesService {},
 }));
+jest.mock('../payments/payments.service', () => ({
+  PaymentsService: class PaymentsService {},
+}));
 jest.mock('../registrations/registrations.service', () => ({
   RegistrationsService: class RegistrationsService {},
 }));
@@ -53,6 +57,17 @@ const EXISTING_TOOL_NAMES = [
   'get_shareholder',
   'list_registrations',
   'get_registration',
+  'approve_registration',
+  'reject_registration',
+  'cancel_registration',
+  'create_transfer',
+  'buy_shares_for_shareholder',
+  'sell_shares_for_shareholder',
+  'get_payment_details',
+  'complete_registration',
+  'set_payment_date',
+  'add_payment',
+  'resend_payment_email',
   'get_capital_timeline',
   'get_capital_by_project',
   'get_shareholder_growth',
@@ -92,7 +107,21 @@ const billingService = {
 };
 
 const shareholdersService = { findAll: jest.fn(), findById: jest.fn() };
-const registrationsService = { findAll: jest.fn(), findById: jest.fn() };
+const registrationsService = {
+  findAll: jest.fn(),
+  findById: jest.fn(),
+  approve: jest.fn(),
+  reject: jest.fn(),
+  cancel: jest.fn(),
+  createTransfer: jest.fn(),
+  createBuy: jest.fn(),
+  createSell: jest.fn(),
+  getPaymentDetails: jest.fn(),
+  complete: jest.fn(),
+  updatePaymentDate: jest.fn(),
+  resendPaymentEmail: jest.fn(),
+};
+const paymentsService = { addPayment: jest.fn() };
 const analyticsService = {
   getCapitalTimeline: jest.fn(),
   getCapitalByProject: jest.fn(),
@@ -144,6 +173,7 @@ const toolProviders = [
     { provide: BillingService, useValue: billingService },
     { provide: ShareholdersService, useValue: shareholdersService },
     { provide: RegistrationsService, useValue: registrationsService },
+    { provide: PaymentsService, useValue: paymentsService },
     { provide: AnalyticsService, useValue: analyticsService },
     { provide: ReportsService, useValue: reportsService },
     { provide: MessagesService, useValue: messagesService },
@@ -253,7 +283,7 @@ describe('MCP HTTP transport', () => {
     expect(response.body.result?.serverInfo?.name).toBe('opencoop-test');
   });
 
-  it('lists all 16 existing tools', async () => {
+  it('lists all 27 existing tools', async () => {
     const response = await postMcp(
       { jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} },
       'oc_read_only',
@@ -263,7 +293,7 @@ describe('MCP HTTP transport', () => {
     expect(response.status).toBe(200);
     expect(response.body.error).toBeUndefined();
     expect(names).toEqual(expect.arrayContaining(EXISTING_TOOL_NAMES));
-    expect(names.filter((name) => name !== 'test_write_scope')).toHaveLength(16);
+    expect(names.filter((name) => name !== 'test_write_scope')).toHaveLength(27);
   });
 
   it('calls an existing tool end-to-end', async () => {
