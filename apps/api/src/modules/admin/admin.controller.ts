@@ -52,6 +52,9 @@ import { CreateSellDto } from '../registrations/dto/create-sell.dto';
 import { CompleteRegistrationDto } from '../registrations/dto/complete-registration.dto';
 import { UpdatePaymentDateDto } from '../registrations/dto/update-payment-date.dto';
 import { AddPaymentDto } from '../registrations/dto/add-payment.dto';
+import { RejectRegistrationDto } from '../registrations/dto/reject-registration.dto';
+import { CancelRegistrationDto } from '../registrations/dto/cancel-registration.dto';
+import { CreateTransferDto } from '../registrations/dto/create-transfer.dto';
 import { CreateShareClassDto } from '../shares/dto/create-share-class.dto';
 import { UpdateShareClassDto } from '../shares/dto/update-share-class.dto';
 import { CreateProjectDto } from '../projects/dto/create-project.dto';
@@ -122,7 +125,13 @@ export class AdminController {
       delete updateCoopDto.emailEnabled;
       delete updateCoopDto.pontoEnabled;
     }
-    return this.coopsService.update(coopId, updateCoopDto, user.id, req.ip, req.headers['user-agent']);
+    return this.coopsService.update(
+      coopId,
+      updateCoopDto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Post('api-key/regenerate')
@@ -166,7 +175,13 @@ export class AdminController {
     @Req() req: Request,
     @Body() updateBrandingDto: UpdateBrandingDto,
   ) {
-    return this.coopsService.updateBranding(coopId, updateBrandingDto, user.id, req.ip, req.headers['user-agent']);
+    return this.coopsService.updateBranding(
+      coopId,
+      updateBrandingDto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Post('logo')
@@ -222,7 +237,13 @@ export class AdminController {
     @Req() req: Request,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.coopsService.uploadSignature(coopId, file, user.id, req.ip, req.headers['user-agent']);
+    return this.coopsService.uploadSignature(
+      coopId,
+      file,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Delete('signature')
@@ -249,10 +270,7 @@ export class AdminController {
   @Get('channels/:channelId')
   @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Get channel by ID' })
-  async getChannel(
-    @Param('coopId') coopId: string,
-    @Param('channelId') channelId: string,
-  ) {
+  async getChannel(@Param('coopId') coopId: string, @Param('channelId') channelId: string) {
     return this.channelsService.findById(channelId, coopId);
   }
 
@@ -278,16 +296,20 @@ export class AdminController {
     @Req() req: Request,
     @Body() dto: UpdateChannelDto,
   ) {
-    return this.channelsService.update(channelId, coopId, dto, user.id, req.ip, req.headers['user-agent']);
+    return this.channelsService.update(
+      channelId,
+      coopId,
+      dto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Delete('channels/:channelId')
   @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Delete a channel (not the default)' })
-  async deleteChannel(
-    @Param('coopId') coopId: string,
-    @Param('channelId') channelId: string,
-  ) {
+  async deleteChannel(@Param('coopId') coopId: string, @Param('channelId') channelId: string) {
     return this.channelsService.delete(channelId, coopId);
   }
 
@@ -315,10 +337,7 @@ export class AdminController {
   @Delete('channels/:channelId/logo')
   @RequirePermission('canManageSettings')
   @ApiOperation({ summary: 'Remove channel logo' })
-  async removeChannelLogo(
-    @Param('coopId') coopId: string,
-    @Param('channelId') channelId: string,
-  ) {
+  async removeChannelLogo(@Param('coopId') coopId: string, @Param('channelId') channelId: string) {
     await this.channelsService.removeLogo(channelId, coopId);
     return { success: true };
   }
@@ -378,8 +397,16 @@ export class AdminController {
     @Query('type') type?: string,
     @Query('ecoPowerClient') ecoPowerClient?: string,
   ) {
-    const result = await this.shareholdersService.findAll(coopId, { page, pageSize, search, status, type, ecoPowerClient });
-    const canViewPII = user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
+    const result = await this.shareholdersService.findAll(coopId, {
+      page,
+      pageSize,
+      search,
+      status,
+      type,
+      ecoPowerClient,
+    });
+    const canViewPII =
+      user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
     return canViewPII ? result : maskShareholderListPII(result);
   }
 
@@ -403,7 +430,8 @@ export class AdminController {
     @CurrentUser() user: CurrentUserData,
   ) {
     const result = await this.shareholdersService.findById(id, coopId);
-    const canViewPII = user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
+    const canViewPII =
+      user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
     return canViewPII ? result : maskShareholderPII(result);
   }
 
@@ -415,10 +443,9 @@ export class AdminController {
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    const shareholder = await this.shareholdersService.findById(id, coopId);
-    if (!shareholder.userId) return [];
-    const minors = await this.shareholdersService.findMinorsByUserId(shareholder.userId, coopId);
-    const canViewPII = user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
+    const minors = await this.shareholdersService.findMinorsByShareholderId(id, coopId);
+    const canViewPII =
+      user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
     return canViewPII ? minors : minors.map(maskShareholderPII);
   }
 
@@ -431,7 +458,13 @@ export class AdminController {
     @Req() req: Request,
     @Body() createShareholderDto: CreateShareholderDto,
   ) {
-    return this.shareholdersService.create(coopId, createShareholderDto, user.id, req.ip, req.headers['user-agent']);
+    return this.shareholdersService.create(
+      coopId,
+      createShareholderDto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Post('shareholders/import')
@@ -446,18 +479,20 @@ export class AdminController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 10 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-      const allowed = [
-        'text/csv',
-        'text/plain',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-excel',
-      ];
-      cb(null, allowed.includes(file.mimetype));
-    },
-  }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = [
+          'text/csv',
+          'text/plain',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+        ];
+        cb(null, allowed.includes(file.mimetype));
+      },
+    }),
+  )
   async importShareholders(
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
@@ -489,7 +524,14 @@ export class AdminController {
     @Req() req: Request,
     @Body() updateShareholderDto: UpdateShareholderDto,
   ) {
-    return this.shareholdersService.update(id, coopId, updateShareholderDto, user.id, req.ip, req.headers['user-agent']);
+    return this.shareholdersService.update(
+      id,
+      coopId,
+      updateShareholderDto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   // ==================== SHARE CLASSES ====================
@@ -501,6 +543,13 @@ export class AdminController {
     return this.shareClassesService.findAll(coopId);
   }
 
+  @Get('share-classes/:id')
+  @RequirePermission('canManageShareClasses')
+  @ApiOperation({ summary: 'Get share class by ID' })
+  async getShareClass(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.shareClassesService.findById(id, coopId);
+  }
+
   @Post('share-classes')
   @RequirePermission('canManageShareClasses')
   @ApiOperation({ summary: 'Create a new share class' })
@@ -510,7 +559,13 @@ export class AdminController {
     @Req() req: Request,
     @Body() createShareClassDto: CreateShareClassDto,
   ) {
-    return this.shareClassesService.create(coopId, createShareClassDto, user.id, req.ip, req.headers['user-agent']);
+    return this.shareClassesService.create(
+      coopId,
+      createShareClassDto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Put('share-classes/:id')
@@ -523,7 +578,14 @@ export class AdminController {
     @Req() req: Request,
     @Body() updateShareClassDto: UpdateShareClassDto,
   ) {
-    return this.shareClassesService.update(id, coopId, updateShareClassDto, user.id, req.ip, req.headers['user-agent']);
+    return this.shareClassesService.update(
+      id,
+      coopId,
+      updateShareClassDto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   // ==================== PROJECTS ====================
@@ -535,6 +597,13 @@ export class AdminController {
     return this.projectsService.findAll(coopId);
   }
 
+  @Get('projects/:id')
+  @RequirePermission('canManageProjects')
+  @ApiOperation({ summary: 'Get project by ID' })
+  async getProject(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.projectsService.findById(id, coopId);
+  }
+
   @Post('projects')
   @RequirePermission('canManageProjects')
   @ApiOperation({ summary: 'Create a new project' })
@@ -544,7 +613,13 @@ export class AdminController {
     @Req() req: Request,
     @Body() createProjectDto: CreateProjectDto,
   ) {
-    return this.projectsService.create(coopId, createProjectDto, user.id, req.ip, req.headers['user-agent']);
+    return this.projectsService.create(
+      coopId,
+      createProjectDto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Put('projects/:id')
@@ -557,7 +632,14 @@ export class AdminController {
     @Req() req: Request,
     @Body() updateProjectDto: UpdateProjectDto,
   ) {
-    return this.projectsService.update(id, coopId, updateProjectDto, user.id, req.ip, req.headers['user-agent']);
+    return this.projectsService.update(
+      id,
+      coopId,
+      updateProjectDto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Delete('projects/:id')
@@ -585,10 +667,7 @@ export class AdminController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  async importProjects(
-    @Param('coopId') coopId: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  async importProjects(@Param('coopId') coopId: string, @UploadedFile() file: Express.Multer.File) {
     const csvContent = file.buffer.toString('utf-8');
     return this.projectsService.importCsv(coopId, csvContent);
   }
@@ -627,7 +706,13 @@ export class AdminController {
     @Query('type') type?: string,
     @Query('shareholderId') shareholderId?: string,
   ) {
-    return this.registrationsService.findAll(coopId, { page, pageSize, status, type, shareholderId });
+    return this.registrationsService.findAll(coopId, {
+      page,
+      pageSize,
+      status,
+      type,
+      shareholderId,
+    });
   }
 
   @Put('registrations/:id/approve')
@@ -648,9 +733,9 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
-    @Body('reason') reason: string,
+    @Body() dto: RejectRegistrationDto,
   ) {
-    return this.registrationsService.reject(id, coopId, user.id, reason);
+    return this.registrationsService.reject(id, coopId, user.id, dto.reason);
   }
 
   @Put('registrations/:id/cancel')
@@ -660,9 +745,9 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
-    @Body('reason') reason?: string,
+    @Body() dto: CancelRegistrationDto,
   ) {
-    return this.registrationsService.cancel(id, coopId, user.id, reason);
+    return this.registrationsService.cancel(id, coopId, user.id, dto.reason);
   }
 
   @Post('transfers')
@@ -671,12 +756,7 @@ export class AdminController {
   async createTransfer(
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
-    @Body() transferDto: {
-      fromShareholderId: string;
-      toShareholderId: string;
-      registrationId: string;
-      quantity: number;
-    },
+    @Body() transferDto: CreateTransferDto,
   ) {
     return this.registrationsService.createTransfer({
       coopId,
@@ -717,11 +797,10 @@ export class AdminController {
 
   @Get('registrations/:id/payment-details')
   @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Get payment details for a registration (IBAN, amount, OGM for QR code)' })
-  async getPaymentDetails(
-    @Param('coopId') coopId: string,
-    @Param('id') id: string,
-  ) {
+  @ApiOperation({
+    summary: 'Get payment details for a registration (IBAN, amount, OGM for QR code)',
+  })
+  async getPaymentDetails(@Param('coopId') coopId: string, @Param('id') id: string) {
     return this.registrationsService.getPaymentDetails(id, coopId);
   }
 
@@ -831,7 +910,7 @@ export class AdminController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: MatchBankTransactionDto,
   ) {
-    return this.bankImportService.manualMatch(id, dto.registrationId, user.id, coopId);
+    return this.bankImportService.manualMatch(coopId, id, dto.registrationId, user.id);
   }
 
   // ==================== DIVIDENDS ====================
@@ -859,7 +938,13 @@ export class AdminController {
     @Req() req: Request,
     @Body() createDividendPeriodDto: CreateDividendPeriodDto,
   ) {
-    return this.dividendsService.create(coopId, createDividendPeriodDto, user.id, req.ip, req.headers['user-agent']);
+    return this.dividendsService.create(
+      coopId,
+      createDividendPeriodDto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Post('dividends/:id/calculate')
@@ -884,7 +969,14 @@ export class AdminController {
     @Req() req: Request,
     @Body() dto: MarkDividendsPaidDto,
   ) {
-    return this.dividendsService.markAsPaid(id, coopId, dto.paymentReference, user.id, req.ip, req.headers['user-agent']);
+    return this.dividendsService.markAsPaid(
+      id,
+      coopId,
+      dto.paymentReference,
+      user.id,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Get('dividends/:id/export')
@@ -905,10 +997,7 @@ export class AdminController {
 
   @Get('analytics/capital-timeline')
   @ApiOperation({ summary: 'Get capital timeline data' })
-  async getCapitalTimeline(
-    @Param('coopId') coopId: string,
-    @Query('period') period?: string,
-  ) {
+  async getCapitalTimeline(@Param('coopId') coopId: string, @Query('period') period?: string) {
     const validPeriod = ['day', 'month', 'quarter', 'year', 'all'].includes(period || '')
       ? (period as 'day' | 'month' | 'quarter' | 'year' | 'all')
       : 'month';
@@ -923,10 +1012,7 @@ export class AdminController {
 
   @Get('analytics/shareholder-growth')
   @ApiOperation({ summary: 'Get shareholder growth data' })
-  async getShareholderGrowth(
-    @Param('coopId') coopId: string,
-    @Query('period') period?: string,
-  ) {
+  async getShareholderGrowth(@Param('coopId') coopId: string, @Query('period') period?: string) {
     const validPeriod = ['day', 'month', 'quarter', 'year', 'all'].includes(period || '')
       ? (period as 'day' | 'month' | 'quarter' | 'year' | 'all')
       : 'month';
@@ -935,10 +1021,7 @@ export class AdminController {
 
   @Get('analytics/transaction-summary')
   @ApiOperation({ summary: 'Get transaction summary data' })
-  async getTransactionSummary(
-    @Param('coopId') coopId: string,
-    @Query('period') period?: string,
-  ) {
+  async getTransactionSummary(@Param('coopId') coopId: string, @Query('period') period?: string) {
     const validPeriod = ['day', 'month', 'quarter', 'year', 'all'].includes(period || '')
       ? (period as 'day' | 'month' | 'quarter' | 'year' | 'all')
       : 'month';
@@ -956,10 +1039,7 @@ export class AdminController {
   @Get('reports/annual-overview')
   @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Get annual overview report data' })
-  async getAnnualOverview(
-    @Param('coopId') coopId: string,
-    @Query('year') year?: string,
-  ) {
+  async getAnnualOverview(@Param('coopId') coopId: string, @Query('year') year?: string) {
     const y = parseInt(year || '', 10) || new Date().getFullYear();
     return this.reportsService.getAnnualOverview(coopId, y);
   }
@@ -981,20 +1061,14 @@ export class AdminController {
   @Get('reports/shareholder-register')
   @RequirePermission('canViewShareholderRegister')
   @ApiOperation({ summary: 'Get shareholder register report data' })
-  async getShareholderRegister(
-    @Param('coopId') coopId: string,
-    @Query('date') date?: string,
-  ) {
+  async getShareholderRegister(@Param('coopId') coopId: string, @Query('date') date?: string) {
     return this.reportsService.getShareholderRegister(coopId, date);
   }
 
   @Get('reports/dividend-summary')
   @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Get dividend summary report data' })
-  async getDividendSummary(
-    @Param('coopId') coopId: string,
-    @Query('year') year?: string,
-  ) {
+  async getDividendSummary(@Param('coopId') coopId: string, @Query('year') year?: string) {
     const y = parseInt(year || '', 10) || new Date().getFullYear();
     return this.reportsService.getDividendSummary(coopId, y);
   }
@@ -1144,10 +1218,7 @@ export class AdminController {
   @Get('conversations')
   @RequirePermission('canManageMessages')
   @ApiOperation({ summary: 'List all conversations for this coop' })
-  async listConversations(
-    @Param('coopId') coopId: string,
-    @Query('page') page?: number,
-  ) {
+  async listConversations(@Param('coopId') coopId: string, @Query('page') page?: number) {
     return this.messagesService.findAllForCoop(coopId, Number(page) || 1);
   }
 
@@ -1161,7 +1232,11 @@ export class AdminController {
     @Body() dto: CreateConversationDto,
   ) {
     return this.messagesService.createConversation(
-      coopId, dto, user.id, req.ip, req.headers['user-agent'] as string,
+      coopId,
+      dto,
+      user.id,
+      req.ip,
+      req.headers['user-agent'] as string,
     );
   }
 
@@ -1217,7 +1292,9 @@ export class AdminController {
     @Req() req: Request,
   ) {
     return this.messagesService.send(conversationId, coopId, {
-      userId: user.id, ip: req.ip, userAgent: req.headers['user-agent'] as string,
+      userId: user.id,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] as string,
     });
   }
 
@@ -1230,7 +1307,12 @@ export class AdminController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: ScheduleConversationDto,
   ) {
-    return this.messagesService.schedule(conversationId, coopId, new Date(dto.scheduledAt), user.id);
+    return this.messagesService.schedule(
+      conversationId,
+      coopId,
+      new Date(dto.scheduledAt),
+      user.id,
+    );
   }
 
   @Post('conversations/:conversationId/cancel-schedule')

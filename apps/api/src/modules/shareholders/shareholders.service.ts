@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -23,13 +29,18 @@ export class ShareholdersService {
     try {
       await this.audienceQueue.add('reconcile-one', { coopId, shareholderId });
     } catch (err) {
-      this.logger.warn(`audience-sync enqueue failed for ${shareholderId}: ${(err as Error).message}`);
+      this.logger.warn(
+        `audience-sync enqueue failed for ${shareholderId}: ${(err as Error).message}`,
+      );
     }
   }
 
-  private decryptShareholder<T extends { nationalId?: string | null; beneficialOwners?: Array<{ nationalId?: string | null }> }>(
-    shareholder: T,
-  ): T {
+  private decryptShareholder<
+    T extends {
+      nationalId?: string | null;
+      beneficialOwners?: Array<{ nationalId?: string | null }>;
+    },
+  >(shareholder: T): T {
     if (shareholder.nationalId && isEncrypted(shareholder.nationalId)) {
       shareholder.nationalId = decryptField(shareholder.nationalId);
     }
@@ -104,7 +115,7 @@ export class ShareholdersService {
           createdAt: true,
           registrations: {
             where: { type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
-            select: { quantity: true, status: true, registerDate: true },
+            select: { quantity: true, status: true, registerDate: true, isGift: true },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -129,8 +140,9 @@ export class ShareholdersService {
           ? registerDates.reduce((earliest, d) => (d < earliest ? d : earliest))
           : null;
       const memberSince = firstRegistrationDate ?? rest.createdAt;
+      const giftBuyer = registrations.some((r) => r.isGift);
 
-      return { ...rest, sharesOwned, firstRegistrationDate, memberSince };
+      return { ...rest, sharesOwned, firstRegistrationDate, memberSince, giftBuyer };
     });
 
     return {
@@ -154,7 +166,10 @@ export class ShareholdersService {
             project: true,
             payments: { orderBy: { bankDate: 'asc' } },
             soldBy: {
-              where: { type: 'SELL', status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+              where: {
+                type: 'SELL',
+                status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
+              },
               select: { quantity: true, status: true },
             },
           },
@@ -212,7 +227,10 @@ export class ShareholdersService {
             project: true,
             payments: { orderBy: { bankDate: 'asc' } },
             soldBy: {
-              where: { type: 'SELL', status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+              where: {
+                type: 'SELL',
+                status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
+              },
               select: { quantity: true, status: true },
             },
           },
@@ -237,13 +255,36 @@ export class ShareholdersService {
     }));
   }
 
-  async create(coopId: string, dto: CreateShareholderDto, actorId?: string, ip?: string, userAgent?: string) {
+  async findMinorsByShareholderId(shareholderId: string, coopId: string) {
+    const shareholder = await this.findById(shareholderId, coopId);
+    if (!shareholder.userId) return [];
+    return this.findMinorsByUserId(shareholder.userId, coopId);
+  }
+
+  async create(
+    coopId: string,
+    dto: CreateShareholderDto,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
+    if (dto.type !== 'COMPANY' && (!dto.firstName?.trim() || !dto.lastName?.trim())) {
+      throw new BadRequestException(
+        'firstName and lastName are required for individual shareholders',
+      );
+    }
+    if (dto.type === 'COMPANY' && !dto.companyName?.trim()) {
+      throw new BadRequestException('companyName is required for company shareholders');
+    }
+
     if (dto.email) {
       const existing = await this.prisma.shareholder.findFirst({
         where: { coopId, email: dto.email.toLowerCase() },
       });
       if (existing) {
-        throw new ConflictException('A shareholder with this email already exists in this cooperative');
+        throw new ConflictException(
+          'A shareholder with this email already exists in this cooperative',
+        );
       }
     }
 
@@ -265,7 +306,9 @@ export class ShareholdersService {
     let referralCode: string | null = null;
     for (let i = 0; i < 5; i++) {
       const candidate = generateReferralCode(rest.firstName);
-      const existing = await this.prisma.shareholder.findFirst({ where: { referralCode: candidate } });
+      const existing = await this.prisma.shareholder.findFirst({
+        where: { referralCode: candidate },
+      });
       if (!existing) {
         referralCode = candidate;
         break;
@@ -321,7 +364,14 @@ export class ShareholdersService {
     return this.decryptShareholder(created!);
   }
 
-  async update(id: string, coopId: string, dto: UpdateShareholderDto, actorId?: string, ip?: string, userAgent?: string) {
+  async update(
+    id: string,
+    coopId: string,
+    dto: UpdateShareholderDto,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     const existing = await this.findById(id, coopId);
 
     if (dto.email && dto.email.toLowerCase() !== existing.email?.toLowerCase()) {
@@ -334,19 +384,31 @@ export class ShareholdersService {
         select: { userId: true },
       });
       if (emailTaken) {
-        throw new ConflictException('A shareholder with this email already exists in this cooperative');
+        throw new ConflictException(
+          'A shareholder with this email already exists in this cooperative',
+        );
       }
     }
 
     // Reject Ecopower fields if the feature is disabled for this coop
     if (dto.isEcoPowerClient !== undefined || dto.ecoPowerId !== undefined) {
-      const coop = await this.prisma.coop.findUnique({ where: { id: coopId }, select: { ecoPowerEnabled: true } });
+      const coop = await this.prisma.coop.findUnique({
+        where: { id: coopId },
+        select: { ecoPowerEnabled: true },
+      });
       if (!coop?.ecoPowerEnabled) {
         throw new BadRequestException('Ecopower integration is not enabled for this cooperative');
       }
     }
 
-    const { beneficialOwners, birthDate, address, registeredByUserId, registeredByShareholderId, ...rest } = dto;
+    const {
+      beneficialOwners,
+      birthDate,
+      address,
+      registeredByUserId,
+      registeredByShareholderId,
+      ...rest
+    } = dto;
 
     // birthDate is required for MINOR shareholders
     const effectiveType = rest.type || existing.type;
@@ -379,7 +441,9 @@ export class ShareholdersService {
       } else {
         const parentEmail = parentShareholder.email?.toLowerCase();
         if (!parentEmail) {
-          throw new BadRequestException('Parent/guardian must have an email before assigning a minor');
+          throw new BadRequestException(
+            'Parent/guardian must have an email before assigning a minor',
+          );
         }
 
         const parentUser =
@@ -387,7 +451,9 @@ export class ShareholdersService {
           (await this.prisma.user.create({
             data: {
               email: parentEmail,
-              name: `${parentShareholder.firstName || ''} ${parentShareholder.lastName || ''}`.trim() || null,
+              name:
+                `${parentShareholder.firstName || ''} ${parentShareholder.lastName || ''}`.trim() ||
+                null,
               role: 'SHAREHOLDER',
               preferredLanguage: 'nl',
               emailVerified: new Date(),
@@ -408,7 +474,9 @@ export class ShareholdersService {
     }
 
     if (resolvedRegisteredByUserId) {
-      const parentUser = await this.prisma.user.findUnique({ where: { id: resolvedRegisteredByUserId } });
+      const parentUser = await this.prisma.user.findUnique({
+        where: { id: resolvedRegisteredByUserId },
+      });
       if (!parentUser) {
         throw new BadRequestException('Parent/guardian user not found');
       }
@@ -427,7 +495,9 @@ export class ShareholdersService {
         ...rest,
         ...(rest.nationalId !== undefined && { nationalId }),
         email: rest.email === null ? null : rest.email?.toLowerCase(),
-        ...(address !== undefined && { address: address ? JSON.parse(JSON.stringify(address)) : null }),
+        ...(address !== undefined && {
+          address: address ? JSON.parse(JSON.stringify(address)) : null,
+        }),
         ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
         ...((registeredByUserId !== undefined || registeredByShareholderId !== undefined) && {
           registeredByUserId: resolvedRegisteredByUserId ?? null,
@@ -452,7 +522,10 @@ export class ShareholdersService {
       await this.enqueueAudienceSync(coopId, id);
     }
 
-    const changes = this.auditService.diff(existing as Record<string, unknown>, dto as Record<string, unknown>);
+    const changes = this.auditService.diff(
+      existing as Record<string, unknown>,
+      dto as Record<string, unknown>,
+    );
     if (changes.length > 0) {
       await this.auditService.log({
         coopId,

@@ -86,10 +86,10 @@ describe('McpBankTools', () => {
     );
     expect(bankImportService.getUnmatchedTransactions).toHaveBeenCalledWith('coop-from-auth');
     expect(bankImportService.manualMatch).toHaveBeenCalledWith(
+      'coop-from-auth',
       'transaction-1',
       'registration-1',
       'user-from-auth',
-      'coop-from-auth',
     );
     expect(bankImportService.importCsvText).toHaveBeenCalledWith(
       'coop-from-auth',
@@ -109,10 +109,10 @@ describe('McpBankTools', () => {
     });
 
     expect(bankImportService.manualMatch).toHaveBeenCalledWith(
+      'coop-from-auth',
       'transaction-1',
       'registration-1',
       'user-from-auth',
-      'coop-from-auth',
     );
   });
 
@@ -128,10 +128,10 @@ describe('McpBankTools', () => {
       }),
     ).rejects.toBeInstanceOf(McpError);
     expect(bankImportService.manualMatch).toHaveBeenCalledWith(
+      'coop-from-auth',
       'transaction-1',
       'registration-1',
       'user-from-auth',
-      'coop-from-auth',
     );
   });
 

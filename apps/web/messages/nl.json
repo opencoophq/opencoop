@@ -785,7 +785,9 @@
       "matchTransaction": "Transactie koppelen",
       "reference": "Mededeling",
       "selectRegistration": "Selecteer een registratie om te koppelen",
-      "noRegistrations": "Geen openstaande registraties gevonden"
+      "noRegistrations": "Geen openstaande registraties gevonden",
+      "uploadError": "Uploaden van het CSV-bestand is mislukt",
+      "uploadSuccess": "{total} rijen geïmporteerd: {matched} gekoppeld, {unmatched} niet gekoppeld"
     },
     "dividends": {
       "title": "Dividendbeheer",

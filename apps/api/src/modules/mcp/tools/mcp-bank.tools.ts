@@ -107,10 +107,10 @@ export class McpBankTools {
       params,
       async (ctx) =>
         this.bankImportService.manualMatch(
+          ctx.coopId,
           params.bankTransactionId,
           params.registrationId,
           ctx.userId,
-          ctx.coopId,
         ),
     );
   }

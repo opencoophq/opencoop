@@ -44,6 +44,7 @@ describe('BankImportService — importCsv OGM matching', () => {
       bankTransaction: {
         create: jest.fn().mockResolvedValue({ id: 'btx-1' }),
         update: jest.fn().mockResolvedValue({}),
+        findFirst: jest.fn(),
       },
       payment: {
         create: jest.fn().mockResolvedValue({ id: 'pay-1' }),
@@ -54,6 +55,7 @@ describe('BankImportService — importCsv OGM matching', () => {
         // returns the matching registrations for the rows in this import.
         findMany: jest.fn().mockResolvedValue([]),
         update: jest.fn().mockResolvedValue({}),
+        findFirst: jest.fn(),
       },
       $transaction: jest.fn((cb: any) => cb(prisma)),
     };
@@ -94,6 +96,122 @@ describe('BankImportService — importCsv OGM matching', () => {
 
   it('sanity: the test OGM is a valid Belgian structured-communication code', () => {
     expect(validateOgmCode(OGM)).toBe(true);
+  });
+
+  it('finds the Belfius header regardless of blank or extra metadata lines', async () => {
+    prisma.registration.findMany.mockResolvedValue([]);
+
+    const header =
+      'Rekening;Boekingsdatum;Rekeninguittrekselnummer;Transactienummer;Rekening tegenpartij;Naam tegenpartij bevat;Straat en nummer;Postcode en gemeente;Transactie;Valutadatum;Bedrag;Devies;BIC;Landcode;Mededelingen';
+    const row =
+      'BE00 0000 0000 0000;21/09/2026;;;;;;;STORTING;21/09/2026;125,00;EUR;;;vrije mededeling';
+    const csv = Buffer.from(
+      [
+        'Boekingsdatum vanaf;01/01/2026',
+        '',
+        'Laatste saldo;1.000,00 EUR',
+        '',
+        ';',
+        ';',
+        'Extra;regel',
+        header,
+        row,
+        '',
+      ].join('\r\n'),
+      'latin1',
+    );
+
+    await service.importCsv(COOP_ID, IMPORTER_ID, 'belfius.csv', csv, 'belfius');
+
+    expect(prisma.bankImport.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ rowCount: 1 }) }),
+    );
+  });
+
+  it('imports a real-shaped Belfius export with Belgian dates, amounts, and OGM matching', async () => {
+    prisma.registration.findMany.mockResolvedValue([
+      {
+        id: 'reg-belfius-1',
+        coopId: COOP_ID,
+        shareholderId: 'sh-belfius-1',
+        status: 'PENDING_PAYMENT',
+        totalAmount: 125,
+        isGift: false,
+        ogmCode: OGM,
+      },
+    ]);
+    prisma.payment.findMany.mockResolvedValue([{ amount: 125 }]);
+
+    const metadata = Array.from({ length: 11 }, (_, index) => `Metadata ${index + 1};value`);
+    const belfiusCsv = Buffer.from(
+      [
+        ...metadata,
+        ';',
+        'Rekening;Boekingsdatum;Rekeninguittrekselnummer;Transactienummer;Rekening tegenpartij;Naam tegenpartij bevat;Straat en nummer;Postcode en gemeente;Transactie;Valutadatum;Bedrag;Devies;BIC;Landcode;Mededelingen',
+        [
+          'BE00 0000 0000 0000',
+          '21/09/2026',
+          '',
+          '',
+          'BE00 1111 1111 1111',
+          'Jan Janssens',
+          'Straat 1',
+          '3500 HASSELT',
+          `STORTING VAN BE00 1111 1111 1111 Jan Janssens ${OGM} NAAR BE00 0000 0000 0000 Coop`,
+          '21/09/2026',
+          '125,00',
+          'EUR',
+          'AXABBE22',
+          'BE',
+          `REF. : ${OGM}`,
+        ].join(';'),
+        [
+          'BE00 0000 0000 0000',
+          '17/09/2026',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          'UW COLLECTIEVE OVERSCHRIJVING LONEN ISABEL REF. : 0801B9H007760 VAL. 17-09',
+          '17/09/2026',
+          '-1.065,40',
+          'EUR',
+          '',
+          '',
+          'UW COLLECTIEVE OVERSCHRIJVING LONEN ISABEL',
+        ].join(';'),
+      ].join('\n'),
+      'latin1',
+    );
+
+    await service.importCsv(COOP_ID, IMPORTER_ID, 'belfius.csv', belfiusCsv, 'belfius');
+
+    expect(prisma.bankImport.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ rowCount: 2 }) }),
+    );
+    expect(prisma.bankTransaction.create).toHaveBeenCalledTimes(2);
+
+    expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          date: new Date(2026, 8, 21),
+          amount: 125,
+          referenceText: expect.stringContaining(OGM),
+          matchStatus: 'AUTO_MATCHED',
+        }),
+      }),
+    );
+    expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          date: new Date(2026, 8, 17),
+          amount: -1065.4,
+          matchStatus: 'UNMATCHED',
+        }),
+      }),
+    );
   });
 
   it('AUTO_MATCHES a credit row whose reference contains an OGM for a PENDING_PAYMENT registration', async () => {
@@ -365,14 +483,14 @@ describe('BankImportService — importCsv OGM matching', () => {
   });
 
   it('recomputes status after a manual partial-payment match commits', async () => {
-    prisma.bankTransaction.findUnique = jest.fn().mockResolvedValue({
+    prisma.bankTransaction.findFirst.mockResolvedValue({
       id: 'btx-1',
       coopId: COOP_ID,
       matchStatus: 'UNMATCHED',
       amount: 60,
       date: new Date('2026-01-15'),
     });
-    prisma.registration.findUnique = jest.fn().mockResolvedValue({
+    prisma.registration.findFirst.mockResolvedValue({
       id: 'reg-1',
       coopId: COOP_ID,
       shareholderId: 'sh-1',
@@ -381,50 +499,43 @@ describe('BankImportService — importCsv OGM matching', () => {
     });
     prisma.payment.findMany.mockResolvedValue([{ amount: 60 }]);
 
-    await service.manualMatch('btx-1', 'reg-1', IMPORTER_ID, COOP_ID);
+    await service.manualMatch(COOP_ID, 'btx-1', 'reg-1', IMPORTER_ID);
 
     expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh-1');
   });
 
-  it('rejects manual matches that cross either coop boundary before creating a payment', async () => {
-    prisma.bankTransaction.findUnique = jest.fn().mockResolvedValue({
-      id: 'btx-other',
-      coopId: 'coop-A',
-      matchStatus: 'UNMATCHED',
-      amount: 60,
-      date: new Date('2026-01-15'),
-    });
-    prisma.registration.findUnique = jest.fn().mockResolvedValue({
-      id: 'reg-other',
-      coopId: 'coop-A',
-      shareholderId: 'sh-1',
-      status: 'PENDING_PAYMENT',
-      totalAmount: 100,
-    });
+  it('rejects a bank transaction from a different coop without creating a payment', async () => {
+    prisma.bankTransaction.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.manualMatch('btx-other', 'reg-other', IMPORTER_ID, 'coop-B'),
+      service.manualMatch(COOP_ID, 'btx-1', 'reg-1', IMPORTER_ID),
     ).rejects.toBeInstanceOf(NotFoundException);
 
-    prisma.bankTransaction.findUnique.mockResolvedValue({
-      id: 'btx-owned',
-      coopId: 'coop-B',
-      matchStatus: 'UNMATCHED',
-      amount: 60,
-      date: new Date('2026-01-15'),
+    expect(prisma.bankTransaction.findFirst).toHaveBeenCalledWith({
+      where: { id: 'btx-1', coopId: COOP_ID },
     });
-    prisma.registration.findUnique.mockResolvedValue({
-      id: 'reg-other',
-      coopId: 'coop-A',
-      shareholderId: 'sh-1',
-      status: 'PENDING_PAYMENT',
-      totalAmount: 100,
-    });
-
-    await expect(
-      service.manualMatch('btx-owned', 'reg-other', IMPORTER_ID, 'coop-B'),
-    ).rejects.toBeInstanceOf(NotFoundException);
     expect(prisma.payment.create).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a registration from a different coop without creating a payment', async () => {
+    prisma.bankTransaction.findFirst.mockResolvedValue({
+      id: 'btx-1',
+      matchStatus: 'UNMATCHED',
+      amount: 60,
+      date: new Date('2026-01-15'),
+    });
+    prisma.registration.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.manualMatch(COOP_ID, 'btx-1', 'reg-1', IMPORTER_ID),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(prisma.bankTransaction.findFirst).toHaveBeenCalledWith({
+      where: { id: 'btx-1', coopId: COOP_ID },
+    });
+    expect(prisma.registration.findFirst).toHaveBeenCalledWith({
+      where: { id: 'reg-1', coopId: COOP_ID },
+    });
+    expect(prisma.payment.create).not.toHaveBeenCalled();
   });
 });

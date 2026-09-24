@@ -15,6 +15,40 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.39.1] - 2026-09-24
+
+### Fixed
+- **Belfius bank import works.** The Belfius preset used column names that the real
+  Belfius Web export does not have, so every upload failed. It now reads `Boekingsdatum`,
+  `Naam tegenpartij bevat` and `Mededelingen`. Bank presets find their header row by its
+  column names, so extra or blank metadata lines above the header no longer break an import.
+- **Bank import shows what happened.** Upload and match errors appear on the page, and a
+  successful upload shows how many rows were imported, matched and left unmatched.
+- **Ponto payments match their registration.** Ponto looked up the structured
+  communication as 12 raw digits, while registrations store it as `+++XXX/XXXX/XXXXX+++`,
+  so no Ponto payment ever matched. It now validates and formats the code first, and also
+  finds a `+++…+++` or `***…***` code typed in a free-text message.
+
+### Security
+- **Manual bank matching stays inside the coop.** A coop admin could match a bank
+  transaction or registration of another coop by id. Both now must belong to the coop in
+  the URL; anything else returns 404.
+
+## [2026.39.0] - 2026-09-21
+
+### Fixed
+- **Gift purchases no longer create nameless shareholders.** The public purchase form's
+  gift option asked the buyer for an email only. The buyer holds the shares until the
+  recipient claims the gift code, so the buyer must be a complete register entry. The
+  gift form now asks for name, birth date, email, phone and address, and the API rejects
+  a new individual without a first and last name, or a company without a company name.
+- **Admin shareholder list rows are always clickable.** When the name is empty, the link
+  shows the email instead of nothing.
+
+### Added
+- **Gift icon in the admin shareholder list.** Shareholders who bought shares as a gift
+  get a gift icon next to their type badge.
+
 ## [2026.37.1] - 2026-09-10
 
 Note: tag `v2026.37.0` points at the same commit as `v2026.31.0` and shipped nothing new.

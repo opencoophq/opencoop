@@ -22,7 +22,12 @@ import { AudienceSyncModule } from '../audience-sync/audience-sync.module';
     AudienceSyncModule,
   ],
   controllers: [ShareholderActionsController, HouseholdController],
-  providers: [ShareholdersService, ShareholderImportService, BirthdaySchedulerService, HouseholdService],
-  exports: [ShareholdersService, ShareholderImportService],
+  providers: [
+    ShareholdersService,
+    ShareholderImportService,
+    BirthdaySchedulerService,
+    HouseholdService,
+  ],
+  exports: [ShareholdersService, ShareholderImportService, HouseholdService],
 })
 export class ShareholdersModule {}

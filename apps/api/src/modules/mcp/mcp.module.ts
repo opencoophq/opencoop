@@ -8,14 +8,20 @@ import { McpAnalyticsTools } from './tools/mcp-analytics.tools';
 import { McpMessageTools } from './tools/mcp-message.tools';
 import { McpBankTools } from './tools/mcp-bank.tools';
 import { McpDividendTools } from './tools/mcp-dividend.tools';
+import { McpCatalogTools } from './tools/mcp-catalog.tools';
 import { ShareholdersModule } from '../shareholders/shareholders.module';
 import { RegistrationsModule } from '../registrations/registrations.module';
 import { AdminModule } from '../admin/admin.module';
 import { MessagesModule } from '../messages/messages.module';
+import { SharesModule } from '../shares/shares.module';
+import { ProjectsModule } from '../projects/projects.module';
+import { ChannelsModule } from '../channels/channels.module';
+import { CoopsModule } from '../coops/coops.module';
 import { CoopPermissionsService } from '../../common/utils/coop-permissions';
 import { BillingModule } from '../billing/billing.module';
 import { BankImportModule } from '../bank-import/bank-import.module';
 import { DividendsModule } from '../dividends/dividends.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { McpToolkit } from './mcp-toolkit';
 
 @Module({
@@ -29,6 +35,7 @@ import { McpToolkit } from './mcp-toolkit';
         McpMessageTools,
         McpBankTools,
         McpDividendTools,
+        McpCatalogTools,
       ],
       'opencoop',
     ),
@@ -36,9 +43,14 @@ import { McpToolkit } from './mcp-toolkit';
     RegistrationsModule,
     AdminModule,
     MessagesModule,
+    SharesModule,
+    ProjectsModule,
+    ChannelsModule,
+    CoopsModule,
     BillingModule,
     BankImportModule,
     DividendsModule,
+    PaymentsModule,
   ],
   providers: [
     McpAuthStore,
@@ -49,6 +61,7 @@ import { McpToolkit } from './mcp-toolkit';
     McpMessageTools,
     McpBankTools,
     McpDividendTools,
+    McpCatalogTools,
     CoopPermissionsService,
     McpToolkit,
   ],

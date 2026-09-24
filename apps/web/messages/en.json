@@ -785,7 +785,9 @@
       "matchTransaction": "Match Transaction",
       "reference": "Reference",
       "selectRegistration": "Select a registration to match",
-      "noRegistrations": "No pending registrations found"
+      "noRegistrations": "No pending registrations found",
+      "uploadError": "The CSV upload failed",
+      "uploadSuccess": "{total} rows imported: {matched} matched, {unmatched} unmatched"
     },
     "dividends": {
       "title": "Dividend Management",
