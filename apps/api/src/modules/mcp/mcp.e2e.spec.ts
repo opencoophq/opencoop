@@ -18,6 +18,7 @@ import { ApiKeysService } from '../api-keys/api-keys.service';
 import { BillingService } from '../billing/billing.service';
 import { MessagesService } from '../messages/messages.service';
 import { RegistrationsService } from '../registrations/registrations.service';
+import { HouseholdService } from '../shareholders/household.service';
 import { ShareholdersService } from '../shareholders/shareholders.service';
 import { McpAuthMiddleware } from './mcp-auth.middleware';
 import { McpAuthStore } from './mcp-auth.store';
@@ -51,6 +52,12 @@ const EXISTING_TOOL_NAMES = [
   'list_projects',
   'list_shareholders',
   'get_shareholder',
+  'create_shareholder',
+  'update_shareholder',
+  'get_shareholder_minors',
+  'search_household_users',
+  'link_household',
+  'emancipate_shareholder',
   'list_registrations',
   'get_registration',
   'get_capital_timeline',
@@ -92,6 +99,11 @@ const billingService = {
 };
 
 const shareholdersService = { findAll: jest.fn(), findById: jest.fn() };
+const householdService = {
+  searchHouseholdCandidates: jest.fn(),
+  linkShareholders: jest.fn(),
+  unlinkShareholder: jest.fn(),
+};
 const registrationsService = { findAll: jest.fn(), findById: jest.fn() };
 const analyticsService = {
   getCapitalTimeline: jest.fn(),
@@ -143,6 +155,7 @@ const toolProviders = [
     { provide: CoopPermissionsService, useValue: coopPermissionsService },
     { provide: BillingService, useValue: billingService },
     { provide: ShareholdersService, useValue: shareholdersService },
+    { provide: HouseholdService, useValue: householdService },
     { provide: RegistrationsService, useValue: registrationsService },
     { provide: AnalyticsService, useValue: analyticsService },
     { provide: ReportsService, useValue: reportsService },
@@ -253,7 +266,7 @@ describe('MCP HTTP transport', () => {
     expect(response.body.result?.serverInfo?.name).toBe('opencoop-test');
   });
 
-  it('lists all 16 existing tools', async () => {
+  it('lists all shareholder and existing tools', async () => {
     const response = await postMcp(
       { jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} },
       'oc_read_only',
@@ -263,7 +276,7 @@ describe('MCP HTTP transport', () => {
     expect(response.status).toBe(200);
     expect(response.body.error).toBeUndefined();
     expect(names).toEqual(expect.arrayContaining(EXISTING_TOOL_NAMES));
-    expect(names.filter((name) => name !== 'test_write_scope')).toHaveLength(16);
+    expect(names.filter((name) => name !== 'test_write_scope')).toHaveLength(22);
   });
 
   it('calls an existing tool end-to-end', async () => {

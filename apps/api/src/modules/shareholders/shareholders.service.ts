@@ -254,6 +254,12 @@ export class ShareholdersService {
     }));
   }
 
+  async findMinorsByShareholderId(shareholderId: string, coopId: string) {
+    const shareholder = await this.findById(shareholderId, coopId);
+    if (!shareholder.userId) return [];
+    return this.findMinorsByUserId(shareholder.userId, coopId);
+  }
+
   async create(
     coopId: string,
     dto: CreateShareholderDto,

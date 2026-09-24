@@ -438,9 +438,7 @@ export class AdminController {
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    const shareholder = await this.shareholdersService.findById(id, coopId);
-    if (!shareholder.userId) return [];
-    const minors = await this.shareholdersService.findMinorsByUserId(shareholder.userId, coopId);
+    const minors = await this.shareholdersService.findMinorsByShareholderId(id, coopId);
     const canViewPII =
       user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
     return canViewPII ? minors : minors.map(maskShareholderPII);

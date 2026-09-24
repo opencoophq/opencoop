@@ -3,10 +3,16 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { BillingService } from '../../billing/billing.service';
 import { CoopPermissionsService } from '../../../common/utils/coop-permissions';
+import { HouseholdService } from '../../shareholders/household.service';
 import { ShareholdersService } from '../../shareholders/shareholders.service';
 import { McpAuthStore } from '../mcp-auth.store';
 import { McpToolkit } from '../mcp-toolkit';
-import { McpShareholderTools, listShareholdersParameters } from './mcp-shareholder.tools';
+import {
+  McpShareholderTools,
+  createShareholderParameters,
+  listShareholdersParameters,
+  updateShareholderParameters,
+} from './mcp-shareholder.tools';
 
 describe('McpShareholderTools', () => {
   let tools: McpShareholderTools;
@@ -14,11 +20,22 @@ describe('McpShareholderTools', () => {
     getUserId: () => 'u1',
     getCoopId: () => 'coop-from-auth',
     getApiKeyId: () => 'k1',
-    getScope: () => 'READ_WRITE' as const,
+    getScope: jest.fn(),
   };
   const permissions = { permissions: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
-  const shareholders = { findAll: jest.fn(), findById: jest.fn() };
+  const shareholders = {
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    findMinorsByShareholderId: jest.fn(),
+  };
+  const household = {
+    searchHouseholdCandidates: jest.fn(),
+    linkShareholders: jest.fn(),
+    unlinkShareholder: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
@@ -29,10 +46,12 @@ describe('McpShareholderTools', () => {
         { provide: CoopPermissionsService, useValue: permissions },
         { provide: BillingService, useValue: billing },
         { provide: ShareholdersService, useValue: shareholders },
+        { provide: HouseholdService, useValue: household },
       ],
     }).compile();
     tools = module.get(McpShareholderTools);
     jest.clearAllMocks();
+    auth.getScope.mockReturnValue('READ_WRITE');
     permissions.permissions.mockResolvedValue({
       canManageShareholders: true,
       canViewPII: false,
@@ -63,6 +82,26 @@ describe('McpShareholderTools', () => {
       nationalId: 'secret',
       registrations: [{ pricePerShare: new Decimal('10.25') }],
     });
+    shareholders.create.mockResolvedValue({ id: 'created-shareholder' });
+    shareholders.update.mockResolvedValue({ id: 'shareholder-1234', email: null });
+    shareholders.findMinorsByShareholderId.mockResolvedValue([
+      {
+        id: 'minor-1234',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada.minor@example.com',
+      },
+    ]);
+    household.searchHouseholdCandidates.mockResolvedValue([
+      {
+        shareholderId: 'target-1234',
+        email: 'target@example.com',
+        fullName: 'Target Shareholder',
+        shareholderCount: 2,
+      },
+    ]);
+    household.linkShareholders.mockResolvedValue({ id: 'shareholder-1234' });
+    household.unlinkShareholder.mockResolvedValue({ id: 'emancipation-1234' });
   });
 
   it('rejects without canManageShareholders', async () => {
@@ -135,8 +174,86 @@ describe('McpShareholderTools', () => {
     );
   });
 
+  it('creates and updates shareholders with the authenticated coop and audit context', async () => {
+    await tools.createShareholder({ type: 'INDIVIDUAL', email: 'new@example.com' });
+    await tools.updateShareholder({ shareholderId: 'shareholder-1234', email: null });
+
+    expect(shareholders.create).toHaveBeenCalledWith(
+      'coop-from-auth',
+      expect.objectContaining({ type: 'INDIVIDUAL', email: 'new@example.com' }),
+      'u1',
+      'mcp',
+      'mcp-api-key:k1',
+    );
+    expect(shareholders.update).toHaveBeenCalledWith(
+      'shareholder-1234',
+      'coop-from-auth',
+      expect.objectContaining({ email: null }),
+      'u1',
+      'mcp',
+      'mcp-api-key:k1',
+    );
+    expect(shareholders.update.mock.calls[0][2]).not.toHaveProperty('shareholderId');
+  });
+
+  it('gets minors through the extracted service method and masks the list', async () => {
+    const result = await tools.getShareholderMinors({ shareholderId: 'shareholder-1234' });
+
+    expect(shareholders.findMinorsByShareholderId).toHaveBeenCalledWith(
+      'shareholder-1234',
+      'coop-from-auth',
+    );
+    expect(result).toEqual([
+      expect.objectContaining({ firstName: 'Aandeelhouder #1234', email: '***' }),
+    ]);
+  });
+
+  it('uses shareholder IDs and the authenticated coop for household tools', async () => {
+    await tools.searchHouseholdUsers({ shareholderId: 'shareholder-1234', search: 'target' });
+    await tools.linkHousehold({
+      shareholderId: 'shareholder-1234',
+      targetShareholderId: 'target-1234',
+    });
+    await tools.emancipateShareholder({ shareholderId: 'shareholder-1234' });
+
+    expect(household.searchHouseholdCandidates).toHaveBeenCalledWith(
+      'coop-from-auth',
+      'shareholder-1234',
+      'target',
+    );
+    expect(household.linkShareholders).toHaveBeenCalledWith({
+      coopId: 'coop-from-auth',
+      shareholderId: 'shareholder-1234',
+      targetShareholderId: 'target-1234',
+      actorUserId: 'u1',
+    });
+    expect(household.unlinkShareholder).toHaveBeenCalledWith({
+      coopId: 'coop-from-auth',
+      shareholderId: 'shareholder-1234',
+      actorUserId: 'u1',
+    });
+  });
+
+  it('rejects writes through a read-only API key', async () => {
+    auth.getScope.mockReturnValue('READ_ONLY');
+
+    await expect(
+      tools.createShareholder({ type: 'INDIVIDUAL', email: 'new@example.com' }),
+    ).rejects.toBeInstanceOf(McpError);
+    expect(shareholders.create).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid shareholder status and type enum values', () => {
     expect(listShareholdersParameters.safeParse({ status: 'UNKNOWN' }).success).toBe(false);
     expect(listShareholdersParameters.safeParse({ type: 'UNKNOWN' }).success).toBe(false);
+    expect(createShareholderParameters.safeParse({ type: 'INDIVIDUAL' }).success).toBe(false);
+    expect(
+      updateShareholderParameters.safeParse({ shareholderId: 'shareholder-1234', email: null })
+        .success,
+    ).toBe(true);
+    expect(
+      updateShareholderParameters.safeParse({ shareholderId: 'shareholder-1234', unexpected: true })
+        .success,
+    ).toBe(false);
   });
 });
