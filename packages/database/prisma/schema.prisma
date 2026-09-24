@@ -17,6 +17,11 @@ enum UserRole {
   SHAREHOLDER
 }
 
+enum ApiKeyScope {
+  READ_ONLY
+  READ_WRITE
+}
+
 enum ShareholderType {
   INDIVIDUAL
   COMPANY
@@ -340,6 +345,7 @@ model ApiKey {
   prefix     String // first 11 chars of raw key for display ("oc_a1b2c3d4...")
   keyHash    String    @unique // SHA-256 hash of full key
   name       String // user-chosen label
+  scope      ApiKeyScope @default(READ_ONLY)
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   coopId     String
