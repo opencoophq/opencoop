@@ -374,7 +374,7 @@ describe('PontoService', () => {
       const mockRegistration = {
         id: 'reg-1',
         coopId: 'coop-1',
-        ogmCode: '090933755493',
+        ogmCode: '+++090/9337/55493+++',
         status: 'PENDING_PAYMENT',
         totalAmount: 250,
         payments: [],
@@ -403,9 +403,28 @@ describe('PontoService', () => {
           coopId: 'coop-1',
           pontoTransactionId: 'tx-1',
           amount: 250,
-          ogmCode: '090933755493',
+          ogmCode: '+++090/9337/55493+++',
           matchStatus: 'AUTO_MATCHED',
         }),
+      });
+
+      expect(mockPrisma.registration.findFirst).toHaveBeenCalledWith({
+        where: {
+          ogmCode: '+++090/9337/55493+++',
+          coopId: 'coop-1',
+          status: { in: ['PENDING_PAYMENT', 'ACTIVE'] },
+        },
+        include: {
+          payments: true,
+          shareholder: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
       });
 
       // Should create payment via PaymentsService with the original transaction amount
@@ -444,12 +463,102 @@ describe('PontoService', () => {
       expect(mockPaymentsService.addPayment).not.toHaveBeenCalled();
     });
 
+    it('should accept the ***…*** OGM notation in unstructured remittance text', async () => {
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
+      mockPrisma.registration.findFirst.mockResolvedValue(null);
+      mockPrisma.bankTransaction.create.mockResolvedValue({ id: 'bt-stars', matchStatus: 'UNMATCHED' });
+
+      await (service as any).processTransaction(
+        { ...unstructuredTxn, remittanceInformation: 'aandelen ***090/9337/55493***' },
+        'coop-1',
+        true,
+      );
+
+      expect(mockPrisma.registration.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ ogmCode: '+++090/9337/55493+++' }),
+        }),
+      );
+    });
+
+    it('should auto-match an OGM embedded in unstructured remittance text', async () => {
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
+      mockPrisma.registration.findFirst.mockResolvedValue({
+        id: 'reg-1',
+        coopId: 'coop-1',
+        ogmCode: '+++090/9337/55493+++',
+        status: 'PENDING_PAYMENT',
+        payments: [],
+        shareholder: {
+          id: 'sh-1',
+          firstName: 'Jan',
+          lastName: 'Peeters',
+          email: 'jan@example.com',
+        },
+      });
+      mockPrisma.bankTransaction.create.mockResolvedValue({
+        id: 'bt-unstructured',
+        matchStatus: 'AUTO_MATCHED',
+      });
+      mockPaymentsService.addPayment.mockResolvedValue({ id: 'pay-1' });
+
+      await (service as any).processTransaction(
+        {
+          ...unstructuredTxn,
+          remittanceInformation: 'Betaling +++090/9337/55493+++ aandelen',
+        },
+        'coop-1',
+        true,
+      );
+
+      expect(mockPrisma.registration.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            ogmCode: '+++090/9337/55493+++',
+          }),
+        }),
+      );
+      expect(mockPrisma.bankTransaction.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          ogmCode: '+++090/9337/55493+++',
+          matchStatus: 'AUTO_MATCHED',
+        }),
+      });
+      expect(mockPaymentsService.addPayment).toHaveBeenCalled();
+    });
+
+    it('should reject an OGM with an invalid check digit without looking up a registration', async () => {
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
+      mockPrisma.bankTransaction.create.mockResolvedValue({
+        id: 'bt-invalid-ogm',
+        matchStatus: 'UNMATCHED',
+      });
+
+      await (service as any).processTransaction(
+        {
+          ...structuredTxn,
+          remittanceInformation: '+++090/9337/55494+++',
+        },
+        'coop-1',
+        true,
+      );
+
+      expect(mockPrisma.registration.findFirst).not.toHaveBeenCalled();
+      expect(mockPrisma.bankTransaction.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          ogmCode: null,
+          matchStatus: 'UNMATCHED',
+        }),
+      });
+      expect(mockPaymentsService.addPayment).not.toHaveBeenCalled();
+    });
+
     it('should not create payment when autoMatch is false even if matched', async () => {
       mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
       mockPrisma.registration.findFirst.mockResolvedValue({
         id: 'reg-1',
         coopId: 'coop-1',
-        ogmCode: '090933755493',
+        ogmCode: '+++090/9337/55493+++',
         status: 'PENDING_PAYMENT',
       });
 
