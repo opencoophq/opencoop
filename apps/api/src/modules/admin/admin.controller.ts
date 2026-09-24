@@ -52,6 +52,9 @@ import { CreateSellDto } from '../registrations/dto/create-sell.dto';
 import { CompleteRegistrationDto } from '../registrations/dto/complete-registration.dto';
 import { UpdatePaymentDateDto } from '../registrations/dto/update-payment-date.dto';
 import { AddPaymentDto } from '../registrations/dto/add-payment.dto';
+import { RejectRegistrationDto } from '../registrations/dto/reject-registration.dto';
+import { CancelRegistrationDto } from '../registrations/dto/cancel-registration.dto';
+import { CreateTransferDto } from '../registrations/dto/create-transfer.dto';
 import { CreateShareClassDto } from '../shares/dto/create-share-class.dto';
 import { UpdateShareClassDto } from '../shares/dto/update-share-class.dto';
 import { CreateProjectDto } from '../projects/dto/create-project.dto';
@@ -714,9 +717,9 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
-    @Body('reason') reason: string,
+    @Body() dto: RejectRegistrationDto,
   ) {
-    return this.registrationsService.reject(id, coopId, user.id, reason);
+    return this.registrationsService.reject(id, coopId, user.id, dto.reason);
   }
 
   @Put('registrations/:id/cancel')
@@ -726,9 +729,9 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
-    @Body('reason') reason?: string,
+    @Body() dto: CancelRegistrationDto,
   ) {
-    return this.registrationsService.cancel(id, coopId, user.id, reason);
+    return this.registrationsService.cancel(id, coopId, user.id, dto.reason);
   }
 
   @Post('transfers')
@@ -737,13 +740,7 @@ export class AdminController {
   async createTransfer(
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
-    @Body()
-    transferDto: {
-      fromShareholderId: string;
-      toShareholderId: string;
-      registrationId: string;
-      quantity: number;
-    },
+    @Body() transferDto: CreateTransferDto,
   ) {
     return this.registrationsService.createTransfer({
       coopId,
