@@ -499,6 +499,13 @@ export class AdminController {
     return this.shareClassesService.findAll(coopId);
   }
 
+  @Get('share-classes/:id')
+  @RequirePermission('canManageShareClasses')
+  @ApiOperation({ summary: 'Get share class by ID' })
+  async getShareClass(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.shareClassesService.findById(id, coopId);
+  }
+
   @Post('share-classes')
   @RequirePermission('canManageShareClasses')
   @ApiOperation({ summary: 'Create a new share class' })
@@ -531,6 +538,13 @@ export class AdminController {
   @ApiOperation({ summary: 'Get all projects' })
   async getProjects(@Param('coopId') coopId: string) {
     return this.projectsService.findAll(coopId);
+  }
+
+  @Get('projects/:id')
+  @RequirePermission('canManageProjects')
+  @ApiOperation({ summary: 'Get project by ID' })
+  async getProject(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.projectsService.findById(id, coopId);
   }
 
   @Post('projects')

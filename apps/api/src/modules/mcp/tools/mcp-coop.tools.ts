@@ -1,15 +1,54 @@
 import { Injectable } from '@nestjs/common';
+import { EcoPowerThresholdType } from '@opencoop/database';
 import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AnalyticsService } from '../../admin/analytics.service';
+import { CoopsService } from '../../coops/coops.service';
+import { UpdateCoopSettingsDto } from '../../coops/dto/mcp-update-coop-settings.dto';
 import { McpToolkit } from '../mcp-toolkit';
+
+export const updateCoopSettingsParameters = z
+  .object({
+    name: z.string().max(100).optional(),
+    requiresApproval: z.boolean().optional(),
+    bankName: z.string().optional(),
+    bankIban: z.string().optional(),
+    bankBic: z.string().optional(),
+    minimumHoldingPeriod: z.number().int().min(0).optional(),
+    emailProvider: z.union([z.literal('smtp'), z.literal('graph'), z.null()]).optional(),
+    smtpHost: z.string().optional(),
+    smtpPort: z.number().optional(),
+    smtpUser: z.string().optional(),
+    smtpFrom: z.string().optional(),
+    graphClientId: z.string().optional(),
+    graphTenantId: z.string().optional(),
+    graphFromEmail: z.string().optional(),
+    ecoPowerEnabled: z.boolean().optional(),
+    ecoPowerMinThresholdType: z.nativeEnum(EcoPowerThresholdType).nullable().optional(),
+    ecoPowerMinThreshold: z.number().nullable().optional(),
+    emailAudienceProvider: z.literal('brevo').nullable().optional(),
+    brevoMembersListId: z.string().optional(),
+    brevoResignedListId: z.string().optional(),
+    legalForm: z.string().optional(),
+    foundedDate: z.string().optional(),
+    certificateSignatory: z.string().optional(),
+    coopPhone: z.string().optional(),
+    coopEmail: z.string().optional(),
+    coopWebsite: z.string().optional(),
+    vatNumber: z.string().optional(),
+    coopAddress: z.record(z.string(), z.string()).nullable().optional(),
+  })
+  .strict();
+
+type UpdateCoopSettingsParams = z.infer<typeof updateCoopSettingsParameters>;
 
 @Injectable()
 export class McpCoopTools {
   constructor(
     private readonly prisma: PrismaService,
     private readonly analyticsService: AnalyticsService,
+    private readonly coopsService: CoopsService,
     private readonly toolkit: McpToolkit,
   ) {}
 
@@ -149,5 +188,40 @@ export class McpCoopTools {
         sharesSold: sharesByProject.get(project.id) ?? 0,
       }));
     });
+  }
+
+  // Mirrors GET admin/coops/:coopId/settings
+  @Tool({
+    name: 'get_coop_settings',
+    description: 'Get cooperative settings without SMTP, Graph, or Brevo credentials.',
+    parameters: z.object({}).strict(),
+  })
+  async getCoopSettings() {
+    return this.toolkit.run({ permission: 'canManageSettings' }, undefined, async (ctx) =>
+      this.coopsService.getSettings(ctx.coopId),
+    );
+  }
+
+  // Mirrors PUT admin/coops/:coopId/settings
+  @Tool({
+    name: 'update_coop_settings',
+    description: 'Update cooperative settings and return the saved settings without credentials.',
+    parameters: updateCoopSettingsParameters,
+  })
+  async updateCoopSettings(params: UpdateCoopSettingsParams) {
+    return this.toolkit.run(
+      { permission: 'canManageSettings', write: true, dto: UpdateCoopSettingsDto },
+      params,
+      async (ctx, dto) => {
+        await this.coopsService.update(
+          ctx.coopId,
+          dto,
+          ctx.audit.userId,
+          ctx.audit.ip,
+          ctx.audit.userAgent,
+        );
+        return this.coopsService.getSettings(ctx.coopId);
+      },
+    );
   }
 }

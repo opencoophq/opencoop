@@ -5,17 +5,24 @@ import { BillingService } from '../../billing/billing.service';
 import { CoopPermissionsService } from '../../../common/utils/coop-permissions';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AnalyticsService } from '../../admin/analytics.service';
+
+jest.mock('../../coops/coops.service', () => ({
+  CoopsService: class CoopsService {},
+}));
+
+import { CoopsService } from '../../coops/coops.service';
 import { McpAuthStore } from '../mcp-auth.store';
 import { McpToolkit } from '../mcp-toolkit';
-import { McpCoopTools } from './mcp-coop.tools';
+import { McpCoopTools, updateCoopSettingsParameters } from './mcp-coop.tools';
 
 describe('McpCoopTools', () => {
   let tools: McpCoopTools;
+  let scope: 'READ_ONLY' | 'READ_WRITE' = 'READ_WRITE';
   const auth = {
     getUserId: () => 'u1',
     getCoopId: () => 'coop-from-auth',
     getApiKeyId: () => 'k1',
-    getScope: () => 'READ_WRITE' as const,
+    getScope: () => scope,
   };
   const permissions = { permissions: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
@@ -29,6 +36,7 @@ describe('McpCoopTools', () => {
     $queryRaw: jest.fn(),
   };
   const analytics = { getCapitalByProject: jest.fn() };
+  const coops = { getSettings: jest.fn(), update: jest.fn() };
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
@@ -40,19 +48,29 @@ describe('McpCoopTools', () => {
         { provide: BillingService, useValue: billing },
         { provide: PrismaService, useValue: prisma },
         { provide: AnalyticsService, useValue: analytics },
+        { provide: CoopsService, useValue: coops },
       ],
     }).compile();
     tools = module.get(McpCoopTools);
     jest.clearAllMocks();
+    scope = 'READ_WRITE';
     permissions.permissions.mockResolvedValue({
       canManageShareClasses: true,
       canManageProjects: true,
+      canManageSettings: true,
     });
     billing.isReadOnly.mockResolvedValue(false);
     prisma.project.findMany.mockResolvedValue([{ id: 'p1', name: 'Solar' }]);
     analytics.getCapitalByProject.mockResolvedValue([
       { projectId: 'p1', projectName: 'Solar', totalCapital: 70, shareCount: 7, percentage: 100 },
     ]);
+    coops.getSettings.mockResolvedValue({ id: 'coop-from-auth', name: 'Coop' });
+    coops.update.mockResolvedValue({
+      id: 'coop-from-auth',
+      smtpPass: 'secret',
+      graphClientSecret: 'secret',
+      brevoApiKey: 'secret',
+    });
   });
 
   it('rejects a protected tool when the matching permission is absent', async () => {
@@ -91,5 +109,68 @@ describe('McpCoopTools', () => {
     const result = await tools.listProjects();
 
     expect(result).toEqual([{ id: 'p1', name: 'Solar', sharesSold: 7 }]);
+  });
+
+  it('returns settings without secret fields', async () => {
+    coops.getSettings.mockResolvedValue({
+      id: 'coop-from-auth',
+      name: 'Coop',
+      smtpHost: 'smtp.example.com',
+    });
+
+    const result = await tools.getCoopSettings();
+
+    expect(coops.getSettings).toHaveBeenCalledWith('coop-from-auth');
+    expect(result).toEqual({
+      id: 'coop-from-auth',
+      name: 'Coop',
+      smtpHost: 'smtp.example.com',
+    });
+    expect(result).not.toHaveProperty('smtpPass');
+    expect(result).not.toHaveProperty('graphClientSecret');
+    expect(result).not.toHaveProperty('brevoApiKey');
+  });
+
+  it('updates settings, then returns the select-limited settings read', async () => {
+    coops.getSettings.mockResolvedValue({ id: 'coop-from-auth', name: 'Updated Coop' });
+
+    const result = await tools.updateCoopSettings({ name: 'Updated Coop' });
+
+    expect(coops.update).toHaveBeenCalledWith(
+      'coop-from-auth',
+      expect.objectContaining({ name: 'Updated Coop' }),
+      'u1',
+      'mcp',
+      'mcp-api-key:k1',
+    );
+    expect(coops.getSettings).toHaveBeenCalledWith('coop-from-auth');
+    expect(result).toEqual({ id: 'coop-from-auth', name: 'Updated Coop' });
+    expect(result).not.toHaveProperty('smtpPass');
+    expect(result).not.toHaveProperty('graphClientSecret');
+    expect(result).not.toHaveProperty('brevoApiKey');
+  });
+
+  it('refuses settings writes for a read-only key and without permission', async () => {
+    scope = 'READ_ONLY';
+    await expect(tools.updateCoopSettings({ name: 'Nope' })).rejects.toBeInstanceOf(McpError);
+    expect(coops.update).not.toHaveBeenCalled();
+
+    scope = 'READ_WRITE';
+    permissions.permissions.mockResolvedValue({});
+    await expect(tools.getCoopSettings()).rejects.toBeInstanceOf(McpError);
+    expect(coops.getSettings).not.toHaveBeenCalled();
+  });
+
+  it('rejects omitted secrets and admin-only switches in settings input', () => {
+    expect(updateCoopSettingsParameters.safeParse({ smtpPass: 'secret' }).success).toBe(false);
+    expect(updateCoopSettingsParameters.safeParse({ graphClientSecret: 'secret' }).success).toBe(
+      false,
+    );
+    expect(updateCoopSettingsParameters.safeParse({ brevoApiKey: 'secret' }).success).toBe(false);
+    expect(updateCoopSettingsParameters.safeParse({ emailEnabled: true }).success).toBe(false);
+    expect(updateCoopSettingsParameters.safeParse({ pontoEnabled: true }).success).toBe(false);
+    expect(updateCoopSettingsParameters.safeParse({ minimumHoldingPeriod: -1 }).success).toBe(
+      false,
+    );
   });
 });
