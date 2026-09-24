@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { createHash, randomBytes } from 'crypto';
+import { ApiKeyScope } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -8,20 +9,30 @@ export class ApiKeysService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, coopId: string, name: string) {
+  async create(
+    userId: string,
+    coopId: string,
+    name: string,
+    scope: ApiKeyScope = ApiKeyScope.READ_ONLY,
+  ) {
     const rawKey = 'oc_' + randomBytes(20).toString('hex');
     const keyHash = createHash('sha256').update(rawKey).digest('hex');
     const prefix = rawKey.substring(0, 11);
 
     const apiKey = await this.prisma.apiKey.create({
-      data: { keyHash, prefix, name, userId, coopId },
-      select: { id: true, prefix: true, name: true, createdAt: true },
+      data: { keyHash, prefix, name, scope, userId, coopId },
+      select: { id: true, prefix: true, name: true, scope: true, createdAt: true },
     });
 
     return { ...apiKey, rawKey };
   }
 
-  async validate(rawKey: string): Promise<{ userId: string; coopId: string; apiKeyId: string } | null> {
+  async validate(rawKey: string): Promise<{
+    userId: string;
+    coopId: string;
+    apiKeyId: string;
+    scope: ApiKeyScope;
+  } | null> {
     const keyHash = createHash('sha256').update(rawKey).digest('hex');
 
     const apiKey = await this.prisma.apiKey.findUnique({
@@ -34,7 +45,12 @@ export class ApiKeysService {
     const { user } = apiKey;
     if (user.role === 'SYSTEM_ADMIN') {
       this.touchLastUsed(apiKey.id);
-      return { userId: apiKey.userId, coopId: apiKey.coopId, apiKeyId: apiKey.id };
+      return {
+        userId: apiKey.userId,
+        coopId: apiKey.coopId,
+        apiKeyId: apiKey.id,
+        scope: apiKey.scope,
+      };
     }
 
     if (user.role === 'COOP_ADMIN') {
@@ -44,7 +60,12 @@ export class ApiKeysService {
       if (!membership) return null;
 
       this.touchLastUsed(apiKey.id);
-      return { userId: apiKey.userId, coopId: apiKey.coopId, apiKeyId: apiKey.id };
+      return {
+        userId: apiKey.userId,
+        coopId: apiKey.coopId,
+        apiKeyId: apiKey.id,
+        scope: apiKey.scope,
+      };
     }
 
     return null;
@@ -57,7 +78,14 @@ export class ApiKeysService {
         revokedAt: null,
         ...(!isSystemAdmin ? { userId } : {}),
       },
-      select: { id: true, prefix: true, name: true, createdAt: true, lastUsedAt: true },
+      select: {
+        id: true,
+        prefix: true,
+        name: true,
+        scope: true,
+        createdAt: true,
+        lastUsedAt: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

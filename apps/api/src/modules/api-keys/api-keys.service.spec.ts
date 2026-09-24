@@ -3,6 +3,7 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { ApiKeysService } from './api-keys.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ApiKeyScope } from '@opencoop/database';
 
 describe('ApiKeysService', () => {
   let service: ApiKeysService;
@@ -21,10 +22,7 @@ describe('ApiKeysService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [
-        ApiKeysService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [ApiKeysService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<ApiKeysService>(ApiKeysService);
@@ -85,6 +83,43 @@ describe('ApiKeysService', () => {
         }),
       );
     });
+
+    it('should create a read-only key by default', async () => {
+      mockPrisma.apiKey.create.mockResolvedValue({
+        id: 'key1',
+        prefix: 'oc_a1b2c3d',
+        name: 'Test Key',
+        scope: ApiKeyScope.READ_ONLY,
+        createdAt: new Date(),
+      });
+
+      await service.create('user1', 'coop1', 'Test Key');
+
+      expect(mockPrisma.apiKey.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ scope: ApiKeyScope.READ_ONLY }),
+          select: expect.objectContaining({ scope: true }),
+        }),
+      );
+    });
+
+    it('should create a read-write key when requested', async () => {
+      mockPrisma.apiKey.create.mockResolvedValue({
+        id: 'key1',
+        prefix: 'oc_a1b2c3d',
+        name: 'Writer',
+        scope: ApiKeyScope.READ_WRITE,
+        createdAt: new Date(),
+      });
+
+      await service.create('user1', 'coop1', 'Writer', ApiKeyScope.READ_WRITE);
+
+      expect(mockPrisma.apiKey.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ scope: ApiKeyScope.READ_WRITE }),
+        }),
+      );
+    });
   });
 
   describe('validate', () => {
@@ -97,6 +132,7 @@ describe('ApiKeysService', () => {
         keyHash,
         userId: 'user1',
         coopId: 'coop1',
+        scope: ApiKeyScope.READ_ONLY,
         revokedAt: null,
         user: { id: 'user1', role: 'COOP_ADMIN' },
       });
@@ -105,7 +141,12 @@ describe('ApiKeysService', () => {
 
       const result = await service.validate(rawKey);
 
-      expect(result).toEqual({ userId: 'user1', coopId: 'coop1', apiKeyId: 'key1' });
+      expect(result).toEqual({
+        userId: 'user1',
+        coopId: 'coop1',
+        apiKeyId: 'key1',
+        scope: ApiKeyScope.READ_ONLY,
+      });
     });
 
     it('should return userId and coopId for a valid key with SYSTEM_ADMIN role', async () => {
@@ -117,6 +158,7 @@ describe('ApiKeysService', () => {
         keyHash,
         userId: 'admin1',
         coopId: 'coop1',
+        scope: ApiKeyScope.READ_WRITE,
         revokedAt: null,
         user: { id: 'admin1', role: 'SYSTEM_ADMIN' },
       });
@@ -124,7 +166,12 @@ describe('ApiKeysService', () => {
 
       const result = await service.validate(rawKey);
 
-      expect(result).toEqual({ userId: 'admin1', coopId: 'coop1', apiKeyId: 'key2' });
+      expect(result).toEqual({
+        userId: 'admin1',
+        coopId: 'coop1',
+        apiKeyId: 'key2',
+        scope: ApiKeyScope.READ_WRITE,
+      });
       // Should NOT check coopAdmin membership for system admins
       expect(mockPrisma.coopAdmin.findFirst).not.toHaveBeenCalled();
     });
@@ -196,7 +243,14 @@ describe('ApiKeysService', () => {
   describe('findByUser', () => {
     it('should return keys for a given user and coop', async () => {
       const keys = [
-        { id: 'key1', prefix: 'oc_abc1234', name: 'Key 1', createdAt: new Date(), lastUsedAt: null },
+        {
+          id: 'key1',
+          prefix: 'oc_abc1234',
+          name: 'Key 1',
+          scope: ApiKeyScope.READ_ONLY,
+          createdAt: new Date(),
+          lastUsedAt: null,
+        },
       ];
       mockPrisma.apiKey.findMany.mockResolvedValue(keys);
 
@@ -206,14 +260,29 @@ describe('ApiKeysService', () => {
       expect(mockPrisma.apiKey.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { coopId: 'coop1', revokedAt: null, userId: 'user1' },
+          select: expect.objectContaining({ scope: true }),
         }),
       );
     });
 
     it('should return all keys for the coop when isSystemAdmin is true', async () => {
       const keys = [
-        { id: 'key1', prefix: 'oc_abc1234', name: 'Key 1', createdAt: new Date(), lastUsedAt: null },
-        { id: 'key2', prefix: 'oc_def5678', name: 'Key 2', createdAt: new Date(), lastUsedAt: null },
+        {
+          id: 'key1',
+          prefix: 'oc_abc1234',
+          name: 'Key 1',
+          scope: ApiKeyScope.READ_ONLY,
+          createdAt: new Date(),
+          lastUsedAt: null,
+        },
+        {
+          id: 'key2',
+          prefix: 'oc_def5678',
+          name: 'Key 2',
+          scope: ApiKeyScope.READ_WRITE,
+          createdAt: new Date(),
+          lastUsedAt: null,
+        },
       ];
       mockPrisma.apiKey.findMany.mockResolvedValue(keys);
 
@@ -253,7 +322,7 @@ describe('ApiKeysService', () => {
       await expect(service.revoke('key1', 'user1')).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow system admin to revoke another user\'s key', async () => {
+    it("should allow system admin to revoke another user's key", async () => {
       mockPrisma.apiKey.findUnique.mockResolvedValue({ id: 'key1', userId: 'user2' });
       mockPrisma.apiKey.update.mockResolvedValue({});
 
