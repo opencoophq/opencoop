@@ -16,6 +16,7 @@ import { AnalyticsService } from '../admin/analytics.service';
 import { ReportsService } from '../admin/reports.service';
 import { ApiKeysService } from '../api-keys/api-keys.service';
 import { BillingService } from '../billing/billing.service';
+import { CoopsService } from '../coops/coops.service';
 import { MessagesService } from '../messages/messages.service';
 import { PaymentsService } from '../payments/payments.service';
 import { RegistrationsService } from '../registrations/registrations.service';
@@ -42,6 +43,9 @@ jest.mock('../messages/messages.service', () => ({
 jest.mock('../payments/payments.service', () => ({
   PaymentsService: class PaymentsService {},
 }));
+jest.mock('../coops/coops.service', () => ({
+  CoopsService: class CoopsService {},
+}));
 jest.mock('../registrations/registrations.service', () => ({
   RegistrationsService: class RegistrationsService {},
 }));
@@ -54,6 +58,8 @@ const EXISTING_TOOL_NAMES = [
   'get_coop_stats',
   'list_share_classes',
   'list_projects',
+  'get_coop_settings',
+  'update_coop_settings',
   'list_shareholders',
   'get_shareholder',
   'create_shareholder',
@@ -147,6 +153,7 @@ const messagesService = {
   findByIdForAdmin: jest.fn(),
   countRecipients: jest.fn(),
 };
+const coopsService = { getSettings: jest.fn(), update: jest.fn() };
 
 @Injectable()
 class TestWriteTools {
@@ -190,6 +197,7 @@ const toolProviders = [
     { provide: AnalyticsService, useValue: analyticsService },
     { provide: ReportsService, useValue: reportsService },
     { provide: MessagesService, useValue: messagesService },
+    { provide: CoopsService, useValue: coopsService },
   ],
   exports: [McpAuthStore],
 })
