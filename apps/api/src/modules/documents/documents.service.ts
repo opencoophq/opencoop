@@ -77,9 +77,9 @@ export class DocumentsService {
     };
   }
 
-  async generateCertificate(shareholderId: string, locale?: string) {
-    const shareholder = await this.prisma.shareholder.findUnique({
-      where: { id: shareholderId },
+  async generateCertificate(shareholderId: string, coopId: string, locale?: string) {
+    const shareholder = await this.prisma.shareholder.findFirst({
+      where: { id: shareholderId, coopId },
       include: {
         coop: true,
         registrations: {
@@ -110,9 +110,8 @@ export class DocumentsService {
     if (reg.payments.length === 0) {
       vestedQuantity = reg.quantity;
     } else {
-      vestedQuantity = pricePerShare > 0
-        ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity)
-        : 0;
+      vestedQuantity =
+        pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity) : 0;
     }
 
     // S5: Don't generate certificate for 0 vested shares
@@ -135,7 +134,9 @@ export class DocumentsService {
       shareholderName,
       shareholderType: shareholder.type,
       nationalId: shareholder.nationalId
-        ? (isEncrypted(shareholder.nationalId) ? decryptField(shareholder.nationalId) : shareholder.nationalId)
+        ? isEncrypted(shareholder.nationalId)
+          ? decryptField(shareholder.nationalId)
+          : shareholder.nationalId
         : undefined,
       companyId: shareholder.companyId || undefined,
       shareClassName: reg.shareClass.name,
@@ -143,9 +144,10 @@ export class DocumentsService {
       quantity: vestedQuantity,
       pricePerShare,
       totalValue,
-      purchaseDate: (reg.payments?.length
-        ? reg.payments[reg.payments.length - 1].bankDate
-        : null)?.toISOString().split('T')[0] || reg.registerDate.toISOString().split('T')[0],
+      purchaseDate:
+        (reg.payments?.length ? reg.payments[reg.payments.length - 1].bankDate : null)
+          ?.toISOString()
+          .split('T')[0] || reg.registerDate.toISOString().split('T')[0],
       issueDate: new Date().toISOString().split('T')[0],
       locale: locale || 'nl',
       shareholderCity: this.getShareholderCity(shareholder.address),
@@ -183,7 +185,11 @@ export class DocumentsService {
     return doc;
   }
 
-  async generateCertificateForRegistration(registrationId: string, coopId: string, locale?: string) {
+  async generateCertificateForRegistration(
+    registrationId: string,
+    coopId: string,
+    locale?: string,
+  ) {
     const reg = await this.prisma.registration.findUnique({
       where: { id: registrationId, coopId },
       include: {
@@ -215,9 +221,8 @@ export class DocumentsService {
       vestedQuantity = reg.quantity;
     } else {
       const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
-      vestedQuantity = pricePerShare > 0
-        ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity)
-        : 0;
+      vestedQuantity =
+        pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity) : 0;
     }
 
     if (vestedQuantity <= 0) {
@@ -239,7 +244,9 @@ export class DocumentsService {
       shareholderName,
       shareholderType: shareholder.type,
       nationalId: shareholder.nationalId
-        ? (isEncrypted(shareholder.nationalId) ? decryptField(shareholder.nationalId) : shareholder.nationalId)
+        ? isEncrypted(shareholder.nationalId)
+          ? decryptField(shareholder.nationalId)
+          : shareholder.nationalId
         : undefined,
       companyId: shareholder.companyId || undefined,
       shareClassName: reg.shareClass.name,
@@ -247,9 +254,10 @@ export class DocumentsService {
       quantity: vestedQuantity,
       pricePerShare,
       totalValue,
-      purchaseDate: (reg.payments?.length
-        ? reg.payments[reg.payments.length - 1].bankDate
-        : null)?.toISOString().split('T')[0] || reg.registerDate.toISOString().split('T')[0],
+      purchaseDate:
+        (reg.payments?.length ? reg.payments[reg.payments.length - 1].bankDate : null)
+          ?.toISOString()
+          .split('T')[0] || reg.registerDate.toISOString().split('T')[0],
       issueDate: new Date().toISOString().split('T')[0],
       locale: locale || 'nl',
       shareholderCity: this.getShareholderCity(shareholder.address),
@@ -287,7 +295,16 @@ export class DocumentsService {
     return doc;
   }
 
-  async getDocuments(shareholderId: string) {
+  async getDocuments(shareholderId: string, coopId: string) {
+    const shareholder = await this.prisma.shareholder.findFirst({
+      where: { id: shareholderId, coopId },
+      select: { id: true },
+    });
+
+    if (!shareholder) {
+      throw new NotFoundException('Shareholder not found');
+    }
+
     return this.prisma.shareholderDocument.findMany({
       where: { shareholderId },
       orderBy: { generatedAt: 'desc' },
@@ -348,7 +365,12 @@ export class DocumentsService {
     return filePath;
   }
 
-  async generateDividendStatement(shareholderId: string, dividendPayoutId: string, locale?: string) {
+  async generateDividendStatement(
+    shareholderId: string,
+    dividendPayoutId: string,
+    coopId: string,
+    locale?: string,
+  ) {
     const payout = await this.prisma.dividendPayout.findUnique({
       where: { id: dividendPayoutId },
       include: {
@@ -367,6 +389,10 @@ export class DocumentsService {
       throw new NotFoundException('Dividend payout not found');
     }
 
+    if (payout.shareholder.coopId !== coopId) {
+      throw new NotFoundException('Dividend payout not found');
+    }
+
     const shareholder = payout.shareholder;
 
     const shareholderName =
@@ -376,33 +402,39 @@ export class DocumentsService {
 
     // Build details from calculationDetails if available
     const details = Array.isArray(payout.calculationDetails)
-      ? (payout.calculationDetails as Array<{
-          shareClassName?: string;
-          quantity?: number;
-          totalValue?: number;
-          dividendRate?: number;
-          dividendAmount?: number;
-        }>).map((d) => ({
+      ? (
+          payout.calculationDetails as Array<{
+            shareClassName?: string;
+            quantity?: number;
+            totalValue?: number;
+            dividendRate?: number;
+            dividendAmount?: number;
+          }>
+        ).map((d) => ({
           shareClassName: d.shareClassName || '',
           quantity: d.quantity || 0,
           totalValue: d.totalValue || 0,
           dividendRate: d.dividendRate || 0,
           dividendAmount: d.dividendAmount || 0,
         }))
-      : [{
-          shareClassName: '-',
-          quantity: 0,
-          totalValue: 0,
-          dividendRate: Number(payout.dividendPeriod.dividendRate),
-          dividendAmount: Number(payout.grossAmount),
-        }];
+      : [
+          {
+            shareClassName: '-',
+            quantity: 0,
+            totalValue: 0,
+            dividendRate: Number(payout.dividendPeriod.dividendRate),
+            dividendAmount: Number(payout.grossAmount),
+          },
+        ];
 
     const element = React.createElement(DividendStatement, {
       coopName: shareholder.coop.name,
       shareholderName,
       shareholderType: shareholder.type,
       nationalId: shareholder.nationalId
-        ? (isEncrypted(shareholder.nationalId) ? decryptField(shareholder.nationalId) : shareholder.nationalId)
+        ? isEncrypted(shareholder.nationalId)
+          ? decryptField(shareholder.nationalId)
+          : shareholder.nationalId
         : undefined,
       companyId: shareholder.companyId || undefined,
       year: payout.dividendPeriod.year,

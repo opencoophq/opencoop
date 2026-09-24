@@ -10,6 +10,7 @@ import { McpBankTools } from './tools/mcp-bank.tools';
 import { McpDividendTools } from './tools/mcp-dividend.tools';
 import { McpCatalogTools } from './tools/mcp-catalog.tools';
 import { McpMeetingTools } from './tools/mcp-meeting.tools';
+import { McpReportTools } from './tools/mcp-report.tools';
 import { ShareholdersModule } from '../shareholders/shareholders.module';
 import { RegistrationsModule } from '../registrations/registrations.module';
 import { AdminModule } from '../admin/admin.module';
@@ -18,6 +19,8 @@ import { SharesModule } from '../shares/shares.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { ChannelsModule } from '../channels/channels.module';
 import { CoopsModule } from '../coops/coops.module';
+import { DocumentsModule } from '../documents/documents.module';
+import { AuditModule } from '../audit/audit.module';
 import { CoopPermissionsService } from '../../common/utils/coop-permissions';
 import { BillingModule } from '../billing/billing.module';
 import { BankImportModule } from '../bank-import/bank-import.module';
@@ -39,6 +42,7 @@ import { McpToolkit } from './mcp-toolkit';
         McpDividendTools,
         McpCatalogTools,
         McpMeetingTools,
+        McpReportTools,
       ],
       'opencoop',
     ),
@@ -50,6 +54,8 @@ import { McpToolkit } from './mcp-toolkit';
     ProjectsModule,
     ChannelsModule,
     CoopsModule,
+    DocumentsModule,
+    AuditModule,
     BillingModule,
     BankImportModule,
     DividendsModule,
@@ -67,6 +73,7 @@ import { McpToolkit } from './mcp-toolkit';
     McpDividendTools,
     McpCatalogTools,
     McpMeetingTools,
+    McpReportTools,
     CoopPermissionsService,
     McpToolkit,
   ],
