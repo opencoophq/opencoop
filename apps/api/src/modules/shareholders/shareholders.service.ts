@@ -115,7 +115,7 @@ export class ShareholdersService {
           createdAt: true,
           registrations: {
             where: { type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
-            select: { quantity: true, status: true, registerDate: true },
+            select: { quantity: true, status: true, registerDate: true, isGift: true },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -140,8 +140,9 @@ export class ShareholdersService {
           ? registerDates.reduce((earliest, d) => (d < earliest ? d : earliest))
           : null;
       const memberSince = firstRegistrationDate ?? rest.createdAt;
+      const giftBuyer = registrations.some((r) => r.isGift);
 
-      return { ...rest, sharesOwned, firstRegistrationDate, memberSince };
+      return { ...rest, sharesOwned, firstRegistrationDate, memberSince, giftBuyer };
     });
 
     return {
@@ -267,6 +268,15 @@ export class ShareholdersService {
     ip?: string,
     userAgent?: string,
   ) {
+    if (dto.type !== 'COMPANY' && (!dto.firstName?.trim() || !dto.lastName?.trim())) {
+      throw new BadRequestException(
+        'firstName and lastName are required for individual shareholders',
+      );
+    }
+    if (dto.type === 'COMPANY' && !dto.companyName?.trim()) {
+      throw new BadRequestException('companyName is required for company shareholders');
+    }
+
     if (dto.email) {
       const existing = await this.prisma.shareholder.findFirst({
         where: { coopId, email: dto.email.toLowerCase() },

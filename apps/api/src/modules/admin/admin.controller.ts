@@ -911,11 +911,12 @@ export class AdminController {
   @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Manually match a bank transaction to a registration' })
   async matchBankTransaction(
+    @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
     @Body('registrationId') registrationId: string,
   ) {
-    return this.bankImportService.manualMatch(id, registrationId, user.id);
+    return this.bankImportService.manualMatch(coopId, id, registrationId, user.id);
   }
 
   // ==================== DIVIDENDS ====================

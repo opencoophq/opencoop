@@ -29,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
 import { Upload, Link2 } from 'lucide-react';
@@ -91,6 +92,8 @@ export default function BankImportPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loadingRegistrations, setLoadingRegistrations] = useState(false);
   const [matching, setMatching] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const loadData = useCallback(async () => {
     if (!selectedCoop) return;
@@ -113,16 +116,30 @@ export default function BankImportPage() {
     const file = e.target.files?.[0];
     if (!file || !selectedCoop) return;
     setUploading(true);
+    setError('');
+    setSuccessMessage('');
     const formData = new FormData();
     formData.append('file', file);
     try {
-      await api(`/admin/coops/${selectedCoop.id}/bank-import?preset=${selectedPreset}`, {
-        method: 'POST',
-        body: formData,
-      });
+      const result = await api<{ rowCount: number; matchedCount: number; unmatchedCount: number }>(
+        `/admin/coops/${selectedCoop.id}/bank-import?preset=${selectedPreset}`,
+        {
+          method: 'POST',
+          body: formData,
+        },
+      );
+      setError('');
+      setSuccessMessage(
+        t('admin.bankImport.uploadSuccess', {
+          total: result.rowCount,
+          matched: result.matchedCount,
+          unmatched: result.unmatchedCount,
+        }),
+      );
       loadData();
-    } catch {
-      // ignore
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('admin.bankImport.uploadError'));
+      setSuccessMessage('');
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -157,8 +174,9 @@ export default function BankImportPage() {
       setMatchDialogOpen(false);
       setMatchingTx(null);
       loadData();
-    } catch {
-      // ignore
+    } catch (err) {
+      setMatchDialogOpen(false);
+      setError(err instanceof Error ? err.message : t('admin.bankImport.uploadError'));
     } finally {
       setMatching(false);
     }
@@ -198,6 +216,17 @@ export default function BankImportPage() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {successMessage && (
+        <Alert className="mb-4">
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardContent className="pt-6">
