@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { IsString } from 'class-validator';
 import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { AudienceService } from '../../messages/audience.service';
+import { CreateConversationDto } from '../../messages/dto/create-conversation.dto';
+import { CreateMessageDto } from '../../messages/dto/create-message.dto';
+import { ScheduleConversationDto } from '../../messages/dto/schedule-conversation.dto';
 import { MessagesService } from '../../messages/messages.service';
 import { markdownToMessageHtml } from '../../messages/message-body';
 import { McpToolkit } from '../mcp-toolkit';
@@ -18,6 +23,27 @@ export const audienceSchema = z
   })
   .strict();
 type AudienceInput = z.infer<typeof audienceSchema>;
+
+const createConversationAudienceParameters = z
+  .object({
+    type: z.enum(['ALL', 'PROJECT', 'SELECTED']),
+    projectId: z.string().optional(),
+    shareholderIds: z.array(z.string()).optional(),
+  })
+  .strict();
+
+export const createConversationParameters = z
+  .object({
+    subject: z.string().min(1),
+    type: z.enum(['BROADCAST', 'DIRECT']),
+    body: z.string().min(1),
+    format: z.enum(['TEXT', 'HTML']).optional(),
+    status: z.enum(['DRAFT', 'SENT']).optional(),
+    audience: createConversationAudienceParameters.optional(),
+    shareholderId: z.string().optional(),
+    existingDocumentIds: z.array(z.string()).optional(),
+  })
+  .strict();
 
 export const createMessageDraftParameters = z
   .object({
@@ -42,14 +68,70 @@ export const getMessageDraftParameters = z
   })
   .strict();
 
+export const listConversationsParameters = z
+  .object({
+    page: z.number().int().min(1).optional(),
+  })
+  .strict();
+
+export const getConversationParameters = z
+  .object({
+    conversationId: z.string(),
+  })
+  .strict();
+
+export const sendMessageDraftParameters = z
+  .object({
+    conversationId: z.string(),
+  })
+  .strict();
+
+export const scheduleMessageDraftParameters = z
+  .object({
+    conversationId: z.string(),
+    scheduledAt: z.string().datetime({ offset: true }),
+  })
+  .strict();
+
+export const unscheduleMessageDraftParameters = z
+  .object({
+    conversationId: z.string(),
+  })
+  .strict();
+
+export const replyToConversationParameters = z
+  .object({
+    conversationId: z.string(),
+    body: z.string().min(1),
+    existingDocumentIds: z.array(z.string()).optional(),
+  })
+  .strict();
+
 type CreateMessageDraftParams = z.infer<typeof createMessageDraftParameters>;
+type CreateConversationParams = z.infer<typeof createConversationParameters>;
 type UpdateMessageDraftParams = z.infer<typeof updateMessageDraftParameters>;
 type GetMessageDraftParams = z.infer<typeof getMessageDraftParameters>;
+type ListConversationsParams = z.infer<typeof listConversationsParameters>;
+type GetConversationParams = z.infer<typeof getConversationParameters>;
+type SendMessageDraftParams = z.infer<typeof sendMessageDraftParameters>;
+type ScheduleMessageDraftParams = z.infer<typeof scheduleMessageDraftParameters>;
+type UnscheduleMessageDraftParams = z.infer<typeof unscheduleMessageDraftParameters>;
+type ReplyToConversationParams = z.infer<typeof replyToConversationParameters>;
+
+class ScheduleMessageDraftToolDto extends ScheduleConversationDto {
+  @IsString()
+  conversationId!: string;
+}
+
+class ReplyToConversationToolDto extends CreateMessageDto {
+  @IsString()
+  conversationId!: string;
+}
 
 /**
- * Draft-only messaging tools for API keys. These can create and edit DRAFT
- * conversations and nothing else: no send, no schedule, no participants.
- * Sending is an admin-UI action by a logged-in user.
+ * Messaging tools for API keys that can manage messages. A READ_WRITE key with
+ * canManageMessages can create, schedule, send, and reply; READ_ONLY keys and
+ * callers without that permission cannot.
  */
 @Injectable()
 export class McpMessageTools {
@@ -57,6 +139,7 @@ export class McpMessageTools {
     private readonly toolkit: McpToolkit,
     private readonly messages: MessagesService,
     private readonly prisma: PrismaService,
+    private readonly audienceService: AudienceService,
   ) {}
 
   private async resolveAudience(coopId: string, audienceInput: AudienceInput) {
@@ -112,6 +195,24 @@ export class McpMessageTools {
       recipientCount: await this.messages.countRecipients(conversationId, coopId),
       adminUrl: this.adminUrl(conv.id),
     };
+  }
+
+  // Mirrors POST admin/coops/:coopId/conversations
+  @Tool({
+    name: 'create_conversation',
+    description:
+      'Create a conversation: BROADCAST (to an audience) or DIRECT (a 1:1 conversation with one shareholder, via shareholderId). Unless status is DRAFT, this sends immediately and irreversibly, emailing the recipient(s) right away.',
+    parameters: createConversationParameters,
+  })
+  async createConversation(params: CreateConversationParams) {
+    return this.toolkit.run(
+      { permission: 'canManageMessages', write: true, dto: CreateConversationDto },
+      params,
+      async (ctx, dto) =>
+        this.messages.createConversation(ctx.coopId, dto, ctx.userId, undefined, 'mcp', {
+          apiKeyId: ctx.apiKeyId,
+        }),
+    );
   }
 
   // Mirrors POST admin/coops/:coopId/conversations
@@ -182,6 +283,113 @@ export class McpMessageTools {
   async getMessageDraft(params: GetMessageDraftParams) {
     return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) =>
       this.describe(params.conversationId, ctx.coopId),
+    );
+  }
+
+  // Mirrors GET admin/coops/:coopId/conversations
+  @Tool({
+    name: 'list_conversations',
+    description: 'List conversations for the cooperative with optional pagination.',
+    parameters: listConversationsParameters,
+  })
+  async listConversations(params: ListConversationsParams) {
+    return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) =>
+      this.messages.findAllForCoop(ctx.coopId, params.page ?? 1),
+    );
+  }
+
+  // Mirrors GET admin/coops/:coopId/conversations/:conversationId
+  @Tool({
+    name: 'get_conversation',
+    description: 'Read a conversation and return its full message history and participants.',
+    parameters: getConversationParameters,
+  })
+  async getConversation(params: GetConversationParams) {
+    return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) =>
+      this.messages.findByIdForAdmin(params.conversationId, ctx.coopId),
+    );
+  }
+
+  // Mirrors POST admin/coops/:coopId/conversations/audience-preview
+  @Tool({
+    name: 'preview_message_audience',
+    description: 'Resolve an audience and return the number of active recipients it contains.',
+    parameters: audienceSchema,
+  })
+  async previewMessageAudience(params: AudienceInput) {
+    return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) => {
+      const audience = await this.resolveAudience(ctx.coopId, params);
+      const { shareholderIds } = await this.audienceService.resolve(ctx.coopId, audience);
+      return { count: shareholderIds.length };
+    });
+  }
+
+  // Mirrors POST admin/coops/:coopId/conversations/:conversationId/send
+  @Tool({
+    name: 'send_message_draft',
+    description:
+      'Send a draft immediately and irreversibly. This emails every recipient; check the recipient count first with preview_message_audience.',
+    parameters: sendMessageDraftParameters,
+  })
+  async sendMessageDraft(params: SendMessageDraftParams) {
+    return this.toolkit.run({ permission: 'canManageMessages', write: true }, params, async (ctx) =>
+      this.messages.send(params.conversationId, ctx.coopId, {
+        userId: ctx.audit.userId,
+        ip: ctx.audit.ip,
+        userAgent: ctx.audit.userAgent,
+      }),
+    );
+  }
+
+  // Mirrors POST admin/coops/:coopId/conversations/:conversationId/schedule
+  @Tool({
+    name: 'schedule_message_draft',
+    description: 'Schedule a draft for a future time and return the updated conversation.',
+    parameters: scheduleMessageDraftParameters,
+  })
+  async scheduleMessageDraft(params: ScheduleMessageDraftParams) {
+    return this.toolkit.run(
+      { permission: 'canManageMessages', write: true, dto: ScheduleMessageDraftToolDto },
+      params,
+      async (ctx, dto) =>
+        this.messages.schedule(
+          dto.conversationId,
+          ctx.coopId,
+          new Date(dto.scheduledAt),
+          ctx.userId,
+        ),
+    );
+  }
+
+  // Mirrors POST admin/coops/:coopId/conversations/:conversationId/cancel-schedule
+  @Tool({
+    name: 'unschedule_message_draft',
+    description: 'Cancel a scheduled send and return the conversation to DRAFT status.',
+    parameters: unscheduleMessageDraftParameters,
+  })
+  async unscheduleMessageDraft(params: UnscheduleMessageDraftParams) {
+    return this.toolkit.run({ permission: 'canManageMessages', write: true }, params, async (ctx) =>
+      this.messages.cancelSchedule(params.conversationId, ctx.coopId, ctx.userId),
+    );
+  }
+
+  // Mirrors POST admin/coops/:coopId/conversations/:conversationId/messages
+  @Tool({
+    name: 'reply_to_conversation',
+    description: 'Reply to a conversation immediately; this emails all participants.',
+    parameters: replyToConversationParameters,
+  })
+  async replyToConversation(params: ReplyToConversationParams) {
+    return this.toolkit.run(
+      { permission: 'canManageMessages', write: true, dto: ReplyToConversationToolDto },
+      params,
+      async (ctx, dto) =>
+        this.messages.addAdminReply(
+          dto.conversationId,
+          ctx.coopId,
+          { body: dto.body, existingDocumentIds: dto.existingDocumentIds },
+          ctx.userId,
+        ),
     );
   }
 }

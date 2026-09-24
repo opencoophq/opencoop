@@ -16,6 +16,7 @@ import { AnalyticsService } from '../admin/analytics.service';
 import { ReportsService } from '../admin/reports.service';
 import { ApiKeysService } from '../api-keys/api-keys.service';
 import { BillingService } from '../billing/billing.service';
+import { AudienceService } from '../messages/audience.service';
 import { MessagesService } from '../messages/messages.service';
 import { PaymentsService } from '../payments/payments.service';
 import { RegistrationsService } from '../registrations/registrations.service';
@@ -80,9 +81,17 @@ const EXISTING_TOOL_NAMES = [
   'get_shareholder_growth',
   'get_transaction_summary',
   'get_annual_overview',
+  'create_conversation',
   'create_message_draft',
   'update_message_draft',
   'get_message_draft',
+  'list_conversations',
+  'get_conversation',
+  'preview_message_audience',
+  'send_message_draft',
+  'schedule_message_draft',
+  'unschedule_message_draft',
+  'reply_to_conversation',
 ];
 
 const apiKeysService = {
@@ -146,7 +155,13 @@ const messagesService = {
   updateDraft: jest.fn(),
   findByIdForAdmin: jest.fn(),
   countRecipients: jest.fn(),
+  findAllForCoop: jest.fn(),
+  send: jest.fn(),
+  schedule: jest.fn(),
+  cancelSchedule: jest.fn(),
+  addAdminReply: jest.fn(),
 };
+const audienceService = { resolve: jest.fn() };
 
 @Injectable()
 class TestWriteTools {
@@ -190,6 +205,7 @@ const toolProviders = [
     { provide: AnalyticsService, useValue: analyticsService },
     { provide: ReportsService, useValue: reportsService },
     { provide: MessagesService, useValue: messagesService },
+    { provide: AudienceService, useValue: audienceService },
   ],
   exports: [McpAuthStore],
 })
