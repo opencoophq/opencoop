@@ -14,8 +14,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CoopPermissionsService } from '../../common/utils/coop-permissions';
 import { AnalyticsService } from '../admin/analytics.service';
 import { ReportsService } from '../admin/reports.service';
+import { AuditService } from '../audit/audit.service';
 import { ApiKeysService } from '../api-keys/api-keys.service';
 import { BillingService } from '../billing/billing.service';
+import { DocumentsService } from '../documents/documents.service';
 import { MessagesService } from '../messages/messages.service';
 import { PaymentsService } from '../payments/payments.service';
 import { RegistrationsService } from '../registrations/registrations.service';
@@ -27,6 +29,7 @@ import { McpToolkit } from './mcp-toolkit';
 import { McpAnalyticsTools } from './tools/mcp-analytics.tools';
 import { McpCoopTools } from './tools/mcp-coop.tools';
 import { McpMessageTools } from './tools/mcp-message.tools';
+import { McpReportTools } from './tools/mcp-report.tools';
 import { McpShareholderTools } from './tools/mcp-shareholder.tools';
 import { McpTransactionTools } from './tools/mcp-transaction.tools';
 
@@ -35,6 +38,12 @@ jest.mock('../admin/reports.service', () => ({
 }));
 jest.mock('../admin/analytics.service', () => ({
   AnalyticsService: class AnalyticsService {},
+}));
+jest.mock('../audit/audit.service', () => ({
+  AuditService: class AuditService {},
+}));
+jest.mock('../documents/documents.service', () => ({
+  DocumentsService: class DocumentsService {},
 }));
 jest.mock('../messages/messages.service', () => ({
   MessagesService: class MessagesService {},
@@ -80,6 +89,16 @@ const EXISTING_TOOL_NAMES = [
   'get_shareholder_growth',
   'get_transaction_summary',
   'get_annual_overview',
+  'get_capital_statement',
+  'get_shareholder_register',
+  'get_dividend_summary',
+  'get_project_investment_report',
+  'get_shareholders_per_project',
+  'get_referral_analytics',
+  'list_audit_logs',
+  'list_shareholder_documents',
+  'generate_certificate',
+  'generate_dividend_statement',
   'create_message_draft',
   'update_message_draft',
   'get_message_draft',
@@ -139,8 +158,22 @@ const analyticsService = {
   getCapitalByProject: jest.fn(),
   getShareholderGrowth: jest.fn(),
   getTransactionSummary: jest.fn(),
+  getReferralAnalytics: jest.fn(),
 };
-const reportsService = { getAnnualOverview: jest.fn() };
+const reportsService = {
+  getAnnualOverview: jest.fn(),
+  getCapitalStatement: jest.fn(),
+  getShareholderRegister: jest.fn(),
+  getDividendSummary: jest.fn(),
+  getProjectInvestment: jest.fn(),
+  getShareholdersPerProject: jest.fn(),
+};
+const documentsService = {
+  getDocuments: jest.fn(),
+  generateCertificate: jest.fn(),
+  generateDividendStatement: jest.fn(),
+};
+const auditService = { findByCoop: jest.fn() };
 const messagesService = {
   createConversation: jest.fn(),
   updateDraft: jest.fn(),
@@ -171,6 +204,7 @@ const toolProviders = [
   McpTransactionTools,
   McpAnalyticsTools,
   McpMessageTools,
+  McpReportTools,
   TestWriteTools,
 ];
 
@@ -189,6 +223,8 @@ const toolProviders = [
     { provide: PaymentsService, useValue: paymentsService },
     { provide: AnalyticsService, useValue: analyticsService },
     { provide: ReportsService, useValue: reportsService },
+    { provide: DocumentsService, useValue: documentsService },
+    { provide: AuditService, useValue: auditService },
     { provide: MessagesService, useValue: messagesService },
   ],
   exports: [McpAuthStore],
