@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CoopPermissionKey } from '@opencoop/shared';
+import { CoopPermissionKey, CoopPermissions, DEFAULT_ROLES } from '@opencoop/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
@@ -29,16 +29,37 @@ export function mergeAdminPermissions(
 export class CoopPermissionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async has(userId: string, coopId: string, key: CoopPermissionKey): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-    if (!user) return false;
-    if (user.role === 'SYSTEM_ADMIN') return true;
-    const admin = await this.prisma.coopAdmin.findFirst({
-      where: { userId, coopId },
-      include: { roles: { include: { role: true } } },
+  async permissions(userId: string, coopId: string): Promise<Partial<CoopPermissions>> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        role: true,
+        coopAdminOf: {
+          where: { coopId },
+          take: 1,
+          select: {
+            permissionOverrides: true,
+            roles: {
+              select: {
+                role: { select: { permissions: true } },
+              },
+            },
+          },
+        },
+      },
     });
-    if (!admin) return false;
-    const merged = mergeAdminPermissions(admin.roles.map((r) => r.role.permissions), admin.permissionOverrides);
-    return merged[key] === true;
+    if (!user) return {};
+    if (user.role === 'SYSTEM_ADMIN') return { ...DEFAULT_ROLES.Admin };
+    const admin = user.coopAdminOf[0];
+    if (!admin) return {};
+    return mergeAdminPermissions(
+      admin.roles.map((role) => role.role.permissions),
+      admin.permissionOverrides,
+    );
+  }
+
+  async has(userId: string, coopId: string, key: CoopPermissionKey): Promise<boolean> {
+    const permissions = await this.permissions(userId, coopId);
+    return permissions[key] === true;
   }
 }

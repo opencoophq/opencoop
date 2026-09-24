@@ -4,17 +4,23 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 describe('mergeAdminPermissions', () => {
   it('ORs roles and lets overrides win', () => {
-    expect(mergeAdminPermissions([{ canManageMessages: false }, { canManageMessages: true }], { canViewPII: false })).toEqual({
+    expect(
+      mergeAdminPermissions([{ canManageMessages: false }, { canManageMessages: true }], {
+        canViewPII: false,
+      }),
+    ).toEqual({
       canManageMessages: true,
       canViewPII: false,
     });
-    expect(mergeAdminPermissions([{ canManageMessages: true }], { canManageMessages: false })).toEqual({ canManageMessages: false });
+    expect(
+      mergeAdminPermissions([{ canManageMessages: true }], { canManageMessages: false }),
+    ).toEqual({ canManageMessages: false });
   });
 });
 
 describe('CoopPermissionsService.has', () => {
   let service: CoopPermissionsService;
-  const prisma = { user: { findUnique: jest.fn() }, coopAdmin: { findFirst: jest.fn() } };
+  const prisma = { user: { findUnique: jest.fn() } };
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
@@ -25,27 +31,34 @@ describe('CoopPermissionsService.has', () => {
   });
 
   it('is true for a system admin without looking at coop roles', async () => {
-    prisma.user.findUnique.mockResolvedValue({ role: 'SYSTEM_ADMIN' });
+    prisma.user.findUnique.mockResolvedValue({ role: 'SYSTEM_ADMIN', coopAdminOf: [] });
     expect(await service.has('u1', 'c1', 'canManageMessages')).toBe(true);
-    expect(prisma.coopAdmin.findFirst).not.toHaveBeenCalled();
   });
 
-  it('merges the roles of the coop admin row', async () => {
-    prisma.user.findUnique.mockResolvedValue({ role: 'USER' });
-    prisma.coopAdmin.findFirst.mockResolvedValue({
-      permissionOverrides: null,
-      roles: [{ role: { permissions: { canManageMessages: true } } }],
+  it('returns all merged permissions from one database lookup', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      role: 'COOP_ADMIN',
+      coopAdminOf: [
+        {
+          permissionOverrides: { canViewPII: false },
+          roles: [
+            { role: { permissions: { canManageMessages: true } } },
+            { role: { permissions: { canViewReports: true } } },
+          ],
+        },
+      ],
     });
-    expect(await service.has('u1', 'c1', 'canManageMessages')).toBe(true);
-    expect(prisma.coopAdmin.findFirst).toHaveBeenCalledWith({
-      where: { userId: 'u1', coopId: 'c1' },
-      include: { roles: { include: { role: true } } },
+
+    expect(await service.permissions('u1', 'c1')).toEqual({
+      canManageMessages: true,
+      canViewReports: true,
+      canViewPII: false,
     });
+    expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
   });
 
   it('is false when the user is not an admin of the coop', async () => {
-    prisma.user.findUnique.mockResolvedValue({ role: 'USER' });
-    prisma.coopAdmin.findFirst.mockResolvedValue(null);
+    prisma.user.findUnique.mockResolvedValue({ role: 'COOP_ADMIN', coopAdminOf: [] });
     expect(await service.has('u1', 'c1', 'canManageMessages')).toBe(false);
   });
 });

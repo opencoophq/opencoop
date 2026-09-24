@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { ApiKeyScope } from '@opencoop/database';
 import { AsyncLocalStorage } from 'async_hooks';
 
 interface McpAuthContext {
   userId: string;
   coopId: string;
-  apiKeyId?: string;
+  apiKeyId: string;
+  scope: ApiKeyScope;
 }
 
 @Injectable()
@@ -27,7 +29,15 @@ export class McpAuthStore {
     return ctx.userId;
   }
 
-  getApiKeyId(): string | undefined {
-    return this.storage.getStore()?.apiKeyId;
+  getApiKeyId(): string {
+    const ctx = this.storage.getStore();
+    if (!ctx) throw new Error('No MCP auth context — is the request authenticated?');
+    return ctx.apiKeyId;
+  }
+
+  getScope(): ApiKeyScope {
+    const ctx = this.storage.getStore();
+    if (!ctx) throw new Error('No MCP auth context — is the request authenticated?');
+    return ctx.scope;
   }
 }
