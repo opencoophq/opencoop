@@ -250,13 +250,16 @@ export class BankImportService {
       return this.parseGenericCsv(lines);
     }
 
-    // Header-based parsing for bank presets
-    const dataLines = lines.slice(preset.skipRows);
-    if (dataLines.length < 2) return [];
+    // Header-based parsing for bank presets: the header is the first line that
+    // names both the date and the amount column (banks prepend metadata blocks).
+    const headerIdx = lines.findIndex((line) => {
+      const cells = this.splitCsvLine(line, preset.delimiter);
+      return cells.includes(preset.dateColumn) && cells.includes(preset.amountColumn);
+    });
+    if (headerIdx === -1) return [];
 
-    const headerLine = dataLines[0];
-    const headers = this.splitCsvLine(headerLine, preset.delimiter);
-    const rows = dataLines.slice(1);
+    const headers = this.splitCsvLine(lines[headerIdx], preset.delimiter);
+    const rows = lines.slice(headerIdx + 1);
 
     const colIndex = (name: string) => headers.indexOf(name);
     const dateIdx = colIndex(preset.dateColumn);
@@ -372,9 +375,9 @@ export class BankImportService {
     return isNaN(num) ? null : num;
   }
 
-  async manualMatch(bankTransactionId: string, registrationId: string, userId: string) {
-    const bankTx = await this.prisma.bankTransaction.findUnique({
-      where: { id: bankTransactionId },
+  async manualMatch(coopId: string, bankTransactionId: string, registrationId: string, userId: string) {
+    const bankTx = await this.prisma.bankTransaction.findFirst({
+      where: { id: bankTransactionId, coopId },
     });
 
     if (!bankTx) {
@@ -385,8 +388,8 @@ export class BankImportService {
       throw new BadRequestException('Bank transaction is already matched');
     }
 
-    const registration = await this.prisma.registration.findUnique({
-      where: { id: registrationId },
+    const registration = await this.prisma.registration.findFirst({
+      where: { id: registrationId, coopId },
     });
 
     if (!registration) {
