@@ -1,3 +1,28 @@
+jest.mock('../meetings/agenda.service', () => ({
+  AgendaService: class AgendaService {},
+}));
+jest.mock('../meetings/attendance.service', () => ({
+  AttendanceService: class AttendanceService {},
+}));
+jest.mock('../meetings/convocation.service', () => ({
+  ConvocationService: class ConvocationService {},
+}));
+jest.mock('../meetings/meeting-documents.service', () => ({
+  MeetingDocumentsService: class MeetingDocumentsService {},
+}));
+jest.mock('../meetings/meetings.service', () => ({
+  MeetingsService: class MeetingsService {},
+}));
+jest.mock('../meetings/minutes.service', () => ({
+  MinutesService: class MinutesService {},
+}));
+jest.mock('../meetings/proxies.service', () => ({
+  ProxiesService: class ProxiesService {},
+}));
+jest.mock('../meetings/votes.service', () => ({
+  VotesService: class VotesService {},
+}));
+
 import {
   INestApplication,
   Injectable,
@@ -27,8 +52,17 @@ import { McpToolkit } from './mcp-toolkit';
 import { McpAnalyticsTools } from './tools/mcp-analytics.tools';
 import { McpCoopTools } from './tools/mcp-coop.tools';
 import { McpMessageTools } from './tools/mcp-message.tools';
+import { McpMeetingTools } from './tools/mcp-meeting.tools';
 import { McpShareholderTools } from './tools/mcp-shareholder.tools';
 import { McpTransactionTools } from './tools/mcp-transaction.tools';
+import { AgendaService } from '../meetings/agenda.service';
+import { AttendanceService } from '../meetings/attendance.service';
+import { ConvocationService } from '../meetings/convocation.service';
+import { MeetingDocumentsService } from '../meetings/meeting-documents.service';
+import { MeetingsService } from '../meetings/meetings.service';
+import { MinutesService } from '../meetings/minutes.service';
+import { ProxiesService } from '../meetings/proxies.service';
+import { VotesService } from '../meetings/votes.service';
 
 jest.mock('../admin/reports.service', () => ({
   ReportsService: class ReportsService {},
@@ -83,6 +117,40 @@ const EXISTING_TOOL_NAMES = [
   'create_message_draft',
   'update_message_draft',
   'get_message_draft',
+  'create_meeting',
+  'list_meetings',
+  'get_meeting',
+  'update_meeting',
+  'delete_meeting',
+  'cancel_meeting',
+  'add_agenda_item',
+  'update_agenda_item',
+  'delete_agenda_item',
+  'create_proxy',
+  'list_proxies',
+  'delete_proxy',
+  'record_votes',
+  'close_resolution',
+  'send_convocation',
+  'get_convocation_status',
+  'preview_convocation',
+  'send_convocation_reminder',
+  'check_in_attendee',
+  'undo_check_in',
+  'get_live_attendance',
+  'list_attendance',
+  'get_minutes',
+  'generate_minutes',
+  'update_minutes',
+  'finalize_minutes',
+  'list_meeting_documents',
+  'update_meeting_document',
+  'delete_meeting_document',
+  'get_documents_email_draft',
+  'update_documents_email_draft',
+  'preview_documents_email',
+  'email_meeting_documents',
+  'list_rsvp_statuses',
 ];
 
 const apiKeysService = {
@@ -147,6 +215,14 @@ const messagesService = {
   findByIdForAdmin: jest.fn(),
   countRecipients: jest.fn(),
 };
+const meetingsService = {};
+const agendaService = {};
+const proxiesService = {};
+const votesService = {};
+const convocationService = {};
+const attendanceService = {};
+const minutesService = {};
+const meetingDocumentsService = {};
 
 @Injectable()
 class TestWriteTools {
@@ -171,6 +247,7 @@ const toolProviders = [
   McpTransactionTools,
   McpAnalyticsTools,
   McpMessageTools,
+  McpMeetingTools,
   TestWriteTools,
 ];
 
@@ -190,6 +267,14 @@ const toolProviders = [
     { provide: AnalyticsService, useValue: analyticsService },
     { provide: ReportsService, useValue: reportsService },
     { provide: MessagesService, useValue: messagesService },
+    { provide: MeetingsService, useValue: meetingsService },
+    { provide: AgendaService, useValue: agendaService },
+    { provide: ProxiesService, useValue: proxiesService },
+    { provide: VotesService, useValue: votesService },
+    { provide: ConvocationService, useValue: convocationService },
+    { provide: AttendanceService, useValue: attendanceService },
+    { provide: MinutesService, useValue: minutesService },
+    { provide: MeetingDocumentsService, useValue: meetingDocumentsService },
   ],
   exports: [McpAuthStore],
 })
