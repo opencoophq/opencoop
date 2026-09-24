@@ -10,6 +10,7 @@ import { PontoClient, PontoTransaction } from './ponto.client';
 import { PaymentsService } from '../payments/payments.service';
 import { EmailService } from '../email/email.service';
 import { encryptField, decryptField } from '../../common/crypto/field-encryption';
+import { formatOgmCode, validateOgmCode } from '@opencoop/shared';
 
 @Injectable()
 export class PontoService {
@@ -311,14 +312,21 @@ export class PontoService {
       return;
     }
 
-    // Extract OGM code from structured remittance information
+    // Extract and normalize a valid OGM code from the remittance information.
     let ogmCode: string | null = null;
+    let rawOgmCode: string | null = null;
     if (txn.remittanceInformationType === 'structured') {
-      ogmCode = txn.remittanceInformation.replace(/\D/g, '');
-      // Validate it looks like a 12-digit OGM
-      if (!/^\d{12}$/.test(ogmCode)) {
-        ogmCode = null;
-      }
+      const digits = (txn.remittanceInformation || '').replace(/\D/g, '');
+      rawOgmCode = /^\d{12}$/.test(digits) ? digits : null;
+    } else {
+      const match = (txn.remittanceInformation || '').match(
+        /(?:\+{3}|\*{3})\s*(\d{3})\s*\/\s*(\d{4})\s*\/\s*(\d{5})\s*(?:\+{3}|\*{3})/,
+      );
+      rawOgmCode = match ? match.slice(1).join('') : null;
+    }
+
+    if (rawOgmCode && validateOgmCode(rawOgmCode)) {
+      ogmCode = formatOgmCode(rawOgmCode);
     }
 
     // Try to match to a registration
