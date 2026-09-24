@@ -11,6 +11,8 @@ import { RegistrationsModule } from '../registrations/registrations.module';
 import { AdminModule } from '../admin/admin.module';
 import { MessagesModule } from '../messages/messages.module';
 import { CoopPermissionsService } from '../../common/utils/coop-permissions';
+import { BillingModule } from '../billing/billing.module';
+import { McpToolkit } from './mcp-toolkit';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { CoopPermissionsService } from '../../common/utils/coop-permissions';
     RegistrationsModule,
     AdminModule,
     MessagesModule,
+    BillingModule,
   ],
   providers: [
     McpAuthStore,
@@ -31,7 +34,8 @@ import { CoopPermissionsService } from '../../common/utils/coop-permissions';
     McpAnalyticsTools,
     McpMessageTools,
     CoopPermissionsService,
+    McpToolkit,
   ],
-  exports: [McpAuthStore],
+  exports: [McpAuthStore, McpToolkit],
 })
 export class McpToolsModule {}
