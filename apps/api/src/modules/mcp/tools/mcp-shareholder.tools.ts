@@ -266,7 +266,7 @@ export class McpShareholderTools {
     parameters: searchHouseholdUsersParameters,
   })
   async searchHouseholdUsers(params: SearchHouseholdUsersParams) {
-    return this.toolkit.run({}, params, async (ctx) =>
+    return this.toolkit.run({ permission: 'canManageShareholders' }, params, async (ctx) =>
       this.householdService.searchHouseholdCandidates(
         ctx.coopId,
         params.shareholderId,
@@ -283,13 +283,16 @@ export class McpShareholderTools {
     parameters: linkHouseholdParameters,
   })
   async linkHousehold(params: LinkHouseholdParams) {
-    return this.toolkit.run({ write: true, dto: LinkHouseholdToolDto }, params, async (ctx, dto) =>
-      this.householdService.linkShareholders({
-        coopId: ctx.coopId,
-        shareholderId: params.shareholderId,
-        targetShareholderId: dto.targetShareholderId,
-        actorUserId: ctx.userId,
-      }),
+    return this.toolkit.run(
+      { permission: 'canManageShareholders', write: true, dto: LinkHouseholdToolDto },
+      params,
+      async (ctx, dto) =>
+        this.householdService.linkShareholders({
+          coopId: ctx.coopId,
+          shareholderId: params.shareholderId,
+          targetShareholderId: dto.targetShareholderId,
+          actorUserId: ctx.userId,
+        }),
     );
   }
 
@@ -301,12 +304,15 @@ export class McpShareholderTools {
     parameters: emancipateShareholderParameters,
   })
   async emancipateShareholder(params: EmancipateShareholderParams) {
-    return this.toolkit.run({ write: true }, params, async (ctx) =>
-      this.householdService.unlinkShareholder({
-        coopId: ctx.coopId,
-        shareholderId: params.shareholderId,
-        actorUserId: ctx.userId,
-      }),
+    return this.toolkit.run(
+      { permission: 'canManageShareholders', write: true },
+      params,
+      async (ctx) =>
+        this.householdService.unlinkShareholder({
+          coopId: ctx.coopId,
+          shareholderId: params.shareholderId,
+          actorUserId: ctx.userId,
+        }),
     );
   }
 }
