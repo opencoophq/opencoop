@@ -60,6 +60,8 @@ import { UpdateShareClassDto } from '../shares/dto/update-share-class.dto';
 import { CreateProjectDto } from '../projects/dto/create-project.dto';
 import { UpdateProjectDto } from '../projects/dto/update-project.dto';
 import { CreateDividendPeriodDto } from '../dividends/dto/create-dividend-period.dto';
+import { MarkDividendsPaidDto } from '../dividends/dto/mark-dividends-paid.dto';
+import { MatchBankTransactionDto } from '../bank-import/dto/match-bank-transaction.dto';
 import { UpdateCoopDto } from '../coops/dto/update-coop.dto';
 import { UpdateBrandingDto } from '../coops/dto/update-branding.dto';
 import { maskShareholderPII, maskShareholderListPII } from '../../common/utils/mask-pii';
@@ -896,15 +898,7 @@ export class AdminController {
   @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Get unmatched Ponto bank transactions' })
   async getUnmatchedBankTransactions(@Param('coopId') coopId: string) {
-    return this.prisma.bankTransaction.findMany({
-      where: {
-        coopId,
-        matchStatus: 'UNMATCHED',
-        pontoTransactionId: { not: null },
-        amount: { gt: 0 },
-      },
-      orderBy: { date: 'desc' },
-    });
+    return this.bankImportService.getUnmatchedTransactions(coopId);
   }
 
   @Post('bank-transactions/:id/match')
@@ -914,9 +908,9 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
-    @Body('registrationId') registrationId: string,
+    @Body() dto: MatchBankTransactionDto,
   ) {
-    return this.bankImportService.manualMatch(coopId, id, registrationId, user.id);
+    return this.bankImportService.manualMatch(coopId, id, dto.registrationId, user.id);
   }
 
   // ==================== DIVIDENDS ====================
@@ -973,12 +967,12 @@ export class AdminController {
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserData,
     @Req() req: Request,
-    @Body('paymentReference') paymentReference?: string,
+    @Body() dto: MarkDividendsPaidDto,
   ) {
     return this.dividendsService.markAsPaid(
       id,
       coopId,
-      paymentReference,
+      dto.paymentReference,
       user.id,
       req.ip,
       req.headers['user-agent'],

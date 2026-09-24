@@ -6,6 +6,8 @@ import { McpShareholderTools } from './tools/mcp-shareholder.tools';
 import { McpTransactionTools } from './tools/mcp-transaction.tools';
 import { McpAnalyticsTools } from './tools/mcp-analytics.tools';
 import { McpMessageTools } from './tools/mcp-message.tools';
+import { McpBankTools } from './tools/mcp-bank.tools';
+import { McpDividendTools } from './tools/mcp-dividend.tools';
 import { McpCatalogTools } from './tools/mcp-catalog.tools';
 import { ShareholdersModule } from '../shareholders/shareholders.module';
 import { RegistrationsModule } from '../registrations/registrations.module';
@@ -17,6 +19,8 @@ import { ChannelsModule } from '../channels/channels.module';
 import { CoopsModule } from '../coops/coops.module';
 import { CoopPermissionsService } from '../../common/utils/coop-permissions';
 import { BillingModule } from '../billing/billing.module';
+import { BankImportModule } from '../bank-import/bank-import.module';
+import { DividendsModule } from '../dividends/dividends.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { McpToolkit } from './mcp-toolkit';
 
@@ -29,6 +33,8 @@ import { McpToolkit } from './mcp-toolkit';
         McpTransactionTools,
         McpAnalyticsTools,
         McpMessageTools,
+        McpBankTools,
+        McpDividendTools,
         McpCatalogTools,
       ],
       'opencoop',
@@ -42,6 +48,8 @@ import { McpToolkit } from './mcp-toolkit';
     ChannelsModule,
     CoopsModule,
     BillingModule,
+    BankImportModule,
+    DividendsModule,
     PaymentsModule,
   ],
   providers: [
@@ -51,6 +59,8 @@ import { McpToolkit } from './mcp-toolkit';
     McpTransactionTools,
     McpAnalyticsTools,
     McpMessageTools,
+    McpBankTools,
+    McpDividendTools,
     McpCatalogTools,
     CoopPermissionsService,
     McpToolkit,
