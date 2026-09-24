@@ -20,10 +20,21 @@ export class BankImportService {
     });
   }
 
-  async getTransactions(coopId: string, bankImportId?: string, matchStatus?: string) {
+  async getTransactions(
+    coopId: string,
+    bankImportId?: string,
+    matchStatus?: string,
+    search?: string,
+  ) {
     const where: Record<string, unknown> = { coopId };
     if (bankImportId) where.bankImportId = bankImportId;
     if (matchStatus) where.matchStatus = matchStatus;
+    if (search) {
+      where.OR = [
+        { counterparty: { contains: search, mode: 'insensitive' } },
+        { referenceText: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     return this.prisma.bankTransaction.findMany({
       where,
@@ -44,6 +55,18 @@ export class BankImportService {
     });
   }
 
+  async getUnmatchedTransactions(coopId: string) {
+    return this.prisma.bankTransaction.findMany({
+      where: {
+        coopId,
+        matchStatus: 'UNMATCHED',
+        pontoTransactionId: { not: null },
+        amount: { gt: 0 },
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+
   async importCsv(
     coopId: string,
     importedById: string,
@@ -57,6 +80,31 @@ export class BankImportService {
     }
 
     const csvContent = fileBuffer.toString(preset.encoding);
+    return this.importCsvContent(coopId, importedById, fileName, csvContent, preset);
+  }
+
+  async importCsvText(
+    coopId: string,
+    importedById: string,
+    fileName: string,
+    csvContent: string,
+    presetId: string = 'generic',
+  ) {
+    const preset = BANK_PRESETS[presetId];
+    if (!preset) {
+      throw new BadRequestException(`Unknown bank preset: ${presetId}`);
+    }
+
+    return this.importCsvContent(coopId, importedById, fileName, csvContent, preset);
+  }
+
+  private async importCsvContent(
+    coopId: string,
+    importedById: string,
+    fileName: string,
+    csvContent: string,
+    preset: BankPreset,
+  ) {
     const rows = this.parseCsv(csvContent, preset);
 
     if (rows.length === 0) {
@@ -372,12 +420,17 @@ export class BankImportService {
     return isNaN(num) ? null : num;
   }
 
-  async manualMatch(bankTransactionId: string, registrationId: string, userId: string) {
+  async manualMatch(
+    bankTransactionId: string,
+    registrationId: string,
+    userId: string,
+    coopId: string,
+  ) {
     const bankTx = await this.prisma.bankTransaction.findUnique({
       where: { id: bankTransactionId },
     });
 
-    if (!bankTx) {
+    if (!bankTx || bankTx.coopId !== coopId) {
       throw new NotFoundException('Bank transaction not found');
     }
 
@@ -389,7 +442,7 @@ export class BankImportService {
       where: { id: registrationId },
     });
 
-    if (!registration) {
+    if (!registration || registration.coopId !== coopId) {
       throw new NotFoundException('Registration not found');
     }
 
@@ -413,10 +466,7 @@ export class BankImportService {
 
       let isCompleted = false;
       let isActive = false;
-      if (
-        registration.status === 'PENDING_PAYMENT' ||
-        registration.status === 'ACTIVE'
-      ) {
+      if (registration.status === 'PENDING_PAYMENT' || registration.status === 'ACTIVE') {
         const allPayments = await tx.payment.findMany({
           where: { registrationId },
           select: { amount: true },
