@@ -169,8 +169,7 @@ export default function BankImportPage() {
     try {
       await api(`/admin/coops/${selectedCoop.id}/bank-transactions/${matchingTx.id}/match`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ registrationId }),
+        body: { registrationId },
       });
       setMatchDialogOpen(false);
       setMatchingTx(null);
