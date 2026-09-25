@@ -1055,10 +1055,11 @@ export class AdminController {
   @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Generate share certificate for a shareholder' })
   async generateCertificate(
+    @Param('coopId') coopId: string,
     @Param('shareholderId') shareholderId: string,
     @Query('locale') locale?: string,
   ) {
-    return this.documentsService.generateCertificate(shareholderId, locale);
+    return this.documentsService.generateCertificate(shareholderId, coopId, locale);
   }
 
   @Post('registrations/:registrationId/resend-payment-email')
@@ -1086,11 +1087,17 @@ export class AdminController {
   @RequirePermission('canManageShareholders')
   @ApiOperation({ summary: 'Generate dividend statement for a shareholder' })
   async generateDividendStatement(
+    @Param('coopId') coopId: string,
     @Param('shareholderId') shareholderId: string,
     @Param('dividendPayoutId') dividendPayoutId: string,
     @Query('locale') locale?: string,
   ) {
-    return this.documentsService.generateDividendStatement(shareholderId, dividendPayoutId, locale);
+    return this.documentsService.generateDividendStatement(
+      shareholderId,
+      dividendPayoutId,
+      coopId,
+      locale,
+    );
   }
 
   @Get('documents/:documentId/download')
