@@ -1825,6 +1825,8 @@
     "subject": "Betreff",
     "body": "Nachricht",
     "allShareholders": "Alle Anteilseigner",
+    "project": "Projekt",
+    "selectedShareholders": "{count} ausgewählte Anteilseigner",
     "specificShareholder": "Bestimmter Anteilseigner",
     "broadcast": "Rundschreiben",
     "direct": "Direkt",

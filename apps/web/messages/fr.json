@@ -1825,6 +1825,8 @@
     "subject": "Sujet",
     "body": "Message",
     "allShareholders": "Tous les coopérateurs",
+    "project": "Projet",
+    "selectedShareholders": "{count} coopérateurs sélectionnés",
     "specificShareholder": "Coopérateur spécifique",
     "broadcast": "Diffusion",
     "direct": "Direct",

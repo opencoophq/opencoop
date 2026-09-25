@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
 import { ArrowLeft, Loader2, Paperclip } from 'lucide-react';
 
@@ -69,6 +70,7 @@ export default function AdminConversationDetailPage() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [statusAction, setStatusAction] = useState<'send' | 'cancel' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const loadConversation = async () => {
     if (!selectedCoop) return;
@@ -137,14 +139,15 @@ export default function AdminConversationDetailPage() {
 
   const handleSendNow = async () => {
     if (!selectedCoop || !window.confirm(t('messages.sendNowConfirm'))) return;
+    setError(null);
     setStatusAction('send');
     try {
       await api(`/admin/coops/${selectedCoop.id}/conversations/${conversationId}/send`, {
         method: 'POST',
       });
       await loadConversation();
-    } catch {
-      // ignore
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.actionError'));
     } finally {
       setStatusAction(null);
     }
@@ -152,14 +155,15 @@ export default function AdminConversationDetailPage() {
 
   const handleCancelSchedule = async () => {
     if (!selectedCoop) return;
+    setError(null);
     setStatusAction('cancel');
     try {
       await api(`/admin/coops/${selectedCoop.id}/conversations/${conversationId}/cancel-schedule`, {
         method: 'POST',
       });
       await loadConversation();
-    } catch {
-      // ignore
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.actionError'));
     } finally {
       setStatusAction(null);
     }
@@ -254,6 +258,12 @@ export default function AdminConversationDetailPage() {
             </Button>
           )}
         </div>
+      )}
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {conversation.type === 'BROADCAST' && (
