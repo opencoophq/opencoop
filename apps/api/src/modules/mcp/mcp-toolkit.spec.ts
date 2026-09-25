@@ -37,6 +37,7 @@ describe('McpToolkit', () => {
   };
   const permissionService = {
     permissions: jest.fn(),
+    permissionsWithRole: jest.fn(),
   };
   const billingService = {
     isReadOnly: jest.fn(),
@@ -55,6 +56,10 @@ describe('McpToolkit', () => {
       canManageShareholders: true,
       canViewPII: true,
     });
+    permissionService.permissionsWithRole.mockImplementation(async (userId, coopId) => ({
+      permissions: await permissionService.permissions(userId, coopId),
+      role: 'COOP_ADMIN',
+    }));
     billingService.isReadOnly.mockResolvedValue(false);
     loggerError = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     toolkit = new McpToolkit(
@@ -219,6 +224,63 @@ describe('McpToolkit', () => {
       firstName: 'Ada',
       email: 'ada@example.com',
     });
+  });
+
+  it('keeps PII visible when canViewPII is absent and masks only explicit false', async () => {
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: {},
+      role: 'COOP_ADMIN',
+    });
+
+    const visible = await toolkit.run({ pii: 'shareholder' }, undefined, async () => ({
+      id: 'shareholder-1234',
+      firstName: 'Ada',
+      email: 'ada@example.com',
+    }));
+    expect(visible).toEqual({
+      id: 'shareholder-1234',
+      firstName: 'Ada',
+      email: 'ada@example.com',
+    });
+
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: { canViewPII: false },
+      role: 'COOP_ADMIN',
+    });
+    const masked = await toolkit.run({ pii: 'shareholder' }, undefined, async () => ({
+      id: 'shareholder-1234',
+      firstName: 'Ada',
+      email: 'ada@example.com',
+    }));
+    expect(masked).toEqual(
+      expect.objectContaining({ firstName: 'Aandeelhouder #1234', email: '***' }),
+    );
+  });
+
+  it('uses the REST legacy default for missing permissions', async () => {
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: {},
+      role: 'COOP_ADMIN',
+    });
+
+    await expect(
+      toolkit.run({ permission: 'canManageMeetings' }, undefined, async () => ({ ok: true })),
+    ).resolves.toEqual({ ok: true });
+    await expect(
+      toolkit.run({ permission: 'canViewReports' }, undefined, async () => ({ ok: true })),
+    ).rejects.toMatchObject({ message: 'Insufficient permissions' });
+  });
+
+  it('allows SYSTEM_ADMIN write tools during read-only subscriptions', async () => {
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: {},
+      role: 'SYSTEM_ADMIN',
+    });
+    billingService.isReadOnly.mockResolvedValue(true);
+
+    await expect(
+      toolkit.run({ write: true }, undefined, async () => ({ ok: true })),
+    ).resolves.toEqual({ ok: true });
   });
 
   it('normalises values recursively without mutating the source', async () => {

@@ -1,5 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { CoopPermissionsService, mergeAdminPermissions } from './coop-permissions';
+import {
+  CoopPermissionsService,
+  isPermitted,
+  LEGACY_DEFAULT_TRUE,
+  mergeAdminPermissions,
+} from './coop-permissions';
 import { PrismaService } from '../../prisma/prisma.service';
 
 describe('mergeAdminPermissions', () => {
@@ -60,5 +65,15 @@ describe('CoopPermissionsService.has', () => {
   it('is false when the user is not an admin of the coop', async () => {
     prisma.user.findUnique.mockResolvedValue({ role: 'COOP_ADMIN', coopAdminOf: [] });
     expect(await service.has('u1', 'c1', 'canManageMessages')).toBe(false);
+  });
+});
+
+describe('isPermitted', () => {
+  it('uses the legacy default only for missing permissions and still denies false', () => {
+    expect(LEGACY_DEFAULT_TRUE.has('canManageMeetings')).toBe(true);
+    expect(isPermitted({}, 'canManageMeetings')).toBe(true);
+    expect(isPermitted({ canManageMeetings: false }, 'canManageMeetings')).toBe(false);
+    expect(isPermitted({}, 'canViewReports')).toBe(false);
+    expect(isPermitted({ canViewReports: true }, 'canViewReports')).toBe(true);
   });
 });

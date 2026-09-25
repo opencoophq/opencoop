@@ -58,7 +58,7 @@ describe('McpMeetingTools', () => {
     getApiKeyId: () => 'key-1',
     getScope: jest.fn(),
   };
-  const permissions = { permissions: jest.fn() };
+  const permissions = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
   const meetings = {
     create: jest.fn(),
@@ -131,6 +131,10 @@ describe('McpMeetingTools', () => {
     }).compile();
     tools = module.get(McpMeetingTools);
     jest.clearAllMocks();
+    permissions.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await permissions.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     auth.getScope.mockReturnValue('READ_WRITE');
     permissions.permissions.mockResolvedValue({ canManageMeetings: true });
     billing.isReadOnly.mockResolvedValue(false);
@@ -275,7 +279,7 @@ describe('McpMeetingTools', () => {
   });
 
   it('rejects missing permission and read-only writes before calling services', async () => {
-    permissions.permissions.mockResolvedValue({});
+    permissions.permissions.mockResolvedValue({ canManageMeetings: false });
     await expect(tools.listMeetings({})).rejects.toBeInstanceOf(McpError);
     expect(meetings.list).not.toHaveBeenCalled();
 
@@ -290,6 +294,78 @@ describe('McpMeetingTools', () => {
       }),
     ).rejects.toBeInstanceOf(McpError);
     expect(meetings.create).not.toHaveBeenCalled();
+  });
+
+  it('masks nested shareholder PII in attendance and convocation outputs', async () => {
+    permissions.permissions.mockResolvedValue({ canManageMeetings: true, canViewPII: false });
+    attendance.list.mockResolvedValue([
+      {
+        shareholder: {
+          id: 'shareholder-1234',
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+        },
+        proxiesHeld: [{ id: 'shareholder-5678', firstName: 'Grace', lastName: 'Hopper' }],
+      },
+    ]);
+    convocation.listStatus.mockResolvedValue([
+      {
+        shareholder: { id: 'shareholder-1234', firstName: 'Ada', email: 'ada@example.com' },
+      },
+    ]);
+    convocation.previewEmail.mockResolvedValue({
+      shareholderName: 'Ada Lovelace',
+      recipientEmail: 'ada@example.com',
+    });
+    documents.previewEmail.mockResolvedValue({
+      shareholderName: 'Ada Lovelace',
+      recipientEmail: 'ada@example.com',
+    });
+
+    const attendanceResult = await tools.listAttendance({ meetingId: 'meeting-1' });
+    const statusResult = await tools.getConvocationStatus({ meetingId: 'meeting-1' });
+    const convocationResult = await tools.previewConvocation({
+      meetingId: 'meeting-1',
+      shareholderId: 'shareholder-1234',
+    });
+    const documentsResult = await tools.previewDocumentsEmail({
+      meetingId: 'meeting-1',
+      shareholderId: 'shareholder-1234',
+    });
+
+    expect(attendanceResult).toEqual([
+      {
+        shareholder: expect.objectContaining({
+          firstName: 'Aandeelhouder #1234',
+          lastName: '',
+          email: '***',
+        }),
+        proxiesHeld: [expect.objectContaining({ firstName: 'Aandeelhouder #5678', lastName: '' })],
+      },
+    ]);
+    expect(statusResult).toEqual([
+      { shareholder: expect.objectContaining({ firstName: 'Aandeelhouder #1234', email: '***' }) },
+    ]);
+    expect(convocationResult).toEqual({
+      shareholderName: 'Aandeelhouder #1234',
+      recipientEmail: '***',
+    });
+    expect(documentsResult).toEqual({
+      shareholderName: 'Aandeelhouder #1234',
+      recipientEmail: '***',
+    });
+  });
+
+  it('masks shareholder names in document attendance statuses when canViewPII is false', async () => {
+    permissions.permissions.mockResolvedValue({ canManageMeetings: true, canViewPII: false });
+    documents.listAttendanceStatuses.mockResolvedValue([
+      { shareholderName: 'Ada Lovelace', documentsEmailSentAt: null },
+    ]);
+
+    const result = await tools.listRsvpStatuses({ meetingId: 'meeting-1' });
+
+    expect(result).toEqual([{ shareholderName: 'Aandeelhouder #1', documentsEmailSentAt: null }]);
   });
 
   it('validates non-trivial tool input with the zod schemas', () => {

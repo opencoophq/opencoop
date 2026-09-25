@@ -38,7 +38,7 @@ describe('McpTransactionTools', () => {
     getApiKeyId: () => 'k1',
     getScope: () => keyScope,
   };
-  const permissions = { permissions: jest.fn() };
+  const permissions = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
   const registrations = {
     findAll: jest.fn(),
@@ -70,6 +70,10 @@ describe('McpTransactionTools', () => {
     }).compile();
     tools = module.get(McpTransactionTools);
     jest.clearAllMocks();
+    permissions.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await permissions.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     keyScope = 'READ_WRITE';
     permissions.permissions.mockResolvedValue({
       canManageTransactions: true,

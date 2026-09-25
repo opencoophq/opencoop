@@ -38,7 +38,7 @@ describe('McpMessageTools', () => {
     cancelSchedule: jest.fn(),
     addAdminReply: jest.fn(),
   };
-  const perms = { permissions: jest.fn() };
+  const perms = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
   const prisma = { project: { findFirst: jest.fn() } };
   const audienceService = { resolve: jest.fn() };
@@ -58,6 +58,10 @@ describe('McpMessageTools', () => {
     }).compile();
     tools = module.get(McpMessageTools);
     jest.clearAllMocks();
+    perms.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await perms.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     perms.permissions.mockResolvedValue({ canManageMessages: true, canViewPII: true });
     billing.isReadOnly.mockResolvedValue(false);
     messages.createConversation.mockResolvedValue({ id: 'conv1' });
@@ -264,6 +268,76 @@ describe('McpMessageTools', () => {
         messages: [{ body: '<p>hi</p>', format: 'HTML' }],
       }),
     );
+  });
+
+  it('masks shareholder participants in conversation details when canViewPII is false', async () => {
+    perms.permissions.mockResolvedValue({ canManageMessages: true, canViewPII: false });
+    messages.findByIdForAdmin.mockResolvedValue({
+      id: 'conv1',
+      participants: [
+        {
+          shareholder: {
+            id: 'shareholder-1234',
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            email: 'ada@example.com',
+          },
+        },
+      ],
+    });
+
+    const result = await tools.getConversation({ conversationId: 'conv1' });
+
+    expect(result).toEqual({
+      id: 'conv1',
+      participants: [
+        {
+          shareholder: expect.objectContaining({
+            firstName: 'Aandeelhouder #1234',
+            lastName: '',
+            email: '***',
+          }),
+        },
+      ],
+    });
+  });
+
+  it('masks shareholder participants in conversation lists when canViewPII is false', async () => {
+    perms.permissions.mockResolvedValue({ canManageMessages: true, canViewPII: false });
+    messages.findAllForCoop.mockResolvedValue({
+      conversations: [
+        {
+          id: 'conv1',
+          participants: [
+            { shareholder: { id: 'shareholder-1234', firstName: 'Ada', lastName: 'Lovelace' } },
+          ],
+        },
+      ],
+      total: 1,
+      page: 1,
+      totalPages: 1,
+    });
+
+    const result = await tools.listConversations({});
+
+    expect(result).toEqual({
+      conversations: [
+        {
+          id: 'conv1',
+          participants: [
+            {
+              shareholder: expect.objectContaining({
+                firstName: 'Aandeelhouder #1234',
+                lastName: '',
+              }),
+            },
+          ],
+        },
+      ],
+      total: 1,
+      page: 1,
+      totalPages: 1,
+    });
   });
 
   it('previews an audience after resolving a project name', async () => {

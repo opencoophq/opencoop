@@ -206,7 +206,12 @@ export class McpShareholderTools {
   })
   async createShareholder(params: CreateShareholderParams) {
     return this.toolkit.run(
-      { permission: 'canManageShareholders', write: true, dto: CreateShareholderDto },
+      {
+        permission: 'canManageShareholders',
+        write: true,
+        pii: 'shareholder',
+        dto: CreateShareholderDto,
+      },
       params,
       async (ctx, dto) =>
         this.shareholdersService.create(
@@ -227,7 +232,12 @@ export class McpShareholderTools {
   })
   async updateShareholder(params: UpdateShareholderParams) {
     return this.toolkit.run(
-      { permission: 'canManageShareholders', write: true, dto: UpdateShareholderToolDto },
+      {
+        permission: 'canManageShareholders',
+        write: true,
+        pii: 'shareholder',
+        dto: UpdateShareholderToolDto,
+      },
       params,
       async (ctx, dto) => {
         const { shareholderId: _shareholderId, ...updateDto } = dto;
@@ -266,12 +276,15 @@ export class McpShareholderTools {
     parameters: searchHouseholdUsersParameters,
   })
   async searchHouseholdUsers(params: SearchHouseholdUsersParams) {
-    return this.toolkit.run({ permission: 'canManageShareholders' }, params, async (ctx) =>
-      this.householdService.searchHouseholdCandidates(
-        ctx.coopId,
-        params.shareholderId,
-        params.search,
-      ),
+    return this.toolkit.run(
+      { permission: 'canManageShareholders', pii: 'householdCandidates' },
+      params,
+      async (ctx) =>
+        this.householdService.searchHouseholdCandidates(
+          ctx.coopId,
+          params.shareholderId,
+          params.search,
+        ),
     );
   }
 
@@ -284,7 +297,12 @@ export class McpShareholderTools {
   })
   async linkHousehold(params: LinkHouseholdParams) {
     return this.toolkit.run(
-      { permission: 'canManageShareholders', write: true, dto: LinkHouseholdToolDto },
+      {
+        permission: 'canManageShareholders',
+        write: true,
+        pii: 'shareholder',
+        dto: LinkHouseholdToolDto,
+      },
       params,
       async (ctx, dto) =>
         this.householdService.linkShareholders({

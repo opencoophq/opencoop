@@ -20,7 +20,7 @@ describe('McpDividendTools', () => {
     getApiKeyId: () => 'key-1',
     getScope: () => scope,
   };
-  const permissions = { permissions: jest.fn() };
+  const permissions = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
   const dividendsService = {
     findAll: jest.fn(),
@@ -52,6 +52,10 @@ describe('McpDividendTools', () => {
     }).compile();
     tools = module.get(McpDividendTools);
     jest.clearAllMocks();
+    permissions.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await permissions.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     scope = 'READ_WRITE';
     permissions.permissions.mockResolvedValue({ canManageDividends: true });
     billing.isReadOnly.mockResolvedValue(false);
@@ -107,6 +111,53 @@ describe('McpDividendTools', () => {
 
     await expect(tools.listDividendPeriods({})).rejects.toBeInstanceOf(McpError);
     expect(dividendsService.findAll).not.toHaveBeenCalled();
+  });
+
+  it('masks shareholder PII nested in a dividend period', async () => {
+    permissions.permissions.mockResolvedValue({ canManageDividends: true, canViewPII: false });
+    dividendsService.findById.mockResolvedValue({
+      id: 'period-1',
+      payouts: [
+        {
+          id: 'payout-1',
+          shareholder: {
+            id: 'shareholder-1234',
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            email: 'ada@example.com',
+          },
+        },
+      ],
+    });
+
+    const result = await tools.getDividendPeriod({ dividendPeriodId: 'period-1' });
+
+    expect(result).toEqual({
+      id: 'period-1',
+      payouts: [
+        {
+          id: 'payout-1',
+          shareholder: expect.objectContaining({
+            firstName: 'Aandeelhouder #1234',
+            lastName: '',
+            email: '***',
+          }),
+        },
+      ],
+    });
+  });
+
+  it('masks shareholder PII in dividend CSV exports', async () => {
+    permissions.permissions.mockResolvedValue({ canManageDividends: true, canViewPII: false });
+    dividendsService.exportToCsv.mockResolvedValue(
+      'Shareholder ID;Name;Type;Email\nshareholder-1234;"Ada Lovelace";INDIVIDUAL;ada@example.com',
+    );
+
+    const result = await tools.exportDividends({ dividendPeriodId: 'period-1' });
+
+    expect(result).toEqual({
+      result: 'Shareholder ID;Name;Type;Email\nshareholder-1234;"Aandeelhouder #1";INDIVIDUAL;***',
+    });
   });
 
   it('rejects write tools for a READ_ONLY key', async () => {

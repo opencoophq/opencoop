@@ -208,6 +208,10 @@ const prismaService = {
 
 const coopPermissionsService = {
   permissions: jest.fn(async () => ({ canViewPII: true, canManageMessages: true })),
+  permissionsWithRole: jest.fn(async () => ({
+    permissions: { canViewPII: true, canManageMessages: true },
+    role: 'COOP_ADMIN',
+  })),
   has: jest.fn(async () => true),
 };
 

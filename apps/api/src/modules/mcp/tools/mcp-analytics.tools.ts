@@ -70,6 +70,33 @@ export class McpAnalyticsTools {
     return earliest?.createdAt.toISOString();
   }
 
+  private async earliestPaymentBankDate(coopId: string): Promise<string | undefined> {
+    const earliest = await this.prisma.payment.findFirst({
+      where: {
+        registration: {
+          coopId,
+          status: { in: ['ACTIVE', 'COMPLETED'] },
+        },
+      },
+      orderBy: { bankDate: 'asc' },
+      select: { bankDate: true },
+    });
+    return earliest?.bankDate.toISOString();
+  }
+
+  private async earliestBuyRegisterDate(coopId: string): Promise<string | undefined> {
+    const earliest = await this.prisma.registration.findFirst({
+      where: {
+        coopId,
+        type: 'BUY',
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+      },
+      orderBy: { registerDate: 'asc' },
+      select: { registerDate: true },
+    });
+    return earliest?.registerDate.toISOString();
+  }
+
   // Mirrors GET admin/coops/:coopId/analytics/capital-timeline
   @Tool({
     name: 'get_capital_timeline',
@@ -79,7 +106,7 @@ export class McpAnalyticsTools {
   })
   async getCapitalTimeline(params: CapitalTimelineParams) {
     return this.toolkit.run({}, params, async (ctx) => {
-      const from = params.from ?? (await this.earliestRegistrationDate(ctx.coopId));
+      const from = params.from ?? (await this.earliestPaymentBankDate(ctx.coopId));
       return this.analyticsService.getCapitalTimeline(
         ctx.coopId,
         params.bucket ?? 'month',
@@ -111,7 +138,7 @@ export class McpAnalyticsTools {
   })
   async getShareholderGrowth(params: ShareholderGrowthParams) {
     return this.toolkit.run({}, params, async (ctx) => {
-      const from = params.from ?? (await this.earliestRegistrationDate(ctx.coopId));
+      const from = params.from ?? (await this.earliestBuyRegisterDate(ctx.coopId));
       return this.analyticsService.getShareholderGrowth(
         ctx.coopId,
         params.bucket ?? 'month',

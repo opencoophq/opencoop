@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { BankTransactionMatchStatus } from '@opencoop/database';
 import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
+import { maskShareholderPII } from '../../../common/utils/mask-pii';
 import { BankImportService } from '../../bank-import/bank-import.service';
 import { BANK_PRESETS } from '../../bank-import/bank-presets';
 import { McpToolkit } from '../mcp-toolkit';
@@ -70,14 +71,31 @@ export class McpBankTools {
     parameters: listBankTransactionsParameters,
   })
   async listBankTransactions(params: ListBankTransactionsParams) {
-    return this.toolkit.run({ permission: 'canManageTransactions' }, params, async (ctx) =>
-      this.bankImportService.getTransactions(
+    return this.toolkit.run({ permission: 'canManageTransactions' }, params, async (ctx) => {
+      const result = await this.bankImportService.getTransactions(
         ctx.coopId,
         params.bankImportId,
         params.matchStatus,
         params.search,
-      ),
-    );
+      );
+      if (ctx.canViewPII) return result;
+      return result.map((transaction) => ({
+        ...transaction,
+        matchedPayment: transaction.matchedPayment
+          ? {
+              ...transaction.matchedPayment,
+              registration: transaction.matchedPayment.registration
+                ? {
+                    ...transaction.matchedPayment.registration,
+                    shareholder: transaction.matchedPayment.registration.shareholder
+                      ? maskShareholderPII(transaction.matchedPayment.registration.shareholder)
+                      : transaction.matchedPayment.registration.shareholder,
+                  }
+                : transaction.matchedPayment.registration,
+            }
+          : transaction.matchedPayment,
+      }));
+    });
   }
 
   // Mirrors GET admin/coops/:coopId/bank-transactions/unmatched
