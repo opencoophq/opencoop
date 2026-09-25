@@ -33,6 +33,7 @@ import { AttendanceService } from './attendance.service';
 import { MinutesService } from './minutes.service';
 import { MeetingPdfService } from './pdf.service';
 import { MeetingDocumentsService } from './meeting-documents.service';
+import { RsvpService } from './rsvp.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
@@ -46,6 +47,7 @@ import { SendConvocationDto } from './dto/send-convocation.dto';
 import { UploadMeetingDocumentDto } from './dto/upload-meeting-document.dto';
 import { UpdateMeetingDocumentDto } from './dto/update-meeting-document.dto';
 import { UpdateDocumentsEmailDraftDto } from './dto/update-documents-email-draft.dto';
+import { RsvpUpdateDto } from './dto/rsvp-update.dto';
 import { CancelMeetingDto } from './dto/cancel-meeting.dto';
 import { UpdateMinutesDto } from './dto/update-minutes.dto';
 
@@ -67,6 +69,7 @@ export class MeetingsController {
     private minutes: MinutesService,
     private pdf: MeetingPdfService,
     private documents: MeetingDocumentsService,
+    private rsvp: RsvpService,
   ) {}
 
   @Post()
@@ -241,6 +244,22 @@ export class MeetingsController {
     @Param('shareholderId') shareholderId: string,
   ) {
     return this.attendance.undo(coopId, id, shareholderId);
+  }
+
+  @Patch(':id/attendance/:shareholderId')
+  updateAttendanceRsvp(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Param('shareholderId') shareholderId: string,
+    @Body() dto: RsvpUpdateDto,
+  ) {
+    return this.rsvp.updateRsvpForShareholder(
+      coopId,
+      id,
+      shareholderId,
+      dto.status,
+      dto.delegateShareholderId,
+    );
   }
 
   @Get(':id/live-attendance')

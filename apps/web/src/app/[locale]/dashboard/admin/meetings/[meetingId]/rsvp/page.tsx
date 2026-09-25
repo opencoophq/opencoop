@@ -17,6 +17,22 @@ import {
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -35,6 +51,7 @@ import {
   Copy,
   Download,
   Check,
+  Pencil,
 } from 'lucide-react';
 import { formatDateTime } from '@opencoop/shared';
 import type { MeetingDto, RSVPStatus, ProxyDto } from '@opencoop/shared';
@@ -84,6 +101,11 @@ export default function RsvpTrackerPage() {
     direction: 'asc',
   });
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editingRow, setEditingRow] = useState<AttendanceRow | null>(null);
+  const [editStatus, setEditStatus] = useState<RSVPStatus>('UNKNOWN');
+  const [editDelegateId, setEditDelegateId] = useState<string>('');
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     if (!selectedCoop || !meetingId) return;
@@ -91,12 +113,10 @@ export default function RsvpTrackerPage() {
     try {
       const [m, a, p] = await Promise.all([
         api<MeetingDto>(`/admin/coops/${selectedCoop.id}/meetings/${meetingId}`),
-        api<AttendanceRow[]>(
-          `/admin/coops/${selectedCoop.id}/meetings/${meetingId}/attendance`,
+        api<AttendanceRow[]>(`/admin/coops/${selectedCoop.id}/meetings/${meetingId}/attendance`),
+        api<ProxyListItem[]>(`/admin/coops/${selectedCoop.id}/meetings/${meetingId}/proxies`).catch(
+          () => [] as ProxyListItem[],
         ),
-        api<ProxyListItem[]>(
-          `/admin/coops/${selectedCoop.id}/meetings/${meetingId}/proxies`,
-        ).catch(() => [] as ProxyListItem[]),
       ]);
       setMeeting(m);
       setRows(a);
@@ -123,9 +143,7 @@ export default function RsvpTrackerPage() {
     // Multi-select status filter is applied first; empty set = no filter (all
     // statuses shown). Free-text column filters then run on the remaining rows.
     const statusFiltered =
-      statusFilter.size === 0
-        ? rows
-        : rows.filter((r) => statusFilter.has(r.rsvpStatus));
+      statusFilter.size === 0 ? rows : rows.filter((r) => statusFilter.has(r.rsvpStatus));
     return applyColumnFiltersAndSort<AttendanceRow, RsvpColumn>(
       statusFiltered,
       {
@@ -139,7 +157,9 @@ export default function RsvpTrackerPage() {
           // cell — return the translated label so the user can filter on
           // what they see (e.g. "aanwezig", "afwezig"), not the raw enum.
           accessor: (r) =>
-            t(`meetings.rsvp.status.${r.rsvpStatus.toLowerCase()}` as 'meetings.rsvp.status.attending'),
+            t(
+              `meetings.rsvp.status.${r.rsvpStatus.toLowerCase()}` as 'meetings.rsvp.status.attending',
+            ),
         },
         delegate: {
           accessor: (r) => {
@@ -171,9 +191,7 @@ export default function RsvpTrackerPage() {
       return t('common.filter');
     }
     return Array.from(statusFilter)
-      .map((s) =>
-        t(`meetings.rsvp.status.${s.toLowerCase()}` as 'meetings.rsvp.status.attending'),
-      )
+      .map((s) => t(`meetings.rsvp.status.${s.toLowerCase()}` as 'meetings.rsvp.status.attending'))
       .join(', ');
   };
 
@@ -201,9 +219,7 @@ export default function RsvpTrackerPage() {
   const shName = (sh: AttendanceRow['shareholder']) =>
     `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim() || '—';
 
-  const rsvpVariant = (
-    s: RSVPStatus,
-  ): 'default' | 'secondary' | 'outline' | 'destructive' => {
+  const rsvpVariant = (s: RSVPStatus): 'default' | 'secondary' | 'outline' | 'destructive' => {
     switch (s) {
       case 'ATTENDING':
         return 'default';
@@ -232,6 +248,42 @@ export default function RsvpTrackerPage() {
       setTimeout(() => setCopiedId((id) => (id === row.id ? null : id)), 1500);
     } catch {
       // no-op
+    }
+  };
+
+  const openEditDialog = (row: AttendanceRow) => {
+    const proxy = delegateByGrantor.get(row.shareholderId);
+    setEditingRow(row);
+    setEditStatus(row.rsvpStatus);
+    setEditDelegateId(proxy?.delegateShareholderId ?? '');
+    setEditError(null);
+  };
+
+  const saveRsvpOverride = async () => {
+    if (!selectedCoop || !editingRow) return;
+    if (editStatus === 'PROXY' && !editDelegateId) {
+      setEditError(t('meetings.rsvp.edit.delegateRequired'));
+      return;
+    }
+    setSavingId(editingRow.id);
+    setEditError(null);
+    try {
+      await api(
+        `/admin/coops/${selectedCoop.id}/meetings/${meetingId}/attendance/${editingRow.shareholderId}`,
+        {
+          method: 'PATCH',
+          body: {
+            status: editStatus,
+            delegateShareholderId: editStatus === 'PROXY' ? editDelegateId : undefined,
+          },
+        },
+      );
+      setEditingRow(null);
+      await fetchAll();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : t('meetings.rsvp.edit.saveError'));
+    } finally {
+      setSavingId(null);
     }
   };
 
@@ -316,33 +368,25 @@ export default function RsvpTrackerPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground">
-              {t('meetings.rsvp.status.attending')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('meetings.rsvp.status.attending')}</p>
             <p className="text-2xl font-bold">{counts.ATTENDING}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground">
-              {t('meetings.rsvp.status.proxy')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('meetings.rsvp.status.proxy')}</p>
             <p className="text-2xl font-bold">{counts.PROXY}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground">
-              {t('meetings.rsvp.status.absent')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('meetings.rsvp.status.absent')}</p>
             <p className="text-2xl font-bold">{counts.ABSENT}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground">
-              {t('meetings.rsvp.status.unknown')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('meetings.rsvp.status.unknown')}</p>
             <p className="text-2xl font-bold">{counts.UNKNOWN}</p>
           </CardContent>
         </Card>
@@ -352,39 +396,57 @@ export default function RsvpTrackerPage() {
       <Card>
         <CardContent className="pt-6">
           {rows.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {t('meetings.rsvp.empty')}
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('meetings.rsvp.empty')}</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'shareholder'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'shareholder'))}
+                    >
                       {t('meetings.rsvp.columns.shareholder')}
                       {sortIcon('shareholder')}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'email'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'email'))}
+                    >
                       {t('meetings.rsvp.columns.email')}
                       {sortIcon('email')}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'rsvpStatus'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'rsvpStatus'))}
+                    >
                       {t('meetings.rsvp.columns.rsvpStatus')}
                       {sortIcon('rsvpStatus')}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'delegate'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'delegate'))}
+                    >
                       {t('meetings.rsvp.columns.delegate')}
                       {sortIcon('delegate')}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'rsvpAt'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'rsvpAt'))}
+                    >
                       {t('meetings.rsvp.columns.rsvpAt')}
                       {sortIcon('rsvpAt')}
                     </Button>
@@ -395,7 +457,9 @@ export default function RsvpTrackerPage() {
                   <TableHead>
                     <Input
                       value={columnFilters.shareholder || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, shareholder: e.target.value }))}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({ ...prev, shareholder: e.target.value }))
+                      }
                       placeholder={t('common.filter')}
                       className="h-8"
                     />
@@ -403,7 +467,9 @@ export default function RsvpTrackerPage() {
                   <TableHead>
                     <Input
                       value={columnFilters.email || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({ ...prev, email: e.target.value }))
+                      }
                       placeholder={t('common.filter')}
                       className="h-8"
                     />
@@ -411,7 +477,11 @@ export default function RsvpTrackerPage() {
                   <TableHead>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-8 w-full justify-between font-normal">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-full justify-between font-normal"
+                        >
                           <span className="truncate">{statusFilterLabel()}</span>
                           <ChevronDown className="h-4 w-4 ml-1 flex-shrink-0" />
                         </Button>
@@ -423,7 +493,9 @@ export default function RsvpTrackerPage() {
                             checked={statusFilter.has(status)}
                             onCheckedChange={() => toggleStatusFilter(status)}
                           >
-                            {t(`meetings.rsvp.status.${status.toLowerCase()}` as 'meetings.rsvp.status.attending')}
+                            {t(
+                              `meetings.rsvp.status.${status.toLowerCase()}` as 'meetings.rsvp.status.attending',
+                            )}
                           </DropdownMenuCheckboxItem>
                         ))}
                       </DropdownMenuContent>
@@ -432,7 +504,9 @@ export default function RsvpTrackerPage() {
                   <TableHead>
                     <Input
                       value={columnFilters.delegate || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, delegate: e.target.value }))}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({ ...prev, delegate: e.target.value }))
+                      }
                       placeholder={t('common.filter')}
                       className="h-8"
                     />
@@ -440,7 +514,9 @@ export default function RsvpTrackerPage() {
                   <TableHead>
                     <Input
                       value={columnFilters.rsvpAt || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, rsvpAt: e.target.value }))}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({ ...prev, rsvpAt: e.target.value }))
+                      }
                       placeholder={t('common.filter')}
                       className="h-8"
                     />
@@ -455,58 +531,146 @@ export default function RsvpTrackerPage() {
                       {t('common.noResults')}
                     </TableCell>
                   </TableRow>
-                ) : filtered.map((row) => {
-                  const proxy = delegateByGrantor.get(row.shareholderId);
-                  const delegateName = proxy?.delegate
-                    ? `${proxy.delegate.firstName ?? ''} ${proxy.delegate.lastName ?? ''}`.trim()
-                    : null;
-                  return (
-                    <TableRow key={row.id}>
-                      <TableCell className="font-medium">{shName(row.shareholder)}</TableCell>
-                      <TableCell>{row.shareholder.email ?? '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant={rsvpVariant(row.rsvpStatus)}>
-                          {t(
-                            `meetings.rsvp.status.${row.rsvpStatus.toLowerCase()}` as 'meetings.rsvp.status.attending',
-                          )}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {row.rsvpStatus === 'PROXY' ? delegateName || '—' : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {row.rsvpAt
-                          ? formatDateTime(row.rsvpAt, locale, { dateStyle: 'short', timeStyle: 'short' })
-                          : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={!row.rsvpToken}
-                          onClick={() => copyLink(row)}
-                        >
-                          {copiedId === row.id ? (
-                            <>
-                              <Check className="h-4 w-4 mr-1" />
-                              {t('meetings.rsvp.copied')}
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-4 w-4 mr-1" />
-                              {t('meetings.rsvp.copyLink')}
-                            </>
-                          )}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                ) : (
+                  filtered.map((row) => {
+                    const proxy = delegateByGrantor.get(row.shareholderId);
+                    const delegateName = proxy?.delegate
+                      ? `${proxy.delegate.firstName ?? ''} ${proxy.delegate.lastName ?? ''}`.trim()
+                      : null;
+                    return (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-medium">{shName(row.shareholder)}</TableCell>
+                        <TableCell>{row.shareholder.email ?? '—'}</TableCell>
+                        <TableCell>
+                          <Badge variant={rsvpVariant(row.rsvpStatus)}>
+                            {t(
+                              `meetings.rsvp.status.${row.rsvpStatus.toLowerCase()}` as 'meetings.rsvp.status.attending',
+                            )}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {row.rsvpStatus === 'PROXY' ? delegateName || '—' : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {row.rsvpAt
+                            ? formatDateTime(row.rsvpAt, locale, {
+                                dateStyle: 'short',
+                                timeStyle: 'short',
+                              })
+                            : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => openEditDialog(row)}>
+                              <Pencil className="h-4 w-4 mr-1" />
+                              {t('meetings.rsvp.edit.button')}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={!row.rsvpToken}
+                              onClick={() => copyLink(row)}
+                            >
+                              {copiedId === row.id ? (
+                                <>
+                                  <Check className="h-4 w-4 mr-1" />
+                                  {t('meetings.rsvp.copied')}
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-4 w-4 mr-1" />
+                                  {t('meetings.rsvp.copyLink')}
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!editingRow} onOpenChange={(open) => !open && setEditingRow(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('meetings.rsvp.edit.title')}</DialogTitle>
+            <DialogDescription>
+              {editingRow ? shName(editingRow.shareholder) : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          {editError && (
+            <Alert variant="destructive">
+              <AlertDescription>{editError}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rsvp-status">{t('meetings.rsvp.edit.statusLabel')}</Label>
+              <Select
+                value={editStatus}
+                onValueChange={(value) => {
+                  setEditStatus(value as RSVPStatus);
+                  if (value !== 'PROXY') setEditDelegateId('');
+                }}
+              >
+                <SelectTrigger id="rsvp-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RSVP_STATUSES.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {t(
+                        `meetings.rsvp.status.${status.toLowerCase()}` as 'meetings.rsvp.status.attending',
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {editStatus === 'PROXY' && editingRow && (
+              <div className="space-y-2">
+                <Label htmlFor="rsvp-delegate">{t('meetings.rsvp.edit.delegateLabel')}</Label>
+                <Select value={editDelegateId} onValueChange={setEditDelegateId}>
+                  <SelectTrigger id="rsvp-delegate">
+                    <SelectValue placeholder={t('meetings.rsvp.edit.delegatePlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rows
+                      .filter((row) => row.shareholderId !== editingRow.shareholderId)
+                      .map((row) => (
+                        <SelectItem key={row.shareholderId} value={row.shareholderId}>
+                          {shName(row.shareholder)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingRow(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={saveRsvpOverride}
+              disabled={savingId === editingRow?.id || (editStatus === 'PROXY' && !editDelegateId)}
+            >
+              {savingId === editingRow?.id
+                ? t('meetings.rsvp.edit.saving')
+                : t('meetings.rsvp.edit.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
