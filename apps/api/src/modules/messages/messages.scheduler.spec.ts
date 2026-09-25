@@ -8,7 +8,7 @@ import { EmailService } from '../email/email.service';
 describe('MessagesScheduler', () => {
   let scheduler: MessagesScheduler;
   const prisma = {
-    conversation: { findMany: jest.fn(), update: jest.fn() },
+    conversation: { findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
     coopAdmin: { findMany: jest.fn() },
     coop: { findUnique: jest.fn() },
   };
@@ -26,6 +26,7 @@ describe('MessagesScheduler', () => {
     }).compile();
     scheduler = module.get(MessagesScheduler);
     jest.clearAllMocks();
+    prisma.conversation.updateMany.mockResolvedValue({ count: 1 });
   });
 
   it('sends every due scheduled conversation with the scheduling user as actor', async () => {
@@ -45,21 +46,28 @@ describe('MessagesScheduler', () => {
   });
 
   it('counts a failure and leaves the row scheduled', async () => {
-    prisma.conversation.findMany.mockResolvedValue([{ id: 'a', coopId: 'c', createdById: 'u1', subject: 'A', sendAttempts: 0 }]);
+    prisma.conversation.findMany.mockResolvedValue([
+      { id: 'a', coopId: 'c', createdById: 'u1', subject: 'A', sendAttempts: 0 },
+    ]);
     messages.send.mockRejectedValueOnce(new Error('smtp down'));
     await scheduler.tick();
-    expect(prisma.conversation.update).toHaveBeenCalledWith({ where: { id: 'a' }, data: { sendAttempts: 1 } });
+    expect(prisma.conversation.update).toHaveBeenCalledWith({
+      where: { id: 'a' },
+      data: { sendAttempts: 1 },
+    });
     expect(email.send).not.toHaveBeenCalled();
   });
 
   it('flips back to draft after the third failure and mails the admins', async () => {
-    prisma.conversation.findMany.mockResolvedValue([{ id: 'a', coopId: 'c', createdById: 'u1', subject: 'A', sendAttempts: 2 }]);
+    prisma.conversation.findMany.mockResolvedValue([
+      { id: 'a', coopId: 'c', createdById: 'u1', subject: 'A', sendAttempts: 2 },
+    ]);
     messages.send.mockRejectedValueOnce(new Error('smtp down'));
     prisma.coop.findUnique.mockResolvedValue({ name: 'Coop', emailEnabled: true });
     prisma.coopAdmin.findMany.mockResolvedValue([{ user: { email: 'admin@x.be', name: 'Admin' } }]);
     await scheduler.tick();
-    expect(prisma.conversation.update).toHaveBeenCalledWith({
-      where: { id: 'a' },
+    expect(prisma.conversation.updateMany).toHaveBeenCalledWith({
+      where: { id: 'a', status: 'SCHEDULED' },
       data: { status: 'DRAFT', scheduledAt: null, sendAttempts: 3 },
     });
     expect(email.send).toHaveBeenCalledWith(
@@ -71,8 +79,28 @@ describe('MessagesScheduler', () => {
     );
   });
 
+  it('does not revert or mail admins when the final failure happened after the send claim', async () => {
+    prisma.conversation.findMany.mockResolvedValue([
+      { id: 'a', coopId: 'c', createdById: 'u1', subject: 'A', sendAttempts: 2 },
+    ]);
+    messages.send.mockRejectedValueOnce(new Error('audit down'));
+    prisma.conversation.updateMany.mockResolvedValueOnce({ count: 0 });
+
+    await scheduler.tick();
+
+    expect(prisma.conversation.updateMany).toHaveBeenCalledWith({
+      where: { id: 'a', status: 'SCHEDULED' },
+      data: { status: 'DRAFT', scheduledAt: null, sendAttempts: 3 },
+    });
+    expect(prisma.conversation.update).not.toHaveBeenCalled();
+    expect(prisma.coop.findUnique).not.toHaveBeenCalled();
+    expect(email.send).not.toHaveBeenCalled();
+  });
+
   it('skips a conversation cancelled or rescheduled after the due snapshot', async () => {
-    prisma.conversation.findMany.mockResolvedValue([{ id: 'a', coopId: 'c', createdById: 'u1', subject: 'A', sendAttempts: 2 }]);
+    prisma.conversation.findMany.mockResolvedValue([
+      { id: 'a', coopId: 'c', createdById: 'u1', subject: 'A', sendAttempts: 2 },
+    ]);
     messages.send.mockRejectedValueOnce(new ConflictException('Conversation is no longer due'));
     await scheduler.tick();
     const scheduledBefore = prisma.conversation.findMany.mock.calls[0][0].where.scheduledAt.lte;

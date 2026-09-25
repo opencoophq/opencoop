@@ -18,11 +18,21 @@ describe('MessagesService drafts and sending', () => {
   };
   const prisma = {
     $transaction: jest.fn((fn: (t: typeof tx) => unknown) => fn(tx)),
-    conversation: { findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn(), update: jest.fn(), delete: jest.fn() },
+    conversation: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
     coop: { findUnique: jest.fn() },
     message: { findFirst: jest.fn(), update: jest.fn() },
   };
-  const audience = { resolve: jest.fn(), count: jest.fn() };
+  const audience = {
+    resolve: jest.fn(),
+    count: jest.fn(),
+    assertProjectBelongsToCoop: jest.fn(),
+  };
   const audit = { log: jest.fn() };
   const email = { send: jest.fn() };
 
@@ -45,21 +55,37 @@ describe('MessagesService drafts and sending', () => {
     tx.message.create.mockResolvedValue({ id: 'm1' });
     tx.conversation.updateMany.mockResolvedValue({ count: 1 });
     prisma.coop.findUnique.mockResolvedValue({ name: 'Coop', slug: 'coop', emailEnabled: true });
+    audience.assertProjectBelongsToCoop.mockResolvedValue(undefined);
   });
 
   describe('createConversation', () => {
     it('defaults an omitted format to TEXT without sanitising the body', async () => {
       const conv = await service.createConversation(
         'coop1',
-        { type: 'BROADCAST', subject: 'S', body: '<p>hi</p><script>x</script>', status: 'DRAFT', audience: { type: 'PROJECT', projectId: 'p1' } },
+        {
+          type: 'BROADCAST',
+          subject: 'S',
+          body: '<p>hi</p><script>x</script>',
+          status: 'DRAFT',
+          audience: { type: 'PROJECT', projectId: 'p1' },
+        },
         'u1',
       );
       expect(conv.id).toBe('c1');
       expect(tx.conversation.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ status: 'DRAFT', audienceType: 'PROJECT', audienceProjectId: 'p1', audienceShareholderIds: [] }),
+        data: expect.objectContaining({
+          status: 'DRAFT',
+          audienceType: 'PROJECT',
+          audienceProjectId: 'p1',
+          audienceShareholderIds: [],
+        }),
       });
       expect(tx.message.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ body: '<p>hi</p><script>x</script>', format: 'TEXT', senderType: 'ADMIN' }),
+        data: expect.objectContaining({
+          body: '<p>hi</p><script>x</script>',
+          format: 'TEXT',
+          senderType: 'ADMIN',
+        }),
       });
       expect(tx.conversationParticipant.createMany).not.toHaveBeenCalled();
       expect(email.send).not.toHaveBeenCalled();
@@ -68,11 +94,30 @@ describe('MessagesService drafts and sending', () => {
     it('defaults to SENT + ALL for a plain broadcast and sends immediately', async () => {
       audience.resolve.mockResolvedValue({ shareholderIds: ['s1', 's2'] });
       prisma.conversation.findUnique
-        .mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'DRAFT', audienceType: 'ALL', audienceProjectId: null, audienceShareholderIds: [] })
-        .mockResolvedValueOnce({ id: 'c1', subject: 'S', participants: [], messages: [{ body: '<p>hi</p>', format: 'HTML' }] });
-      await service.createConversation('coop1', { type: 'BROADCAST', subject: 'S', body: '<p>hi</p>' }, 'u1');
+        .mockResolvedValueOnce({
+          id: 'c1',
+          coopId: 'coop1',
+          status: 'DRAFT',
+          audienceType: 'ALL',
+          audienceProjectId: null,
+          audienceShareholderIds: [],
+        })
+        .mockResolvedValueOnce({
+          id: 'c1',
+          subject: 'S',
+          participants: [],
+          messages: [{ body: '<p>hi</p>', format: 'HTML' }],
+        });
+      await service.createConversation(
+        'coop1',
+        { type: 'BROADCAST', subject: 'S', body: '<p>hi</p>' },
+        'u1',
+      );
       expect(tx.conversationParticipant.createMany).toHaveBeenCalledWith({
-        data: [{ conversationId: 'c1', shareholderId: 's1' }, { conversationId: 'c1', shareholderId: 's2' }],
+        data: [
+          { conversationId: 'c1', shareholderId: 's1' },
+          { conversationId: 'c1', shareholderId: 's2' },
+        ],
         skipDuplicates: true,
       });
       expect(tx.conversation.updateMany).toHaveBeenCalledWith(
@@ -83,17 +128,41 @@ describe('MessagesService drafts and sending', () => {
     it('maps a DIRECT conversation to a SELECTED audience of one', async () => {
       audience.resolve.mockResolvedValue({ shareholderIds: ['s9'] });
       prisma.conversation.findUnique
-        .mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'DRAFT', audienceType: 'SELECTED', audienceProjectId: null, audienceShareholderIds: ['s9'] })
+        .mockResolvedValueOnce({
+          id: 'c1',
+          coopId: 'coop1',
+          status: 'DRAFT',
+          audienceType: 'SELECTED',
+          audienceProjectId: null,
+          audienceShareholderIds: ['s9'],
+        })
         .mockResolvedValueOnce({ id: 'c1', subject: 'S', participants: [], messages: [] });
-      await service.createConversation('coop1', { type: 'DIRECT', subject: 'S', body: 'hi', shareholderId: 's9', format: 'TEXT' }, 'u1');
+      await service.createConversation(
+        'coop1',
+        { type: 'DIRECT', subject: 'S', body: 'hi', shareholderId: 's9', format: 'TEXT' },
+        'u1',
+      );
       expect(tx.conversation.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ type: 'DIRECT', audienceType: 'SELECTED', audienceShareholderIds: ['s9'] }),
+        data: expect.objectContaining({
+          type: 'DIRECT',
+          audienceType: 'SELECTED',
+          audienceShareholderIds: ['s9'],
+        }),
       });
     });
 
     it('records the api key that created a draft', async () => {
-      await service.createConversation('coop1', { type: 'BROADCAST', subject: 'S', body: 'x', status: 'DRAFT' }, 'u1', undefined, undefined, { apiKeyId: 'k1' });
-      expect(tx.conversation.create).toHaveBeenCalledWith({ data: expect.objectContaining({ createdByApiKeyId: 'k1' }) });
+      await service.createConversation(
+        'coop1',
+        { type: 'BROADCAST', subject: 'S', body: 'x', status: 'DRAFT' },
+        'u1',
+        undefined,
+        undefined,
+        { apiKeyId: 'k1' },
+      );
+      expect(tx.conversation.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ createdByApiKeyId: 'k1' }),
+      });
     });
 
     it('creates no rows or SENT audit when immediate-send audience validation fails', async () => {
@@ -122,11 +191,120 @@ describe('MessagesService drafts and sending', () => {
         }),
       );
     });
+
+    it('rejects a draft PROJECT audience from another coop before creating rows', async () => {
+      audience.assertProjectBelongsToCoop.mockRejectedValueOnce(
+        new NotFoundException('Project not found'),
+      );
+
+      await expect(
+        service.createConversation(
+          'coop1',
+          {
+            type: 'BROADCAST',
+            subject: 'S',
+            body: 'x',
+            status: 'DRAFT',
+            audience: { type: 'PROJECT', projectId: 'foreign-project' },
+          },
+          'u1',
+        ),
+      ).rejects.toThrow('Project not found');
+
+      expect(audience.assertProjectBelongsToCoop).toHaveBeenCalledWith('coop1', 'foreign-project');
+      expect(tx.conversation.create).not.toHaveBeenCalled();
+      expect(tx.message.create).not.toHaveBeenCalled();
+    });
+
+    it('deletes an immediate-send conversation when send fails before claiming it', async () => {
+      const sendError = new Error('claim failed');
+      audience.resolve.mockResolvedValueOnce({ shareholderIds: ['s1'] });
+      prisma.conversation.findUnique
+        .mockRejectedValueOnce(sendError)
+        .mockResolvedValueOnce({ id: 'c1', status: 'DRAFT' });
+
+      await expect(
+        service.createConversation(
+          'coop1',
+          { type: 'BROADCAST', subject: 'S', body: 'x' },
+          'u1',
+          '127.0.0.1',
+          'jest',
+        ),
+      ).rejects.toBe(sendError);
+
+      expect(prisma.conversation.findUnique).toHaveBeenLastCalledWith({
+        where: { id: 'c1' },
+        select: { status: true },
+      });
+      expect(prisma.conversation.delete).toHaveBeenCalledWith({ where: { id: 'c1' } });
+      expect(audit.log).not.toHaveBeenCalled();
+    });
+
+    it('keeps an immediate-send conversation and audits SENT when send fails after claiming it', async () => {
+      const sendError = new Error('smtp down');
+      audience.resolve.mockResolvedValueOnce({ shareholderIds: ['s1'] });
+      prisma.conversation.findUnique
+        .mockResolvedValueOnce({
+          id: 'c1',
+          coopId: 'coop1',
+          type: 'BROADCAST',
+          status: 'DRAFT',
+          audienceType: 'ALL',
+          audienceProjectId: null,
+          audienceShareholderIds: [],
+        })
+        .mockResolvedValueOnce({
+          id: 'c1',
+          subject: 'S',
+          participants: [
+            {
+              shareholder: {
+                email: 'a@x.be',
+                firstName: 'A',
+                user: null,
+              },
+            },
+          ],
+          messages: [{ body: 'hello', format: 'TEXT', attachments: [] }],
+        })
+        .mockResolvedValueOnce({ id: 'c1', status: 'SENT' });
+      email.send.mockRejectedValueOnce(sendError);
+
+      await expect(
+        service.createConversation(
+          'coop1',
+          { type: 'BROADCAST', subject: 'S', body: 'x' },
+          'u1',
+          '127.0.0.1',
+          'jest',
+        ),
+      ).rejects.toBe(sendError);
+
+      expect(prisma.conversation.delete).not.toHaveBeenCalled();
+      expect(audit.log).toHaveBeenCalledWith({
+        coopId: 'coop1',
+        entity: 'Conversation',
+        entityId: 'c1',
+        action: 'CREATE',
+        changes: [
+          { field: 'type', oldValue: null, newValue: 'BROADCAST' },
+          { field: 'status', oldValue: null, newValue: 'SENT' },
+        ],
+        actorId: 'u1',
+        ipAddress: '127.0.0.1',
+        userAgent: 'jest',
+      });
+    });
   });
 
   describe('addAdminReply', () => {
     it('stores multiline admin replies as TEXT', async () => {
-      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1' });
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'SENT',
+      });
 
       await service.addAdminReply('c1', 'coop1', { body: 'first line\nsecond line' }, 'u1');
 
@@ -140,23 +318,50 @@ describe('MessagesService drafts and sending', () => {
         },
       });
     });
+
+    it.each(['DRAFT', 'SCHEDULED'] as const)(
+      'rejects an admin reply to a %s conversation',
+      async (status) => {
+        prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status });
+
+        await expect(service.addAdminReply('c1', 'coop1', { body: 'reply' }, 'u1')).rejects.toThrow(
+          new BadRequestException(
+            'Only sent conversations can be replied to; edit the draft instead',
+          ),
+        );
+
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('send', () => {
-    const draft = { id: 'c1', coopId: 'coop1', status: 'DRAFT', audienceType: 'ALL', audienceProjectId: null, audienceShareholderIds: [] };
+    const draft = {
+      id: 'c1',
+      coopId: 'coop1',
+      status: 'DRAFT',
+      audienceType: 'ALL',
+      audienceProjectId: null,
+      audienceShareholderIds: [],
+    };
 
     it('creates participants, marks SENT, queues one email per participant, logs audit', async () => {
       audience.resolve.mockResolvedValue({ shareholderIds: ['s1', 's2'] });
-      prisma.conversation.findUnique
-        .mockResolvedValueOnce(draft)
-        .mockResolvedValueOnce({
-          id: 'c1', subject: 'S',
-          participants: [
-            { shareholder: { email: 'a@x.be', firstName: 'A', user: null } },
-            { shareholder: { email: 'b@x.be', firstName: 'B', user: { preferredLanguage: 'fr', email: 'b@x.be' } } },
-          ],
-          messages: [{ body: '<p>hi</p>', format: 'HTML', attachments: [] }],
-        });
+      prisma.conversation.findUnique.mockResolvedValueOnce(draft).mockResolvedValueOnce({
+        id: 'c1',
+        subject: 'S',
+        participants: [
+          { shareholder: { email: 'a@x.be', firstName: 'A', user: null } },
+          {
+            shareholder: {
+              email: 'b@x.be',
+              firstName: 'B',
+              user: { preferredLanguage: 'fr', email: 'b@x.be' },
+            },
+          },
+        ],
+        messages: [{ body: '<p>hi</p>', format: 'HTML', attachments: [] }],
+      });
       await service.send('c1', 'coop1', actor);
       expect(tx.conversation.updateMany).toHaveBeenCalledWith({
         where: { id: 'c1', status: { in: ['DRAFT', 'SCHEDULED'] } },
@@ -168,11 +373,20 @@ describe('MessagesService drafts and sending', () => {
         expect.objectContaining({
           to: 'b@x.be',
           templateKey: 'message-notification',
-          templateData: expect.objectContaining({ messageBody: '<p>hi</p>', language: 'fr', hasAttachments: false }),
+          templateData: expect.objectContaining({
+            messageBody: '<p>hi</p>',
+            language: 'fr',
+            hasAttachments: false,
+          }),
         }),
       );
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ entity: 'Conversation', entityId: 'c1', action: 'UPDATE', actorId: 'u1' }),
+        expect.objectContaining({
+          entity: 'Conversation',
+          entityId: 'c1',
+          action: 'UPDATE',
+          actorId: 'u1',
+        }),
       );
     });
 
@@ -226,9 +440,9 @@ describe('MessagesService drafts and sending', () => {
       });
       tx.conversation.updateMany.mockResolvedValueOnce({ count: 0 });
 
-      await expect(
-        service.send('c1', 'coop1', actor, { scheduledBefore }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.send('c1', 'coop1', actor, { scheduledBefore })).rejects.toThrow(
+        ConflictException,
+      );
 
       expect(tx.conversation.updateMany).toHaveBeenCalledWith({
         where: { id: 'c1', status: 'SCHEDULED', scheduledAt: { lte: scheduledBefore } },
@@ -252,7 +466,11 @@ describe('MessagesService drafts and sending', () => {
 
   describe('updateDraft / deleteDraft', () => {
     it('preserves the stored TEXT format during a body-only update', async () => {
-      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'DRAFT' });
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'DRAFT',
+      });
       prisma.message.findFirst.mockResolvedValueOnce({ id: 'm1', body: 'old', format: 'TEXT' });
 
       await service.updateDraft('c1', 'coop1', { body: 'first\nsecond<script>x</script>' }, 'u1');
@@ -264,19 +482,47 @@ describe('MessagesService drafts and sending', () => {
     });
 
     it('sanitises the body and updates the audience of a draft', async () => {
-      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'DRAFT' });
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'DRAFT',
+      });
       prisma.message.findFirst.mockResolvedValueOnce({ id: 'm1', body: 'old', format: 'HTML' });
-      await service.updateDraft('c1', 'coop1', { body: '<p>a</p><img src=x>', format: 'HTML', audience: { type: 'SELECTED', shareholderIds: ['s1'] } }, 'u1');
-      expect(prisma.message.update).toHaveBeenCalledWith({ where: { id: 'm1' }, data: { body: '<p>a</p>', format: 'HTML' } });
+      await service.updateDraft(
+        'c1',
+        'coop1',
+        {
+          body: '<p>a</p><img src=x>',
+          format: 'HTML',
+          audience: { type: 'SELECTED', shareholderIds: ['s1'] },
+        },
+        'u1',
+      );
+      expect(prisma.message.update).toHaveBeenCalledWith({
+        where: { id: 'm1' },
+        data: { body: '<p>a</p>', format: 'HTML' },
+      });
       expect(prisma.conversation.update).toHaveBeenCalledWith({
         where: { id: 'c1' },
-        data: expect.objectContaining({ audienceType: 'SELECTED', audienceShareholderIds: ['s1'], audienceProjectId: null }),
+        data: expect.objectContaining({
+          audienceType: 'SELECTED',
+          audienceShareholderIds: ['s1'],
+          audienceProjectId: null,
+        }),
       });
     });
 
     it('updates only the format of a draft and keeps the body', async () => {
-      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'DRAFT' });
-      prisma.message.findFirst.mockResolvedValueOnce({ id: 'm1', body: '<p>keep</p>', format: 'HTML' });
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'DRAFT',
+      });
+      prisma.message.findFirst.mockResolvedValueOnce({
+        id: 'm1',
+        body: '<p>keep</p>',
+        format: 'HTML',
+      });
       await service.updateDraft('c1', 'coop1', { format: 'HTML' }, 'u1');
       expect(prisma.message.update).toHaveBeenCalledWith({
         where: { id: 'm1' },
@@ -285,21 +531,63 @@ describe('MessagesService drafts and sending', () => {
     });
 
     it('refuses to update or delete a sent conversation', async () => {
-      prisma.conversation.findUnique.mockResolvedValue({ id: 'c1', coopId: 'coop1', status: 'SENT' });
-      await expect(service.updateDraft('c1', 'coop1', { subject: 'x' }, 'u1')).rejects.toThrow(ConflictException);
+      prisma.conversation.findUnique.mockResolvedValue({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'SENT',
+      });
+      await expect(service.updateDraft('c1', 'coop1', { subject: 'x' }, 'u1')).rejects.toThrow(
+        ConflictException,
+      );
       await expect(service.deleteDraft('c1', 'coop1', 'u1')).rejects.toThrow(ConflictException);
     });
 
     it('deletes a draft', async () => {
-      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'DRAFT' });
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'DRAFT',
+      });
       await service.deleteDraft('c1', 'coop1', 'u1');
       expect(prisma.conversation.delete).toHaveBeenCalledWith({ where: { id: 'c1' } });
+    });
+
+    it('rejects a PROJECT audience from another coop before changing the draft', async () => {
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'DRAFT',
+      });
+      prisma.message.findFirst.mockResolvedValueOnce({ id: 'm1', body: 'old', format: 'TEXT' });
+      audience.assertProjectBelongsToCoop.mockRejectedValueOnce(
+        new NotFoundException('Project not found'),
+      );
+
+      await expect(
+        service.updateDraft(
+          'c1',
+          'coop1',
+          {
+            body: 'new',
+            audience: { type: 'PROJECT', projectId: 'foreign-project' },
+          },
+          'u1',
+        ),
+      ).rejects.toThrow('Project not found');
+
+      expect(audience.assertProjectBelongsToCoop).toHaveBeenCalledWith('coop1', 'foreign-project');
+      expect(prisma.message.update).not.toHaveBeenCalled();
+      expect(prisma.conversation.update).not.toHaveBeenCalled();
     });
   });
 
   describe('schedule / cancelSchedule', () => {
     it('schedules a draft in the future', async () => {
-      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'DRAFT' });
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'DRAFT',
+      });
       const at = new Date(Date.now() + 10 * 60_000);
       await service.schedule('c1', 'coop1', at, 'u1');
       expect(prisma.conversation.update).toHaveBeenCalledWith({
@@ -309,12 +597,22 @@ describe('MessagesService drafts and sending', () => {
     });
 
     it('rejects a time less than a minute ahead', async () => {
-      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'DRAFT' });
-      await expect(service.schedule('c1', 'coop1', new Date(Date.now() + 10_000), 'u1')).rejects.toThrow(BadRequestException);
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'DRAFT',
+      });
+      await expect(
+        service.schedule('c1', 'coop1', new Date(Date.now() + 10_000), 'u1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('cancels back to draft', async () => {
-      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'SCHEDULED' });
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'SCHEDULED',
+      });
       await service.cancelSchedule('c1', 'coop1', 'u1');
       expect(prisma.conversation.update).toHaveBeenCalledWith({
         where: { id: 'c1' },
@@ -323,7 +621,11 @@ describe('MessagesService drafts and sending', () => {
     });
 
     it('cannot cancel a draft or a sent conversation', async () => {
-      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', coopId: 'coop1', status: 'SENT' });
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        status: 'SENT',
+      });
       await expect(service.cancelSchedule('c1', 'coop1', 'u1')).rejects.toThrow(ConflictException);
     });
   });
@@ -331,8 +633,24 @@ describe('MessagesService drafts and sending', () => {
   describe('findAllForCoop', () => {
     it('adds recipientCount without resolving draft recipient ids', async () => {
       prisma.conversation.findMany.mockResolvedValue([
-        { id: 'a', type: 'BROADCAST', status: 'SENT', _count: { participants: 5, messages: 1 }, audienceType: 'ALL', audienceProjectId: null, audienceShareholderIds: [] },
-        { id: 'b', type: 'BROADCAST', status: 'DRAFT', _count: { participants: 0, messages: 1 }, audienceType: 'SELECTED', audienceProjectId: null, audienceShareholderIds: ['s1', 's2'] },
+        {
+          id: 'a',
+          type: 'BROADCAST',
+          status: 'SENT',
+          _count: { participants: 5, messages: 1 },
+          audienceType: 'ALL',
+          audienceProjectId: null,
+          audienceShareholderIds: [],
+        },
+        {
+          id: 'b',
+          type: 'BROADCAST',
+          status: 'DRAFT',
+          _count: { participants: 0, messages: 1 },
+          audienceType: 'SELECTED',
+          audienceProjectId: null,
+          audienceShareholderIds: ['s1', 's2'],
+        },
       ]);
       prisma.conversation.count.mockResolvedValue(2);
       audience.count.mockResolvedValue(2);
@@ -340,6 +658,41 @@ describe('MessagesService drafts and sending', () => {
       expect(r.conversations.map((c) => c.recipientCount)).toEqual([5, 2]);
       expect(audience.count).toHaveBeenCalledTimes(1);
       expect(audience.resolve).not.toHaveBeenCalled();
+    });
+
+    it('keeps valid rows when one draft audience cannot be counted', async () => {
+      prisma.conversation.findMany.mockResolvedValue([
+        {
+          id: 'broken',
+          type: 'BROADCAST',
+          status: 'DRAFT',
+          _count: { participants: 0, messages: 1 },
+          audienceType: 'PROJECT',
+          audienceProjectId: null,
+          audienceShareholderIds: [],
+        },
+        {
+          id: 'valid',
+          type: 'BROADCAST',
+          status: 'SCHEDULED',
+          _count: { participants: 0, messages: 1 },
+          audienceType: 'SELECTED',
+          audienceProjectId: null,
+          audienceShareholderIds: ['s1', 's2'],
+        },
+      ]);
+      prisma.conversation.count.mockResolvedValue(2);
+      audience.count
+        .mockRejectedValueOnce(new BadRequestException('projectId is required'))
+        .mockResolvedValueOnce(2);
+
+      const result = await service.findAllForCoop('coop1', 1);
+
+      expect(result.conversations.map((conversation) => conversation.recipientCount)).toEqual([
+        null,
+        2,
+      ]);
+      expect(audience.count).toHaveBeenCalledTimes(2);
     });
 
     it('counts a draft DIRECT recipient through the DIRECT audience variant', async () => {

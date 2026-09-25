@@ -46,22 +46,36 @@ export class MessagesScheduler {
         }
         Sentry.captureException(error);
         const attempts = conv.sendAttempts + 1;
-        this.logger.error(`Scheduled send failed for ${conv.id} (attempt ${attempts}): ${error.message}`);
+        this.logger.error(
+          `Scheduled send failed for ${conv.id} (attempt ${attempts}): ${error.message}`,
+        );
         if (attempts >= MAX_ATTEMPTS) {
-          await this.prisma.conversation.update({
-            where: { id: conv.id },
+          const reverted = await this.prisma.conversation.updateMany({
+            where: { id: conv.id, status: 'SCHEDULED' },
             data: { status: 'DRAFT', scheduledAt: null, sendAttempts: attempts },
           });
-          await this.notifyAdminsOfFailure(conv.coopId, conv.subject, error.message);
+          if (reverted.count === 0) {
+            this.logger.warn(
+              `Scheduled conversation ${conv.id} was already sent or changed; it was not reverted`,
+            );
+          } else {
+            await this.notifyAdminsOfFailure(conv.coopId, conv.subject, error.message);
+          }
         } else {
-          await this.prisma.conversation.update({ where: { id: conv.id }, data: { sendAttempts: attempts } });
+          await this.prisma.conversation.update({
+            where: { id: conv.id },
+            data: { sendAttempts: attempts },
+          });
         }
       }
     }
   }
 
   private async notifyAdminsOfFailure(coopId: string, subject: string, reason: string) {
-    const coop = await this.prisma.coop.findUnique({ where: { id: coopId }, select: { name: true, emailEnabled: true } });
+    const coop = await this.prisma.coop.findUnique({
+      where: { id: coopId },
+      select: { name: true, emailEnabled: true },
+    });
     if (!coop?.emailEnabled) return;
     const admins = await this.prisma.coopAdmin.findMany({
       where: { coopId },
