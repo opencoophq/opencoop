@@ -148,7 +148,7 @@ describe('McpShareholderTools', () => {
       pageSize: 25,
       totalPages: 1,
     });
-    expect(list).not.toHaveProperty('items.0.nationalId');
+    expect(list).toHaveProperty('items.0.nationalId', '***');
     expect(detail).toEqual(
       expect.objectContaining({
         firstName: 'Aandeelhouder #1234',
@@ -157,7 +157,7 @@ describe('McpShareholderTools', () => {
         registrations: [{ pricePerShare: 10.25 }],
       }),
     );
-    expect(detail).not.toHaveProperty('nationalId');
+    expect(detail).toHaveProperty('nationalId', '***');
   });
 
   it('leaves visible PII unmasked when canViewPII is true', async () => {

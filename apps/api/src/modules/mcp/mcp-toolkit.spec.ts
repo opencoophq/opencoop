@@ -10,7 +10,9 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { Prisma } from '@opencoop/database';
 import { Decimal } from '@prisma/client/runtime/library';
 import { BillingService } from '../billing/billing.service';
+import { AuditService } from '../audit/audit.service';
 import { CoopPermissionsService } from '../../common/utils/coop-permissions';
+import { PrismaService } from '../../prisma/prisma.service';
 import { McpAuthStore } from './mcp-auth.store';
 import { McpToolkit } from './mcp-toolkit';
 
@@ -172,58 +174,239 @@ describe('McpToolkit', () => {
     expect(fn).not.toHaveBeenCalled();
   });
 
-  it('masks one shareholder when canViewPII is false', async () => {
+  it('masks a shareholder-like object with the shared masker and extra fields', async () => {
     permissionService.permissions.mockResolvedValue({ canViewPII: false });
 
-    const result = await toolkit.run({ pii: 'shareholder' }, undefined, async () => ({
+    const result = await toolkit.run({}, undefined, async () => ({
       id: 'shareholder-1234',
+      type: 'INDIVIDUAL',
+      name: 'Ada Lovelace',
       firstName: 'Ada',
       lastName: 'Lovelace',
       email: 'ada@example.com',
+      phone: '+3212345678',
+      address: { street: 'Main Street' },
+      city: 'Brussels',
+      postalCode: '1000',
+      companyName: null,
+      companyId: null,
+      bankIban: 'BE123',
+      bankBic: 'BIC123',
+      birthDate: '1990-01-01',
+      street: 'Main Street',
+      houseNumber: '42',
       nationalId: 'secret',
+    }));
+
+    expect(result).toEqual({
+      id: 'shareholder-1234',
+      type: 'INDIVIDUAL',
+      name: 'Aandeelhouder #1234',
+      firstName: 'Aandeelhouder #1234',
+      lastName: '',
+      email: '***',
+      phone: '***',
+      address: '***',
+      city: '***',
+      postalCode: '***',
+      companyName: null,
+      companyId: null,
+      bankIban: '***',
+      bankBic: '***',
+      birthDate: '***',
+      street: '***',
+      houseNumber: '***',
+      nationalId: '***',
+    });
+  });
+
+  it('masks shareholder-like objects recursively inside another object', async () => {
+    permissionService.permissions.mockResolvedValue({ canViewPII: false });
+
+    const result = await toolkit.run({}, undefined, async () => ({
+      registration: {
+        id: 'registration-1',
+        shareholder: {
+          id: 'shareholder-5678',
+          firstName: 'Grace',
+          email: 'grace@example.com',
+          profile: { email: 'nested@example.com' },
+        },
+      },
+    }));
+
+    expect(result).toEqual({
+      registration: {
+        id: 'registration-1',
+        shareholder: expect.objectContaining({
+          firstName: 'Aandeelhouder #5678',
+          email: '***',
+          profile: { email: '***' },
+        }),
+      },
+    });
+  });
+
+  it('normalises falsy shareholder-only PII fields to null', async () => {
+    permissionService.permissions.mockResolvedValue({ canViewPII: false });
+
+    const result = await toolkit.run({}, undefined, async () => ({
+      id: 'shareholder-1234',
+      firstName: 'Ada',
+      bankIban: '',
+      bankBic: undefined,
+      birthDate: null,
+      street: '',
+      houseNumber: null,
+      nationalId: '',
     }));
 
     expect(result).toEqual(
       expect.objectContaining({
-        firstName: 'Aandeelhouder #1234',
-        lastName: '',
-        email: '***',
+        bankIban: null,
+        bankBic: null,
+        birthDate: null,
+        street: null,
+        houseNumber: null,
+        nationalId: null,
       }),
     );
-    expect(result).not.toHaveProperty('nationalId');
   });
 
-  it('masks shareholder list items and preserves pagination metadata', async () => {
+  it('masks flat PII keys on non-shareholder-like objects and preserves falsy values', async () => {
     permissionService.permissions.mockResolvedValue({ canViewPII: false });
 
-    const result = await toolkit.run({ pii: 'shareholderList' }, undefined, async () => ({
-      items: [{ id: 'shareholder-5678', firstName: 'Grace', email: 'grace@example.com' }],
-      total: 1,
+    const result = await toolkit.run({}, undefined, async () => ({
+      email: 'registration@example.com',
+      shareholderEmail: 'shareholder@example.com',
+      phone: null,
+      bankIban: 'BE123',
+      bankBic: '',
+      birthDate: '1990-01-01',
+      address: { street: 'Main Street' },
+      street: 'Main Street',
+      houseNumber: '42',
+      postalCode: '1000',
+      city: 'Brussels',
     }));
+
+    expect(result).toEqual({
+      email: '***',
+      shareholderEmail: '***',
+      phone: null,
+      bankIban: '***',
+      bankBic: '',
+      birthDate: '***',
+      address: '***',
+      street: '***',
+      houseNumber: '***',
+      postalCode: '***',
+      city: '***',
+    });
+  });
+
+  it('masks PII audit changes from the JSON shape returned by AuditService.findByCoop', async () => {
+    permissionService.permissions.mockResolvedValue({ canViewPII: false });
+    const auditPrisma = {
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'audit-1',
+            changes: [
+              {
+                field: 'email',
+                oldValue: null,
+                newValue: { primary: 'ada@example.com' },
+              },
+              { field: 'status', oldValue: 'PENDING', newValue: 'ACTIVE' },
+            ],
+          },
+        ]),
+        count: jest.fn().mockResolvedValue(1),
+      },
+    };
+    const auditService = new AuditService(auditPrisma as unknown as PrismaService);
+    const auditLogs = await auditService.findByCoop('coop1');
+
+    const result = await toolkit.run({}, undefined, async () => auditLogs);
 
     expect(result).toEqual({
       items: [
-        expect.objectContaining({
-          firstName: 'Aandeelhouder #5678',
-          email: '***',
-        }),
+        {
+          id: 'audit-1',
+          changes: [
+            { field: 'email', oldValue: '***', newValue: '***' },
+            { field: 'status', oldValue: 'PENDING', newValue: 'ACTIVE' },
+          ],
+        },
       ],
       total: 1,
+      page: 1,
+      limit: 50,
+      totalPages: 1,
     });
   });
 
-  it('keeps PII visible when canViewPII is true', async () => {
-    const result = await toolkit.run({ pii: 'shareholder' }, undefined, async () => ({
-      id: 'shareholder-1234',
-      firstName: 'Ada',
-      email: 'ada@example.com',
+  it('keeps coop and project names and coop contact fields visible', async () => {
+    permissionService.permissions.mockResolvedValue({ canViewPII: false });
+
+    const result = await toolkit.run({}, undefined, async () => ({
+      coop: {
+        id: 'coop-1',
+        name: 'Open Coop',
+        coopEmail: 'hello@coop.example',
+        coopPhone: '+3212345678',
+      },
+      project: { id: 'project-1', name: 'Solar Roof' },
     }));
 
     expect(result).toEqual({
-      id: 'shareholder-1234',
-      firstName: 'Ada',
-      email: 'ada@example.com',
+      coop: {
+        id: 'coop-1',
+        name: 'Open Coop',
+        coopEmail: 'hello@coop.example',
+        coopPhone: '+3212345678',
+      },
+      project: { id: 'project-1', name: 'Solar Roof' },
     });
+  });
+
+  it('uses stable sibling-id labels for name-bearing flat keys', async () => {
+    permissionService.permissions.mockResolvedValue({ canViewPII: false });
+    const source = {
+      first: { shareholderId: 'shareholder-1234', shareholderName: 'Ada Lovelace' },
+      second: { shareholderId: 'shareholder-1234', fullName: 'Ada Lovelace' },
+      missingId: { shareholderName: 'Unknown' },
+    };
+
+    const firstRun = await toolkit.run({}, undefined, async () => source);
+    const secondRun = await toolkit.run({}, undefined, async () => source);
+
+    expect(firstRun).toEqual({
+      first: { shareholderId: 'shareholder-1234', shareholderName: 'Aandeelhouder #1234' },
+      second: { shareholderId: 'shareholder-1234', fullName: 'Aandeelhouder #1234' },
+      missingId: { shareholderName: '***' },
+    });
+    expect(secondRun).toEqual(firstRun);
+  });
+
+  it('keeps PII visible when canViewPII is true', async () => {
+    const source = {
+      shareholder: {
+        id: 'shareholder-1234',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@example.com',
+      },
+      audit: {
+        field: 'email',
+        oldValue: 'old@example.com',
+        newValue: 'new@example.com',
+      },
+      summary: { shareholderId: 'shareholder-1234', shareholderName: 'Ada Lovelace' },
+    };
+
+    await expect(toolkit.run({}, undefined, async () => source)).resolves.toEqual(source);
   });
 
   it('keeps PII visible when canViewPII is absent and masks only explicit false', async () => {
@@ -232,7 +415,7 @@ describe('McpToolkit', () => {
       role: 'COOP_ADMIN',
     });
 
-    const visible = await toolkit.run({ pii: 'shareholder' }, undefined, async () => ({
+    const visible = await toolkit.run({}, undefined, async () => ({
       id: 'shareholder-1234',
       firstName: 'Ada',
       email: 'ada@example.com',
@@ -247,7 +430,7 @@ describe('McpToolkit', () => {
       permissions: { canViewPII: false },
       role: 'COOP_ADMIN',
     });
-    const masked = await toolkit.run({ pii: 'shareholder' }, undefined, async () => ({
+    const masked = await toolkit.run({}, undefined, async () => ({
       id: 'shareholder-1234',
       firstName: 'Ada',
       email: 'ada@example.com',

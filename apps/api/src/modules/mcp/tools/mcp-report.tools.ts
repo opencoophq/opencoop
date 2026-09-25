@@ -5,7 +5,6 @@ import { AnalyticsService } from '../../admin/analytics.service';
 import { ReportsService } from '../../admin/reports.service';
 import { AuditService } from '../../audit/audit.service';
 import { DocumentsService } from '../../documents/documents.service';
-import { maskShareholderPII } from '../../../common/utils/mask-pii';
 import { McpToolkit } from '../mcp-toolkit';
 
 const isoDate = z.string().datetime({ offset: true }).or(z.string().date());
@@ -105,15 +104,7 @@ export class McpReportTools {
       const now = new Date();
       const from = params.from ?? `${now.getFullYear()}-01-01`;
       const to = params.to ?? now.toISOString().split('T')[0];
-      const result = await this.reportsService.getCapitalStatement(ctx.coopId, from, to);
-      if (ctx.canViewPII) return result;
-      return {
-        ...result,
-        movements: result.movements.map((movement, index) => ({
-          ...movement,
-          shareholderName: `Aandeelhouder #${index + 1}`,
-        })),
-      };
+      return this.reportsService.getCapitalStatement(ctx.coopId, from, to);
     });
   }
 
@@ -125,18 +116,9 @@ export class McpReportTools {
     parameters: shareholderRegisterParameters,
   })
   async getShareholderRegister(params: ShareholderRegisterParams) {
-    return this.toolkit.run({ permission: 'canViewShareholderRegister' }, params, async (ctx) => {
-      const result = await this.reportsService.getShareholderRegister(ctx.coopId, params.date);
-      if (ctx.canViewPII) return result;
-      return {
-        ...result,
-        shareholders: result.shareholders.map((shareholder, index) => ({
-          ...shareholder,
-          name: `Aandeelhouder #${index + 1}`,
-          email: shareholder.email ? '***' : shareholder.email,
-        })),
-      };
-    });
+    return this.toolkit.run({ permission: 'canViewShareholderRegister' }, params, async (ctx) =>
+      this.reportsService.getShareholderRegister(ctx.coopId, params.date),
+    );
   }
 
   // Mirrors GET admin/coops/:coopId/reports/dividend-summary
@@ -149,15 +131,7 @@ export class McpReportTools {
   async getDividendSummary(params: DividendSummaryParams) {
     return this.toolkit.run({ permission: 'canViewReports' }, params, async (ctx) => {
       const year = Number(params.year) || new Date().getFullYear();
-      const result = await this.reportsService.getDividendSummary(ctx.coopId, year);
-      if (ctx.canViewPII || !result) return result;
-      return {
-        ...result,
-        payouts: result.payouts.map((payout, index) => ({
-          ...payout,
-          shareholderName: `Aandeelhouder #${index + 1}`,
-        })),
-      };
+      return this.reportsService.getDividendSummary(ctx.coopId, year);
     });
   }
 
@@ -182,24 +156,9 @@ export class McpReportTools {
     parameters: shareholdersPerProjectParameters,
   })
   async getShareholdersPerProject(params: ShareholdersPerProjectParams) {
-    return this.toolkit.run({ permission: 'canViewReports' }, params, async (ctx) => {
-      const result = await this.reportsService.getShareholdersPerProject(
-        ctx.coopId,
-        params.projectId,
-      );
-      if (ctx.canViewPII) return result;
-      return {
-        ...result,
-        shareholders: result.shareholders.map((shareholder) => ({
-          ...shareholder,
-          shareholderName: maskShareholderPII({
-            id: shareholder.shareholderId,
-            firstName: shareholder.shareholderName,
-          }).firstName,
-          email: shareholder.email ? '***' : shareholder.email,
-        })),
-      };
-    });
+    return this.toolkit.run({ permission: 'canViewReports' }, params, async (ctx) =>
+      this.reportsService.getShareholdersPerProject(ctx.coopId, params.projectId),
+    );
   }
 
   // Mirrors GET admin/coops/:coopId/analytics/referrals
@@ -209,17 +168,9 @@ export class McpReportTools {
     parameters: referralAnalyticsParameters,
   })
   async getReferralAnalytics(params: Record<string, never>) {
-    return this.toolkit.run({}, params, async (ctx) => {
-      const result = await this.analyticsService.getReferralAnalytics(ctx.coopId);
-      if (ctx.canViewPII) return result;
-      return {
-        ...result,
-        topReferrers: result.topReferrers.map((referrer) => ({
-          ...referrer,
-          name: maskShareholderPII({ id: referrer.id, firstName: referrer.name }).firstName,
-        })),
-      };
-    });
+    return this.toolkit.run({}, params, async (ctx) =>
+      this.analyticsService.getReferralAnalytics(ctx.coopId),
+    );
   }
 
   // Mirrors GET admin/coops/:coopId/audit-logs

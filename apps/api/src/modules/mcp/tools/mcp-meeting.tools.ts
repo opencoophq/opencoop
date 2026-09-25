@@ -10,7 +10,6 @@ import {
 import { Tool } from '@rekog/mcp-nest';
 import { IsString } from 'class-validator';
 import { z } from 'zod';
-import { maskShareholderPII } from '../../../common/utils/mask-pii';
 import { AgendaService } from '../../meetings/agenda.service';
 import { AttendanceService } from '../../meetings/attendance.service';
 import { CancelMeetingDto } from '../../meetings/dto/cancel-meeting.dto';
@@ -438,15 +437,9 @@ export class McpMeetingTools {
     parameters: listProxiesParameters,
   })
   async listProxies(params: ListProxiesParams) {
-    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) => {
-      const result = await this.proxies.list(ctx.coopId, params.meetingId);
-      if (ctx.canViewPII) return result;
-      return result.map((proxy) => ({
-        ...proxy,
-        grantor: maskShareholderPII(proxy.grantor),
-        delegate: maskShareholderPII(proxy.delegate),
-      }));
-    });
+    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) =>
+      this.proxies.list(ctx.coopId, params.meetingId),
+    );
   }
 
   // Mirrors DELETE admin/coops/:coopId/meetings/:id/proxies/:proxyId
@@ -512,14 +505,9 @@ export class McpMeetingTools {
     parameters: getConvocationStatusParameters,
   })
   async getConvocationStatus(params: GetMeetingParams) {
-    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) => {
-      const result = await this.convocation.listStatus(ctx.coopId, params.meetingId);
-      if (ctx.canViewPII) return result;
-      return result.map((row) => ({
-        ...row,
-        shareholder: maskShareholderPII(row.shareholder),
-      }));
-    });
+    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) =>
+      this.convocation.listStatus(ctx.coopId, params.meetingId),
+    );
   }
 
   // Mirrors GET admin/coops/:coopId/meetings/:id/convocation/email-preview
@@ -529,23 +517,9 @@ export class McpMeetingTools {
     parameters: previewConvocationParameters,
   })
   async previewConvocation(params: z.infer<typeof previewConvocationParameters>) {
-    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) => {
-      const result = await this.convocation.previewEmail(
-        ctx.coopId,
-        params.meetingId,
-        params.shareholderId,
-      );
-      if (ctx.canViewPII) return result;
-      const masked = maskShareholderPII({
-        id: params.shareholderId,
-        firstName: result.shareholderName,
-      });
-      return {
-        ...result,
-        shareholderName: masked.firstName,
-        recipientEmail: result.recipientEmail ? '***' : result.recipientEmail,
-      };
-    });
+    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) =>
+      this.convocation.previewEmail(ctx.coopId, params.meetingId, params.shareholderId),
+    );
   }
 
   // Mirrors POST admin/coops/:coopId/meetings/:id/convocation/reminder
@@ -556,17 +530,8 @@ export class McpMeetingTools {
     parameters: sendConvocationReminderParameters,
   })
   async sendConvocationReminder(params: GetMeetingParams) {
-    return this.toolkit.run(
-      { permission: 'canManageMeetings', write: true },
-      params,
-      async (ctx) => {
-        const result = await this.convocation.sendReminderNow(ctx.coopId, params.meetingId);
-        if (ctx.canViewPII) return result;
-        return {
-          ...result,
-          failures: result.failures.map((entry) => ({ ...entry, to: '***' })),
-        };
-      },
+    return this.toolkit.run({ permission: 'canManageMeetings', write: true }, params, async (ctx) =>
+      this.convocation.sendReminderNow(ctx.coopId, params.meetingId),
     );
   }
 
@@ -613,15 +578,9 @@ export class McpMeetingTools {
     parameters: listAttendanceParameters,
   })
   async listAttendance(params: GetMeetingParams) {
-    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) => {
-      const result = await this.attendance.list(ctx.coopId, params.meetingId);
-      if (ctx.canViewPII) return result;
-      return result.map((row) => ({
-        ...row,
-        shareholder: maskShareholderPII(row.shareholder),
-        proxiesHeld: row.proxiesHeld.map((shareholder) => maskShareholderPII(shareholder)),
-      }));
-    });
+    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) =>
+      this.attendance.list(ctx.coopId, params.meetingId),
+    );
   }
 
   // Mirrors GET admin/coops/:coopId/meetings/:id/minutes
@@ -751,23 +710,9 @@ export class McpMeetingTools {
     parameters: previewDocumentsEmailParameters,
   })
   async previewDocumentsEmail(params: PreviewDocumentsEmailParams) {
-    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) => {
-      const result = await this.documents.previewEmail(
-        ctx.coopId,
-        params.meetingId,
-        params.shareholderId,
-      );
-      if (ctx.canViewPII) return result;
-      const masked = maskShareholderPII({
-        id: params.shareholderId,
-        firstName: result.shareholderName,
-      });
-      return {
-        ...result,
-        shareholderName: masked.firstName,
-        recipientEmail: result.recipientEmail ? '***' : result.recipientEmail,
-      };
-    });
+    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) =>
+      this.documents.previewEmail(ctx.coopId, params.meetingId, params.shareholderId),
+    );
   }
 
   // Mirrors POST admin/coops/:coopId/meetings/:id/documents-email/send
@@ -790,13 +735,8 @@ export class McpMeetingTools {
     parameters: listRsvpStatusesParameters,
   })
   async listRsvpStatuses(params: GetMeetingParams) {
-    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) => {
-      const result = await this.documents.listAttendanceStatuses(ctx.coopId, params.meetingId);
-      if (ctx.canViewPII) return result;
-      return result.map((row, index) => ({
-        ...row,
-        shareholderName: `Aandeelhouder #${index + 1}`,
-      }));
-    });
+    return this.toolkit.run({ permission: 'canManageMeetings' }, params, async (ctx) =>
+      this.documents.listAttendanceStatuses(ctx.coopId, params.meetingId),
+    );
   }
 }

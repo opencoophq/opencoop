@@ -9,7 +9,6 @@ import { CreateMessageDto } from '../../messages/dto/create-message.dto';
 import { ScheduleConversationDto } from '../../messages/dto/schedule-conversation.dto';
 import { MessagesService } from '../../messages/messages.service';
 import { markdownToMessageHtml } from '../../messages/message-body';
-import { maskShareholderPII } from '../../../common/utils/mask-pii';
 import { McpToolkit } from '../mcp-toolkit';
 
 export const audienceSchema = z
@@ -294,20 +293,9 @@ export class McpMessageTools {
     parameters: listConversationsParameters,
   })
   async listConversations(params: ListConversationsParams) {
-    return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) => {
-      const result = await this.messages.findAllForCoop(ctx.coopId, params.page ?? 1);
-      if (ctx.canViewPII) return result;
-      return {
-        ...result,
-        conversations: result.conversations.map((conversation) => ({
-          ...conversation,
-          participants: conversation.participants.map((participant) => ({
-            ...participant,
-            shareholder: maskShareholderPII(participant.shareholder),
-          })),
-        })),
-      };
-    });
+    return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) =>
+      this.messages.findAllForCoop(ctx.coopId, params.page ?? 1),
+    );
   }
 
   // Mirrors GET admin/coops/:coopId/conversations/:conversationId
@@ -317,17 +305,9 @@ export class McpMessageTools {
     parameters: getConversationParameters,
   })
   async getConversation(params: GetConversationParams) {
-    return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) => {
-      const result = await this.messages.findByIdForAdmin(params.conversationId, ctx.coopId);
-      if (ctx.canViewPII) return result;
-      return {
-        ...result,
-        participants: result.participants.map((participant) => ({
-          ...participant,
-          shareholder: maskShareholderPII(participant.shareholder),
-        })),
-      };
-    });
+    return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) =>
+      this.messages.findByIdForAdmin(params.conversationId, ctx.coopId),
+    );
   }
 
   // Mirrors POST admin/coops/:coopId/conversations/audience-preview

@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { EcoPowerThresholdType } from '@opencoop/database';
 import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -12,21 +11,11 @@ export const updateCoopSettingsParameters = z
   .object({
     name: z.string().max(100).optional(),
     requiresApproval: z.boolean().optional(),
-    bankName: z.string().optional(),
-    bankIban: z.string().optional(),
-    bankBic: z.string().optional(),
     minimumHoldingPeriod: z.number().int().min(0).optional(),
-    ecoPowerEnabled: z.boolean().optional(),
-    ecoPowerMinThresholdType: z.nativeEnum(EcoPowerThresholdType).nullable().optional(),
-    ecoPowerMinThreshold: z.number().nullable().optional(),
-    emailAudienceProvider: z.literal('brevo').nullable().optional(),
-    brevoMembersListId: z.string().optional(),
-    brevoResignedListId: z.string().optional(),
     legalForm: z.string().optional(),
     foundedDate: z.string().optional(),
     certificateSignatory: z.string().optional(),
     coopPhone: z.string().optional(),
-    coopEmail: z.string().optional(),
     coopWebsite: z.string().optional(),
     vatNumber: z.string().optional(),
     coopAddress: z.record(z.string(), z.string()).nullable().optional(),
@@ -197,7 +186,8 @@ export class McpCoopTools {
   // Mirrors PUT admin/coops/:coopId/settings
   @Tool({
     name: 'update_coop_settings',
-    description: 'Update cooperative settings and return the saved settings without credentials.',
+    description:
+      'Update general cooperative settings. Bank details, email transport, reply-to address, audience sync, and other integrations can only be changed in the dashboard.',
     parameters: updateCoopSettingsParameters,
   })
   async updateCoopSettings(params: UpdateCoopSettingsParams) {

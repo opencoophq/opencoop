@@ -83,13 +83,4 @@ export class CoopPermissionsService {
       role: user.role,
     };
   }
-
-  async permissions(userId: string, coopId: string): Promise<Partial<CoopPermissions>> {
-    return (await this.permissionsWithRole(userId, coopId)).permissions;
-  }
-
-  async has(userId: string, coopId: string, key: CoopPermissionKey): Promise<boolean> {
-    const permissions = await this.permissions(userId, coopId);
-    return permissions[key] === true;
-  }
 }

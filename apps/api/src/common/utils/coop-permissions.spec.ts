@@ -23,7 +23,7 @@ describe('mergeAdminPermissions', () => {
   });
 });
 
-describe('CoopPermissionsService.has', () => {
+describe('CoopPermissionsService.permissionsWithRole', () => {
   let service: CoopPermissionsService;
   const prisma = { user: { findUnique: jest.fn() } };
 
@@ -35,12 +35,16 @@ describe('CoopPermissionsService.has', () => {
     jest.clearAllMocks();
   });
 
-  it('is true for a system admin without looking at coop roles', async () => {
+  it('returns default permissions and the role for a system admin', async () => {
     prisma.user.findUnique.mockResolvedValue({ role: 'SYSTEM_ADMIN', coopAdminOf: [] });
-    expect(await service.has('u1', 'c1', 'canManageMessages')).toBe(true);
+
+    await expect(service.permissionsWithRole('u1', 'c1')).resolves.toMatchObject({
+      permissions: { canManageMessages: true },
+      role: 'SYSTEM_ADMIN',
+    });
   });
 
-  it('returns all merged permissions from one database lookup', async () => {
+  it('returns merged permissions and the role from one database lookup', async () => {
     prisma.user.findUnique.mockResolvedValue({
       role: 'COOP_ADMIN',
       coopAdminOf: [
@@ -54,17 +58,24 @@ describe('CoopPermissionsService.has', () => {
       ],
     });
 
-    expect(await service.permissions('u1', 'c1')).toEqual({
-      canManageMessages: true,
-      canViewReports: true,
-      canViewPII: false,
+    await expect(service.permissionsWithRole('u1', 'c1')).resolves.toEqual({
+      permissions: {
+        canManageMessages: true,
+        canViewReports: true,
+        canViewPII: false,
+      },
+      role: 'COOP_ADMIN',
     });
     expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
   });
 
-  it('is false when the user is not an admin of the coop', async () => {
+  it('returns no permissions when the user is not an admin of the coop', async () => {
     prisma.user.findUnique.mockResolvedValue({ role: 'COOP_ADMIN', coopAdminOf: [] });
-    expect(await service.has('u1', 'c1', 'canManageMessages')).toBe(false);
+
+    await expect(service.permissionsWithRole('u1', 'c1')).resolves.toEqual({
+      permissions: {},
+      role: 'COOP_ADMIN',
+    });
   });
 });
 

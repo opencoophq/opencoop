@@ -15,6 +15,32 @@ import { McpAuthStore } from '../mcp-auth.store';
 import { McpToolkit } from '../mcp-toolkit';
 import { McpCoopTools, updateCoopSettingsParameters } from './mcp-coop.tools';
 
+const excludedCoopSettingFields = {
+  bankName: 'Bank',
+  bankIban: 'BE123',
+  bankBic: 'BIC123',
+  coopEmail: 'reply-to@example.com',
+  emailAudienceProvider: 'brevo',
+  brevoMembersListId: 'members-list',
+  brevoResignedListId: 'resigned-list',
+  ecoPowerEnabled: true,
+  ecoPowerMinThresholdType: 'EURO',
+  ecoPowerMinThreshold: 100,
+  smtpHost: 'smtp.example.com',
+  emailProvider: 'smtp',
+  emailEnabled: true,
+  pontoEnabled: true,
+  smtpPort: 587,
+  smtpUser: 'smtp-user',
+  smtpPass: 'smtp-pass',
+  smtpFrom: 'from@example.com',
+  graphClientId: 'graph-client',
+  graphClientSecret: 'graph-secret',
+  graphTenantId: 'graph-tenant',
+  graphFromEmail: 'graph@example.com',
+  brevoApiKey: 'brevo-secret',
+} as const;
+
 describe('McpCoopTools', () => {
   let tools: McpCoopTools;
   let scope: 'READ_ONLY' | 'READ_WRITE' = 'READ_WRITE';
@@ -165,31 +191,37 @@ describe('McpCoopTools', () => {
     expect(coops.getSettings).not.toHaveBeenCalled();
   });
 
-  it('rejects omitted secrets and admin-only switches in settings input', () => {
-    expect(updateCoopSettingsParameters.safeParse({ smtpPass: 'secret' }).success).toBe(false);
-    expect(updateCoopSettingsParameters.safeParse({ graphClientSecret: 'secret' }).success).toBe(
-      false,
-    );
-    expect(updateCoopSettingsParameters.safeParse({ brevoApiKey: 'secret' }).success).toBe(false);
-    expect(updateCoopSettingsParameters.safeParse({ emailEnabled: true }).success).toBe(false);
-    expect(updateCoopSettingsParameters.safeParse({ pontoEnabled: true }).success).toBe(false);
-    const transportFields = {
-      emailProvider: 'smtp',
-      smtpHost: 'smtp.example.com',
-      smtpPort: 587,
-      smtpUser: 'attacker',
-      smtpFrom: 'attacker@example.com',
-      graphClientId: 'attacker',
-      graphTenantId: 'attacker',
-      graphFromEmail: 'attacker@example.com',
-    } as const;
-    for (const [field, value] of Object.entries(transportFields)) {
-      expect(updateCoopSettingsParameters.strict().safeParse({ [field]: value }).success).toBe(
-        false,
-      );
+  it('accepts only the explicit MCP settings allow-list', () => {
+    expect(
+      updateCoopSettingsParameters.safeParse({
+        name: 'Updated Coop',
+        requiresApproval: true,
+        minimumHoldingPeriod: 12,
+        legalForm: 'CV',
+        foundedDate: '2020-01-01',
+        certificateSignatory: 'Ada Lovelace',
+        coopPhone: '+3212345678',
+        coopWebsite: 'https://coop.example',
+        vatNumber: 'BE0123456789',
+        coopAddress: { street: 'Main Street', city: 'Brussels' },
+      }).success,
+    ).toBe(true);
+
+    for (const [field, value] of Object.entries(excludedCoopSettingFields)) {
+      expect(updateCoopSettingsParameters.safeParse({ [field]: value }).success).toBe(false);
     }
     expect(updateCoopSettingsParameters.safeParse({ minimumHoldingPeriod: -1 }).success).toBe(
       false,
     );
   });
+
+  it.each(Object.entries(excludedCoopSettingFields))(
+    'rejects excluded field %s before it reaches CoopsService.update',
+    async (field, value) => {
+      await expect(tools.updateCoopSettings({ [field]: value } as never)).rejects.toBeInstanceOf(
+        McpError,
+      );
+      expect(coops.update).not.toHaveBeenCalled();
+    },
+  );
 });

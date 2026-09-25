@@ -28,7 +28,9 @@ describe('DividendsService tenant isolation', () => {
     prisma.dividendPeriod.findFirst.mockResolvedValue(null);
     await expect(service.findById('period-B', 'coop-A')).rejects.toThrow(NotFoundException);
     expect(prisma.dividendPeriod.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ id: 'period-B', coopId: 'coop-A' }) }),
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'period-B', coopId: 'coop-A' }),
+      }),
     );
   });
 
@@ -36,7 +38,9 @@ describe('DividendsService tenant isolation', () => {
     prisma.dividendPeriod.findFirst.mockResolvedValue(null);
     await expect(service.calculate('period-B', 'coop-A')).rejects.toThrow(NotFoundException);
     expect(prisma.dividendPeriod.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ id: 'period-B', coopId: 'coop-A' }) }),
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'period-B', coopId: 'coop-A' }),
+      }),
     );
   });
 
@@ -44,7 +48,9 @@ describe('DividendsService tenant isolation', () => {
     prisma.dividendPeriod.findFirst.mockResolvedValue(null);
     await expect(service.markAsPaid('period-B', 'coop-A')).rejects.toThrow(NotFoundException);
     expect(prisma.dividendPeriod.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ id: 'period-B', coopId: 'coop-A' }) }),
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'period-B', coopId: 'coop-A' }),
+      }),
     );
   });
 
@@ -52,7 +58,77 @@ describe('DividendsService tenant isolation', () => {
     prisma.dividendPeriod.findFirst.mockResolvedValue(null);
     await expect(service.exportToCsv('period-B', 'coop-A')).rejects.toThrow(NotFoundException);
     expect(prisma.dividendPeriod.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ id: 'period-B', coopId: 'coop-A' }) }),
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'period-B', coopId: 'coop-A' }),
+      }),
+    );
+  });
+});
+
+describe('DividendsService payout exports', () => {
+  let service: DividendsService;
+  const prisma = {
+    dividendPeriod: { findFirst: jest.fn() },
+  };
+
+  beforeEach(async () => {
+    const mod = await Test.createTestingModule({
+      providers: [
+        DividendsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AuditService, useValue: { log: jest.fn() } },
+      ],
+    }).compile();
+    service = mod.get(DividendsService);
+    jest.clearAllMocks();
+    prisma.dividendPeriod.findFirst.mockResolvedValue({
+      id: 'period-1',
+      name: '2026 payout',
+      year: 2026,
+      coop: { name: 'Open Coop' },
+      payouts: [
+        {
+          grossAmount: 100,
+          withholdingTax: 30,
+          netAmount: 70,
+          shareholder: {
+            id: 'shareholder-1234',
+            type: 'COMPANY',
+            firstName: null,
+            lastName: null,
+            companyName: 'Coop; Labs',
+            email: 'finance@coop-labs.example',
+            user: null,
+          },
+        },
+      ],
+    });
+  });
+
+  it('returns structured payout rows without parsing CSV delimiters', async () => {
+    await expect(service.getExportRows('period-1', 'coop-1')).resolves.toEqual([
+      {
+        id: 'shareholder-1234',
+        type: 'COMPANY',
+        firstName: null,
+        lastName: null,
+        companyName: 'Coop; Labs',
+        email: 'finance@coop-labs.example',
+        emailSource: 'shareholder',
+        grossAmount: 100,
+        withholdingTax: 30,
+        netAmount: 70,
+        reference: 'Dividend 2026 payout - Open Coop',
+      },
+    ]);
+  });
+
+  it('keeps the REST CSV bytes unchanged when a company name contains a semicolon', async () => {
+    await expect(service.exportToCsv('period-1', 'coop-1')).resolves.toBe(
+      [
+        'Shareholder ID;Name;Type;Email;Email source;Gross Amount;Withholding Tax;Net Amount;Reference',
+        'shareholder-1234;"Coop; Labs";COMPANY;finance@coop-labs.example;shareholder;100.00;30.00;70.00;"Dividend 2026 payout - Open Coop"',
+      ].join('\n'),
     );
   });
 });
@@ -125,7 +201,8 @@ describe('DividendsService.calculate — period-level tax rounding reconciliatio
     expect(created).toHaveLength(3);
 
     const totalGross = created.reduce((s: number, p: any) => s + p.grossAmount, 0);
-    const sumTax = Math.round(created.reduce((s: number, p: any) => s + p.withholdingTax, 0) * 100) / 100;
+    const sumTax =
+      Math.round(created.reduce((s: number, p: any) => s + p.withholdingTax, 0) * 100) / 100;
 
     // Period-level invariant: per-payout taxes sum exactly to the rounded period target.
     expect(sumTax).toBe(Math.round(totalGross * 0.3 * 100) / 100);

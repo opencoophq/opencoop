@@ -167,18 +167,15 @@ export class McpShareholderTools {
     parameters: listShareholdersParameters,
   })
   async listShareholders(params: ListShareholdersParams) {
-    return this.toolkit.run(
-      { permission: 'canManageShareholders', pii: 'shareholderList' },
-      params,
-      async (ctx) =>
-        this.shareholdersService.findAll(ctx.coopId, {
-          search: params.search,
-          status: params.status,
-          type: params.type,
-          channelId: params.channelId,
-          page: params.page,
-          pageSize: params.pageSize ?? 25,
-        }),
+    return this.toolkit.run({ permission: 'canManageShareholders' }, params, async (ctx) =>
+      this.shareholdersService.findAll(ctx.coopId, {
+        search: params.search,
+        status: params.status,
+        type: params.type,
+        channelId: params.channelId,
+        page: params.page,
+        pageSize: params.pageSize ?? 25,
+      }),
     );
   }
 
@@ -190,10 +187,8 @@ export class McpShareholderTools {
     parameters: getShareholderParameters,
   })
   async getShareholder(params: GetShareholderParams) {
-    return this.toolkit.run(
-      { permission: 'canManageShareholders', pii: 'shareholder' },
-      params,
-      async (ctx) => this.shareholdersService.findById(params.shareholderId, ctx.coopId),
+    return this.toolkit.run({ permission: 'canManageShareholders' }, params, async (ctx) =>
+      this.shareholdersService.findById(params.shareholderId, ctx.coopId),
     );
   }
 
@@ -209,7 +204,6 @@ export class McpShareholderTools {
       {
         permission: 'canManageShareholders',
         write: true,
-        pii: 'shareholder',
         dto: CreateShareholderDto,
       },
       params,
@@ -235,7 +229,6 @@ export class McpShareholderTools {
       {
         permission: 'canManageShareholders',
         write: true,
-        pii: 'shareholder',
         dto: UpdateShareholderToolDto,
       },
       params,
@@ -260,11 +253,8 @@ export class McpShareholderTools {
     parameters: getShareholderMinorsParameters,
   })
   async getShareholderMinors(params: GetShareholderMinorsParams) {
-    return this.toolkit.run(
-      { permission: 'canManageShareholders', pii: 'shareholderList' },
-      params,
-      async (ctx) =>
-        this.shareholdersService.findMinorsByShareholderId(params.shareholderId, ctx.coopId),
+    return this.toolkit.run({ permission: 'canManageShareholders' }, params, async (ctx) =>
+      this.shareholdersService.findMinorsByShareholderId(params.shareholderId, ctx.coopId),
     );
   }
 
@@ -276,15 +266,12 @@ export class McpShareholderTools {
     parameters: searchHouseholdUsersParameters,
   })
   async searchHouseholdUsers(params: SearchHouseholdUsersParams) {
-    return this.toolkit.run(
-      { permission: 'canManageShareholders', pii: 'householdCandidates' },
-      params,
-      async (ctx) =>
-        this.householdService.searchHouseholdCandidates(
-          ctx.coopId,
-          params.shareholderId,
-          params.search,
-        ),
+    return this.toolkit.run({ permission: 'canManageShareholders' }, params, async (ctx) =>
+      this.householdService.searchHouseholdCandidates(
+        ctx.coopId,
+        params.shareholderId,
+        params.search,
+      ),
     );
   }
 
@@ -300,7 +287,6 @@ export class McpShareholderTools {
       {
         permission: 'canManageShareholders',
         write: true,
-        pii: 'shareholder',
         dto: LinkHouseholdToolDto,
       },
       params,

@@ -28,7 +28,7 @@ describe('McpDividendTools', () => {
     create: jest.fn(),
     calculate: jest.fn(),
     markAsPaid: jest.fn(),
-    exportToCsv: jest.fn(),
+    getExportRows: jest.fn(),
   };
   const createParams = {
     name: '2026 Annual Dividend',
@@ -64,7 +64,21 @@ describe('McpDividendTools', () => {
     dividendsService.create.mockResolvedValue({ id: 'period-2' });
     dividendsService.calculate.mockResolvedValue({ id: 'period-1', status: 'CALCULATED' });
     dividendsService.markAsPaid.mockResolvedValue({ id: 'period-1', status: 'PAID' });
-    dividendsService.exportToCsv.mockResolvedValue('name;amount\nAda;10');
+    dividendsService.getExportRows.mockResolvedValue([
+      {
+        id: 'shareholder-1234',
+        type: 'INDIVIDUAL',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        companyName: null,
+        email: 'ada@example.com',
+        emailSource: 'shareholder',
+        grossAmount: 100,
+        withholdingTax: 30,
+        netAmount: 70,
+        reference: 'Dividend 2026 - Open Coop',
+      },
+    ]);
   });
 
   it('passes the authenticated coop and audit context to every dividend service operation', async () => {
@@ -102,8 +116,22 @@ describe('McpDividendTools', () => {
       'mcp',
       'mcp-api-key:key-1',
     );
-    expect(dividendsService.exportToCsv).toHaveBeenCalledWith('period-1', 'coop-from-auth');
-    expect(exported).toEqual({ result: 'name;amount\nAda;10' });
+    expect(dividendsService.getExportRows).toHaveBeenCalledWith('period-1', 'coop-from-auth');
+    expect(exported).toEqual([
+      {
+        id: 'shareholder-1234',
+        type: 'INDIVIDUAL',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        companyName: null,
+        email: 'ada@example.com',
+        emailSource: 'shareholder',
+        grossAmount: 100,
+        withholdingTax: 30,
+        netAmount: 70,
+        reference: 'Dividend 2026 - Open Coop',
+      },
+    ]);
   });
 
   it('rejects without canManageDividends', async () => {
@@ -147,17 +175,47 @@ describe('McpDividendTools', () => {
     });
   });
 
-  it('masks shareholder PII in dividend CSV exports', async () => {
+  it('returns and masks structured export rows when a company name contains a semicolon', async () => {
     permissions.permissions.mockResolvedValue({ canManageDividends: true, canViewPII: false });
-    dividendsService.exportToCsv.mockResolvedValue(
-      'Shareholder ID;Name;Type;Email\nshareholder-1234;"Ada Lovelace";INDIVIDUAL;ada@example.com',
-    );
+    dividendsService.getExportRows.mockResolvedValue([
+      {
+        id: 'shareholder-1234',
+        type: 'COMPANY',
+        firstName: null,
+        lastName: null,
+        companyName: 'Coop; Labs',
+        email: 'finance@coop-labs.example',
+        emailSource: 'shareholder',
+        grossAmount: 100,
+        withholdingTax: 30,
+        netAmount: 70,
+        reference: 'Dividend 2026 - Open Coop',
+      },
+    ]);
 
     const result = await tools.exportDividends({ dividendPeriodId: 'period-1' });
 
-    expect(result).toEqual({
-      result: 'Shareholder ID;Name;Type;Email\nshareholder-1234;"Aandeelhouder #1";INDIVIDUAL;***',
-    });
+    expect(result).toEqual([
+      {
+        id: 'shareholder-1234',
+        type: 'COMPANY',
+        firstName: 'Aandeelhouder #1234',
+        lastName: '',
+        companyName: 'Aandeelhouder #1234',
+        email: '***',
+        emailSource: 'shareholder',
+        grossAmount: 100,
+        withholdingTax: 30,
+        netAmount: 70,
+        reference: 'Dividend 2026 - Open Coop',
+        phone: null,
+        address: null,
+        city: null,
+        postalCode: null,
+        companyId: null,
+        name: 'Aandeelhouder #1234',
+      },
+    ]);
   });
 
   it('rejects write tools for a READ_ONLY key', async () => {
