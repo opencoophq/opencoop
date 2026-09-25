@@ -1828,6 +1828,8 @@
     "subject": "Onderwerp",
     "body": "Bericht",
     "allShareholders": "Alle aandeelhouders",
+    "project": "Project",
+    "selectedShareholders": "{count} geselecteerde aandeelhouders",
     "specificShareholder": "Specifieke aandeelhouder",
     "broadcast": "Groepsbericht",
     "direct": "Direct",

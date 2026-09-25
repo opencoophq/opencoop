@@ -1828,6 +1828,8 @@
     "subject": "Subject",
     "body": "Message",
     "allShareholders": "All shareholders",
+    "project": "Project",
+    "selectedShareholders": "{count} selected shareholders",
     "specificShareholder": "Specific shareholder",
     "broadcast": "Broadcast",
     "direct": "Direct",

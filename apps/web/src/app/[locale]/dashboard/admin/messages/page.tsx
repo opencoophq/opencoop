@@ -41,6 +41,9 @@ interface ConversationListItem {
   type: 'BROADCAST' | 'DIRECT';
   status: 'DRAFT' | 'SCHEDULED' | 'SENT';
   scheduledAt: string | null;
+  audienceType: 'ALL' | 'PROJECT' | 'SELECTED';
+  audienceProjectId: string | null;
+  audienceShareholderIds: string[];
   recipientCount?: number | null;
   updatedAt: string;
   messages: Array<{
@@ -109,7 +112,14 @@ export default function AdminMessagesPage() {
 
   const conversationParticipantsLabel = useCallback(
     (conv: ConversationListItem): string => {
-      if (conv.type === 'BROADCAST') return t('messages.allShareholders');
+      if (conv.type === 'BROADCAST') {
+        if (conv.audienceType === 'PROJECT') return t('messages.project');
+        if (conv.audienceType === 'SELECTED') {
+          const count = conv.recipientCount ?? conv.audienceShareholderIds.length;
+          return t('messages.selectedShareholders', { count });
+        }
+        return t('messages.allShareholders');
+      }
       const names = conv.participants.map((p) =>
         p.shareholder.type === 'COMPANY'
           ? (p.shareholder.companyName ?? '')
