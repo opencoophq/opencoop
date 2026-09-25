@@ -153,7 +153,7 @@ export class DividendsService {
 
     // Convert percentage to decimal (e.g., 2.5% -> 0.025)
     const dividendRateDecimal = dto.dividendRate / 100;
-    const withholdingTaxRateDecimal = dto.withholdingTaxRate ? dto.withholdingTaxRate / 100 : 0.3;
+    const withholdingTaxRateDecimal = (dto.withholdingTaxRate ?? 30) / 100;
 
     const period = await this.prisma.dividendPeriod.create({
       data: {

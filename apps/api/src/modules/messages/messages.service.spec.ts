@@ -241,35 +241,11 @@ describe('MessagesService drafts and sending', () => {
       expect(audit.log).not.toHaveBeenCalled();
     });
 
-    it('keeps an immediate-send conversation and audits SENT when send fails after claiming it', async () => {
+    it('returns an immediate-send conversation and audits SENT when send fails after claiming it', async () => {
       const sendError = new Error('smtp down');
       audience.resolve.mockResolvedValueOnce({ shareholderIds: ['s1'] });
-      prisma.conversation.findUnique
-        .mockResolvedValueOnce({
-          id: 'c1',
-          coopId: 'coop1',
-          type: 'BROADCAST',
-          status: 'DRAFT',
-          audienceType: 'ALL',
-          audienceProjectId: null,
-          audienceShareholderIds: [],
-        })
-        .mockResolvedValueOnce({
-          id: 'c1',
-          subject: 'S',
-          participants: [
-            {
-              shareholder: {
-                email: 'a@x.be',
-                firstName: 'A',
-                user: null,
-              },
-            },
-          ],
-          messages: [{ body: 'hello', format: 'TEXT', attachments: [] }],
-        })
-        .mockResolvedValueOnce({ id: 'c1', status: 'SENT' });
-      email.send.mockRejectedValueOnce(sendError);
+      jest.spyOn(service, 'send').mockRejectedValueOnce(sendError);
+      prisma.conversation.findUnique.mockResolvedValueOnce({ id: 'c1', status: 'SENT' });
 
       await expect(
         service.createConversation(
@@ -279,7 +255,7 @@ describe('MessagesService drafts and sending', () => {
           '127.0.0.1',
           'jest',
         ),
-      ).rejects.toBe(sendError);
+      ).resolves.toEqual(expect.objectContaining({ id: 'c1' }));
 
       expect(prisma.conversation.delete).not.toHaveBeenCalled();
       expect(audit.log).toHaveBeenCalledWith({
@@ -362,7 +338,9 @@ describe('MessagesService drafts and sending', () => {
         ],
         messages: [{ body: '<p>hi</p>', format: 'HTML', attachments: [] }],
       });
-      await service.send('c1', 'coop1', actor);
+      await expect(service.send('c1', 'coop1', actor)).resolves.toEqual(
+        expect.objectContaining({ notificationFailures: 0 }),
+      );
       expect(tx.conversation.updateMany).toHaveBeenCalledWith({
         where: { id: 'c1', status: { in: ['DRAFT', 'SCHEDULED'] } },
         data: expect.objectContaining({ status: 'SENT', scheduledAt: null }),
@@ -385,6 +363,41 @@ describe('MessagesService drafts and sending', () => {
           entity: 'Conversation',
           entityId: 'c1',
           action: 'UPDATE',
+          actorId: 'u1',
+        }),
+      );
+    });
+
+    it('keeps the claim and records a notification failure without throwing', async () => {
+      audience.resolve.mockResolvedValue({ shareholderIds: ['s1'] });
+      prisma.conversation.findUnique.mockResolvedValueOnce(draft).mockResolvedValueOnce({
+        id: 'c1',
+        subject: 'S',
+        participants: [{ shareholder: { email: 'a@x.be', firstName: 'A', user: null } }],
+        messages: [{ body: 'hello', format: 'TEXT', attachments: [] }],
+      });
+      email.send.mockRejectedValueOnce(new Error('smtp down'));
+
+      await expect(service.send('c1', 'coop1', actor)).resolves.toEqual(
+        expect.objectContaining({
+          id: 'c1',
+          status: 'SENT',
+          recipientCount: 1,
+          notificationFailures: 1,
+        }),
+      );
+
+      expect(tx.conversationParticipant.createMany).toHaveBeenCalledWith({
+        data: [{ conversationId: 'c1', shareholderId: 's1' }],
+        skipDuplicates: true,
+      });
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          coopId: 'coop1',
+          entity: 'Conversation',
+          entityId: 'c1',
+          action: 'UPDATE',
+          changes: [{ field: 'notifyFailure', oldValue: null, newValue: 'smtp down' }],
           actorId: 'u1',
         }),
       );
@@ -465,6 +478,62 @@ describe('MessagesService drafts and sending', () => {
   });
 
   describe('updateDraft / deleteDraft', () => {
+    it('rejects every audience edit on a direct draft before updating it', async () => {
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        type: 'DIRECT',
+        status: 'DRAFT',
+      });
+
+      await expect(
+        service.updateDraft('c1', 'coop1', { audience: { type: 'ALL' } }, 'u1'),
+      ).rejects.toThrow(new BadRequestException("A direct message's recipient cannot be changed"));
+
+      expect(prisma.conversation.update).not.toHaveBeenCalled();
+    });
+
+    it('still updates non-audience fields on a direct draft', async () => {
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        type: 'DIRECT',
+        status: 'DRAFT',
+      });
+
+      await service.updateDraft('c1', 'coop1', { subject: 'New subject' }, 'u1');
+
+      expect(prisma.conversation.update).toHaveBeenCalledWith({
+        where: { id: 'c1' },
+        data: expect.objectContaining({ subject: 'New subject' }),
+      });
+    });
+
+    it('still updates the audience on a broadcast draft', async () => {
+      prisma.conversation.findUnique.mockResolvedValueOnce({
+        id: 'c1',
+        coopId: 'coop1',
+        type: 'BROADCAST',
+        status: 'DRAFT',
+      });
+
+      await service.updateDraft(
+        'c1',
+        'coop1',
+        { audience: { type: 'SELECTED', shareholderIds: ['s1'] } },
+        'u1',
+      );
+
+      expect(prisma.conversation.update).toHaveBeenCalledWith({
+        where: { id: 'c1' },
+        data: expect.objectContaining({
+          audienceType: 'SELECTED',
+          audienceProjectId: null,
+          audienceShareholderIds: ['s1'],
+        }),
+      });
+    });
+
     it('preserves the stored TEXT format during a body-only update', async () => {
       prisma.conversation.findUnique.mockResolvedValueOnce({
         id: 'c1',

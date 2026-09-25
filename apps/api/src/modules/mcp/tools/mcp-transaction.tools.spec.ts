@@ -190,6 +190,22 @@ describe('McpTransactionTools', () => {
     );
   });
 
+  it('masks payment beneficiary and bank details when PII is hidden', async () => {
+    registrations.getPaymentDetails.mockResolvedValue({
+      beneficiaryName: 'Ada Lovelace',
+      iban: 'BE123',
+      bic: 'BIC123',
+      amount: 25.5,
+    });
+
+    await expect(tools.getPaymentDetails({ registrationId: 'r1' })).resolves.toEqual({
+      beneficiaryName: '***',
+      iban: '***',
+      bic: '***',
+      amount: 25.5,
+    });
+  });
+
   it('rejects invalid enum and date values', () => {
     expect(listRegistrationsParameters.safeParse({ status: 'UNKNOWN' }).success).toBe(false);
     expect(listRegistrationsParameters.safeParse({ type: 'UNKNOWN' }).success).toBe(false);

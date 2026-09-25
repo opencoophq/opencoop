@@ -154,6 +154,17 @@ describe('McpBankTools', () => {
     ]);
   });
 
+  it('masks bank transaction counterparties when PII is hidden', async () => {
+    permissions.permissions.mockResolvedValue({ canManageTransactions: true, canViewPII: false });
+    bankImportService.getTransactions.mockResolvedValue([
+      { id: 'transaction-1', counterparty: 'Ada Lovelace', amount: 25.5 },
+    ]);
+
+    await expect(tools.listBankTransactions({})).resolves.toEqual([
+      { id: 'transaction-1', counterparty: '***', amount: 25.5 },
+    ]);
+  });
+
   it('propagates a service-level tenant isolation failure', async () => {
     bankImportService.manualMatch.mockRejectedValue(
       new NotFoundException('Bank transaction not found'),

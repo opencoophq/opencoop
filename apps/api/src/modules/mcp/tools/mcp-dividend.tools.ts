@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
 import { DividendsService } from '../../dividends/dividends.service';
+import { CreateDividendPeriodDto } from '../../dividends/dto/create-dividend-period.dto';
 import { McpToolkit } from '../mcp-toolkit';
 
 const isoDate = z.string().datetime({ offset: true }).or(z.string().date());
@@ -91,19 +92,12 @@ export class McpDividendTools {
   })
   async createDividendPeriod(params: CreateDividendPeriodParams) {
     return this.toolkit.run(
-      { permission: 'canManageDividends', write: true },
+      { permission: 'canManageDividends', write: true, dto: CreateDividendPeriodDto },
       params,
-      async (ctx) =>
+      async (ctx, dto) =>
         this.dividendsService.create(
           ctx.coopId,
-          {
-            name: params.name,
-            year: params.year,
-            dividendRate: params.dividendRate,
-            withholdingTaxRate: params.withholdingTaxRate,
-            exDividendDate: params.exDividendDate,
-            paymentDate: params.paymentDate,
-          },
+          dto,
           ctx.audit.userId,
           ctx.audit.ip,
           ctx.audit.userAgent,
