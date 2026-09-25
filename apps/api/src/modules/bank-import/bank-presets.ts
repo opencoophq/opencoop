@@ -3,7 +3,6 @@ export interface BankPreset {
   name: string;
   delimiter: string;
   encoding: BufferEncoding;
-  skipRows: number;
   dateColumn: string;
   dateFormat: string;
   amountColumn: string;
@@ -23,21 +22,19 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     id: 'belfius',
     name: 'Belfius',
     delimiter: ';',
-    encoding: 'utf-8',
-    skipRows: 12,
-    dateColumn: 'Datum',
+    encoding: 'latin1',
+    dateColumn: 'Boekingsdatum',
     dateFormat: 'DD/MM/YYYY',
     amountColumn: 'Bedrag',
     decimalSeparator: ',',
-    counterpartyColumn: 'Tegenrekening',
-    referenceColumn: 'Mededeling',
+    counterpartyColumn: 'Naam tegenpartij bevat',
+    referenceColumn: 'Mededelingen',
   },
   kbc: {
     id: 'kbc',
     name: 'KBC',
     delimiter: ';',
     encoding: 'latin1',
-    skipRows: 0,
     dateColumn: 'Datum',
     dateFormat: 'DD/MM/YYYY',
     amountColumn: 'Bedrag',
@@ -50,7 +47,6 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     name: 'BNP Paribas Fortis',
     delimiter: ';',
     encoding: 'utf-8',
-    skipRows: 0,
     dateColumn: 'Uitvoeringsdatum',
     dateFormat: 'DD/MM/YYYY',
     amountColumn: 'Bedrag',
@@ -63,7 +59,6 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     name: 'ING',
     delimiter: ';',
     encoding: 'utf-8',
-    skipRows: 0,
     dateColumn: 'Datum',
     dateFormat: 'DD/MM/YYYY',
     amountColumn: 'Bedrag (EUR)',
@@ -81,7 +76,6 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     name: 'Generic CSV',
     delimiter: ';',
     encoding: 'utf-8',
-    skipRows: 1,
     dateColumn: '__col_0',
     dateFormat: 'ISO',
     amountColumn: '__col_1',

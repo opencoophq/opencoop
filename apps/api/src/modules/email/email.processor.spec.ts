@@ -135,24 +135,25 @@ describe('EmailProcessor', () => {
       expect(html).toContain('href="https://opencoop.test/meetings/rsvp/token?a=1&b=2"');
     });
 
-    it('escapes message subject and preview in message-notification', () => {
+    it('escapes shareholder name and subject, but not messageBody, in message-notification', () => {
       const processor = createProcessor();
 
       const html = processor.renderTemplate(
         'message-notification',
         {
           language: 'en',
-          shareholderName: 'Jan',
+          shareholderName: xss,
           messageSubject: xss,
-          messagePreview: '<script>steal()</script>',
+          messageBody: '<p>Trusted body</p>',
           inboxUrl: 'https://opencoop.test/inbox/1',
         },
         'Coop & Co',
       );
 
       expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
-      expect(html).toContain('&lt;script&gt;steal()&lt;/script&gt;');
-      expect(html).not.toContain('<script>steal()</script>');
+      expect(html).not.toContain('<script>alert(1)</script>');
+      // messageBody is pre-sanitised HTML from message-body.ts; it is rendered unescaped by design.
+      expect(html).toContain('<p>Trusted body</p>');
       // Trusted URL untouched.
       expect(html).toContain('href="https://opencoop.test/inbox/1"');
     });

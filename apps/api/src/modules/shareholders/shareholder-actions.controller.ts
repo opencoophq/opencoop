@@ -22,7 +22,15 @@ import { RegistrationsService } from '../registrations/registrations.service';
 import { MessagesService } from '../messages/messages.service';
 import { CreateMessageDto } from '../messages/dto/create-message.dto';
 import { CreateShareholderConversationDto } from '../messages/dto/create-shareholder-conversation.dto';
-import { IsString, IsInt, IsOptional, Min, ValidateNested, IsObject, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  Min,
+  ValidateNested,
+  IsObject,
+  IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { AddressDto } from './dto/create-shareholder.dto';
 import { DocumentsService } from '../documents/documents.service';
@@ -150,7 +158,8 @@ export class ShareholderActionsController {
     }
 
     const isOwner = shareholder.userId === userId;
-    const isParentOfMinor = shareholder.type === 'MINOR' && shareholder.registeredByUserId === userId;
+    const isParentOfMinor =
+      shareholder.type === 'MINOR' && shareholder.registeredByUserId === userId;
 
     if (!isOwner && !isParentOfMinor) {
       throw new ForbiddenException('You can only manage your own shareholder records');
@@ -175,7 +184,12 @@ export class ShareholderActionsController {
 
     // Verify the buy registration belongs to this shareholder, is active, and check holding period
     const buyRegistration = await this.prisma.registration.findFirst({
-      where: { id: dto.registrationId, shareholderId, type: 'BUY', status: { in: ['ACTIVE', 'COMPLETED'] } },
+      where: {
+        id: dto.registrationId,
+        shareholderId,
+        type: 'BUY',
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+      },
       include: {
         payments: {
           select: { bankDate: true },
@@ -195,9 +209,10 @@ export class ShareholderActionsController {
       const earliestPaymentDate = buyRegistration.payments?.[0]?.bankDate
         ? new Date(buyRegistration.payments[0].bankDate)
         : null;
-      const acquisitionDate = earliestPaymentDate && earliestPaymentDate < registerDate
-        ? earliestPaymentDate
-        : registerDate;
+      const acquisitionDate =
+        earliestPaymentDate && earliestPaymentDate < registerDate
+          ? earliestPaymentDate
+          : registerDate;
       const minDate = new Date(acquisitionDate);
       minDate.setMonth(minDate.getMonth() + holdingMonths);
       if (new Date() < minDate) {
@@ -358,7 +373,10 @@ export class ShareholderActionsController {
     }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="gift-certificate-${registration.giftCode}.pdf"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="gift-certificate-${registration.giftCode}.pdf"`,
+    );
     fs.createReadStream(filePath).pipe(res);
   }
 
@@ -369,12 +387,14 @@ export class ShareholderActionsController {
     @CurrentUser() user: CurrentUserData,
     @Body('locale') locale?: string,
   ) {
-    await this.verifyShareholder(shareholderId, user.id);
-    return this.documentsService.generateCertificate(shareholderId, locale);
+    const shareholder = await this.verifyShareholder(shareholderId, user.id);
+    return this.documentsService.generateCertificate(shareholderId, shareholder.coopId, locale);
   }
 
   @Post('generate-certificate/:registrationId')
-  @ApiOperation({ summary: 'Generate share certificate for a specific registration (shareholder self-service)' })
+  @ApiOperation({
+    summary: 'Generate share certificate for a specific registration (shareholder self-service)',
+  })
   async generateCertificateForRegistration(
     @Param('shareholderId') shareholderId: string,
     @Param('registrationId') registrationId: string,
@@ -392,7 +412,11 @@ export class ShareholderActionsController {
       throw new NotFoundException('Registration not found');
     }
 
-    return this.documentsService.generateCertificateForRegistration(registrationId, shareholder.coopId, locale);
+    return this.documentsService.generateCertificateForRegistration(
+      registrationId,
+      shareholder.coopId,
+      locale,
+    );
   }
 
   @Post('generate-dividend-statement/:dividendPayoutId')
@@ -403,7 +427,7 @@ export class ShareholderActionsController {
     @CurrentUser() user: CurrentUserData,
     @Body('locale') locale?: string,
   ) {
-    await this.verifyShareholder(shareholderId, user.id);
+    const shareholder = await this.verifyShareholder(shareholderId, user.id);
 
     // Verify the payout belongs to this shareholder
     const payout = await this.prisma.dividendPayout.findFirst({
@@ -414,7 +438,12 @@ export class ShareholderActionsController {
       throw new NotFoundException('Dividend payout not found');
     }
 
-    return this.documentsService.generateDividendStatement(shareholderId, dividendPayoutId, locale);
+    return this.documentsService.generateDividendStatement(
+      shareholderId,
+      dividendPayoutId,
+      shareholder.coopId,
+      locale,
+    );
   }
 
   @Post('buy')
@@ -501,7 +530,11 @@ export class ShareholderActionsController {
   ) {
     const shareholder = await this.verifyShareholder(shareholderId, user.id);
     return this.messagesService.createShareholderConversation(
-      shareholderId, shareholder.coop.id, dto.subject, dto.body, user.id,
+      shareholderId,
+      shareholder.coop.id,
+      dto.subject,
+      dto.body,
+      user.id,
     );
   }
 
@@ -603,9 +636,7 @@ export class ShareholderActionsController {
 
     return {
       referralCode: shareholder.referralCode,
-      referralLink: coop
-        ? `${appUrl}/r/${shareholder.referralCode}`
-        : null,
+      referralLink: coop ? `${appUrl}/r/${shareholder.referralCode}` : null,
       totalReferred: referrals.length,
       convertedReferred: referrals.filter((r) => r.status === 'ACTIVE').length,
       referrals: referrals.map((r) => ({

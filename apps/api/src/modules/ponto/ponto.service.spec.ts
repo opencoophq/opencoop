@@ -10,11 +10,15 @@ jest.mock('@react-pdf/renderer', () => ({
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { PontoService } from './ponto.service';
 import { PontoClient } from './ponto.client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PaymentsService } from '../payments/payments.service';
+import { BankMatchingService } from '../bank-import/bank-matching.service';
 import { EmailService } from '../email/email.service';
 
 // ---------------------------------------------------------------------------
@@ -84,6 +88,7 @@ describe('PontoService', () => {
   };
 
   const mockPontoClient = {
+    assertOAuthConfigured: jest.fn(),
     generateAuthorizationUrl: jest.fn(),
     exchangeAuthorizationCode: jest.fn(),
     refreshAccessToken: jest.fn(),
@@ -93,8 +98,17 @@ describe('PontoService', () => {
     getUpdatedTransactions: jest.fn(),
   };
 
-  const mockPaymentsService = {
-    addPayment: jest.fn(),
+  const mockBankMatchingService = {
+    matchTransaction: jest.fn((
+      _coopId: string,
+      transaction: { ogmCode: string | null },
+      _userId?: string,
+      allowCreate = true,
+    ) => Promise.resolve(
+      transaction.ogmCode && allowCreate
+        ? { status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true }
+        : { status: 'UNMATCHED', linkedExisting: false, createdPayment: false },
+    )),
   };
 
   const mockEmailService = {
@@ -108,8 +122,8 @@ describe('PontoService', () => {
         PontoService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: PontoClient, useValue: mockPontoClient },
-        { provide: PaymentsService, useValue: mockPaymentsService },
         { provide: EmailService, useValue: mockEmailService },
+        { provide: BankMatchingService, useValue: mockBankMatchingService },
       ],
     }).compile();
 
@@ -210,6 +224,109 @@ describe('PontoService', () => {
           status: 'PENDING',
         }),
       });
+    });
+  });
+
+  describe('PONTO_REDIRECT_URI configuration', () => {
+    let originalRedirectUri: string | undefined;
+
+    beforeEach(() => {
+      originalRedirectUri = process.env.PONTO_REDIRECT_URI;
+    });
+
+    afterEach(() => {
+      if (originalRedirectUri === undefined) {
+        delete process.env.PONTO_REDIRECT_URI;
+      } else {
+        process.env.PONTO_REDIRECT_URI = originalRedirectUri;
+      }
+    });
+
+    it('should fail loudly when PONTO_REDIRECT_URI is empty', async () => {
+      process.env.PONTO_REDIRECT_URI = '';
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        id: 'coop-1',
+        pontoEnabled: true,
+      });
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.pontoConnection.create.mockResolvedValue({
+        id: 'conn-new',
+        status: 'PENDING',
+      });
+
+      await expect(service.initiateConnection('coop-1')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+      await expect(service.initiateConnection('coop-1')).rejects.toThrow(
+        'PONTO_REDIRECT_URI',
+      );
+    });
+
+    // The happy path deletes any stale connection and creates a PENDING one. A server that
+    // cannot finish the handshake must not start it, or a misconfigured deploy would destroy
+    // an existing connection and strand a PENDING row on every attempt.
+    it('should not touch the database when the redirect URI is missing', async () => {
+      process.env.PONTO_REDIRECT_URI = '';
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        id: 'coop-1',
+        pontoEnabled: true,
+      });
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue({
+        id: 'conn-stale',
+        status: 'PENDING',
+      });
+
+      await expect(service.initiateConnection('coop-1')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+
+      expect(mockPrisma.pontoConnection.delete).not.toHaveBeenCalled();
+      expect(mockPrisma.pontoConnection.create).not.toHaveBeenCalled();
+    });
+
+    it('should not touch the database when the client credentials are missing', async () => {
+      process.env.PONTO_REDIRECT_URI = 'https://opencoop.be/api/ponto/callback';
+      mockPontoClient.assertOAuthConfigured.mockImplementationOnce(() => {
+        throw new ServiceUnavailableException(
+          'Ponto is not configured on this server: PONTO_CLIENT_ID is not set.',
+        );
+      });
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        id: 'coop-1',
+        pontoEnabled: true,
+      });
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue({
+        id: 'conn-stale',
+        status: 'PENDING',
+      });
+
+      await expect(service.initiateConnection('coop-1')).rejects.toThrow('PONTO_CLIENT_ID');
+
+      expect(mockPrisma.pontoConnection.delete).not.toHaveBeenCalled();
+      expect(mockPrisma.pontoConnection.create).not.toHaveBeenCalled();
+    });
+
+    it('should pass PONTO_REDIRECT_URI through unchanged', async () => {
+      const redirectUri = 'https://opencoop.be/api/ponto/callback';
+      process.env.PONTO_REDIRECT_URI = redirectUri;
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        id: 'coop-1',
+        pontoEnabled: true,
+      });
+      mockPrisma.pontoConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.pontoConnection.create.mockResolvedValue({
+        id: 'conn-new',
+        status: 'PENDING',
+      });
+      mockPontoClient.generateAuthorizationUrl.mockReturnValue(
+        'https://ponto.example.com/auth',
+      );
+
+      await service.initiateConnection('coop-1');
+
+      expect(mockPontoClient.generateAuthorizationUrl.mock.calls[0][0]).toBe(
+        redirectUri,
+      );
     });
   });
 
@@ -374,7 +491,7 @@ describe('PontoService', () => {
       const mockRegistration = {
         id: 'reg-1',
         coopId: 'coop-1',
-        ogmCode: '090933755493',
+        ogmCode: '+++090/9337/55493+++',
         status: 'PENDING_PAYMENT',
         totalAmount: 250,
         payments: [],
@@ -393,8 +510,6 @@ describe('PontoService', () => {
         matchStatus: 'AUTO_MATCHED',
       };
       mockPrisma.bankTransaction.create.mockResolvedValue(createdBankTxn);
-      mockPaymentsService.addPayment.mockResolvedValue({ id: 'pay-1' });
-
       await (service as any).processTransaction(structuredTxn, 'coop-1', true);
 
       // Should create bank transaction with AUTO_MATCHED status
@@ -403,19 +518,17 @@ describe('PontoService', () => {
           coopId: 'coop-1',
           pontoTransactionId: 'tx-1',
           amount: 250,
-          ogmCode: '090933755493',
-          matchStatus: 'AUTO_MATCHED',
+          ogmCode: '+++090/9337/55493+++',
+          matchStatus: 'UNMATCHED',
         }),
       });
 
-      // Should create payment via PaymentsService with the original transaction amount
-      expect(mockPaymentsService.addPayment).toHaveBeenCalledWith({
-        registrationId: 'reg-1',
-        coopId: 'coop-1',
-        amount: 250,
-        bankDate: new Date('2024-01-15'),
-        bankTransactionId: 'bt-1',
-      });
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ id: 'bt-1', amount: 250, ogmCode: '+++090/9337/55493+++' }),
+        undefined,
+        true,
+      );
     });
 
     it('should mark unmatched when no registration found', async () => {
@@ -441,7 +554,104 @@ describe('PontoService', () => {
           ogmCode: null,
         }),
       });
-      expect(mockPaymentsService.addPayment).not.toHaveBeenCalled();
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: null }),
+        undefined,
+        true,
+      );
+    });
+
+    it('should accept the ***…*** OGM notation in unstructured remittance text', async () => {
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
+      mockPrisma.registration.findFirst.mockResolvedValue(null);
+      mockPrisma.bankTransaction.create.mockResolvedValue({ id: 'bt-stars', matchStatus: 'UNMATCHED' });
+
+      await (service as any).processTransaction(
+        { ...unstructuredTxn, remittanceInformation: 'aandelen ***090/9337/55493***' },
+        'coop-1',
+        true,
+      );
+
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: '+++090/9337/55493+++' }),
+        undefined,
+        true,
+      );
+    });
+
+    it('should auto-match an OGM embedded in unstructured remittance text', async () => {
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
+      mockPrisma.registration.findFirst.mockResolvedValue({
+        id: 'reg-1',
+        coopId: 'coop-1',
+        ogmCode: '+++090/9337/55493+++',
+        status: 'PENDING_PAYMENT',
+        payments: [],
+        shareholder: {
+          id: 'sh-1',
+          firstName: 'Jan',
+          lastName: 'Peeters',
+          email: 'jan@example.com',
+        },
+      });
+      mockPrisma.bankTransaction.create.mockResolvedValue({
+        id: 'bt-unstructured',
+        matchStatus: 'AUTO_MATCHED',
+      });
+      await (service as any).processTransaction(
+        {
+          ...unstructuredTxn,
+          remittanceInformation: 'Betaling +++090/9337/55493+++ aandelen',
+        },
+        'coop-1',
+        true,
+      );
+
+      expect(mockPrisma.bankTransaction.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          ogmCode: '+++090/9337/55493+++',
+          matchStatus: 'UNMATCHED',
+        }),
+      });
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: '+++090/9337/55493+++' }),
+        undefined,
+        true,
+      );
+    });
+
+    it('should reject an OGM with an invalid check digit without looking up a registration', async () => {
+      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
+      mockPrisma.bankTransaction.create.mockResolvedValue({
+        id: 'bt-invalid-ogm',
+        matchStatus: 'UNMATCHED',
+      });
+
+      await (service as any).processTransaction(
+        {
+          ...structuredTxn,
+          remittanceInformation: '+++090/9337/55494+++',
+        },
+        'coop-1',
+        true,
+      );
+
+      expect(mockPrisma.registration.findFirst).not.toHaveBeenCalled();
+      expect(mockPrisma.bankTransaction.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          ogmCode: null,
+          matchStatus: 'UNMATCHED',
+        }),
+      });
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: null }),
+        undefined,
+        true,
+      );
     });
 
     it('should not create payment when autoMatch is false even if matched', async () => {
@@ -449,7 +659,7 @@ describe('PontoService', () => {
       mockPrisma.registration.findFirst.mockResolvedValue({
         id: 'reg-1',
         coopId: 'coop-1',
-        ogmCode: '090933755493',
+        ogmCode: '+++090/9337/55493+++',
         status: 'PENDING_PAYMENT',
       });
 
@@ -467,10 +677,15 @@ describe('PontoService', () => {
 
       expect(mockPrisma.bankTransaction.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          matchStatus: 'AUTO_MATCHED',
+          matchStatus: 'UNMATCHED',
         }),
       });
-      expect(mockPaymentsService.addPayment).not.toHaveBeenCalled();
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: '+++090/9337/55493+++' }),
+        undefined,
+        false,
+      );
     });
   });
 
@@ -479,7 +694,7 @@ describe('PontoService', () => {
   // -----------------------------------------------------------------------
 
   describe('processNewTransactions', () => {
-    it('should filter out negative amounts and process incoming transactions', async () => {
+    it('should process both incoming and outgoing transactions for audit storage', async () => {
       mockPrisma.pontoConnection.findFirst.mockResolvedValue({
         id: 'conn-1',
         coopId: 'coop-1',
@@ -515,17 +730,21 @@ describe('PontoService', () => {
         },
       ]);
 
-      // Mock processTransaction (private) to verify it's called only for positive amounts
+      // Mock processTransaction (private) to verify both transaction types are stored.
       const processSpy = jest
         .spyOn(service as any, 'processTransaction')
         .mockResolvedValue(undefined);
 
       await service.processNewTransactions('sync-1', 'acc-1');
 
-      // Should only process the incoming (positive) transaction
-      expect(processSpy).toHaveBeenCalledTimes(1);
+      expect(processSpy).toHaveBeenCalledTimes(2);
       expect(processSpy).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'tx-in', amount: 100 }),
+        'coop-1',
+        true,
+      );
+      expect(processSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'tx-out', amount: -50 }),
         'coop-1',
         true,
       );

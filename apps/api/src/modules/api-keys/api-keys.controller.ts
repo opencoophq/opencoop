@@ -20,10 +20,7 @@ export class ApiKeysController {
 
   @Get()
   @ApiOperation({ summary: 'List your API keys for this coop (system admins see all)' })
-  async list(
-    @Param('coopId') coopId: string,
-    @CurrentUser() user: CurrentUserData,
-  ) {
+  async list(@Param('coopId') coopId: string, @CurrentUser() user: CurrentUserData) {
     return this.apiKeysService.findByUser(user.id, coopId, user.role === 'SYSTEM_ADMIN');
   }
 
@@ -34,15 +31,12 @@ export class ApiKeysController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: CreateApiKeyDto,
   ) {
-    return this.apiKeysService.create(user.id, coopId, dto.name);
+    return this.apiKeysService.create(user.id, coopId, dto.name, dto.scope);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Revoke an API key (system admins can revoke any)' })
-  async revoke(
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserData,
-  ) {
+  async revoke(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
     await this.apiKeysService.revoke(id, user.id, user.role === 'SYSTEM_ADMIN');
     return { success: true };
   }

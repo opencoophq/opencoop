@@ -66,11 +66,12 @@
     "thanksEnd": "Vielen Dank, dass Sie Anteilseigner von {coopName} sind!"
   },
   "message-notification": {
-    "title": "Neue Nachricht von {coopName}",
-    "dear": "Liebe/r {shareholderName},",
-    "body": "Sie haben eine neue Nachricht von {coopName} erhalten.",
+    "title": "Nachricht von {coopName}",
+    "dear": "Liebe(r) {shareholderName},",
     "subject": "Betreff",
-    "viewMessage": "Nachricht anzeigen"
+    "replyHint": "Antworten können Sie über Ihren Posteingang auf der Plattform.",
+    "attachmentsHint": "Diese Nachricht enthält Anhänge. Sie finden sie in Ihrem Posteingang.",
+    "viewMessage": "Nachricht ansehen"
   },
   "meeting-convocation": {
     "title": "Einladung — {coopName}",

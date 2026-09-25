@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
+import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 import { computeTotalPaid } from '@opencoop/shared';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private registrationsService: RegistrationsService,
     private adminNotificationsService: AdminNotificationsService,
+    private shareholderStatus: ShareholderStatusService,
   ) {}
 
   async findByRegistration(registrationId: string) {
@@ -105,6 +107,7 @@ export class PaymentsService {
         where: { id: data.registrationId },
         data: { status: 'ACTIVE' },
       });
+      await this.shareholderStatus.recompute(registration.shareholderId);
     }
 
     return payment;
@@ -130,6 +133,49 @@ export class PaymentsService {
         payments: { orderBy: { bankDate: 'asc' } },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findUnlinkedByCoopId(coopId: string, search?: string, amount?: string) {
+    const parsedAmount = amount === undefined || amount === '' ? undefined : Number(amount);
+    if (parsedAmount !== undefined && !Number.isFinite(parsedAmount)) {
+      throw new BadRequestException('Amount must be a valid number');
+    }
+
+    const shareholderSearch = search?.trim();
+    return this.prisma.payment.findMany({
+      where: {
+        coopId,
+        bankTransactionId: null,
+        ...(parsedAmount === undefined ? {} : { amount: parsedAmount.toFixed(2) }),
+        ...(shareholderSearch
+          ? {
+              registration: {
+                shareholder: {
+                  OR: [
+                    { firstName: { contains: shareholderSearch, mode: 'insensitive' } },
+                    { lastName: { contains: shareholderSearch, mode: 'insensitive' } },
+                    { companyName: { contains: shareholderSearch, mode: 'insensitive' } },
+                  ],
+                },
+              },
+            }
+          : {}),
+      },
+      include: {
+        registration: {
+          select: {
+            ogmCode: true,
+            totalAmount: true,
+            status: true,
+            shareholder: {
+              select: { firstName: true, lastName: true, companyName: true },
+            },
+          },
+        },
+      },
+      orderBy: { bankDate: 'desc' },
+      take: 100,
     });
   }
 }
