@@ -1,0 +1,157 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "OpenCoop" [ref=e5] [cursor=pointer]:
+          - /url: /nl
+          - img [ref=e7]
+          - generic [ref=e11]: OpenCoop
+        - generic [ref=e12]:
+          - link "Prijzen" [ref=e13] [cursor=pointer]:
+            - /url: /nl/pricing
+            - button "Prijzen" [ref=e14]
+          - link "Demo" [ref=e15] [cursor=pointer]:
+            - /url: /nl/demo
+            - button "Demo" [ref=e16]
+          - link "Migratie" [ref=e17] [cursor=pointer]:
+            - /url: /nl/migration
+            - button "Migratie" [ref=e18]
+          - link "Documentatie" [ref=e19] [cursor=pointer]:
+            - /url: https://docs.opencoop.be
+            - button "Documentatie" [ref=e20]
+          - link "Inloggen" [ref=e21] [cursor=pointer]:
+            - /url: /nl/login
+            - button "Inloggen" [ref=e22]
+          - link "Aan de slag" [ref=e23] [cursor=pointer]:
+            - /url: /nl/pricing
+            - button "Aan de slag" [ref=e24]
+          - button "🇳🇱" [ref=e25] [cursor=pointer]
+          - switch "Toggle dark mode" [ref=e26] [cursor=pointer]:
+            - img [ref=e27]
+            - img [ref=e33]
+            - generic:
+              - img
+    - generic [ref=e35]:
+      - generic:
+        - generic:
+          - img
+      - generic [ref=e36]:
+        - generic [ref=e38]:
+          - img [ref=e39]
+          - text: Interactieve demo
+        - heading "Neem een proefrit" [level=1] [ref=e42]
+        - paragraph [ref=e44]: Ontdek een volledig ingerichte democoöperatie met aandeelhouders, aandelen, transacties en dividenden. Geen registratie nodig.
+        - link "Open de demo" [ref=e47] [cursor=pointer]:
+          - /url: /demo/login
+          - button "Open de demo" [ref=e48]:
+            - text: Open de demo
+            - img
+    - generic [ref=e50]:
+      - generic [ref=e51]:
+        - heading "Kies uw rol" [level=2] [ref=e52]
+        - paragraph [ref=e53]: Log in als coöperatiebeheerder om alles te beheren, of als aandeelhouder om de ledenervaring te bekijken.
+      - generic [ref=e54]:
+        - generic [ref=e56]:
+          - generic [ref=e57]: Volledige toegang
+          - img [ref=e59]
+          - heading "Coöperatiebeheerder" [level=3] [ref=e62]
+          - paragraph [ref=e63]: Beheer aandeelhouders, verwerk transacties, keer dividenden uit en genereer documenten.
+          - generic [ref=e64]:
+            - generic [ref=e65]:
+              - generic [ref=e66]: E-mail
+              - button "admin@zonnecooperatie.be" [ref=e67] [cursor=pointer]:
+                - generic [ref=e68]: admin@zonnecooperatie.be
+                - img [ref=e69]
+            - generic [ref=e72]:
+              - generic [ref=e73]: Wachtwoord
+              - button "demo1234" [ref=e74] [cursor=pointer]:
+                - generic [ref=e75]: demo1234
+                - img [ref=e76]
+          - link "Inloggen als beheerder" [ref=e79] [cursor=pointer]:
+            - /url: /demo/login
+            - button "Inloggen als beheerder" [ref=e80]:
+              - text: Inloggen als beheerder
+              - img
+        - generic [ref=e82]:
+          - img [ref=e84]
+          - heading "Aandeelhouder" [level=3] [ref=e89]
+          - paragraph [ref=e90]: Bekijk uw aandelen, download certificaten en raadpleeg uw dividenduitkeringen.
+          - generic [ref=e91]:
+            - generic [ref=e92]:
+              - generic [ref=e93]: E-mail
+              - button "jan.peeters@email.be" [ref=e94] [cursor=pointer]:
+                - generic [ref=e95]: jan.peeters@email.be
+                - img [ref=e96]
+            - generic [ref=e99]:
+              - generic [ref=e100]: Wachtwoord
+              - button "demo1234" [ref=e101] [cursor=pointer]:
+                - generic [ref=e102]: demo1234
+                - img [ref=e103]
+          - link "Inloggen als aandeelhouder" [ref=e106] [cursor=pointer]:
+            - /url: /demo/login
+            - button "Inloggen als aandeelhouder" [ref=e107]:
+              - text: Inloggen als aandeelhouder
+              - img
+    - generic [ref=e109]:
+      - generic [ref=e110]:
+        - heading "Wat zit er in de demo?" [level=2] [ref=e111]
+        - paragraph [ref=e112]: De democoöperatie is voorgeladen met realistische voorbeelddata.
+      - generic [ref=e113]:
+        - generic [ref=e115]:
+          - img [ref=e117]
+          - heading "6 aandeelhouders" [level=3] [ref=e122]
+          - paragraph [ref=e123]: Particulieren, een bedrijf, een minderjarige en een lopende registratie — alle types vertegenwoordigd.
+        - generic [ref=e125]:
+          - img [ref=e127]
+          - heading "2 aandelenklassen" [level=3] [ref=e131]
+          - paragraph [ref=e132]: Klasse A (€250) en Klasse B (€500) met verschillende dividendpercentages en stemrechten.
+        - generic [ref=e134]:
+          - img [ref=e136]
+          - heading "Dividendperiode" [level=3] [ref=e141]
+          - paragraph [ref=e142]: Een voltooide dividendperiode 2025 met berekende uitkeringen en roerende voorheffing.
+    - generic [ref=e144]:
+      - heading "Klaar om het zelf te proberen?" [level=2] [ref=e145]
+      - paragraph [ref=e146]: Spring erin en ontdek — geen registratie, geen creditcard, geen verplichtingen.
+      - link "Open de demo" [ref=e148] [cursor=pointer]:
+        - /url: /demo/login
+        - button "Open de demo" [ref=e149]:
+          - text: Open de demo
+          - img
+    - contentinfo [ref=e150]:
+      - generic [ref=e151]:
+        - generic [ref=e152]:
+          - generic [ref=e153]:
+            - img [ref=e154]
+            - generic [ref=e158]: OpenCoop
+          - generic [ref=e159]: ·
+          - generic [ref=e160]: Gelicentieerd onder AGPL-3.0
+          - generic [ref=e161]: ·
+          - link "Algemene Voorwaarden" [ref=e162] [cursor=pointer]:
+            - /url: /nl/terms
+          - generic [ref=e163]: ·
+          - link "Privacybeleid" [ref=e164] [cursor=pointer]:
+            - /url: /nl/privacy
+          - generic [ref=e165]: ·
+          - link "Verwerkersovereenkomst" [ref=e166] [cursor=pointer]:
+            - /url: /nl/dpa
+        - generic [ref=e167]:
+          - img [ref=e168]
+          - generic [ref=e171]: "Taal:"
+          - button "NL" [ref=e173] [cursor=pointer]
+          - generic [ref=e174]:
+            - generic [ref=e175]: /
+            - button "EN" [ref=e176] [cursor=pointer]
+          - generic [ref=e177]:
+            - generic [ref=e178]: /
+            - button "FR" [ref=e179] [cursor=pointer]
+          - generic [ref=e180]:
+            - generic [ref=e181]: /
+            - button "DE" [ref=e182] [cursor=pointer]
+  - alert [ref=e183]
+  - generic [ref=e184]:
+    - img [ref=e185]
+    - paragraph [ref=e187]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=e188] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=e189] [cursor=pointer]
