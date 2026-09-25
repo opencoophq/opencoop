@@ -22,7 +22,7 @@ describe('McpShareholderTools', () => {
     getApiKeyId: () => 'k1',
     getScope: jest.fn(),
   };
-  const permissions = { permissions: jest.fn() };
+  const permissions = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
   const shareholders = {
     findAll: jest.fn(),
@@ -51,6 +51,10 @@ describe('McpShareholderTools', () => {
     }).compile();
     tools = module.get(McpShareholderTools);
     jest.clearAllMocks();
+    permissions.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await permissions.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     auth.getScope.mockReturnValue('READ_WRITE');
     permissions.permissions.mockResolvedValue({
       canManageShareholders: true,
@@ -196,6 +200,49 @@ describe('McpShareholderTools', () => {
     expect(shareholders.update.mock.calls[0][2]).not.toHaveProperty('shareholderId');
   });
 
+  it('masks created shareholder PII when canViewPII is false', async () => {
+    shareholders.create.mockResolvedValue({
+      id: 'created-1234',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      email: 'ada@example.com',
+      phone: '+3212345678',
+    });
+
+    const result = await tools.createShareholder({ type: 'INDIVIDUAL', email: 'new@example.com' });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        firstName: 'Aandeelhouder #1234',
+        lastName: '',
+        email: '***',
+        phone: '***',
+      }),
+    );
+  });
+
+  it('masks updated shareholder PII when canViewPII is false', async () => {
+    shareholders.update.mockResolvedValue({
+      id: 'shareholder-1234',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      email: 'ada@example.com',
+    });
+
+    const result = await tools.updateShareholder({
+      shareholderId: 'shareholder-1234',
+      email: 'new@example.com',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        firstName: 'Aandeelhouder #1234',
+        lastName: '',
+        email: '***',
+      }),
+    );
+  });
+
   it('gets minors through the extracted service method and masks the list', async () => {
     const result = await tools.getShareholderMinors({ shareholderId: 'shareholder-1234' });
 
@@ -232,6 +279,44 @@ describe('McpShareholderTools', () => {
       shareholderId: 'shareholder-1234',
       actorUserId: 'u1',
     });
+  });
+
+  it('masks household candidate PII when canViewPII is false', async () => {
+    const result = await tools.searchHouseholdUsers({
+      shareholderId: 'shareholder-1234',
+      search: '',
+    });
+
+    expect(result).toEqual([
+      {
+        shareholderId: 'target-1234',
+        email: '***',
+        fullName: 'Aandeelhouder #1234',
+        shareholderCount: 2,
+      },
+    ]);
+  });
+
+  it('masks the updated shareholder returned by link_household when canViewPII is false', async () => {
+    household.linkShareholders.mockResolvedValue({
+      id: 'shareholder-1234',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      email: 'ada@example.com',
+    });
+
+    const result = await tools.linkHousehold({
+      shareholderId: 'shareholder-1234',
+      targetShareholderId: 'target-1234',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        firstName: 'Aandeelhouder #1234',
+        lastName: '',
+        email: '***',
+      }),
+    );
   });
 
   it('rejects writes through a read-only API key', async () => {

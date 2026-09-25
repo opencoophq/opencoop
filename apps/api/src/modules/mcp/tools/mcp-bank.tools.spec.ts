@@ -26,7 +26,7 @@ describe('McpBankTools', () => {
     getApiKeyId: () => 'key-1',
     getScope: () => scope,
   };
-  const permissions = { permissions: jest.fn() };
+  const permissions = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
   const bankImportService = {
     getImports: jest.fn(),
@@ -49,6 +49,10 @@ describe('McpBankTools', () => {
     }).compile();
     tools = module.get(McpBankTools);
     jest.clearAllMocks();
+    permissions.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await permissions.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     scope = 'READ_WRITE';
     permissions.permissions.mockResolvedValue({ canManageTransactions: true });
     billing.isReadOnly.mockResolvedValue(false);
@@ -114,6 +118,40 @@ describe('McpBankTools', () => {
       'registration-1',
       'user-from-auth',
     );
+  });
+
+  it('masks embedded shareholder names in matched bank transactions', async () => {
+    permissions.permissions.mockResolvedValue({ canManageTransactions: true, canViewPII: false });
+    bankImportService.getTransactions.mockResolvedValue([
+      {
+        id: 'transaction-1',
+        matchedPayment: {
+          registration: {
+            shareholder: {
+              id: 'shareholder-1234',
+              firstName: 'Ada',
+              lastName: 'Lovelace',
+            },
+          },
+        },
+      },
+    ]);
+
+    const result = await tools.listBankTransactions({});
+
+    expect(result).toEqual([
+      {
+        id: 'transaction-1',
+        matchedPayment: {
+          registration: {
+            shareholder: expect.objectContaining({
+              firstName: 'Aandeelhouder #1234',
+              lastName: '',
+            }),
+          },
+        },
+      },
+    ]);
   });
 
   it('propagates a service-level tenant isolation failure', async () => {

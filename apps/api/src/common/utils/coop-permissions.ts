@@ -24,12 +24,33 @@ export function mergeAdminPermissions(
   return { ...merged, ...overrideObj };
 }
 
+// Permissions added after this list went live default to `true` when missing
+// from a JWT. A `false` entry still denies access.
+export const LEGACY_DEFAULT_TRUE: ReadonlySet<CoopPermissionKey> = new Set<CoopPermissionKey>([
+  'canManageMeetings',
+]);
+
+export function isPermitted(
+  permissions: Partial<CoopPermissions>,
+  key: CoopPermissionKey,
+): boolean {
+  const value = permissions[key];
+  if (value === true) return true;
+  if (value === undefined && LEGACY_DEFAULT_TRUE.has(key)) return true;
+  return false;
+}
+
+export interface CoopPermissionsContext {
+  permissions: Partial<CoopPermissions>;
+  role?: string;
+}
+
 /** Live permission check for callers that have no JWT, such as API-key (MCP) requests. */
 @Injectable()
 export class CoopPermissionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async permissions(userId: string, coopId: string): Promise<Partial<CoopPermissions>> {
+  async permissionsWithRole(userId: string, coopId: string): Promise<CoopPermissionsContext> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -48,14 +69,23 @@ export class CoopPermissionsService {
         },
       },
     });
-    if (!user) return {};
-    if (user.role === 'SYSTEM_ADMIN') return { ...DEFAULT_ROLES.Admin };
+    if (!user) return { permissions: {} };
+    if (user.role === 'SYSTEM_ADMIN') {
+      return { permissions: { ...DEFAULT_ROLES.Admin }, role: user.role };
+    }
     const admin = user.coopAdminOf[0];
-    if (!admin) return {};
-    return mergeAdminPermissions(
-      admin.roles.map((role) => role.role.permissions),
-      admin.permissionOverrides,
-    );
+    if (!admin) return { permissions: {}, role: user.role };
+    return {
+      permissions: mergeAdminPermissions(
+        admin.roles.map((role) => role.role.permissions),
+        admin.permissionOverrides,
+      ),
+      role: user.role,
+    };
+  }
+
+  async permissions(userId: string, coopId: string): Promise<Partial<CoopPermissions>> {
+    return (await this.permissionsWithRole(userId, coopId)).permissions;
   }
 
   async has(userId: string, coopId: string, key: CoopPermissionKey): Promise<boolean> {

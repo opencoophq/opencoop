@@ -43,7 +43,7 @@ describe('McpReportTools', () => {
     getApiKeyId: () => 'k1',
     getScope: jest.fn(),
   };
-  const permissions = { permissions: jest.fn() };
+  const permissions = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
   const reports = {
     getCapitalStatement: jest.fn(),
@@ -76,6 +76,10 @@ describe('McpReportTools', () => {
     }).compile();
     tools = module.get(McpReportTools);
     jest.clearAllMocks();
+    permissions.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await permissions.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     auth.getScope.mockReturnValue('READ_WRITE');
     permissions.permissions.mockResolvedValue({
       canViewReports: true,
@@ -173,6 +177,93 @@ describe('McpReportTools', () => {
       entityId: undefined,
       page: 1,
       limit: 50,
+    });
+  });
+
+  it('masks shareholder register PII when canViewPII is false', async () => {
+    permissions.permissions.mockResolvedValue({
+      canViewReports: true,
+      canViewShareholderRegister: true,
+      canViewPII: false,
+    });
+    reports.getShareholderRegister.mockResolvedValue({
+      shareholders: [{ name: 'Ada Lovelace', email: 'ada@example.com', shareCount: 2 }],
+    });
+
+    const result = await tools.getShareholderRegister({});
+
+    expect(result).toEqual({
+      shareholders: [{ name: 'Aandeelhouder #1', email: '***', shareCount: 2 }],
+    });
+  });
+
+  it('masks shareholder names in capital statements when canViewPII is false', async () => {
+    permissions.permissions.mockResolvedValue({ canViewReports: true, canViewPII: false });
+    reports.getCapitalStatement.mockResolvedValue({
+      movements: [{ shareholderName: 'Ada Lovelace', amount: 10 }],
+    });
+
+    const result = await tools.getCapitalStatement({});
+
+    expect(result).toEqual({
+      movements: [{ shareholderName: 'Aandeelhouder #1', amount: 10 }],
+    });
+  });
+
+  it('masks shareholder-per-project PII when canViewPII is false', async () => {
+    permissions.permissions.mockResolvedValue({ canViewReports: true, canViewPII: false });
+    reports.getShareholdersPerProject.mockResolvedValue({
+      projectId: 'project-1',
+      shareholders: [
+        {
+          shareholderId: 'shareholder-1234',
+          shareholderName: 'Ada Lovelace',
+          email: 'ada@example.com',
+        },
+      ],
+    });
+
+    const result = await tools.getShareholdersPerProject({ projectId: 'project-1' });
+
+    expect(result).toEqual({
+      projectId: 'project-1',
+      shareholders: [
+        expect.objectContaining({
+          shareholderId: 'shareholder-1234',
+          shareholderName: 'Aandeelhouder #1234',
+          email: '***',
+        }),
+      ],
+    });
+  });
+
+  it('masks dividend-summary shareholder names when canViewPII is false', async () => {
+    permissions.permissions.mockResolvedValue({ canViewReports: true, canViewPII: false });
+    reports.getDividendSummary.mockResolvedValue({
+      year: 2025,
+      payouts: [{ shareholderName: 'Ada Lovelace', grossAmount: 10 }],
+    });
+
+    const result = await tools.getDividendSummary({ year: 2025 });
+
+    expect(result).toEqual({
+      year: 2025,
+      payouts: [{ shareholderName: 'Aandeelhouder #1', grossAmount: 10 }],
+    });
+  });
+
+  it('masks referral-analytics shareholder names when canViewPII is false', async () => {
+    permissions.permissions.mockResolvedValue({ canViewPII: false });
+    analytics.getReferralAnalytics.mockResolvedValue({
+      totalReferrals: 1,
+      topReferrers: [{ id: 'shareholder-1234', name: 'Ada Lovelace', totalReferred: 1 }],
+    });
+
+    const result = await tools.getReferralAnalytics({});
+
+    expect(result).toEqual({
+      totalReferrals: 1,
+      topReferrers: [{ id: 'shareholder-1234', name: 'Aandeelhouder #1234', totalReferred: 1 }],
     });
   });
 

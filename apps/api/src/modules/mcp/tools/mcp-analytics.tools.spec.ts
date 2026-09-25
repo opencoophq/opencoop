@@ -25,9 +25,12 @@ describe('McpAnalyticsTools', () => {
     getApiKeyId: () => 'k1',
     getScope: () => 'READ_WRITE' as const,
   };
-  const permissions = { permissions: jest.fn() };
+  const permissions = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
-  const prisma = { registration: { findFirst: jest.fn() } };
+  const prisma = {
+    registration: { findFirst: jest.fn() },
+    payment: { findFirst: jest.fn() },
+  };
   const analytics = {
     getCapitalTimeline: jest.fn(),
     getCapitalByProject: jest.fn(),
@@ -36,6 +39,8 @@ describe('McpAnalyticsTools', () => {
   };
   const reports = { getAnnualOverview: jest.fn() };
   const earliest = new Date('2020-01-02T00:00:00.000Z');
+  const earliestPaymentBankDate = new Date('1999-01-02T00:00:00.000Z');
+  const earliestBuyRegisterDate = new Date('2001-05-06T00:00:00.000Z');
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
@@ -51,10 +56,18 @@ describe('McpAnalyticsTools', () => {
       ],
     }).compile();
     tools = module.get(McpAnalyticsTools);
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+    permissions.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await permissions.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     permissions.permissions.mockResolvedValue({ canViewReports: true });
     billing.isReadOnly.mockResolvedValue(false);
-    prisma.registration.findFirst.mockResolvedValue({ createdAt: earliest });
+    prisma.registration.findFirst.mockResolvedValue({
+      registerDate: earliest,
+      createdAt: earliest,
+    });
+    prisma.payment.findFirst.mockResolvedValue({ bankDate: earliestPaymentBankDate });
     analytics.getCapitalTimeline.mockResolvedValue([
       {
         date: '2020-01-01T00:00:00.000Z',
@@ -73,6 +86,29 @@ describe('McpAnalyticsTools', () => {
     reports.getAnnualOverview.mockResolvedValue({ year: 2025, capitalEnd: new Decimal('99.99') });
   });
 
+  it('uses the earliest relevant payment bankDate and BUY registerDate for defaults', async () => {
+    prisma.payment.findFirst.mockResolvedValue({ bankDate: earliestPaymentBankDate });
+    prisma.registration.findFirst
+      .mockResolvedValueOnce({ registerDate: earliestBuyRegisterDate })
+      .mockResolvedValueOnce({ createdAt: earliest });
+
+    await tools.getCapitalTimeline({});
+    await tools.getShareholderGrowth({});
+
+    expect(analytics.getCapitalTimeline).toHaveBeenCalledWith(
+      'coop-from-auth',
+      'month',
+      earliestPaymentBankDate.toISOString(),
+      undefined,
+    );
+    expect(analytics.getShareholderGrowth).toHaveBeenCalledWith(
+      'coop-from-auth',
+      'month',
+      earliestBuyRegisterDate.toISOString(),
+      undefined,
+    );
+  });
+
   it('rejects a report when canViewReports is absent', async () => {
     permissions.permissions.mockResolvedValue({});
 
@@ -86,7 +122,25 @@ describe('McpAnalyticsTools', () => {
     await tools.getTransactionSummary({ bucket: 'day' });
     await tools.getCapitalByProject({});
 
-    expect(prisma.registration.findFirst).toHaveBeenCalledTimes(3);
+    expect(prisma.payment.findFirst).toHaveBeenCalledWith({
+      where: {
+        registration: {
+          coopId: 'coop-from-auth',
+          status: { in: ['ACTIVE', 'COMPLETED'] },
+        },
+      },
+      orderBy: { bankDate: 'asc' },
+      select: { bankDate: true },
+    });
+    expect(prisma.registration.findFirst).toHaveBeenCalledWith({
+      where: {
+        coopId: 'coop-from-auth',
+        type: 'BUY',
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+      },
+      orderBy: { registerDate: 'asc' },
+      select: { registerDate: true },
+    });
     expect(prisma.registration.findFirst).toHaveBeenCalledWith({
       where: { coopId: 'coop-from-auth' },
       orderBy: { createdAt: 'asc' },
@@ -95,7 +149,7 @@ describe('McpAnalyticsTools', () => {
     expect(analytics.getCapitalTimeline).toHaveBeenCalledWith(
       'coop-from-auth',
       'year',
-      earliest.toISOString(),
+      earliestPaymentBankDate.toISOString(),
       undefined,
     );
     expect(analytics.getShareholderGrowth).toHaveBeenCalledWith(

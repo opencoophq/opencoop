@@ -24,7 +24,7 @@ describe('McpCoopTools', () => {
     getApiKeyId: () => 'k1',
     getScope: () => scope,
   };
-  const permissions = { permissions: jest.fn() };
+  const permissions = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
   const prisma = {
     coop: { findUniqueOrThrow: jest.fn() },
@@ -53,6 +53,10 @@ describe('McpCoopTools', () => {
     }).compile();
     tools = module.get(McpCoopTools);
     jest.clearAllMocks();
+    permissions.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await permissions.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     scope = 'READ_WRITE';
     permissions.permissions.mockResolvedValue({
       canManageShareClasses: true,
@@ -169,6 +173,21 @@ describe('McpCoopTools', () => {
     expect(updateCoopSettingsParameters.safeParse({ brevoApiKey: 'secret' }).success).toBe(false);
     expect(updateCoopSettingsParameters.safeParse({ emailEnabled: true }).success).toBe(false);
     expect(updateCoopSettingsParameters.safeParse({ pontoEnabled: true }).success).toBe(false);
+    const transportFields = {
+      emailProvider: 'smtp',
+      smtpHost: 'smtp.example.com',
+      smtpPort: 587,
+      smtpUser: 'attacker',
+      smtpFrom: 'attacker@example.com',
+      graphClientId: 'attacker',
+      graphTenantId: 'attacker',
+      graphFromEmail: 'attacker@example.com',
+    } as const;
+    for (const [field, value] of Object.entries(transportFields)) {
+      expect(updateCoopSettingsParameters.strict().safeParse({ [field]: value }).success).toBe(
+        false,
+      );
+    }
     expect(updateCoopSettingsParameters.safeParse({ minimumHoldingPeriod: -1 }).success).toBe(
       false,
     );

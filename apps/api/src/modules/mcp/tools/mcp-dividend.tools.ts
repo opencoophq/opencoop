@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
+import { maskShareholderPII } from '../../../common/utils/mask-pii';
 import { DividendsService } from '../../dividends/dividends.service';
 import { McpToolkit } from '../mcp-toolkit';
 
@@ -57,6 +58,20 @@ export class McpDividendTools {
     private readonly toolkit: McpToolkit,
   ) {}
 
+  private maskPeriodPII<T extends { payouts: Array<{ shareholder: unknown }> }>(
+    result: T,
+    canViewPII: boolean,
+  ): T {
+    if (canViewPII) return result;
+    return {
+      ...result,
+      payouts: result.payouts.map((payout) => ({
+        ...payout,
+        shareholder: maskShareholderPII(payout.shareholder),
+      })),
+    };
+  }
+
   // Mirrors GET admin/coops/:coopId/dividends
   @Tool({
     name: 'list_dividend_periods',
@@ -78,9 +93,10 @@ export class McpDividendTools {
     parameters: getDividendPeriodParameters,
   })
   async getDividendPeriod(params: GetDividendPeriodParams) {
-    return this.toolkit.run({ permission: 'canManageDividends' }, params, async (ctx) =>
-      this.dividendsService.findById(params.dividendPeriodId, ctx.coopId),
-    );
+    return this.toolkit.run({ permission: 'canManageDividends' }, params, async (ctx) => {
+      const result = await this.dividendsService.findById(params.dividendPeriodId, ctx.coopId);
+      return this.maskPeriodPII(result, ctx.canViewPII);
+    });
   }
 
   // Mirrors POST admin/coops/:coopId/dividends
@@ -122,14 +138,16 @@ export class McpDividendTools {
     return this.toolkit.run(
       { permission: 'canManageDividends', write: true },
       params,
-      async (ctx) =>
-        this.dividendsService.calculate(
+      async (ctx) => {
+        const result = await this.dividendsService.calculate(
           params.dividendPeriodId,
           ctx.coopId,
           ctx.audit.userId,
           ctx.audit.ip,
           ctx.audit.userAgent,
-        ),
+        );
+        return this.maskPeriodPII(result, ctx.canViewPII);
+      },
     );
   }
 
@@ -144,15 +162,17 @@ export class McpDividendTools {
     return this.toolkit.run(
       { permission: 'canManageDividends', write: true },
       params,
-      async (ctx) =>
-        this.dividendsService.markAsPaid(
+      async (ctx) => {
+        const result = await this.dividendsService.markAsPaid(
           params.dividendPeriodId,
           ctx.coopId,
           params.paymentReference,
           ctx.audit.userId,
           ctx.audit.ip,
           ctx.audit.userAgent,
-        ),
+        );
+        return this.maskPeriodPII(result, ctx.canViewPII);
+      },
     );
   }
 
@@ -163,8 +183,17 @@ export class McpDividendTools {
     parameters: exportDividendsParameters,
   })
   async exportDividends(params: ExportDividendsParams) {
-    return this.toolkit.run({ permission: 'canManageDividends' }, params, async (ctx) =>
-      this.dividendsService.exportToCsv(params.dividendPeriodId, ctx.coopId),
-    );
+    return this.toolkit.run({ permission: 'canManageDividends' }, params, async (ctx) => {
+      const csv = await this.dividendsService.exportToCsv(params.dividendPeriodId, ctx.coopId);
+      if (ctx.canViewPII) return csv;
+      const [header, ...rows] = csv.split('\n');
+      const maskedRows = rows.map((row, index) => {
+        const fields = row.split(';');
+        fields[1] = `"Aandeelhouder #${index + 1}"`;
+        fields[3] = fields[3] ? '***' : fields[3];
+        return fields.join(';');
+      });
+      return [header, ...maskedRows].join('\n');
+    });
   }
 }

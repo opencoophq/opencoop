@@ -12,8 +12,13 @@ import { Prisma } from '@opencoop/database';
 import { Decimal } from '@prisma/client/runtime/library';
 import { CoopPermissionKey } from '@opencoop/shared';
 import { BillingService } from '../billing/billing.service';
-import { CoopPermissionsService } from '../../common/utils/coop-permissions';
-import { maskShareholderListPII, maskShareholderPII } from '../../common/utils/mask-pii';
+import { CoopPermissionsService, isPermitted } from '../../common/utils/coop-permissions';
+import {
+  HouseholdCandidate,
+  maskHouseholdCandidatesPII,
+  maskShareholderListPII,
+  maskShareholderPII,
+} from '../../common/utils/mask-pii';
 import { McpAuthStore } from './mcp-auth.store';
 
 const SECRET_KEYS = new Set(['nationalId', 'giftCode', 'filePath', 'keyHash', 'passwordHash']);
@@ -37,7 +42,7 @@ export interface McpToolContext {
 interface McpToolOptions<D> {
   permission?: CoopPermissionKey;
   write?: boolean;
-  pii?: 'shareholder' | 'shareholderList';
+  pii?: 'shareholder' | 'shareholderList' | 'householdCandidates';
   dto?: ClassConstructor<D>;
 }
 
@@ -65,6 +70,8 @@ export class McpToolkit {
         result = maskShareholderPII(result);
       } else if (!context.canViewPII && opts.pii === 'shareholderList') {
         result = maskShareholderListPII(result);
+      } else if (!context.canViewPII && opts.pii === 'householdCandidates') {
+        result = maskHouseholdCandidatesPII(result as HouseholdCandidate[]);
       }
 
       const normalised = this.normalise(result, new WeakSet<object>());
@@ -83,15 +90,15 @@ export class McpToolkit {
     const coopId = this.auth.getCoopId();
     const apiKeyId = this.auth.getApiKeyId();
     const scope = this.auth.getScope();
-    const permissions = await this.coopPermissions.permissions(userId, coopId);
+    const { permissions, role } = await this.coopPermissions.permissionsWithRole(userId, coopId);
 
-    if (opts.permission && permissions[opts.permission] !== true) {
+    if (opts.permission && !isPermitted(permissions, opts.permission)) {
       throw new ForbiddenException('Insufficient permissions');
     }
     if (opts.write && scope !== 'READ_WRITE') {
       throw new ForbiddenException('This API key is read-only');
     }
-    if (opts.write && (await this.billingService.isReadOnly(coopId))) {
+    if (opts.write && role !== 'SYSTEM_ADMIN' && (await this.billingService.isReadOnly(coopId))) {
       throw new ForbiddenException(SUBSCRIPTION_REQUIRED_MESSAGE);
     }
 
@@ -100,7 +107,7 @@ export class McpToolkit {
       coopId,
       apiKeyId,
       scope,
-      canViewPII: permissions.canViewPII === true,
+      canViewPII: permissions.canViewPII !== false,
       audit: {
         userId,
         ip: 'mcp',

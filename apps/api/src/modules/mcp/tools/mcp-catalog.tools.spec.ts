@@ -31,7 +31,7 @@ describe('McpCatalogTools', () => {
     getApiKeyId: () => 'k1',
     getScope: () => scope,
   };
-  const permissions = { permissions: jest.fn() };
+  const permissions = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
   const shareClasses = { findById: jest.fn(), create: jest.fn(), update: jest.fn() };
   const projects = { findById: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() };
@@ -58,6 +58,10 @@ describe('McpCatalogTools', () => {
     }).compile();
     tools = module.get(McpCatalogTools);
     jest.clearAllMocks();
+    permissions.permissionsWithRole.mockImplementation(async () => ({
+      permissions: await permissions.permissions(),
+      role: 'COOP_ADMIN',
+    }));
     scope = 'READ_WRITE';
     permissions.permissions.mockResolvedValue({
       canManageShareClasses: true,
