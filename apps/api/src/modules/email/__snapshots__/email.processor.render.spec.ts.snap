@@ -448,6 +448,42 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch
     "
 `;
 
+exports[`EmailProcessor render snapshots (byte-exact baseline) renders message-notification with the full body 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Bericht van Bronsgroen</h1>
+          <p>Beste Christiane,</p>
+          <p><strong>Onderwerp:</strong> Uw aandelen</p>
+          <div style="margin: 16px 0; line-height: 1.5;"><h2>Wat er is beslist</h2><p>Een <strong>vet</strong> woord.</p></div>
+          <p>Dit bericht bevat bijlagen. U vindt ze in uw postvak.</p>
+          <p style="color:#555;">Antwoorden kan via uw postvak op het platform.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.be/nl/dashboard/inbox/c1"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Bekijk het bericht
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Bronsgroen via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
 exports[`EmailProcessor render snapshots (byte-exact baseline) template "admin-digest" renders in de 1`] = `
 "
       <!DOCTYPE html>
@@ -1957,18 +1993,17 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "message
       </head>
       <body>
         
-          <h1>Neue Nachricht von Coöp &amp; Co</h1>
-          <p>Liebe/r Jan Peeters,</p>
-          <p>Sie haben eine neue Nachricht von Coöp &amp; Co erhalten.</p>
+          <h1>Nachricht von Coöp &amp; Co</h1>
+          <p>Liebe(r) Jan Peeters,</p>
           <p><strong>Betreff:</strong> Belangrijk nieuws</p>
-          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
-            Dit is een voorbeeld van een bericht.
-          </blockquote>
+          <div style="margin: 16px 0; line-height: 1.5;"><p>Dit is een voorbeeld van een bericht.</p></div>
+          
+          <p style="color:#555;">Antworten können Sie über Ihren Posteingang auf der Plattform.</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="https://opencoop.test/inbox/1"
                style="background-color: #1e40af; color: white; padding: 12px 24px;
                       text-decoration: none; border-radius: 6px; display: inline-block;">
-              Nachricht anzeigen
+              Nachricht ansehen
             </a>
           </p>
         
@@ -1994,18 +2029,17 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "message
       </head>
       <body>
         
-          <h1>New message from Coöp &amp; Co</h1>
+          <h1>Message from Coöp &amp; Co</h1>
           <p>Dear Jan Peeters,</p>
-          <p>You have received a new message from Coöp &amp; Co.</p>
           <p><strong>Subject:</strong> Belangrijk nieuws</p>
-          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
-            Dit is een voorbeeld van een bericht.
-          </blockquote>
+          <div style="margin: 16px 0; line-height: 1.5;"><p>Dit is een voorbeeld van een bericht.</p></div>
+          
+          <p style="color:#555;">You can reply through your inbox on the platform.</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="https://opencoop.test/inbox/1"
                style="background-color: #1e40af; color: white; padding: 12px 24px;
                       text-decoration: none; border-radius: 6px; display: inline-block;">
-              View message
+              View the message
             </a>
           </p>
         
@@ -2031,13 +2065,12 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "message
       </head>
       <body>
         
-          <h1>Nouveau message de Coöp &amp; Co</h1>
-          <p>Cher/Chère Jan Peeters,</p>
-          <p>Vous avez reçu un nouveau message de Coöp &amp; Co.</p>
-          <p><strong>Sujet:</strong> Belangrijk nieuws</p>
-          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
-            Dit is een voorbeeld van een bericht.
-          </blockquote>
+          <h1>Message de Coöp &amp; Co</h1>
+          <p>Bonjour Jan Peeters,</p>
+          <p><strong>Objet:</strong> Belangrijk nieuws</p>
+          <div style="margin: 16px 0; line-height: 1.5;"><p>Dit is een voorbeeld van een bericht.</p></div>
+          
+          <p style="color:#555;">Vous pouvez répondre via votre boîte de réception sur la plateforme.</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="https://opencoop.test/inbox/1"
                style="background-color: #1e40af; color: white; padding: 12px 24px;
@@ -2068,13 +2101,12 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "message
       </head>
       <body>
         
-          <h1>Nieuw bericht van Coöp &amp; Co</h1>
+          <h1>Bericht van Coöp &amp; Co</h1>
           <p>Beste Jan Peeters,</p>
-          <p>U heeft een nieuw bericht ontvangen van Coöp &amp; Co.</p>
           <p><strong>Onderwerp:</strong> Belangrijk nieuws</p>
-          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
-            Dit is een voorbeeld van een bericht.
-          </blockquote>
+          <div style="margin: 16px 0; line-height: 1.5;"><p>Dit is een voorbeeld van een bericht.</p></div>
+          
+          <p style="color:#555;">Antwoorden kan via uw postvak op het platform.</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="https://opencoop.test/inbox/1"
                style="background-color: #1e40af; color: white; padding: 12px 24px;

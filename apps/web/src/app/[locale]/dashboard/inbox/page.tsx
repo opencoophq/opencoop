@@ -5,7 +5,14 @@ import { useTranslations } from 'next-intl';
 import { useLocale } from '@/contexts/locale-context';
 import { Link } from '@/i18n/routing';
 import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +26,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
+import { messageBodyPreview } from '@/lib/utils';
 import { Plus, Loader2 } from 'lucide-react';
 
 interface Conversation {
@@ -110,7 +118,9 @@ export default function InboxPage() {
       <Card>
         <CardContent className="pt-6">
           {conversations.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">{t('messages.noConversations')}</p>
+            <p className="text-muted-foreground text-center py-8">
+              {t('messages.noConversations')}
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -124,11 +134,7 @@ export default function InboxPage() {
               <TableBody>
                 {conversations.map((conv) => {
                   const lastMessage = conv.messages[0];
-                  const preview = lastMessage?.body
-                    ? lastMessage.body.length > 80
-                      ? lastMessage.body.slice(0, 80) + '...'
-                      : lastMessage.body
-                    : '';
+                  const preview = lastMessage?.body ? messageBodyPreview(lastMessage.body) : '';
                   return (
                     <TableRow key={conv.id} className="cursor-pointer hover:bg-muted/50">
                       <TableCell className={conv.isUnread ? 'font-semibold' : ''}>
@@ -136,12 +142,12 @@ export default function InboxPage() {
                           {conv.subject}
                         </Link>
                       </TableCell>
-                      <TableCell className={`text-muted-foreground ${conv.isUnread ? 'font-medium' : ''}`}>
+                      <TableCell
+                        className={`text-muted-foreground ${conv.isUnread ? 'font-medium' : ''}`}
+                      >
                         {preview}
                       </TableCell>
-                      <TableCell>
-                        {new Date(conv.updatedAt).toLocaleDateString(locale)}
-                      </TableCell>
+                      <TableCell>{new Date(conv.updatedAt).toLocaleDateString(locale)}</TableCell>
                       <TableCell>
                         {conv.isUnread ? (
                           <Badge variant="default">{t('messages.unread')}</Badge>

@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { DocumentsService } from '../documents/documents.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
+import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 
 /**
  * Behavioural specs for the registration state machine:
@@ -24,13 +25,23 @@ import { AdminNotificationsService } from '../admin-notifications/admin-notifica
 describe('RegistrationsService — lifecycle', () => {
   let service: RegistrationsService;
   let prisma: any;
+  let shareholderStatus: { recompute: jest.Mock; recomputeMany: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
-      registration: { update: jest.fn().mockResolvedValue({}) },
+      registration: {
+        create: jest.fn().mockResolvedValue({ id: 'registration-created' }),
+        findFirst: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn().mockResolvedValue({}),
+      },
       payment: { create: jest.fn().mockResolvedValue({}) },
       // Run the transaction callback synchronously against the same mock prisma
       $transaction: jest.fn((cb: any) => cb(prisma)),
+    };
+    shareholderStatus = {
+      recompute: jest.fn().mockResolvedValue(null),
+      recomputeMany: jest.fn().mockResolvedValue(undefined),
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -40,6 +51,7 @@ describe('RegistrationsService — lifecycle', () => {
         { provide: EmailService, useValue: {} },
         { provide: DocumentsService, useValue: {} },
         { provide: AdminNotificationsService, useValue: {} },
+        { provide: ShareholderStatusService, useValue: shareholderStatus },
       ],
     }).compile();
     service = moduleRef.get(RegistrationsService);
@@ -213,6 +225,51 @@ describe('RegistrationsService — lifecycle', () => {
 
       await expect(service.cancel('r1', 'c1', 'user-1')).rejects.toThrow(BadRequestException);
       expect(prisma.registration.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('shareholder status hooks', () => {
+    it('recomputes status when a registration is completed', async () => {
+      jest.restoreAllMocks();
+      prisma.registration.findUnique.mockResolvedValue({
+        id: 'r1',
+        shareholderId: 'sh1',
+        isGift: false,
+        type: 'SELL',
+        giftCode: null,
+        shareholder: { email: null, user: null },
+      });
+
+      await service.onRegistrationCompleted('r1');
+
+      expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh1');
+    });
+
+    it('recomputes both shareholders after a transfer transaction commits', async () => {
+      prisma.registration.findFirst.mockResolvedValue({
+        id: 'buy-1',
+        shareClassId: 'class-1',
+        projectId: null,
+        quantity: 10,
+        pricePerShare: 10,
+        payments: [],
+        shareClass: { id: 'class-1' },
+      });
+      prisma.registration.create
+        .mockResolvedValueOnce({ id: 'sell-1' })
+        .mockResolvedValueOnce({ id: 'buy-2' });
+      jest.spyOn(service as any, 'getAvailableShares').mockResolvedValue(10);
+      jest.spyOn(service as any, 'checkEcoPowerThreshold').mockResolvedValue(undefined);
+
+      await service.createTransfer({
+        coopId: 'coop-1',
+        fromShareholderId: 'from-sh',
+        toShareholderId: 'to-sh',
+        registrationId: 'buy-1',
+        quantity: 3,
+      });
+
+      expect(shareholderStatus.recomputeMany).toHaveBeenCalledWith(['from-sh', 'to-sh']);
     });
   });
 });

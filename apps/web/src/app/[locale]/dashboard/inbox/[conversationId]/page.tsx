@@ -24,6 +24,7 @@ interface Message {
   senderType: 'ADMIN' | 'SHAREHOLDER';
   senderId: string;
   body: string;
+  format: 'TEXT' | 'HTML';
   createdAt: string;
   attachments: Attachment[];
 }
@@ -118,11 +119,7 @@ export default function ConversationDetailPage() {
   }
 
   if (!conversation) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        {t('common.noResults')}
-      </div>
-    );
+    return <div className="text-center py-8 text-muted-foreground">{t('common.noResults')}</div>;
   }
 
   return (
@@ -156,7 +153,14 @@ export default function ConversationDetailPage() {
                     })}
                   </span>
                 </div>
-                <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                {msg.format === 'HTML' ? (
+                  <div
+                    className="text-sm [&_p]:mb-3 [&_p:last-child]:mb-0 [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-bold [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-primary [&_a]:underline [&_blockquote]:my-3 [&_blockquote]:border-l-4 [&_blockquote]:border-muted-foreground/40 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-foreground"
+                    dangerouslySetInnerHTML={{ __html: msg.body }}
+                  />
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                )}
                 {msg.attachments.length > 0 && (
                   <div className="mt-3 space-y-1">
                     <p className="text-xs font-medium text-muted-foreground">

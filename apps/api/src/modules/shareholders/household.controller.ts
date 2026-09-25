@@ -3,6 +3,9 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CoopGuard } from '../../common/guards/coop.guard';
+import { SubscriptionGuard } from '../../common/guards/subscription.guard';
+import { PermissionGuard } from '../../common/guards/permission.guard';
+import { RequirePermission } from '../../common/decorators/permissions.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
 import { HouseholdService } from './household.service';
@@ -11,14 +14,16 @@ import { LinkShareholderDto } from './dto/link-shareholder.dto';
 @ApiTags('Shareholders')
 @ApiBearerAuth()
 @Controller('admin/coops/:coopId/shareholders/:shareholderId/household')
-@UseGuards(JwtAuthGuard, RolesGuard, CoopGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, CoopGuard, SubscriptionGuard, PermissionGuard)
 @Roles('COOP_ADMIN', 'SYSTEM_ADMIN')
+@RequirePermission('canManageShareholders')
 export class HouseholdController {
   constructor(private readonly household: HouseholdService) {}
 
   @Get('search-users')
   @ApiOperation({
-    summary: 'Search household-link candidates in this coop by email (excludes the current shareholder)',
+    summary:
+      'Search household-link candidates in this coop by email (excludes the current shareholder)',
   })
   async searchCandidates(
     @Param('coopId') coopId: string,

@@ -66,11 +66,12 @@
     "thanksEnd": "Thank you for being a shareholder of {coopName}!"
   },
   "message-notification": {
-    "title": "New message from {coopName}",
+    "title": "Message from {coopName}",
     "dear": "Dear {shareholderName},",
-    "body": "You have received a new message from {coopName}.",
     "subject": "Subject",
-    "viewMessage": "View message"
+    "replyHint": "You can reply through your inbox on the platform.",
+    "attachmentsHint": "This message has attachments. You will find them in your inbox.",
+    "viewMessage": "View the message"
   },
   "meeting-convocation": {
     "title": "Notice — {coopName}",

@@ -169,13 +169,12 @@ describe('ShareholderImportService', () => {
       expect(results[0].errors[0]).toContain('Invalid birthDate');
     });
 
-    it('should reject invalid status', () => {
+    it('should ignore an unknown status column', () => {
       const rows = [
         { type: 'INDIVIDUAL', firstName: 'Jan', lastName: 'Peeters', email: 'jan@test.be', status: 'DELETED' },
       ];
       const results = service.validateRows(rows, new Set());
-      expect(results[0].valid).toBe(false);
-      expect(results[0].errors[0]).toContain('Invalid status');
+      expect(results[0].valid).toBe(true);
     });
 
     it('should normalize type to uppercase', () => {
@@ -228,6 +227,18 @@ describe('ShareholderImportService', () => {
           }),
         }),
       );
+    });
+
+    it('should not write status from an uploaded status column', async () => {
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
+      (prismaService.shareholder.createMany as jest.Mock).mockResolvedValue({ count: 1 });
+
+      const csv =
+        'type,firstName,lastName,email,status\nINDIVIDUAL,Jan,Peeters,jan@test.be,ACTIVE\n';
+      await service.importShareholders('coop-1', makeFile(csv), false, 'user-1');
+
+      const data = (prismaService.shareholder.createMany as jest.Mock).mock.calls[0][0].data[0];
+      expect(data).not.toHaveProperty('status');
     });
 
     it('should skip invalid rows and create valid ones', async () => {
