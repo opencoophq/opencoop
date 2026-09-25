@@ -449,6 +449,24 @@ describe('McpToolkit', () => {
     });
   });
 
+  it('keeps the coop address visible and still masks a shareholder inside the coop record', async () => {
+    permissionService.permissions.mockResolvedValue({ canViewPII: false });
+
+    const result = await toolkit.run({}, undefined, async () => ({
+      slug: 'open-coop',
+      coopAddress: { street: 'Kerkstraat', number: '1', postalCode: '2000', city: 'Antwerpen' },
+      channels: [{ slug: 'main', name: 'Main' }],
+      contact: { id: 'shareholder-9012', firstName: 'Ada', email: 'ada@example.com' },
+    }));
+
+    expect(result).toEqual({
+      slug: 'open-coop',
+      coopAddress: { street: 'Kerkstraat', number: '1', postalCode: '2000', city: 'Antwerpen' },
+      channels: [{ slug: 'main', name: 'Main' }],
+      contact: expect.objectContaining({ email: '***' }),
+    });
+  });
+
   it('masks signer, IP address, and user-projection names', async () => {
     permissionService.permissions.mockResolvedValue({ canViewPII: false });
 

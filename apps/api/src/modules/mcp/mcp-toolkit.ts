@@ -170,7 +170,12 @@ export class McpToolkit {
     return messages;
   }
 
-  private normalise(value: unknown, ancestors: WeakSet<object>, maskPII: boolean): unknown {
+  private normalise(
+    value: unknown,
+    ancestors: WeakSet<object>,
+    maskPII: boolean,
+    inCoopRecord = false,
+  ): unknown {
     if (Decimal.isDecimal(value)) return Number(value);
     if (value instanceof Date) return value.toISOString();
     if (typeof value === 'bigint') {
@@ -180,7 +185,7 @@ export class McpToolkit {
     if (Array.isArray(value)) {
       if (ancestors.has(value)) return '[Circular]';
       ancestors.add(value);
-      const result = value.map((item) => this.normalise(item, ancestors, maskPII));
+      const result = value.map((item) => this.normalise(item, ancestors, maskPII, inCoopRecord));
       ancestors.delete(value);
       return result;
     }
@@ -188,22 +193,29 @@ export class McpToolkit {
     if (ancestors.has(value)) return '[Circular]';
 
     ancestors.add(value);
-    const source = maskPII ? this.maskObjectPII(value) : value;
+    // A coop record and its subtree (coopAddress, channels) hold the coop's own data,
+    // not personal data. A shareholder-like object inside it is still masked.
+    const coopSubtree = inCoopRecord || this.isCoopRecord(value);
+    const maskHere = maskPII && (!coopSubtree || this.isShareholderLike(value));
+    const source = maskHere ? this.maskObjectPII(value) : value;
     const result: Record<string, unknown> = {};
     for (const [key, item] of Object.entries(source)) {
       const keepMaskedNationalId =
-        maskPII && key === 'nationalId' && (item === '***' || item === null);
+        maskHere && key === 'nationalId' && (item === '***' || item === null);
       if (!SECRET_KEYS.has(key) || keepMaskedNationalId) {
-        result[key] = this.normalise(item, ancestors, maskPII);
+        result[key] = this.normalise(item, ancestors, maskPII, coopSubtree && !maskHere);
       }
     }
     ancestors.delete(value);
     return result;
   }
 
+  private isCoopRecord(value: Record<string, unknown>): boolean {
+    return this.hasOwn(value, 'slug') && !this.isShareholderLike(value);
+  }
+
   private maskObjectPII(value: Record<string, unknown>): Record<string, unknown> {
     const shareholderLike = this.isShareholderLike(value);
-    const coopBankRecord = this.hasOwn(value, 'slug') && this.hasOwn(value, 'bankIban');
     const result = shareholderLike
       ? (maskShareholderPII(value) as Record<string, unknown>)
       : { ...value };
@@ -231,7 +243,6 @@ export class McpToolkit {
     }
 
     for (const key of FLAT_PII_KEYS) {
-      if (coopBankRecord && (key === 'bankIban' || key === 'bankBic')) continue;
       if (this.hasOwn(result, key) && result[key]) {
         result[key] = '***';
       }
