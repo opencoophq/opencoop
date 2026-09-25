@@ -22,8 +22,16 @@ const FLAT_PII_KEYS = new Set([
   'email',
   'shareholderEmail',
   'phone',
+  'iban',
+  'bic',
   'bankIban',
   'bankBic',
+  'counterparty',
+  'counterpartyName',
+  'counterpartyIban',
+  'accountHolder',
+  'signedByName',
+  'ipAddress',
   'birthDate',
   'address',
   'street',
@@ -195,6 +203,7 @@ export class McpToolkit {
 
   private maskObjectPII(value: Record<string, unknown>): Record<string, unknown> {
     const shareholderLike = this.isShareholderLike(value);
+    const coopBankRecord = this.hasOwn(value, 'slug') && this.hasOwn(value, 'bankIban');
     const result = shareholderLike
       ? (maskShareholderPII(value) as Record<string, unknown>)
       : { ...value };
@@ -212,7 +221,17 @@ export class McpToolkit {
       result.newValue = '***';
     }
 
+    if (
+      !shareholderLike &&
+      this.hasOwn(result, 'id') &&
+      this.hasOwn(result, 'name') &&
+      this.hasOwn(result, 'email')
+    ) {
+      result.name = '***';
+    }
+
     for (const key of FLAT_PII_KEYS) {
+      if (coopBankRecord && (key === 'bankIban' || key === 'bankBic')) continue;
       if (this.hasOwn(result, key) && result[key]) {
         result[key] = '***';
       }
@@ -222,6 +241,12 @@ export class McpToolkit {
       if (this.hasOwn(result, key)) {
         result[key] = this.shareholderLabel(result.shareholderId);
       }
+    }
+
+    if (this.hasOwn(result, 'beneficiaryName')) {
+      result.beneficiaryName = this.hasOwn(result, 'shareholderId')
+        ? this.shareholderLabel(result.shareholderId)
+        : '***';
     }
 
     if (this.hasOwn(result, 'recipientEmail') && result.recipientEmail) {

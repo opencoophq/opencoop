@@ -390,6 +390,83 @@ describe('McpToolkit', () => {
     expect(secondRun).toEqual(firstRun);
   });
 
+  it('masks bank and counterparty PII keys including beneficiary names', async () => {
+    permissionService.permissions.mockResolvedValue({ canViewPII: false });
+
+    const result = await toolkit.run({}, undefined, async () => ({
+      payment: {
+        iban: 'BE123',
+        bic: 'BIC123',
+        counterparty: 'Ada Lovelace',
+        counterpartyName: 'Ada Lovelace',
+        counterpartyIban: 'BE456',
+        accountHolder: 'Ada Lovelace',
+        beneficiaryName: 'Ada Lovelace',
+      },
+      shareholderPayment: {
+        shareholderId: 'shareholder-1234',
+        beneficiaryName: 'Ada Lovelace',
+      },
+    }));
+
+    expect(result).toEqual({
+      payment: {
+        iban: '***',
+        bic: '***',
+        counterparty: '***',
+        counterpartyName: '***',
+        counterpartyIban: '***',
+        accountHolder: '***',
+        beneficiaryName: '***',
+      },
+      shareholderPayment: {
+        shareholderId: 'shareholder-1234',
+        beneficiaryName: 'Aandeelhouder #1234',
+      },
+    });
+  });
+
+  it('keeps bank details on a top-level coop record while masking shareholder bank details', async () => {
+    permissionService.permissions.mockResolvedValue({ canViewPII: false });
+
+    const result = await toolkit.run({}, undefined, async () => ({
+      slug: 'open-coop',
+      bankIban: 'BE123',
+      bankBic: 'BIC123',
+      shareholder: {
+        id: 'shareholder-5678',
+        firstName: 'Grace',
+        bankIban: 'BE456',
+        bankBic: 'BIC456',
+      },
+    }));
+
+    expect(result).toEqual({
+      slug: 'open-coop',
+      bankIban: 'BE123',
+      bankBic: 'BIC123',
+      shareholder: expect.objectContaining({ bankIban: '***', bankBic: '***' }),
+    });
+  });
+
+  it('masks signer, IP address, and user-projection names', async () => {
+    permissionService.permissions.mockResolvedValue({ canViewPII: false });
+
+    const result = await toolkit.run({}, undefined, async () => ({
+      signedByName: 'Ada Lovelace',
+      ipAddress: '192.0.2.1',
+      actor: { id: 'user-1', name: 'Ada Lovelace', email: 'ada@example.com' },
+      project: { id: 'project-1', name: 'Solar Roof' },
+    }));
+
+    expect(result).toEqual({
+      signedByName: '***',
+      ipAddress: '***',
+      actor: { id: 'user-1', name: '***', email: '***' },
+      project: { id: 'project-1', name: 'Solar Roof' },
+    });
+  });
+
   it('keeps PII visible when canViewPII is true', async () => {
     const source = {
       shareholder: {

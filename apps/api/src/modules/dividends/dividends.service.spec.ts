@@ -4,6 +4,51 @@ import { DividendsService } from './dividends.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 
+describe('DividendsService.create withholding tax conversion', () => {
+  let service: DividendsService;
+  const prisma = {
+    dividendPeriod: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
+  };
+
+  beforeEach(async () => {
+    const mod = await Test.createTestingModule({
+      providers: [
+        DividendsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AuditService, useValue: { log: jest.fn() } },
+      ],
+    }).compile();
+    service = mod.get(DividendsService);
+    jest.clearAllMocks();
+    prisma.dividendPeriod.findFirst.mockResolvedValue(null);
+    prisma.dividendPeriod.create.mockImplementation(async ({ data }) => ({
+      id: 'period-1',
+      ...data,
+    }));
+  });
+
+  it.each([
+    { label: 'explicit zero', input: 0, expected: 0 },
+    { label: 'omitted value', input: undefined, expected: 0.3 },
+    { label: 'explicit normal value', input: 15, expected: 0.15 },
+  ])('stores the correct decimal for $label', async ({ input, expected }) => {
+    await service.create('coop-1', {
+      name: '2026 dividend',
+      year: 2026,
+      dividendRate: 2.5,
+      ...(input === undefined ? {} : { withholdingTaxRate: input }),
+      exDividendDate: '2026-12-31',
+    });
+
+    expect(prisma.dividendPeriod.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ withholdingTaxRate: expected }),
+    });
+  });
+});
+
 describe('DividendsService tenant isolation', () => {
   let service: DividendsService;
   let prisma: any;

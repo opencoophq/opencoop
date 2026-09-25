@@ -234,6 +234,7 @@ export class MessagesService {
             ipAddress: ip,
             userAgent,
           });
+          return conversation;
         } else {
           try {
             await this.prisma.conversation.delete({ where: { id: conversation.id } });
@@ -283,6 +284,9 @@ export class MessagesService {
 
   async updateDraft(conversationId: string, coopId: string, dto: UpdateDraftDto, userId: string) {
     const conv = await this.loadForAdmin(conversationId, coopId);
+    if (dto.audience && conv.type === 'DIRECT') {
+      throw new BadRequestException("A direct message's recipient cannot be changed");
+    }
     if (conv.status !== 'DRAFT') throw new ConflictException('Conversation is not a draft');
 
     if (dto.audience?.type === 'PROJECT') {
@@ -390,7 +394,26 @@ export class MessagesService {
       );
     }
 
-    await this.notifyParticipants(conversationId, coopId);
+    let notificationFailures = 0;
+    try {
+      await this.notifyParticipants(conversationId, coopId);
+    } catch (error) {
+      notificationFailures = 1;
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Could not notify participants for conversation ${conversationId}: ${reason}`,
+      );
+      await this.auditService.log({
+        coopId,
+        entity: 'Conversation',
+        entityId: conversationId,
+        action: 'UPDATE',
+        changes: [{ field: 'notifyFailure', oldValue: null, newValue: reason }],
+        actorId: actor.userId,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
+      });
+    }
 
     await this.auditService.log({
       coopId,
@@ -410,6 +433,7 @@ export class MessagesService {
       status: 'SENT' as const,
       sentAt: now,
       recipientCount: shareholderIds.length,
+      notificationFailures,
     };
   }
 

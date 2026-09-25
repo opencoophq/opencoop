@@ -125,6 +125,39 @@ describe('McpCoopTools', () => {
     expect(analytics.getCapitalByProject).toHaveBeenCalledWith('coop-from-auth');
   });
 
+  it('keeps coop bank details visible without PII permission', async () => {
+    permissions.permissions.mockResolvedValue({ canManageSettings: true, canViewPII: false });
+    prisma.coop.findUniqueOrThrow.mockResolvedValue({
+      id: 'coop-from-auth',
+      name: 'Coop',
+      slug: 'coop',
+      bankIban: 'BE123',
+      bankBic: 'BIC123',
+    });
+    coops.getSettings.mockResolvedValue({
+      id: 'coop-from-auth',
+      name: 'Coop',
+      slug: 'coop',
+      bankIban: 'BE123',
+      bankBic: 'BIC123',
+    });
+
+    await expect(tools.getCoopInfo()).resolves.toEqual({
+      id: 'coop-from-auth',
+      name: 'Coop',
+      slug: 'coop',
+      bankIban: 'BE123',
+      bankBic: 'BIC123',
+    });
+    await expect(tools.getCoopSettings()).resolves.toEqual({
+      id: 'coop-from-auth',
+      name: 'Coop',
+      slug: 'coop',
+      bankIban: 'BE123',
+      bankBic: 'BIC123',
+    });
+  });
+
   it('normalises Decimal share-class fields to numbers', async () => {
     prisma.shareClass.findMany.mockResolvedValue([
       { id: 'sc1', pricePerShare: new Decimal('12.50') },

@@ -3,6 +3,7 @@ import { BillingService } from '../../billing/billing.service';
 import { CoopPermissionsService } from '../../../common/utils/coop-permissions';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { DividendsService } from '../../dividends/dividends.service';
+import { CreateDividendPeriodDto } from '../../dividends/dto/create-dividend-period.dto';
 import { McpAuthStore } from '../mcp-auth.store';
 import { McpToolkit } from '../mcp-toolkit';
 import {
@@ -139,6 +140,21 @@ describe('McpDividendTools', () => {
 
     await expect(tools.listDividendPeriods({})).rejects.toBeInstanceOf(McpError);
     expect(dividendsService.findAll).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid DTO input before calling the dividend service', async () => {
+    await expect(tools.createDividendPeriod({ ...createParams, name: '' })).rejects.toMatchObject({
+      message: expect.stringContaining('name must be longer than or equal to 1 characters'),
+    });
+    expect(dividendsService.create).not.toHaveBeenCalled();
+  });
+
+  it('passes a validated DTO instance to the dividend service', async () => {
+    await tools.createDividendPeriod(createParams);
+
+    const dto = dividendsService.create.mock.calls[0][1];
+    expect(dto).toBeInstanceOf(CreateDividendPeriodDto);
+    expect(dto).toEqual(createParams);
   });
 
   it('masks shareholder PII nested in a dividend period', async () => {

@@ -4,6 +4,8 @@ import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MessagesService } from './messages.service';
 import { EmailService } from '../email/email.service';
+import { BillingService } from '../billing/billing.service';
+import { CoopPermissionsService, isPermitted } from '../../common/utils/coop-permissions';
 
 const MAX_ATTEMPTS = 3;
 
@@ -20,6 +22,8 @@ export class MessagesScheduler {
     private readonly prisma: PrismaService,
     private readonly messages: MessagesService,
     private readonly email: EmailService,
+    private readonly billing: BillingService,
+    private readonly coopPermissions: CoopPermissionsService,
   ) {}
 
   @Cron('* * * * *')
@@ -31,6 +35,36 @@ export class MessagesScheduler {
       select: { id: true, coopId: true, createdById: true, subject: true, sendAttempts: true },
     });
     for (const conv of due) {
+      const { permissions, role } = await this.coopPermissions.permissionsWithRole(
+        conv.createdById,
+        conv.coopId,
+      );
+      let authorizationFailure: string | undefined;
+      if (role !== 'SYSTEM_ADMIN') {
+        if (await this.billing.isReadOnly(conv.coopId)) {
+          authorizationFailure = "the cooperative's subscription is read-only";
+        } else if (!isPermitted(permissions, 'canManageMessages')) {
+          authorizationFailure = 'the sender no longer has permission to send messages';
+        }
+      }
+      if (authorizationFailure) {
+        const reverted = await this.prisma.conversation.updateMany({
+          where: { id: conv.id, status: 'SCHEDULED' },
+          data: { status: 'DRAFT', scheduledAt: null },
+        });
+        if (reverted.count === 0) {
+          this.logger.warn(
+            `Scheduled conversation ${conv.id} was already sent or changed; it was not reverted`,
+          );
+        } else {
+          this.logger.warn(
+            `Scheduled conversation ${conv.id} was reverted before send: ${authorizationFailure}`,
+          );
+          await this.notifyAdminsOfFailure(conv.coopId, conv.subject, authorizationFailure);
+        }
+        continue;
+      }
+
       try {
         await this.messages.send(
           conv.id,
