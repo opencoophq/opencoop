@@ -275,17 +275,32 @@ describe('ConvocationService', () => {
         {
           rsvpToken: 'token-s1',
           shareholderId: 's1',
-          shareholder: { email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'A' },
+          shareholder: {
+            email: null,
+            user: { email: 'jan@x.com', preferredLanguage: 'fr' },
+            firstName: 'Jan',
+            lastName: 'A',
+          },
         },
         {
           rsvpToken: 'token-s2',
           shareholderId: 's2',
-          shareholder: { email: null, user: { email: 'jan@x.com' }, firstName: 'Jan', lastName: 'B' },
+          shareholder: {
+            email: null,
+            user: { email: 'jan@x.com', preferredLanguage: 'nl' },
+            firstName: 'Jan',
+            lastName: 'B',
+          },
         },
         {
           rsvpToken: 'token-s3',
           shareholderId: 's3',
-          shareholder: { email: null, user: { email: 'piet@x.com' }, firstName: 'Piet', lastName: 'C' },
+          shareholder: {
+            email: null,
+            user: { email: 'piet@x.com', preferredLanguage: null },
+            firstName: 'Piet',
+            lastName: 'C',
+          },
         },
       ]);
 
@@ -299,6 +314,10 @@ describe('ConvocationService', () => {
 
       const janCall = emailService.send.mock.calls.find((c: any[]) => c[0].to === 'jan@x.com');
       expect(janCall[0].templateData.rsvpUrl).toContain('token-s1');
+      expect(janCall[0].templateData.language).toBe('fr');
+
+      const pietCall = emailService.send.mock.calls.find((c: any[]) => c[0].to === 'piet@x.com');
+      expect(pietCall[0].templateData.language).toBe('nl');
     });
 
     it('skips postal-only shareholders in reminders', async () => {
@@ -383,6 +402,51 @@ describe('ConvocationService', () => {
       const call = emailService.send.mock.calls[0][0];
       expect(call.attachments).toBeUndefined(); // none successfully generated
       expect((res as any).sent).toHaveLength(1);
+    });
+
+    it('passes the primary shareholder preferred language to the convocation template', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        {
+          id: 's1',
+          email: null,
+          user: { email: 'jan@x.com', preferredLanguage: 'fr' },
+          firstName: 'Jan',
+          lastName: 'A',
+          coopId: 'c1',
+        },
+      ]);
+
+      await service.processSend('c1', 'm1', { confirmShortNotice: true });
+
+      expect(prisma.shareholder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({
+            user: { select: { email: true, preferredLanguage: true } },
+          }),
+        }),
+      );
+      expect(emailService.send).toHaveBeenCalledTimes(1);
+      expect(emailService.send.mock.calls[0][0].templateData.language).toBe('fr');
+    });
+
+    it('falls back to Dutch when the primary shareholder has no preferred language', async () => {
+      prisma.meeting.findUnique.mockResolvedValue(makeMeeting());
+      prisma.shareholder.findMany.mockResolvedValue([
+        {
+          id: 's1',
+          email: null,
+          user: { email: 'jan@x.com', preferredLanguage: null },
+          firstName: 'Jan',
+          lastName: 'A',
+          coopId: 'c1',
+        },
+      ]);
+
+      await service.processSend('c1', 'm1', { confirmShortNotice: true });
+
+      expect(emailService.send).toHaveBeenCalledTimes(1);
+      expect(emailService.send.mock.calls[0][0].templateData.language).toBe('nl');
     });
 
     it('skips attendees whose shareholders have no resolvable email (postal-only)', async () => {
