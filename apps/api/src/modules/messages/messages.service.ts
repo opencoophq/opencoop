@@ -7,6 +7,7 @@ import { sanitizeMessageHtml, textToMessageHtml } from './message-body';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { UpdateDraftDto } from './dto/update-draft.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { AudienceDto } from './dto/audience.dto';
 import * as path from 'path';
 import * as fs from 'fs';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
@@ -17,6 +18,11 @@ export interface SendActor {
   userId: string;
   ip?: string;
   userAgent?: string;
+}
+
+interface SendOptions {
+  shareholderIds?: string[];
+  scheduledBefore?: Date;
 }
 
 @Injectable()
@@ -65,17 +71,21 @@ export class MessagesService {
         recipientCount:
           c.status === 'SENT'
             ? c._count.participants
-            : (await this.audienceService.resolve(coopId, this.audienceOf(c))).shareholderIds.length,
+            : await this.audienceService.count(coopId, this.audienceOf(c)),
       })),
     );
     return { conversations: withCounts, total, page, totalPages: Math.ceil(total / take) };
   }
 
   private audienceOf(c: {
+    type: 'BROADCAST' | 'DIRECT';
     audienceType: 'ALL' | 'PROJECT' | 'SELECTED';
     audienceProjectId: string | null;
     audienceShareholderIds: string[];
   }): Audience {
+    if (c.type === 'DIRECT') {
+      return { type: 'DIRECT', shareholderId: c.audienceShareholderIds[0] };
+    }
     return { type: c.audienceType, projectId: c.audienceProjectId, shareholderIds: c.audienceShareholderIds };
   }
 
@@ -121,16 +131,30 @@ export class MessagesService {
     if (dto.type === 'DIRECT' && !dto.shareholderId) {
       throw new BadRequestException('shareholderId is required for DIRECT conversations');
     }
-    const format = dto.format ?? 'HTML';
+    const format = dto.format ?? 'TEXT';
     const body = format === 'HTML' ? sanitizeMessageHtml(dto.body) : dto.body;
     if (!body) throw new BadRequestException('Message body is empty');
 
-    const audience: Audience =
+    const audience: AudienceDto =
       dto.type === 'DIRECT'
         ? { type: 'SELECTED', shareholderIds: [dto.shareholderId!] }
         : (dto.audience ?? { type: 'ALL' });
     if (audience.type === 'PROJECT' && !audience.projectId) {
       throw new BadRequestException('projectId is required for a PROJECT audience');
+    }
+    const sendsImmediately = (dto.status ?? 'SENT') === 'SENT';
+    let shareholderIds: string[] | undefined;
+    if (sendsImmediately) {
+      const resolved = await this.audienceService.resolve(
+        coopId,
+        dto.type === 'DIRECT'
+          ? { type: 'DIRECT', shareholderId: dto.shareholderId }
+          : audience,
+      );
+      if (resolved.shareholderIds.length === 0) {
+        throw new BadRequestException({ code: 'EMPTY_AUDIENCE', message: 'No recipients' });
+      }
+      shareholderIds = resolved.shareholderIds;
     }
 
     const conversation = await this.prisma.$transaction(async (tx) => {
@@ -165,6 +189,10 @@ export class MessagesService {
       return conv;
     });
 
+    if (sendsImmediately) {
+      await this.send(conversation.id, coopId, { userId, ip, userAgent }, { shareholderIds });
+    }
+
     await this.auditService.log({
       coopId,
       entity: 'Conversation',
@@ -179,10 +207,6 @@ export class MessagesService {
       ipAddress: ip,
       userAgent,
     });
-
-    if ((dto.status ?? 'SENT') === 'SENT') {
-      await this.send(conversation.id, coopId, { userId, ip, userAgent });
-    }
     return conversation;
   }
 
@@ -197,7 +221,7 @@ export class MessagesService {
     if (conv.status === 'SENT') {
       return this.prisma.conversationParticipant.count({ where: { conversationId } });
     }
-    return (await this.audienceService.resolve(coopId, this.audienceOf(conv))).shareholderIds.length;
+    return this.audienceService.count(coopId, this.audienceOf(conv));
   }
 
   async updateDraft(conversationId: string, coopId: string, dto: UpdateDraftDto, userId: string) {
@@ -211,7 +235,7 @@ export class MessagesService {
         select: { id: true, body: true, format: true },
       });
       if (!first) throw new NotFoundException('Draft message not found');
-      const format = dto.format ?? 'HTML';
+      const format = dto.format ?? first.format;
       let body: string;
       if (dto.body !== undefined) {
         body = format === 'HTML' ? sanitizeMessageHtml(dto.body) : dto.body;
@@ -268,11 +292,13 @@ export class MessagesService {
    * The only path that creates participants and queues shareholder e-mail.
    * Guarded by an updateMany on status so two concurrent calls cannot both send.
    */
-  async send(conversationId: string, coopId: string, actor: SendActor) {
+  async send(conversationId: string, coopId: string, actor: SendActor, options?: SendOptions) {
     const conv = await this.loadForAdmin(conversationId, coopId);
     if (conv.status === 'SENT') throw new ConflictException('Conversation already sent');
 
-    const { shareholderIds } = await this.audienceService.resolve(coopId, this.audienceOf(conv));
+    const shareholderIds =
+      options?.shareholderIds ??
+      (await this.audienceService.resolve(coopId, this.audienceOf(conv))).shareholderIds;
     if (shareholderIds.length === 0) {
       throw new BadRequestException({ code: 'EMPTY_AUDIENCE', message: 'No recipients' });
     }
@@ -280,7 +306,9 @@ export class MessagesService {
     const now = new Date();
     const claimed = await this.prisma.$transaction(async (tx) => {
       const r = await tx.conversation.updateMany({
-        where: { id: conversationId, status: { in: ['DRAFT', 'SCHEDULED'] } },
+        where: options?.scheduledBefore
+          ? { id: conversationId, status: 'SCHEDULED', scheduledAt: { lte: options.scheduledBefore } }
+          : { id: conversationId, status: { in: ['DRAFT', 'SCHEDULED'] } },
         data: { status: 'SENT', sentAt: now, scheduledAt: null, updatedAt: now },
       });
       if (r.count === 0) return false;
@@ -290,7 +318,11 @@ export class MessagesService {
       });
       return true;
     });
-    if (!claimed) throw new ConflictException('Conversation already sent');
+    if (!claimed) {
+      throw new ConflictException(
+        options?.scheduledBefore ? 'Conversation is no longer due' : 'Conversation already sent',
+      );
+    }
 
     await this.notifyParticipants(conversationId, coopId);
 
@@ -371,8 +403,8 @@ export class MessagesService {
           conversationId,
           senderType: 'ADMIN',
           senderId: userId,
-          body: sanitizeMessageHtml(dto.body),
-          format: 'HTML',
+          body: dto.body,
+          format: 'TEXT',
         },
       });
 

@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 describe('AudienceService', () => {
   let service: AudienceService;
   const prisma = {
-    shareholder: { findMany: jest.fn() },
+    shareholder: { findMany: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
     project: { findFirst: jest.fn() },
     registration: { findMany: jest.fn() },
   };
@@ -73,5 +73,77 @@ describe('AudienceService', () => {
     const r = await service.resolve('coop1', { type: 'SELECTED', shareholderIds: [] });
     expect(r.shareholderIds).toEqual([]);
     expect(prisma.shareholder.findMany).not.toHaveBeenCalled();
+  });
+
+  it('DIRECT resolves its shareholder in the coop regardless of status', async () => {
+    prisma.shareholder.findFirst.mockResolvedValue({ id: 's-pending' });
+
+    const r = await service.resolve('coop1', { type: 'DIRECT', shareholderId: 's-pending' });
+
+    expect(r.shareholderIds).toEqual(['s-pending']);
+    expect(prisma.shareholder.findFirst).toHaveBeenCalledWith({
+      where: { id: 's-pending', coopId: 'coop1' },
+      select: { id: true },
+    });
+  });
+
+  describe('count', () => {
+    it('counts active ALL shareholders without loading ids', async () => {
+      prisma.shareholder.count.mockResolvedValue(7);
+
+      await expect(service.count('coop1', { type: 'ALL' })).resolves.toBe(7);
+
+      expect(prisma.shareholder.count).toHaveBeenCalledWith({
+        where: { coopId: 'coop1', status: 'ACTIVE' },
+      });
+      expect(prisma.shareholder.findMany).not.toHaveBeenCalled();
+    });
+
+    it('counts distinct active PROJECT shareholders through the shareholder relation', async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: 'p1' });
+      prisma.shareholder.count.mockResolvedValue(2);
+
+      await expect(service.count('coop1', { type: 'PROJECT', projectId: 'p1' })).resolves.toBe(2);
+
+      expect(prisma.shareholder.count).toHaveBeenCalledWith({
+        where: {
+          coopId: 'coop1',
+          status: 'ACTIVE',
+          registrations: {
+            some: {
+              coopId: 'coop1',
+              projectId: 'p1',
+              type: 'BUY',
+              status: { in: ['ACTIVE', 'COMPLETED'] },
+            },
+          },
+        },
+      });
+      expect(prisma.registration.findMany).not.toHaveBeenCalled();
+    });
+
+    it('counts active SELECTED shareholders in the coop', async () => {
+      prisma.shareholder.count.mockResolvedValue(1);
+
+      await expect(
+        service.count('coop1', { type: 'SELECTED', shareholderIds: ['s1', 'ghost'] }),
+      ).resolves.toBe(1);
+
+      expect(prisma.shareholder.count).toHaveBeenCalledWith({
+        where: { coopId: 'coop1', status: 'ACTIVE', id: { in: ['s1', 'ghost'] } },
+      });
+    });
+
+    it('counts a DIRECT shareholder without filtering status', async () => {
+      prisma.shareholder.count.mockResolvedValue(1);
+
+      await expect(
+        service.count('coop1', { type: 'DIRECT', shareholderId: 's-pending' }),
+      ).resolves.toBe(1);
+
+      expect(prisma.shareholder.count).toHaveBeenCalledWith({
+        where: { id: 's-pending', coopId: 'coop1' },
+      });
+    });
   });
 });
