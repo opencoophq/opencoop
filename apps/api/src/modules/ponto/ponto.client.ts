@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import * as fs from 'fs';
 import { Agent } from 'undici';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -45,6 +45,7 @@ export class PontoClient {
   private readonly apiBase = 'https://api.ibanity.com/ponto-connect';
   private readonly authBase: string;
   private readonly dispatcher: Agent | undefined;
+  private mtlsUnavailableReason: string | undefined;
 
   constructor(private readonly prisma: PrismaService) {
     // Determine auth base URL
@@ -67,9 +68,13 @@ export class PontoClient {
         });
         this.logger.log('mTLS dispatcher initialized');
       } else {
+        this.mtlsUnavailableReason =
+          'PONTO_CERT_PATH and PONTO_KEY_PATH are not configured.';
         this.logger.warn('PONTO_CERT_PATH / PONTO_KEY_PATH not set; mTLS disabled');
       }
     } catch (err) {
+      this.mtlsUnavailableReason =
+        `PONTO_CERT_PATH / PONTO_KEY_PATH failed to load: ${(err as Error).message}`;
       this.logger.warn('Failed to initialize mTLS dispatcher', (err as Error).message);
     }
   }
@@ -83,7 +88,7 @@ export class PontoClient {
    */
   generateAuthorizationUrl(redirectUri: string, codeChallenge: string, state: string): string {
     const params = new URLSearchParams({
-      client_id: process.env.PONTO_CLIENT_ID!,
+      client_id: this.requireEnv('PONTO_CLIENT_ID'),
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'ai offline_access',
@@ -275,9 +280,28 @@ export class PontoClient {
   }
 
   private basicAuth(): string {
-    const clientId = process.env.PONTO_CLIENT_ID ?? '';
-    const clientSecret = process.env.PONTO_CLIENT_SECRET ?? '';
+    const clientId = this.requireEnv('PONTO_CLIENT_ID');
+    const clientSecret = this.requireEnv('PONTO_CLIENT_SECRET');
     return Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  }
+
+  /**
+   * Assert that everything the OAuth handshake needs is present, so callers can fail
+   * before taking any side effect rather than part-way through one.
+   */
+  assertOAuthConfigured(): void {
+    this.requireEnv('PONTO_CLIENT_ID');
+    this.requireEnv('PONTO_CLIENT_SECRET');
+  }
+
+  private requireEnv(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+      throw new ServiceUnavailableException(
+        `Ponto is not configured on this server: ${name} is not set.`,
+      );
+    }
+    return value;
   }
 
   /**
@@ -335,6 +359,12 @@ export class PontoClient {
       body?: string;
     },
   ): Promise<Response> {
+    if (!this.dispatcher) {
+      throw new ServiceUnavailableException(
+        `Ponto requires mTLS but it is not available: ${this.mtlsUnavailableReason}`,
+      );
+    }
+
     const fetchOptions: RequestInit & { dispatcher?: unknown } = {
       method: options.method,
       headers: options.headers,

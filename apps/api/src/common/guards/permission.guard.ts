@@ -2,6 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { CoopPermissionKey, CoopPermissions } from '@opencoop/shared';
+import { isPermitted } from '../utils/coop-permissions';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -43,21 +44,4 @@ export class PermissionGuard implements CanActivate {
 
     return true;
   }
-}
-
-// Permissions added after this list went live default to `true` when missing
-// from a JWT — so an access token issued before the deploy doesn't lock the
-// user out of a feature they previously had access to. A `false` entry still
-// denies (an admin who actively unchecked the permission should stay denied).
-// Drop entries here once the longest-lived refresh token has rotated past
-// the rollout date.
-const LEGACY_DEFAULT_TRUE: ReadonlySet<CoopPermissionKey> = new Set<CoopPermissionKey>([
-  'canManageMeetings',
-]);
-
-function isPermitted(permissions: CoopPermissions, p: CoopPermissionKey): boolean {
-  const value = permissions[p];
-  if (value === true) return true;
-  if (value === undefined && LEGACY_DEFAULT_TRUE.has(p)) return true;
-  return false;
 }

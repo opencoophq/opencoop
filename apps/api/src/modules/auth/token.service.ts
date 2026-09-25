@@ -3,28 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { hashToken } from '../../common/crypto/hash-token';
-
-/**
- * OR-merge permissions across all roles assigned to a CoopAdmin, then apply
- * the per-admin overrides on top. An admin with N roles has the union of
- * their permissions: as soon as ANY role grants `canX`, the admin has `canX`.
- * Overrides win unconditionally — a `false` override switches a granted
- * permission off, a `true` override grants something no role provided.
- */
-function mergeAdminPermissions(
-  rolePermissionsList: unknown[],
-  overrides: unknown,
-): Record<string, boolean> {
-  const merged: Record<string, boolean> = {};
-  for (const perms of rolePermissionsList) {
-    const obj = (perms ?? {}) as Record<string, boolean>;
-    for (const [key, value] of Object.entries(obj)) {
-      merged[key] = merged[key] || value === true;
-    }
-  }
-  const overrideObj = (overrides ?? {}) as Record<string, boolean>;
-  return { ...merged, ...overrideObj };
-}
+import { mergeAdminPermissions } from '../../common/utils/coop-permissions';
 
 /**
  * JWT issuance and refresh-token lifecycle. Extracted from AuthService — this

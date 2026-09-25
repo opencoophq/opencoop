@@ -20,18 +20,34 @@ function bufferToBase64url(buf: Buffer | Uint8Array): string {
 
 @Injectable()
 export class WebAuthnService {
-  private rpName: string;
-  private rpId: string;
-  private origin: string;
+  readonly rpName: string;
+  /** Relying party ID — the hostname the passkey is scoped to. */
+  readonly rpId: string;
+  /** Origin the browser must report, scheme and port included. */
+  readonly origin: string;
 
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
     private redisService: RedisService,
   ) {
+    // Both are derived from FRONTEND_URL rather than configured separately: a passkey is
+    // bound to the exact hostname the user visits, so a second source for it can only
+    // ever drift out of sync with the first.
+    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3002');
+    let url: URL;
+    try {
+      url = new URL(frontendUrl);
+    } catch {
+      throw new Error(
+        `FRONTEND_URL must be an absolute URL (e.g. https://opencoop.be), got "${frontendUrl}". ` +
+          'WebAuthn cannot determine its relying party without it.',
+      );
+    }
+
     this.rpName = this.configService.get('WEBAUTHN_RP_NAME', 'OpenCoop');
-    this.rpId = this.configService.get('WEBAUTHN_RP_ID', 'localhost');
-    this.origin = this.configService.get('WEBAUTHN_ORIGIN', 'http://localhost:3002');
+    this.rpId = url.hostname;
+    this.origin = url.origin;
   }
 
   async generateRegistrationOptions(userId: string) {

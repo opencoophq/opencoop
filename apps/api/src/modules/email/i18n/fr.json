@@ -66,10 +66,11 @@
     "thanksEnd": "Merci d'être actionnaire de {coopName} !"
   },
   "message-notification": {
-    "title": "Nouveau message de {coopName}",
-    "dear": "Cher/Chère {shareholderName},",
-    "body": "Vous avez reçu un nouveau message de {coopName}.",
-    "subject": "Sujet",
+    "title": "Message de {coopName}",
+    "dear": "Bonjour {shareholderName},",
+    "subject": "Objet",
+    "replyHint": "Vous pouvez répondre via votre boîte de réception sur la plateforme.",
+    "attachmentsHint": "Ce message contient des pièces jointes. Vous les trouverez dans votre boîte de réception.",
     "viewMessage": "Voir le message"
   },
   "meeting-convocation": {

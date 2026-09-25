@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { BillingModule } from '../billing/billing.module';
-import { PaymentsModule } from '../payments/payments.module';
+import { BankImportModule } from '../bank-import/bank-import.module';
 import { EmailModule } from '../email/email.module';
 import { PontoClient } from './ponto.client';
 import { PontoService } from './ponto.service';
@@ -14,7 +14,7 @@ import { PontoAdminController } from './ponto.admin.controller';
   imports: [
     BullModule.registerQueue({ name: 'ponto' }),
     BillingModule,
-    PaymentsModule,
+    BankImportModule,
     EmailModule,
   ],
   controllers: [PontoController, PontoAdminController],
