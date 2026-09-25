@@ -39,8 +39,9 @@ describe('MessagesScheduler', () => {
       orderBy: { scheduledAt: 'asc' },
       select: { id: true, coopId: true, createdById: true, subject: true, sendAttempts: true },
     });
-    expect(messages.send).toHaveBeenCalledWith('a', 'c', { userId: 'u1' });
-    expect(messages.send).toHaveBeenCalledWith('b', 'c', { userId: 'u2' });
+    const scheduledBefore = prisma.conversation.findMany.mock.calls[0][0].where.scheduledAt.lte;
+    expect(messages.send).toHaveBeenCalledWith('a', 'c', { userId: 'u1' }, { scheduledBefore });
+    expect(messages.send).toHaveBeenCalledWith('b', 'c', { userId: 'u2' }, { scheduledBefore });
   });
 
   it('counts a failure and leaves the row scheduled', async () => {
@@ -70,10 +71,12 @@ describe('MessagesScheduler', () => {
     );
   });
 
-  it('skips a conversation that was already sent by another tick without counting a failure', async () => {
+  it('skips a conversation cancelled or rescheduled after the due snapshot', async () => {
     prisma.conversation.findMany.mockResolvedValue([{ id: 'a', coopId: 'c', createdById: 'u1', subject: 'A', sendAttempts: 2 }]);
-    messages.send.mockRejectedValueOnce(new ConflictException('Conversation already sent'));
+    messages.send.mockRejectedValueOnce(new ConflictException('Conversation is no longer due'));
     await scheduler.tick();
+    const scheduledBefore = prisma.conversation.findMany.mock.calls[0][0].where.scheduledAt.lte;
+    expect(messages.send).toHaveBeenCalledWith('a', 'c', { userId: 'u1' }, { scheduledBefore });
     expect(prisma.conversation.update).not.toHaveBeenCalled();
     expect(email.send).not.toHaveBeenCalled();
   });

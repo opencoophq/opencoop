@@ -18,7 +18,7 @@ export class CreateConversationDto {
   @MinLength(1)
   body: string;
 
-  @ApiProperty({ required: false, enum: ['TEXT', 'HTML'], description: 'Default HTML for admin messages' })
+  @ApiProperty({ required: false, enum: ['TEXT', 'HTML'], description: 'Default TEXT' })
   @IsOptional()
   @IsIn(['TEXT', 'HTML'])
   format?: 'TEXT' | 'HTML';

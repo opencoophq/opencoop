@@ -24,18 +24,24 @@ export class MessagesScheduler {
 
   @Cron('* * * * *')
   async tick() {
+    const scheduledBefore = new Date();
     const due = await this.prisma.conversation.findMany({
-      where: { status: 'SCHEDULED', scheduledAt: { lte: new Date() } },
+      where: { status: 'SCHEDULED', scheduledAt: { lte: scheduledBefore } },
       orderBy: { scheduledAt: 'asc' },
       select: { id: true, coopId: true, createdById: true, subject: true, sendAttempts: true },
     });
     for (const conv of due) {
       try {
-        await this.messages.send(conv.id, conv.coopId, { userId: conv.createdById });
+        await this.messages.send(
+          conv.id,
+          conv.coopId,
+          { userId: conv.createdById },
+          { scheduledBefore },
+        );
         this.logger.log(`Sent scheduled conversation ${conv.id}`);
       } catch (error) {
         if (error instanceof ConflictException) {
-          this.logger.log(`Scheduled conversation ${conv.id} was already sent (409); skipping`);
+          this.logger.log(`Scheduled conversation ${conv.id} is no longer due (409); skipping`);
           continue;
         }
         Sentry.captureException(error);
