@@ -1844,6 +1844,13 @@
     "admin": "Administrateur",
     "you": "Vous",
     "recipient": "Destinataire",
+    "recipients": "Destinataires",
+    "draft": "Brouillon",
+    "scheduled": "Planifié",
+    "scheduledFor": "Planifié pour le {date}",
+    "sendNow": "Envoyer maintenant",
+    "sendNowConfirm": "Tous les destinataires recevront un e-mail immédiatement et cette action est irréversible. Continuer ?",
+    "cancelSchedule": "Annuler la planification",
     "from": "De"
   },
   "legal": {

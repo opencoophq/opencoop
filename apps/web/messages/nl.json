@@ -1847,6 +1847,13 @@
     "admin": "Beheerder",
     "you": "U",
     "recipient": "Ontvanger",
+    "recipients": "Ontvangers",
+    "draft": "Concept",
+    "scheduled": "Gepland",
+    "scheduledFor": "Gepland voor {date}",
+    "sendNow": "Nu verzenden",
+    "sendNowConfirm": "Dit mailt alle ontvangers onmiddellijk en kan niet ongedaan worden gemaakt. Doorgaan?",
+    "cancelSchedule": "Planning annuleren",
     "from": "Van"
   },
   "legal": {

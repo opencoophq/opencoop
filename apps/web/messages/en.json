@@ -1847,6 +1847,13 @@
     "admin": "Admin",
     "you": "You",
     "recipient": "Recipient",
+    "recipients": "Recipients",
+    "draft": "Draft",
+    "scheduled": "Scheduled",
+    "scheduledFor": "Scheduled for {date}",
+    "sendNow": "Send now",
+    "sendNowConfirm": "This will email all recipients immediately and cannot be undone. Continue?",
+    "cancelSchedule": "Cancel schedule",
     "from": "From"
   },
   "legal": {
