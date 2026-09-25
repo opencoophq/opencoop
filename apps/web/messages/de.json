@@ -1844,6 +1844,13 @@
     "admin": "Administrator",
     "you": "Sie",
     "recipient": "Empfänger",
+    "recipients": "Empfänger",
+    "draft": "Entwurf",
+    "scheduled": "Geplant",
+    "scheduledFor": "Geplant für {date}",
+    "sendNow": "Jetzt senden",
+    "sendNowConfirm": "Alle Empfänger erhalten sofort eine E-Mail. Diese Aktion kann nicht rückgängig gemacht werden. Fortfahren?",
+    "cancelSchedule": "Planung abbrechen",
     "from": "Von"
   },
   "legal": {

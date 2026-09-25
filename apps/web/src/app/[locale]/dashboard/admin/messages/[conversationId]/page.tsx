@@ -25,6 +25,7 @@ interface Message {
   senderType: 'ADMIN' | 'SHAREHOLDER';
   senderId: string;
   body: string;
+  format: 'TEXT' | 'HTML';
   createdAt: string;
   attachments: Attachment[];
 }
@@ -46,6 +47,8 @@ interface ConversationDetail {
   id: string;
   subject: string;
   type: 'BROADCAST' | 'DIRECT';
+  status: 'DRAFT' | 'SCHEDULED' | 'SENT';
+  scheduledAt: string | null;
   messages: Message[];
   participants: Participant[];
   _count: {
@@ -65,6 +68,7 @@ export default function AdminConversationDetailPage() {
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [statusAction, setStatusAction] = useState<'send' | 'cancel' | null>(null);
 
   const loadConversation = async () => {
     if (!selectedCoop) return;
@@ -88,13 +92,10 @@ export default function AdminConversationDetailPage() {
     if (!selectedCoop || !reply.trim()) return;
     setSending(true);
     try {
-      await api(
-        `/admin/coops/${selectedCoop.id}/conversations/${conversationId}/messages`,
-        {
-          method: 'POST',
-          body: { body: reply },
-        },
-      );
+      await api(`/admin/coops/${selectedCoop.id}/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        body: { body: reply },
+      });
       setReply('');
       await loadConversation();
     } catch {
@@ -134,14 +135,42 @@ export default function AdminConversationDetailPage() {
     }
   };
 
+  const handleSendNow = async () => {
+    if (!selectedCoop || !window.confirm(t('messages.sendNowConfirm'))) return;
+    setStatusAction('send');
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/conversations/${conversationId}/send`, {
+        method: 'POST',
+      });
+      await loadConversation();
+    } catch {
+      // ignore
+    } finally {
+      setStatusAction(null);
+    }
+  };
+
+  const handleCancelSchedule = async () => {
+    if (!selectedCoop) return;
+    setStatusAction('cancel');
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/conversations/${conversationId}/cancel-schedule`, {
+        method: 'POST',
+      });
+      await loadConversation();
+    } catch {
+      // ignore
+    } finally {
+      setStatusAction(null);
+    }
+  };
+
   const getSenderLabel = (msg: Message) => {
     if (msg.senderType === 'ADMIN') {
       return t('messages.admin');
     }
     // Find participant by senderId
-    const participant = conversation?.participants.find(
-      (p) => p.shareholder.id === msg.senderId,
-    );
+    const participant = conversation?.participants.find((p) => p.shareholder.id === msg.senderId);
     if (participant) {
       const sh = participant.shareholder;
       if (sh.type === 'COMPANY' && sh.companyName) return sh.companyName;
@@ -168,15 +197,19 @@ export default function AdminConversationDetailPage() {
   }
 
   if (!conversation) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        {t('common.noResults')}
-      </div>
-    );
+    return <div className="text-center py-8 text-muted-foreground">{t('common.noResults')}</div>;
   }
 
   const readCount = conversation.participants.filter((p) => p.readAt).length;
   const totalParticipants = conversation._count.participants;
+  const scheduledDate = conversation.scheduledAt ? new Date(conversation.scheduledAt) : null;
+  const scheduledDateLabel =
+    scheduledDate && !Number.isNaN(scheduledDate.getTime())
+      ? `${scheduledDate.toLocaleDateString(locale)} ${scheduledDate.toLocaleTimeString(locale, {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}`
+      : null;
 
   return (
     <div className="space-y-6">
@@ -194,12 +227,39 @@ export default function AdminConversationDetailPage() {
         <Badge variant={conversation.type === 'BROADCAST' ? 'default' : 'secondary'}>
           {t(`messages.${conversation.type.toLowerCase()}`)}
         </Badge>
+        {conversation.status === 'DRAFT' && <Badge variant="outline">{t('messages.draft')}</Badge>}
+        {conversation.status === 'SCHEDULED' && (
+          <Badge variant="outline">
+            {scheduledDateLabel
+              ? t('messages.scheduledFor', { date: scheduledDateLabel })
+              : t('messages.scheduled')}
+          </Badge>
+        )}
       </div>
+
+      {conversation.status !== 'SENT' && (
+        <div className="flex gap-2">
+          <Button onClick={handleSendNow} disabled={statusAction !== null}>
+            {statusAction === 'send' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {t('messages.sendNow')}
+          </Button>
+          {conversation.status === 'SCHEDULED' && (
+            <Button
+              variant="outline"
+              onClick={handleCancelSchedule}
+              disabled={statusAction !== null}
+            >
+              {statusAction === 'cancel' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t('messages.cancelSchedule')}
+            </Button>
+          )}
+        </div>
+      )}
 
       {conversation.type === 'BROADCAST' && (
         <p className="text-sm text-muted-foreground">
-          {t('messages.participants')}: {totalParticipants} &middot;{' '}
-          {t('messages.read')}: {readCount}/{totalParticipants}
+          {t('messages.participants')}: {totalParticipants} &middot; {t('messages.read')}:{' '}
+          {readCount}/{totalParticipants}
         </p>
       )}
 
@@ -210,9 +270,7 @@ export default function AdminConversationDetailPage() {
             <Card key={msg.id} className={isAdmin ? 'border-primary/20 bg-primary/5' : ''}>
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <Badge variant={isAdmin ? 'default' : 'outline'}>
-                    {getSenderLabel(msg)}
-                  </Badge>
+                  <Badge variant={isAdmin ? 'default' : 'outline'}>{getSenderLabel(msg)}</Badge>
                   <span className="text-xs text-muted-foreground">
                     {new Date(msg.createdAt).toLocaleDateString(locale)}{' '}
                     {new Date(msg.createdAt).toLocaleTimeString(locale, {
@@ -221,7 +279,14 @@ export default function AdminConversationDetailPage() {
                     })}
                   </span>
                 </div>
-                <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                {msg.format === 'HTML' ? (
+                  <div
+                    className="text-sm [&_p]:mb-3 [&_p:last-child]:mb-0 [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-bold [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-primary [&_a]:underline [&_blockquote]:my-3 [&_blockquote]:border-l-4 [&_blockquote]:border-muted-foreground/40 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-foreground"
+                    dangerouslySetInnerHTML={{ __html: msg.body }}
+                  />
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                )}
                 {msg.attachments.length > 0 && (
                   <div className="mt-3 space-y-1">
                     <p className="text-xs font-medium text-muted-foreground">
@@ -244,43 +309,45 @@ export default function AdminConversationDetailPage() {
         })}
       </div>
 
-      <Card>
-        <CardContent className="pt-4 pb-4">
-          <Textarea
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            placeholder={t('messages.replyPlaceholder')}
-            rows={3}
-          />
-          <div className="flex items-center justify-between mt-3">
-            <div>
-              <input
-                type="file"
-                id="file-upload"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => document.getElementById('file-upload')?.click()}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Paperclip className="h-4 w-4 mr-1" />
-                )}
-                {t('messages.attachFile')}
+      {conversation.status === 'SENT' && (
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <Textarea
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              placeholder={t('messages.replyPlaceholder')}
+              rows={3}
+            />
+            <div className="flex items-center justify-between mt-3">
+              <div>
+                <input
+                  type="file"
+                  id="file-upload"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Paperclip className="h-4 w-4 mr-1" />
+                  )}
+                  {t('messages.attachFile')}
+                </Button>
+              </div>
+              <Button onClick={handleReply} disabled={sending || !reply.trim()}>
+                {sending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {t('messages.send')}
               </Button>
             </div>
-            <Button onClick={handleReply} disabled={sending || !reply.trim()}>
-              {sending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {t('messages.send')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

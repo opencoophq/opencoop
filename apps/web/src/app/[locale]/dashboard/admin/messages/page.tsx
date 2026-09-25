@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { api } from '@/lib/api';
+import { messageBodyPreview } from '@/lib/utils';
 import {
   applyColumnFiltersAndSort,
   toggleColumnSort,
@@ -38,6 +39,9 @@ interface ConversationListItem {
   id: string;
   subject: string;
   type: 'BROADCAST' | 'DIRECT';
+  status: 'DRAFT' | 'SCHEDULED' | 'SENT';
+  scheduledAt: string | null;
+  recipientCount?: number | null;
   updatedAt: string;
   messages: Array<{
     body: string;
@@ -103,18 +107,21 @@ export default function AdminMessagesPage() {
     fetchConversations();
   }, [fetchConversations]);
 
-  const conversationParticipantsLabel = useCallback((conv: ConversationListItem): string => {
-    if (conv.type === 'BROADCAST') return t('messages.allShareholders');
-    const names = conv.participants.map((p) =>
-      p.shareholder.type === 'COMPANY'
-        ? (p.shareholder.companyName ?? '')
-        : `${p.shareholder.firstName} ${p.shareholder.lastName}`.trim(),
-    );
-    const total = conv._count.participants;
-    if (names.length === 0) return String(total);
-    const shown = names.slice(0, 2).join(', ');
-    return total > 2 ? `${shown}, ...` : shown;
-  }, [t]);
+  const conversationParticipantsLabel = useCallback(
+    (conv: ConversationListItem): string => {
+      if (conv.type === 'BROADCAST') return t('messages.allShareholders');
+      const names = conv.participants.map((p) =>
+        p.shareholder.type === 'COMPANY'
+          ? (p.shareholder.companyName ?? '')
+          : `${p.shareholder.firstName} ${p.shareholder.lastName}`.trim(),
+      );
+      const total = conv._count.participants;
+      if (names.length === 0) return String(total);
+      const shown = names.slice(0, 2).join(', ');
+      return total > 2 ? `${shown}, ...` : shown;
+    },
+    [t],
+  );
 
   const visibleConversations = useMemo(
     () =>
@@ -123,7 +130,7 @@ export default function AdminMessagesPage() {
         {
           type: { accessor: (conv) => conv.type },
           subject: { accessor: (conv) => conv.subject },
-          body: { accessor: (conv) => conv.messages[0]?.body || '' },
+          body: { accessor: (conv) => messageBodyPreview(conv.messages[0]?.body || '') },
           participants: { accessor: (conv) => conversationParticipantsLabel(conv) },
           date: { accessor: (conv) => conv.updatedAt },
         },
@@ -196,31 +203,53 @@ export default function AdminMessagesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'type'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'type'))}
+                    >
                       {t('common.type')}
                       {sortIcon('type')}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'subject'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'subject'))}
+                    >
                       {t('messages.subject')}
                       {sortIcon('subject')}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'body'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'body'))}
+                    >
                       {t('messages.body')}
                       {sortIcon('body')}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'participants'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setColumnSort((prev) => toggleColumnSort(prev, 'participants'))
+                      }
+                    >
                       {t('messages.participants')}
                       {sortIcon('participants')}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'date'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setColumnSort((prev) => toggleColumnSort(prev, 'date'))}
+                    >
                       {t('common.date')}
                       {sortIcon('date')}
                     </Button>
@@ -230,7 +259,9 @@ export default function AdminMessagesPage() {
                   <TableHead>
                     <Input
                       value={columnFilters.type || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, type: e.target.value }))}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({ ...prev, type: e.target.value }))
+                      }
                       placeholder={t('common.filter')}
                       className="h-8"
                     />
@@ -238,7 +269,9 @@ export default function AdminMessagesPage() {
                   <TableHead>
                     <Input
                       value={columnFilters.subject || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, subject: e.target.value }))}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({ ...prev, subject: e.target.value }))
+                      }
                       placeholder={t('common.filter')}
                       className="h-8"
                     />
@@ -246,7 +279,9 @@ export default function AdminMessagesPage() {
                   <TableHead>
                     <Input
                       value={columnFilters.body || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, body: e.target.value }))}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({ ...prev, body: e.target.value }))
+                      }
                       placeholder={t('common.filter')}
                       className="h-8"
                     />
@@ -254,7 +289,9 @@ export default function AdminMessagesPage() {
                   <TableHead>
                     <Input
                       value={columnFilters.participants || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, participants: e.target.value }))}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({ ...prev, participants: e.target.value }))
+                      }
                       placeholder={t('common.filter')}
                       className="h-8"
                     />
@@ -262,7 +299,9 @@ export default function AdminMessagesPage() {
                   <TableHead>
                     <Input
                       value={columnFilters.date || ''}
-                      onChange={(e) => setColumnFilters((prev) => ({ ...prev, date: e.target.value }))}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({ ...prev, date: e.target.value }))
+                      }
                       placeholder={t('common.filter')}
                       className="h-8"
                     />
@@ -279,17 +318,36 @@ export default function AdminMessagesPage() {
                 ) : (
                   pagedConversations.map((conv) => {
                     const lastMessage = conv.messages[0];
-                    const preview = lastMessage?.body
-                      ? lastMessage.body.length > 80
-                        ? lastMessage.body.slice(0, 80) + '...'
-                        : lastMessage.body
-                      : '';
+                    const preview = lastMessage?.body ? messageBodyPreview(lastMessage.body) : '';
+                    const scheduledDate = conv.scheduledAt ? new Date(conv.scheduledAt) : null;
+                    const scheduledDateLabel =
+                      scheduledDate && !Number.isNaN(scheduledDate.getTime())
+                        ? `${scheduledDate.toLocaleDateString(locale)} ${scheduledDate.toLocaleTimeString(
+                            locale,
+                            {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            },
+                          )}`
+                        : null;
                     return (
                       <TableRow key={conv.id} className="cursor-pointer hover:bg-muted/50">
                         <TableCell>
-                          <Badge variant={conv.type === 'BROADCAST' ? 'default' : 'secondary'}>
-                            {t(`messages.${conv.type.toLowerCase()}`)}
-                          </Badge>
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant={conv.type === 'BROADCAST' ? 'default' : 'secondary'}>
+                              {t(`messages.${conv.type.toLowerCase()}`)}
+                            </Badge>
+                            {conv.status === 'DRAFT' && (
+                              <Badge variant="outline">{t('messages.draft')}</Badge>
+                            )}
+                            {conv.status === 'SCHEDULED' && (
+                              <Badge variant="outline">
+                                {scheduledDateLabel
+                                  ? t('messages.scheduledFor', { date: scheduledDateLabel })
+                                  : t('messages.scheduled')}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="font-medium">
                           <Link
@@ -300,10 +358,15 @@ export default function AdminMessagesPage() {
                           </Link>
                         </TableCell>
                         <TableCell className="text-muted-foreground">{preview}</TableCell>
-                        <TableCell>{conversationParticipantsLabel(conv)}</TableCell>
                         <TableCell>
-                          {new Date(conv.updatedAt).toLocaleDateString(locale)}
+                          <div>{conversationParticipantsLabel(conv)}</div>
+                          {typeof conv.recipientCount === 'number' && (
+                            <div className="text-xs text-muted-foreground">
+                              {t('messages.recipients')}: {conv.recipientCount}
+                            </div>
+                          )}
                         </TableCell>
+                        <TableCell>{new Date(conv.updatedAt).toLocaleDateString(locale)}</TableCell>
                       </TableRow>
                     );
                   })
@@ -316,7 +379,8 @@ export default function AdminMessagesPage() {
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-muted-foreground">
                 {t('common.showing')} {(page - 1) * pageSize + 1}-
-                {Math.min(page * pageSize, visibleConversations.length)} {t('common.of')} {visibleConversations.length}
+                {Math.min(page * pageSize, visibleConversations.length)} {t('common.of')}{' '}
+                {visibleConversations.length}
               </p>
               <div className="flex gap-2">
                 <Button
