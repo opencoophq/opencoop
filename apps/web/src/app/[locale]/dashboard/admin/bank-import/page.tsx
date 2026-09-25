@@ -121,7 +121,7 @@ export default function BankImportPage() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const result = await api<{ rowCount: number; matchedCount: number; unmatchedCount: number }>(
+      const result = await api<{ rowCount: number; matchedCount: number; unmatchedCount: number; skippedCount: number }>(
         `/admin/coops/${selectedCoop.id}/bank-import?preset=${selectedPreset}`,
         {
           method: 'POST',
@@ -134,6 +134,7 @@ export default function BankImportPage() {
           total: result.rowCount,
           matched: result.matchedCount,
           unmatched: result.unmatchedCount,
+          skipped: result.skippedCount,
         }),
       );
       loadData();

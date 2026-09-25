@@ -787,7 +787,7 @@
       "selectRegistration": "Selecteer een registratie om te koppelen",
       "noRegistrations": "Geen openstaande registraties gevonden",
       "uploadError": "Uploaden van het CSV-bestand is mislukt",
-      "uploadSuccess": "{total} rijen geïmporteerd: {matched} gekoppeld, {unmatched} niet gekoppeld"
+      "uploadSuccess": "{total} rijen geïmporteerd: {matched} gekoppeld, {unmatched} niet gekoppeld, {skipped} dubbele overgeslagen"
     },
     "dividends": {
       "title": "Dividendbeheer",
