@@ -135,4 +135,47 @@ export class PaymentsService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async findUnlinkedByCoopId(coopId: string, search?: string, amount?: string) {
+    const parsedAmount = amount === undefined || amount === '' ? undefined : Number(amount);
+    if (parsedAmount !== undefined && !Number.isFinite(parsedAmount)) {
+      throw new BadRequestException('Amount must be a valid number');
+    }
+
+    const shareholderSearch = search?.trim();
+    return this.prisma.payment.findMany({
+      where: {
+        coopId,
+        bankTransactionId: null,
+        ...(parsedAmount === undefined ? {} : { amount: parsedAmount.toFixed(2) }),
+        ...(shareholderSearch
+          ? {
+              registration: {
+                shareholder: {
+                  OR: [
+                    { firstName: { contains: shareholderSearch, mode: 'insensitive' } },
+                    { lastName: { contains: shareholderSearch, mode: 'insensitive' } },
+                    { companyName: { contains: shareholderSearch, mode: 'insensitive' } },
+                  ],
+                },
+              },
+            }
+          : {}),
+      },
+      include: {
+        registration: {
+          select: {
+            ogmCode: true,
+            totalAmount: true,
+            status: true,
+            shareholder: {
+              select: { firstName: true, lastName: true, companyName: true },
+            },
+          },
+        },
+      },
+      orderBy: { bankDate: 'desc' },
+      take: 100,
+    });
+  }
 }

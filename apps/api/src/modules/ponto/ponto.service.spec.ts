@@ -14,7 +14,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PontoService } from './ponto.service';
 import { PontoClient } from './ponto.client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PaymentsService } from '../payments/payments.service';
+import { BankMatchingService } from '../bank-import/bank-matching.service';
 import { EmailService } from '../email/email.service';
 
 // ---------------------------------------------------------------------------
@@ -93,8 +93,17 @@ describe('PontoService', () => {
     getUpdatedTransactions: jest.fn(),
   };
 
-  const mockPaymentsService = {
-    addPayment: jest.fn(),
+  const mockBankMatchingService = {
+    matchTransaction: jest.fn((
+      _coopId: string,
+      transaction: { ogmCode: string | null },
+      _userId?: string,
+      allowCreate = true,
+    ) => Promise.resolve(
+      transaction.ogmCode && allowCreate
+        ? { status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true }
+        : { status: 'UNMATCHED', linkedExisting: false, createdPayment: false },
+    )),
   };
 
   const mockEmailService = {
@@ -108,8 +117,8 @@ describe('PontoService', () => {
         PontoService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: PontoClient, useValue: mockPontoClient },
-        { provide: PaymentsService, useValue: mockPaymentsService },
         { provide: EmailService, useValue: mockEmailService },
+        { provide: BankMatchingService, useValue: mockBankMatchingService },
       ],
     }).compile();
 
@@ -393,8 +402,6 @@ describe('PontoService', () => {
         matchStatus: 'AUTO_MATCHED',
       };
       mockPrisma.bankTransaction.create.mockResolvedValue(createdBankTxn);
-      mockPaymentsService.addPayment.mockResolvedValue({ id: 'pay-1' });
-
       await (service as any).processTransaction(structuredTxn, 'coop-1', true);
 
       // Should create bank transaction with AUTO_MATCHED status
@@ -404,37 +411,16 @@ describe('PontoService', () => {
           pontoTransactionId: 'tx-1',
           amount: 250,
           ogmCode: '+++090/9337/55493+++',
-          matchStatus: 'AUTO_MATCHED',
+          matchStatus: 'UNMATCHED',
         }),
       });
 
-      expect(mockPrisma.registration.findFirst).toHaveBeenCalledWith({
-        where: {
-          ogmCode: '+++090/9337/55493+++',
-          coopId: 'coop-1',
-          status: { in: ['PENDING_PAYMENT', 'ACTIVE'] },
-        },
-        include: {
-          payments: true,
-          shareholder: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      // Should create payment via PaymentsService with the original transaction amount
-      expect(mockPaymentsService.addPayment).toHaveBeenCalledWith({
-        registrationId: 'reg-1',
-        coopId: 'coop-1',
-        amount: 250,
-        bankDate: new Date('2024-01-15'),
-        bankTransactionId: 'bt-1',
-      });
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ id: 'bt-1', amount: 250, ogmCode: '+++090/9337/55493+++' }),
+        undefined,
+        true,
+      );
     });
 
     it('should mark unmatched when no registration found', async () => {
@@ -460,7 +446,12 @@ describe('PontoService', () => {
           ogmCode: null,
         }),
       });
-      expect(mockPaymentsService.addPayment).not.toHaveBeenCalled();
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: null }),
+        undefined,
+        true,
+      );
     });
 
     it('should accept the ***…*** OGM notation in unstructured remittance text', async () => {
@@ -474,10 +465,11 @@ describe('PontoService', () => {
         true,
       );
 
-      expect(mockPrisma.registration.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ ogmCode: '+++090/9337/55493+++' }),
-        }),
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: '+++090/9337/55493+++' }),
+        undefined,
+        true,
       );
     });
 
@@ -500,8 +492,6 @@ describe('PontoService', () => {
         id: 'bt-unstructured',
         matchStatus: 'AUTO_MATCHED',
       });
-      mockPaymentsService.addPayment.mockResolvedValue({ id: 'pay-1' });
-
       await (service as any).processTransaction(
         {
           ...unstructuredTxn,
@@ -511,20 +501,18 @@ describe('PontoService', () => {
         true,
       );
 
-      expect(mockPrisma.registration.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            ogmCode: '+++090/9337/55493+++',
-          }),
-        }),
-      );
       expect(mockPrisma.bankTransaction.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           ogmCode: '+++090/9337/55493+++',
-          matchStatus: 'AUTO_MATCHED',
+          matchStatus: 'UNMATCHED',
         }),
       });
-      expect(mockPaymentsService.addPayment).toHaveBeenCalled();
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: '+++090/9337/55493+++' }),
+        undefined,
+        true,
+      );
     });
 
     it('should reject an OGM with an invalid check digit without looking up a registration', async () => {
@@ -550,7 +538,12 @@ describe('PontoService', () => {
           matchStatus: 'UNMATCHED',
         }),
       });
-      expect(mockPaymentsService.addPayment).not.toHaveBeenCalled();
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: null }),
+        undefined,
+        true,
+      );
     });
 
     it('should not create payment when autoMatch is false even if matched', async () => {
@@ -576,10 +569,15 @@ describe('PontoService', () => {
 
       expect(mockPrisma.bankTransaction.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          matchStatus: 'AUTO_MATCHED',
+          matchStatus: 'UNMATCHED',
         }),
       });
-      expect(mockPaymentsService.addPayment).not.toHaveBeenCalled();
+      expect(mockBankMatchingService.matchTransaction).toHaveBeenCalledWith(
+        'coop-1',
+        expect.objectContaining({ ogmCode: '+++090/9337/55493+++' }),
+        undefined,
+        false,
+      );
     });
   });
 
@@ -588,7 +586,7 @@ describe('PontoService', () => {
   // -----------------------------------------------------------------------
 
   describe('processNewTransactions', () => {
-    it('should filter out negative amounts and process incoming transactions', async () => {
+    it('should process both incoming and outgoing transactions for audit storage', async () => {
       mockPrisma.pontoConnection.findFirst.mockResolvedValue({
         id: 'conn-1',
         coopId: 'coop-1',
@@ -624,17 +622,21 @@ describe('PontoService', () => {
         },
       ]);
 
-      // Mock processTransaction (private) to verify it's called only for positive amounts
+      // Mock processTransaction (private) to verify both transaction types are stored.
       const processSpy = jest
         .spyOn(service as any, 'processTransaction')
         .mockResolvedValue(undefined);
 
       await service.processNewTransactions('sync-1', 'acc-1');
 
-      // Should only process the incoming (positive) transaction
-      expect(processSpy).toHaveBeenCalledTimes(1);
+      expect(processSpy).toHaveBeenCalledTimes(2);
       expect(processSpy).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'tx-in', amount: 100 }),
+        'coop-1',
+        true,
+      );
+      expect(processSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'tx-out', amount: -50 }),
         'coop-1',
         true,
       );

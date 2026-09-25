@@ -787,7 +787,22 @@
       "selectRegistration": "Selecteer een registratie om te koppelen",
       "noRegistrations": "Geen openstaande registraties gevonden",
       "uploadError": "Uploaden van het CSV-bestand is mislukt",
-      "uploadSuccess": "{total} rijen geïmporteerd: {matched} gekoppeld, {unmatched} niet gekoppeld, {skipped} dubbele overgeslagen"
+      "uploadSuccess": "{total} rijen geïmporteerd: {matched} gekoppeld, {unmatched} niet gekoppeld, {skipped} dubbele overgeslagen",
+      "rematch": "Opnieuw automatisch koppelen",
+      "rematchSuccess": "{checked} gecontroleerd: {linkedExisting} bestaande betalingen gekoppeld, {createdPayments} betalingen aangemaakt, {stillUnmatched} niet gekoppeld, {ignoredOutgoing} uitgaande betalingen genegeerd",
+      "existingPayment": "Bestaande betaling",
+      "openRegistration": "Openstaande inschrijving",
+      "searchShareholder": "Zoek op naam van aandeelhouder",
+      "noExistingPayments": "Geen bestaande betalingen gevonden",
+      "statusAll": "Alle",
+      "statusUnmatched": "Niet gekoppeld",
+      "statusMatched": "Gekoppeld",
+      "statusIgnored": "Genegeerd",
+      "ignore": "Negeren",
+      "restore": "Terugzetten",
+      "ignoreSelected": "{count} selecties negeren",
+      "ignoreSuccess": "{ignored} betaling(en) genegeerd, {skipped} overgeslagen",
+      "notSharePayment": "Geen aandelenbetaling"
     },
     "dividends": {
       "title": "Dividendbeheer",

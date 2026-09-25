@@ -1,6 +1,7 @@
 import {
   generateOgmCode,
   validateOgmCode,
+  extractOgmCode,
   formatOgmCode,
   parseOgmCode,
   calculateDividend,
@@ -37,6 +38,21 @@ describe('OGM mod-97', () => {
   it('format/parse are inverse', () => {
     const raw = '123456789012';
     expect(parseOgmCode(formatOgmCode(raw))).toBe(raw);
+  });
+});
+
+describe('extractOgmCode', () => {
+  const ogm = generateOgmCode('001', 42);
+  const raw = ogm.replace(/[+/]/g, '');
+
+  it('extracts valid plus and star notation from text', () => {
+    expect(extractOgmCode(`betaling ${ogm}`)).toBe(ogm);
+    expect(extractOgmCode(`betaling ${ogm.replaceAll('+', '*')}`)).toBe(ogm);
+  });
+
+  it('accepts a valid raw 12-digit field and rejects invalid checksums', () => {
+    expect(extractOgmCode(raw)).toBe(ogm);
+    expect(extractOgmCode(`${raw.slice(0, 11)}${raw[11] === '9' ? '8' : '9'}`)).toBeNull();
   });
 });
 

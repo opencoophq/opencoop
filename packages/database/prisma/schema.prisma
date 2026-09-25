@@ -51,6 +51,7 @@ enum BankTransactionMatchStatus {
   UNMATCHED
   AUTO_MATCHED
   MANUAL_MATCHED
+  IGNORED
 }
 
 enum DividendPeriodStatus {

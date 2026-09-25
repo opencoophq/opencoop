@@ -15,6 +15,26 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.39.4] - 2026-09-25
+
+### Fixed
+- **Bank rows link to payments that already exist.** Registrations marked paid by hand
+  already have a payment without a bank line. Their bank rows stayed "unmatched" and the
+  link dialog could not reach them. Auto-matching (CSV and Ponto) now attaches such a row to
+  the unlinked payment of the same registration with the same amount, without creating a
+  second payment. Linking a registration that is already fully paid is refused.
+- **Concurrent links cannot overwrite each other.** A payment or bank row is only claimed
+  while it is still free; a manual link that lost the race returns 409.
+
+### Added
+- **"Relink automatically" button** on the bank import page. It re-runs matching on all
+  unmatched rows, including rows imported before this release and older Ponto rows.
+- **Link dialog with two lists:** existing unlinked payments and open registrations,
+  searchable by name and amount.
+- **Ignore non-share rows.** Outgoing transfers are ignored on import. Incoming rows that are
+  not share payments (invoices, refunds) can be ignored one by one or in bulk, and restored.
+  The unmatched list and counter leave ignored rows out; a status filter shows them.
+
 ## [2026.39.3] - 2026-09-25
 
 ### Added
