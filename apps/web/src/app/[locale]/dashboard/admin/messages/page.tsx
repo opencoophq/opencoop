@@ -43,6 +43,7 @@ interface ConversationListItem {
   scheduledAt: string | null;
   audienceType: 'ALL' | 'PROJECT' | 'SELECTED';
   audienceProjectId: string | null;
+  audienceProject?: { name: string } | null;
   audienceShareholderIds: string[];
   recipientCount?: number | null;
   updatedAt: string;
@@ -113,7 +114,7 @@ export default function AdminMessagesPage() {
   const conversationParticipantsLabel = useCallback(
     (conv: ConversationListItem): string => {
       if (conv.type === 'BROADCAST') {
-        if (conv.audienceType === 'PROJECT') return t('messages.project');
+        if (conv.audienceType === 'PROJECT') return conv.audienceProject?.name ?? t('messages.project');
         if (conv.audienceType === 'SELECTED') {
           const count = conv.recipientCount ?? conv.audienceShareholderIds.length;
           return t('messages.selectedShareholders', { count });

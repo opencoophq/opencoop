@@ -68,6 +68,7 @@ export class MessagesService {
               },
             },
           },
+          audienceProject: { select: { name: true } },
           _count: { select: { participants: true, messages: true } },
         },
       }),
