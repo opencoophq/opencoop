@@ -15,6 +15,38 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.39.3] - 2026-09-25
+
+### Added
+- **Full admin access over MCP.** The MCP endpoint (`POST /api/mcp`) now offers 112 tools
+  covering what a coop admin can do in the dashboard: shareholders and households,
+  registrations, payments and transfers, share classes, projects and channels, coop
+  settings, bank transactions and matching, dividends, messages (draft, schedule, send,
+  reply), general meetings (convocation, agenda, proxies, votes, check-in, minutes), and
+  reports, documents and audit logs.
+- **Read-only and read-write API keys.** Choose the scope when you create a key under
+  Settings → API keys. Every tool checks the key owner's current coop permissions, and
+  personal data is masked for admins without permission to view it.
+- **Message drafts, audiences and scheduling.** Broadcast messages can target all
+  shareholders, one project or selected shareholders, can be saved as a draft and can be
+  scheduled. The messages list shows drafts and scheduled messages, with Send now and
+  Cancel schedule.
+
+### Changed
+- **Existing API keys are now read-only.** Create a new read-write key if an integration
+  needs to change data.
+- Bank details, e-mail settings, the reply-to address and audience sync can only be
+  changed in the dashboard, not over MCP.
+
+### Fixed
+- A dividend period created with 0% withholding tax stored 30%.
+- Household linking now requires the shareholder-management permission and an active
+  subscription.
+- A scheduled message is only sent if its author may still send messages and the coop's
+  subscription allows it.
+- If some notification e-mails fail after a message was sent, the send no longer reports
+  an error, so a retry cannot e-mail everyone twice.
+
 ## [2026.39.2] - 2026-09-25
 
 ### Security
