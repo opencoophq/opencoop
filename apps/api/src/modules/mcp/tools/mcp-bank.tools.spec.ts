@@ -92,7 +92,7 @@ describe('McpBankTools', () => {
     expect(bankImportService.manualMatch).toHaveBeenCalledWith(
       'coop-from-auth',
       'transaction-1',
-      'registration-1',
+      { registrationId: 'registration-1' },
       'user-from-auth',
     );
     expect(bankImportService.importCsvText).toHaveBeenCalledWith(
@@ -115,7 +115,7 @@ describe('McpBankTools', () => {
     expect(bankImportService.manualMatch).toHaveBeenCalledWith(
       'coop-from-auth',
       'transaction-1',
-      'registration-1',
+      { registrationId: 'registration-1' },
       'user-from-auth',
     );
   });
@@ -179,7 +179,7 @@ describe('McpBankTools', () => {
     expect(bankImportService.manualMatch).toHaveBeenCalledWith(
       'coop-from-auth',
       'transaction-1',
-      'registration-1',
+      { registrationId: 'registration-1' },
       'user-from-auth',
     );
   });

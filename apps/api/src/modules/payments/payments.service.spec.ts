@@ -87,4 +87,30 @@ describe('PaymentsService.addPayment tenant isolation', () => {
     expect(registrationsService.onRegistrationCompleted).toHaveBeenCalledWith('reg-A');
     expect(shareholderStatus.recompute).not.toHaveBeenCalled();
   });
+
+  it('lists up to 100 unlinked payments with exact amount and shareholder search filters', async () => {
+    prisma.payment.findMany = jest.fn().mockResolvedValue([]);
+
+    await service.findUnlinkedByCoopId('coop-A', 'Jan', '100.00');
+
+    expect(prisma.payment.findMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        coopId: 'coop-A',
+        bankTransactionId: null,
+        amount: '100.00',
+        registration: {
+          shareholder: {
+            OR: [
+              { firstName: { contains: 'Jan', mode: 'insensitive' } },
+              { lastName: { contains: 'Jan', mode: 'insensitive' } },
+              { companyName: { contains: 'Jan', mode: 'insensitive' } },
+            ],
+          },
+        },
+      }),
+      include: expect.any(Object),
+      orderBy: { bankDate: 'desc' },
+      take: 100,
+    });
+  });
 });

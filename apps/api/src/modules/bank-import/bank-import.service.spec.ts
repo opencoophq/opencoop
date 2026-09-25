@@ -7,6 +7,7 @@ jest.mock('../documents/documents.service', () => ({
 import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { BankImportService } from './bank-import.service';
+import { BankMatchingService } from './bank-matching.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
@@ -29,6 +30,7 @@ describe('BankImportService — importCsv OGM matching', () => {
   let prisma: any;
   let registrationsService: any;
   let shareholderStatus: any;
+  let bankMatchingService: any;
 
   // A real, checksum-valid OGM produced the same way the app generates them.
   const OGM = generateOgmCode('001', 42);
@@ -44,12 +46,16 @@ describe('BankImportService — importCsv OGM matching', () => {
       bankTransaction: {
         create: jest.fn().mockResolvedValue({ id: 'btx-1' }),
         update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         findFirst: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
       },
       payment: {
         create: jest.fn().mockResolvedValue({ id: 'pay-1' }),
         findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn(),
+        update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       registration: {
         // Batched lookup: one findMany({ where: { ogmCode: { in: [...] } } })
@@ -59,6 +65,49 @@ describe('BankImportService — importCsv OGM matching', () => {
         findFirst: jest.fn(),
       },
       $transaction: jest.fn((cb: any) => cb(prisma)),
+    };
+    bankMatchingService = {
+      matchTransaction: jest.fn(async (coopId: string, transaction: any, userId?: string) => {
+        const registrations = await prisma.registration.findMany();
+        const registration = registrations.find(
+          (candidate: any) => candidate.coopId === coopId && candidate.ogmCode === transaction.ogmCode,
+        );
+        if (!registration || !['PENDING_PAYMENT', 'ACTIVE'].includes(registration.status)) {
+          return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+        }
+
+        const bankTransaction = { id: transaction.id };
+        await prisma.payment.create({
+          data: {
+            registrationId: registration.id,
+            coopId,
+            amount: transaction.amount,
+            bankDate: transaction.date,
+            bankTransactionId: bankTransaction.id,
+            matchedByUserId: userId,
+            matchedAt: new Date(),
+          },
+        });
+        const allPayments = await prisma.payment.findMany({ where: { registrationId: registration.id } });
+        const totalPaid = allPayments.reduce((sum: number, payment: any) => sum + Number(payment.amount), 0);
+        if (totalPaid >= Number(registration.totalAmount)) {
+          registration.status = 'COMPLETED';
+          await prisma.registration.update({
+            where: { id: registration.id },
+            data: { status: 'COMPLETED' },
+          });
+          await registrationsService.onRegistrationCompleted(registration.id);
+        } else if (registration.status === 'PENDING_PAYMENT') {
+          registration.status = 'ACTIVE';
+          await prisma.registration.update({ where: { id: registration.id }, data: { status: 'ACTIVE' } });
+          await shareholderStatus.recomputeMany([registration.shareholderId]);
+        }
+        await prisma.bankTransaction.update({
+          where: { id: transaction.id },
+          data: { matchStatus: 'AUTO_MATCHED', ogmCode: transaction.ogmCode },
+        });
+        return { status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true };
+      }),
     };
     registrationsService = {
       onRegistrationCompleted: jest.fn().mockResolvedValue(null),
@@ -74,6 +123,7 @@ describe('BankImportService — importCsv OGM matching', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: RegistrationsService, useValue: registrationsService },
         { provide: ShareholderStatusService, useValue: shareholderStatus },
+        { provide: BankMatchingService, useValue: bankMatchingService },
       ],
     }).compile();
     service = moduleRef.get(BankImportService);
@@ -312,7 +362,7 @@ describe('BankImportService — importCsv OGM matching', () => {
           date: new Date(2026, 8, 21),
           amount: 125,
           referenceText: expect.stringContaining(OGM),
-          matchStatus: 'AUTO_MATCHED',
+          matchStatus: 'UNMATCHED',
         }),
       }),
     );
@@ -321,7 +371,7 @@ describe('BankImportService — importCsv OGM matching', () => {
         data: expect.objectContaining({
           date: new Date(2026, 8, 17),
           amount: -1065.4,
-          matchStatus: 'UNMATCHED',
+          matchStatus: 'IGNORED',
         }),
       }),
     );
@@ -357,7 +407,7 @@ describe('BankImportService — importCsv OGM matching', () => {
     expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          matchStatus: 'AUTO_MATCHED',
+          matchStatus: 'UNMATCHED',
           ogmCode: OGM,
           amount: 100,
         }),
@@ -572,27 +622,20 @@ describe('BankImportService — importCsv OGM matching', () => {
     );
   });
 
-  it('issues ONE batched findMany for all OGMs (no per-row N+1 lookup)', async () => {
-    const OGM2 = generateOgmCode('002', 7);
-    prisma.registration.findMany.mockResolvedValue([]);
-
+  it('sends every positive row through the shared matcher', async () => {
     await service.importCsv(
       COOP_ID,
       IMPORTER_ID,
       'test.csv',
       csvRows([
         ['2026-01-15', '100', 'A', OGM],
-        ['2026-01-16', '100', 'B', OGM2],
-        ['2026-01-17', '100', 'C', OGM], // duplicate OGM -> deduped
+        ['2026-01-16', '100', 'B', OGM],
       ]),
       'generic',
     );
 
-    expect(prisma.registration.findMany).toHaveBeenCalledTimes(1);
-    const arg = prisma.registration.findMany.mock.calls[0][0];
-    expect(arg.where.ogmCode.in).toEqual(expect.arrayContaining([OGM, OGM2]));
-    // Deduped: two unique OGMs, not three.
-    expect(arg.where.ogmCode.in).toHaveLength(2);
+    expect(bankMatchingService.matchTransaction).toHaveBeenCalledTimes(2);
+    expect(bankMatchingService.matchTransaction.mock.calls[0][1].ogmCode).toBe(OGM);
   });
 
   it('recomputes status after a manual partial-payment match commits', async () => {
@@ -612,7 +655,7 @@ describe('BankImportService — importCsv OGM matching', () => {
     });
     prisma.payment.findMany.mockResolvedValue([{ amount: 60 }]);
 
-    await service.manualMatch(COOP_ID, 'btx-1', 'reg-1', IMPORTER_ID);
+    await service.manualMatch(COOP_ID, 'btx-1', { registrationId: 'reg-1' }, IMPORTER_ID);
 
     expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh-1');
   });
@@ -621,7 +664,7 @@ describe('BankImportService — importCsv OGM matching', () => {
     prisma.bankTransaction.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.manualMatch(COOP_ID, 'btx-1', 'reg-1', IMPORTER_ID),
+      service.manualMatch(COOP_ID, 'btx-1', { registrationId: 'reg-1' }, IMPORTER_ID),
     ).rejects.toBeInstanceOf(NotFoundException);
 
     expect(prisma.bankTransaction.findFirst).toHaveBeenCalledWith({
@@ -640,7 +683,7 @@ describe('BankImportService — importCsv OGM matching', () => {
     prisma.registration.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.manualMatch(COOP_ID, 'btx-1', 'reg-1', IMPORTER_ID),
+      service.manualMatch(COOP_ID, 'btx-1', { registrationId: 'reg-1' }, IMPORTER_ID),
     ).rejects.toBeInstanceOf(NotFoundException);
 
     expect(prisma.bankTransaction.findFirst).toHaveBeenCalledWith({

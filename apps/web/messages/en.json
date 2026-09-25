@@ -787,7 +787,22 @@
       "selectRegistration": "Select a registration to match",
       "noRegistrations": "No pending registrations found",
       "uploadError": "The CSV upload failed",
-      "uploadSuccess": "{total} rows imported: {matched} matched, {unmatched} unmatched, {skipped} duplicates skipped"
+      "uploadSuccess": "{total} rows imported: {matched} matched, {unmatched} unmatched, {skipped} duplicates skipped",
+      "rematch": "Automatically rematch",
+      "rematchSuccess": "{checked} checked: {linkedExisting} existing payments linked, {createdPayments} payments created, {stillUnmatched} still unmatched, {ignoredOutgoing} outgoing payments ignored",
+      "existingPayment": "Existing payment",
+      "openRegistration": "Open registration",
+      "searchShareholder": "Search shareholder name",
+      "noExistingPayments": "No existing payments found",
+      "statusAll": "All",
+      "statusUnmatched": "Unmatched",
+      "statusMatched": "Matched",
+      "statusIgnored": "Ignored",
+      "ignore": "Ignore",
+      "restore": "Restore",
+      "ignoreSelected": "Ignore {count} selected",
+      "ignoreSuccess": "{ignored} payment(s) ignored, {skipped} skipped",
+      "notSharePayment": "Not a share payment"
     },
     "dividends": {
       "title": "Dividend Management",

@@ -785,7 +785,22 @@
       "selectRegistration": "Sélectionnez une inscription à rapprocher",
       "noRegistrations": "Aucune inscription en attente trouvée",
       "uploadError": "L’importation du fichier CSV a échoué",
-      "uploadSuccess": "{total} lignes importées : {matched} rapprochées, {unmatched} non rapprochées, {skipped} doublons ignorés"
+      "uploadSuccess": "{total} lignes importées : {matched} rapprochées, {unmatched} non rapprochées, {skipped} doublons ignorés",
+      "rematch": "Rapprocher automatiquement à nouveau",
+      "rematchSuccess": "{checked} vérifiées : {linkedExisting} paiements existants liés, {createdPayments} paiements créés, {stillUnmatched} non rapprochées, {ignoredOutgoing} paiements sortants ignorés",
+      "existingPayment": "Paiement existant",
+      "openRegistration": "Inscription ouverte",
+      "searchShareholder": "Rechercher le nom de l’actionnaire",
+      "noExistingPayments": "Aucun paiement existant trouvé",
+      "statusAll": "Toutes",
+      "statusUnmatched": "Non rapprochées",
+      "statusMatched": "Rapprochées",
+      "statusIgnored": "Ignorées",
+      "ignore": "Ignorer",
+      "restore": "Restaurer",
+      "ignoreSelected": "Ignorer {count} sélectionnées",
+      "ignoreSuccess": "{ignored} paiement(s) ignoré(s), {skipped} ignoré(s) lors du traitement",
+      "notSharePayment": "Pas un paiement d’actions"
     },
     "dividends": {
       "title": "Gestion des dividendes",

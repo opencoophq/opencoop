@@ -846,6 +846,17 @@ export class AdminController {
     });
   }
 
+  @Get('payments/unlinked')
+  @RequirePermission('canManageTransactions')
+  @ApiOperation({ summary: 'Get unlinked payments for bank transaction matching' })
+  async getUnlinkedPayments(
+    @Param('coopId') coopId: string,
+    @Query('search') search?: string,
+    @Query('amount') amount?: string,
+  ) {
+    return this.paymentsService.findUnlinkedByCoopId(coopId, search, amount);
+  }
+
   // ==================== BANK IMPORT ====================
 
   @Get('bank-imports')
@@ -901,6 +912,36 @@ export class AdminController {
     return this.bankImportService.getUnmatchedTransactions(coopId);
   }
 
+  @Post('bank-transactions/rematch')
+  @RequirePermission('canManageTransactions')
+  @ApiOperation({ summary: 'Re-run automatic bank transaction matching' })
+  async rematchBankTransactions(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.bankImportService.rematch(coopId, user.id);
+  }
+
+  @Post('bank-transactions/ignore')
+  @RequirePermission('canManageTransactions')
+  @ApiOperation({ summary: 'Ignore unmatched bank transactions' })
+  async ignoreBankTransactions(
+    @Param('coopId') coopId: string,
+    @Body('ids') ids: string[],
+  ) {
+    return this.bankImportService.ignoreTransactions(coopId, ids || []);
+  }
+
+  @Post('bank-transactions/unignore')
+  @RequirePermission('canManageTransactions')
+  @ApiOperation({ summary: 'Restore ignored bank transactions' })
+  async unignoreBankTransactions(
+    @Param('coopId') coopId: string,
+    @Body('ids') ids: string[],
+  ) {
+    return this.bankImportService.unignoreTransactions(coopId, ids || []);
+  }
+
   @Post('bank-transactions/:id/match')
   @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Manually match a bank transaction to a registration' })
@@ -910,7 +951,12 @@ export class AdminController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: MatchBankTransactionDto,
   ) {
-    return this.bankImportService.manualMatch(coopId, id, dto.registrationId, user.id);
+    return this.bankImportService.manualMatch(
+      coopId,
+      id,
+      { registrationId: dto.registrationId, paymentId: dto.paymentId },
+      user.id,
+    );
   }
 
   // ==================== DIVIDENDS ====================
