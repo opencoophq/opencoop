@@ -111,12 +111,56 @@ export class BankImportService {
       throw new BadRequestException('CSV file is empty or has no valid data rows');
     }
 
+    const minDate = new Date(
+      Math.min(...rows.map((row) => new Date(row.date.getFullYear(), row.date.getMonth(), row.date.getDate()).getTime())),
+    );
+    const maxDate = new Date(
+      Math.max(...rows.map((row) => new Date(row.date.getFullYear(), row.date.getMonth(), row.date.getDate()).getTime())),
+    );
+    maxDate.setHours(23, 59, 59, 999);
+
+    const existingTransactions = await this.prisma.bankTransaction.findMany({
+      where: { coopId, date: { gte: minDate, lte: maxDate } },
+      select: { date: true, amount: true, counterparty: true, referenceText: true },
+    });
+    const existingCounts = new Map<string, number>();
+    for (const transaction of existingTransactions) {
+      const key = this.getDedupeKey(transaction);
+      existingCounts.set(key, (existingCounts.get(key) ?? 0) + 1);
+    }
+
+    const fileCounts = new Map<string, number>();
+    for (const row of rows) {
+      const key = this.getDedupeKey({
+        date: row.date,
+        amount: row.amount,
+        counterparty: row.counterparty,
+        referenceText: row.reference,
+      });
+      fileCounts.set(key, (fileCounts.get(key) ?? 0) + 1);
+    }
+
+    const importedCounts = new Map<string, number>();
+    const importRows = rows.filter((row) => {
+      const key = this.getDedupeKey({
+        date: row.date,
+        amount: row.amount,
+        counterparty: row.counterparty,
+        referenceText: row.reference,
+      });
+      const importedCount = importedCounts.get(key) ?? 0;
+      const existingCount = existingCounts.get(key) ?? 0;
+      importedCounts.set(key, importedCount + 1);
+      return importedCount < Math.max(0, (fileCounts.get(key) ?? 0) - existingCount);
+    });
+    const skippedCount = rows.length - importRows.length;
+
     const bankImport = await this.prisma.bankImport.create({
       data: {
         coopId,
         fileName,
         importedById,
-        rowCount: rows.length,
+        rowCount: importRows.length,
       },
     });
 
@@ -131,7 +175,7 @@ export class BankImportService {
     const OGM_REGEX = /\+\+\+\d{3}\/\d{4}\/\d{5}\+\+\+/;
     const uniqueOgms = Array.from(
       new Set(
-        rows
+        importRows
           .filter((r) => r.amount > 0)
           .map((r) => r.reference?.match(OGM_REGEX)?.[0])
           .filter((o): o is string => !!o),
@@ -158,7 +202,7 @@ export class BankImportService {
       }
     }
 
-    for (const row of rows) {
+    for (const row of importRows) {
       if (row.amount <= 0) {
         await this.prisma.bankTransaction.create({
           data: {
@@ -282,10 +326,29 @@ export class BankImportService {
       await this.registrationsService.onRegistrationCompleted(regId);
     }
 
-    return this.prisma.bankImport.update({
+    const updatedImport = await this.prisma.bankImport.update({
       where: { id: bankImport.id },
       data: { matchedCount, unmatchedCount },
     });
+    return { ...updatedImport, skippedCount };
+  }
+
+  private getDedupeKey(transaction: {
+    date: Date;
+    amount: unknown;
+    counterparty?: string | null;
+    referenceText?: string | null;
+  }): string {
+    const date = transaction.date;
+    const calendarDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+    const amountInCents = Math.round(Number(transaction.amount) * 100);
+    const normalize = (value: string | null | undefined) => (value ?? '').trim().replace(/\s+/g, ' ');
+    return JSON.stringify([
+      calendarDate,
+      amountInCents,
+      normalize(transaction.counterparty),
+      normalize(transaction.referenceText),
+    ]);
   }
 
   private parseCsv(
@@ -362,10 +425,10 @@ export class BankImportService {
       if (fields.length < 4) continue;
 
       const [dateStr, amountStr, counterparty, reference] = fields;
-      const date = new Date(dateStr);
+      const date = this.parseDate(dateStr, 'ISO');
       const amount = parseFloat(amountStr.replace(',', '.'));
 
-      if (isNaN(date.getTime()) || isNaN(amount)) continue;
+      if (!date || isNaN(amount)) continue;
 
       result.push({ date, amount, counterparty, reference });
     }
@@ -404,6 +467,11 @@ export class BankImportService {
       const year = parseInt(parts[2], 10);
       if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
       return new Date(year, month, day);
+    }
+
+    const isoDateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+    if (isoDateOnly) {
+      return new Date(Number(isoDateOnly[1]), Number(isoDateOnly[2]) - 1, Number(isoDateOnly[3]));
     }
 
     // ISO or native fallback

@@ -15,6 +15,21 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.39.2] - 2026-09-25
+
+### Security
+- **Documents stay inside their coop.** Generating a share certificate or a dividend
+  statement looked the shareholder up by id alone, so an admin of one coop could generate
+  these documents for a shareholder of another coop. The shareholder, and for statements
+  the dividend payout, must now belong to the admin's coop; anything else returns 404.
+
+### Fixed
+- **Manual bank matching works again.** The bank-import screen encoded the match request
+  twice, so the API rejected every manual match with a 400.
+- **Re-importing a bank export no longer duplicates payments.** Rows already imported for
+  the coop (same date, amount, counterparty and reference) are skipped, and the upload
+  result shows how many were skipped.
+
 ## [2026.39.1] - 2026-09-24
 
 ### Fixed
