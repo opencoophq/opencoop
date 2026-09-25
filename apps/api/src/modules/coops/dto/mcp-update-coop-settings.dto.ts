@@ -1,18 +1,15 @@
-import { OmitType } from '@nestjs/swagger';
+import { PickType } from '@nestjs/swagger';
 import { UpdateCoopDto } from './update-coop.dto';
 
-export class UpdateCoopSettingsDto extends OmitType(UpdateCoopDto, [
-  'emailProvider',
-  'smtpHost',
-  'smtpPort',
-  'smtpUser',
-  'smtpFrom',
-  'graphClientId',
-  'graphTenantId',
-  'graphFromEmail',
-  'brevoApiKey',
-  'graphClientSecret',
-  'emailEnabled',
-  'pontoEnabled',
-  'smtpPass',
+export class UpdateCoopSettingsDto extends PickType(UpdateCoopDto, [
+  'name',
+  'requiresApproval',
+  'minimumHoldingPeriod',
+  'legalForm',
+  'foundedDate',
+  'certificateSignatory',
+  'coopPhone',
+  'coopWebsite',
+  'vatNumber',
+  'coopAddress',
 ] as const) {}

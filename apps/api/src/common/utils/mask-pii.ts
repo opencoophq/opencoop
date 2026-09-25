@@ -32,18 +32,3 @@ export function maskShareholderListPII(result: any) {
   }
   return result;
 }
-
-export interface HouseholdCandidate {
-  shareholderId: string;
-  email: string | null;
-  fullName: string;
-  shareholderCount: number;
-}
-
-export function maskHouseholdCandidatesPII(candidates: HouseholdCandidate[]) {
-  return candidates.map((candidate) => ({
-    ...candidate,
-    fullName: `Aandeelhouder #${candidate.shareholderId?.slice(-4) || '****'}`,
-    email: '***',
-  }));
-}

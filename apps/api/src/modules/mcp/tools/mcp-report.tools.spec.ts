@@ -187,13 +187,22 @@ describe('McpReportTools', () => {
       canViewPII: false,
     });
     reports.getShareholderRegister.mockResolvedValue({
-      shareholders: [{ name: 'Ada Lovelace', email: 'ada@example.com', shareCount: 2 }],
+      shareholders: [
+        { name: 'Ada Lovelace', type: 'INDIVIDUAL', email: 'ada@example.com', shareCount: 2 },
+      ],
     });
 
     const result = await tools.getShareholderRegister({});
 
     expect(result).toEqual({
-      shareholders: [{ name: 'Aandeelhouder #1', email: '***', shareCount: 2 }],
+      shareholders: [
+        expect.objectContaining({
+          name: 'Aandeelhouder #****',
+          type: 'INDIVIDUAL',
+          email: '***',
+          shareCount: 2,
+        }),
+      ],
     });
   });
 
@@ -206,7 +215,7 @@ describe('McpReportTools', () => {
     const result = await tools.getCapitalStatement({});
 
     expect(result).toEqual({
-      movements: [{ shareholderName: 'Aandeelhouder #1', amount: 10 }],
+      movements: [{ shareholderName: '***', amount: 10 }],
     });
   });
 
@@ -248,7 +257,7 @@ describe('McpReportTools', () => {
 
     expect(result).toEqual({
       year: 2025,
-      payouts: [{ shareholderName: 'Aandeelhouder #1', grossAmount: 10 }],
+      payouts: [{ shareholderName: '***', grossAmount: 10 }],
     });
   });
 
@@ -256,14 +265,65 @@ describe('McpReportTools', () => {
     permissions.permissions.mockResolvedValue({ canViewPII: false });
     analytics.getReferralAnalytics.mockResolvedValue({
       totalReferrals: 1,
-      topReferrers: [{ id: 'shareholder-1234', name: 'Ada Lovelace', totalReferred: 1 }],
+      topReferrers: [
+        {
+          id: 'shareholder-1234',
+          name: 'Ada Lovelace',
+          referralCode: 'REF-ADA',
+          totalReferred: 1,
+        },
+      ],
     });
 
     const result = await tools.getReferralAnalytics({});
 
     expect(result).toEqual({
       totalReferrals: 1,
-      topReferrers: [{ id: 'shareholder-1234', name: 'Aandeelhouder #1234', totalReferred: 1 }],
+      topReferrers: [
+        expect.objectContaining({
+          id: 'shareholder-1234',
+          name: 'Aandeelhouder #1234',
+          referralCode: 'REF-ADA',
+          totalReferred: 1,
+        }),
+      ],
+    });
+  });
+
+  it('masks PII values in audit-log change rows when canViewPII is false', async () => {
+    permissions.permissions.mockResolvedValue({ canViewPII: false });
+    audit.findByCoop.mockResolvedValue({
+      items: [
+        {
+          id: 'audit-1',
+          changes: [
+            { field: 'companyName', oldValue: null, newValue: 'Coop Labs' },
+            { field: 'status', oldValue: 'PENDING', newValue: 'ACTIVE' },
+          ],
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 50,
+      totalPages: 1,
+    });
+
+    const result = await tools.listAuditLogs({});
+
+    expect(result).toEqual({
+      items: [
+        {
+          id: 'audit-1',
+          changes: [
+            { field: 'companyName', oldValue: '***', newValue: '***' },
+            { field: 'status', oldValue: 'PENDING', newValue: 'ACTIVE' },
+          ],
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 50,
+      totalPages: 1,
     });
   });
 

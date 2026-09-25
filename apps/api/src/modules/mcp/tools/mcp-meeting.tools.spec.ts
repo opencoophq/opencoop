@@ -348,11 +348,11 @@ describe('McpMeetingTools', () => {
       { shareholder: expect.objectContaining({ firstName: 'Aandeelhouder #1234', email: '***' }) },
     ]);
     expect(convocationResult).toEqual({
-      shareholderName: 'Aandeelhouder #1234',
+      shareholderName: '***',
       recipientEmail: '***',
     });
     expect(documentsResult).toEqual({
-      shareholderName: 'Aandeelhouder #1234',
+      shareholderName: '***',
       recipientEmail: '***',
     });
   });
@@ -365,7 +365,22 @@ describe('McpMeetingTools', () => {
 
     const result = await tools.listRsvpStatuses({ meetingId: 'meeting-1' });
 
-    expect(result).toEqual([{ shareholderName: 'Aandeelhouder #1', documentsEmailSentAt: null }]);
+    expect(result).toEqual([{ shareholderName: '***', documentsEmailSentAt: null }]);
+  });
+
+  it('masks reminder failure recipient addresses in the generic pass', async () => {
+    permissions.permissions.mockResolvedValue({ canManageMeetings: true, canViewPII: false });
+    convocation.sendReminderNow.mockResolvedValue({
+      sent: 0,
+      failures: [{ to: 'ada@example.com', error: 'Mailbox unavailable' }],
+    });
+
+    const result = await tools.sendConvocationReminder({ meetingId: 'meeting-1' });
+
+    expect(result).toEqual({
+      sent: 0,
+      failures: [{ to: '***', error: 'Mailbox unavailable' }],
+    });
   });
 
   it('validates non-trivial tool input with the zod schemas', () => {

@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { RegistrationStatus, RegistrationType } from '@opencoop/database';
 import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
-import { maskShareholderPII } from '../../../common/utils/mask-pii';
 import { PaymentsService } from '../../payments/payments.service';
 import { AddPaymentDto } from '../../registrations/dto/add-payment.dto';
 import { CancelRegistrationDto } from '../../registrations/dto/cancel-registration.dto';
@@ -195,7 +194,7 @@ export class McpTransactionTools {
 
       return {
         ...rest,
-        shareholder: ctx.canViewPII ? shareholderSummary : maskShareholderPII(shareholderSummary),
+        shareholder: shareholderSummary,
       };
     });
   }
