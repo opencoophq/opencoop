@@ -1,14 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
-import { computeTotalPaid } from '@opencoop/shared';
+import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+import { computeTotalPaid, extractOgmCode } from '@opencoop/shared';
 import { BankPreset, BANK_PRESETS } from './bank-presets';
+import { BankMatchingService } from './bank-matching.service';
 
 @Injectable()
 export class BankImportService {
   constructor(
     private prisma: PrismaService,
     private registrationsService: RegistrationsService,
+    private shareholderStatus: ShareholderStatusService,
+    private bankMatchingService: BankMatchingService,
   ) {}
 
   async getImports(coopId: string) {
@@ -18,10 +22,21 @@ export class BankImportService {
     });
   }
 
-  async getTransactions(coopId: string, bankImportId?: string, matchStatus?: string) {
+  async getTransactions(
+    coopId: string,
+    bankImportId?: string,
+    matchStatus?: string,
+    search?: string,
+  ) {
     const where: Record<string, unknown> = { coopId };
     if (bankImportId) where.bankImportId = bankImportId;
     if (matchStatus) where.matchStatus = matchStatus;
+    if (search) {
+      where.OR = [
+        { counterparty: { contains: search, mode: 'insensitive' } },
+        { referenceText: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     return this.prisma.bankTransaction.findMany({
       where,
@@ -42,6 +57,18 @@ export class BankImportService {
     });
   }
 
+  async getUnmatchedTransactions(coopId: string) {
+    return this.prisma.bankTransaction.findMany({
+      where: {
+        coopId,
+        matchStatus: 'UNMATCHED',
+        pontoTransactionId: { not: null },
+        amount: { gt: 0 },
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+
   async importCsv(
     coopId: string,
     importedById: string,
@@ -55,49 +82,123 @@ export class BankImportService {
     }
 
     const csvContent = fileBuffer.toString(preset.encoding);
+    return this.importCsvContent(coopId, importedById, fileName, csvContent, preset);
+  }
+
+  async importCsvText(
+    coopId: string,
+    importedById: string,
+    fileName: string,
+    csvContent: string,
+    presetId: string = 'generic',
+  ) {
+    const preset = BANK_PRESETS[presetId];
+    if (!preset) {
+      throw new BadRequestException(`Unknown bank preset: ${presetId}`);
+    }
+
+    return this.importCsvContent(coopId, importedById, fileName, csvContent, preset);
+  }
+
+  private async importCsvContent(
+    coopId: string,
+    importedById: string,
+    fileName: string,
+    csvContent: string,
+    preset: BankPreset,
+  ) {
     const rows = this.parseCsv(csvContent, preset);
 
     if (rows.length === 0) {
       throw new BadRequestException('CSV file is empty or has no valid data rows');
     }
 
+    const minDate = new Date(
+      Math.min(...rows.map((row) => new Date(row.date.getFullYear(), row.date.getMonth(), row.date.getDate()).getTime())),
+    );
+    const maxDate = new Date(
+      Math.max(...rows.map((row) => new Date(row.date.getFullYear(), row.date.getMonth(), row.date.getDate()).getTime())),
+    );
+    maxDate.setHours(23, 59, 59, 999);
+
+    const existingTransactions = await this.prisma.bankTransaction.findMany({
+      where: { coopId, date: { gte: minDate, lte: maxDate } },
+      select: { date: true, amount: true, counterparty: true, referenceText: true },
+    });
+    const existingCounts = new Map<string, number>();
+    for (const transaction of existingTransactions) {
+      const key = this.getDedupeKey(transaction);
+      existingCounts.set(key, (existingCounts.get(key) ?? 0) + 1);
+    }
+
+    const fileCounts = new Map<string, number>();
+    for (const row of rows) {
+      const key = this.getDedupeKey({
+        date: row.date,
+        amount: row.amount,
+        counterparty: row.counterparty,
+        referenceText: row.reference,
+      });
+      fileCounts.set(key, (fileCounts.get(key) ?? 0) + 1);
+    }
+
+    const importedCounts = new Map<string, number>();
+    const importRows = rows.filter((row) => {
+      const key = this.getDedupeKey({
+        date: row.date,
+        amount: row.amount,
+        counterparty: row.counterparty,
+        referenceText: row.reference,
+      });
+      const importedCount = importedCounts.get(key) ?? 0;
+      const existingCount = existingCounts.get(key) ?? 0;
+      importedCounts.set(key, importedCount + 1);
+      return importedCount < Math.max(0, (fileCounts.get(key) ?? 0) - existingCount);
+    });
+    const skippedCount = rows.length - importRows.length;
+
     const bankImport = await this.prisma.bankImport.create({
       data: {
         coopId,
         fileName,
         importedById,
-        rowCount: rows.length,
+        rowCount: importRows.length,
       },
     });
 
     let matchedCount = 0;
     let unmatchedCount = 0;
-    const completedGiftRegistrationIds: string[] = [];
 
-    // Batch the OGM lookups: extract every OGM from the rows (same regex the loop
-    // uses), dedupe, and fetch all matching registrations in ONE query instead of
-    // a findUnique per row (N+1). Keyed by ogmCode for O(1) lookup in the loop.
-    const OGM_REGEX = /\+\+\+\d{3}\/\d{4}\/\d{5}\+\+\+/;
-    const uniqueOgms = Array.from(
-      new Set(
-        rows
-          .filter((r) => r.amount > 0)
-          .map((r) => r.reference?.match(OGM_REGEX)?.[0])
-          .filter((o): o is string => !!o),
+    const uniqueOgms = [
+      ...new Set(
+        importRows
+          .filter((row) => row.amount > 0)
+          .map((row) => extractOgmCode(row.reference))
+          .filter((ogmCode): ogmCode is string => ogmCode !== null),
       ),
-    );
-
-    const registrationMap = new Map<string, { id: string; coopId: string; status: string; totalAmount: unknown; isGift: boolean }>();
+    ];
+    const registrationMap = new Map<string, any>();
     if (uniqueOgms.length > 0) {
       const registrations = await this.prisma.registration.findMany({
-        where: { ogmCode: { in: uniqueOgms } },
+        where: { coopId, ogmCode: { in: uniqueOgms } },
+        select: {
+          id: true,
+          coopId: true,
+          status: true,
+          totalAmount: true,
+          ogmCode: true,
+          payments: {
+            select: { id: true, amount: true, bankDate: true, bankTransactionId: true },
+          },
+        },
       });
-      for (const reg of registrations) {
-        if (reg.ogmCode) registrationMap.set(reg.ogmCode, reg);
+      for (const registration of registrations) {
+        if (registration.ogmCode) registrationMap.set(registration.ogmCode, registration);
       }
     }
 
-    for (const row of rows) {
+    for (const row of importRows) {
+      const ogmCode = extractOgmCode(row.reference);
       if (row.amount <= 0) {
         await this.prisma.bankTransaction.create({
           data: {
@@ -106,100 +207,15 @@ export class BankImportService {
             date: row.date,
             amount: row.amount,
             counterparty: row.counterparty || null,
-            ogmCode: null,
+            ogmCode,
             referenceText: row.reference || null,
-            matchStatus: 'UNMATCHED',
+            matchStatus: 'IGNORED',
           },
         });
-        unmatchedCount++;
         continue;
       }
 
-      const ogmMatch = row.reference?.match(OGM_REGEX);
-      const ogmCode = ogmMatch ? ogmMatch[0] : null;
-      let matchStatus: 'UNMATCHED' | 'AUTO_MATCHED' = 'UNMATCHED';
-
-      if (ogmCode) {
-        // Pre-fetched (was findUnique per row). The cached entry is kept in sync
-        // with each successful match below, so a SECOND row for the same OGM sees
-        // the registration's UPDATED status — exactly as a fresh DB read would.
-        const registration = registrationMap.get(ogmCode);
-
-        if (
-          registration &&
-          registration.coopId === coopId &&
-          (registration.status === 'PENDING_PAYMENT' || registration.status === 'ACTIVE')
-        ) {
-          matchStatus = 'AUTO_MATCHED';
-          matchedCount++;
-
-          await this.prisma.$transaction(async (tx) => {
-            const bankTx = await tx.bankTransaction.create({
-              data: {
-                coopId,
-                bankImportId: bankImport.id,
-                date: row.date,
-                amount: row.amount,
-                counterparty: row.counterparty || null,
-                ogmCode,
-                referenceText: row.reference || null,
-                matchStatus,
-              },
-            });
-
-            await tx.payment.create({
-              data: {
-                registrationId: registration.id,
-                coopId,
-                amount: row.amount,
-                bankDate: row.date,
-                bankTransactionId: bankTx.id,
-                matchedByUserId: importedById,
-                matchedAt: new Date(),
-              },
-            });
-
-            const allPayments = await tx.payment.findMany({
-              where: { registrationId: registration.id },
-              select: { amount: true },
-            });
-            const totalPaid = computeTotalPaid(allPayments);
-
-            if (totalPaid >= Number(registration.totalAmount)) {
-              await tx.registration.update({
-                where: { id: registration.id },
-                data: {
-                  status: 'COMPLETED',
-                  processedAt: new Date(),
-                },
-              });
-              // Keep the cached entry in sync: a later same-OGM row must see
-              // COMPLETED (which the gate excludes), as a fresh DB read would.
-              registration.status = 'COMPLETED';
-
-              if (registration.isGift) {
-                completedGiftRegistrationIds.push(registration.id);
-              }
-            } else if (registration.status === 'PENDING_PAYMENT') {
-              await tx.registration.update({
-                where: { id: registration.id },
-                data: { status: 'ACTIVE' },
-              });
-              // Keep the cached entry in sync: a partial payment flips
-              // PENDING_PAYMENT -> ACTIVE, which a later same-OGM row must see.
-              registration.status = 'ACTIVE';
-            }
-          });
-
-          continue;
-        } else {
-          unmatchedCount++;
-        }
-      } else {
-        unmatchedCount++;
-      }
-
-      await this.prisma.bankTransaction.create({
+      const bankTransaction = await this.prisma.bankTransaction.create({
         data: {
           coopId,
           bankImportId: bankImport.id,
@@ -208,19 +224,44 @@ export class BankImportService {
           counterparty: row.counterparty || null,
           ogmCode,
           referenceText: row.reference || null,
-          matchStatus,
+          matchStatus: 'UNMATCHED',
         },
       });
+
+      const result = await this.bankMatchingService.matchTransaction(coopId, {
+        id: bankTransaction.id,
+        date: row.date,
+        amount: row.amount,
+        referenceText: row.reference || null,
+        ogmCode,
+      }, importedById, true, ogmCode ? registrationMap.get(ogmCode) : undefined);
+      if (result.status === 'AUTO_MATCHED') matchedCount++;
+      else unmatchedCount++;
     }
 
-    for (const regId of completedGiftRegistrationIds) {
-      await this.registrationsService.onRegistrationCompleted(regId);
-    }
-
-    return this.prisma.bankImport.update({
+    const updatedImport = await this.prisma.bankImport.update({
       where: { id: bankImport.id },
       data: { matchedCount, unmatchedCount },
     });
+    return { ...updatedImport, skippedCount };
+  }
+
+  private getDedupeKey(transaction: {
+    date: Date;
+    amount: unknown;
+    counterparty?: string | null;
+    referenceText?: string | null;
+  }): string {
+    const date = transaction.date;
+    const calendarDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+    const amountInCents = Math.round(Number(transaction.amount) * 100);
+    const normalize = (value: string | null | undefined) => (value ?? '').trim().replace(/\s+/g, ' ');
+    return JSON.stringify([
+      calendarDate,
+      amountInCents,
+      normalize(transaction.counterparty),
+      normalize(transaction.referenceText),
+    ]);
   }
 
   private parseCsv(
@@ -233,13 +274,16 @@ export class BankImportService {
       return this.parseGenericCsv(lines);
     }
 
-    // Header-based parsing for bank presets
-    const dataLines = lines.slice(preset.skipRows);
-    if (dataLines.length < 2) return [];
+    // Header-based parsing for bank presets: the header is the first line that
+    // names both the date and the amount column (banks prepend metadata blocks).
+    const headerIdx = lines.findIndex((line) => {
+      const cells = this.splitCsvLine(line, preset.delimiter);
+      return cells.includes(preset.dateColumn) && cells.includes(preset.amountColumn);
+    });
+    if (headerIdx === -1) return [];
 
-    const headerLine = dataLines[0];
-    const headers = this.splitCsvLine(headerLine, preset.delimiter);
-    const rows = dataLines.slice(1);
+    const headers = this.splitCsvLine(lines[headerIdx], preset.delimiter);
+    const rows = lines.slice(headerIdx + 1);
 
     const colIndex = (name: string) => headers.indexOf(name);
     const dateIdx = colIndex(preset.dateColumn);
@@ -294,10 +338,10 @@ export class BankImportService {
       if (fields.length < 4) continue;
 
       const [dateStr, amountStr, counterparty, reference] = fields;
-      const date = new Date(dateStr);
+      const date = this.parseDate(dateStr, 'ISO');
       const amount = parseFloat(amountStr.replace(',', '.'));
 
-      if (isNaN(date.getTime()) || isNaN(amount)) continue;
+      if (!date || isNaN(amount)) continue;
 
       result.push({ date, amount, counterparty, reference });
     }
@@ -338,6 +382,11 @@ export class BankImportService {
       return new Date(year, month, day);
     }
 
+    const isoDateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+    if (isoDateOnly) {
+      return new Date(Number(isoDateOnly[1]), Number(isoDateOnly[2]) - 1, Number(isoDateOnly[3]));
+    }
+
     // ISO or native fallback
     const d = new Date(trimmed);
     return isNaN(d.getTime()) ? null : d;
@@ -355,9 +404,19 @@ export class BankImportService {
     return isNaN(num) ? null : num;
   }
 
-  async manualMatch(bankTransactionId: string, registrationId: string, userId: string) {
-    const bankTx = await this.prisma.bankTransaction.findUnique({
-      where: { id: bankTransactionId },
+  async manualMatch(
+    coopId: string,
+    bankTransactionId: string,
+    target: { registrationId?: string; paymentId?: string },
+    userId: string,
+  ) {
+    const { registrationId, paymentId } = target;
+    if ((registrationId && paymentId) || (!registrationId && !paymentId)) {
+      throw new BadRequestException('Provide either registrationId or paymentId');
+    }
+
+    const bankTx = await this.prisma.bankTransaction.findFirst({
+      where: { id: bankTransactionId, coopId },
     });
 
     if (!bankTx) {
@@ -368,18 +427,60 @@ export class BankImportService {
       throw new BadRequestException('Bank transaction is already matched');
     }
 
-    const registration = await this.prisma.registration.findUnique({
-      where: { id: registrationId },
+    if (paymentId) {
+      const payment = await this.prisma.payment.findFirst({
+        where: { id: paymentId, coopId },
+      });
+      if (!payment) {
+        throw new NotFoundException('Payment not found');
+      }
+      if (payment.bankTransactionId) {
+        throw new BadRequestException('Payment is already matched');
+      }
+      if (this.toCents(payment.amount) !== this.toCents(bankTx.amount)) {
+        throw new BadRequestException('Payment amount must exactly match the bank transaction amount');
+      }
+
+      // Claim both rows only while they are still free, so a concurrent link cannot be
+      // overwritten silently.
+      await this.prisma.$transaction(async (tx) => {
+        const claimedPayment = await tx.payment.updateMany({
+          where: { id: paymentId, bankTransactionId: null },
+          data: {
+            bankTransactionId,
+            matchedByUserId: userId,
+            matchedAt: new Date(),
+          },
+        });
+        const claimedTransaction = await tx.bankTransaction.updateMany({
+          where: { id: bankTransactionId, matchStatus: 'UNMATCHED' },
+          data: { matchStatus: 'MANUAL_MATCHED' },
+        });
+        if (claimedPayment.count !== 1 || claimedTransaction.count !== 1) {
+          throw new ConflictException('Payment or bank transaction was linked in the meantime');
+        }
+      });
+
+      return { success: true };
+    }
+
+    const registration = await this.prisma.registration.findFirst({
+      where: { id: registrationId, coopId },
     });
 
     if (!registration) {
       throw new NotFoundException('Registration not found');
     }
+    if (!['PENDING_PAYMENT', 'ACTIVE'].includes(registration.status)) {
+      throw new BadRequestException(
+        'Registration is already fully paid — link the existing payment instead',
+      );
+    }
 
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.payment.create({
         data: {
-          registrationId,
+          registrationId: registrationId!,
           coopId: registration.coopId,
           amount: Number(bankTx.amount),
           bankDate: bankTx.date,
@@ -389,25 +490,26 @@ export class BankImportService {
         },
       });
 
-      await tx.bankTransaction.update({
-        where: { id: bankTransactionId },
+      const claimedTransaction = await tx.bankTransaction.updateMany({
+        where: { id: bankTransactionId, matchStatus: 'UNMATCHED' },
         data: { matchStatus: 'MANUAL_MATCHED' },
       });
+      if (claimedTransaction.count !== 1) {
+        throw new ConflictException('Bank transaction was linked in the meantime');
+      }
 
       let isCompleted = false;
-      if (
-        registration.status === 'PENDING_PAYMENT' ||
-        registration.status === 'ACTIVE'
-      ) {
+      let isActive = false;
+      if (registration.status === 'PENDING_PAYMENT' || registration.status === 'ACTIVE') {
         const allPayments = await tx.payment.findMany({
-          where: { registrationId },
+          where: { registrationId: registrationId! },
           select: { amount: true },
         });
         const totalPaid = computeTotalPaid(allPayments);
 
         if (totalPaid >= Number(registration.totalAmount)) {
           await tx.registration.update({
-            where: { id: registrationId },
+            where: { id: registrationId! },
             data: {
               status: 'COMPLETED',
               processedAt: new Date(),
@@ -416,19 +518,96 @@ export class BankImportService {
           isCompleted = true;
         } else if (registration.status === 'PENDING_PAYMENT') {
           await tx.registration.update({
-            where: { id: registrationId },
+            where: { id: registrationId! },
             data: { status: 'ACTIVE' },
           });
+          isActive = true;
         }
       }
 
-      return { success: true, isCompleted };
+      return { success: true, isCompleted, isActive, shareholderId: registration.shareholderId };
     });
 
     if (result.isCompleted) {
-      await this.registrationsService.onRegistrationCompleted(registrationId);
+      await this.registrationsService.onRegistrationCompleted(registrationId!);
+    } else if (result.isActive) {
+      await this.shareholderStatus.recompute(result.shareholderId);
     }
 
     return { success: true };
+  }
+
+  async rematch(coopId: string, matchedByUserId?: string) {
+    const unmatched = await this.prisma.bankTransaction.findMany({
+      where: { coopId, matchStatus: 'UNMATCHED' },
+      select: { id: true, date: true, amount: true, referenceText: true, ogmCode: true },
+    });
+    const outgoing = unmatched.filter((transaction) => Number(transaction.amount) < 0);
+    let ignoredOutgoing = 0;
+    if (outgoing.length > 0) {
+      const result = await this.prisma.bankTransaction.updateMany({
+        where: { coopId, id: { in: outgoing.map((transaction) => transaction.id) }, matchStatus: 'UNMATCHED' },
+        data: { matchStatus: 'IGNORED' },
+      });
+      ignoredOutgoing = result.count;
+    }
+
+    const incoming = unmatched.filter((transaction) => Number(transaction.amount) > 0);
+    let linkedExisting = 0;
+    let createdPayments = 0;
+    let stillUnmatched = 0;
+    for (const transaction of incoming) {
+      const result = await this.bankMatchingService.matchTransaction(coopId, transaction, matchedByUserId);
+      if (result.linkedExisting) linkedExisting++;
+      if (result.createdPayment) createdPayments++;
+      if (result.status === 'UNMATCHED') stillUnmatched++;
+    }
+
+    return {
+      checked: incoming.length,
+      linkedExisting,
+      createdPayments,
+      stillUnmatched,
+      ignoredOutgoing,
+    };
+  }
+
+  async ignoreTransactions(coopId: string, ids: string[]) {
+    return this.updateIgnoredStatus(coopId, ids, 'UNMATCHED', 'IGNORED');
+  }
+
+  async unignoreTransactions(coopId: string, ids: string[]) {
+    return this.updateIgnoredStatus(coopId, ids, 'IGNORED', 'UNMATCHED');
+  }
+
+  private async updateIgnoredStatus(
+    coopId: string,
+    ids: string[],
+    fromStatus: 'UNMATCHED' | 'IGNORED',
+    toStatus: 'UNMATCHED' | 'IGNORED',
+  ) {
+    const uniqueIds = [...new Set(ids)];
+    if (uniqueIds.length === 0) return { [toStatus === 'IGNORED' ? 'ignored' : 'unignored']: 0, skipped: 0 };
+
+    const transactions = await this.prisma.bankTransaction.findMany({
+      where: { coopId, id: { in: uniqueIds } },
+      select: { id: true, matchStatus: true },
+    });
+    if (transactions.length !== uniqueIds.length) {
+      throw new NotFoundException('Bank transaction not found');
+    }
+
+    const updated = await this.prisma.bankTransaction.updateMany({
+      where: { coopId, id: { in: uniqueIds }, matchStatus: fromStatus },
+      data: { matchStatus: toStatus },
+    });
+    return {
+      [toStatus === 'IGNORED' ? 'ignored' : 'unignored']: updated.count,
+      skipped: uniqueIds.length - updated.count,
+    };
+  }
+
+  private toCents(amount: unknown): number {
+    return Math.round(Number(amount) * 100);
   }
 }

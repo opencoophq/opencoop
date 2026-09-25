@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ServiceUnavailableException } from '@nestjs/common';
 import { PontoClient, PontoTokens } from './ponto.client';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -72,6 +73,86 @@ describe('PontoClient', () => {
     it('should use sandbox auth base when PONTO_SANDBOX is true', () => {
       const url = client.generateAuthorizationUrl('http://cb', 'ch', 'st');
       expect(url).toContain('sandbox-authorization.myponto.com');
+    });
+  });
+
+  describe('PONTO_CLIENT_ID configuration', () => {
+    let originalClientId: string | undefined;
+
+    beforeEach(() => {
+      originalClientId = process.env.PONTO_CLIENT_ID;
+    });
+
+    afterEach(() => {
+      if (originalClientId === undefined) {
+        delete process.env.PONTO_CLIENT_ID;
+      } else {
+        process.env.PONTO_CLIENT_ID = originalClientId;
+      }
+    });
+
+    it('should throw instead of generating a URL when PONTO_CLIENT_ID is unset', () => {
+      delete process.env.PONTO_CLIENT_ID;
+
+      expect(() =>
+        client.generateAuthorizationUrl('http://cb', 'challenge', 'state'),
+      ).toThrow(ServiceUnavailableException);
+      expect(() =>
+        client.generateAuthorizationUrl('http://cb', 'challenge', 'state'),
+      ).toThrow('PONTO_CLIENT_ID');
+    });
+
+    it('should never generate the literal client_id=undefined value', () => {
+      process.env.PONTO_CLIENT_ID = 'configured-client-id';
+
+      const url = client.generateAuthorizationUrl('http://cb', 'challenge', 'state');
+
+      expect(url).not.toContain('client_id=undefined');
+    });
+  });
+
+  describe('construction without Ponto configuration', () => {
+    const envNames = [
+      'PONTO_CLIENT_ID',
+      'PONTO_CLIENT_SECRET',
+      'PONTO_CERT_PATH',
+      'PONTO_KEY_PATH',
+    ] as const;
+    let originalEnv: Record<(typeof envNames)[number], string | undefined>;
+
+    beforeEach(() => {
+      originalEnv = Object.fromEntries(
+        envNames.map((name) => [name, process.env[name]]),
+      ) as Record<(typeof envNames)[number], string | undefined>;
+      envNames.forEach((name) => delete process.env[name]);
+    });
+
+    afterEach(() => {
+      envNames.forEach((name) => {
+        const value = originalEnv[name];
+        if (value === undefined) {
+          delete process.env[name];
+        } else {
+          process.env[name] = value;
+        }
+      });
+    });
+
+    it('should instantiate without throwing and fail fast only on an API call', async () => {
+      const module = await Test.createTestingModule({
+        providers: [
+          PontoClient,
+          { provide: PrismaService, useValue: mockPrisma },
+        ],
+      }).compile();
+      const unconfiguredClient = module.get<PontoClient>(PontoClient);
+
+      expect(unconfiguredClient).toBeInstanceOf(PontoClient);
+      await expect(unconfiguredClient.getAccounts('access-token')).rejects.toThrow(
+        /PONTO_CERT_PATH.*PONTO_KEY_PATH/,
+      );
+
+      await module.close();
     });
   });
 

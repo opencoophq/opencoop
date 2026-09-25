@@ -200,7 +200,8 @@
     "statuses": {
       "PENDING": "Ausstehend",
       "ACTIVE": "Aktiv",
-      "INACTIVE": "Inaktiv"
+      "INACTIVE": "Inaktiv",
+      "derivedFromPaidShares": "Abgeleitet aus bezahlten Anteilen"
     },
     "memberSince": "Mitglied seit"
   },
@@ -782,7 +783,24 @@
       "matchTransaction": "Transaktion zuordnen",
       "reference": "Mitteilung",
       "selectRegistration": "Wählen Sie eine Registrierung zum Zuordnen",
-      "noRegistrations": "Keine ausstehenden Registrierungen gefunden"
+      "noRegistrations": "Keine ausstehenden Registrierungen gefunden",
+      "uploadError": "Der CSV-Upload ist fehlgeschlagen",
+      "uploadSuccess": "{total} Zeilen importiert: {matched} zugeordnet, {unmatched} nicht zugeordnet, {skipped} Duplikate übersprungen",
+      "rematch": "Automatisch erneut zuordnen",
+      "rematchSuccess": "{checked} geprüft: {linkedExisting} bestehende Zahlungen verknüpft, {createdPayments} Zahlungen erstellt, {stillUnmatched} weiterhin nicht zugeordnet, {ignoredOutgoing} ausgehende Zahlungen ignoriert",
+      "existingPayment": "Bestehende Zahlung",
+      "openRegistration": "Offene Registrierung",
+      "searchShareholder": "Nach Namen des Anteilseigners suchen",
+      "noExistingPayments": "Keine bestehenden Zahlungen gefunden",
+      "statusAll": "Alle",
+      "statusUnmatched": "Nicht zugeordnet",
+      "statusMatched": "Zugeordnet",
+      "statusIgnored": "Ignoriert",
+      "ignore": "Ignorieren",
+      "restore": "Wiederherstellen",
+      "ignoreSelected": "{count} ausgewählte ignorieren",
+      "ignoreSuccess": "{ignored} Zahlung(en) ignoriert, {skipped} übersprungen",
+      "notSharePayment": "Keine Aktienzahlung"
     },
     "dividends": {
       "title": "Dividendenverwaltung",
@@ -902,6 +920,10 @@
         "create": "API-Schlüssel erstellen",
         "name": "Schlüsselname",
         "namePlaceholder": "z.B. Claude Code - Laptop",
+        "scope": "Zugriffsebene",
+        "readOnly": "Nur lesen",
+        "readWrite": "Lesen & schreiben",
+        "scopeHint": "Schlüssel mit Lese- und Schreibzugriff können Daten (z. B. Anteilseigner, Transaktionen und Nachrichten) mit den Berechtigungen des Schlüsselinhabers ändern.",
         "prefix": "Schlüssel",
         "createdAt": "Erstellt",
         "lastUsed": "Zuletzt verwendet",
@@ -1818,6 +1840,8 @@
     "subject": "Betreff",
     "body": "Nachricht",
     "allShareholders": "Alle Anteilseigner",
+    "project": "Projekt",
+    "selectedShareholders": "{count} ausgewählte Anteilseigner",
     "specificShareholder": "Bestimmter Anteilseigner",
     "broadcast": "Rundschreiben",
     "direct": "Direkt",
@@ -1837,6 +1861,13 @@
     "admin": "Administrator",
     "you": "Sie",
     "recipient": "Empfänger",
+    "recipients": "Empfänger",
+    "draft": "Entwurf",
+    "scheduled": "Geplant",
+    "scheduledFor": "Geplant für {date}",
+    "sendNow": "Jetzt senden",
+    "sendNowConfirm": "Alle Empfänger erhalten sofort eine E-Mail. Diese Aktion kann nicht rückgängig gemacht werden. Fortfahren?",
+    "cancelSchedule": "Planung abbrechen",
     "from": "Von"
   },
   "legal": {

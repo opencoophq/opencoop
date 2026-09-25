@@ -11,6 +11,7 @@ import { RegistrationsModule } from '../registrations/registrations.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { MessagesModule } from '../messages/messages.module';
 import { AudienceSyncModule } from '../audience-sync/audience-sync.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
@@ -20,9 +21,15 @@ import { AudienceSyncModule } from '../audience-sync/audience-sync.module';
     DocumentsModule,
     MessagesModule,
     AudienceSyncModule,
+    BillingModule,
   ],
   controllers: [ShareholderActionsController, HouseholdController],
-  providers: [ShareholdersService, ShareholderImportService, BirthdaySchedulerService, HouseholdService],
-  exports: [ShareholdersService, ShareholderImportService],
+  providers: [
+    ShareholdersService,
+    ShareholderImportService,
+    BirthdaySchedulerService,
+    HouseholdService,
+  ],
+  exports: [ShareholdersService, ShareholderImportService, HouseholdService],
 })
 export class ShareholdersModule {}

@@ -3,13 +3,15 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomBytes, createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PontoClient, PontoTransaction } from './ponto.client';
-import { PaymentsService } from '../payments/payments.service';
 import { EmailService } from '../email/email.service';
+import { BankMatchingService } from '../bank-import/bank-matching.service';
 import { encryptField, decryptField } from '../../common/crypto/field-encryption';
+import { extractOgmCode } from '@opencoop/shared';
 
 @Injectable()
 export class PontoService {
@@ -18,9 +20,19 @@ export class PontoService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pontoClient: PontoClient,
-    private readonly paymentsService: PaymentsService,
     private readonly emailService: EmailService,
+    private readonly bankMatchingService: BankMatchingService,
   ) {}
+
+  private getRedirectUri(): string {
+    const redirectUri = process.env.PONTO_REDIRECT_URI;
+    if (!redirectUri) {
+      throw new ServiceUnavailableException(
+        'Ponto is not configured on this server: PONTO_REDIRECT_URI is not set.',
+      );
+    }
+    return redirectUri;
+  }
 
   // -------------------------------------------------------------------------
   // OAuth Flow
@@ -38,6 +50,11 @@ export class PontoService {
     if (!coop.pontoEnabled) {
       throw new BadRequestException('Ponto is not enabled for this cooperative');
     }
+
+    // Validate before touching anything: the steps below delete any stale connection and
+    // create a PENDING one, so a server that cannot finish the handshake must not start it.
+    const redirectUri = this.getRedirectUri();
+    this.pontoClient.assertOAuthConfigured();
 
     // Check for existing connection
     const existing = await this.prisma.pontoConnection.findUnique({
@@ -75,10 +92,6 @@ export class PontoService {
         status: 'PENDING',
       },
     });
-
-    const redirectUri =
-      process.env.PONTO_REDIRECT_URI ||
-      `${process.env.API_URL || 'http://localhost:3001'}/admin/ponto/callback`;
 
     const authorizationUrl = this.pontoClient.generateAuthorizationUrl(
       redirectUri,
@@ -134,9 +147,7 @@ export class PontoService {
     code: string,
     codeVerifier: string,
   ): Promise<void> {
-    const redirectUri =
-      process.env.PONTO_REDIRECT_URI ||
-      `${process.env.API_URL || 'http://localhost:3001'}/admin/ponto/callback`;
+    const redirectUri = this.getRedirectUri();
 
     const tokens = await this.pontoClient.exchangeAuthorizationCode(
       code,
@@ -272,11 +283,11 @@ export class PontoService {
       synchronizationId,
     );
 
-    // Only process incoming (positive) transactions
-    const incoming = transactions.filter((tx) => tx.amount > 0);
+    // Store outgoing transactions as ignored audit rows, and match incoming transactions.
+    const incoming = transactions;
 
     this.logger.log(
-      `Processing ${incoming.length} incoming transactions ` +
+      `Processing ${incoming.length} bank transactions ` +
         `(${transactions.length} total) for coop ${connection.coopId}`,
     );
 
@@ -311,56 +322,16 @@ export class PontoService {
       return;
     }
 
-    // Extract OGM code from structured remittance information
-    let ogmCode: string | null = null;
-    if (txn.remittanceInformationType === 'structured') {
-      ogmCode = txn.remittanceInformation.replace(/\D/g, '');
-      // Validate it looks like a 12-digit OGM
-      if (!/^\d{12}$/.test(ogmCode)) {
-        ogmCode = null;
-      }
-    }
-
-    // Try to match to a registration
-    let registration: {
-      id: string;
-      coopId: string;
-      shareholder: {
-        id: string;
-        firstName: string | null;
-        lastName: string | null;
-        email: string | null;
-      };
-    } | null = null;
-    if (ogmCode) {
-      registration = await this.prisma.registration.findFirst({
-        where: {
-          ogmCode,
-          coopId,
-          status: { in: ['PENDING_PAYMENT', 'ACTIVE'] },
-        },
-        include: {
-          payments: true,
-          shareholder: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-        },
-      });
-    }
-
-    const matchStatus = registration ? 'AUTO_MATCHED' : 'UNMATCHED';
+    const ogmCode = extractOgmCode(txn.remittanceInformation);
+    const bankDate = new Date(txn.executionDate || txn.valueDate);
+    const matchStatus = txn.amount > 0 ? 'UNMATCHED' : 'IGNORED';
 
     // Create the BankTransaction record
     const bankTransaction = await this.prisma.bankTransaction.create({
       data: {
         coopId,
         bankImportId: null,
-        date: new Date(txn.executionDate || txn.valueDate),
+        date: bankDate,
         amount: txn.amount,
         counterparty: txn.counterpartName || null,
         ogmCode,
@@ -370,60 +341,16 @@ export class PontoService {
       },
     });
 
-    if (registration && autoMatch) {
-      await this.createPaymentFromTransaction(
-        bankTransaction,
-        registration,
+    if (txn.amount > 0) {
+      const result = await this.bankMatchingService.matchTransaction(
         coopId,
-        txn.amount,
-        new Date(txn.executionDate || txn.valueDate),
+        { ...bankTransaction, date: bankDate, amount: txn.amount, referenceText: txn.remittanceInformation, ogmCode },
+        undefined,
+        autoMatch,
       );
-    } else if (registration && !autoMatch) {
-      this.logger.log(
-        `Transaction ${txn.id} matched registration ${registration.id} — ` +
-          `pending admin confirmation (autoMatch disabled)`,
-      );
-    } else {
-      this.logger.log(`Transaction ${txn.id} unmatched — no OGM or registration found`);
-    }
-  }
-
-  /**
-   * Create a Payment from a matched bank transaction and send confirmation email.
-   */
-  private async createPaymentFromTransaction(
-    bankTransaction: { id: string },
-    registration: {
-      id: string;
-      coopId: string;
-      shareholder: {
-        id: string;
-        firstName: string | null;
-        lastName: string | null;
-        email: string | null;
-      };
-    },
-    coopId: string,
-    amount: number,
-    bankDate: Date,
-  ): Promise<void> {
-    try {
-      await this.paymentsService.addPayment({
-        registrationId: registration.id,
-        coopId,
-        amount,
-        bankDate,
-        bankTransactionId: bankTransaction.id,
-      });
-
-      this.logger.log(
-        `Payment created for registration ${registration.id} from Ponto transaction`,
-      );
-    } catch (err) {
-      this.logger.error(
-        `Failed to create payment for registration ${registration.id}: ` +
-          `${(err as Error).message}`,
-      );
+      if (result.status === 'UNMATCHED') {
+        this.logger.log(`Transaction ${txn.id} unmatched — no eligible payment found`);
+      }
     }
   }
 

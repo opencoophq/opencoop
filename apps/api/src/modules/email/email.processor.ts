@@ -512,14 +512,15 @@ export class EmailProcessor {
         const sn = escapeHtml(d.shareholderName);
         const ecn = escapeHtml(cn);
         const s = buildCopy('message-notification', lang, { coopName: ecn, shareholderName: sn });
+        // messageBody is allowlist-sanitised HTML produced by message-body.ts; it is not escaped here on purpose.
+        const body = (d.messageBody as string) || '';
         return `
           <h1>${s.title}</h1>
           <p>${s.dear}</p>
-          <p>${s.body}</p>
           <p><strong>${s.subject}:</strong> ${escapeHtml(d.messageSubject)}</p>
-          <blockquote style="border-left: 3px solid #1e40af; padding-left: 12px; color: #555;">
-            ${escapeHtml(d.messagePreview)}
-          </blockquote>
+          <div style="margin: 16px 0; line-height: 1.5;">${body}</div>
+          ${d.hasAttachments ? `<p>${s.attachmentsHint}</p>` : ''}
+          <p style="color:#555;">${s.replyHint}</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="${d.inboxUrl}"
                style="background-color: #1e40af; color: white; padding: 12px 24px;

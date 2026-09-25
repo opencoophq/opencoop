@@ -15,6 +15,151 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.39.4] - 2026-09-25
+
+### Fixed
+- **Bank rows link to payments that already exist.** Registrations marked paid by hand
+  already have a payment without a bank line. Their bank rows stayed "unmatched" and the
+  link dialog could not reach them. Auto-matching (CSV and Ponto) now attaches such a row to
+  the unlinked payment of the same registration with the same amount, without creating a
+  second payment. Linking a registration that is already fully paid is refused.
+- **Concurrent links cannot overwrite each other.** A payment or bank row is only claimed
+  while it is still free; a manual link that lost the race returns 409.
+
+### Added
+- **"Relink automatically" button** on the bank import page. It re-runs matching on all
+  unmatched rows, including rows imported before this release and older Ponto rows.
+- **Link dialog with two lists:** existing unlinked payments and open registrations,
+  searchable by name and amount.
+- **Ignore non-share rows.** Outgoing transfers are ignored on import. Incoming rows that are
+  not share payments (invoices, refunds) can be ignored one by one or in bulk, and restored.
+  The unmatched list and counter leave ignored rows out; a status filter shows them.
+
+## [2026.39.3] - 2026-09-25
+
+### Added
+- **Full admin access over MCP.** The MCP endpoint (`POST /api/mcp`) now offers 112 tools
+  covering what a coop admin can do in the dashboard: shareholders and households,
+  registrations, payments and transfers, share classes, projects and channels, coop
+  settings, bank transactions and matching, dividends, messages (draft, schedule, send,
+  reply), general meetings (convocation, agenda, proxies, votes, check-in, minutes), and
+  reports, documents and audit logs.
+- **Read-only and read-write API keys.** Choose the scope when you create a key under
+  Settings → API keys. Every tool checks the key owner's current coop permissions, and
+  personal data is masked for admins without permission to view it.
+- **Message drafts, audiences and scheduling.** Broadcast messages can target all
+  shareholders, one project or selected shareholders, can be saved as a draft and can be
+  scheduled. The messages list shows drafts and scheduled messages, with Send now and
+  Cancel schedule.
+
+### Changed
+- **Existing API keys are now read-only.** Create a new read-write key if an integration
+  needs to change data.
+- Bank details, e-mail settings, the reply-to address and audience sync can only be
+  changed in the dashboard, not over MCP.
+
+### Fixed
+- A dividend period created with 0% withholding tax stored 30%.
+- Household linking now requires the shareholder-management permission and an active
+  subscription.
+- A scheduled message is only sent if its author may still send messages and the coop's
+  subscription allows it.
+- If some notification e-mails fail after a message was sent, the send no longer reports
+  an error, so a retry cannot e-mail everyone twice.
+
+## [2026.39.2] - 2026-09-25
+
+### Security
+- **Documents stay inside their coop.** Generating a share certificate or a dividend
+  statement looked the shareholder up by id alone, so an admin of one coop could generate
+  these documents for a shareholder of another coop. The shareholder, and for statements
+  the dividend payout, must now belong to the admin's coop; anything else returns 404.
+
+### Fixed
+- **Manual bank matching works again.** The bank-import screen encoded the match request
+  twice, so the API rejected every manual match with a 400.
+- **Re-importing a bank export no longer duplicates payments.** Rows already imported for
+  the coop (same date, amount, counterparty and reference) are skipped, and the upload
+  result shows how many were skipped.
+
+## [2026.39.1] - 2026-09-24
+
+### Fixed
+- **Belfius bank import works.** The Belfius preset used column names that the real
+  Belfius Web export does not have, so every upload failed. It now reads `Boekingsdatum`,
+  `Naam tegenpartij bevat` and `Mededelingen`. Bank presets find their header row by its
+  column names, so extra or blank metadata lines above the header no longer break an import.
+- **Bank import shows what happened.** Upload and match errors appear on the page, and a
+  successful upload shows how many rows were imported, matched and left unmatched.
+- **Ponto payments match their registration.** Ponto looked up the structured
+  communication as 12 raw digits, while registrations store it as `+++XXX/XXXX/XXXXX+++`,
+  so no Ponto payment ever matched. It now validates and formats the code first, and also
+  finds a `+++…+++` or `***…***` code typed in a free-text message.
+
+### Security
+- **Manual bank matching stays inside the coop.** A coop admin could match a bank
+  transaction or registration of another coop by id. Both now must belong to the coop in
+  the URL; anything else returns 404.
+
+## [2026.39.0] - 2026-09-21
+
+### Fixed
+- **Gift purchases no longer create nameless shareholders.** The public purchase form's
+  gift option asked the buyer for an email only. The buyer holds the shares until the
+  recipient claims the gift code, so the buyer must be a complete register entry. The
+  gift form now asks for name, birth date, email, phone and address, and the API rejects
+  a new individual without a first and last name, or a company without a company name.
+- **Admin shareholder list rows are always clickable.** When the name is empty, the link
+  shows the email instead of nothing.
+
+### Added
+- **Gift icon in the admin shareholder list.** Shareholders who bought shares as a gift
+  get a gift icon next to their type badge.
+
+## [2026.37.1] - 2026-09-10
+
+Note: tag `v2026.37.0` points at the same commit as `v2026.31.0` and shipped nothing new.
+
+### Changed
+- **Shareholder status is now derived from paid shares.** A shareholder is ACTIVE when
+  paid BUY shares minus completed SELL shares is above zero. INACTIVE means they once
+  held shares and now hold none. PENDING means they never held paid shares. Admins can
+  no longer set the status by hand. The detail page shows it as a read-only badge, the
+  update endpoint rejects it, and the CSV import no longer accepts a status column. New
+  shareholders start as PENDING until their first payment lands. The status is recomputed
+  after every payment, bank match, completion, and transfer. A nightly job at 02:30
+  (Europe/Brussels) reconciles every row before the Brevo audience sync runs.
+- **Brevo sync removes PENDING shareholders from the members list.** Before, a contact
+  added while ACTIVE stayed on the list forever.
+- **Backfill.** A data migration recomputes the status of every existing shareholder on
+  deploy. On production, 28 Bronsgroen records move from ACTIVE to PENDING because they
+  hold no paid shares. 6 move from ACTIVE to INACTIVE because they sold everything in
+  2026. 1 moves from INACTIVE to ACTIVE because the sale still awaits payout. The
+  dashboard's "active shareholders" tile and the growth chart now agree.
+
+## [2026.31.0] - 2026-08-01
+
+### Fixed
+- **Passkeys now work in deployed environments.** Sign-in with a passkey, and
+  registering one, failed on both acceptance and production: the relying-party ID and
+  expected origin were documented in the deployment templates but never passed through
+  to the API container, so the server checked every response against `localhost` and
+  rejected it. Both values are now derived from `FRONTEND_URL`, which every environment
+  already sets correctly — a passkey is bound to the hostname you actually visit, so
+  there is no longer a second setting that can drift out of step with the first. No
+  existing passkeys were affected: registration had never succeeded in a deployed
+  environment, so none had been stored.
+- A missing or malformed `FRONTEND_URL` now stops the API at startup with an explicit
+  message instead of quietly falling back to `localhost`.
+- **AGM kiosk check-in could not submit signatures.** NestJS Express body-parser
+  defaulted to a 100KB JSON limit, but signature PNGs from an iPad routinely exceed
+  that. The `KioskService`'s own 2MB cap was unreachable: requests were rejected
+  with HTTP 413 before the controller ran. Bumped the JSON/urlencoded limit to 5MB
+  so the service-level limit is the binding constraint. Hardened the kiosk submit
+  handler to wrap `signaturePad.toDataURL()` inside the existing try/catch — a
+  synchronous throw there previously escaped as an unhandled rejection and surfaced
+  as a Next.js "Application error".
+
 ## [2026.30.1] - 2026-07-21
 
 ### Fixed

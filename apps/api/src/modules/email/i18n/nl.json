@@ -66,10 +66,11 @@
     "thanksEnd": "Bedankt om aandeelhouder te zijn van {coopName}!"
   },
   "message-notification": {
-    "title": "Nieuw bericht van {coopName}",
+    "title": "Bericht van {coopName}",
     "dear": "Beste {shareholderName},",
-    "body": "U heeft een nieuw bericht ontvangen van {coopName}.",
     "subject": "Onderwerp",
+    "replyHint": "Antwoorden kan via uw postvak op het platform.",
+    "attachmentsHint": "Dit bericht bevat bijlagen. U vindt ze in uw postvak.",
     "viewMessage": "Bekijk het bericht"
   },
   "meeting-convocation": {
