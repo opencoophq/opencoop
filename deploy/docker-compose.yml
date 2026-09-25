@@ -71,6 +71,7 @@ services:
       APPLE_KEY_PATH: /app/apple-auth-key.p8
       APPLE_CALLBACK_URL: ${APPLE_CALLBACK_URL:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
+      WEBAUTHN_RP_NAME: ${WEBAUTHN_RP_NAME:-OpenCoop}
       NODE_ENV: production
     volumes:
       - api_uploads:/app/uploads

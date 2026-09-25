@@ -1,13 +1,38 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateDividendPeriodDto } from './dto/create-dividend-period.dto';
 import { calculateDividend, apportionWithholdingTax } from '@opencoop/shared';
-import { resolveShareholderEmailWithSource } from '../shareholders/shareholder-email.resolver';
+import {
+  EmailSource,
+  resolveShareholderEmailWithSource,
+} from '../shareholders/shareholder-email.resolver';
+
+export interface DividendExportRow {
+  id: string;
+  type: string;
+  firstName: string | null;
+  lastName: string | null;
+  companyName: string | null;
+  email: string | null;
+  emailSource: EmailSource;
+  grossAmount: number;
+  withholdingTax: number;
+  netAmount: number;
+  reference: string;
+}
 
 @Injectable()
 export class DividendsService {
-  constructor(private prisma: PrismaService, private auditService: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   async findAll(coopId: string) {
     const periods = await this.prisma.dividendPeriod.findMany({
@@ -32,7 +57,7 @@ export class DividendsService {
           totalTax: acc.totalTax + Number(payout.withholdingTax),
           totalNet: acc.totalNet + Number(payout.netAmount),
         }),
-        { totalGross: 0, totalTax: 0, totalNet: 0 }
+        { totalGross: 0, totalTax: 0, totalNet: 0 },
       );
 
       const { payouts, ...periodData } = period;
@@ -84,10 +109,11 @@ export class DividendsService {
     const payouts = period.payouts.map((payout) => ({
       id: payout.id,
       shareholder: payout.shareholder,
-      shares: (payout.calculationDetails as Array<{ quantity: number }>)?.reduce(
-        (sum, d) => sum + (d.quantity || 0),
-        0,
-      ) || 0,
+      shares:
+        (payout.calculationDetails as Array<{ quantity: number }>)?.reduce(
+          (sum, d) => sum + (d.quantity || 0),
+          0,
+        ) || 0,
       grossAmount: Number(payout.grossAmount),
       taxAmount: Number(payout.withholdingTax),
       netAmount: Number(payout.netAmount),
@@ -106,7 +132,13 @@ export class DividendsService {
     };
   }
 
-  async create(coopId: string, dto: CreateDividendPeriodDto, actorId?: string, ip?: string, userAgent?: string) {
+  async create(
+    coopId: string,
+    dto: CreateDividendPeriodDto,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     // Check if period for year already exists
     const existing = await this.prisma.dividendPeriod.findFirst({
       where: {
@@ -121,7 +153,7 @@ export class DividendsService {
 
     // Convert percentage to decimal (e.g., 2.5% -> 0.025)
     const dividendRateDecimal = dto.dividendRate / 100;
-    const withholdingTaxRateDecimal = dto.withholdingTaxRate ? dto.withholdingTaxRate / 100 : 0.30;
+    const withholdingTaxRateDecimal = (dto.withholdingTaxRate ?? 30) / 100;
 
     const period = await this.prisma.dividendPeriod.create({
       data: {
@@ -150,7 +182,13 @@ export class DividendsService {
   }
 
   // C4: Added coopId for tenant isolation
-  async calculate(periodId: string, coopId: string, actorId?: string, ip?: string, userAgent?: string) {
+  async calculate(
+    periodId: string,
+    coopId: string,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     const period = await this.prisma.dividendPeriod.findFirst({
       where: { id: periodId, coopId },
     });
@@ -235,9 +273,8 @@ export class DividendsService {
         // Compute vested shares from payments made before ex-dividend date
         const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
         const pricePerShare = Number(reg.pricePerShare);
-        const vestedQuantity = pricePerShare > 0
-          ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity)
-          : 0;
+        const vestedQuantity =
+          pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity) : 0;
 
         if (vestedQuantity <= 0) continue;
 
@@ -265,7 +302,8 @@ export class DividendsService {
 
       // Sum gross, rounded to whole cents. Tax/net are deferred to period-level
       // apportionment below so the per-payout taxes reconcile exactly.
-      const sumGross = Math.round(calculationDetails.reduce((sum, d) => sum + d.dividendAmount, 0) * 100) / 100;
+      const sumGross =
+        Math.round(calculationDetails.reduce((sum, d) => sum + d.dividendAmount, 0) * 100) / 100;
 
       payouts.push({
         dividendPeriodId: periodId,
@@ -323,7 +361,14 @@ export class DividendsService {
   }
 
   // C4: Added coopId for tenant isolation
-  async markAsPaid(periodId: string, coopId: string, paymentReference?: string, actorId?: string, ip?: string, userAgent?: string) {
+  async markAsPaid(
+    periodId: string,
+    coopId: string,
+    paymentReference?: string,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     const period = await this.prisma.dividendPeriod.findFirst({
       where: { id: periodId, coopId },
     });
@@ -360,7 +405,9 @@ export class DividendsService {
       action: 'UPDATE',
       changes: [
         { field: 'status', oldValue: period.status, newValue: 'PAID' },
-        ...(paymentReference ? [{ field: 'paymentReference', oldValue: null, newValue: paymentReference }] : []),
+        ...(paymentReference
+          ? [{ field: 'paymentReference', oldValue: null, newValue: paymentReference }]
+          : []),
       ],
       actorId,
       ipAddress: ip,
@@ -394,8 +441,7 @@ export class DividendsService {
     });
   }
 
-  // C4: Added coopId for tenant isolation
-  async exportToCsv(periodId: string, coopId: string): Promise<string> {
+  async getExportRows(periodId: string, coopId: string): Promise<DividendExportRow[]> {
     const period = await this.prisma.dividendPeriod.findFirst({
       where: { id: periodId, coopId },
       include: {
@@ -428,6 +474,28 @@ export class DividendsService {
       throw new BadRequestException('No payouts to export');
     }
 
+    return period.payouts.map((payout) => {
+      const { email, source } = resolveShareholderEmailWithSource(payout.shareholder);
+      return {
+        id: payout.shareholder.id,
+        type: payout.shareholder.type,
+        firstName: payout.shareholder.firstName,
+        lastName: payout.shareholder.lastName,
+        companyName: payout.shareholder.companyName,
+        email,
+        emailSource: source,
+        grossAmount: Number(payout.grossAmount),
+        withholdingTax: Number(payout.withholdingTax),
+        netAmount: Number(payout.netAmount),
+        reference: `Dividend ${period.name || period.year} - ${period.coop.name}`,
+      };
+    });
+  }
+
+  // C4: Added coopId for tenant isolation
+  async exportToCsv(periodId: string, coopId: string): Promise<string> {
+    const payouts = await this.getExportRows(periodId, coopId);
+
     // CSV header
     const header = [
       'Shareholder ID',
@@ -442,25 +510,22 @@ export class DividendsService {
     ].join(';');
 
     // CSV rows
-    const rows = period.payouts.map((payout) => {
+    const rows = payouts.map((payout) => {
       const name =
-        payout.shareholder.type === 'COMPANY'
-          ? payout.shareholder.companyName || ''
-          : `${payout.shareholder.firstName || ''} ${payout.shareholder.lastName || ''}`.trim();
-
-      const reference = `Dividend ${period.name || period.year} - ${period.coop.name}`;
-      const { email, source } = resolveShareholderEmailWithSource(payout.shareholder);
+        payout.type === 'COMPANY'
+          ? payout.companyName || ''
+          : `${payout.firstName || ''} ${payout.lastName || ''}`.trim();
 
       return [
-        payout.shareholder.id,
+        payout.id,
         `"${name}"`,
-        payout.shareholder.type,
-        email || '',
-        source,
-        Number(payout.grossAmount).toFixed(2),
-        Number(payout.withholdingTax).toFixed(2),
-        Number(payout.netAmount).toFixed(2),
-        `"${reference}"`,
+        payout.type,
+        payout.email || '',
+        payout.emailSource,
+        payout.grossAmount.toFixed(2),
+        payout.withholdingTax.toFixed(2),
+        payout.netAmount.toFixed(2),
+        `"${payout.reference}"`,
       ].join(';');
     });
 

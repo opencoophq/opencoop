@@ -200,7 +200,8 @@
     "statuses": {
       "PENDING": "In behandeling",
       "ACTIVE": "Actief",
-      "INACTIVE": "Inactief"
+      "INACTIVE": "Inactief",
+      "derivedFromPaidShares": "Afgeleid van betaalde aandelen"
     },
     "memberSince": "Lid sinds"
   },
@@ -784,7 +785,24 @@
       "matchTransaction": "Transactie koppelen",
       "reference": "Mededeling",
       "selectRegistration": "Selecteer een registratie om te koppelen",
-      "noRegistrations": "Geen openstaande registraties gevonden"
+      "noRegistrations": "Geen openstaande registraties gevonden",
+      "uploadError": "Uploaden van het CSV-bestand is mislukt",
+      "uploadSuccess": "{total} rijen geïmporteerd: {matched} gekoppeld, {unmatched} niet gekoppeld, {skipped} dubbele overgeslagen",
+      "rematch": "Opnieuw automatisch koppelen",
+      "rematchSuccess": "{checked} gecontroleerd: {linkedExisting} bestaande betalingen gekoppeld, {createdPayments} betalingen aangemaakt, {stillUnmatched} niet gekoppeld, {ignoredOutgoing} uitgaande betalingen genegeerd",
+      "existingPayment": "Bestaande betaling",
+      "openRegistration": "Openstaande inschrijving",
+      "searchShareholder": "Zoek op naam van aandeelhouder",
+      "noExistingPayments": "Geen bestaande betalingen gevonden",
+      "statusAll": "Alle",
+      "statusUnmatched": "Niet gekoppeld",
+      "statusMatched": "Gekoppeld",
+      "statusIgnored": "Genegeerd",
+      "ignore": "Negeren",
+      "restore": "Terugzetten",
+      "ignoreSelected": "{count} selecties negeren",
+      "ignoreSuccess": "{ignored} betaling(en) genegeerd, {skipped} overgeslagen",
+      "notSharePayment": "Geen aandelenbetaling"
     },
     "dividends": {
       "title": "Dividendbeheer",
@@ -904,6 +922,10 @@
         "create": "API-sleutel aanmaken",
         "name": "Naam sleutel",
         "namePlaceholder": "bijv. Claude Code - laptop",
+        "scope": "Toegangsniveau",
+        "readOnly": "Alleen lezen",
+        "readWrite": "Lezen & schrijven",
+        "scopeHint": "Sleutels met lees- en schrijfrechten kunnen gegevens (zoals aandeelhouders, transacties en berichten) wijzigen met de rechten van de eigenaar.",
         "prefix": "Sleutel",
         "createdAt": "Aangemaakt",
         "lastUsed": "Laatst gebruikt",
@@ -1821,6 +1843,8 @@
     "subject": "Onderwerp",
     "body": "Bericht",
     "allShareholders": "Alle aandeelhouders",
+    "project": "Project",
+    "selectedShareholders": "{count} geselecteerde aandeelhouders",
     "specificShareholder": "Specifieke aandeelhouder",
     "broadcast": "Groepsbericht",
     "direct": "Direct",
@@ -1840,6 +1864,13 @@
     "admin": "Beheerder",
     "you": "U",
     "recipient": "Ontvanger",
+    "recipients": "Ontvangers",
+    "draft": "Concept",
+    "scheduled": "Gepland",
+    "scheduledFor": "Gepland voor {date}",
+    "sendNow": "Nu verzenden",
+    "sendNowConfirm": "Dit mailt alle ontvangers onmiddellijk en kan niet ongedaan worden gemaakt. Doorgaan?",
+    "cancelSchedule": "Planning annuleren",
     "from": "Van"
   },
   "legal": {

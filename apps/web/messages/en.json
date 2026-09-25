@@ -200,7 +200,8 @@
     "statuses": {
       "PENDING": "Pending",
       "ACTIVE": "Active",
-      "INACTIVE": "Inactive"
+      "INACTIVE": "Inactive",
+      "derivedFromPaidShares": "Derived from paid shares"
     },
     "memberSince": "Member since"
   },
@@ -784,7 +785,24 @@
       "matchTransaction": "Match Transaction",
       "reference": "Reference",
       "selectRegistration": "Select a registration to match",
-      "noRegistrations": "No pending registrations found"
+      "noRegistrations": "No pending registrations found",
+      "uploadError": "The CSV upload failed",
+      "uploadSuccess": "{total} rows imported: {matched} matched, {unmatched} unmatched, {skipped} duplicates skipped",
+      "rematch": "Automatically rematch",
+      "rematchSuccess": "{checked} checked: {linkedExisting} existing payments linked, {createdPayments} payments created, {stillUnmatched} still unmatched, {ignoredOutgoing} outgoing payments ignored",
+      "existingPayment": "Existing payment",
+      "openRegistration": "Open registration",
+      "searchShareholder": "Search shareholder name",
+      "noExistingPayments": "No existing payments found",
+      "statusAll": "All",
+      "statusUnmatched": "Unmatched",
+      "statusMatched": "Matched",
+      "statusIgnored": "Ignored",
+      "ignore": "Ignore",
+      "restore": "Restore",
+      "ignoreSelected": "Ignore {count} selected",
+      "ignoreSuccess": "{ignored} payment(s) ignored, {skipped} skipped",
+      "notSharePayment": "Not a share payment"
     },
     "dividends": {
       "title": "Dividend Management",
@@ -904,6 +922,10 @@
         "create": "Create API Key",
         "name": "Key Name",
         "namePlaceholder": "e.g. Claude Code - laptop",
+        "scope": "Scope",
+        "readOnly": "Read-only",
+        "readWrite": "Read & write",
+        "scopeHint": "Read & write keys can change data (including shareholders, transactions, and messages) with the permissions of the key owner.",
         "prefix": "Key",
         "createdAt": "Created",
         "lastUsed": "Last Used",
@@ -1821,6 +1843,8 @@
     "subject": "Subject",
     "body": "Message",
     "allShareholders": "All shareholders",
+    "project": "Project",
+    "selectedShareholders": "{count} selected shareholders",
     "specificShareholder": "Specific shareholder",
     "broadcast": "Broadcast",
     "direct": "Direct",
@@ -1840,6 +1864,13 @@
     "admin": "Admin",
     "you": "You",
     "recipient": "Recipient",
+    "recipients": "Recipients",
+    "draft": "Draft",
+    "scheduled": "Scheduled",
+    "scheduledFor": "Scheduled for {date}",
+    "sendNow": "Send now",
+    "sendNowConfirm": "This will email all recipients immediately and cannot be undone. Continue?",
+    "cancelSchedule": "Cancel schedule",
     "from": "From"
   },
   "legal": {

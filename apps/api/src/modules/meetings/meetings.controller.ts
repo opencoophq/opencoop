@@ -48,6 +48,8 @@ import { UploadMeetingDocumentDto } from './dto/upload-meeting-document.dto';
 import { UpdateMeetingDocumentDto } from './dto/update-meeting-document.dto';
 import { UpdateDocumentsEmailDraftDto } from './dto/update-documents-email-draft.dto';
 import { RsvpUpdateDto } from './dto/rsvp-update.dto';
+import { CancelMeetingDto } from './dto/cancel-meeting.dto';
+import { UpdateMinutesDto } from './dto/update-minutes.dto';
 
 @ApiTags('Meetings')
 @ApiBearerAuth()
@@ -96,8 +98,8 @@ export class MeetingsController {
   }
 
   @Post(':id/cancel')
-  cancel(@Param('coopId') coopId: string, @Param('id') id: string, @Body('reason') reason: string) {
-    return this.meetings.cancel(coopId, id, reason);
+  cancel(@Param('coopId') coopId: string, @Param('id') id: string, @Body() dto: CancelMeetingDto) {
+    return this.meetings.cancel(coopId, id, dto.reason);
   }
 
   @Post(':id/agenda-items')
@@ -284,9 +286,9 @@ export class MeetingsController {
   updateMinutes(
     @Param('coopId') coopId: string,
     @Param('id') id: string,
-    @Body('content') content: string,
+    @Body() dto: UpdateMinutesDto,
   ) {
-    return this.minutes.update(coopId, id, content);
+    return this.minutes.update(coopId, id, dto.content);
   }
 
   @Post(':id/minutes/finalize')

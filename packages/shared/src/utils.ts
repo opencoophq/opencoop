@@ -157,6 +157,30 @@ export function formatOgmCode(raw: string): string {
 }
 
 /**
+ * Extract and normalize the first valid Belgian OGM from bank reference fields.
+ * Accepts +++...+++ and ***...*** notation, plus a field containing only 12 digits.
+ */
+export function extractOgmCode(...values: (string | null | undefined)[]): string | null {
+  for (const value of values) {
+    if (!value) continue;
+
+    const trimmed = value.trim();
+    const rawOnly = trimmed.replace(/\s/g, '');
+    if (/^\d{12}$/.test(rawOnly) && validateOgmCode(rawOnly)) {
+      return formatOgmCode(rawOnly);
+    }
+
+    const notation = /(?:\+{3}|\*{3})\s*(\d{3})\s*\/\s*(\d{4})\s*\/\s*(\d{5})\s*(?:\+{3}|\*{3})/g;
+    for (const match of trimmed.matchAll(notation)) {
+      const raw = match.slice(1, 4).join('');
+      if (validateOgmCode(raw)) return formatOgmCode(raw);
+    }
+  }
+
+  return null;
+}
+
+/**
  * Parse a formatted OGM code back to raw digits.
  */
 export function parseOgmCode(formatted: string): string {

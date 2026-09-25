@@ -200,7 +200,8 @@
     "statuses": {
       "PENDING": "En attente",
       "ACTIVE": "Actif",
-      "INACTIVE": "Inactif"
+      "INACTIVE": "Inactif",
+      "derivedFromPaidShares": "Dérivé des parts payées"
     },
     "memberSince": "Membre depuis"
   },
@@ -782,7 +783,24 @@
       "matchTransaction": "Rapprocher la transaction",
       "reference": "Communication",
       "selectRegistration": "Sélectionnez une inscription à rapprocher",
-      "noRegistrations": "Aucune inscription en attente trouvée"
+      "noRegistrations": "Aucune inscription en attente trouvée",
+      "uploadError": "L’importation du fichier CSV a échoué",
+      "uploadSuccess": "{total} lignes importées : {matched} rapprochées, {unmatched} non rapprochées, {skipped} doublons ignorés",
+      "rematch": "Rapprocher automatiquement à nouveau",
+      "rematchSuccess": "{checked} vérifiées : {linkedExisting} paiements existants liés, {createdPayments} paiements créés, {stillUnmatched} non rapprochées, {ignoredOutgoing} paiements sortants ignorés",
+      "existingPayment": "Paiement existant",
+      "openRegistration": "Inscription ouverte",
+      "searchShareholder": "Rechercher le nom de l’actionnaire",
+      "noExistingPayments": "Aucun paiement existant trouvé",
+      "statusAll": "Toutes",
+      "statusUnmatched": "Non rapprochées",
+      "statusMatched": "Rapprochées",
+      "statusIgnored": "Ignorées",
+      "ignore": "Ignorer",
+      "restore": "Restaurer",
+      "ignoreSelected": "Ignorer {count} sélectionnées",
+      "ignoreSuccess": "{ignored} paiement(s) ignoré(s), {skipped} ignoré(s) lors du traitement",
+      "notSharePayment": "Pas un paiement d’actions"
     },
     "dividends": {
       "title": "Gestion des dividendes",
@@ -902,6 +920,10 @@
         "create": "Créer une clé API",
         "name": "Nom de la clé",
         "namePlaceholder": "ex. Claude Code - laptop",
+        "scope": "Niveau d'accès",
+        "readOnly": "Lecture seule",
+        "readWrite": "Lecture et écriture",
+        "scopeHint": "Les clés avec accès en lecture et écriture peuvent modifier les données (actionnaires, transactions, messages, etc.) avec les autorisations du propriétaire de la clé.",
         "prefix": "Clé",
         "createdAt": "Créée le",
         "lastUsed": "Dernière utilisation",
@@ -1818,6 +1840,8 @@
     "subject": "Sujet",
     "body": "Message",
     "allShareholders": "Tous les coopérateurs",
+    "project": "Projet",
+    "selectedShareholders": "{count} coopérateurs sélectionnés",
     "specificShareholder": "Coopérateur spécifique",
     "broadcast": "Diffusion",
     "direct": "Direct",
@@ -1837,6 +1861,13 @@
     "admin": "Administrateur",
     "you": "Vous",
     "recipient": "Destinataire",
+    "recipients": "Destinataires",
+    "draft": "Brouillon",
+    "scheduled": "Planifié",
+    "scheduledFor": "Planifié pour le {date}",
+    "sendNow": "Envoyer maintenant",
+    "sendNowConfirm": "Tous les destinataires recevront un e-mail immédiatement et cette action est irréversible. Continuer ?",
+    "cancelSchedule": "Annuler la planification",
     "from": "De"
   },
   "legal": {
