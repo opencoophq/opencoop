@@ -16,6 +16,14 @@ export interface Audience {
 export class AudienceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async assertProjectBelongsToCoop(coopId: string, projectId: string): Promise<void> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, coopId },
+      select: { id: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
+  }
+
   async resolve(coopId: string, audience: Audience): Promise<{ shareholderIds: string[] }> {
     switch (audience.type) {
       case 'ALL': {
@@ -26,16 +34,13 @@ export class AudienceService {
         return { shareholderIds: rows.map((r) => r.id) };
       }
       case 'PROJECT': {
-        if (!audience.projectId) throw new BadRequestException('projectId is required for a PROJECT audience');
-        const project = await this.prisma.project.findFirst({
-          where: { id: audience.projectId, coopId },
-          select: { id: true },
-        });
-        if (!project) throw new NotFoundException('Project not found');
+        if (!audience.projectId)
+          throw new BadRequestException('projectId is required for a PROJECT audience');
+        await this.assertProjectBelongsToCoop(coopId, audience.projectId);
         const regs = await this.prisma.registration.findMany({
           where: {
             coopId,
-            projectId: project.id,
+            projectId: audience.projectId,
             type: 'BUY',
             status: { in: ['ACTIVE', 'COMPLETED'] },
             shareholder: { status: 'ACTIVE' },
@@ -73,12 +78,9 @@ export class AudienceService {
           where: { coopId, status: 'ACTIVE' },
         });
       case 'PROJECT': {
-        if (!audience.projectId) throw new BadRequestException('projectId is required for a PROJECT audience');
-        const project = await this.prisma.project.findFirst({
-          where: { id: audience.projectId, coopId },
-          select: { id: true },
-        });
-        if (!project) throw new NotFoundException('Project not found');
+        if (!audience.projectId)
+          throw new BadRequestException('projectId is required for a PROJECT audience');
+        await this.assertProjectBelongsToCoop(coopId, audience.projectId);
         return this.prisma.shareholder.count({
           where: {
             coopId,
@@ -86,7 +88,7 @@ export class AudienceService {
             registrations: {
               some: {
                 coopId,
-                projectId: project.id,
+                projectId: audience.projectId,
                 type: 'BUY',
                 status: { in: ['ACTIVE', 'COMPLETED'] },
               },
