@@ -151,9 +151,13 @@ Swagger UI available at: `http://localhost:3001/docs` (mounted via `SwaggerModul
 
 ## AI Integration
 
-- **MCP Server:** `POST /mcp` — Streamable HTTP transport. Requires a coop API key via `Authorization: Bearer <key>` (enforced by `McpAuthMiddleware`, see `app.module.ts`), with per-key tenant scoping. Tools: `list_coops`, `get_coop_info`, `list_projects`, `list_share_classes`, `get_share_purchase_url`
-- **llms.txt:** `GET /llms.txt` — Plain text API overview for LLMs
-- **llms-full.txt:** `GET /llms-full.txt` — Full public data dump (cached 5 min)
+- **MCP endpoint:** `POST /mcp` is the only MCP endpoint. It uses stateless Streamable HTTP transport with JSON responses, not SSE streaming. `GET` and `DELETE` on `/mcp` return `405`.
+- **Authentication:** Send `Authorization: Bearer oc_<key>`. Each API key belongs to exactly one user and one coop. It is not a session token.
+- **Key scope:** Keys use `READ_ONLY` by default or `READ_WRITE` when selected during creation in the dashboard.
+- Every tool call re-checks the key owner's live coop permissions at call time. It uses the same permission checks as the REST API's `@RequirePermission` decorator and applies the same `canViewPII` masking logic to returned data.
+- Write tools require both `READ_WRITE` key scope and a coop subscription tier that is not read-only.
+- All tool calls go through `McpToolkit.run()` in `apps/api/src/modules/mcp/mcp-toolkit.ts`. This method centrally enforces the permission, PII, and scope checks above.
+- Tools live in `apps/api/src/modules/mcp/tools/`. See `tools/*.tools.ts` for the current tool list.
 
 ## Testing
 

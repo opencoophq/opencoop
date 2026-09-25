@@ -63,6 +63,28 @@ describe('AudienceSyncService', () => {
     });
   });
 
+  it('reconcileOne moves a PENDING member off the members list, no create', async () => {
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ status: 'PENDING' }));
+    const s = await service.reconcileOne('c1', 'sh1');
+    expect(s.moved).toBe(1);
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
+      addListIds: [], removeListIds: [3], createIfMissing: false,
+    }));
+  });
+
+  it('reconcileOne still removes a PENDING shareholder without an email from members', async () => {
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    prisma.shareholder.findFirst.mockResolvedValue(
+      makeShareholder({ status: 'PENDING', email: null, user: null }),
+    );
+    const s = await service.reconcileOne('c1', 'sh1');
+    expect(s.moved).toBe(1);
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
+      email: null, removeListIds: [3], createIfMissing: false,
+    }));
+  });
+
   it('reconcileOne skips when no email can be resolved', async () => {
     prisma.coop.findUnique.mockResolvedValue(COOP);
     prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ email: null, user: null }));
@@ -112,6 +134,15 @@ describe('AudienceSyncService', () => {
     expect(s.failed).toBe(1);
     expect(prisma.brevoSyncRun.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: 'PARTIAL', trigger: 'cron' }) }),
+    );
+  });
+
+  it('reconcileAll includes PENDING shareholders', async () => {
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    prisma.shareholder.findMany.mockResolvedValue([]);
+    await service.reconcileAll('c1', 'cron');
+    expect(prisma.shareholder.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { coopId: 'c1' } }),
     );
   });
 

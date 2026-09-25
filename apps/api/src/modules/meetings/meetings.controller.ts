@@ -46,6 +46,8 @@ import { SendConvocationDto } from './dto/send-convocation.dto';
 import { UploadMeetingDocumentDto } from './dto/upload-meeting-document.dto';
 import { UpdateMeetingDocumentDto } from './dto/update-meeting-document.dto';
 import { UpdateDocumentsEmailDraftDto } from './dto/update-documents-email-draft.dto';
+import { CancelMeetingDto } from './dto/cancel-meeting.dto';
+import { UpdateMinutesDto } from './dto/update-minutes.dto';
 
 @ApiTags('Meetings')
 @ApiBearerAuth()
@@ -83,11 +85,7 @@ export class MeetingsController {
   }
 
   @Patch(':id')
-  update(
-    @Param('coopId') coopId: string,
-    @Param('id') id: string,
-    @Body() dto: UpdateMeetingDto,
-  ) {
+  update(@Param('coopId') coopId: string, @Param('id') id: string, @Body() dto: UpdateMeetingDto) {
     return this.meetings.update(coopId, id, dto);
   }
 
@@ -97,12 +95,8 @@ export class MeetingsController {
   }
 
   @Post(':id/cancel')
-  cancel(
-    @Param('coopId') coopId: string,
-    @Param('id') id: string,
-    @Body('reason') reason: string,
-  ) {
-    return this.meetings.cancel(coopId, id, reason);
+  cancel(@Param('coopId') coopId: string, @Param('id') id: string, @Body() dto: CancelMeetingDto) {
+    return this.meetings.cancel(coopId, id, dto.reason);
   }
 
   @Post(':id/agenda-items')
@@ -151,12 +145,7 @@ export class MeetingsController {
     @Param('id') id: string,
     @Body() dto: CreateProxyDto,
   ) {
-    return this.proxies.create(
-      coopId,
-      id,
-      dto.grantorShareholderId,
-      dto.delegateShareholderId,
-    );
+    return this.proxies.create(coopId, id, dto.grantorShareholderId, dto.delegateShareholderId);
   }
 
   @Get(':id/proxies')
@@ -231,10 +220,7 @@ export class MeetingsController {
   }
 
   @Post(':id/kiosk/:sessionId/end')
-  endKiosk(
-    @Param('coopId') coopId: string,
-    @Param('sessionId') sessionId: string,
-  ) {
+  endKiosk(@Param('coopId') coopId: string, @Param('sessionId') sessionId: string) {
     return this.kiosk.endSession(coopId, sessionId);
   }
 
@@ -281,9 +267,9 @@ export class MeetingsController {
   updateMinutes(
     @Param('coopId') coopId: string,
     @Param('id') id: string,
-    @Body('content') content: string,
+    @Body() dto: UpdateMinutesDto,
   ) {
-    return this.minutes.update(coopId, id, content);
+    return this.minutes.update(coopId, id, dto.content);
   }
 
   @Post(':id/minutes/finalize')
@@ -360,11 +346,7 @@ export class MeetingsController {
   }
 
   @Get(':id/minutes/pdf')
-  async minutesPdf(
-    @Param('coopId') coopId: string,
-    @Param('id') id: string,
-    @Res() res: Response,
-  ) {
+  async minutesPdf(@Param('coopId') coopId: string, @Param('id') id: string, @Res() res: Response) {
     const buf = await this.pdf.minutes(coopId, id);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="minutes.pdf"');

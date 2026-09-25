@@ -23,7 +23,6 @@ interface ImportRow {
   country?: string;
   bankIban?: string;
   bankBic?: string;
-  status?: string;
   /** Optional: email of the primary (household head) shareholder to link this row to. */
   linkedTo?: string;
 }
@@ -64,7 +63,6 @@ const EXPECTED_COLUMNS = [
   'country',
   'bankIban',
   'bankBic',
-  'status',
   'linkedTo',
 ];
 
@@ -232,14 +230,6 @@ export class ShareholderImportService {
         }
       }
 
-      // Validate status if provided
-      if (row.status?.trim()) {
-        const status = row.status.toUpperCase();
-        if (!['PENDING', 'ACTIVE', 'INACTIVE'].includes(status)) {
-          errors.push(`Invalid status "${row.status}". Must be PENDING, ACTIVE, or INACTIVE.`);
-        }
-      }
-
       return {
         row: index + 2, // +2 because row 1 is header, index is 0-based
         data: { ...row, type },
@@ -365,7 +355,6 @@ export class ShareholderImportService {
     const buildBaseData = (row: ImportRow, coopId: string) => ({
       coopId,
       type: row.type as 'INDIVIDUAL' | 'COMPANY' | 'MINOR',
-      status: (row.status?.toUpperCase() as 'PENDING' | 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
       firstName: row.firstName?.trim() || null,
       lastName: row.lastName?.trim() || null,
       phone: row.phone?.trim() || null,

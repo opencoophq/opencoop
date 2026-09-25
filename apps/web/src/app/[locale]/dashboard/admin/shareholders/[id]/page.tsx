@@ -46,6 +46,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard, ExternalLink, MessageSquare, Loader2, Users, Unlink } from 'lucide-react';
 import { api, apiFetch } from '@/lib/api';
 import { LinkShareholderDialog } from '@/components/admin/link-shareholder-dialog';
+import { ShareholderStatusBadge } from '@/components/shareholder-status-badge';
 
 interface ShareClass {
   id: string;
@@ -160,7 +161,6 @@ const shareholderSchema = z.object({
   postalCode: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
-  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE']),
 });
 
 type ShareholderForm = z.infer<typeof shareholderSchema>;
@@ -238,9 +238,6 @@ export default function ShareholderDetailPage() {
 
   const form = useForm<ShareholderForm>({
     resolver: zodResolver(shareholderSchema),
-    defaultValues: {
-      status: 'ACTIVE',
-    },
   });
 
   const fetchShareholder = useCallback(async () => {
@@ -275,7 +272,6 @@ export default function ShareholderDetailPage() {
         postalCode: addr.postalCode || '',
         city: addr.city || '',
         country: addr.country || '',
-        status: data.status,
       });
     } catch {
       setError(t('common.error'));
@@ -874,21 +870,10 @@ export default function ShareholderDetailPage() {
 
               <div className="space-y-2">
                 <Label>{t('common.status')}</Label>
-                <Select
-                  value={form.watch('status')}
-                  onValueChange={(value) =>
-                    form.setValue('status', value as 'PENDING' | 'ACTIVE' | 'INACTIVE')
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">{t('shareholder.status.active')}</SelectItem>
-                    <SelectItem value="PENDING">{t('shareholder.status.pending')}</SelectItem>
-                    <SelectItem value="INACTIVE">{t('shareholder.status.inactive')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                {shareholder && <ShareholderStatusBadge status={shareholder.status} />}
+                <p className="text-muted-foreground text-xs">
+                  {t('shareholder.statuses.derivedFromPaidShares')}
+                </p>
               </div>
             </CardContent>
           </Card>

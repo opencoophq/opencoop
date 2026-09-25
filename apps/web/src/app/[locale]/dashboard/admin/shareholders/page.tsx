@@ -18,6 +18,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  ShareholderStatusBadge,
+  type ShareholderStatus,
+} from '@/components/shareholder-status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,12 +62,13 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Gift,
 } from 'lucide-react';
 
 interface ShareholderRow {
   id: string;
   type: string;
-  status: string;
+  status: ShareholderStatus;
   firstName?: string;
   lastName?: string;
   companyName?: string;
@@ -74,6 +79,7 @@ interface ShareholderRow {
   // registerDate (falls back to createdAt). Nested registrations are no longer
   // returned by the list endpoint.
   sharesOwned: number;
+  giftBuyer?: boolean;
   memberSince: string;
   isEcoPowerClient?: boolean;
 }
@@ -263,9 +269,9 @@ export default function ShareholdersPage() {
   }, [selectedCoop]);
 
   const getName = (sh: ShareholderRow) =>
-    sh.type === 'COMPANY'
-      ? sh.companyName || ''
-      : `${sh.firstName || ''} ${sh.lastName || ''}`.trim();
+    (sh.type === 'COMPANY' ? sh.companyName || '' : `${sh.firstName || ''} ${sh.lastName || ''}`.trim()) ||
+    sh.email ||
+    '—';
 
   // sharesOwned and memberSince are precomputed server-side (lean list payload).
   const activeShares = (sh: ShareholderRow) => sh.sharesOwned ?? 0;
@@ -692,22 +698,22 @@ export default function ShareholdersPage() {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{t(`shareholder.types.${sh.type}`)}</Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline">{t(`shareholder.types.${sh.type}`)}</Badge>
+                          {sh.giftBuyer && (
+                            <span title={t('registration.beneficiaryType.gift')}>
+                              <Gift
+                                className="h-4 w-4 text-muted-foreground"
+                                aria-label={t('registration.beneficiaryType.gift')}
+                              />
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{sh.email || '-'}</TableCell>
                       <TableCell className="text-right">{activeShares(sh)}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            sh.status === 'ACTIVE'
-                              ? 'default'
-                              : sh.status === 'PENDING'
-                                ? 'secondary'
-                                : 'destructive'
-                          }
-                        >
-                          {t(`shareholder.statuses.${sh.status}`)}
-                        </Badge>
+                        <ShareholderStatusBadge status={sh.status} />
                       </TableCell>
                       {ecoPowerEnabled && (
                         <TableCell>

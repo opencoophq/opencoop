@@ -260,11 +260,13 @@ export default function AdminSettingsPage() {
     id: string;
     prefix: string;
     name: string;
+    scope: 'READ_ONLY' | 'READ_WRITE';
     createdAt: string;
     lastUsedAt: string | null;
   }>>([]);
   const [showCreateMcpKeyDialog, setShowCreateMcpKeyDialog] = useState(false);
   const [mcpKeyName, setMcpKeyName] = useState('');
+  const [mcpKeyScope, setMcpKeyScope] = useState<'READ_ONLY' | 'READ_WRITE'>('READ_ONLY');
   const [newMcpKey, setNewMcpKey] = useState('');
   const [mcpKeyCopied, setMcpKeyCopied] = useState(false);
   const [mcpConfigCopied, setMcpConfigCopied] = useState(false);
@@ -388,7 +390,7 @@ export default function AdminSettingsPage() {
       .finally(() => setLoading(false));
 
     // Load MCP API keys
-    api<Array<{ id: string; prefix: string; name: string; createdAt: string; lastUsedAt: string | null }>>(
+    api<Array<{ id: string; prefix: string; name: string; scope: 'READ_ONLY' | 'READ_WRITE'; createdAt: string; lastUsedAt: string | null }>>(
       `/admin/coops/${selectedCoop.id}/api-keys`
     )
       .then(setMcpApiKeys)
@@ -610,13 +612,14 @@ export default function AdminSettingsPage() {
   const handleCreateMcpKey = async () => {
     if (!selectedCoop || !mcpKeyName.trim()) return;
     try {
-      const result = await api<{ rawKey: string; id: string; prefix: string; name: string; createdAt: string }>(
+      const result = await api<{ rawKey: string; id: string; prefix: string; name: string; scope: 'READ_ONLY' | 'READ_WRITE'; createdAt: string }>(
         `/admin/coops/${selectedCoop.id}/api-keys`,
-        { method: 'POST', body: { name: mcpKeyName.trim() } },
+        { method: 'POST', body: { name: mcpKeyName.trim(), scope: mcpKeyScope } },
       );
       setNewMcpKey(result.rawKey);
-      setMcpApiKeys(prev => [{ id: result.id, prefix: result.prefix, name: result.name, createdAt: result.createdAt, lastUsedAt: null }, ...prev]);
+      setMcpApiKeys(prev => [{ id: result.id, prefix: result.prefix, name: result.name, scope: result.scope, createdAt: result.createdAt, lastUsedAt: null }, ...prev]);
       setMcpKeyName('');
+      setMcpKeyScope('READ_ONLY');
       setShowCreateMcpKeyDialog(false);
     } catch {
       setError(t('admin.settings.error'));
@@ -637,7 +640,7 @@ export default function AdminSettingsPage() {
   const getMcpConfigSnippet = (key: string) => JSON.stringify({
     mcpServers: {
       opencoop: {
-        type: 'streamablehttp',
+        type: 'http',
         url: `${window.location.origin}/api/mcp`,
         headers: { Authorization: `Bearer ${key}` },
       },
@@ -1415,6 +1418,9 @@ export default function AdminSettingsPage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{key.name}</span>
+                        <Badge variant={key.scope === 'READ_WRITE' ? 'destructive' : 'secondary'}>
+                          {t(`admin.settings.apiKeys.${key.scope === 'READ_WRITE' ? 'readWrite' : 'readOnly'}`)}
+                        </Badge>
                         <code className="text-xs text-muted-foreground">{key.prefix}{'••••••••'}</code>
                       </div>
                       <div className="flex gap-3 text-xs text-muted-foreground">
@@ -1523,7 +1529,16 @@ export default function AdminSettingsPage() {
       </Dialog>
 
       {/* Create MCP API Key dialog */}
-      <Dialog open={showCreateMcpKeyDialog} onOpenChange={setShowCreateMcpKeyDialog}>
+      <Dialog
+        open={showCreateMcpKeyDialog}
+        onOpenChange={(open) => {
+          setShowCreateMcpKeyDialog(open);
+          if (!open) {
+            setMcpKeyName('');
+            setMcpKeyScope('READ_ONLY');
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('admin.settings.apiKeys.create')}</DialogTitle>
@@ -1537,6 +1552,19 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setMcpKeyName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateMcpKey()}
               />
+            </div>
+            <div>
+              <Label>{t('admin.settings.apiKeys.scope')}</Label>
+              <Select value={mcpKeyScope} onValueChange={(value: 'READ_ONLY' | 'READ_WRITE') => setMcpKeyScope(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="READ_ONLY">{t('admin.settings.apiKeys.readOnly')}</SelectItem>
+                  <SelectItem value="READ_WRITE">{t('admin.settings.apiKeys.readWrite')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">{t('admin.settings.apiKeys.scopeHint')}</p>
             </div>
           </div>
           <DialogFooter>
