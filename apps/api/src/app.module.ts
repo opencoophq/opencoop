@@ -6,7 +6,6 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { McpModule, McpTransportType } from '@rekog/mcp-nest';
-import { randomUUID } from 'crypto';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -52,7 +51,10 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
     BullModule.forRoot({
       redis: {
         host: new URL(process.env.REDIS_URL || 'redis://localhost:6379').hostname,
-        port: parseInt(new URL(process.env.REDIS_URL || 'redis://localhost:6379').port || '6379', 10),
+        port: parseInt(
+          new URL(process.env.REDIS_URL || 'redis://localhost:6379').port || '6379',
+          10,
+        ),
       },
       // Retry transient failures (e.g. SMTP blips) and stop unbounded Redis growth.
       // Email jobs are idempotent: the EmailLog row is created before enqueue and
@@ -95,13 +97,14 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
       name: 'opencoop',
       version: '1.0.0',
       instructions:
-        'OpenCoop admin API — query your cooperative\'s shareholders, transactions, analytics, and more. Authenticated via API key.',
+        "OpenCoop admin API — query your cooperative's shareholders, transactions, analytics, and more. Authenticated via API key.",
       transport: McpTransportType.STREAMABLE_HTTP,
       capabilities: {
         tools: {},
       },
       streamableHttp: {
-        sessionIdGenerator: () => randomUUID(),
+        statelessMode: true,
+        enableJsonResponse: true,
       },
     }),
     ExternalApiModule,

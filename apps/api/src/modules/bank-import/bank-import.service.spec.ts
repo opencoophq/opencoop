@@ -82,7 +82,9 @@ describe('BankImportService — importCsv OGM matching', () => {
   // Build a generic-preset CSV: header line + one data row.
   const csv = (date: string, amount: string, counterparty: string, reference: string) =>
     Buffer.from(
-      ['date;amount;counterparty;reference', `${date};${amount};${counterparty};${reference}`].join('\n'),
+      ['date;amount;counterparty;reference', `${date};${amount};${counterparty};${reference}`].join(
+        '\n',
+      ),
       'utf-8',
     );
 
@@ -214,11 +216,21 @@ describe('BankImportService — importCsv OGM matching', () => {
 
     const header =
       'Rekening;Boekingsdatum;Rekeninguittrekselnummer;Transactienummer;Rekening tegenpartij;Naam tegenpartij bevat;Straat en nummer;Postcode en gemeente;Transactie;Valutadatum;Bedrag;Devies;BIC;Landcode;Mededelingen';
-    const row = 'BE00 0000 0000 0000;21/09/2026;;;;;;;STORTING;21/09/2026;125,00;EUR;;;vrije mededeling';
+    const row =
+      'BE00 0000 0000 0000;21/09/2026;;;;;;;STORTING;21/09/2026;125,00;EUR;;;vrije mededeling';
     const csv = Buffer.from(
-      ['Boekingsdatum vanaf;01/01/2026', '', 'Laatste saldo;1.000,00 EUR', '', ';', ';', 'Extra;regel', header, row, ''].join(
-        '\r\n',
-      ),
+      [
+        'Boekingsdatum vanaf;01/01/2026',
+        '',
+        'Laatste saldo;1.000,00 EUR',
+        '',
+        ';',
+        ';',
+        'Extra;regel',
+        header,
+        row,
+        '',
+      ].join('\r\n'),
       'latin1',
     );
 
@@ -330,7 +342,13 @@ describe('BankImportService — importCsv OGM matching', () => {
     // Payment just booked equals total -> registration completes
     prisma.payment.findMany.mockResolvedValue([{ amount: 100 }]);
 
-    await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-01-15', '100', 'Jan Peeters', OGM), 'generic');
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'test.csv',
+      csv('2026-01-15', '100', 'Jan Peeters', OGM),
+      'generic',
+    );
 
     // Outcome: the row was matched and a payment booked against reg-1.
     // (We assert the real effects below, not the lookup mechanic.)
@@ -367,7 +385,9 @@ describe('BankImportService — importCsv OGM matching', () => {
 
     // matchedCount = 1
     expect(prisma.bankImport.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ matchedCount: 1, unmatchedCount: 0 }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ matchedCount: 1, unmatchedCount: 0 }),
+      }),
     );
   });
 
@@ -386,7 +406,13 @@ describe('BankImportService — importCsv OGM matching', () => {
     // Only a partial payment so far
     prisma.payment.findMany.mockResolvedValue([{ amount: 60 }]);
 
-    await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-01-15', '60', 'Jan', OGM), 'generic');
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'test.csv',
+      csv('2026-01-15', '60', 'Jan', OGM),
+      'generic',
+    );
 
     expect(prisma.payment.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ amount: 60 }) }),
@@ -414,7 +440,9 @@ describe('BankImportService — importCsv OGM matching', () => {
       }),
     );
     expect(prisma.bankImport.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ matchedCount: 0, unmatchedCount: 1 }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ matchedCount: 0, unmatchedCount: 1 }),
+      }),
     );
   });
 
@@ -422,7 +450,13 @@ describe('BankImportService — importCsv OGM matching', () => {
     // The batched findMany returns no registration for this OGM.
     prisma.registration.findMany.mockResolvedValue([]);
 
-    await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-01-15', '100', 'Jan', OGM), 'generic');
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'test.csv',
+      csv('2026-01-15', '100', 'Jan', OGM),
+      'generic',
+    );
 
     // Outcome: no payment booked.
     expect(prisma.payment.create).not.toHaveBeenCalled();
@@ -433,7 +467,9 @@ describe('BankImportService — importCsv OGM matching', () => {
       }),
     );
     expect(prisma.bankImport.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ matchedCount: 0, unmatchedCount: 1 }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ matchedCount: 0, unmatchedCount: 1 }),
+      }),
     );
   });
 
@@ -449,7 +485,13 @@ describe('BankImportService — importCsv OGM matching', () => {
       },
     ]);
 
-    await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-01-15', '100', 'Jan', OGM), 'generic');
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'test.csv',
+      csv('2026-01-15', '100', 'Jan', OGM),
+      'generic',
+    );
 
     expect(prisma.payment.create).not.toHaveBeenCalled();
     expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
@@ -556,6 +598,7 @@ describe('BankImportService — importCsv OGM matching', () => {
   it('recomputes status after a manual partial-payment match commits', async () => {
     prisma.bankTransaction.findFirst.mockResolvedValue({
       id: 'btx-1',
+      coopId: COOP_ID,
       matchStatus: 'UNMATCHED',
       amount: 60,
       date: new Date('2026-01-15'),

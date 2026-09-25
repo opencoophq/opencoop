@@ -13,10 +13,7 @@ describe('McpAuthMiddleware', () => {
 
   beforeEach(() => {
     store = new McpAuthStore();
-    middleware = new McpAuthMiddleware(
-      mockApiKeysService as unknown as ApiKeysService,
-      store,
-    );
+    middleware = new McpAuthMiddleware(mockApiKeysService as unknown as ApiKeysService, store);
     jest.clearAllMocks();
   });
 
@@ -51,7 +48,12 @@ describe('McpAuthMiddleware', () => {
   });
 
   it('should set auth context and call next() for valid key', async () => {
-    const authResult = { userId: 'user1', coopId: 'coop1' };
+    const authResult = {
+      userId: 'user1',
+      coopId: 'coop1',
+      apiKeyId: 'key1',
+      scope: 'READ_WRITE' as const,
+    };
     mockApiKeysService.validate.mockResolvedValue(authResult);
 
     const req = { headers: { authorization: 'Bearer oc_valid_key' } } as any;
@@ -59,10 +61,14 @@ describe('McpAuthMiddleware', () => {
 
     let capturedCoopId: string | undefined;
     let capturedUserId: string | undefined;
+    let capturedApiKeyId: string | undefined;
+    let capturedScope: string | undefined;
 
     const next = jest.fn(() => {
       capturedCoopId = store.getCoopId();
       capturedUserId = store.getUserId();
+      capturedApiKeyId = store.getApiKeyId();
+      capturedScope = store.getScope();
     });
 
     await middleware.use(req, res, next);
@@ -70,5 +76,7 @@ describe('McpAuthMiddleware', () => {
     expect(next).toHaveBeenCalled();
     expect(capturedCoopId).toBe('coop1');
     expect(capturedUserId).toBe('user1');
+    expect(capturedApiKeyId).toBe('key1');
+    expect(capturedScope).toBe('READ_WRITE');
   });
 });
