@@ -45,6 +45,7 @@ describe('BankImportService — importCsv OGM matching', () => {
         create: jest.fn().mockResolvedValue({ id: 'btx-1' }),
         update: jest.fn().mockResolvedValue({}),
         findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       payment: {
         create: jest.fn().mockResolvedValue({ id: 'pay-1' }),
@@ -94,6 +95,118 @@ describe('BankImportService — importCsv OGM matching', () => {
 
   it('sanity: the test OGM is a valid Belgian structured-communication code', () => {
     expect(validateOgmCode(OGM)).toBe(true);
+  });
+
+  it('skips all rows when importing the same CSV twice', async () => {
+    const file = csvRows([
+      ['2026-01-15', '100', 'Jan Peeters', 'first'],
+      ['2026-01-16', '-20', 'Supplier', 'second'],
+    ]);
+
+    await service.importCsv(COOP_ID, IMPORTER_ID, 'first.csv', file, 'generic');
+    prisma.bankTransaction.findMany.mockResolvedValue([
+      { date: new Date(2026, 0, 15), amount: 100, counterparty: 'Jan Peeters', referenceText: 'first' },
+      { date: new Date(2026, 0, 16), amount: -20, counterparty: 'Supplier', referenceText: 'second' },
+    ]);
+    prisma.bankTransaction.create.mockClear();
+    prisma.payment.create.mockClear();
+
+    const result = await service.importCsv(COOP_ID, IMPORTER_ID, 'second.csv', file, 'generic');
+
+    expect(prisma.bankTransaction.create).not.toHaveBeenCalled();
+    expect(prisma.payment.create).not.toHaveBeenCalled();
+    expect(result.skippedCount).toBe(2);
+    expect(prisma.bankImport.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ rowCount: 0 }) }),
+    );
+  });
+
+  it('imports only the new row from overlapping exports', async () => {
+    prisma.bankTransaction.findMany.mockResolvedValue([
+      { date: new Date(2026, 0, 15), amount: 100, counterparty: 'A', referenceText: 'a' },
+      { date: new Date(2026, 0, 16), amount: 200, counterparty: 'B', referenceText: 'b' },
+    ]);
+
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'overlap.csv',
+      csvRows([
+        ['2026-01-16', '200', 'B', 'b'],
+        ['2026-01-17', '300', 'C', 'c'],
+      ]),
+      'generic',
+    );
+
+    expect(prisma.bankTransaction.create).toHaveBeenCalledTimes(1);
+    expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          date: new Date(2026, 0, 17),
+          amount: 300,
+          counterparty: 'C',
+          referenceText: 'c',
+        }),
+      }),
+    );
+  });
+
+  it('imports one of two identical rows when one already exists', async () => {
+    prisma.bankTransaction.findMany.mockResolvedValue([
+      { date: new Date(2026, 0, 15), amount: 100, counterparty: 'X', referenceText: 'x' },
+    ]);
+
+    const result = await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'duplicate.csv',
+      csvRows([
+        ['2026-01-15', '100', 'X', 'x'],
+        ['2026-01-15', '100', 'X', 'x'],
+      ]),
+      'generic',
+    );
+
+    expect(prisma.bankTransaction.create).toHaveBeenCalledTimes(1);
+    expect(result.skippedCount).toBe(1);
+  });
+
+  it('imports both identical rows when the database has none', async () => {
+    const result = await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'legitimate-repeats.csv',
+      csvRows([
+        ['2026-01-15', '100', 'X', 'x'],
+        ['2026-01-15', '100', 'X', 'x'],
+      ]),
+      'generic',
+    );
+
+    expect(prisma.bankTransaction.create).toHaveBeenCalledTimes(2);
+    expect(result.skippedCount).toBe(0);
+  });
+
+  it('scopes duplicate lookup to the imported coop and inclusive file date range', async () => {
+    await service.importCsv(
+      'coop-2',
+      IMPORTER_ID,
+      'other-coop.csv',
+      csvRows([['2026-01-15', '100', 'X', 'x']]),
+      'generic',
+    );
+
+    expect(prisma.bankTransaction.findMany).toHaveBeenCalledWith({
+      where: {
+        coopId: 'coop-2',
+        date: {
+          gte: new Date(2026, 0, 15),
+          lte: new Date(2026, 0, 15, 23, 59, 59, 999),
+        },
+      },
+      select: { date: true, amount: true, counterparty: true, referenceText: true },
+    });
+    expect(prisma.bankTransaction.create).toHaveBeenCalledTimes(1);
   });
 
   it('finds the Belfius header regardless of blank or extra metadata lines', async () => {

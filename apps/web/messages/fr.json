@@ -785,7 +785,7 @@
       "selectRegistration": "Sélectionnez une inscription à rapprocher",
       "noRegistrations": "Aucune inscription en attente trouvée",
       "uploadError": "L’importation du fichier CSV a échoué",
-      "uploadSuccess": "{total} lignes importées : {matched} rapprochées, {unmatched} non rapprochées"
+      "uploadSuccess": "{total} lignes importées : {matched} rapprochées, {unmatched} non rapprochées, {skipped} doublons ignorés"
     },
     "dividends": {
       "title": "Gestion des dividendes",

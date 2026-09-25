@@ -787,7 +787,7 @@
       "selectRegistration": "Select a registration to match",
       "noRegistrations": "No pending registrations found",
       "uploadError": "The CSV upload failed",
-      "uploadSuccess": "{total} rows imported: {matched} matched, {unmatched} unmatched"
+      "uploadSuccess": "{total} rows imported: {matched} matched, {unmatched} unmatched, {skipped} duplicates skipped"
     },
     "dividends": {
       "title": "Dividend Management",
