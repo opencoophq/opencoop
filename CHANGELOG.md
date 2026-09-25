@@ -15,6 +15,28 @@ calendar day — the week tag is an internal build id.
 Releases up to and including `v0.9.0` predate this scheme and keep their
 original SemVer-style tags.
 
+## [2026.39.5] - 2026-09-25
+
+### Added
+- **Admins can record an RSVP for a shareholder.** The RSVP tracker has an inline edit
+  control for phone-in replies: set the status and, when needed, the proxy holder. It uses the
+  same RSVP logic as shareholders, so proxy rules still apply.
+
+### Fixed
+- **AGM kiosk check-in accepts signatures.** The API rejected the iPad signature image as
+  too large (413) before the kiosk's own 2 MB limit applied. A signature error on the kiosk
+  page no longer crashes the page.
+- **Kiosk sessions expire.** A kiosk link stops working 6 hours after the meeting's
+  scheduled time.
+- **PER_SHARE vote weights count real ownership.** Incoming transfers now count, transfer
+  pairs no longer count twice, and a voter with zero shares gets weight 0 instead of 1.
+- **AGM emails use the shareholder's language.** Convocations and reminders (scheduled and
+  manual) follow the shareholder's preferred language, with Dutch as fallback.
+- **Ponto settings reach the API container.** No `PONTO_*` variable was passed to the
+  deployed API, so Ponto could not run. Missing client ID or mTLS certificates now fail with
+  an error that names the setting, before any connection is changed. To enable Ponto, set the
+  `PONTO_*` values and mount the certificates (see `deploy/.env.example`).
+
 ## [2026.39.4] - 2026-09-25
 
 ### Fixed
