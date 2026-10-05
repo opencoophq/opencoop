@@ -108,7 +108,7 @@ describe('ChargeCardsAdminService', () => {
         prisma.chargeCard.updateMany.mock.invocationCallOrder[0],
       );
       expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
-        where: { AND: [{ id: 'card-1' }, { status: 'PAID' }] },
+        where: { AND: [{ id: 'card-1' }, { status: 'PAID', shareholder: { status: 'ACTIVE' } }] },
         data: {
           status: 'ACTIVE',
           cardNumber: 'NL-123',

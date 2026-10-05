@@ -4,7 +4,7 @@ import { computeTotalPaid } from '@opencoop/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
-import { CAN_REPORT_LOST, transitionCard } from './charge-card-transition';
+import { CAN_REPORT_LOST, cancelCard, lockCard, transitionCard } from './charge-card-transition';
 import { ChargeCardView, shareholderDisplayName, toChargeCardView } from './charge-card-view';
 import { isOverdue, workingDaysBetween } from './working-days';
 
@@ -96,7 +96,10 @@ export class ChargeCardsAdminService {
       issued = await this.guardedTransition(
         coopId,
         cardId,
-        { status: 'PAID' },
+        // Re-checked atomically, under the lock, on top of the clearer
+        // pre-check above: a shareholder deactivated between the read and
+        // the write must not get an issued card either.
+        { status: 'PAID', shareholder: { status: 'ACTIVE' } },
         { status: 'ACTIVE', cardNumber, issuedAt: now, activatedAt: now, providerSyncNeeded: false },
         'Only a paid card can be issued',
       );
@@ -176,27 +179,39 @@ export class ChargeCardsAdminService {
   /**
    * A PAID card can be cancelled too (shareholder left); the refund happens
    * outside OpenCoop, unlike the shareholder's own cancel, which refuses a
-   * card that already holds a payment. replacesCardId is cleared so the LOST
-   * card this one replaced, if any, can be replaced again.
+   * card that already holds a payment. Goes through the shared `cancelCard`,
+   * which clears `replacesCardId` so the LOST card this one replaced, if
+   * any, can be replaced again — the same rule the shareholder's own cancel
+   * follows, not a second copy of it.
    */
   async cancel(coopId: string, cardId: string): Promise<ChargeCardView> {
     return toChargeCardView(
-      await this.guardedTransition(
-        coopId,
-        cardId,
-        { status: { in: ['REQUESTED', 'PAID'] } },
-        { status: 'CANCELLED', replacesCardId: null },
-        'Only a requested or paid card can be cancelled',
+      await this.withLockedCard(coopId, cardId, (tx) =>
+        cancelCard(tx, { id: cardId, coopId }, ['REQUESTED', 'PAID'], 'Only a requested or paid card can be cancelled'),
       ),
     );
   }
 
   /**
-   * Locks the card row (FOR UPDATE), the same way cancel() and
-   * recordChargeCardPayment do, then runs the guarded transition inside that
-   * lock. This keeps every admin mutation safe against a concurrent payment,
-   * sync job or shareholder action on the same card.
+   * Locks the card row (FOR UPDATE), the same way the shareholder's cancel()
+   * and recordChargeCardPayment do, then runs `fn` inside that lock. Every
+   * admin mutation goes through this, so each is safe against a concurrent
+   * payment, sync job or shareholder action on the same card.
    */
+  private async withLockedCard<T>(
+    coopId: string,
+    cardId: string,
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(async (tx) => {
+      const locked = await lockCard(tx, { id: cardId, coopId });
+      if (!locked) {
+        throw new NotFoundException('Charge card not found');
+      }
+      return fn(tx);
+    });
+  }
+
   private async guardedTransition(
     coopId: string,
     cardId: string,
@@ -204,15 +219,6 @@ export class ChargeCardsAdminService {
     data: Prisma.ChargeCardUncheckedUpdateManyInput,
     refusal: string,
   ): Promise<ChargeCard> {
-    return this.prisma.$transaction(async (tx) => {
-      const locked = await tx.$queryRaw<{ id: string }[]>`
-        SELECT "id" FROM "charge_cards"
-        WHERE "id" = ${cardId} AND "coopId" = ${coopId}
-        FOR UPDATE`;
-      if (locked.length === 0) {
-        throw new NotFoundException('Charge card not found');
-      }
-      return transitionCard(tx, { id: cardId, coopId }, allowed, data, refusal);
-    });
+    return this.withLockedCard(coopId, cardId, (tx) => transitionCard(tx, { id: cardId, coopId }, allowed, data, refusal));
   }
 }

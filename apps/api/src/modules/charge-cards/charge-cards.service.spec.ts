@@ -261,7 +261,7 @@ describe('ChargeCardsService (shareholder side)', () => {
         expect.objectContaining({ where: { id: 'card-1', shareholderId: 'sh-1' } }),
       );
       expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
-        where: { AND: [{ id: 'card-1' }, { status: 'REQUESTED' }] },
+        where: { AND: [{ id: 'card-1' }, { status: { in: ['REQUESTED'] } }] },
         data: { status: 'CANCELLED', replacesCardId: null },
       });
       expect(result.status).toBe('CANCELLED');

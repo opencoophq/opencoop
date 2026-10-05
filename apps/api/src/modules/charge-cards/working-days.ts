@@ -1,6 +1,6 @@
 const DAY_MS = 86_400_000;
 
-/** Bronsgroen policy: a card is processed within 5 working days. */
+/** Processing target: a card is handled within 5 working days. */
 export const PROCESSING_WORKING_DAYS = 5;
 
 /**

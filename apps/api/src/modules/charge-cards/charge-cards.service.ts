@@ -6,12 +6,12 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { ChargeCard, ChargeCardStatus, Prisma } from '@opencoop/database';
+import { ChargeCard, Prisma } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OgmService } from '../ogm/ogm.service';
 import { EmailService } from '../email/email.service';
 import { canActForShareholder } from '../shareholders/shareholder-access';
-import { CAN_REPORT_LOST, transitionCard } from './charge-card-transition';
+import { CAN_REPORT_LOST, cancelCard, lockCard, transitionCard } from './charge-card-transition';
 import { ChargeCardView, shareholderDisplayName, toChargeCardView } from './charge-card-view';
 import { RequestChargeCardDto } from './dto/request-charge-card.dto';
 
@@ -152,30 +152,21 @@ export class ChargeCardsService {
     const card = await this.prisma.$transaction(async (tx) => {
       // Lock the card row, as recordChargeCardPayment does, so a payment and a
       // cancel on this card run one after the other and cannot both win.
-      const locked = await tx.$queryRaw<{ id: string; status: ChargeCardStatus }[]>`
-        SELECT "id", "status" FROM "charge_cards"
-        WHERE "id" = ${cardId} AND "shareholderId" = ${sh.id}
-        FOR UPDATE`;
-      if (locked.length === 0) {
+      const locked = await lockCard(tx, { id: cardId, shareholderId: sh.id });
+      if (!locked) {
         throw new NotFoundException('Charge card not found');
       }
-      if (locked[0].status !== 'REQUESTED') {
+      if (locked.status !== 'REQUESTED') {
         throw new BadRequestException(CANCEL_REFUSAL);
       }
       // A requested card that money already reached: only the coop can unwind that (refund).
       if ((await tx.payment.count({ where: { chargeCardId: cardId } })) > 0) {
         throw new ConflictException('card has a payment; contact the coop');
       }
-      return transitionCard(
-        tx,
-        { id: cardId, shareholderId: sh.id },
-        { status: 'REQUESTED' },
-        // Clear replacesCardId so the LOST card it was requested for can be
-        // replaced again; isReplacement stays true, as a record of why this
-        // (now cancelled) card existed.
-        { status: 'CANCELLED', replacesCardId: null },
-        CANCEL_REFUSAL,
-      );
+      // cancelCard clears replacesCardId, so the LOST card this one was
+      // requested for can be replaced again; isReplacement stays true, as a
+      // record of why this (now cancelled) card existed.
+      return cancelCard(tx, { id: cardId, shareholderId: sh.id }, ['REQUESTED'], CANCEL_REFUSAL);
     });
     return toChargeCardView(card);
   }

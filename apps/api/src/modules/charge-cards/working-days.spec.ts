@@ -11,6 +11,14 @@ describe('workingDaysBetween', () => {
     expect(workingDaysBetween(d('2026-10-05T08:00:00Z'), d('2026-10-12T08:00:00Z'))).toBe(5);
   });
 
+  it('counts Monday to Monday two weeks later as 10', () => {
+    expect(workingDaysBetween(d('2026-10-05T08:00:00Z'), d('2026-10-19T08:00:00Z'))).toBe(10);
+  });
+
+  it('counts Sunday to Monday as 1', () => {
+    expect(workingDaysBetween(d('2026-10-11T10:00:00Z'), d('2026-10-12T09:00:00Z'))).toBe(1);
+  });
+
   it('counts Friday to Monday as 1', () => {
     expect(workingDaysBetween(d('2026-10-09T16:00:00Z'), d('2026-10-12T09:00:00Z'))).toBe(1);
   });

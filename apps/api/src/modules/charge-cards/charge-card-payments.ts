@@ -1,6 +1,6 @@
 import { ChargeCardStatus, Prisma } from '@opencoop/database';
 import { ChargeCardTarget, toCents } from '../ogm/payment-target';
-import { transitionCard } from './charge-card-transition';
+import { lockCard, transitionCard } from './charge-card-transition';
 
 export interface ChargeCardPaymentInput {
   amount: number;
@@ -31,11 +31,8 @@ export async function recordChargeCardPayment(
   card: ChargeCardTarget,
   input: ChargeCardPaymentInput,
 ) {
-  const locked = await tx.$queryRaw<{ status: ChargeCardStatus }[]>`
-    SELECT "status" FROM "charge_cards"
-    WHERE "id" = ${card.id} AND "coopId" = ${card.coopId}
-    FOR UPDATE`;
-  const status = locked[0]?.status ?? null;
+  const locked = await lockCard(tx, { id: card.id, coopId: card.coopId });
+  const status = locked?.status ?? null;
   if (status !== 'REQUESTED') {
     throw new ChargeCardNotPayableError(status);
   }
