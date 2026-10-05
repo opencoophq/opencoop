@@ -134,6 +134,7 @@ model Coop {
   trialEndsAt          DateTime?
   requiresApproval     Boolean   @default(true)
   ogmPrefix            String    @unique // Unique prefix for OGM codes (e.g., "001")
+  ogmSequence          Int       @default(0) // last OGM sequence handed out (registrations + charge cards)
   minimumHoldingPeriod Int       @default(0) // months, 0 = no restriction
   minConvocationDays   Int       @default(15) // statutory notice period for AGM convocation (per-coop bylaws)
   pontoEnabled         Boolean   @default(false)
