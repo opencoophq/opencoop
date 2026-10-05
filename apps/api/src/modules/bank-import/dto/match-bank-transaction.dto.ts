@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-// Exactly one of the two is required; the service rejects both or neither with a 400.
+// Exactly one of the three is required; the service rejects any other combination with a 400.
 export class MatchBankTransactionDto {
   @IsOptional()
   @IsString()
@@ -11,4 +11,9 @@ export class MatchBankTransactionDto {
   @IsString()
   @IsNotEmpty()
   paymentId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  chargeCardId?: string;
 }

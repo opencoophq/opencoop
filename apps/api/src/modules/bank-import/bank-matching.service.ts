@@ -3,7 +3,8 @@ import { computeTotalPaid, extractOgmCode } from '@opencoop/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
 import { OgmService } from '../ogm/ogm.service';
-import { PaymentTarget } from '../ogm/payment-target';
+import { ChargeCardTarget, PaymentTarget, acceptsCardPayment } from '../ogm/payment-target';
+import { recordChargeCardPayment } from '../charge-cards/charge-card-payments';
 
 export interface BankTransactionMatchInput {
   id: string;
@@ -52,6 +53,9 @@ export class BankMatchingService {
     const target = targetOverride ?? (await this.ogm.resolveOgmTarget(coopId, ogmCode));
     if (!target) {
       return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+    }
+    if (target.kind === 'chargeCard') {
+      return this.matchChargeCard(target, transaction, ogmCode, amount, matchedByUserId, allowCreate);
     }
     const registration = target;
     const cached = targetOverride ? registration : undefined;
@@ -140,6 +144,51 @@ export class BankMatchingService {
       data: { matchStatus: 'AUTO_MATCHED', ogmCode },
     });
 
+    return { status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true };
+  }
+
+  /**
+   * A charge card takes a payment only while REQUESTED and only for at least its
+   * fee. Anything else stays UNMATCHED for an admin (refund or manual match).
+   */
+  private async matchChargeCard(
+    card: ChargeCardTarget,
+    transaction: BankTransactionMatchInput,
+    ogmCode: string,
+    amount: number,
+    matchedByUserId: string | undefined,
+    allowCreate: boolean,
+  ): Promise<BankTransactionMatchResult> {
+    if (!allowCreate || !acceptsCardPayment(card, amount)) {
+      return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+    }
+
+    const paid = await this.prisma
+      .$transaction(async (tx) => {
+        // Claim the bank row first, so a concurrent linker cannot book it twice.
+        const claimed = await tx.bankTransaction.updateMany({
+          where: { id: transaction.id, matchStatus: 'UNMATCHED' },
+          data: { matchStatus: 'AUTO_MATCHED', ogmCode },
+        });
+        if (claimed.count !== 1) throw new LinkConflictError();
+        const result = await recordChargeCardPayment(tx, card, {
+          amount,
+          bankDate: transaction.date,
+          bankTransactionId: transaction.id,
+          matchedByUserId,
+        });
+        return result.paid;
+      })
+      .catch((error: unknown) => {
+        if (error instanceof LinkConflictError) return null;
+        throw error;
+      });
+    if (paid === null) {
+      return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+    }
+
+    // The CSV import reuses this object for later rows: a second transfer must see PAID.
+    if (paid) card.status = 'PAID';
     return { status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true };
   }
 

@@ -111,6 +111,10 @@ describe('OgmService resolvers', () => {
         findMany: jest.fn().mockResolvedValue([registrationRow]),
         findFirst: jest.fn().mockResolvedValue(registrationRow),
       },
+      chargeCard: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
     };
     service = new OgmService(prisma);
   });
@@ -151,5 +155,44 @@ describe('OgmService resolvers', () => {
     prisma.registration.findFirst.mockResolvedValue(null);
 
     await expect(service.resolveOgmTarget('coop-1', OGM)).resolves.toBeNull();
+  });
+
+  const CARD_OGM = '+++001/0000/04221+++';
+  const cardRow = {
+    id: 'card-1',
+    coopId: 'coop-1',
+    shareholderId: 'sh-1',
+    status: 'REQUESTED',
+    feeInclVat: new Prisma.Decimal('6.00'),
+    ogmCode: CARD_OGM,
+  };
+  const cardTarget = { ...cardRow, kind: 'chargeCard', feeInclVat: 6 };
+
+  it('resolves a charge-card OGM in the same batch, scoped to the coop', async () => {
+    prisma.registration.findMany.mockResolvedValue([]);
+    prisma.chargeCard.findMany.mockResolvedValue([cardRow]);
+
+    const targets = await service.resolveOgmTargets('coop-1', ['001000004221']);
+
+    expect(prisma.chargeCard.findMany.mock.calls[0][0].where).toEqual({
+      coopId: 'coop-1',
+      ogmCode: { in: [CARD_OGM] },
+    });
+    expect(targets.get(CARD_OGM)).toEqual(cardTarget);
+  });
+
+  it('resolveOgmTarget falls back to a charge card when no registration has the OGM', async () => {
+    prisma.registration.findFirst.mockResolvedValue(null);
+    prisma.chargeCard.findFirst.mockResolvedValue(cardRow);
+
+    await expect(service.resolveOgmTarget('coop-1', CARD_OGM)).resolves.toEqual(cardTarget);
+    expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({ coopId: 'coop-1', ogmCode: CARD_OGM });
+  });
+
+  it('findChargeCardTarget looks a card up by id within the coop', async () => {
+    prisma.chargeCard.findFirst.mockResolvedValue(cardRow);
+
+    await expect(service.findChargeCardTarget('coop-1', 'card-1')).resolves.toEqual(cardTarget);
+    expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({ id: 'card-1', coopId: 'coop-1' });
   });
 });

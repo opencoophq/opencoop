@@ -5,7 +5,7 @@ jest.mock('../documents/documents.service', () => ({
 }));
 
 import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BankImportService } from './bank-import.service';
 import { BankMatchingService } from './bank-matching.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -65,6 +65,11 @@ describe('BankImportService — importCsv OGM matching', () => {
         findMany: jest.fn().mockResolvedValue([]),
         update: jest.fn().mockResolvedValue({}),
         findFirst: jest.fn(),
+      },
+      chargeCard: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       $transaction: jest.fn((cb: any) => cb(prisma)),
     };
@@ -730,5 +735,78 @@ describe('BankImportService — importCsv OGM matching', () => {
 
     expect(resolve).toHaveBeenCalledTimes(1);
     expect(resolve).toHaveBeenCalledWith(COOP_ID, [OGM]);
+  });
+
+  describe('manual match to a charge card', () => {
+    const CARD = { id: 'card-1', coopId: COOP_ID, shareholderId: 'sh-1', status: 'REQUESTED', feeInclVat: 6, ogmCode: OGM };
+
+    beforeEach(() => {
+      prisma.bankTransaction.findFirst.mockResolvedValue({
+        id: 'btx-1',
+        coopId: COOP_ID,
+        matchStatus: 'UNMATCHED',
+        amount: 3,
+        date: new Date('2026-10-06'),
+      });
+      prisma.chargeCard.findFirst.mockResolvedValue(CARD);
+      prisma.payment.findMany.mockResolvedValue([{ amount: 3 }]);
+    });
+
+    it('books a short payment on a REQUESTED card without marking it PAID', async () => {
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).resolves.toEqual({ success: true });
+
+      expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({ id: 'card-1', coopId: COOP_ID });
+      expect(prisma.payment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          chargeCardId: 'card-1',
+          amount: 3,
+          bankTransactionId: 'btx-1',
+          matchedByUserId: IMPORTER_ID,
+        }),
+      });
+      expect(prisma.chargeCard.updateMany).not.toHaveBeenCalled();
+      expect(prisma.bankTransaction.updateMany).toHaveBeenCalledWith({
+        where: { id: 'btx-1', matchStatus: 'UNMATCHED' },
+        data: { matchStatus: 'MANUAL_MATCHED' },
+      });
+    });
+
+    it('marks the card PAID once its payments reach the fee', async () => {
+      prisma.payment.findMany.mockResolvedValue([{ amount: 3 }, { amount: 3 }]);
+
+      await service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID);
+
+      expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
+        where: { id: 'card-1', status: 'REQUESTED' },
+        data: { status: 'PAID', paidAt: expect.any(Date) },
+      });
+    });
+
+    it('refuses a card that is not REQUESTED', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue({ ...CARD, status: 'PAID' });
+
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 for a card of another coop', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses a registration and a card at once', async () => {
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { registrationId: 'reg-1', chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
   });
 });

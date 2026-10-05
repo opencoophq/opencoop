@@ -3,7 +3,7 @@ import { Prisma } from '@opencoop/database';
 import { extractOgmCode, generateOgmCode } from '@opencoop/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MAX_OGM_SEQUENCE } from './ogm';
-import { PaymentTarget, RegistrationTarget } from './payment-target';
+import { ChargeCardTarget, PaymentTarget, RegistrationTarget } from './payment-target';
 
 /** Give up on skip-taken retries after this many attempts, rather than loop forever. */
 const MAX_SKIP_ATTEMPTS = 1000;
@@ -21,6 +21,29 @@ type RegistrationTargetRow = Prisma.RegistrationGetPayload<{ select: typeof REGI
 
 function toRegistrationTarget(row: RegistrationTargetRow): RegistrationTarget {
   return { kind: 'registration', ...row };
+}
+
+const CHARGE_CARD_TARGET_SELECT = {
+  id: true,
+  coopId: true,
+  shareholderId: true,
+  status: true,
+  feeInclVat: true,
+  ogmCode: true,
+} satisfies Prisma.ChargeCardSelect;
+
+type ChargeCardTargetRow = Prisma.ChargeCardGetPayload<{ select: typeof CHARGE_CARD_TARGET_SELECT }>;
+
+function toChargeCardTarget(row: ChargeCardTargetRow): ChargeCardTarget {
+  return {
+    kind: 'chargeCard',
+    id: row.id,
+    coopId: row.coopId,
+    shareholderId: row.shareholderId,
+    status: row.status,
+    feeInclVat: Number(row.feeInclVat),
+    ogmCode: row.ogmCode,
+  };
 }
 
 @Injectable()
@@ -77,12 +100,21 @@ export class OgmService {
     const targets = new Map<string, PaymentTarget>();
     if (codes.length === 0) return targets;
 
-    const registrations = await this.prisma.registration.findMany({
-      where: { coopId, ogmCode: { in: codes } },
-      select: REGISTRATION_TARGET_SELECT,
-    });
+    const [registrations, chargeCards] = await Promise.all([
+      this.prisma.registration.findMany({
+        where: { coopId, ogmCode: { in: codes } },
+        select: REGISTRATION_TARGET_SELECT,
+      }),
+      this.prisma.chargeCard.findMany({
+        where: { coopId, ogmCode: { in: codes } },
+        select: CHARGE_CARD_TARGET_SELECT,
+      }),
+    ]);
     for (const row of registrations) {
       if (row.ogmCode) targets.set(row.ogmCode, toRegistrationTarget(row));
+    }
+    for (const row of chargeCards) {
+      targets.set(row.ogmCode, toChargeCardTarget(row));
     }
     return targets;
   }
@@ -95,7 +127,21 @@ export class OgmService {
       where: { coopId, ogmCode },
       select: REGISTRATION_TARGET_SELECT,
     });
-    return registration ? toRegistrationTarget(registration) : null;
+    if (registration) return toRegistrationTarget(registration);
+    const card = await this.prisma.chargeCard.findFirst({
+      where: { coopId, ogmCode },
+      select: CHARGE_CARD_TARGET_SELECT,
+    });
+    return card ? toChargeCardTarget(card) : null;
+  }
+
+  /** Looks a charge card up by id, scoped to the coop (manual match). */
+  async findChargeCardTarget(coopId: string, cardId: string): Promise<ChargeCardTarget | null> {
+    const card = await this.prisma.chargeCard.findFirst({
+      where: { id: cardId, coopId },
+      select: CHARGE_CARD_TARGET_SELECT,
+    });
+    return card ? toChargeCardTarget(card) : null;
   }
 
   /** True if some row already holds this OGM code. */

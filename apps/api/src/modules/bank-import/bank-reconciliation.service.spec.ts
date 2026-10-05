@@ -84,6 +84,7 @@ describe('bank reconciliation regressions', () => {
         findMany: jest.fn().mockResolvedValue([]),
         update: jest.fn().mockResolvedValue({}),
       },
+      chargeCard: { findFirst: jest.fn().mockResolvedValue(null), findMany: jest.fn().mockResolvedValue([]) },
       $transaction: jest.fn((callback: (tx: any) => Promise<unknown>) => callback(prisma)),
     };
     const payments: any[] = [];

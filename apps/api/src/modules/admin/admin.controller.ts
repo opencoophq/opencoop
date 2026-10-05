@@ -954,7 +954,7 @@ export class AdminController {
     return this.bankImportService.manualMatch(
       coopId,
       id,
-      { registrationId: dto.registrationId, paymentId: dto.paymentId },
+      { registrationId: dto.registrationId, paymentId: dto.paymentId, chargeCardId: dto.chargeCardId },
       user.id,
     );
   }

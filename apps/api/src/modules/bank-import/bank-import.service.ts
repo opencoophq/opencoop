@@ -6,6 +6,7 @@ import { computeTotalPaid, extractOgmCode } from '@opencoop/shared';
 import { BankPreset, BANK_PRESETS } from './bank-presets';
 import { BankMatchingService } from './bank-matching.service';
 import { OgmService } from '../ogm/ogm.service';
+import { recordChargeCardPayment } from '../charge-cards/charge-card-payments';
 
 @Injectable()
 export class BankImportService {
@@ -398,12 +399,12 @@ export class BankImportService {
   async manualMatch(
     coopId: string,
     bankTransactionId: string,
-    target: { registrationId?: string; paymentId?: string },
+    target: { registrationId?: string; paymentId?: string; chargeCardId?: string },
     userId: string,
   ) {
-    const { registrationId, paymentId } = target;
-    if ((registrationId && paymentId) || (!registrationId && !paymentId)) {
-      throw new BadRequestException('Provide either registrationId or paymentId');
+    const { registrationId, paymentId, chargeCardId } = target;
+    if ([registrationId, paymentId, chargeCardId].filter(Boolean).length !== 1) {
+      throw new BadRequestException('Provide exactly one of registrationId, paymentId and chargeCardId');
     }
 
     const bankTx = await this.prisma.bankTransaction.findFirst({
@@ -416,6 +417,34 @@ export class BankImportService {
 
     if (bankTx.matchStatus !== 'UNMATCHED') {
       throw new BadRequestException('Bank transaction is already matched');
+    }
+
+    if (chargeCardId) {
+      const card = await this.ogm.findChargeCardTarget(coopId, chargeCardId);
+      if (!card) {
+        throw new NotFoundException('Charge card not found');
+      }
+      if (card.status !== 'REQUESTED') {
+        throw new BadRequestException('Only a requested charge card accepts a payment');
+      }
+      // Any amount: an admin may book a partial payment. The card turns PAID once
+      // its payments reach the fee.
+      await this.prisma.$transaction(async (tx) => {
+        const claimedTransaction = await tx.bankTransaction.updateMany({
+          where: { id: bankTransactionId, matchStatus: 'UNMATCHED' },
+          data: { matchStatus: 'MANUAL_MATCHED' },
+        });
+        if (claimedTransaction.count !== 1) {
+          throw new ConflictException('Bank transaction was linked in the meantime');
+        }
+        await recordChargeCardPayment(tx, card, {
+          amount: Number(bankTx.amount),
+          bankDate: bankTx.date,
+          bankTransactionId,
+          matchedByUserId: userId,
+        });
+      });
+      return { success: true };
     }
 
     if (paymentId) {
