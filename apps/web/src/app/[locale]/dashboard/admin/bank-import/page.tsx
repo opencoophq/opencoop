@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
+import { isSilentChargeCardsLoadFailure } from '@/lib/charge-cards-validation';
 import { formatCurrency } from '@opencoop/shared';
 import { Upload, Link2, RefreshCw, EyeOff, RotateCcw } from 'lucide-react';
 
@@ -118,6 +119,7 @@ export default function BankImportPage() {
   const [matchingTx, setMatchingTx] = useState<BankTx | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [matchCards, setMatchCards] = useState<MatchableChargeCard[]>([]);
+  const [matchCardsError, setMatchCardsError] = useState('');
   const [unlinkedPayments, setUnlinkedPayments] = useState<UnlinkedPayment[]>([]);
   const [paymentSearch, setPaymentSearch] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -224,14 +226,27 @@ export default function BankImportPage() {
     } finally {
       setLoadingRegistrations(false);
     }
-    // Cards need canManageShareholders; an admin without it simply sees none.
-    setMatchCards(
-      selectedCoop?.chargeCardsEnabled
-        ? await api<MatchableChargeCard[]>(`/admin/coops/${selectedCoop!.id}/charge-cards?status=REQUESTED`).catch(
-            () => [],
-          )
-        : [],
-    );
+    setMatchCardsError('');
+    // The feature can be on without the admin having canManageShareholders
+    // (403) — that's an ordinary "no cards for you" case, same as a coop
+    // without any cards yet. Same nav-reachability rule as the sidebar: a
+    // coop that switched the feature off while a card is still waiting on
+    // payment must still be matchable here.
+    if (selectedCoop?.chargeCardsEnabled || selectedCoop?.hasChargeCards) {
+      try {
+        setMatchCards(
+          await api<MatchableChargeCard[]>(`/admin/coops/${selectedCoop.id}/charge-cards?status=REQUESTED`),
+        );
+      } catch (err) {
+        const status = err instanceof Error ? (err as Error & { status?: number }).status : undefined;
+        setMatchCards([]);
+        if (!isSilentChargeCardsLoadFailure(status)) {
+          setMatchCardsError(t('chargeCards.match.loadError'));
+        }
+      }
+    } else {
+      setMatchCards([]);
+    }
   };
 
   const handleMatch = async (target: { registrationId?: string; paymentId?: string; chargeCardId?: string }) => {
@@ -649,6 +664,12 @@ export default function BankImportPage() {
                   </div>
                 )}
               </div>
+
+              {matchCardsError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{matchCardsError}</AlertDescription>
+                </Alert>
+              )}
 
               {matchCards.length > 0 && (
                 <div>

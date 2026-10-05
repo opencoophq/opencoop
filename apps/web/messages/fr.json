@@ -2504,11 +2504,13 @@
       "enabled": "Activer les cartes de recharge",
       "fee": "Prix par carte (TVA incl.)",
       "replacementFee": "Prix d’une carte de remplacement après perte ou vol (TVA incl.)",
-      "vatRate": "Taux de TVA (%)"
+      "vatRate": "Taux de TVA (%)",
+      "invalidAmount": "Saisissez un montant valide avec au maximum 2 décimales."
     },
     "match": {
       "heading": "Cartes de recharge en attente de paiement",
-      "card": "Carte de recharge"
+      "card": "Carte de recharge",
+      "loadError": "Impossible de charger les cartes de recharge."
     }
   }
 }

@@ -2507,11 +2507,13 @@
       "enabled": "Enable charge cards",
       "fee": "Card fee (incl. VAT)",
       "replacementFee": "Replacement fee after loss or theft (incl. VAT)",
-      "vatRate": "VAT rate (%)"
+      "vatRate": "VAT rate (%)",
+      "invalidAmount": "Enter a valid amount with at most 2 decimals."
     },
     "match": {
       "heading": "Charge cards awaiting payment",
-      "card": "Charge card"
+      "card": "Charge card",
+      "loadError": "Could not load charge cards."
     }
   }
 }

@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { api } from '@/lib/api';
+import { isValidAmount } from '@/lib/charge-cards-validation';
 import {
   Info,
   AlertTriangle,
@@ -422,6 +423,17 @@ export default function AdminSettingsPage() {
   const handleSave = async () => {
     if (!selectedCoop) return;
     setError('');
+
+    if (
+      form.chargeCardsEnabled &&
+      (!isValidAmount(form.chargeCardFee) ||
+        !isValidAmount(form.chargeCardReplacementFee) ||
+        !isValidAmount(form.chargeCardVatRate, { min: 0, max: 100 }))
+    ) {
+      setError(t('chargeCards.settings.invalidAmount'));
+      return;
+    }
+
     try {
       const body: Record<string, unknown> = {
         name: form.name,

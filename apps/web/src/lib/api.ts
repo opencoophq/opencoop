@@ -150,7 +150,9 @@ export async function api<T = unknown>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+    const err = new Error(error.message || `HTTP ${response.status}`) as Error & { status?: number };
+    err.status = response.status;
+    throw err;
   }
 
   // Handle empty responses (204 No Content, or 200 with empty body)

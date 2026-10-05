@@ -6,6 +6,7 @@ jest.mock('../documents/documents.service', () => ({
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { MagicLinkService } from './magic-link.service';
+import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
@@ -274,5 +275,107 @@ describe('MagicLinkService — requestMagicLink with household shareholders', ()
 
     // No spurious user creation
     expect(userCreateMock).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================================
+// AuthService.getProfile — hasChargeCards nav-reachability flag
+// ============================================================================
+
+describe('AuthService — getProfile hasChargeCards flag', () => {
+  function buildService(prisma: any) {
+    return new AuthService(
+      prisma,
+      {} as any, // usersService (unused by getProfile)
+      {} as any, // jwtService
+      {} as any, // emailService
+      {} as any, // authEmail
+      {} as any, // coopsService
+      {} as any, // auditService
+      {} as any, // tokenService
+    );
+  }
+
+  function buildAdminUser() {
+    return {
+      id: 'admin-1',
+      role: 'COOP_ADMIN',
+      coopAdminOf: [
+        {
+          coop: {
+            id: 'coop-1',
+            name: 'Demo coop',
+            slug: 'demo',
+            active: true,
+            plan: 'FREE',
+            trialEndsAt: null,
+            chargeCardsEnabled: false,
+            channels: [],
+          },
+          role: { name: 'Admin', permissions: {} },
+        },
+      ],
+      shareholders: [],
+      registeredShareholders: [],
+      emailVerified: new Date(),
+      emailVerifyToken: null,
+      passwordHash: null,
+      emailVerifyExpires: null,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+      mfaSecret: null,
+      mfaRecoveryCodes: null,
+      googleId: null,
+      appleId: null,
+    };
+  }
+
+  it('is true when the coop has a non-cancelled charge card, even with the feature off', async () => {
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue(buildAdminUser()) },
+      coop: {
+        findUnique: jest.fn().mockResolvedValue({
+          plan: 'FREE',
+          trialEndsAt: null,
+          subscription: null,
+          _count: { chargeCards: 2 },
+        }),
+      },
+    };
+
+    const result = await buildService(prisma).getProfile('admin-1');
+
+    expect(result.adminCoops).toHaveLength(1);
+    expect(result.adminCoops[0].chargeCardsEnabled).toBe(false);
+    expect(result.adminCoops[0].hasChargeCards).toBe(true);
+    // The count query excludes CANCELLED cards (checked at the Prisma query
+    // level, not re-verified here — this fixture only pins the boolean it
+    // produces).
+    expect(prisma.coop.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'coop-1' },
+        select: expect.objectContaining({
+          _count: { select: { chargeCards: { where: { status: { not: 'CANCELLED' } } } } },
+        }),
+      }),
+    );
+  });
+
+  it('is false when the coop has no non-cancelled charge cards', async () => {
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue(buildAdminUser()) },
+      coop: {
+        findUnique: jest.fn().mockResolvedValue({
+          plan: 'FREE',
+          trialEndsAt: null,
+          subscription: null,
+          _count: { chargeCards: 0 },
+        }),
+      },
+    };
+
+    const result = await buildService(prisma).getProfile('admin-1');
+
+    expect(result.adminCoops[0].hasChargeCards).toBe(false);
   });
 });

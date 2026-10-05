@@ -2507,11 +2507,13 @@
       "enabled": "Laadpassen inschakelen",
       "fee": "Prijs per pas (incl. btw)",
       "replacementFee": "Prijs vervangpas na verlies of diefstal (incl. btw)",
-      "vatRate": "Btw-tarief (%)"
+      "vatRate": "Btw-tarief (%)",
+      "invalidAmount": "Vul een geldig bedrag in met maximaal 2 decimalen."
     },
     "match": {
       "heading": "Laadpassen die wachten op betaling",
-      "card": "Laadpas"
+      "card": "Laadpas",
+      "loadError": "Kon laadpassen niet laden."
     }
   }
 }

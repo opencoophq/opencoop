@@ -541,7 +541,9 @@ export class AuthService {
             plan: true,
             trialEndsAt: true,
             subscription: { select: { status: true } },
-            _count: { select: { chargeCards: true } },
+            // Excludes CANCELLED: a coop that tried the feature, cancelled every
+            // card and switched it off should not keep the nav entry forever.
+            _count: { select: { chargeCards: { where: { status: { not: 'CANCELLED' } } } } },
           },
         });
         const isReadOnly = full ? computeIsReadOnly(full) : false;

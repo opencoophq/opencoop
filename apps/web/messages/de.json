@@ -2504,11 +2504,13 @@
       "enabled": "Ladekarten aktivieren",
       "fee": "Preis pro Karte (inkl. MwSt.)",
       "replacementFee": "Preis einer Ersatzkarte nach Verlust oder Diebstahl (inkl. MwSt.)",
-      "vatRate": "MwSt.-Satz (%)"
+      "vatRate": "MwSt.-Satz (%)",
+      "invalidAmount": "Geben Sie einen gültigen Betrag mit höchstens 2 Dezimalstellen ein."
     },
     "match": {
       "heading": "Ladekarten, die auf Zahlung warten",
-      "card": "Ladekarte"
+      "card": "Ladekarte",
+      "loadError": "Laden der Ladekarten nicht möglich."
     }
   }
 }
