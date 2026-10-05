@@ -444,6 +444,10 @@ export class AuthService {
                 },
               },
             },
+            // Excludes CANCELLED, mirroring adminCoops.hasChargeCards: a
+            // shareholder who still holds a card keeps the nav entry even
+            // after an admin switches the feature off for the coop.
+            _count: { select: { chargeCards: { where: { status: { not: 'CANCELLED' } } } } },
             registrations: {
               include: {
                 shareClass: true,
@@ -622,7 +626,11 @@ export class AuthService {
       adminCoops,
       shareholderCoops: user.shareholders.map((s) => {
         const { channels, ...rest } = s.coop as typeof s.coop & { channels?: { logoUrl: string | null }[] };
-        return { ...rest, logoUrl: channels?.[0]?.logoUrl ?? null };
+        return {
+          ...rest,
+          logoUrl: channels?.[0]?.logoUrl ?? null,
+          hasChargeCards: ((s as typeof s & { _count?: { chargeCards: number } })._count?.chargeCards ?? 0) > 0,
+        };
       }),
     };
   }

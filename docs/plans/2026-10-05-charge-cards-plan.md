@@ -89,7 +89,7 @@ Commands used throughout:
 | e2e DB (after DB specs, it re-seeds) | `pnpm test:e2e:setup` |
 | One e2e spec | `cd e2e && npx playwright test <spec path>` |
 
-The e2e setup runs `db push` and the seed against the same test DB the DB specs rebuild. Run DB specs first and `pnpm test:e2e:setup` after them, never the other way round. A DB that went through `db push` with a newer schema cannot take the new migration any more (`column already exists`), so always rebuild it before the DB specs.
+The e2e setup runs `db push` and the seed against the same test DB the DB specs rebuild. Run DB specs first and `pnpm test:e2e:setup` after them, never the other way round. A DB that went through `db push` with a newer schema cannot take the new migration any more (`column already exists`), so always rebuild it before the DB specs. Because `db push` never runs migration SQL, the e2e DB does not have the `payments_exactly_one_target_check` CHECK constraint — an e2e test cannot rely on the database itself rejecting a payment with both or neither target set.
 
 ## Review Focus
 

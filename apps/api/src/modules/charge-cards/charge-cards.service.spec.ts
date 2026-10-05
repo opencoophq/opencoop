@@ -103,13 +103,18 @@ describe('ChargeCardsService (shareholder side)', () => {
   });
 
   describe('listForShareholder', () => {
-    it('returns enabled=false and no cards when the coop has the feature off', async () => {
+    it('returns enabled=false but still returns the shareholder\'s existing cards when the coop has the feature off', async () => {
       prisma.shareholder.findUnique.mockResolvedValue(shareholder({}, { chargeCardsEnabled: false }));
+      prisma.chargeCard.findMany.mockResolvedValue([card({ status: 'ACTIVE' })]);
 
       const result = await service.listForShareholder('sh-1', 'user-1');
 
-      expect(result).toMatchObject({ enabled: false, cards: [] });
-      expect(prisma.chargeCard.findMany).not.toHaveBeenCalled();
+      // A holder must still be able to see (and report lost) an ACTIVE card
+      // even after the coop switches the feature off.
+      expect(result).toMatchObject({ enabled: false, cards: [{ id: 'card-1', status: 'ACTIVE' }] });
+      expect(prisma.chargeCard.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { shareholderId: 'sh-1' } }),
+      );
     });
 
     it('returns fees as numbers and the cards, newest first', async () => {

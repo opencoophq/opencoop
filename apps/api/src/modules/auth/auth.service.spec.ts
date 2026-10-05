@@ -379,3 +379,78 @@ describe('AuthService — getProfile hasChargeCards flag', () => {
     expect(result.adminCoops[0].hasChargeCards).toBe(false);
   });
 });
+
+// ============================================================================
+// AuthService.getProfile — shareholderCoops.hasChargeCards (nav-reachability
+// mirror of adminCoops.hasChargeCards, for the shareholder-side nav entry)
+// ============================================================================
+
+describe('AuthService — getProfile shareholderCoops.hasChargeCards flag', () => {
+  function buildService(prisma: any) {
+    return new AuthService(
+      prisma,
+      {} as any, // usersService (unused by getProfile)
+      {} as any, // jwtService
+      {} as any, // emailService
+      {} as any, // authEmail
+      {} as any, // coopsService
+      {} as any, // auditService
+      {} as any, // tokenService
+    );
+  }
+
+  function buildShareholderUser(chargeCardsCount: number) {
+    return {
+      id: 'user-1',
+      role: 'INDIVIDUAL',
+      coopAdminOf: [],
+      shareholders: [
+        {
+          id: 'sh-1',
+          type: 'INDIVIDUAL',
+          registrations: [],
+          coop: {
+            id: 'coop-1',
+            name: 'Demo coop',
+            slug: 'demo',
+            bankIban: null,
+            bankBic: null,
+            minimumHoldingPeriod: 0,
+            chargeCardsEnabled: false,
+            channels: [],
+          },
+          _count: { chargeCards: chargeCardsCount },
+        },
+      ],
+      registeredShareholders: [],
+      emailVerified: new Date(),
+      emailVerifyToken: null,
+      passwordHash: null,
+      emailVerifyExpires: null,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+      mfaSecret: null,
+      mfaRecoveryCodes: null,
+      googleId: null,
+      appleId: null,
+    };
+  }
+
+  it('is true when the shareholder has a non-cancelled charge card, even with the feature off', async () => {
+    const prisma = { user: { findUnique: jest.fn().mockResolvedValue(buildShareholderUser(1)) } };
+
+    const result = await buildService(prisma).getProfile('user-1');
+
+    expect(result.shareholderCoops).toHaveLength(1);
+    expect(result.shareholderCoops[0].chargeCardsEnabled).toBe(false);
+    expect(result.shareholderCoops[0].hasChargeCards).toBe(true);
+  });
+
+  it('is false when the shareholder has no non-cancelled charge cards', async () => {
+    const prisma = { user: { findUnique: jest.fn().mockResolvedValue(buildShareholderUser(0)) } };
+
+    const result = await buildService(prisma).getProfile('user-1');
+
+    expect(result.shareholderCoops[0].hasChargeCards).toBe(false);
+  });
+});

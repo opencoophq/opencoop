@@ -166,7 +166,11 @@ export default function ChargeCardsPage() {
     );
   }
 
-  if (!overview.enabled) {
+  // The feature can be switched off after cards already exist: a holder must
+  // still see those cards (e.g. to report one lost), just without the
+  // ability to request a new one. Only show the disabled placeholder when
+  // there is nothing to see.
+  if (!overview.enabled && overview.cards.length === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center text-muted-foreground">{t('notEnabled')}</CardContent>
@@ -187,10 +191,12 @@ export default function ChargeCardsPage() {
           <h1 className="text-2xl font-bold">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <Button onClick={() => setRequestOpen(true)} disabled={!isActive}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('request')}
-        </Button>
+        {overview.enabled && (
+          <Button onClick={() => setRequestOpen(true)} disabled={!isActive}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('request')}
+          </Button>
+        )}
       </div>
 
       {!isActive && (

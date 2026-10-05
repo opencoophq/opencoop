@@ -76,7 +76,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     pendingShareholders: number;
     unmatchedBankTransactions: number;
   } | null>(null);
-  const [shareholderCoop, setShareholderCoop] = useState<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean } | null>(null);
+  const [shareholderCoop, setShareholderCoop] = useState<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -99,7 +99,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       api<{
         emailVerified?: boolean;
         adminCoops?: typeof adminCoops;
-        shareholderCoops?: Array<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean }>;
+        shareholderCoops?: Array<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean }>;
         shareholders?: Array<{ id: string }>;
       }>('/auth/me')
         .then((data) => {
@@ -193,7 +193,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" /> },
     { href: '/dashboard/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
     { href: '/dashboard/meetings', label: t('meetings.title'), icon: <CalendarCheck className="h-4 w-4" /> },
-    ...(shareholderCoop?.chargeCardsEnabled
+    ...(shareholderCoop?.chargeCardsEnabled || shareholderCoop?.hasChargeCards
       ? [{ href: '/dashboard/charge-cards', label: t('chargeCards.nav'), icon: <Zap className="h-4 w-4" /> }]
       : []),
     { href: '/dashboard/documents', label: t('common.documents'), icon: <FileDown className="h-4 w-4" /> },

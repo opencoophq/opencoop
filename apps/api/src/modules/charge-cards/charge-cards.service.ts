@@ -75,16 +75,17 @@ export class ChargeCardsService {
 
   async listForShareholder(shareholderId: string, userId: string) {
     const sh = await this.loadOwnShareholder(shareholderId, userId);
-    const cards = sh.coop.chargeCardsEnabled
-      ? await this.prisma.chargeCard.findMany({
-          where: { shareholderId: sh.id },
-          include: { replacedBy: { select: { id: true } } },
-          orderBy: { requestedAt: 'desc' },
-        })
-      : [];
+    // Always return existing cards, even with the feature switched off: a
+    // holder must still be able to report an ACTIVE card lost. Only
+    // `request`/`requestReenable` (new actions) stay gated below.
+    const cards = await this.prisma.chargeCard.findMany({
+      where: { shareholderId: sh.id },
+      include: { replacedBy: { select: { id: true } } },
+      orderBy: { requestedAt: 'desc' },
+    });
     // Same rule the request path uses to price and (maybe) replace a lost
     // card, so the dialog never quotes a different fee than the server will
-    // actually charge.
+    // actually charge. Null when disabled: there is no request to preview.
     const nextRequest = sh.coop.chargeCardsEnabled
       ? await this.nextRequestTerms(sh.id, sh.coop).then(({ feeInclVat, isReplacement }) => ({
           feeInclVat: feeInclVat.toString(),
