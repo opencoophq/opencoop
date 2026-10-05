@@ -5,6 +5,7 @@ import { ShareholderStatusService } from '../shareholder-status/shareholder-stat
 import { computeTotalPaid, extractOgmCode } from '@opencoop/shared';
 import { BankPreset, BANK_PRESETS } from './bank-presets';
 import { BankMatchingService } from './bank-matching.service';
+import { OgmService } from '../ogm/ogm.service';
 
 @Injectable()
 export class BankImportService {
@@ -13,6 +14,7 @@ export class BankImportService {
     private registrationsService: RegistrationsService,
     private shareholderStatus: ShareholderStatusService,
     private bankMatchingService: BankMatchingService,
+    private ogm: OgmService,
   ) {}
 
   async getImports(coopId: string) {
@@ -183,25 +185,8 @@ export class BankImportService {
           .filter((ogmCode): ogmCode is string => ogmCode !== null),
       ),
     ];
-    const registrationMap = new Map<string, any>();
-    if (uniqueOgms.length > 0) {
-      const registrations = await this.prisma.registration.findMany({
-        where: { coopId, ogmCode: { in: uniqueOgms } },
-        select: {
-          id: true,
-          coopId: true,
-          status: true,
-          totalAmount: true,
-          ogmCode: true,
-          payments: {
-            select: { id: true, amount: true, bankDate: true, bankTransactionId: true },
-          },
-        },
-      });
-      for (const registration of registrations) {
-        if (registration.ogmCode) registrationMap.set(registration.ogmCode, registration);
-      }
-    }
+    // One batched lookup for every OGM in the file (no per-row N+1).
+    const targets = await this.ogm.resolveOgmTargets(coopId, uniqueOgms);
 
     for (const row of importRows) {
       const ogmCode = extractOgmCode(row.reference);
@@ -240,7 +225,7 @@ export class BankImportService {
         amount: row.amount,
         referenceText: row.reference || null,
         ogmCode,
-      }, importedById, true, ogmCode ? registrationMap.get(ogmCode) : undefined);
+      }, importedById, true, ogmCode ? targets.get(ogmCode) : undefined);
       if (result.status === 'AUTO_MATCHED') matchedCount++;
       else unmatchedCount++;
     }

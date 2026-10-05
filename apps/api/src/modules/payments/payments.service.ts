@@ -21,23 +21,6 @@ export class PaymentsService {
     });
   }
 
-  async findByOgmCode(ogmCode: string) {
-    return this.prisma.registration.findUnique({
-      where: { ogmCode },
-      include: {
-        payments: true,
-        shareholder: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            companyName: true,
-          },
-        },
-      },
-    });
-  }
-
   async addPayment(data: {
     registrationId: string;
     coopId: string;

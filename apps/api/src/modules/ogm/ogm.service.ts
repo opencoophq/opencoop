@@ -1,11 +1,27 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@opencoop/database';
-import { generateOgmCode } from '@opencoop/shared';
+import { extractOgmCode, generateOgmCode } from '@opencoop/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MAX_OGM_SEQUENCE } from './ogm';
+import { PaymentTarget, RegistrationTarget } from './payment-target';
 
 /** Give up on skip-taken retries after this many attempts, rather than loop forever. */
 const MAX_SKIP_ATTEMPTS = 1000;
+
+const REGISTRATION_TARGET_SELECT = {
+  id: true,
+  coopId: true,
+  status: true,
+  totalAmount: true,
+  ogmCode: true,
+  payments: { select: { id: true, amount: true, bankDate: true, bankTransactionId: true } },
+} satisfies Prisma.RegistrationSelect;
+
+type RegistrationTargetRow = Prisma.RegistrationGetPayload<{ select: typeof REGISTRATION_TARGET_SELECT }>;
+
+function toRegistrationTarget(row: RegistrationTargetRow): RegistrationTarget {
+  return { kind: 'registration', ...row };
+}
 
 @Injectable()
 export class OgmService {
@@ -44,6 +60,42 @@ export class OgmService {
       }
     }
     throw new Error(`Could not find a free OGM code for coop ${coopId} after ${MAX_SKIP_ATTEMPTS} attempts`);
+  }
+
+  /**
+   * Resolves many OGMs in one query per target table (the CSV import batch).
+   * Inputs may be formatted or digit-only; invalid ones are dropped. Keys are
+   * the formatted codes, as stored.
+   */
+  async resolveOgmTargets(
+    coopId: string,
+    ogms: Array<string | null | undefined>,
+  ): Promise<Map<string, PaymentTarget>> {
+    const codes = [
+      ...new Set(ogms.map((ogm) => extractOgmCode(ogm)).filter((ogm): ogm is string => ogm !== null)),
+    ];
+    const targets = new Map<string, PaymentTarget>();
+    if (codes.length === 0) return targets;
+
+    const registrations = await this.prisma.registration.findMany({
+      where: { coopId, ogmCode: { in: codes } },
+      select: REGISTRATION_TARGET_SELECT,
+    });
+    for (const row of registrations) {
+      if (row.ogmCode) targets.set(row.ogmCode, toRegistrationTarget(row));
+    }
+    return targets;
+  }
+
+  /** Resolves one OGM (Ponto, rematch), with the same normalisation. */
+  async resolveOgmTarget(coopId: string, ogm: string | null | undefined): Promise<PaymentTarget | null> {
+    const ogmCode = extractOgmCode(ogm);
+    if (!ogmCode) return null;
+    const registration = await this.prisma.registration.findFirst({
+      where: { coopId, ogmCode },
+      select: REGISTRATION_TARGET_SELECT,
+    });
+    return registration ? toRegistrationTarget(registration) : null;
   }
 
   /** True if some row already holds this OGM code. */

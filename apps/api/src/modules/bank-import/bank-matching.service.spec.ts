@@ -6,12 +6,14 @@ import { Test } from '@nestjs/testing';
 import { BankMatchingService } from './bank-matching.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
+import { OgmService } from '../ogm/ogm.service';
 import { generateOgmCode } from '@opencoop/shared';
 
 describe('BankMatchingService', () => {
   let service: BankMatchingService;
   let prisma: any;
   let paymentsService: any;
+  let ogmService: OgmService;
   const OGM = generateOgmCode('001', 42);
 
   const bankTransaction = {
@@ -34,11 +36,13 @@ describe('BankMatchingService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         BankMatchingService,
+        OgmService,
         { provide: PrismaService, useValue: prisma },
         { provide: PaymentsService, useValue: paymentsService },
       ],
     }).compile();
     service = moduleRef.get(BankMatchingService);
+    ogmService = moduleRef.get(OgmService);
   });
 
   it('links the closest equal unlinked payment even when the registration is completed', async () => {
@@ -122,5 +126,15 @@ describe('BankMatchingService', () => {
 
     expect(result).toEqual({ status: 'UNMATCHED', linkedExisting: false, createdPayment: false });
     expect(paymentsService.addPayment).not.toHaveBeenCalled();
+  });
+
+  it('looks the OGM up through OgmService, within the coop', async () => {
+    const resolve = jest.spyOn(ogmService, 'resolveOgmTarget');
+    prisma.registration.findFirst.mockResolvedValue(null);
+
+    const result = await service.matchTransaction('coop-1', bankTransaction);
+
+    expect(result.status).toBe('UNMATCHED');
+    expect(resolve).toHaveBeenCalledWith('coop-1', OGM);
   });
 });

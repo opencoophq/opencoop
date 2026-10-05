@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { computeTotalPaid, extractOgmCode } from '@opencoop/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
+import { OgmService } from '../ogm/ogm.service';
+import { PaymentTarget } from '../ogm/payment-target';
 
 export interface BankTransactionMatchInput {
   id: string;
@@ -17,14 +19,6 @@ export interface BankTransactionMatchResult {
   createdPayment: boolean;
 }
 
-export interface BankMatchingRegistration {
-  id: string;
-  coopId: string;
-  status: string;
-  totalAmount?: unknown;
-  payments?: { id: string; amount: unknown; bankDate: Date; bankTransactionId: string | null }[];
-}
-
 class LinkConflictError extends Error {}
 
 @Injectable()
@@ -32,6 +26,7 @@ export class BankMatchingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
+    private readonly ogm: OgmService,
   ) {}
 
   async matchTransaction(
@@ -39,7 +34,7 @@ export class BankMatchingService {
     transaction: BankTransactionMatchInput,
     matchedByUserId?: string,
     allowCreate = true,
-    registrationOverride?: BankMatchingRegistration,
+    targetOverride?: PaymentTarget,
   ): Promise<BankTransactionMatchResult> {
     const amount = Number(transaction.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -51,21 +46,15 @@ export class BankMatchingService {
       return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
     }
 
-    const registration = registrationOverride || await this.prisma.registration.findFirst({
-      where: { coopId, ogmCode },
-      select: {
-        id: true,
-        coopId: true,
-        status: true,
-        totalAmount: true,
-        payments: {
-          select: { id: true, amount: true, bankDate: true, bankTransactionId: true },
-        },
-      },
-    });
-    if (!registration) {
+    // One resolver for every OGM. The CSV import passes the target it batch-loaded
+    // (targetOverride) and reuses that object for later rows of the same file, so the
+    // updates to `cached` below keep it current. A freshly resolved target is not cached.
+    const target = targetOverride ?? (await this.ogm.resolveOgmTarget(coopId, ogmCode));
+    if (!target) {
       return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
     }
+    const registration = target;
+    const cached = targetOverride ? registration : undefined;
 
     const unlinkedPayments = registration.payments
       ? registration.payments.filter((payment) => payment.bankTransactionId === null)
@@ -109,8 +98,8 @@ export class BankMatchingService {
       if (!linked) {
         return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
       }
-      if (registrationOverride?.payments) {
-        const linkedPayment = registrationOverride.payments.find((payment) => payment.id === closestPayment.id);
+      if (cached?.payments) {
+        const linkedPayment = cached.payments.find((payment) => payment.id === closestPayment.id);
         if (linkedPayment) linkedPayment.bankTransactionId = transaction.id;
       }
 
@@ -129,21 +118,21 @@ export class BankMatchingService {
       bankTransactionId: transaction.id,
       ...(matchedByUserId ? { matchedByUserId } : {}),
     });
-    if (registrationOverride?.payments) {
-      registrationOverride.payments.push({
+    if (cached?.payments) {
+      cached.payments.push({
         id: createdPayment?.id || `created-${transaction.id}`,
         amount,
         bankDate: transaction.date,
         bankTransactionId: transaction.id,
       });
       if (
-        registrationOverride.totalAmount !== undefined &&
-        computeTotalPaid(registrationOverride.payments.map((payment) => ({ amount: Number(payment.amount) }))) >=
-          Number(registrationOverride.totalAmount)
+        cached.totalAmount !== undefined &&
+        computeTotalPaid(cached.payments.map((payment) => ({ amount: Number(payment.amount) }))) >=
+          Number(cached.totalAmount)
       ) {
-        registrationOverride.status = 'COMPLETED';
-      } else if (registrationOverride.status === 'PENDING_PAYMENT') {
-        registrationOverride.status = 'ACTIVE';
+        cached.status = 'COMPLETED';
+      } else if (cached.status === 'PENDING_PAYMENT') {
+        cached.status = 'ACTIVE';
       }
     }
     await this.prisma.bankTransaction.update({

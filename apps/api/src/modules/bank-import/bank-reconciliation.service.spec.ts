@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 import { PaymentsService } from '../payments/payments.service';
+import { OgmService } from '../ogm/ogm.service';
 
 describe('bank reconciliation regressions', () => {
   let service: BankImportService;
@@ -140,6 +141,7 @@ describe('bank reconciliation regressions', () => {
       providers: [
         BankImportService,
         BankMatchingService,
+        OgmService,
         { provide: PrismaService, useValue: prisma },
         { provide: PaymentsService, useValue: paymentsService },
         { provide: RegistrationsService, useValue: { onRegistrationCompleted: jest.fn() } },

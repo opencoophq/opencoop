@@ -11,6 +11,7 @@ import { BankMatchingService } from './bank-matching.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+import { OgmService } from '../ogm/ogm.service';
 import { generateOgmCode, validateOgmCode } from '@opencoop/shared';
 
 /**
@@ -31,6 +32,7 @@ describe('BankImportService — importCsv OGM matching', () => {
   let registrationsService: any;
   let shareholderStatus: any;
   let bankMatchingService: any;
+  let ogmService: OgmService;
 
   // A real, checksum-valid OGM produced the same way the app generates them.
   const OGM = generateOgmCode('001', 42);
@@ -120,6 +122,7 @@ describe('BankImportService — importCsv OGM matching', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         BankImportService,
+        OgmService,
         { provide: PrismaService, useValue: prisma },
         { provide: RegistrationsService, useValue: registrationsService },
         { provide: ShareholderStatusService, useValue: shareholderStatus },
@@ -127,6 +130,7 @@ describe('BankImportService — importCsv OGM matching', () => {
       ],
     }).compile();
     service = moduleRef.get(BankImportService);
+    ogmService = moduleRef.get(OgmService);
   });
 
   // Build a generic-preset CSV: header line + one data row.
@@ -707,5 +711,24 @@ describe('BankImportService — importCsv OGM matching', () => {
         shareholder: { select: { firstName: true, lastName: true, companyName: true } },
       },
     });
+  });
+
+  it('resolves every OGM of the file in one OgmService call, scoped to the coop', async () => {
+    const resolve = jest.spyOn(ogmService, 'resolveOgmTargets');
+
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'test.csv',
+      csvRows([
+        ['2026-01-15', '100', 'A', OGM],
+        ['2026-01-16', '50', 'B', `ref ${OGM}`],
+        ['2026-01-17', '-20', 'C', OGM],
+      ]),
+      'generic',
+    );
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).toHaveBeenCalledWith(COOP_ID, [OGM]);
   });
 });

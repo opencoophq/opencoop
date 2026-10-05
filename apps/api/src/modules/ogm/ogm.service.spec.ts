@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { Prisma } from '@opencoop/database';
 import { generateOgmCode } from '@opencoop/shared';
 import { OgmService } from './ogm.service';
 import { MAX_OGM_SEQUENCE } from './ogm';
@@ -88,5 +89,67 @@ describe('OgmService.nextOgmCode', () => {
     };
 
     await expect(service.nextOgmCode(db as any, 'coop-1')).rejects.toThrow(/Could not find a free OGM code/);
+  });
+});
+
+describe('OgmService resolvers', () => {
+  const OGM = '+++090/9337/55493+++';
+  const registrationRow = {
+    id: 'reg-1',
+    coopId: 'coop-1',
+    status: 'PENDING_PAYMENT',
+    totalAmount: new Prisma.Decimal('250.00'),
+    ogmCode: OGM,
+    payments: [],
+  };
+  let prisma: any;
+  let service: OgmService;
+
+  beforeEach(() => {
+    prisma = {
+      registration: {
+        findMany: jest.fn().mockResolvedValue([registrationRow]),
+        findFirst: jest.fn().mockResolvedValue(registrationRow),
+      },
+    };
+    service = new OgmService(prisma);
+  });
+
+  it('normalises digit-only and formatted OGMs into one coop-scoped query', async () => {
+    const targets = await service.resolveOgmTargets('coop-1', ['090933755493', OGM, 'not an ogm', null]);
+
+    expect(prisma.registration.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.registration.findMany.mock.calls[0][0].where).toEqual({
+      coopId: 'coop-1',
+      ogmCode: { in: [OGM] },
+    });
+    expect(targets.get(OGM)).toEqual({ kind: 'registration', ...registrationRow });
+  });
+
+  it('does not query when no input is a valid OGM', async () => {
+    const targets = await service.resolveOgmTargets('coop-1', ['hello', null, undefined]);
+
+    expect(targets.size).toBe(0);
+    expect(prisma.registration.findMany).not.toHaveBeenCalled();
+  });
+
+  it('resolveOgmTarget normalises the OGM and looks it up within the coop', async () => {
+    await expect(service.resolveOgmTarget('coop-1', '090933755493')).resolves.toMatchObject({
+      kind: 'registration',
+      id: 'reg-1',
+    });
+
+    expect(prisma.registration.findFirst.mock.calls[0][0].where).toEqual({ coopId: 'coop-1', ogmCode: OGM });
+  });
+
+  it('resolveOgmTarget returns null for an invalid OGM without querying', async () => {
+    await expect(service.resolveOgmTarget('coop-1', '123')).resolves.toBeNull();
+    expect(prisma.registration.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('resolveOgmTarget returns null when no registration has the OGM', async () => {
+    prisma.registration.findFirst.mockResolvedValue(null);
+
+    await expect(service.resolveOgmTarget('coop-1', OGM)).resolves.toBeNull();
   });
 });
