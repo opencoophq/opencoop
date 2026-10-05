@@ -6,7 +6,7 @@ import { computeTotalPaid, extractOgmCode } from '@opencoop/shared';
 import { BankPreset, BANK_PRESETS } from './bank-presets';
 import { BankMatchingService } from './bank-matching.service';
 import { OgmService } from '../ogm/ogm.service';
-import { recordChargeCardPayment } from '../charge-cards/charge-card-payments';
+import { ChargeCardNotPayableError, recordChargeCardPayment } from '../charge-cards/charge-card-payments';
 
 @Injectable()
 export class BankImportService {
@@ -442,6 +442,12 @@ export class BankImportService {
           bankDate: bankTx.date,
           bankTransactionId,
           matchedByUserId: userId,
+        }).catch((error: unknown) => {
+          // Re-checked under the card lock: paid or cancelled since the read above.
+          if (error instanceof ChargeCardNotPayableError) {
+            throw new ConflictException('Charge card changed in the meantime');
+          }
+          throw error;
         });
       });
       return { success: true };

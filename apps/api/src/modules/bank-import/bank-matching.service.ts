@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
 import { OgmService } from '../ogm/ogm.service';
 import { ChargeCardTarget, PaymentTarget, acceptsCardPayment } from '../ogm/payment-target';
-import { recordChargeCardPayment } from '../charge-cards/charge-card-payments';
+import { ChargeCardNotPayableError, recordChargeCardPayment } from '../charge-cards/charge-card-payments';
 
 export interface BankTransactionMatchInput {
   id: string;
@@ -180,6 +180,12 @@ export class BankMatchingService {
         return result.paid;
       })
       .catch((error: unknown) => {
+        // Lost the bank row, or the card left REQUESTED before we locked it: the
+        // transaction rolled back, so the row stays UNMATCHED for an admin.
+        if (error instanceof ChargeCardNotPayableError) {
+          if (error.status) card.status = error.status;
+          return null;
+        }
         if (error instanceof LinkConflictError) return null;
         throw error;
       });

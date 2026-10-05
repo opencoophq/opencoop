@@ -5,7 +5,7 @@ jest.mock('../documents/documents.service', () => ({
 }));
 
 import { Test } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { BankImportService } from './bank-import.service';
 import { BankMatchingService } from './bank-matching.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -70,7 +70,10 @@ describe('BankImportService — importCsv OGM matching', () => {
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn().mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({}),
       },
+      // The card row lock in recordChargeCardPayment.
+      $queryRaw: jest.fn().mockResolvedValue([{ status: 'REQUESTED' }]),
       $transaction: jest.fn((cb: any) => cb(prisma)),
     };
     bankMatchingService = {
@@ -779,9 +782,18 @@ describe('BankImportService — importCsv OGM matching', () => {
       await service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID);
 
       expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
-        where: { id: 'card-1', status: 'REQUESTED' },
+        where: { AND: [{ id: 'card-1' }, { status: 'REQUESTED' }] },
         data: { status: 'PAID', paidAt: expect.any(Date) },
       });
+    });
+
+    it('returns 409 when the card left REQUESTED before its row was locked', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ status: 'CANCELLED' }]);
+
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
     });
 
     it('refuses a card that is not REQUESTED', async () => {

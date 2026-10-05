@@ -38,7 +38,10 @@ describe('BankMatchingService', () => {
       chargeCard: {
         findFirst: jest.fn().mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({}),
       },
+      // The card row lock in recordChargeCardPayment.
+      $queryRaw: jest.fn().mockResolvedValue([{ status: 'REQUESTED' }]),
       $transaction: jest.fn((callback: (tx: any) => Promise<unknown>) => callback(prisma)),
     };
     paymentsService = { addPayment: jest.fn() };
@@ -183,10 +186,29 @@ describe('BankMatchingService', () => {
         }),
       });
       expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
-        where: { id: 'card-1', status: 'REQUESTED' },
+        where: { AND: [{ id: 'card-1' }, { status: 'REQUESTED' }] },
         data: { status: 'PAID', paidAt: expect.any(Date) },
       });
       expect(paymentsService.addPayment).not.toHaveBeenCalled();
+    });
+
+    it('stays UNMATCHED when the locked card is no longer REQUESTED, and updates the cached target', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ status: 'CANCELLED' }]);
+      const stale: ChargeCardTarget = {
+        kind: 'chargeCard',
+        id: 'card-1',
+        coopId: 'coop-1',
+        shareholderId: 'sh-1',
+        status: 'REQUESTED',
+        feeInclVat: 6,
+        ogmCode: OGM,
+      };
+
+      const result = await service.matchTransaction('coop-1', cardTx, 'user-1', true, stale);
+
+      expect(result).toEqual({ status: 'UNMATCHED', linkedExisting: false, createdPayment: false });
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+      expect(stale.status).toBe('CANCELLED');
     });
 
     it('leaves a short payment UNMATCHED', async () => {
