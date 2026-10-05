@@ -1,5 +1,133 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases charge-card-coop-notice (re-enable) in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Antrag auf Reaktivierung einer Ladekarte</h1>
+    <p>Jan Peeters meldet, dass die Ladekarte nicht mehr funktioniert.</p>
+    <ul>
+      <li>Anteilseigner: Jan Peeters</li>
+      
+      <li>Strukturierte Mitteilung: +++090/9337/55493+++</li>
+      
+    </ul>
+    <p>Aktivieren Sie die Karte im Portal des Anbieters erneut und klicken Sie dann unter Verwaltung → Ladekarten auf Erledigt.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases charge-card-coop-notice (re-enable) in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Charge card re-enable request</h1>
+    <p>Jan Peeters reports that their charge card no longer works.</p>
+    <ul>
+      <li>Shareholder: Jan Peeters</li>
+      
+      <li>Structured communication: +++090/9337/55493+++</li>
+      
+    </ul>
+    <p>Re-enable the card in the provider portal, then click Done in Admin → Charge cards.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases charge-card-coop-notice (re-enable) in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Demande de réactivation de carte de recharge</h1>
+    <p>Jan Peeters signale que sa carte de recharge ne fonctionne plus.</p>
+    <ul>
+      <li>Actionnaire: Jan Peeters</li>
+      
+      <li>Communication structurée: +++090/9337/55493+++</li>
+      
+    </ul>
+    <p>Réactivez la carte dans le portail du fournisseur, puis cliquez sur Fait dans Administration → Cartes de recharge.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases charge-card-coop-notice (re-enable) in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Vraag om een laadpas opnieuw te activeren</h1>
+    <p>Jan Peeters meldt dat de laadpas niet meer werkt.</p>
+    <ul>
+      <li>Aandeelhouder: Jan Peeters</li>
+      
+      <li>Gestructureerde mededeling: +++090/9337/55493+++</li>
+      
+    </ul>
+    <p>Activeer de pas opnieuw in het portaal van de leverancier en klik daarna op Gedaan in Beheer → Laadpassen.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
 exports[`EmailProcessor render snapshots (byte-exact baseline) additional branch cases meeting-convocation (custom body) in de 1`] = `
 "
       <!DOCTYPE html>
@@ -1082,6 +1210,134 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "agenda-
       Heb je je aanwezigheid nog niet bevestigd? <a href="https://opencoop.test/meetings/rsvp/token">Bevestig hier</a>.
     </p>
     <img src="https://opencoop.test/pixel.gif" width="1" height="1" alt="" style="display:block" />
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-card-coop-notice" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Neuer Antrag auf Ladekarte</h1>
+    <p>Jan Peeters hat eine Ladekarte beantragt.</p>
+    <ul>
+      <li>Anteilseigner: Jan Peeters</li>
+      <li>Bezeichnung: Auto &lt;Anna&gt;</li>
+      <li>Strukturierte Mitteilung: +++090/9337/55493+++</li>
+      <li>Betrag: €6.00 (Ersatz für eine verlorene Karte)</li>
+    </ul>
+    <p>Die Karte wechselt zu Bezahlt, sobald die Zahlung eingeht. Geben Sie sie dann unter Verwaltung → Ladekarten aus.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-card-coop-notice" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>New charge card request</h1>
+    <p>Jan Peeters requested a charge card.</p>
+    <ul>
+      <li>Shareholder: Jan Peeters</li>
+      <li>Label: Auto &lt;Anna&gt;</li>
+      <li>Structured communication: +++090/9337/55493+++</li>
+      <li>Amount: €6.00 (replacement for a lost card)</li>
+    </ul>
+    <p>The card moves to Paid when the payment arrives. Then issue it in Admin → Charge cards.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-card-coop-notice" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Nouvelle demande de carte de recharge</h1>
+    <p>Jan Peeters a demandé une carte de recharge.</p>
+    <ul>
+      <li>Actionnaire: Jan Peeters</li>
+      <li>Libellé: Auto &lt;Anna&gt;</li>
+      <li>Communication structurée: +++090/9337/55493+++</li>
+      <li>Montant: €6.00 (remplacement d’une carte perdue)</li>
+    </ul>
+    <p>La carte passe à Payée dès réception du paiement. Délivrez-la ensuite via Administration → Cartes de recharge.</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-card-coop-notice" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Nieuwe aanvraag laadpas</h1>
+    <p>Jan Peeters vroeg een laadpas aan.</p>
+    <ul>
+      <li>Aandeelhouder: Jan Peeters</li>
+      <li>Label: Auto &lt;Anna&gt;</li>
+      <li>Gestructureerde mededeling: +++090/9337/55493+++</li>
+      <li>Bedrag: €6.00 (vervanging van een verloren pas)</li>
+    </ul>
+    <p>De pas gaat naar Betaald zodra de betaling binnen is. Geef hem daarna uit via Beheer → Laadpassen.</p>
   
         <hr>
         <p style="color: #666; font-size: 12px;">

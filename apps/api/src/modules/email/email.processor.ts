@@ -376,6 +376,24 @@ export class EmailProcessor {
           <p>${s.thanks}</p>
         `;
       },
+      'charge-card-coop-notice': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const sn = escapeHtml(d.shareholderName);
+        const s = buildCopy('charge-card-coop-notice', lang, { coopName: escapeHtml(cn), shareholderName: sn });
+        const reenable = d.kind === 'reenable';
+        const amount = typeof d.amount === 'number' ? d.amount.toFixed(2) : '';
+        return `
+    <h1>${reenable ? s.reenableTitle : s.requestedTitle}</h1>
+    <p>${reenable ? s.reenableIntro : s.requestedIntro}</p>
+    <ul>
+      <li>${s.shareholder}: ${sn}</li>
+      ${d.label ? `<li>${s.label}: ${escapeHtml(d.label)}</li>` : ''}
+      <li>${s.ogm}: ${escapeHtml(d.ogmCode)}</li>
+      ${reenable ? '' : `<li>${s.amount}: €${amount}${d.isReplacement ? ` (${s.replacement})` : ''}</li>`}
+    </ul>
+    <p>${reenable ? s.reenableAction : s.requestedAction}</p>
+  `;
+      },
       'dividend-statement': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const sn = escapeHtml(d.shareholderName);

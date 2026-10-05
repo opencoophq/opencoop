@@ -452,6 +452,42 @@ export class EmailService {
     });
   }
 
+  async sendChargeCardCoopNotice(
+    coopId: string,
+    to: string,
+    data: {
+      kind: 'requested' | 'reenable';
+      shareholderName: string;
+      label: string | null;
+      ogmCode: string;
+      amount: number;
+      isReplacement: boolean;
+    },
+  ) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<'requested' | 'reenable', Record<string, string>> = {
+      requested: {
+        nl: 'Nieuwe aanvraag laadpas',
+        en: 'New charge card request',
+        fr: 'Nouvelle demande de carte de recharge',
+        de: 'Neuer Antrag auf Ladekarte',
+      },
+      reenable: {
+        nl: 'Laadpas opnieuw activeren',
+        en: 'Charge card re-enable request',
+        fr: 'Demande de réactivation de carte de recharge',
+        de: 'Antrag auf Reaktivierung einer Ladekarte',
+      },
+    };
+    return this.send({
+      coopId,
+      to,
+      subject: subjects[data.kind][language] || subjects[data.kind]['nl'],
+      templateKey: 'charge-card-coop-notice',
+      templateData: { ...data, language },
+    });
+  }
+
   async sendGiftCertificate(
     coopId: string,
     to: string,
