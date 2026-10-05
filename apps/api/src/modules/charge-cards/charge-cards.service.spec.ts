@@ -74,7 +74,7 @@ describe('ChargeCardsService (shareholder side)', () => {
       },
       payment: { count: jest.fn().mockResolvedValue(0) },
       // SELECT ... FOR UPDATE on the card row (cancel).
-      $queryRaw: jest.fn().mockResolvedValue([{ id: 'card-1' }]),
+      $queryRaw: jest.fn().mockResolvedValue([{ id: 'card-1', status: 'REQUESTED' }]),
       $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(prisma)),
     };
     ogm = { nextOgmCode: jest.fn().mockResolvedValue(OGM) };
@@ -299,7 +299,19 @@ describe('ChargeCardsService (shareholder side)', () => {
       );
     });
 
-    it('refuses with 409 to cancel a card that holds a payment', async () => {
+    it.each(['PAID', 'ACTIVE'])('keeps the 400 for a %s card, even when it holds a payment', async (status) => {
+      prisma.chargeCard.findFirst.mockResolvedValue({ id: 'card-1' });
+      prisma.$queryRaw.mockResolvedValue([{ id: 'card-1', status }]);
+      prisma.payment.count.mockResolvedValue(1);
+
+      const result = service.cancel('sh-1', 'user-1', 'card-1');
+
+      await expect(result).rejects.toThrow(BadRequestException);
+      await expect(result).rejects.toThrow('Only a requested card can be cancelled');
+      expect(prisma.chargeCard.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses with 409 to cancel a REQUESTED card that holds a payment', async () => {
       prisma.chargeCard.findFirst.mockResolvedValue({ id: 'card-1' });
       prisma.payment.count.mockResolvedValue(1);
 

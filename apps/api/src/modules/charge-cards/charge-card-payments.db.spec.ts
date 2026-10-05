@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaClient } from '@opencoop/database';
 import { generateOgmCode } from '@opencoop/shared';
 import { BankImportService } from '../bank-import/bank-import.service';
@@ -168,15 +168,22 @@ describeDb('charge card payments under concurrency (database)', () => {
       const after = await prisma.chargeCard.findUniqueOrThrow({ where: { id: card.id } });
       const cardPayments = await prisma.payment.count({ where: { chargeCardId: card.id } });
       const bank = await prisma.bankTransaction.findUniqueOrThrow({ where: { id: row.id } });
+      // Assert on the outcome. The loser's error depends on timing: a cancel that
+      // commits before manualMatch's pre-check gives a 400, one that commits while
+      // the payment waits for the card lock gives a 409.
+      const refused = (result: PromiseSettledResult<unknown>) =>
+        result.status === 'rejected' &&
+        (result.reason instanceof ConflictException || result.reason instanceof BadRequestException);
       expect([payment.status, cancel.status].sort()).toEqual(['fulfilled', 'rejected']);
       if (after.status === 'CANCELLED') {
         expect(cancel.status).toBe('fulfilled');
-        expect((payment as PromiseRejectedResult).reason).toBeInstanceOf(ConflictException);
+        expect(refused(payment)).toBe(true);
         expect(cardPayments).toBe(0);
         expect(bank.matchStatus).toBe('UNMATCHED');
       } else {
         expect(after.status).toBe('REQUESTED');
-        expect((cancel as PromiseRejectedResult).reason).toBeInstanceOf(ConflictException);
+        expect(payment.status).toBe('fulfilled');
+        expect(refused(cancel)).toBe(true);
         expect(cardPayments).toBe(1);
         expect(bank.matchStatus).toBe('MANUAL_MATCHED');
       }
