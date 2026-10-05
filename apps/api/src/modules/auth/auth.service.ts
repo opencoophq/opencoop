@@ -413,6 +413,7 @@ export class AuthService {
                 active: true,
                 plan: true,
                 trialEndsAt: true,
+                chargeCardsEnabled: true,
                 channels: {
                   where: { isDefault: true },
                   select: { logoUrl: true },
@@ -435,6 +436,7 @@ export class AuthService {
                 bankIban: true,
                 bankBic: true,
                 minimumHoldingPeriod: true,
+                chargeCardsEnabled: true,
                 channels: {
                   where: { isDefault: true },
                   select: { logoUrl: true },
@@ -523,7 +525,7 @@ export class AuthService {
     if (user.role === 'SYSTEM_ADMIN') {
       adminCoopsRaw = await this.prisma.coop.findMany({
         select: {
-          id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true,
+          id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true, chargeCardsEnabled: true,
           channels: { where: { isDefault: true }, select: { logoUrl: true }, take: 1 },
         },
         orderBy: { name: 'asc' },
