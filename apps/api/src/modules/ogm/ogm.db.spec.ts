@@ -75,4 +75,31 @@ describeDb('OGM sequence (database)', () => {
       generateOgmCode(coop.ogmPrefix, 18),
     );
   });
+
+  it('skips a code already held by a registration — e.g. planted by an out-of-band writer during a deploy window', async () => {
+    const coop = await createTestCoop(prisma);
+    const shareholder = await createTestShareholder(prisma, coop.id);
+    const shareClass = await createTestShareClass(prisma, coop.id);
+    // The counter is about to issue sequence 1. Plant that exact code on a registration
+    // as if an out-of-band writer (old API still doing count+1) got there first.
+    await prisma.registration.create({
+      data: {
+        coopId: coop.id,
+        shareholderId: shareholder.id,
+        shareClassId: shareClass.id,
+        type: 'BUY',
+        quantity: 1,
+        pricePerShare: 10,
+        totalAmount: 10,
+        registerDate: new Date(),
+        ogmCode: generateOgmCode(coop.ogmPrefix, 1),
+      },
+    });
+
+    const code = await prisma.$transaction((tx) => ogm.nextOgmCode(tx, coop.id));
+
+    expect(code).toBe(generateOgmCode(coop.ogmPrefix, 2));
+    const after = await prisma.coop.findUniqueOrThrow({ where: { id: coop.id } });
+    expect(after.ogmSequence).toBe(2);
+  });
 });

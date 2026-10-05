@@ -285,7 +285,7 @@ describe('RegistrationsService', () => {
         }),
       };
       prisma.coop.findUnique.mockResolvedValue({
-        ogmPrefix: '001', requiresApproval: false, emailEnabled: false, bankIban: null, bankBic: null,
+        requiresApproval: false, emailEnabled: false, bankIban: null, bankBic: null,
       });
       const tx = {
         registration: {
