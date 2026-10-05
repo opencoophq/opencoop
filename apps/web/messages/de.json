@@ -2095,7 +2095,7 @@
     },
     "convocation": {
       "heading": "Einberufung",
-      "preview": "Vorschau",
+      "preview": "E-Mail-Vorschau",
       "send": "Einberufung senden",
       "sendConfirm": "Die Einberufung wird per E-Mail an alle aktiven Mitglieder gesendet. Fortfahren?",
       "sendSuccess": "Einberufung wird im Hintergrund versandt",
@@ -2107,7 +2107,6 @@
       "subjectLabel": "Betreff",
       "bodyLabel": "E-Mail-Inhalt (HTML)",
       "bodyHelp": "Leer lassen, um die Standardvorlage zu verwenden. Tagesordnung, RSVP-Button und Vollmachtshinweis werden automatisch hinzugefügt.",
-      "preview": "E-Mail-Vorschau",
       "previewSubject": "Betreff",
       "previewBody": "Inhalt",
       "previewHelp": "Dies ist genau das, was ein Anteilseigner erhalten wird. PDF im Anhang.",
@@ -2496,7 +2495,8 @@
       "cancel": "Stornieren",
       "syncDone": "Im Portal erledigt",
       "todo": "Im Anbieterportal zu erledigen",
-      "confirm": "Sind Sie sicher?"
+      "confirm": "Sind Sie sicher?",
+      "cancelPaidConfirm": "Diese Karte stornieren? Es ist bereits eine Zahlung registriert; die Genossenschaft muss sie selbst erstatten."
     },
     "settings": {
       "title": "Ladekarten",

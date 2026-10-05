@@ -2095,7 +2095,7 @@
     },
     "convocation": {
       "heading": "Convocation",
-      "preview": "Aperçu",
+      "preview": "Aperçu de l'e-mail",
       "send": "Envoyer la convocation",
       "sendConfirm": "Ceci enverra la convocation par e-mail à tous les coopérateurs actifs. Continuer ?",
       "sendSuccess": "La convocation est envoyée en arrière-plan",
@@ -2107,7 +2107,6 @@
       "subjectLabel": "Objet",
       "bodyLabel": "Corps de l'e-mail (HTML)",
       "bodyHelp": "Laissez vide pour utiliser le modèle par défaut. L'ordre du jour, le bouton RSVP et la mention de procuration sont ajoutés automatiquement.",
-      "preview": "Aperçu de l'e-mail",
       "previewSubject": "Objet",
       "previewBody": "Corps",
       "previewHelp": "Voici exactement ce qu'un actionnaire recevra. PDF en pièce jointe.",
@@ -2496,7 +2495,8 @@
       "cancel": "Annuler",
       "syncDone": "Fait dans le portail",
       "todo": "À faire dans le portail du fournisseur",
-      "confirm": "Êtes-vous sûr ?"
+      "confirm": "Êtes-vous sûr ?",
+      "cancelPaidConfirm": "Annuler cette carte ? Un paiement est déjà enregistré ; la coopérative doit le rembourser elle-même."
     },
     "settings": {
       "title": "Cartes de recharge",

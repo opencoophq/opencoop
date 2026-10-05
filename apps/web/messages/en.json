@@ -2098,7 +2098,7 @@
     },
     "convocation": {
       "heading": "Convocation",
-      "preview": "Preview",
+      "preview": "Preview email",
       "send": "Send convocation",
       "sendConfirm": "This will email the convocation to all active shareholders. Continue?",
       "sendSuccess": "Convocation is being sent in the background",
@@ -2110,7 +2110,6 @@
       "subjectLabel": "Subject",
       "bodyLabel": "Email body (HTML)",
       "bodyHelp": "Leave blank to use the default template. The agenda, RSVP button, and proxy notice are appended automatically.",
-      "preview": "Preview email",
       "previewSubject": "Subject",
       "previewBody": "Body",
       "previewHelp": "This is exactly what one shareholder will receive. PDF attached.",
@@ -2499,7 +2498,8 @@
       "cancel": "Cancel",
       "syncDone": "Done in portal",
       "todo": "To do in provider portal",
-      "confirm": "Are you sure?"
+      "confirm": "Are you sure?",
+      "cancelPaidConfirm": "Cancel this card? A payment is already registered; the cooperative must refund it by hand."
     },
     "settings": {
       "title": "Charge cards",

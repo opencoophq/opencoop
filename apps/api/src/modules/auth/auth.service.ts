@@ -537,7 +537,12 @@ export class AuthService {
       adminCoopsRaw.map(async (coop) => {
         const full = await this.prisma.coop.findUnique({
           where: { id: coop.id },
-          select: { plan: true, trialEndsAt: true, subscription: { select: { status: true } } },
+          select: {
+            plan: true,
+            trialEndsAt: true,
+            subscription: { select: { status: true } },
+            _count: { select: { chargeCards: true } },
+          },
         });
         const isReadOnly = full ? computeIsReadOnly(full) : false;
         const { channels, ...rest } = coop as typeof coop & { channels?: { logoUrl: string | null }[] };
@@ -547,6 +552,10 @@ export class AuthService {
           plan: full?.plan ?? 'FREE',
           trialEndsAt: full?.trialEndsAt?.toISOString() ?? undefined,
           isReadOnly,
+          // The nav entry shows for a disabled coop that still holds cards: the
+          // nightly sync keeps blocking them even after an admin switches the
+          // feature off, so the to-do list must stay reachable from the nav.
+          hasChargeCards: (full?._count.chargeCards ?? 0) > 0,
         };
       }),
     );

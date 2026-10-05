@@ -2098,7 +2098,7 @@
     },
     "convocation": {
       "heading": "Oproeping",
-      "preview": "Voorbeeld",
+      "preview": "E-mail voorbeeld",
       "send": "Oproeping versturen",
       "sendConfirm": "Hiermee wordt de oproeping per e-mail verstuurd naar alle actieve vennoten. Doorgaan?",
       "sendSuccess": "Oproeping wordt op de achtergrond verstuurd",
@@ -2110,7 +2110,6 @@
       "subjectLabel": "Onderwerp",
       "bodyLabel": "E-mail inhoud (HTML)",
       "bodyHelp": "Laat leeg om de standaard template te gebruiken. De agenda, RSVP-knop en volmacht-melding worden automatisch toegevoegd.",
-      "preview": "E-mail voorbeeld",
       "previewSubject": "Onderwerp",
       "previewBody": "Inhoud",
       "previewHelp": "Dit is exact wat één aandeelhouder zal ontvangen. PDF is bijgevoegd.",
@@ -2499,7 +2498,8 @@
       "cancel": "Annuleren",
       "syncDone": "Gedaan in portaal",
       "todo": "Te doen in leveranciersportaal",
-      "confirm": "Ben je zeker?"
+      "confirm": "Ben je zeker?",
+      "cancelPaidConfirm": "Deze pas annuleren? Er is al een betaling geregistreerd; de coöperatie moet die zelf terugbetalen."
     },
     "settings": {
       "title": "Laadpassen",
