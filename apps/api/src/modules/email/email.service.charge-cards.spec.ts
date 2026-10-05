@@ -27,4 +27,29 @@ describe('EmailService charge-card emails', () => {
       }),
     );
   });
+
+  it('queues the card-issued email in the recipient language', async () => {
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ preferredLanguage: 'de' }) },
+      emailLog: { create: jest.fn().mockResolvedValue({ id: 'log-2' }) },
+    };
+    const queue = { add: jest.fn().mockResolvedValue({}) };
+    const service = new EmailService(prisma as any, queue as any);
+
+    await service.sendChargeCardIssued('coop-1', 'jan@example.com', {
+      shareholderName: 'Jan Peeters',
+      label: 'Auto Anna',
+      cardNumber: 'NL-123',
+      dashboardUrl: 'https://opencoop.test/dashboard/charge-cards',
+    });
+
+    expect(queue.add).toHaveBeenCalledWith(
+      'send',
+      expect.objectContaining({
+        subject: 'Ihre Ladekarte ist bereit',
+        templateKey: 'charge-card-issued',
+        templateData: expect.objectContaining({ language: 'de', cardNumber: 'NL-123' }),
+      }),
+    );
+  });
 });

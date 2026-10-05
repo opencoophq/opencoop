@@ -118,5 +118,14 @@
     "ogm": "Communication structurée",
     "amount": "Montant",
     "replacement": "remplacement d’une carte perdue"
+  },
+  "charge-card-issued": {
+    "title": "Votre carte de recharge est prête",
+    "dear": "Cher/Chère {shareholderName},",
+    "intro": "Votre carte de recharge a été délivrée et activée. Vous pouvez commencer à recharger.",
+    "label": "Libellé",
+    "cardNumber": "Numéro de carte",
+    "dashboard": "Voir mes cartes de recharge",
+    "thanks": "Cordialement, {coopName}"
   }
 }

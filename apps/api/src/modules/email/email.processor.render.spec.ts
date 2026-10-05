@@ -57,6 +57,12 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
       amount: 6,
       isReplacement: true,
     },
+    'charge-card-issued': {
+      shareholderName: 'Jan Peeters',
+      label: 'Auto <Anna>',
+      cardNumber: 'NL-ABC-123',
+      dashboardUrl: 'https://opencoop.test/dashboard/charge-cards',
+    },
     'dividend-statement': {
       shareholderName: 'Jan Peeters',
       year: 2025,

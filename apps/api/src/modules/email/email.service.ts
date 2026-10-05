@@ -488,6 +488,27 @@ export class EmailService {
     });
   }
 
+  async sendChargeCardIssued(
+    coopId: string,
+    to: string,
+    data: { shareholderName: string; label: string | null; cardNumber: string; dashboardUrl: string },
+  ) {
+    const language = await this.resolveRecipientLanguage(to);
+    const subjects: Record<string, string> = {
+      nl: 'Je laadpas is klaar',
+      en: 'Your charge card is ready',
+      fr: 'Votre carte de recharge est prête',
+      de: 'Ihre Ladekarte ist bereit',
+    };
+    return this.send({
+      coopId,
+      to,
+      subject: subjects[language] || subjects['nl'],
+      templateKey: 'charge-card-issued',
+      templateData: { ...data, language },
+    });
+  }
+
   async sendGiftCertificate(
     coopId: string,
     to: string,

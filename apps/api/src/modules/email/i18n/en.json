@@ -118,5 +118,14 @@
     "ogm": "Structured communication",
     "amount": "Amount",
     "replacement": "replacement for a lost card"
+  },
+  "charge-card-issued": {
+    "title": "Your charge card is ready",
+    "dear": "Dear {shareholderName},",
+    "intro": "Your charge card has been issued and activated. You can start charging.",
+    "label": "Label",
+    "cardNumber": "Card number",
+    "dashboard": "View my charge cards",
+    "thanks": "Kind regards, {coopName}"
   }
 }

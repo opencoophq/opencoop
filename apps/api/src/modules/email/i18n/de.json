@@ -118,5 +118,14 @@
     "ogm": "Strukturierte Mitteilung",
     "amount": "Betrag",
     "replacement": "Ersatz für eine verlorene Karte"
+  },
+  "charge-card-issued": {
+    "title": "Ihre Ladekarte ist bereit",
+    "dear": "Liebe/r {shareholderName},",
+    "intro": "Ihre Ladekarte wurde ausgegeben und aktiviert. Sie können jetzt laden.",
+    "label": "Bezeichnung",
+    "cardNumber": "Kartennummer",
+    "dashboard": "Meine Ladekarten ansehen",
+    "thanks": "Mit freundlichen Grüßen, {coopName}"
   }
 }

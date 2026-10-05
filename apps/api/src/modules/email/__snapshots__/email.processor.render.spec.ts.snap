@@ -1348,6 +1348,166 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-
     "
 `;
 
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-card-issued" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Ihre Ladekarte ist bereit</h1>
+    <p>Liebe/r Jan Peeters,</p>
+    <p>Ihre Ladekarte wurde ausgegeben und aktiviert. Sie können jetzt laden.</p>
+    <ul>
+      <li>Bezeichnung: Auto &lt;Anna&gt;</li>
+      <li>Kartennummer: <strong>NL-ABC-123</strong></li>
+    </ul>
+    
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="https://opencoop.test/dashboard/charge-cards"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        Meine Ladekarten ansehen
+      </a>
+    </p>
+    
+    <p>Mit freundlichen Grüßen, Coöp &amp; Co</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-card-issued" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Your charge card is ready</h1>
+    <p>Dear Jan Peeters,</p>
+    <p>Your charge card has been issued and activated. You can start charging.</p>
+    <ul>
+      <li>Label: Auto &lt;Anna&gt;</li>
+      <li>Card number: <strong>NL-ABC-123</strong></li>
+    </ul>
+    
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="https://opencoop.test/dashboard/charge-cards"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        View my charge cards
+      </a>
+    </p>
+    
+    <p>Kind regards, Coöp &amp; Co</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-card-issued" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Votre carte de recharge est prête</h1>
+    <p>Cher/Chère Jan Peeters,</p>
+    <p>Votre carte de recharge a été délivrée et activée. Vous pouvez commencer à recharger.</p>
+    <ul>
+      <li>Libellé: Auto &lt;Anna&gt;</li>
+      <li>Numéro de carte: <strong>NL-ABC-123</strong></li>
+    </ul>
+    
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="https://opencoop.test/dashboard/charge-cards"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        Voir mes cartes de recharge
+      </a>
+    </p>
+    
+    <p>Cordialement, Coöp &amp; Co</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-card-issued" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+    <h1>Je laadpas is klaar</h1>
+    <p>Beste Jan Peeters,</p>
+    <p>Je laadpas is uitgegeven en geactiveerd. Je kunt nu laden.</p>
+    <ul>
+      <li>Label: Auto &lt;Anna&gt;</li>
+      <li>Kaartnummer: <strong>NL-ABC-123</strong></li>
+    </ul>
+    
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="https://opencoop.test/dashboard/charge-cards"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        Bekijk mijn laadpassen
+      </a>
+    </p>
+    
+    <p>Met vriendelijke groeten, Coöp &amp; Co</p>
+  
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
 exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividend-statement" renders in de 1`] = `
 "
       <!DOCTYPE html>
