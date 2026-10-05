@@ -147,6 +147,8 @@ export class PaymentsService {
       where: {
         coopId,
         bankTransactionId: null,
+        // Charge-card payments are never offered for linking; the dialog reads payment.registration.
+        registrationId: { not: null },
         ...(parsedAmount === undefined ? {} : { amount: parsedAmount.toFixed(2) }),
         ...(shareholderSearch
           ? {

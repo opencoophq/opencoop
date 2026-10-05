@@ -694,4 +694,18 @@ describe('BankImportService — importCsv OGM matching', () => {
     });
     expect(prisma.payment.create).not.toHaveBeenCalled();
   });
+
+  it('loads the charge card owner of a matched payment for the transaction list', async () => {
+    prisma.bankTransaction.findMany = jest.fn().mockResolvedValue([]);
+
+    await service.getTransactions(COOP_ID);
+
+    const include = prisma.bankTransaction.findMany.mock.calls[0][0].include;
+    expect(include.matchedPayment.include.chargeCard).toEqual({
+      select: {
+        label: true,
+        shareholder: { select: { firstName: true, lastName: true, companyName: true } },
+      },
+    });
+  });
 });

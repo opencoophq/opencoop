@@ -113,4 +113,16 @@ describe('PaymentsService.addPayment tenant isolation', () => {
       take: 100,
     });
   });
+
+  it('lists only registration payments as unlinked (the link dialog reads payment.registration)', async () => {
+    prisma.payment.findMany = jest.fn().mockResolvedValue([]);
+
+    await service.findUnlinkedByCoopId('coop-A');
+
+    expect(prisma.payment.findMany.mock.calls[0][0].where).toEqual({
+      coopId: 'coop-A',
+      bankTransactionId: null,
+      registrationId: { not: null },
+    });
+  });
 });

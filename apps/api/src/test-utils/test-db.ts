@@ -15,13 +15,36 @@ export function createTestPrisma(): PrismaClient {
   return new PrismaClient({ datasourceUrl: url });
 }
 
-export async function createTestCoop(prisma: PrismaClient) {
+export async function createTestCoop(prisma: PrismaClient, data: { chargeCardsEnabled?: boolean } = {}) {
   counter += 1;
   const taken = new Set((await prisma.coop.findMany({ select: { ogmPrefix: true } })).map((c) => c.ogmPrefix));
   let prefix = 900;
   while (taken.has(String(prefix))) prefix += 1;
   return prisma.coop.create({
-    data: { slug: `${SLUG_PREFIX}${Date.now()}-${counter}`, name: 'DB test coop', ogmPrefix: String(prefix) },
+    data: { slug: `${SLUG_PREFIX}${Date.now()}-${counter}`, name: 'DB test coop', ogmPrefix: String(prefix), ...data },
+  });
+}
+
+export async function createTestChargeCard(
+  prisma: PrismaClient,
+  coopId: string,
+  shareholderId: string,
+  data: Partial<{
+    status: 'REQUESTED' | 'PAID' | 'ACTIVE' | 'BLOCKED' | 'CANCELLED';
+    blockReason: 'NO_SHARES' | 'LOST' | 'ADMIN' | null;
+    providerSyncNeeded: boolean;
+    feeInclVat: number;
+  }> = {},
+) {
+  counter += 1;
+  return prisma.chargeCard.create({
+    data: {
+      coopId,
+      shareholderId,
+      ogmCode: `${SLUG_PREFIX}ogm-${Date.now()}-${counter}`,
+      feeInclVat: 6,
+      ...data,
+    },
   });
 }
 

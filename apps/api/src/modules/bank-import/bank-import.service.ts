@@ -50,6 +50,12 @@ export class BankImportService {
                 },
               },
             },
+            chargeCard: {
+              select: {
+                label: true,
+                shareholder: { select: { firstName: true, lastName: true, companyName: true } },
+              },
+            },
           },
         },
       },

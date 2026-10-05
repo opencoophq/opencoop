@@ -46,12 +46,11 @@ export class OgmService {
     throw new Error(`Could not find a free OGM code for coop ${coopId} after ${MAX_SKIP_ATTEMPTS} attempts`);
   }
 
-  /**
-   * True if some row already holds this OGM code.
-   * Task 2 adds the charge-card table here with one more `||`:
-   *   || (await db.chargeCard.findFirst({ where: { ogmCode: code }, select: { id: true } })) !== null
-   */
+  /** True if some row already holds this OGM code. */
   private async isOgmCodeTaken(db: Prisma.TransactionClient, code: string): Promise<boolean> {
-    return (await db.registration.findFirst({ where: { ogmCode: code }, select: { id: true } })) !== null;
+    if ((await db.registration.findFirst({ where: { ogmCode: code }, select: { id: true } })) !== null) {
+      return true;
+    }
+    return (await db.chargeCard.findFirst({ where: { ogmCode: code }, select: { id: true } })) !== null;
   }
 }

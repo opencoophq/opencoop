@@ -5,6 +5,7 @@ import { generateOgmCode } from '@opencoop/shared';
 import { OgmService } from './ogm.service';
 import {
   cleanupTestCoops,
+  createTestChargeCard,
   createTestCoop,
   createTestPrisma,
   createTestShareClass,
@@ -95,6 +96,22 @@ describeDb('OGM sequence (database)', () => {
         ogmCode: generateOgmCode(coop.ogmPrefix, 1),
       },
     });
+
+    const code = await prisma.$transaction((tx) => ogm.nextOgmCode(tx, coop.id));
+
+    expect(code).toBe(generateOgmCode(coop.ogmPrefix, 2));
+    const after = await prisma.coop.findUniqueOrThrow({ where: { id: coop.id } });
+    expect(after.ogmSequence).toBe(2);
+  });
+
+  it('skips a code already held by a charge card', async () => {
+    const coop = await createTestCoop(prisma);
+    const shareholder = await createTestShareholder(prisma, coop.id);
+    // The counter is about to issue sequence 1. Plant that exact code on a charge
+    // card, the same way an out-of-band writer could plant it on a registration.
+    await createTestChargeCard(prisma, coop.id, shareholder.id, {
+      ogmCode: generateOgmCode(coop.ogmPrefix, 1),
+    } as any);
 
     const code = await prisma.$transaction((tx) => ogm.nextOgmCode(tx, coop.id));
 

@@ -51,8 +51,14 @@ interface MatchedRegistration {
   shareholder?: MatchedShareholder;
 }
 
+interface MatchedChargeCard {
+  label: string | null;
+  shareholder?: MatchedShareholder;
+}
+
 interface MatchedPayment {
-  registration?: MatchedRegistration;
+  registration?: MatchedRegistration | null;
+  chargeCard?: MatchedChargeCard | null;
 }
 
 interface BankTx {
@@ -409,7 +415,8 @@ export default function BankImportPage() {
               </TableHeader>
               <TableBody>
                 {visibleTransactions.map((tx) => {
-                  const shareholder = tx.matchedPayment?.registration?.shareholder;
+                  const shareholder =
+                    tx.matchedPayment?.registration?.shareholder ?? tx.matchedPayment?.chargeCard?.shareholder;
                   const matchedName = shareholder
                     ? `${shareholder.firstName || ''} ${shareholder.lastName || ''}`.trim()
                     : null;

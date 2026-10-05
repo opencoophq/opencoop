@@ -171,18 +171,20 @@ export class AdminNotificationsService {
       }
 
       if (settings.notifyOnPaymentReceived) {
+        const nameSelect = { select: { firstName: true, lastName: true, companyName: true } };
         const payments = await this.prisma.payment.findMany({
           where: { coopId: admin.coopId, createdAt: { gte: since } },
           include: {
-            registration: {
-              include: { shareholder: { select: { firstName: true, lastName: true, companyName: true } } },
-            },
+            registration: { include: { shareholder: nameSelect } },
+            chargeCard: { include: { shareholder: nameSelect } },
           },
           orderBy: { createdAt: 'desc' },
         });
 
         for (const payment of payments) {
-          const sh = payment.registration.shareholder;
+          // A payment belongs to a registration or to a charge card.
+          const sh = payment.registration?.shareholder ?? payment.chargeCard?.shareholder;
+          if (!sh) continue;
           const shareholderName = sh.companyName || [sh.firstName, sh.lastName].filter(Boolean).join(' ');
           events.push({ event: 'payment_received', data: { shareholderName, paymentAmount: Number(payment.amount) } });
         }

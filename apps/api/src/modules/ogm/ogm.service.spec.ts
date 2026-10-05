@@ -10,6 +10,7 @@ describe('OgmService.nextOgmCode', () => {
     const db = {
       $queryRaw: jest.fn().mockResolvedValue([{ ogmPrefix: '001', ogmSequence: 42 }]),
       registration: { findFirst: jest.fn().mockResolvedValue(null) },
+      chargeCard: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
     await expect(service.nextOgmCode(db as any, 'coop-1')).resolves.toBe(generateOgmCode('001', 42));
@@ -43,6 +44,7 @@ describe('OgmService.nextOgmCode', () => {
           .mockResolvedValueOnce({ id: 'r1' }) // code for seq 42 is already taken
           .mockResolvedValueOnce(null), // code for seq 43 is free
       },
+      chargeCard: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
     await expect(service.nextOgmCode(db as any, 'coop-1')).resolves.toBe(generateOgmCode('001', 43));
@@ -54,10 +56,35 @@ describe('OgmService.nextOgmCode', () => {
     });
   });
 
+  it('skips a sequence already held by a charge card and returns the following free code', async () => {
+    const db = {
+      $queryRaw: jest
+        .fn()
+        .mockResolvedValueOnce([{ ogmPrefix: '001', ogmSequence: 42 }])
+        .mockResolvedValueOnce([{ ogmPrefix: '001', ogmSequence: 43 }]),
+      registration: { findFirst: jest.fn().mockResolvedValue(null) },
+      chargeCard: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: 'c1' }) // code for seq 42 is already taken by a charge card
+          .mockResolvedValueOnce(null), // code for seq 43 is free
+      },
+    };
+
+    await expect(service.nextOgmCode(db as any, 'coop-1')).resolves.toBe(generateOgmCode('001', 43));
+    expect(db.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(db.chargeCard.findFirst).toHaveBeenCalledTimes(2);
+    expect(db.chargeCard.findFirst).toHaveBeenNthCalledWith(1, {
+      where: { ogmCode: generateOgmCode('001', 42) },
+      select: { id: true },
+    });
+  });
+
   it('gives up after MAX_SKIP_ATTEMPTS consecutive collisions', async () => {
     const db = {
       $queryRaw: jest.fn().mockResolvedValue([{ ogmPrefix: '001', ogmSequence: 1 }]),
       registration: { findFirst: jest.fn().mockResolvedValue({ id: 'always-taken' }) },
+      chargeCard: { findFirst: jest.fn() },
     };
 
     await expect(service.nextOgmCode(db as any, 'coop-1')).rejects.toThrow(/Could not find a free OGM code/);
