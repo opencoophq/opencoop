@@ -1,9 +1,11 @@
+import { ConflictException } from '@nestjs/common';
 import { PrismaClient } from '@opencoop/database';
 import { generateOgmCode } from '@opencoop/shared';
 import { BankImportService } from '../bank-import/bank-import.service';
 import { BankMatchingService } from '../bank-import/bank-matching.service';
 import { OgmService } from '../ogm/ogm.service';
 import { transitionCard } from './charge-card-transition';
+import { ChargeCardsService } from './charge-cards.service';
 import {
   cleanupTestCoops,
   createTestChargeCard,
@@ -22,6 +24,7 @@ describeDb('charge card payments under concurrency (database)', () => {
   let ogm: OgmService;
   let matcher: BankMatchingService;
   let bankImport: BankImportService;
+  let cards: ChargeCardsService;
   const userId = null as unknown as string;
 
   beforeAll(async () => {
@@ -32,10 +35,13 @@ describeDb('charge card payments under concurrency (database)', () => {
     const payments = { addPayment: jest.fn(() => Promise.reject(new Error('addPayment called for a card'))) };
     matcher = new BankMatchingService(prisma as any, payments as any, ogm);
     bankImport = new BankImportService(prisma as any, {} as any, {} as any, matcher, ogm);
+    const email = { sendChargeCardCoopNotice: jest.fn().mockResolvedValue(undefined) };
+    cards = new ChargeCardsService(prisma as any, ogm, email as any);
   });
 
   afterAll(async () => {
     await cleanupTestCoops(prisma);
+    await prisma.user.deleteMany({ where: { email: { endsWith: '@dbtest.invalid' } } });
     await prisma.$disconnect();
   });
 
@@ -48,7 +54,15 @@ describeDb('charge card payments under concurrency (database)', () => {
       feeInclVat: fee,
       ogmCode: generateOgmCode(coop.ogmPrefix, 1),
     } as any);
-    return { coop, card };
+    return { coop, card, shareholder };
+  };
+
+  /** A card whose shareholder has a login, so ChargeCardsService.cancel accepts the caller. */
+  const setupOwned = async () => {
+    const owned = await setup();
+    const user = await prisma.user.create({ data: { email: `${owned.shareholder.id}@dbtest.invalid` } });
+    await prisma.shareholder.update({ where: { id: owned.shareholder.id }, data: { userId: user.id } });
+    return { ...owned, userId: user.id };
   };
 
   const bankRow = (coopId: string, amount: number, ogmCode?: string) =>
@@ -127,6 +141,44 @@ describeDb('charge card payments under concurrency (database)', () => {
         expect(cancel.status).toBe('rejected');
         expect(cardPayments).toBe(1);
         expect(bank.matchStatus).toBe('AUTO_MATCHED');
+      }
+    }
+  });
+
+  it('a shareholder cannot cancel a card that already holds a partial payment', async () => {
+    const { coop, card, shareholder, userId: owner } = await setupOwned();
+    const row = await bankRow(coop.id, 3);
+    await bankImport.manualMatch(coop.id, row.id, { chargeCardId: card.id }, userId);
+
+    await expect(cards.cancel(shareholder.id, owner, card.id)).rejects.toBeInstanceOf(ConflictException);
+    const after = await prisma.chargeCard.findUniqueOrThrow({ where: { id: card.id } });
+    expect(after.status).toBe('REQUESTED');
+  });
+
+  it('a partial payment racing a shareholder cancel: exactly one wins, never a payment on a CANCELLED card', async () => {
+    for (let round = 0; round < 5; round++) {
+      const { coop, card, shareholder, userId: owner } = await setupOwned();
+      const row = await bankRow(coop.id, 3);
+
+      const [payment, cancel] = await Promise.allSettled([
+        bankImport.manualMatch(coop.id, row.id, { chargeCardId: card.id }, userId),
+        cards.cancel(shareholder.id, owner, card.id),
+      ]);
+
+      const after = await prisma.chargeCard.findUniqueOrThrow({ where: { id: card.id } });
+      const cardPayments = await prisma.payment.count({ where: { chargeCardId: card.id } });
+      const bank = await prisma.bankTransaction.findUniqueOrThrow({ where: { id: row.id } });
+      expect([payment.status, cancel.status].sort()).toEqual(['fulfilled', 'rejected']);
+      if (after.status === 'CANCELLED') {
+        expect(cancel.status).toBe('fulfilled');
+        expect((payment as PromiseRejectedResult).reason).toBeInstanceOf(ConflictException);
+        expect(cardPayments).toBe(0);
+        expect(bank.matchStatus).toBe('UNMATCHED');
+      } else {
+        expect(after.status).toBe('REQUESTED');
+        expect((cancel as PromiseRejectedResult).reason).toBeInstanceOf(ConflictException);
+        expect(cardPayments).toBe(1);
+        expect(bank.matchStatus).toBe('MANUAL_MATCHED');
       }
     }
   });

@@ -113,8 +113,9 @@ export class OgmService {
     for (const row of registrations) {
       if (row.ogmCode) targets.set(row.ogmCode, toRegistrationTarget(row));
     }
+    // Same precedence as resolveOgmTarget: a registration wins over a card.
     for (const row of chargeCards) {
-      targets.set(row.ogmCode, toChargeCardTarget(row));
+      if (!targets.has(row.ogmCode)) targets.set(row.ogmCode, toChargeCardTarget(row));
     }
     return targets;
   }

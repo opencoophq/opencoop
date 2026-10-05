@@ -147,16 +147,31 @@ export class ChargeCardsService {
 
   async cancel(shareholderId: string, userId: string, cardId: string): Promise<ChargeCardView> {
     const sh = await this.loadOwnShareholder(shareholderId, userId);
-    const card = await transitionCard(
-      this.prisma,
-      { id: cardId, shareholderId: sh.id },
-      { status: 'REQUESTED' },
-      // Clear replacesCardId so the LOST card it was requested for can be
-      // replaced again; isReplacement stays true, as a record of why this
-      // (now cancelled) card existed.
-      { status: 'CANCELLED', replacesCardId: null },
-      'Only a requested card can be cancelled',
-    );
+    const card = await this.prisma.$transaction(async (tx) => {
+      // Lock the card row, as recordChargeCardPayment does, so a payment and a
+      // cancel on this card run one after the other and cannot both win.
+      const locked = await tx.$queryRaw<{ id: string }[]>`
+        SELECT "id" FROM "charge_cards"
+        WHERE "id" = ${cardId} AND "shareholderId" = ${sh.id}
+        FOR UPDATE`;
+      if (locked.length === 0) {
+        throw new NotFoundException('Charge card not found');
+      }
+      // Money already reached the card: only the coop can unwind that (refund).
+      if ((await tx.payment.count({ where: { chargeCardId: cardId } })) > 0) {
+        throw new ConflictException('card has a payment; contact the coop');
+      }
+      return transitionCard(
+        tx,
+        { id: cardId, shareholderId: sh.id },
+        { status: 'REQUESTED' },
+        // Clear replacesCardId so the LOST card it was requested for can be
+        // replaced again; isReplacement stays true, as a record of why this
+        // (now cancelled) card existed.
+        { status: 'CANCELLED', replacesCardId: null },
+        'Only a requested card can be cancelled',
+      );
+    });
     return toChargeCardView(card);
   }
 

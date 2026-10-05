@@ -189,6 +189,18 @@ describe('OgmService resolvers', () => {
     expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({ coopId: 'coop-1', ogmCode: CARD_OGM });
   });
 
+  it('both resolvers prefer the registration when a registration and a card share an OGM', async () => {
+    const shared = { ...cardRow, ogmCode: OGM };
+    prisma.chargeCard.findMany.mockResolvedValue([shared]);
+    prisma.chargeCard.findFirst.mockResolvedValue(shared);
+
+    const batch = await service.resolveOgmTargets('coop-1', [OGM]);
+    const single = await service.resolveOgmTarget('coop-1', OGM);
+
+    expect(batch.get(OGM)).toMatchObject({ kind: 'registration', id: 'reg-1' });
+    expect(single).toMatchObject({ kind: 'registration', id: 'reg-1' });
+  });
+
   it('findChargeCardTarget looks a card up by id within the coop', async () => {
     prisma.chargeCard.findFirst.mockResolvedValue(cardRow);
 

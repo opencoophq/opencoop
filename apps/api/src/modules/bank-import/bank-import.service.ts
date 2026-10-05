@@ -7,6 +7,7 @@ import { BankPreset, BANK_PRESETS } from './bank-presets';
 import { BankMatchingService } from './bank-matching.service';
 import { OgmService } from '../ogm/ogm.service';
 import { ChargeCardNotPayableError, recordChargeCardPayment } from '../charge-cards/charge-card-payments';
+import { toCents } from '../ogm/payment-target';
 
 @Injectable()
 export class BankImportService {
@@ -420,6 +421,10 @@ export class BankImportService {
     }
 
     if (chargeCardId) {
+      // An outgoing or zero row is not a fee payment, and would lower the card's total.
+      if (this.toCents(bankTx.amount) <= 0) {
+        throw new BadRequestException('Only an incoming bank transaction can pay a charge card');
+      }
       const card = await this.ogm.findChargeCardTarget(coopId, chargeCardId);
       if (!card) {
         throw new NotFoundException('Charge card not found');
@@ -634,6 +639,6 @@ export class BankImportService {
   }
 
   private toCents(amount: unknown): number {
-    return Math.round(Number(amount) * 100);
+    return toCents(Number(amount));
   }
 }

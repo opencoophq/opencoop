@@ -787,6 +787,22 @@ describe('BankImportService — importCsv OGM matching', () => {
       });
     });
 
+    it.each([0, -6, 0.004])('rejects a bank amount of %p (not above 0 cents) with 400', async (amount) => {
+      prisma.bankTransaction.findFirst.mockResolvedValue({
+        id: 'btx-1',
+        coopId: COOP_ID,
+        matchStatus: 'UNMATCHED',
+        amount,
+        date: new Date('2026-10-06'),
+      });
+
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+      expect(prisma.bankTransaction.updateMany).not.toHaveBeenCalled();
+    });
+
     it('returns 409 when the card left REQUESTED before its row was locked', async () => {
       prisma.$queryRaw.mockResolvedValue([{ status: 'CANCELLED' }]);
 

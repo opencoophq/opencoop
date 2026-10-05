@@ -3,7 +3,7 @@ import { computeTotalPaid, extractOgmCode } from '@opencoop/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
 import { OgmService } from '../ogm/ogm.service';
-import { ChargeCardTarget, PaymentTarget, acceptsCardPayment } from '../ogm/payment-target';
+import { ChargeCardTarget, PaymentTarget, acceptsCardPayment, toCents } from '../ogm/payment-target';
 import { ChargeCardNotPayableError, recordChargeCardPayment } from '../charge-cards/charge-card-payments';
 
 export interface BankTransactionMatchInput {
@@ -199,7 +199,7 @@ export class BankMatchingService {
   }
 
   private toCents(amount: number): number {
-    return Math.round(amount * 100);
+    return toCents(amount);
   }
 
   private dateDistance(left: Date, right: Date): number {

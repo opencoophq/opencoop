@@ -72,6 +72,9 @@ describe('ChargeCardsService (shareholder side)', () => {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: jest.fn(),
       },
+      payment: { count: jest.fn().mockResolvedValue(0) },
+      // SELECT ... FOR UPDATE on the card row (cancel).
+      $queryRaw: jest.fn().mockResolvedValue([{ id: 'card-1' }]),
       $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(prisma)),
     };
     ogm = { nextOgmCode: jest.fn().mockResolvedValue(OGM) };
@@ -275,6 +278,44 @@ describe('ChargeCardsService (shareholder side)', () => {
       prisma.chargeCard.findFirst.mockResolvedValue(null);
 
       await expect(service.cancel('sh-1', 'user-1', 'card-9')).rejects.toThrow(NotFoundException);
+    });
+
+    it('locks the card row, scoped to the shareholder, and checks payments before it cancels', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue({ id: 'card-1' });
+      prisma.chargeCard.findUniqueOrThrow.mockResolvedValue(card({ status: 'CANCELLED' }));
+
+      await service.cancel('sh-1', 'user-1', 'card-1');
+
+      expect(prisma.$transaction).toHaveBeenCalled();
+      const [sql, ...values] = prisma.$queryRaw.mock.calls[0];
+      expect(sql.join('?')).toMatch(/FROM "charge_cards"[\s\S]*FOR UPDATE/);
+      expect(values).toEqual(['card-1', 'sh-1']);
+      expect(prisma.payment.count).toHaveBeenCalledWith({ where: { chargeCardId: 'card-1' } });
+      expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+        prisma.payment.count.mock.invocationCallOrder[0],
+      );
+      expect(prisma.payment.count.mock.invocationCallOrder[0]).toBeLessThan(
+        prisma.chargeCard.updateMany.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('refuses with 409 to cancel a card that holds a payment', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue({ id: 'card-1' });
+      prisma.payment.count.mockResolvedValue(1);
+
+      const result = service.cancel('sh-1', 'user-1', 'card-1');
+
+      await expect(result).rejects.toThrow(ConflictException);
+      await expect(result).rejects.toThrow('card has a payment; contact the coop');
+      expect(prisma.chargeCard.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 without revealing payments when the locked row is not the shareholder\'s', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      await expect(service.cancel('sh-1', 'user-1', 'card-9')).rejects.toThrow(NotFoundException);
+      expect(prisma.payment.count).not.toHaveBeenCalled();
+      expect(prisma.chargeCard.updateMany).not.toHaveBeenCalled();
     });
 
     it('reports a card lost and flags the provider sync', async () => {
