@@ -12,7 +12,9 @@ test.describe('Shareholder charge cards', () => {
 
     await page.goto('/nl/dashboard');
     await page.locator('aside').getByRole('link', { name: 'Laadpassen' }).click();
-    await expect(page).toHaveURL(/\/nl\/dashboard\/charge-cards$/);
+    // The dev server compiles this route on-demand on first visit (several
+    // seconds); the default 5s expect timeout can lose that race.
+    await expect(page).toHaveURL(/\/nl\/dashboard\/charge-cards$/, { timeout: 15_000 });
     await expect(page.locator('main').getByRole('heading', { name: 'Laadpassen' })).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole('button', { name: 'Pas aanvragen' }).click();

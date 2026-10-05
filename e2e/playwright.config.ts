@@ -65,9 +65,16 @@ export default defineConfig({
 
   webServer: [
     {
+      // Local: run the package's own "dev" script through `pnpm --filter`
+      // directly, bypassing root `turbo dev`. Turbo 2's default strict
+      // envMode silently drops undeclared env vars (DATABASE_URL,
+      // JWT_SECRET, ...) from spawned tasks, which crashed the API with
+      // "JwtStrategy requires a secret or key" even though they were set
+      // right here. `pnpm --filter` runs the script directly, no turbo in
+      // between, so the `env` below reaches the process unfiltered.
       command: isCI
         ? 'cd .. && node apps/api/dist/main'
-        : 'cd .. && pnpm dev --filter @opencoop/api',
+        : 'cd .. && pnpm --filter @opencoop/api dev',
       url: 'http://localhost:3001/docs',
       reuseExistingServer: !isCI,
       stdout: 'pipe',
@@ -80,9 +87,11 @@ export default defineConfig({
       },
     },
     {
+      // Same reason as the API entry above: bypass turbo so `env` below is
+      // not subject to its strict envMode filtering.
       command: isCI
         ? 'cd ../apps/web && npx next start -p 3002'
-        : 'cd .. && pnpm dev --filter @opencoop/web',
+        : 'cd .. && pnpm --filter @opencoop/web dev',
       url: 'http://localhost:3002',
       reuseExistingServer: !isCI,
       stdout: 'pipe',

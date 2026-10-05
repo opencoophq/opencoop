@@ -57,6 +57,12 @@ export interface ChargeCardPaymentDetails {
   ogmCode: string;
 }
 
+export interface NextRequestTerms {
+  feeInclVat: Prisma.Decimal;
+  isReplacement: boolean;
+  replacesCardId: string | null;
+}
+
 @Injectable()
 export class ChargeCardsService {
   private readonly logger = new Logger(ChargeCardsService.name);
@@ -76,12 +82,22 @@ export class ChargeCardsService {
           orderBy: { requestedAt: 'desc' },
         })
       : [];
+    // Same rule the request path uses to price and (maybe) replace a lost
+    // card, so the dialog never quotes a different fee than the server will
+    // actually charge.
+    const nextRequest = sh.coop.chargeCardsEnabled
+      ? await this.nextRequestTerms(sh.id, sh.coop).then(({ feeInclVat, isReplacement }) => ({
+          feeInclVat: feeInclVat.toString(),
+          isReplacement,
+        }))
+      : null;
     return {
       enabled: sh.coop.chargeCardsEnabled,
       coop: { name: sh.coop.name, slug: sh.coop.slug, bankIban: sh.coop.bankIban, bankBic: sh.coop.bankBic },
       shareholderStatus: sh.status,
       fee: Number(sh.coop.chargeCardFee),
       replacementFee: Number(sh.coop.chargeCardReplacementFee),
+      nextRequest,
       cards: cards.map(toChargeCardView),
     };
   }
@@ -99,16 +115,7 @@ export class ChargeCardsService {
       throw new BadRequestException('Only active shareholders can request a charge card');
     }
 
-    // The server decides whether this request replaces a lost card, not the
-    // client: if the shareholder has a LOST card that no live card already
-    // replaces, this request automatically becomes its replacement — the
-    // oldest one first, if there happen to be several.
-    const lost = await this.prisma.chargeCard.findFirst({
-      where: { shareholderId: sh.id, status: 'BLOCKED', blockReason: 'LOST', replacedBy: null },
-      orderBy: { blockedAt: 'asc' },
-    });
-    const feeInclVat = lost ? sh.coop.chargeCardReplacementFee : sh.coop.chargeCardFee;
-    const replacesCardId = lost?.id ?? null;
+    const { feeInclVat, isReplacement, replacesCardId } = await this.nextRequestTerms(sh.id, sh.coop);
 
     let card: ChargeCard;
     try {
@@ -121,7 +128,7 @@ export class ChargeCardsService {
             label: dto.label?.trim() || null,
             ogmCode,
             feeInclVat,
-            isReplacement: replacesCardId !== null,
+            isReplacement,
             replacesCardId,
           },
         });
@@ -228,6 +235,30 @@ export class ChargeCardsService {
 
     await this.notifyCoop(sh, 'reenable', updated);
     return toChargeCardView(updated);
+  }
+
+  /**
+   * The server decides whether the shareholder's next request replaces a lost
+   * card, not the client: if there is a LOST card that no live card already
+   * replaces, the next request automatically becomes its replacement — the
+   * oldest one first, if there happen to be several. Shared by `request`
+   * (which acts on it) and `listForShareholder` (which only previews it), so
+   * the dialog never quotes a fee the server would not actually charge.
+   */
+  private async nextRequestTerms(
+    shareholderId: string,
+    coop: { chargeCardFee: Prisma.Decimal; chargeCardReplacementFee: Prisma.Decimal },
+  ): Promise<NextRequestTerms> {
+    const lost = await this.prisma.chargeCard.findFirst({
+      where: { shareholderId, status: 'BLOCKED', blockReason: 'LOST', replacedBy: null },
+      orderBy: { blockedAt: 'asc' },
+    });
+    const replacesCardId = lost?.id ?? null;
+    return {
+      feeInclVat: replacesCardId ? coop.chargeCardReplacementFee : coop.chargeCardFee,
+      isReplacement: replacesCardId !== null,
+      replacesCardId,
+    };
   }
 
   private async loadOwnShareholder(shareholderId: string, userId: string): Promise<OwnShareholder> {

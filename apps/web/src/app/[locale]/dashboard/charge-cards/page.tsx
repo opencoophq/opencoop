@@ -43,12 +43,20 @@ interface ChargeCardView {
   requestedAt: string;
 }
 
+interface NextRequestTerms {
+  feeInclVat: number | string;
+  isReplacement: boolean;
+}
+
 interface Overview {
   enabled: boolean;
   coop: { name: string; slug: string; bankIban: string | null; bankBic: string | null };
   shareholderStatus: 'PENDING' | 'ACTIVE' | 'INACTIVE';
   fee: number | string;
   replacementFee: number | string;
+  // Computed server-side with the same rule the request endpoint uses, so the
+  // dialog never quotes a fee the server would not actually charge.
+  nextRequest: NextRequestTerms | null;
   cards: ChargeCardView[];
 }
 
@@ -167,7 +175,10 @@ export default function ChargeCardsPage() {
   }
 
   const isActive = overview.shareholderStatus === 'ACTIVE';
-  const fee = formatCurrency(money(overview.fee), locale);
+  // Fall back to the regular fee/non-replacement if the preview is somehow
+  // missing (e.g. an older cached response); the server still decides for real.
+  const nextRequest = overview.nextRequest ?? { feeInclVat: overview.fee, isReplacement: false };
+  const nextFee = formatCurrency(money(nextRequest.feeInclVat), locale);
 
   return (
     <div className="space-y-6">
@@ -270,7 +281,9 @@ export default function ChargeCardsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('requestTitle')}</DialogTitle>
-            <DialogDescription>{t('requestDescription', { fee })}</DialogDescription>
+            <DialogDescription>
+              {t(nextRequest.isReplacement ? 'replacementDescription' : 'requestDescription', { fee: nextFee })}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">

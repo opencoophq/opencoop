@@ -89,12 +89,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Back from a login that started on a deep link (e.g. bronsgroen.be → charge cards).
-    const pendingRedirect = consumePostLoginRedirect();
-    if (pendingRedirect && pendingRedirect !== pathname) {
-      router.replace(pendingRedirect);
-    }
-
     try {
       const parsed = JSON.parse(userData);
       setUser(parsed);
@@ -109,6 +103,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         shareholders?: Array<{ id: string }>;
       }>('/auth/me')
         .then((data) => {
+          // Only now do we know the token actually works: a stale token fails
+          // here, `api()` redirects to /login itself (see api.ts), and that
+          // redirect re-remembers the path. Consuming it before this point
+          // would discard the deep link for exactly that case.
+          const pendingRedirect = consumePostLoginRedirect();
+          if (pendingRedirect && pendingRedirect !== pathname) {
+            router.replace(pendingRedirect);
+          }
+
           setEmailVerified(data.emailVerified ?? true);
 
           if (data.adminCoops) {

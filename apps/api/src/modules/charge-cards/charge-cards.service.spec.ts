@@ -129,6 +129,33 @@ describe('ChargeCardsService (shareholder side)', () => {
         expect.objectContaining({ where: { shareholderId: 'sh-1' }, orderBy: { requestedAt: 'desc' } }),
       );
     });
+
+    it('previews the next request at the regular fee when there is no unreplaced LOST card', async () => {
+      const result = await service.listForShareholder('sh-1', 'user-1');
+
+      expect(prisma.chargeCard.findFirst).toHaveBeenCalledWith({
+        where: { shareholderId: 'sh-1', status: 'BLOCKED', blockReason: 'LOST', replacedBy: null },
+        orderBy: { blockedAt: 'asc' },
+      });
+      expect(result).toMatchObject({ nextRequest: { feeInclVat: '6', isReplacement: false } });
+    });
+
+    it('previews the next request as a replacement, at the replacement fee, when an unreplaced LOST card exists', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue(card({ id: 'lost-1', status: 'BLOCKED', blockReason: 'LOST' }));
+
+      const result = await service.listForShareholder('sh-1', 'user-1');
+
+      expect(result).toMatchObject({ nextRequest: { feeInclVat: '12', isReplacement: true } });
+    });
+
+    it('omits the next-request preview when the coop has the feature off', async () => {
+      prisma.shareholder.findUnique.mockResolvedValue(shareholder({}, { chargeCardsEnabled: false }));
+
+      const result = await service.listForShareholder('sh-1', 'user-1');
+
+      expect(result).toMatchObject({ nextRequest: null });
+      expect(prisma.chargeCard.findFirst).not.toHaveBeenCalled();
+    });
   });
 
   describe('request', () => {
