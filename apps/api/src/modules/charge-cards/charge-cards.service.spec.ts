@@ -66,7 +66,7 @@ describe('ChargeCardsService (shareholder side)', () => {
       shareholder: { findUnique: jest.fn().mockResolvedValue(shareholder()) },
       chargeCard: {
         findMany: jest.fn().mockResolvedValue([]),
-        findFirst: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -148,6 +148,10 @@ describe('ChargeCardsService (shareholder side)', () => {
 
       const result = await service.request('sh-1', 'user-1', { label: '  Auto Anna  ' });
 
+      expect(prisma.chargeCard.findFirst).toHaveBeenCalledWith({
+        where: { shareholderId: 'sh-1', status: 'BLOCKED', blockReason: 'LOST', replacedBy: null },
+        orderBy: { blockedAt: 'asc' },
+      });
       expect(ogm.nextOgmCode).toHaveBeenCalledWith(prisma, 'coop-1');
       expect(prisma.chargeCard.create).toHaveBeenCalledWith({
         data: {
@@ -185,17 +189,18 @@ describe('ChargeCardsService (shareholder side)', () => {
       expect(prisma.chargeCard.create).toHaveBeenCalledWith({ data: expect.objectContaining({ label: null }) });
     });
 
-    it('charges the replacement fee when replacing an own LOST card', async () => {
+    it('automatically becomes the replacement when the shareholder has an unreplaced LOST card', async () => {
       prisma.chargeCard.findFirst.mockResolvedValue(card({ id: 'lost-1', status: 'BLOCKED', blockReason: 'LOST' }));
       prisma.chargeCard.create.mockResolvedValue(
         card({ id: 'card-2', feeInclVat: new Prisma.Decimal('12.00'), isReplacement: true, replacesCardId: 'lost-1' }),
       );
 
-      await service.request('sh-1', 'user-1', { replacesCardId: 'lost-1' });
+      await service.request('sh-1', 'user-1', {});
 
-      expect(prisma.chargeCard.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'lost-1', shareholderId: 'sh-1' } }),
-      );
+      expect(prisma.chargeCard.findFirst).toHaveBeenCalledWith({
+        where: { shareholderId: 'sh-1', status: 'BLOCKED', blockReason: 'LOST', replacedBy: null },
+        orderBy: { blockedAt: 'asc' },
+      });
       expect(prisma.chargeCard.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           feeInclVat: new Prisma.Decimal('12.00'),
@@ -203,20 +208,6 @@ describe('ChargeCardsService (shareholder side)', () => {
           replacesCardId: 'lost-1',
         }),
       });
-    });
-
-    it('refuses to replace a card that is not lost', async () => {
-      prisma.chargeCard.findFirst.mockResolvedValue(card({ id: 'c-2', status: 'ACTIVE' }));
-
-      await expect(service.request('sh-1', 'user-1', { replacesCardId: 'c-2' })).rejects.toThrow(BadRequestException);
-    });
-
-    it('refuses to replace a lost card twice', async () => {
-      prisma.chargeCard.findFirst.mockResolvedValue(
-        card({ id: 'lost-1', status: 'BLOCKED', blockReason: 'LOST', replacedBy: { id: 'card-2' } }),
-      );
-
-      await expect(service.request('sh-1', 'user-1', { replacesCardId: 'lost-1' })).rejects.toThrow(ConflictException);
     });
 
     it('turns a unique-index race on replacesCardId into 409', async () => {
@@ -229,7 +220,7 @@ describe('ChargeCardsService (shareholder side)', () => {
         }),
       );
 
-      await expect(service.request('sh-1', 'user-1', { replacesCardId: 'lost-1' })).rejects.toThrow(ConflictException);
+      await expect(service.request('sh-1', 'user-1', {})).rejects.toThrow(ConflictException);
     });
 
     it('still creates the card when the coop has no email address', async () => {
@@ -238,6 +229,21 @@ describe('ChargeCardsService (shareholder side)', () => {
 
       await expect(service.request('sh-1', 'user-1', {})).resolves.toMatchObject({ card: { id: 'card-1' } });
       expect(email.sendChargeCardCoopNotice).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the OGM in the coop email when the shareholder has no name', async () => {
+      prisma.shareholder.findUnique.mockResolvedValue(
+        shareholder({ firstName: null, lastName: null, companyName: null }),
+      );
+      prisma.chargeCard.create.mockResolvedValue(card());
+
+      await service.request('sh-1', 'user-1', {});
+
+      expect(email.sendChargeCardCoopNotice).toHaveBeenCalledWith(
+        'coop-1',
+        'info@bronsgroen.be',
+        expect.objectContaining({ shareholderName: OGM }),
+      );
     });
   });
 
@@ -253,7 +259,7 @@ describe('ChargeCardsService (shareholder side)', () => {
       );
       expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
         where: { AND: [{ id: 'card-1' }, { status: 'REQUESTED' }] },
-        data: { status: 'CANCELLED' },
+        data: { status: 'CANCELLED', replacesCardId: null },
       });
       expect(result.status).toBe('CANCELLED');
     });
@@ -293,14 +299,14 @@ describe('ChargeCardsService (shareholder side)', () => {
       prisma.chargeCard.findFirst
         .mockResolvedValueOnce(card({ status: 'ACTIVE' }))
         .mockResolvedValueOnce(card({ status: 'ACTIVE', providerSyncNeeded: true }));
-      prisma.chargeCard.update.mockResolvedValue(card({ status: 'ACTIVE', providerSyncNeeded: true }));
+      prisma.chargeCard.findUniqueOrThrow.mockResolvedValue(card({ status: 'ACTIVE', providerSyncNeeded: true }));
 
       await service.requestReenable('sh-1', 'user-1', 'card-1');
       await service.requestReenable('sh-1', 'user-1', 'card-1');
 
-      expect(prisma.chargeCard.update).toHaveBeenCalledTimes(1);
-      expect(prisma.chargeCard.update).toHaveBeenCalledWith({
-        where: { id: 'card-1' },
+      expect(prisma.chargeCard.updateMany).toHaveBeenCalledTimes(1);
+      expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
+        where: { id: 'card-1', status: 'ACTIVE', providerSyncNeeded: false },
         data: { providerSyncNeeded: true, activatedAt: expect.any(Date) },
       });
       expect(email.sendChargeCardCoopNotice).toHaveBeenCalledTimes(1);
@@ -309,6 +315,17 @@ describe('ChargeCardsService (shareholder side)', () => {
         'info@bronsgroen.be',
         expect.objectContaining({ kind: 'reenable' }),
       );
+    });
+
+    it('stays quiet when it loses the race to flip providerSyncNeeded', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue(card({ status: 'ACTIVE' }));
+      prisma.chargeCard.updateMany.mockResolvedValue({ count: 0 });
+      prisma.chargeCard.findUniqueOrThrow.mockResolvedValue(card({ status: 'BLOCKED', blockReason: 'ADMIN' }));
+
+      const result = await service.requestReenable('sh-1', 'user-1', 'card-1');
+
+      expect(result.status).toBe('BLOCKED');
+      expect(email.sendChargeCardCoopNotice).not.toHaveBeenCalled();
     });
 
     it('refuses a re-enable for a card that is not ACTIVE', async () => {
@@ -322,7 +339,14 @@ describe('ChargeCardsService (shareholder side)', () => {
       prisma.chargeCard.findFirst.mockResolvedValue(card({ status: 'ACTIVE' }));
 
       await expect(service.requestReenable('sh-1', 'user-1', 'card-1')).rejects.toThrow(BadRequestException);
-      expect(prisma.chargeCard.update).not.toHaveBeenCalled();
+      expect(prisma.chargeCard.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses a re-enable when charge cards are disabled', async () => {
+      prisma.shareholder.findUnique.mockResolvedValue(shareholder({}, { chargeCardsEnabled: false }));
+
+      await expect(service.requestReenable('sh-1', 'user-1', 'card-1')).rejects.toThrow(ForbiddenException);
+      expect(prisma.chargeCard.findFirst).not.toHaveBeenCalled();
     });
   });
 });

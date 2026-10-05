@@ -7,9 +7,4 @@ export class RequestChargeCardDto {
   @IsString()
   @MaxLength(60)
   label?: string;
-
-  @ApiProperty({ required: false, description: 'Id of an own LOST card this request replaces' })
-  @IsOptional()
-  @IsString()
-  replacesCardId?: string;
 }

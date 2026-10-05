@@ -92,22 +92,16 @@ export class ChargeCardsService {
       throw new BadRequestException('Only active shareholders can request a charge card');
     }
 
-    let feeInclVat = sh.coop.chargeCardFee;
-    let replacesCardId: string | null = null;
-    if (dto.replacesCardId) {
-      const lost = await this.prisma.chargeCard.findFirst({
-        where: { id: dto.replacesCardId, shareholderId: sh.id },
-        include: { replacedBy: { select: { id: true } } },
-      });
-      if (!lost || lost.status !== 'BLOCKED' || lost.blockReason !== 'LOST') {
-        throw new BadRequestException('Only your own lost card can be replaced');
-      }
-      if (lost.replacedBy) {
-        throw new ConflictException('This card has already been replaced');
-      }
-      feeInclVat = sh.coop.chargeCardReplacementFee;
-      replacesCardId = lost.id;
-    }
+    // The server decides whether this request replaces a lost card, not the
+    // client: if the shareholder has a LOST card that no live card already
+    // replaces, this request automatically becomes its replacement — the
+    // oldest one first, if there happen to be several.
+    const lost = await this.prisma.chargeCard.findFirst({
+      where: { shareholderId: sh.id, status: 'BLOCKED', blockReason: 'LOST', replacedBy: null },
+      orderBy: { blockedAt: 'asc' },
+    });
+    const feeInclVat = lost ? sh.coop.chargeCardReplacementFee : sh.coop.chargeCardFee;
+    const replacesCardId = lost?.id ?? null;
 
     let card: ChargeCard;
     try {
@@ -157,7 +151,10 @@ export class ChargeCardsService {
       this.prisma,
       { id: cardId, shareholderId: sh.id },
       { status: 'REQUESTED' },
-      { status: 'CANCELLED' },
+      // Clear replacesCardId so the LOST card it was requested for can be
+      // replaced again; isReplacement stays true, as a record of why this
+      // (now cancelled) card existed.
+      { status: 'CANCELLED', replacesCardId: null },
       'Only a requested card can be cancelled',
     );
     return toChargeCardView(card);
@@ -182,6 +179,9 @@ export class ChargeCardsService {
    */
   async requestReenable(shareholderId: string, userId: string, cardId: string): Promise<ChargeCardView> {
     const sh = await this.loadOwnShareholder(shareholderId, userId);
+    if (!sh.coop.chargeCardsEnabled) {
+      throw new ForbiddenException('Charge cards are not enabled for this cooperative');
+    }
     const existing = await this.prisma.chargeCard.findFirst({ where: { id: cardId, shareholderId: sh.id } });
     if (!existing) {
       throw new NotFoundException('Charge card not found');
@@ -195,10 +195,21 @@ export class ChargeCardsService {
     if (existing.providerSyncNeeded) {
       return toChargeCardView(existing);
     }
-    const updated = await this.prisma.chargeCard.update({
-      where: { id: existing.id },
+
+    // Guarded transition: the update only takes effect if the card is still
+    // ACTIVE and not already flagged. Two quick clicks, or a click racing an
+    // admin block, can only ever have one of them actually flip the flag —
+    // the loser sees count 0 and quietly returns the current row instead of
+    // emailing a second time or overwriting a concurrent admin action.
+    const result = await this.prisma.chargeCard.updateMany({
+      where: { id: existing.id, status: 'ACTIVE', providerSyncNeeded: false },
       data: { providerSyncNeeded: true, activatedAt: new Date() },
     });
+    const updated = await this.prisma.chargeCard.findUniqueOrThrow({ where: { id: existing.id } });
+    if (result.count === 0) {
+      return toChargeCardView(updated);
+    }
+
     await this.notifyCoop(sh, 'reenable', updated);
     return toChargeCardView(updated);
   }
@@ -225,7 +236,9 @@ export class ChargeCardsService {
     try {
       await this.email.sendChargeCardCoopNotice(sh.coopId, sh.coop.coopEmail, {
         kind,
-        shareholderName: shareholderDisplayName(sh),
+        // Fall back to the card's OGM when the shareholder has no company,
+        // first or last name (a malformed record should not blank the email).
+        shareholderName: shareholderDisplayName(sh) || card.ogmCode,
         label: card.label,
         ogmCode: card.ogmCode,
         amount: Number(card.feeInclVat),

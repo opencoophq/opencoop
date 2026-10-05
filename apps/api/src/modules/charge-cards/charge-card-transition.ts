@@ -18,7 +18,9 @@ export async function transitionCard(
   db: Prisma.TransactionClient,
   scope: Prisma.ChargeCardWhereInput,
   allowed: Prisma.ChargeCardWhereInput,
-  data: Prisma.ChargeCardUpdateManyMutationInput,
+  // Unchecked: callers may need to clear replacesCardId (an FK-backed scalar
+  // that the checked UpdateManyMutationInput omits), e.g. on cancel.
+  data: Prisma.ChargeCardUncheckedUpdateManyInput,
   refusal: string,
 ): Promise<ChargeCard> {
   const card = await db.chargeCard.findFirst({ where: scope, select: { id: true } });
