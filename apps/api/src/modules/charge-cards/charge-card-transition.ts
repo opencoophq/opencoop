@@ -17,6 +17,21 @@ export const CANCEL_DATA: Prisma.ChargeCardUncheckedUpdateManyInput = {
   replacesCardId: null,
 };
 
+/** The refusal for the one guarded transition every REQUESTED-only cancel shares. */
+export const CANCEL_REFUSAL = 'Only a requested card can be cancelled';
+
+/**
+ * True once any payment has been linked to this card, whatever its amount —
+ * a partial payment on a REQUESTED card still means money already reached
+ * the coop, so a cancel of that card is not silent: only the coop can unwind
+ * it with a refund. Both the shareholder's own cancel and the daily
+ * NO_SHARES sync use this instead of writing the same `payment.count` check
+ * twice.
+ */
+export async function holdsPayment(tx: Prisma.TransactionClient, cardId: string): Promise<boolean> {
+  return (await tx.payment.count({ where: { chargeCardId: cardId } })) > 0;
+}
+
 export interface CardLockScope {
   id: string;
   coopId?: string;

@@ -11,11 +11,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { OgmService } from '../ogm/ogm.service';
 import { EmailService } from '../email/email.service';
 import { canActForShareholder } from '../shareholders/shareholder-access';
-import { CAN_REPORT_LOST, cancelCard, lockCard, transitionCard } from './charge-card-transition';
+import {
+  CANCEL_REFUSAL,
+  CAN_REPORT_LOST,
+  cancelCard,
+  holdsPayment,
+  lockCard,
+  transitionCard,
+} from './charge-card-transition';
 import { ChargeCardView, shareholderDisplayName, toChargeCardView } from './charge-card-view';
 import { RequestChargeCardDto } from './dto/request-charge-card.dto';
-
-const CANCEL_REFUSAL = 'Only a requested card can be cancelled';
 
 const OWN_SHAREHOLDER_SELECT = {
   id: true,
@@ -160,7 +165,7 @@ export class ChargeCardsService {
         throw new BadRequestException(CANCEL_REFUSAL);
       }
       // A requested card that money already reached: only the coop can unwind that (refund).
-      if ((await tx.payment.count({ where: { chargeCardId: cardId } })) > 0) {
+      if (await holdsPayment(tx, cardId)) {
         throw new ConflictException('card has a payment; contact the coop');
       }
       // cancelCard clears replacesCardId, so the LOST card this one was

@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
-import { cancelCard, lockCard } from './charge-card-transition';
-
-/** Unreachable in practice: cancelOpenRequests re-checks the locked status is REQUESTED before calling cancelCard. */
-const CANCEL_REFUSAL = 'Only a requested card can be cancelled';
+import { CANCEL_REFUSAL, cancelCard, holdsPayment, lockCard } from './charge-card-transition';
 
 export interface ChargeCardSyncResult {
   blocked: number;
@@ -51,14 +48,15 @@ export class ChargeCardSyncService {
       }),
     ]);
 
-    const cancelled = await this.cancelOpenRequests(scope);
+    const { cancelled, failed } = await this.cancelOpenRequests(scope);
 
     const result = { blocked: blocked.count, unblocked: unblocked.count, cancelled };
-    if (result.blocked || result.unblocked || result.cancelled) {
-      this.logger.log(
-        `Charge-card sync: ${result.blocked} blocked, ${result.unblocked} unblocked, ${result.cancelled} cancelled`,
-      );
-    }
+    // Always printed: one candidate's transaction failing must not hide what the
+    // already-committed block/unblock step, or the other candidates, did.
+    this.logger.log(
+      `Charge-card sync: ${result.blocked} blocked, ${result.unblocked} unblocked, ` +
+        `${result.cancelled} cancelled, ${failed} failed`,
+    );
     return result;
   }
 
@@ -70,40 +68,52 @@ export class ChargeCardSyncService {
    * re-checked under its own transaction (as every other cancel does), and
    * the cancel itself goes through the shared `cancelCard`, never a literal
    * `updateMany`.
+   *
+   * Each candidate's transaction is wrapped in its own try/catch: a lock
+   * timeout or deadlock on one card must not stop the rest of the batch from
+   * being tried, and must not make the whole nightly sync throw after the
+   * block/unblock step already committed.
    */
-  private async cancelOpenRequests(scope: Prisma.ChargeCardWhereInput): Promise<number> {
+  private async cancelOpenRequests(
+    scope: Prisma.ChargeCardWhereInput,
+  ): Promise<{ cancelled: number; failed: number }> {
     const candidates = await this.prisma.chargeCard.findMany({
       where: { ...scope, status: 'REQUESTED', shareholder: { status: { not: 'ACTIVE' } } },
       select: { id: true, shareholderId: true },
     });
 
     let cancelled = 0;
+    let failed = 0;
     for (const candidate of candidates) {
-      const didCancel = await this.prisma.$transaction(async (tx) => {
-        const locked = await lockCard(tx, { id: candidate.id, shareholderId: candidate.shareholderId });
-        if (!locked || locked.status !== 'REQUESTED') {
-          return false;
-        }
-        const paymentCount = await tx.payment.count({ where: { chargeCardId: candidate.id } });
-        if (paymentCount > 0) {
-          this.logger.warn(
-            `charge card ${candidate.id} (shareholder ${candidate.shareholderId}) is REQUESTED and holds a ` +
-              'payment, but its shareholder has no shares; leaving it REQUESTED for an admin to refund',
+      try {
+        const didCancel = await this.prisma.$transaction(async (tx) => {
+          const locked = await lockCard(tx, { id: candidate.id, shareholderId: candidate.shareholderId });
+          if (!locked || locked.status !== 'REQUESTED') {
+            return false;
+          }
+          if (await holdsPayment(tx, candidate.id)) {
+            this.logger.warn(
+              `charge card ${candidate.id} (shareholder ${candidate.shareholderId}) is REQUESTED and holds a ` +
+                'payment, but its shareholder has no shares; leaving it REQUESTED for an admin to refund',
+            );
+            return false;
+          }
+          await cancelCard(
+            tx,
+            { id: candidate.id, shareholderId: candidate.shareholderId },
+            ['REQUESTED'],
+            CANCEL_REFUSAL,
           );
-          return false;
+          return true;
+        });
+        if (didCancel) {
+          cancelled += 1;
         }
-        await cancelCard(
-          tx,
-          { id: candidate.id, shareholderId: candidate.shareholderId },
-          ['REQUESTED'],
-          CANCEL_REFUSAL,
-        );
-        return true;
-      });
-      if (didCancel) {
-        cancelled += 1;
+      } catch (err) {
+        failed += 1;
+        this.logger.warn(`charge-card sync failed for card ${candidate.id}: ${(err as Error).message}`);
       }
     }
-    return cancelled;
+    return { cancelled, failed };
   }
 }

@@ -97,4 +97,34 @@ describe('ChargeCardSyncService', () => {
     expect(prisma.payment.count).not.toHaveBeenCalled();
     expect(prisma.chargeCard.findFirst).not.toHaveBeenCalled();
   });
+
+  it('keeps processing the other candidates when one candidate transaction throws', async () => {
+    prisma.chargeCard.updateMany
+      .mockResolvedValueOnce({ count: 0 }) // block
+      .mockResolvedValueOnce({ count: 0 }) // unblock
+      .mockResolvedValueOnce({ count: 1 }); // cancelCard's internal updateMany, for card-9
+    prisma.chargeCard.findMany.mockResolvedValue([
+      { id: 'card-bad', shareholderId: 'sh-bad' },
+      { id: 'card-9', shareholderId: 'sh-9' },
+    ]);
+    prisma.chargeCard.findFirst.mockResolvedValue({ id: 'card-9' });
+    prisma.chargeCard.findUniqueOrThrow.mockResolvedValue({ id: 'card-9', status: 'CANCELLED' });
+    prisma.$queryRaw.mockImplementation((_strings: unknown, ...values: string[]) => {
+      const [id] = values;
+      if (id === 'card-bad') {
+        return Promise.reject(new Error('lock timeout'));
+      }
+      return Promise.resolve([{ id, status: 'REQUESTED' }]);
+    });
+    const warn = jest.spyOn((service as any).logger, 'warn').mockImplementation(() => undefined);
+    const log = jest.spyOn((service as any).logger, 'log').mockImplementation(() => undefined);
+
+    await expect(service.syncAll()).resolves.toEqual({ blocked: 0, unblocked: 0, cancelled: 1 });
+
+    // The failing candidate's lock threw, but card-9 still got cancelled.
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('card-bad'));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('lock timeout'));
+    // The summary log always prints and carries the failed count.
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('1 failed'));
+  });
 });
