@@ -4,11 +4,13 @@
 
 **Goal:** Let shareholders of a coop with charge cards turned on request EV charging cards and pay a one-time fee by OGM bank transfer, and let coop admins issue, block and track those cards, without any provider integration.
 
-**Architecture:** One per-coop OGM counter (`Coop.ogmSequence`) feeds registrations and charge cards. `Payment` becomes generic (a registration or a charge card, enforced by a CHECK constraint), and one `OgmService` resolves OGMs and ids to a `PaymentTarget` for CSV import, Ponto, manual match and manual add. A new `charge-cards` NestJS module holds the shareholder and admin endpoints; a state-based `ChargeCardSyncService` keeps cards in line with shareholder status (nightly and on every `recompute()`). The web app gets a shareholder page, an admin page, a settings section, and a post-login redirect so a deep link survives login.
+**Architecture:** One per-coop OGM counter (`Coop.ogmSequence`) feeds registrations and charge cards. `Payment` becomes generic (a registration or a charge card, enforced by a CHECK constraint), and one `OgmService` resolves OGMs to a `PaymentTarget` for `BankMatchingService` (the shared matcher behind CSV import, Ponto and rematch, on main since v2026.39.4); manual match looks a card up through the same service. A new `charge-cards` NestJS module holds the shareholder and admin endpoints; a state-based `ChargeCardSyncService` keeps cards in line with shareholder status (nightly and on every `recompute()`). The web app gets a shareholder page, an admin page, a settings section, and a post-login redirect so a deep link survives login.
 
 **Tech Stack:** NestJS 10, Prisma 6, PostgreSQL 16, Jest 29 + ts-jest (unit specs with mocked Prisma, plus `*.db.spec.ts` specs against the test Postgres), Next.js 15 App Router, React 18, next-intl, Playwright.
 
 **Spec:** `docs/plans/2026-10-05-charge-cards-design.md`, plus the coordinator's 2026-10-05 changes: fees are set incl. VAT (`chargeCardFee` 6.00, `chargeCardReplacementFee` 12.00, `chargeCardVatRate` 21 stored for later invoicing), `ChargeCard.feeInclVat` and `isReplacement` frozen at request time, a LOST card can be replaced once, admin list shows waiting time and flags cards older than 5 working days, no UNPAID reason, no yearly cleanup, no roaming, no invoices.
+
+**Base:** updated on 2026-10-05 against `main` 4e6b2840 (plan first written against d5dc546c). Since then main shipped `extractOgmCode` in `@opencoop/shared`, `BankMatchingService`, the Ponto OGM-format fix, the coop-scoped manual match, `MatchBankTransactionDto`, the `IGNORED` match status and the link-to-existing-payment flow. Task 3 and Task 5 build on those instead of re-doing them. Preflight notes: `.superpowers/sdd/2026-10-05-charge-cards-plan/preflight.md`.
 
 ## Global Constraints
 
@@ -25,7 +27,9 @@
 - **Do not rewrite the web message files with `JSON.stringify`.** `en.json` contains duplicate keys (`meetings.convocation` twice), so a parse-and-dump rewrites unrelated content. The plan inserts the new namespace as text.
 - **Formatting:** currency through `formatCurrency(amount, locale)` from `@opencoop/shared` with `useLocale()`; dates through `toLocaleDateString(locale)`.
 - **Web pages copy their siblings** (`tasks/lessons.md`, 2026-04-14): `'use client'`, `useTranslations()`, the `api()` helper, `useAdmin()`, `Link` from `@/i18n/routing`. Never `use(params)`.
-- **Migrations are hand-written** in fixed folders and proven with `prisma migrate diff --exit-code` against `schema.prisma`. CI's e2e job builds its DB with `prisma db push`, which never runs migration SQL. The CHECK constraint and the OGM backfill run only in production (`prisma migrate deploy`) and in the `*.db.spec.ts` specs, which build their DB with `prisma migrate reset`.
+- **Migrations are hand-written** in fixed folders and proven with `prisma migrate diff --exit-code` against `schema.prisma`. CI's e2e job builds its DB with `prisma db push`, which never runs migration SQL. The CHECK constraint and the OGM backfill run only in production (`prisma migrate deploy`) and in the `*.db.spec.ts` specs, which build their DB with `prisma migrate deploy` followed by `prisma db push` (see "Rebuild the test DB" below).
+- **The migration history does not replay to the current schema.** On an empty DB, the 43 existing migrations apply cleanly, but `migrate diff` still reports a pre-existing baseline drift: `coops` lacks the Ecopower and API-key columns, `shareholders` lacks `ecoPowerId`/`isEcoPowerClient`, `registrations` lacks the gift columns, plus `webauthn_credentials`, `refresh_tokens` and `audit_logs`. On such a DB, `prisma.coop.create` fails with "The column `ecoPowerEnabled` does not exist". Production must have these columns, since the app reads them, so they came from outside the migration history (not checked on prod). So the DB specs run `migrate deploy` (our migration SQL, CHECK and backfill included) and then `db push` (fills the old drift; it keeps CHECK constraints). Repairing the old history is out of scope.
+- **Do not use `prisma migrate reset`.** Prisma 6 refuses it from an AI agent unless the user's own consent text is passed in an environment variable, and it would not fix the drift anyway. The test container keeps its data on tmpfs, so `--force-recreate` gives an empty test DB. Only ever recreate `postgres-test` from `docker-compose.test.yml` (port 5433), never another database.
 - **Test layers:** unit specs mock Prisma (the existing style). `*.db.spec.ts` specs use `describeDb`, which skips unless `TEST_DATABASE_URL` is set, so `pnpm --filter @opencoop/api test` stays green in CI without a database. Run DB specs with `--runInBand`.
 - **Stale artifacts:** `apps/api/tsconfig.json` has `"incremental": true`. If `tsc` replays an error you already fixed, delete `apps/api/tsconfig.tsbuildinfo` and `apps/api/dist` and rerun before you debug.
 - **Untracked compiled files** (`*.js`, `*.d.ts`) sit next to many sources in `apps/api/src` and `apps/web/src`. Stage explicit paths only. Never `git add -A` or `git add .`.
@@ -37,20 +41,20 @@
 Run these before Task 1. They start the test Postgres on port 5433, create a shadow DB for `migrate diff`, and record the migration baseline.
 
 ```bash
-cd /Users/wouterhermans/Developer/opencoop
+cd /Users/wouterhermans/Developer/opencoop-worktrees/charge-cards
 pnpm install
 pnpm db:generate
 pnpm --filter "@opencoop/api^..." build
-docker compose -f docker-compose.test.yml up -d
+docker compose -f docker-compose.test.yml up -d --wait postgres-test
 docker compose -f docker-compose.test.yml exec -T postgres-test createdb -U opencoop opencoop_shadow
 ```
 
-Expected: the last command prints nothing. On a rerun it prints `database "opencoop_shadow" already exists`; that is fine.
+Expected: the last command prints nothing. On a rerun it prints `database "opencoop_shadow" already exists`; that is fine. Run Docker through Colima (`colima status` says running). Compose names the project after the folder, so a test container started from the main checkout (`opencoop-postgres-test-1`) also binds port 5433: stop it first. Preflight baseline on 4e6b2840: `pnpm --filter @opencoop/api test` passes, 68 suites, 788 tests.
 
 Record the baseline drift between the existing migrations and the schema:
 
 ```bash
-cd /Users/wouterhermans/Developer/opencoop/packages/database
+cd /Users/wouterhermans/Developer/opencoop-worktrees/charge-cards/packages/database
 pnpm exec prisma migrate diff \
   --from-migrations prisma/migrations \
   --to-schema-datamodel prisma/schema.prisma \
@@ -59,7 +63,18 @@ pnpm exec prisma migrate diff \
 echo "exit=$?"
 ```
 
-Expected: `exit=0` (no drift). If you get `exit=2`, save the printed diff to `tasks/charge-cards-baseline-drift.txt` and compare against it in every later `migrate diff` step: only the new statements count. If you get `exit=1`, the shadow DB is unreachable; fix that before you start.
+Expected: `exit=2`. On 4e6b2840 the baseline drift is known (see Global Constraints: Ecopower, API-key and gift columns, `webauthn_credentials`, `refresh_tokens`, `audit_logs`). Rerun with `--script` instead of `--exit-code`, save the output to `tasks/charge-cards-baseline-drift.sql`, and compare against it in every later `migrate diff` step: only new statements count, and every later "Expected: `exit=0`" means "no statements beyond the baseline". If you get `exit=1`, the shadow DB is unreachable; fix that before you start.
+
+Rebuild the test DB (an empty DB, all migrations, then the baseline drift):
+
+```bash
+docker compose -f docker-compose.test.yml up -d --force-recreate --wait postgres-test
+docker compose -f docker-compose.test.yml exec -T postgres-test createdb -U opencoop opencoop_shadow
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate deploy
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma db push --skip-generate --accept-data-loss
+```
+
+Expected: `migrate deploy` ends with `All migrations have been successfully applied.` and lists every folder in `prisma/migrations`; `db push` ends with `Your database is now in sync with your Prisma schema`. Its data-loss warnings name only two unique indexes (`coops.apiKeyHash`, `registrations.giftCode`) on empty tables. Preflight ran these four lines on 4e6b2840: 43 migrations applied, and a `coop`/`shareholder`/`shareClass`/`registration` create worked afterwards. `db push` keeps CHECK constraints it does not know (checked with a probe constraint).
 
 Commands used throughout:
 
@@ -67,19 +82,19 @@ Commands used throughout:
 |---|---|
 | One API spec file or folder | `pnpm --filter @opencoop/api exec jest <path-fragment>` |
 | All API unit specs | `pnpm --filter @opencoop/api test` |
-| Rebuild the test DB from migrations | `DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate reset --force --skip-seed --skip-generate` |
+| Rebuild the test DB from migrations | the four lines under "Rebuild the test DB" above |
 | DB-backed specs | `TEST_DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/api exec jest --runInBand db.spec` |
 | API build / lint | `pnpm --filter @opencoop/api build` / `pnpm --filter @opencoop/api lint` |
 | Web build / lint | `pnpm --filter @opencoop/web build` / `pnpm --filter @opencoop/web exec next lint` |
 | e2e DB (after DB specs, it re-seeds) | `pnpm test:e2e:setup` |
 | One e2e spec | `cd e2e && npx playwright test <spec path>` |
 
-The e2e setup runs `db push` and the seed against the same test DB the DB specs reset. Run DB specs first and `pnpm test:e2e:setup` after them, never the other way round.
+The e2e setup runs `db push` and the seed against the same test DB the DB specs rebuild. Run DB specs first and `pnpm test:e2e:setup` after them, never the other way round. A DB that went through `db push` with a newer schema cannot take the new migration any more (`column already exists`), so always rebuild it before the DB specs.
 
 ## Review Focus
 
-1. **A shareholder pays the card fee twice** (two transfers, same OGM). The first payment moves the card to `PAID`; the second stays `UNMATCHED` with no second `Payment` row, so an admin can refund it. Pinned in Task 5 (`bank-import.service.spec.ts`, "second transfer for a paid card stays UNMATCHED").
-2. **The OGM arrives in another shape**: digits only from Ponto, `***` instead of `+++`, spaces, or bare digits in a CSV reference. All shapes match the stored `+++xxx/xxxx/xxxxx+++` code, and a 12-digit run inside a longer number (an IBAN) never matches. Pinned in Task 3 (`ogm.spec.ts`, `ponto.service.spec.ts`, `bank-import.service.spec.ts`).
+1. **A shareholder pays the card fee twice** (two transfers, same OGM). The first payment moves the card to `PAID`; the second stays `UNMATCHED` with no second `Payment` row, so an admin can refund it. Pinned in Task 5 (`bank-matching.service.spec.ts`, "second transfer for a paid card stays UNMATCHED").
+2. **The OGM arrives in another shape**: digits only from Ponto, `***` instead of `+++`, spaces. Main already normalises these with `extractOgmCode` (`packages/shared/src/utils.ts`, specs in `utils.spec.ts`); a reference that is exactly 12 valid digits matches, 12 digits inside free text (an IBAN, a sentence) never do. Task 3 routes every OGM lookup through `OgmService`, which normalises with the same function, so a charge-card OGM gets the same treatment. Pinned in Task 3 (`ogm.service.spec.ts`).
 3. **An admin types a card number with spaces, or a number already used in the coop.** OpenCoop trims it, and a duplicate returns `409 Conflict` instead of a 500. Pinned in Task 6 (`charge-cards-admin.service.spec.ts`).
 4. **An admin issues a `PAID` card after the shareholder sold all shares.** OpenCoop refuses, because the nightly job would block the card at once and the provider would bill for it. Pinned in Task 6.
 5. **The shareholder status flaps** (sells, then buys again before the provider change is made). The card goes `BLOCKED` then back to `ACTIVE`, and `providerSyncNeeded` stays `true`, so the admin still checks the portal. Pinned in Task 7 (`charge-card-sync.db.spec.ts`).
@@ -372,7 +387,7 @@ pnpm exec prisma migrate diff \
 echo "exit=$?"
 ```
 
-Expected: `exit=0`. If `exit=2`, rerun with `--script` instead of `--exit-code`, read the SQL Prisma still wants, and fix `migration.sql` until the diff is empty (or equal to the recorded baseline).
+Expected: `exit=2` from the known baseline only. Rerun with `--script` instead of `--exit-code` and compare with `tasks/charge-cards-baseline-drift.sql` (`diff <(pnpm exec prisma migrate diff ... --script) ../../tasks/charge-cards-baseline-drift.sql`). Any statement that is not in the baseline is SQL Prisma still wants from this migration; fix `migration.sql` until the two outputs are equal.
 
 - [ ] **Step 12: Write the DB helper and the failing DB spec**
 
@@ -383,7 +398,7 @@ import { PrismaClient, ShareholderStatus } from '@opencoop/database';
 
 /**
  * Helpers for *.db.spec.ts files. They run against the test Postgres
- * (docker-compose.test.yml, port 5433) after `prisma migrate reset`, and
+ * (docker-compose.test.yml, port 5433) after `prisma migrate deploy` + `db push`, and
  * skip when TEST_DATABASE_URL is not set (CI unit job, plain `pnpm test`).
  */
 const url = process.env.TEST_DATABASE_URL;
@@ -514,11 +529,14 @@ describeDb('OGM sequence (database)', () => {
 - [ ] **Step 13: Run the DB spec against a migrated DB**
 
 ```bash
-DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate reset --force --skip-seed --skip-generate
+docker compose -f docker-compose.test.yml up -d --force-recreate --wait postgres-test
+docker compose -f docker-compose.test.yml exec -T postgres-test createdb -U opencoop opencoop_shadow
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate deploy
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma db push --skip-generate --accept-data-loss
 TEST_DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/api exec jest --runInBand src/modules/ogm/ogm.db.spec
 ```
 
-Expected: the reset ends with `Database reset successful` and lists `20261005100000_coop_ogm_sequence`. The spec PASSES, 2 tests. If the reset fails on an older migration, stop: the migration history does not replay on an empty DB, and the DB specs need a different bootstrap. Report it as a blocker.
+Expected: `migrate deploy` lists `20261005100000_coop_ogm_sequence` as applied and ends with `All migrations have been successfully applied.`; `db push` reports the DB in sync. The spec PASSES, 2 tests. If `migrate deploy` fails on the new migration, fix the migration; if it fails on an older one, stop and report a blocker.
 
 Then confirm the spec skips without the variable:
 Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm/ogm.db.spec`
@@ -574,9 +592,10 @@ The `chargeCardId` foreign key needs the `charge_cards` table, so the whole char
 - Create: `packages/database/prisma/migrations/20261005110000_charge_cards/migration.sql`
 - Modify: `apps/api/src/modules/admin-notifications/admin-notifications.service.ts:173-188`
 - Create: `apps/api/src/modules/admin-notifications/admin-notifications.service.spec.ts`
-- Modify: `apps/api/src/modules/bank-import/bank-import.service.ts:28-44` (`getTransactions` include)
+- Modify: `apps/api/src/modules/bank-import/bank-import.service.ts:41-57` (`getTransactions` include)
 - Modify: `apps/api/src/modules/bank-import/bank-import.service.spec.ts` (append one test)
-- Modify: `apps/web/src/app/[locale]/dashboard/admin/bank-import/page.tsx:44-66` and `:224`
+- Modify: `apps/web/src/app/[locale]/dashboard/admin/bank-import/page.tsx:45-67` and `:412`
+- Modify: `apps/api/src/modules/payments/payments.service.ts` (`findUnlinkedByCoopId`), `apps/api/src/modules/payments/payments.service.spec.ts` (append one test)
 - Modify: `apps/api/src/test-utils/test-db.ts` (add `createTestChargeCard`)
 - Create: `apps/api/src/modules/payments/payments.db.spec.ts`
 
@@ -842,7 +861,7 @@ ALTER TABLE "payments" ADD CONSTRAINT "payments_exactly_one_target_check"
 - [ ] **Step 5: Prove the migration matches the schema**
 
 Run from `packages/database` the same `prisma migrate diff ... --exit-code; echo "exit=$?"` command as Task 1 Step 11.
-Expected: `exit=0`. Prisma does not model CHECK constraints, so the extra constraint never shows up as drift. If `exit=2`, rerun with `--script`, read what Prisma still wants (usually a column order or a default literal like `21` vs `21.00`), and align `migration.sql`.
+Expected: the `--script` output equals the baseline (`tasks/charge-cards-baseline-drift.sql`), as in Task 1 Step 11. Prisma does not model CHECK constraints, so the extra constraint never shows up as drift. Any extra statement is what Prisma still wants (usually a column order or a default literal like `21` vs `21.00`); align `migration.sql`.
 
 - [ ] **Step 6: Fix the digest reader**
 
@@ -970,13 +989,46 @@ and replace `const shareholder = tx.matchedPayment?.registration?.shareholder;` 
 
 - `apps/api/src/modules/system/system.controller.ts:108-116` filters `registration: { type: 'BUY', ... }`. A card payment has no registration, so the filter drops it, and card fees stay out of "total capital". The type check in Step 11 proves it still compiles.
 - `apps/api/src/modules/payments/payments.service.ts:17-22` (`findByRegistration`) filters on `registrationId`; it never returns card payments. Task 3 deletes the unused `findByOgmCode` next to it.
-- Raw SQL in `admin/reports.service.ts`, `admin/analytics.service.ts`, `admin/admin.controller.ts:341`, `mcp/tools/mcp-coop.tools.ts:95` all `JOIN registrations r ON r.id = p."registrationId"` (inner join), so card payments never count as capital.
-- `registrations.service.ts:647` (`updatePaymentDate`) filters on `registrationId`.
+- Raw SQL in `admin/reports.service.ts`, `admin/analytics.service.ts`, `admin/admin.controller.ts:369`, `mcp/tools/mcp-coop.tools.ts:110` all `JOIN registrations r ON r.id = p."registrationId"` (inner join), so card payments never count as capital.
+- `registrations.service.ts:648` (`updatePaymentDate`) filters on `registrationId`.
+- `bank-matching.service.ts` (`matchTransaction`) reads the unlinked payments of one registration (`registrationId: registration.id`).
 
-Confirm the grep still finds nothing new:
+One reader is new on main and is not safe: `PaymentsService.findUnlinkedByCoopId` (the "link to an existing payment" list in the bank-import match dialog, `GET .../payments/unlinked`) returns every coop payment without a bank transaction, and `bank-import/page.tsx:558-561` reads `payment.registration.shareholder` without a guard. A card payment always gets its bank transaction in v1, but one without it would crash the dialog. Limit the list to registration payments, which is all the dialog can link.
+
+Append to `apps/api/src/modules/payments/payments.service.spec.ts`, inside the `describe`:
+
+```ts
+  it('lists only registration payments as unlinked (the link dialog reads payment.registration)', async () => {
+    prisma.payment.findMany = jest.fn().mockResolvedValue([]);
+
+    await service.findUnlinkedByCoopId('coop-A');
+
+    expect(prisma.payment.findMany.mock.calls[0][0].where).toEqual({
+      coopId: 'coop-A',
+      bankTransactionId: null,
+      registrationId: { not: null },
+    });
+  });
+```
+
+Run: `pnpm --filter @opencoop/api exec jest src/modules/payments`
+Expected: FAIL — the `where` has no `registrationId`.
+
+In `apps/api/src/modules/payments/payments.service.ts`, `findUnlinkedByCoopId`, change `bankTransactionId: null,` to:
+
+```ts
+        bankTransactionId: null,
+        // Charge-card payments are never offered for linking; the dialog reads payment.registration.
+        registrationId: { not: null },
+```
+
+Run: `pnpm --filter @opencoop/api exec jest src/modules/payments`
+Expected: PASS.
+
+Confirm the grep finds nothing new:
 
 Run: `grep -rn "payment\.registration\b\|payments\.registration\b\|\.registration\.shareholder" apps/api/src apps/web/src --include='*.ts' --include='*.tsx' | grep -v '\.d\.ts'`
-Expected: only the two lines you just changed (with `?.`).
+Expected: the two lines you changed (with `?.`) and the three `payment.registration` lines in `bank-import/page.tsx:558-561`, which the filter above keeps safe.
 
 - [ ] **Step 10: Write the CHECK-constraint DB spec**
 
@@ -1093,11 +1145,14 @@ describeDb('payments_exactly_one_target_check (database)', () => {
 Run:
 
 ```bash
-DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate reset --force --skip-seed --skip-generate
+docker compose -f docker-compose.test.yml up -d --force-recreate --wait postgres-test
+docker compose -f docker-compose.test.yml exec -T postgres-test createdb -U opencoop opencoop_shadow
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate deploy
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma db push --skip-generate --accept-data-loss
 TEST_DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/api exec jest --runInBand db.spec
 ```
 
-Expected: both migrations applied; `ogm.db.spec` and `payments.db.spec` PASS, 5 tests.
+Expected: `migrate deploy` applies both new migrations; `ogm.db.spec` and `payments.db.spec` PASS, 5 tests.
 
 - [ ] **Step 11: Build, test, commit**
 
@@ -1117,293 +1172,34 @@ git add packages/database/prisma/schema.prisma \
   apps/api/src/modules/bank-import/bank-import.service.ts \
   apps/api/src/modules/bank-import/bank-import.service.spec.ts \
   apps/api/src/modules/payments/payments.db.spec.ts apps/api/src/test-utils/test-db.ts \
+  apps/api/src/modules/payments/payments.service.ts apps/api/src/modules/payments/payments.service.spec.ts \
   "apps/web/src/app/[locale]/dashboard/admin/bank-import/page.tsx"
 git commit -m "feat(payments): a payment belongs to a registration or a charge card"
 ```
 
 ---
-### Task 3: One OGM resolver (registrations), and the Ponto format bug
+### Task 3: One OGM resolver (registrations)
 
-`resolveOgmTarget` replaces the registration-only lookups in CSV import and Ponto. `addPayment` and `manualMatch` receive an id, not an OGM, so they use the sibling `findTarget(coopId, ref)` on the same service. All four entry points now get the same `PaymentTarget` shape. Charge cards join the resolver in Task 5.
+Main moved ahead of this plan (v2026.39.1 to v2026.39.4): `extractOgmCode` in `@opencoop/shared` normalises every OGM shape, `BankMatchingService.matchTransaction` is the one matcher behind CSV import, Ponto and rematch, Ponto stores and matches the formatted OGM, and `manualMatch` is scoped to the coop. This task puts the remaining registration-only lookups (the matcher's single lookup and the CSV batch lookup) behind `OgmService`, so Task 5 adds charge cards in one place. Behaviour does not change.
 
 **Files:**
-- Modify: `apps/api/src/modules/ogm/ogm.ts` (add `normalizeOgm`, `extractOgm`)
-- Create: `apps/api/src/modules/ogm/ogm.spec.ts`
 - Create: `apps/api/src/modules/ogm/payment-target.ts`
 - Modify: `apps/api/src/modules/ogm/ogm.service.ts`, `apps/api/src/modules/ogm/ogm.service.spec.ts`
-- Modify: `apps/api/src/modules/bank-import/bank-import.service.ts:1-14` (imports, constructor), `:75-229` (`importCsv` matching loop), `:375-454` (`manualMatch`)
-- Modify: `apps/api/src/modules/bank-import/bank-import.module.ts`, `apps/api/src/modules/bank-import/bank-import.service.spec.ts`
-- Create: `apps/api/src/modules/bank-import/dto/match-bank-transaction.dto.ts`
-- Modify: `apps/api/src/modules/ponto/ponto.service.ts:1-23` (imports, constructor), `:296-429` (`processTransaction`, `createPaymentFromTransaction`)
-- Modify: `apps/api/src/modules/ponto/ponto.module.ts`, `apps/api/src/modules/ponto/ponto.service.spec.ts`
-- Modify: `apps/api/src/modules/payments/payments.service.ts` (whole file), `apps/api/src/modules/payments/payments.module.ts`, `apps/api/src/modules/payments/payments.service.spec.ts` (whole file)
-- Modify: `apps/api/src/modules/admin/admin.controller.ts:745-760` (`addPayment`), `:825-834` (`matchBankTransaction`)
+- Modify: `apps/api/src/modules/bank-import/bank-matching.service.ts` (imports, `BankMatchingRegistration`, constructor, `matchTransaction`), `apps/api/src/modules/bank-import/bank-matching.service.spec.ts`
+- Modify: `apps/api/src/modules/bank-import/bank-import.service.ts:1-16` (imports, constructor), `:180-198` (batched registration lookup), `:237` (matcher call)
+- Modify: `apps/api/src/modules/bank-import/bank-import.module.ts`, `apps/api/src/modules/bank-import/bank-import.service.spec.ts`, `apps/api/src/modules/bank-import/bank-reconciliation.service.spec.ts` (providers)
+- Modify: `apps/api/src/modules/payments/payments.service.ts:24-39` (delete the unused `findByOgmCode`)
 
 **Interfaces:**
-- Consumes: `OgmService` (Task 1); `validateOgmCode`, `formatOgmCode` from `@opencoop/shared`.
+- Consumes: `OgmService` (Task 1); `extractOgmCode` from `@opencoop/shared` (on main).
 - Produces:
-  - `normalizeOgm(raw: string | null | undefined): string | null` — any OGM shape with a valid mod-97 check → `+++xxx/xxxx/xxxxx+++`, else `null`.
-  - `extractOgm(text: string | null | undefined): string | null` — first valid OGM in free text.
-  - `RegistrationTarget = { kind: 'registration'; id; coopId; shareholderId; status: RegistrationStatus; totalAmount: number; isGift: boolean; ogmCode: string | null }`.
-  - `PaymentTarget = RegistrationTarget` (Task 5 widens it). `PaymentTargetRef = { kind: 'registration'; id: string }` (Task 5 widens it).
-  - `acceptsAutoMatch(target: PaymentTarget): boolean`, `toPaymentTargetRef(target)`, `parsePaymentTargetRef(body: { registrationId?: string }): PaymentTargetRef`.
-  - `OgmService.resolveOgmTargets(coopId, ogms: Array<string | null | undefined>): Promise<Map<string, PaymentTarget>>`, `OgmService.resolveOgmTarget(coopId, ogm): Promise<PaymentTarget | null>`, `OgmService.findTarget(coopId, ref: PaymentTargetRef): Promise<PaymentTarget | null>`.
-  - `PaymentsService.addPayment(data: AddPaymentInput)` with `AddPaymentInput = { target: PaymentTargetRef; coopId; amount; bankDate; bankTransactionId?; matchedByUserId? }`.
-  - `BankImportService.manualMatch(coopId: string, bankTransactionId: string, ref: PaymentTargetRef, userId: string)`.
-  - `MatchBankTransactionDto { registrationId?: string }`.
+  - `RegistrationTarget = { kind: 'registration'; id: string; coopId: string; status: string; totalAmount?: unknown; ogmCode?: string | null; payments?: Array<{ id: string; amount: unknown; bankDate: Date; bankTransactionId: string | null }> }`: the shape `BankMatchingService` already used (`BankMatchingRegistration`), plus `kind`.
+  - `PaymentTarget = RegistrationTarget` (Task 5 widens it).
+  - `OgmService.resolveOgmTargets(coopId: string, ogms: Array<string | null | undefined>): Promise<Map<string, PaymentTarget>>`: one query per target table; keys are the formatted codes.
+  - `OgmService.resolveOgmTarget(coopId: string, ogm: string | null | undefined): Promise<PaymentTarget | null>`.
+  - `BankMatchingService.matchTransaction(coopId, transaction, matchedByUserId?, allowCreate = true, targetOverride?: PaymentTarget)` (the fifth parameter was `registrationOverride?: BankMatchingRegistration`).
 
-- [ ] **Step 1: Write the failing normaliser tests**
-
-Create `apps/api/src/modules/ogm/ogm.spec.ts`:
-
-```ts
-import { generateOgmCode } from '@opencoop/shared';
-import { extractOgm, normalizeOgm } from './ogm';
-
-const OGM = '+++090/9337/55493+++';
-const DIGITS = '090933755493';
-
-describe('normalizeOgm', () => {
-  it('keeps a formatted OGM', () => {
-    expect(normalizeOgm(OGM)).toBe(OGM);
-  });
-
-  it('formats a digit-only OGM (Ponto strips the formatting)', () => {
-    expect(normalizeOgm(DIGITS)).toBe(OGM);
-  });
-
-  it('accepts asterisks and spaces', () => {
-    expect(normalizeOgm('*** 090 / 9337 / 55493 ***')).toBe(OGM);
-  });
-
-  it('rejects a wrong check digit', () => {
-    expect(normalizeOgm('090933755494')).toBeNull();
-  });
-
-  it('rejects the wrong number of digits', () => {
-    expect(normalizeOgm('09093375549')).toBeNull();
-    expect(normalizeOgm('0909337554930')).toBeNull();
-  });
-
-  it('returns null for empty input', () => {
-    expect(normalizeOgm(null)).toBeNull();
-    expect(normalizeOgm(undefined)).toBeNull();
-    expect(normalizeOgm('')).toBeNull();
-  });
-});
-
-describe('extractOgm', () => {
-  it('finds a formatted OGM in free text', () => {
-    expect(extractOgm(`Laadpas ${OGM} Jan Peeters`)).toBe(OGM);
-  });
-
-  it('finds an OGM with asterisks', () => {
-    expect(extractOgm('***090/9337/55493***')).toBe(OGM);
-  });
-
-  it('finds an OGM without plus signs', () => {
-    expect(extractOgm('mededeling 090/9337/55493')).toBe(OGM);
-  });
-
-  it('finds a bare 12-digit OGM', () => {
-    expect(extractOgm(`mededeling ${DIGITS} bedankt`)).toBe(OGM);
-  });
-
-  it('ignores 12 digits inside a longer number such as an IBAN', () => {
-    expect(extractOgm('BE68539007547034')).toBeNull();
-  });
-
-  it('skips an invalid bare number and finds the next valid one', () => {
-    const other = generateOgmCode('001', 42);
-    expect(extractOgm(`ref 123456789012 en ${other.replace(/\D/g, '')}`)).toBe(other);
-  });
-
-  it('returns null when there is no OGM', () => {
-    expect(extractOgm('gewone overschrijving')).toBeNull();
-    expect(extractOgm(null)).toBeNull();
-  });
-});
-```
-
-- [ ] **Step 2: Run them and watch them fail**
-
-Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm/ogm.spec`
-Expected: FAIL — `normalizeOgm` and `extractOgm` are not exported from `./ogm`.
-
-- [ ] **Step 3: Implement the normaliser**
-
-Replace `apps/api/src/modules/ogm/ogm.ts` with:
-
-```ts
-import { formatOgmCode, validateOgmCode } from '@opencoop/shared';
-
-/** The OGM body is prefix (3 digits) + sequence (7 digits) + check (2 digits). */
-export const MAX_OGM_SEQUENCE = 9_999_999;
-
-const FORMATTED_OGM = /(?:\+{3}|\*{3})?\s*(\d{3})\s*\/\s*(\d{4})\s*\/\s*(\d{5})\s*(?:\+{3}|\*{3})?/;
-const BARE_OGM = /(?<!\d)\d{12}(?!\d)/g;
-
-/**
- * Normalises any OGM shape (+++xxx/xxxx/xxxxx+++, ***...***, digits only,
- * with spaces) to the stored +++xxx/xxxx/xxxxx+++ form. Returns null unless
- * the input has exactly 12 digits with a valid mod-97 check.
- */
-export function normalizeOgm(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const digits = raw.replace(/\D/g, '');
-  if (digits.length !== 12 || !validateOgmCode(digits)) return null;
-  return formatOgmCode(digits);
-}
-
-/** Finds the first valid OGM in free text (a CSV reference column). */
-export function extractOgm(text: string | null | undefined): string | null {
-  if (!text) return null;
-  const formatted = text.match(FORMATTED_OGM);
-  if (formatted) {
-    const ogm = normalizeOgm(formatted.slice(1, 4).join(''));
-    if (ogm) return ogm;
-  }
-  for (const match of text.matchAll(BARE_OGM)) {
-    const ogm = normalizeOgm(match[0]);
-    if (ogm) return ogm;
-  }
-  return null;
-}
-```
-
-Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm/ogm.spec`
-Expected: PASS, 13 tests.
-
-- [ ] **Step 4: Write the failing Ponto bug test**
-
-This test proves the existing bug before any fix: Ponto strips the OGM to 12 digits and queries `ogmCode = '090933755493'`, but registrations store `+++090/9337/55493+++`, so a structured Ponto payment never matches.
-
-In `apps/api/src/modules/ponto/ponto.service.spec.ts`:
-
-1. Add `import { OgmService } from '../ogm/ogm.service';` below the `EmailService` import.
-2. In `mockPrisma.registration`, add `findMany: jest.fn(),` next to `findFirst`.
-3. In the `providers` array of `beforeEach`, add `OgmService,` after `PontoService,` (the real service, on top of `mockPrisma`).
-4. Inside `describe('processTransaction', () => {`, directly after the `unstructuredTxn` constant, add:
-
-```ts
-    afterEach(() => {
-      mockPrisma.registration.findFirst.mockReset();
-      mockPrisma.registration.findMany.mockReset();
-    });
-
-    it('matches a digit-only structured OGM against the formatted code stored on the registration', async () => {
-      const stored = {
-        id: 'reg-1',
-        coopId: 'coop-1',
-        shareholderId: 'sh-1',
-        status: 'PENDING_PAYMENT',
-        totalAmount: 250,
-        isGift: false,
-        ogmCode: '+++090/9337/55493+++',
-        payments: [],
-        shareholder: { id: 'sh-1', firstName: 'Jan', lastName: 'Peeters', email: 'jan@example.com' },
-      };
-      // The mock behaves like the database: only the stored (formatted) code matches.
-      const isStored = (where: any) =>
-        where?.ogmCode === stored.ogmCode ||
-        (Array.isArray(where?.ogmCode?.in) && where.ogmCode.in.includes(stored.ogmCode));
-      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
-      mockPrisma.registration.findFirst.mockImplementation(async ({ where }: any) => (isStored(where) ? stored : null));
-      mockPrisma.registration.findMany.mockImplementation(async ({ where }: any) => (isStored(where) ? [stored] : []));
-      mockPrisma.bankTransaction.create.mockResolvedValue({ id: 'bt-9' });
-      mockPaymentsService.addPayment.mockResolvedValue({ id: 'pay-9' });
-
-      await (service as any).processTransaction(
-        { ...structuredTxn, remittanceInformation: '090933755493' },
-        'coop-1',
-        true,
-      );
-
-      expect(mockPrisma.bankTransaction.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ matchStatus: 'AUTO_MATCHED', ogmCode: '+++090/9337/55493+++' }),
-      });
-      expect(mockPaymentsService.addPayment).toHaveBeenCalled();
-    });
-```
-
-- [ ] **Step 5: Run it and watch it fail on the current code**
-
-Run: `pnpm --filter @opencoop/api exec jest src/modules/ponto/ponto.service.spec -t "digit-only structured OGM"`
-Expected: FAIL — `bankTransaction.create` was called with `matchStatus: 'UNMATCHED'` and `ogmCode: '090933755493'`. That is the bug.
-
-- [ ] **Step 6: Write the failing CSV and manual-match tests**
-
-In `apps/api/src/modules/bank-import/bank-import.service.spec.ts`:
-
-1. Add imports: `import { NotFoundException } from '@nestjs/common';` and `import { OgmService } from '../ogm/ogm.service';`.
-2. In the `providers` array, add `OgmService,` after `BankImportService,`.
-3. In the test `'issues ONE batched findMany for all OGMs (no per-row N+1 lookup)'`, add as the last line: `expect(arg.where.coopId).toBe(COOP_ID);`.
-4. Replace the whole test `'recomputes status after a manual partial-payment match commits'` with:
-
-```ts
-  it('recomputes status after a manual partial-payment match commits', async () => {
-    prisma.bankTransaction.findFirst = jest.fn().mockResolvedValue({
-      id: 'btx-1',
-      coopId: COOP_ID,
-      matchStatus: 'UNMATCHED',
-      amount: 60,
-      date: new Date('2026-01-15'),
-    });
-    prisma.registration.findFirst = jest.fn().mockResolvedValue({
-      id: 'reg-1',
-      coopId: COOP_ID,
-      shareholderId: 'sh-1',
-      status: 'PENDING_PAYMENT',
-      totalAmount: 100,
-      isGift: false,
-      ogmCode: OGM,
-    });
-    prisma.payment.findMany.mockResolvedValue([{ amount: 60 }]);
-
-    await service.manualMatch(COOP_ID, 'btx-1', { kind: 'registration', id: 'reg-1' }, IMPORTER_ID);
-
-    expect(prisma.registration.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'reg-1', coopId: COOP_ID } }),
-    );
-    expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh-1');
-  });
-
-  it('refuses to match a bank transaction that belongs to another coop', async () => {
-    prisma.bankTransaction.findFirst = jest.fn(async ({ where }: any) =>
-      where.coopId === 'coop-other'
-        ? { id: 'btx-1', coopId: 'coop-other', matchStatus: 'UNMATCHED', amount: 60, date: new Date() }
-        : null,
-    );
-    prisma.registration.findFirst = jest.fn().mockResolvedValue({
-      id: 'reg-1', coopId: COOP_ID, shareholderId: 'sh-1', status: 'PENDING_PAYMENT', totalAmount: 100, isGift: false, ogmCode: OGM,
-    });
-
-    await expect(
-      service.manualMatch(COOP_ID, 'btx-1', { kind: 'registration', id: 'reg-1' }, IMPORTER_ID),
-    ).rejects.toThrow(NotFoundException);
-    expect(prisma.payment.create).not.toHaveBeenCalled();
-  });
-
-  it('matches a bare 12-digit OGM in the CSV reference', async () => {
-    const digits = OGM.replace(/\D/g, '');
-    prisma.registration.findMany.mockResolvedValue([
-      { id: 'reg-1', coopId: COOP_ID, shareholderId: 'sh-1', status: 'PENDING_PAYMENT', totalAmount: 100, isGift: false, ogmCode: OGM },
-    ]);
-    prisma.payment.findMany.mockResolvedValue([{ amount: 100 }]);
-
-    await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-01-15', '100', 'Jan', `mededeling ${digits}`), 'generic');
-
-    expect(prisma.registration.findMany.mock.calls[0][0].where.ogmCode.in).toEqual([OGM]);
-    expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ matchStatus: 'AUTO_MATCHED', ogmCode: OGM }) }),
-    );
-  });
-```
-
-Run: `pnpm --filter @opencoop/api exec jest src/modules/bank-import`
-Expected: FAIL. ts-jest reports `TS2345`/`TS2554` on the new `manualMatch(COOP_ID, 'btx-1', {...}, IMPORTER_ID)` calls (the current signature takes 3 arguments), and once that compiles the bare-OGM test fails because the current regex only finds `+++…+++` codes.
-
-- [ ] **Step 7: Write the failing resolver tests**
+- [ ] **Step 1: Write the failing resolver tests**
 
 Append to `apps/api/src/modules/ogm/ogm.service.spec.ts` (add `import { Prisma } from '@opencoop/database';` to the imports):
 
@@ -1413,11 +1209,10 @@ describe('OgmService resolvers', () => {
   const registrationRow = {
     id: 'reg-1',
     coopId: 'coop-1',
-    shareholderId: 'sh-1',
     status: 'PENDING_PAYMENT',
     totalAmount: new Prisma.Decimal('250.00'),
-    isGift: false,
     ogmCode: OGM,
+    payments: [],
   };
   let prisma: any;
   let service: OgmService;
@@ -1440,16 +1235,7 @@ describe('OgmService resolvers', () => {
       coopId: 'coop-1',
       ogmCode: { in: [OGM] },
     });
-    expect(targets.get(OGM)).toEqual({
-      kind: 'registration',
-      id: 'reg-1',
-      coopId: 'coop-1',
-      shareholderId: 'sh-1',
-      status: 'PENDING_PAYMENT',
-      totalAmount: 250,
-      isGift: false,
-      ogmCode: OGM,
-    });
+    expect(targets.get(OGM)).toEqual({ kind: 'registration', ...registrationRow });
   });
 
   it('does not query when no input is a valid OGM', async () => {
@@ -1459,142 +1245,92 @@ describe('OgmService resolvers', () => {
     expect(prisma.registration.findMany).not.toHaveBeenCalled();
   });
 
-  it('resolveOgmTarget returns the single target for a digit-only OGM', async () => {
-    await expect(service.resolveOgmTarget('coop-1', '090933755493')).resolves.toMatchObject({ id: 'reg-1' });
+  it('resolveOgmTarget normalises the OGM and looks it up within the coop', async () => {
+    await expect(service.resolveOgmTarget('coop-1', '090933755493')).resolves.toMatchObject({
+      kind: 'registration',
+      id: 'reg-1',
+    });
+
+    expect(prisma.registration.findFirst.mock.calls[0][0].where).toEqual({ coopId: 'coop-1', ogmCode: OGM });
   });
 
   it('resolveOgmTarget returns null for an invalid OGM without querying', async () => {
     await expect(service.resolveOgmTarget('coop-1', '123')).resolves.toBeNull();
-    expect(prisma.registration.findMany).not.toHaveBeenCalled();
+    expect(prisma.registration.findFirst).not.toHaveBeenCalled();
   });
 
-  it('findTarget scopes the lookup to the coop', async () => {
-    await service.findTarget('coop-1', { kind: 'registration', id: 'reg-1' });
-
-    expect(prisma.registration.findFirst.mock.calls[0][0].where).toEqual({ id: 'reg-1', coopId: 'coop-1' });
-  });
-
-  it('findTarget returns null for a registration outside the coop', async () => {
+  it('resolveOgmTarget returns null when no registration has the OGM', async () => {
     prisma.registration.findFirst.mockResolvedValue(null);
 
-    await expect(service.findTarget('coop-1', { kind: 'registration', id: 'reg-x' })).resolves.toBeNull();
+    await expect(service.resolveOgmTarget('coop-1', OGM)).resolves.toBeNull();
   });
 });
 ```
 
+`090933755493` is a valid OGM (`extractOgmCode('090933755493')` returns `+++090/9337/55493+++`; checked in preflight).
+
 Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm/ogm.service.spec`
 Expected: FAIL — `service.resolveOgmTargets is not a function`.
 
-- [ ] **Step 8: Implement the payment-target types and the resolvers**
+- [ ] **Step 2: Implement the target type and the resolvers**
 
 Create `apps/api/src/modules/ogm/payment-target.ts`:
 
 ```ts
-import { BadRequestException } from '@nestjs/common';
-import type { RegistrationStatus } from '@opencoop/database';
-
-/** Something a bank payment can be booked on. Task 5 adds charge cards. */
+/**
+ * Something a bank payment can be booked on, in the shape BankMatchingService
+ * works with. Task 5 adds charge cards.
+ */
 export interface RegistrationTarget {
   kind: 'registration';
   id: string;
   coopId: string;
-  shareholderId: string;
-  status: RegistrationStatus;
-  totalAmount: number;
-  isGift: boolean;
-  ogmCode: string | null;
+  status: string;
+  totalAmount?: unknown;
+  ogmCode?: string | null;
+  payments?: { id: string; amount: unknown; bankDate: Date; bankTransactionId: string | null }[];
 }
 
 export type PaymentTarget = RegistrationTarget;
-
-export type PaymentTargetRef = { kind: 'registration'; id: string };
-
-/** True when CSV import or Ponto may book a payment on this target without an admin. */
-export function acceptsAutoMatch(target: PaymentTarget): boolean {
-  return target.status === 'PENDING_PAYMENT' || target.status === 'ACTIVE';
-}
-
-export function toPaymentTargetRef(target: PaymentTarget): PaymentTargetRef {
-  return { kind: target.kind, id: target.id };
-}
-
-/** Builds a target reference from a request body ({ registrationId }). */
-export function parsePaymentTargetRef(body: { registrationId?: string }): PaymentTargetRef {
-  if (!body.registrationId) {
-    throw new BadRequestException('registrationId is required');
-  }
-  return { kind: 'registration', id: body.registrationId };
-}
 ```
 
-Replace `apps/api/src/modules/ogm/ogm.service.ts` with:
+In `apps/api/src/modules/ogm/ogm.service.ts`:
+
+1. Change the shared import to `import { extractOgmCode, generateOgmCode } from '@opencoop/shared';` and add `import { PaymentTarget, RegistrationTarget } from './payment-target';`.
+2. Add above `@Injectable()`:
 
 ```ts
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@opencoop/database';
-import { generateOgmCode } from '@opencoop/shared';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MAX_OGM_SEQUENCE, normalizeOgm } from './ogm';
-import { PaymentTarget, PaymentTargetRef, RegistrationTarget } from './payment-target';
-
 const REGISTRATION_TARGET_SELECT = {
   id: true,
   coopId: true,
-  shareholderId: true,
   status: true,
   totalAmount: true,
-  isGift: true,
   ogmCode: true,
+  payments: { select: { id: true, amount: true, bankDate: true, bankTransactionId: true } },
 } satisfies Prisma.RegistrationSelect;
 
 type RegistrationTargetRow = Prisma.RegistrationGetPayload<{ select: typeof REGISTRATION_TARGET_SELECT }>;
 
 function toRegistrationTarget(row: RegistrationTargetRow): RegistrationTarget {
-  return {
-    kind: 'registration',
-    id: row.id,
-    coopId: row.coopId,
-    shareholderId: row.shareholderId,
-    status: row.status,
-    totalAmount: Number(row.totalAmount),
-    isGift: row.isGift,
-    ogmCode: row.ogmCode,
-  };
+  return { kind: 'registration', ...row };
 }
+```
 
-@Injectable()
-export class OgmService {
-  constructor(private readonly prisma: PrismaService) {}
+3. Add these methods after `nextOgmCode`:
 
+```ts
   /**
-   * Hands out the next OGM of a coop. One atomic UPDATE ... RETURNING on the
-   * coop row, so concurrent callers never get the same sequence. Registrations
-   * and charge cards share this counter, so their codes never collide.
-   */
-  async nextOgmCode(db: Prisma.TransactionClient, coopId: string): Promise<string> {
-    const rows = await db.$queryRaw<{ ogmPrefix: string; ogmSequence: number }[]>`
-      UPDATE "coops" SET "ogmSequence" = "ogmSequence" + 1
-      WHERE "id" = ${coopId}
-      RETURNING "ogmPrefix", "ogmSequence"`;
-    if (rows.length === 0) {
-      throw new NotFoundException('Cooperative not found');
-    }
-    const { ogmPrefix, ogmSequence } = rows[0];
-    if (ogmSequence > MAX_OGM_SEQUENCE) {
-      throw new Error(`OGM sequence exhausted for coop ${coopId}`);
-    }
-    return generateOgmCode(ogmPrefix, ogmSequence);
-  }
-
-  /**
-   * Resolves many OGMs in one query per target table. Inputs may be formatted
-   * or digit-only; invalid ones are dropped. Keys are the normalised codes.
+   * Resolves many OGMs in one query per target table (the CSV import batch).
+   * Inputs may be formatted or digit-only; invalid ones are dropped. Keys are
+   * the formatted codes, as stored.
    */
   async resolveOgmTargets(
     coopId: string,
     ogms: Array<string | null | undefined>,
   ): Promise<Map<string, PaymentTarget>> {
-    const codes = [...new Set(ogms.map((ogm) => normalizeOgm(ogm)).filter((ogm): ogm is string => ogm !== null))];
+    const codes = [
+      ...new Set(ogms.map((ogm) => extractOgmCode(ogm)).filter((ogm): ogm is string => ogm !== null)),
+    ];
     const targets = new Map<string, PaymentTarget>();
     if (codes.length === 0) return targets;
 
@@ -1608,672 +1344,153 @@ export class OgmService {
     return targets;
   }
 
+  /** Resolves one OGM (Ponto, rematch), with the same normalisation. */
   async resolveOgmTarget(coopId: string, ogm: string | null | undefined): Promise<PaymentTarget | null> {
-    const code = normalizeOgm(ogm);
-    if (!code) return null;
-    return (await this.resolveOgmTargets(coopId, [code])).get(code) ?? null;
-  }
-
-  /** Looks a target up by id, scoped to the coop (manual add, manual match). */
-  async findTarget(coopId: string, ref: PaymentTargetRef): Promise<PaymentTarget | null> {
-    const row = await this.prisma.registration.findFirst({
-      where: { id: ref.id, coopId },
+    const ogmCode = extractOgmCode(ogm);
+    if (!ogmCode) return null;
+    const registration = await this.prisma.registration.findFirst({
+      where: { coopId, ogmCode },
       select: REGISTRATION_TARGET_SELECT,
     });
-    return row ? toRegistrationTarget(row) : null;
+    return registration ? toRegistrationTarget(registration) : null;
   }
-}
 ```
 
 Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm`
 Expected: PASS, all OGM specs.
 
-- [ ] **Step 9: Rewire CSV import and manual match**
+- [ ] **Step 3: Write the failing matcher and CSV tests**
 
-Create `apps/api/src/modules/bank-import/dto/match-bank-transaction.dto.ts`:
+In `apps/api/src/modules/bank-import/bank-matching.service.spec.ts`:
+
+1. Add `import { OgmService } from '../ogm/ogm.service';`.
+2. Below `let paymentsService: any;` add `let ogmService: OgmService;`.
+3. In the `providers` array, add `OgmService,` after `BankMatchingService,` (the real service, on top of the prisma mock).
+4. Below `service = moduleRef.get(BankMatchingService);` add `ogmService = moduleRef.get(OgmService);`.
+5. Append before the final `});`:
 
 ```ts
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+  it('looks the OGM up through OgmService, within the coop', async () => {
+    const resolve = jest.spyOn(ogmService, 'resolveOgmTarget');
+    prisma.registration.findFirst.mockResolvedValue(null);
 
-export class MatchBankTransactionDto {
-  @ApiProperty({ required: false, description: 'Registration to book the payment on' })
-  @IsOptional()
-  @IsString()
-  registrationId?: string;
-}
+    const result = await service.matchTransaction('coop-1', bankTransaction);
+
+    expect(result.status).toBe('UNMATCHED');
+    expect(resolve).toHaveBeenCalledWith('coop-1', OGM);
+  });
 ```
+
+In `apps/api/src/modules/bank-import/bank-import.service.spec.ts`:
+
+1. Add `import { OgmService } from '../ogm/ogm.service';`.
+2. Below `let bankMatchingService: any;` add `let ogmService: OgmService;`.
+3. In the `providers` array, add `OgmService,` after `BankImportService,`.
+4. Below `service = moduleRef.get(BankImportService);` add `ogmService = moduleRef.get(OgmService);`.
+5. Append before the final `});`:
+
+```ts
+  it('resolves every OGM of the file in one OgmService call, scoped to the coop', async () => {
+    const resolve = jest.spyOn(ogmService, 'resolveOgmTargets');
+
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'test.csv',
+      csvRows([
+        ['2026-01-15', '100', 'A', OGM],
+        ['2026-01-16', '50', 'B', `ref ${OGM}`],
+        ['2026-01-17', '-20', 'C', OGM],
+      ]),
+      'generic',
+    );
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).toHaveBeenCalledWith(COOP_ID, [OGM]);
+  });
+```
+
+In `apps/api/src/modules/bank-import/bank-reconciliation.service.spec.ts`, add `import { OgmService } from '../ogm/ogm.service';` and add `OgmService,` to the `providers` array after `BankMatchingService,`.
+
+Run: `pnpm --filter @opencoop/api exec jest src/modules/bank-import`
+Expected: FAIL in exactly the two new tests: `resolveOgmTarget` and `resolveOgmTargets` were never called, because the matcher and the CSV import still query `prisma.registration` themselves.
+
+- [ ] **Step 4: Route the matcher through the resolver**
+
+In `apps/api/src/modules/bank-import/bank-matching.service.ts`:
+
+1. Add `import { OgmService } from '../ogm/ogm.service';` and `import { PaymentTarget } from '../ogm/payment-target';`.
+2. Delete the `export interface BankMatchingRegistration { ... }` block. `matchTransaction` was its only user (`grep -rn BankMatchingRegistration apps/api/src` finds nothing else).
+3. Add `private readonly ogm: OgmService,` as the last constructor parameter.
+4. In `matchTransaction`, change the last parameter `registrationOverride?: BankMatchingRegistration,` to `targetOverride?: PaymentTarget,`.
+5. Replace:
+
+```ts
+    const registration = registrationOverride || await this.prisma.registration.findFirst({
+      where: { coopId, ogmCode },
+      select: {
+        id: true,
+        coopId: true,
+        status: true,
+        totalAmount: true,
+        payments: {
+          select: { id: true, amount: true, bankDate: true, bankTransactionId: true },
+        },
+      },
+    });
+    if (!registration) {
+      return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+    }
+```
+
+with:
+
+```ts
+    // One resolver for every OGM. The CSV import passes the target it batch-loaded
+    // (targetOverride) and reuses that object for later rows of the same file, so the
+    // updates to `cached` below keep it current. A freshly resolved target is not cached.
+    const target = targetOverride ?? (await this.ogm.resolveOgmTarget(coopId, ogmCode));
+    if (!target) {
+      return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+    }
+    const registration = target;
+    const cached = targetOverride ? registration : undefined;
+```
+
+6. Rename every remaining `registrationOverride` in the file to `cached`:
+
+```bash
+sed -i '' 's/registrationOverride/cached/g' apps/api/src/modules/bank-import/bank-matching.service.ts
+grep -c registrationOverride apps/api/src/modules/bank-import/bank-matching.service.ts
+```
+
+Expected: `0`. The renamed lines keep their exact behaviour: they only ran when the caller passed an override, and `cached` is set only then.
+
+- [ ] **Step 5: Route the CSV batch through the resolver**
 
 In `apps/api/src/modules/bank-import/bank-import.service.ts`:
 
-1. Add imports:
+1. Add `import { OgmService } from '../ogm/ogm.service';`.
+2. Add `private ogm: OgmService,` as the last constructor parameter (after `private bankMatchingService: BankMatchingService,`).
+3. Replace the block from `const registrationMap = new Map<string, any>();` down to and including the closing `}` of its `if (uniqueOgms.length > 0) { ... }` with:
 
 ```ts
-import { OgmService } from '../ogm/ogm.service';
-import { extractOgm } from '../ogm/ogm';
-import { PaymentTargetRef, acceptsAutoMatch } from '../ogm/payment-target';
+    // One batched lookup for every OGM in the file (no per-row N+1).
+    const targets = await this.ogm.resolveOgmTargets(coopId, uniqueOgms);
 ```
 
-2. Add `private ogm: OgmService,` as the last constructor parameter.
-3. Replace everything from `let matchedCount = 0;` down to and including the closing `}` of the `for (const row of rows) { ... }` loop with:
+4. In the `matchTransaction` call inside the row loop, change `ogmCode ? registrationMap.get(ogmCode) : undefined` to `ogmCode ? targets.get(ogmCode) : undefined`.
 
-```ts
-    let matchedCount = 0;
-    let unmatchedCount = 0;
-    const completedGiftRegistrationIds: string[] = [];
-    const shareholderIdsToRecompute: string[] = [];
+In `apps/api/src/modules/bank-import/bank-import.module.ts`, add `import { OgmModule } from '../ogm/ogm.module';` and change `imports` to `[RegistrationsModule, ShareholderStatusModule, PaymentsModule, OgmModule]`. `PontoModule` imports `BankImportModule`, so Ponto gets the resolver through `BankMatchingService` with no change of its own.
 
-    // One batched lookup for every OGM in the file (no per-row N+1). The
-    // resolver normalises formatted and digit-only codes and scopes to the coop.
-    const targets = await this.ogm.resolveOgmTargets(
-      coopId,
-      rows.filter((r) => r.amount > 0).map((r) => extractOgm(r.reference)),
-    );
+In `apps/api/src/modules/payments/payments.service.ts`, delete the method `findByOgmCode` (lines 24-39). It has no callers (`grep -rn findByOgmCode apps/api/src` finds only the definition) and was one more registration-only OGM lookup.
 
-    for (const row of rows) {
-      if (row.amount <= 0) {
-        await this.prisma.bankTransaction.create({
-          data: {
-            coopId,
-            bankImportId: bankImport.id,
-            date: row.date,
-            amount: row.amount,
-            counterparty: row.counterparty || null,
-            ogmCode: null,
-            referenceText: row.reference || null,
-            matchStatus: 'UNMATCHED',
-          },
-        });
-        unmatchedCount++;
-        continue;
-      }
+- [ ] **Step 6: Run every touched suite and watch it pass**
 
-      const ogmCode = extractOgm(row.reference);
-      let matchStatus: 'UNMATCHED' | 'AUTO_MATCHED' = 'UNMATCHED';
+Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm src/modules/bank-import src/modules/ponto src/modules/payments src/modules/mcp`
+Expected: PASS, including the two new tests; no existing test changed.
 
-      // The cached target is kept in sync with each match below, so a SECOND
-      // row for the same OGM sees the updated status, as a fresh read would.
-      const target = ogmCode ? targets.get(ogmCode) : undefined;
-
-      if (target && target.coopId === coopId && acceptsAutoMatch(target)) {
-        matchStatus = 'AUTO_MATCHED';
-        matchedCount++;
-
-        await this.prisma.$transaction(async (tx) => {
-          const bankTx = await tx.bankTransaction.create({
-            data: {
-              coopId,
-              bankImportId: bankImport.id,
-              date: row.date,
-              amount: row.amount,
-              counterparty: row.counterparty || null,
-              ogmCode,
-              referenceText: row.reference || null,
-              matchStatus,
-            },
-          });
-
-          await tx.payment.create({
-            data: {
-              registrationId: target.id,
-              coopId,
-              amount: row.amount,
-              bankDate: row.date,
-              bankTransactionId: bankTx.id,
-              matchedByUserId: importedById,
-              matchedAt: new Date(),
-            },
-          });
-
-          const allPayments = await tx.payment.findMany({
-            where: { registrationId: target.id },
-            select: { amount: true },
-          });
-          const totalPaid = computeTotalPaid(allPayments);
-
-          if (totalPaid >= target.totalAmount) {
-            await tx.registration.update({
-              where: { id: target.id },
-              data: { status: 'COMPLETED', processedAt: new Date() },
-            });
-            target.status = 'COMPLETED';
-            shareholderIdsToRecompute.push(target.shareholderId);
-            if (target.isGift) {
-              completedGiftRegistrationIds.push(target.id);
-            }
-          } else if (target.status === 'PENDING_PAYMENT') {
-            await tx.registration.update({
-              where: { id: target.id },
-              data: { status: 'ACTIVE' },
-            });
-            target.status = 'ACTIVE';
-            shareholderIdsToRecompute.push(target.shareholderId);
-          }
-        });
-
-        continue;
-      }
-
-      unmatchedCount++;
-      await this.prisma.bankTransaction.create({
-        data: {
-          coopId,
-          bankImportId: bankImport.id,
-          date: row.date,
-          amount: row.amount,
-          counterparty: row.counterparty || null,
-          ogmCode,
-          referenceText: row.reference || null,
-          matchStatus,
-        },
-      });
-    }
-```
-
-4. Replace the whole `manualMatch` method with:
-
-```ts
-  async manualMatch(coopId: string, bankTransactionId: string, ref: PaymentTargetRef, userId: string) {
-    // Both lookups are scoped to the caller's coop: before this change a coop
-    // admin could book another coop's bank transaction on any registration.
-    const bankTx = await this.prisma.bankTransaction.findFirst({
-      where: { id: bankTransactionId, coopId },
-    });
-    if (!bankTx) {
-      throw new NotFoundException('Bank transaction not found');
-    }
-    if (bankTx.matchStatus !== 'UNMATCHED') {
-      throw new BadRequestException('Bank transaction is already matched');
-    }
-
-    const target = await this.ogm.findTarget(coopId, ref);
-    if (!target) {
-      throw new NotFoundException('Registration not found');
-    }
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      await tx.payment.create({
-        data: {
-          registrationId: target.id,
-          coopId,
-          amount: Number(bankTx.amount),
-          bankDate: bankTx.date,
-          bankTransactionId,
-          matchedByUserId: userId,
-          matchedAt: new Date(),
-        },
-      });
-
-      await tx.bankTransaction.update({
-        where: { id: bankTransactionId },
-        data: { matchStatus: 'MANUAL_MATCHED' },
-      });
-
-      let isCompleted = false;
-      let isActive = false;
-      if (target.status === 'PENDING_PAYMENT' || target.status === 'ACTIVE') {
-        const allPayments = await tx.payment.findMany({
-          where: { registrationId: target.id },
-          select: { amount: true },
-        });
-        const totalPaid = computeTotalPaid(allPayments);
-
-        if (totalPaid >= target.totalAmount) {
-          await tx.registration.update({
-            where: { id: target.id },
-            data: { status: 'COMPLETED', processedAt: new Date() },
-          });
-          isCompleted = true;
-        } else if (target.status === 'PENDING_PAYMENT') {
-          await tx.registration.update({
-            where: { id: target.id },
-            data: { status: 'ACTIVE' },
-          });
-          isActive = true;
-        }
-      }
-
-      return { isCompleted, isActive };
-    });
-
-    if (result.isCompleted) {
-      await this.registrationsService.onRegistrationCompleted(target.id);
-    } else if (result.isActive) {
-      await this.shareholderStatus.recompute(target.shareholderId);
-    }
-
-    return { success: true };
-  }
-```
-
-In `apps/api/src/modules/bank-import/bank-import.module.ts`, add `import { OgmModule } from '../ogm/ogm.module';` and change the imports to `[RegistrationsModule, ShareholderStatusModule, OgmModule]`.
-
-- [ ] **Step 10: Rewire Ponto**
-
-In `apps/api/src/modules/ponto/ponto.service.ts`:
-
-1. Add imports:
-
-```ts
-import { OgmService } from '../ogm/ogm.service';
-import { normalizeOgm } from '../ogm/ogm';
-import { PaymentTarget, acceptsAutoMatch, toPaymentTargetRef } from '../ogm/payment-target';
-```
-
-2. Add `private readonly ogm: OgmService,` as the last constructor parameter.
-3. Replace the methods `processTransaction` and `createPaymentFromTransaction` (from the doc comment `* Process a single bank transaction: dedup, extract OGM, match to registration,` down to the end of `createPaymentFromTransaction`) with:
-
-```ts
-   * Process a single bank transaction: dedup, extract the OGM, resolve it to a
-   * payment target, create the BankTransaction, and optionally book a Payment.
-   */
-  private async processTransaction(
-    txn: PontoTransaction,
-    coopId: string,
-    autoMatch: boolean,
-  ): Promise<void> {
-    // Deduplication: skip if we've already seen this Ponto transaction
-    const existing = await this.prisma.bankTransaction.findUnique({
-      where: { pontoTransactionId: txn.id },
-    });
-    if (existing) {
-      this.logger.debug(`Skipping duplicate Ponto transaction ${txn.id}`);
-      return;
-    }
-
-    // Ponto strips the formatting from structured remittance information
-    // ("090933755493"). The stored codes are formatted (+++090/9337/55493+++),
-    // so normalise before the lookup and before storing it.
-    const ogmCode =
-      txn.remittanceInformationType === 'structured' ? normalizeOgm(txn.remittanceInformation) : null;
-    const target = ogmCode ? await this.ogm.resolveOgmTarget(coopId, ogmCode) : null;
-    const matched = target !== null && acceptsAutoMatch(target);
-    const bankDate = new Date(txn.executionDate || txn.valueDate);
-
-    const bankTransaction = await this.prisma.bankTransaction.create({
-      data: {
-        coopId,
-        bankImportId: null,
-        date: bankDate,
-        amount: txn.amount,
-        counterparty: txn.counterpartName || null,
-        ogmCode,
-        referenceText: txn.remittanceInformation || null,
-        pontoTransactionId: txn.id,
-        matchStatus: matched ? 'AUTO_MATCHED' : 'UNMATCHED',
-      },
-    });
-
-    if (matched && autoMatch) {
-      await this.createPaymentFromTransaction(bankTransaction, target, coopId, txn.amount, bankDate);
-    } else if (matched) {
-      this.logger.log(
-        `Transaction ${txn.id} matched ${target.kind} ${target.id} — ` +
-          `pending admin confirmation (autoMatch disabled)`,
-      );
-    } else {
-      this.logger.log(`Transaction ${txn.id} unmatched — no OGM or no open payment target found`);
-    }
-  }
-
-  /**
-   * Book a Payment for a matched bank transaction.
-   */
-  private async createPaymentFromTransaction(
-    bankTransaction: { id: string },
-    target: PaymentTarget,
-    coopId: string,
-    amount: number,
-    bankDate: Date,
-  ): Promise<void> {
-    try {
-      await this.paymentsService.addPayment({
-        target: toPaymentTargetRef(target),
-        coopId,
-        amount,
-        bankDate,
-        bankTransactionId: bankTransaction.id,
-      });
-
-      this.logger.log(`Payment created for ${target.kind} ${target.id} from Ponto transaction`);
-    } catch (err) {
-      this.logger.error(
-        `Failed to create payment for ${target.kind} ${target.id}: ${(err as Error).message}`,
-      );
-    }
-  }
-```
-
-The doc comment's opening `/**` line above `* Process a single bank transaction` stays in place.
-
-In `apps/api/src/modules/ponto/ponto.module.ts`, add `import { OgmModule } from '../ogm/ogm.module';` and add `OgmModule,` to `imports` after `EmailModule,`.
-
-- [ ] **Step 11: Rewire `addPayment` and the admin endpoints**
-
-Replace `apps/api/src/modules/payments/payments.service.ts` with:
-
-```ts
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { RegistrationsService } from '../registrations/registrations.service';
-import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
-import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
-import { OgmService } from '../ogm/ogm.service';
-import { PaymentTargetRef, RegistrationTarget } from '../ogm/payment-target';
-import { computeTotalPaid } from '@opencoop/shared';
-
-export interface AddPaymentInput {
-  target: PaymentTargetRef;
-  coopId: string;
-  amount: number;
-  bankDate: Date;
-  bankTransactionId?: string;
-  matchedByUserId?: string;
-}
-
-@Injectable()
-export class PaymentsService {
-  constructor(
-    private prisma: PrismaService,
-    private registrationsService: RegistrationsService,
-    private adminNotificationsService: AdminNotificationsService,
-    private shareholderStatus: ShareholderStatusService,
-    private ogm: OgmService,
-  ) {}
-
-  async findByRegistration(registrationId: string) {
-    return this.prisma.payment.findMany({
-      where: { registrationId },
-      orderBy: { bankDate: 'asc' },
-    });
-  }
-
-  async addPayment(data: AddPaymentInput) {
-    // Scoped to the caller's coop: a foreign target is "not found" (C4).
-    const target = await this.ogm.findTarget(data.coopId, data.target);
-    if (!target) {
-      throw new NotFoundException('Payment target not found');
-    }
-    return this.addRegistrationPayment(target, data);
-  }
-
-  private async addRegistrationPayment(target: RegistrationTarget, data: AddPaymentInput) {
-    // I6: Only allow payments on PENDING_PAYMENT or ACTIVE registrations
-    if (!['PENDING_PAYMENT', 'ACTIVE'].includes(target.status)) {
-      throw new BadRequestException(
-        `Cannot add payment to registration with status ${target.status}`,
-      );
-    }
-
-    const registration = await this.prisma.registration.findUnique({
-      where: { id: target.id },
-      include: { payments: true },
-    });
-    if (!registration) {
-      throw new NotFoundException('Registration not found');
-    }
-
-    const payment = await this.prisma.payment.create({
-      data: {
-        registrationId: target.id,
-        coopId: data.coopId,
-        amount: data.amount,
-        bankDate: data.bankDate,
-        bankTransactionId: data.bankTransactionId || null,
-        matchedByUserId: data.matchedByUserId || null,
-        matchedAt: new Date(),
-      },
-    });
-
-    // Notify coop admins of payment received
-    const reg = await this.prisma.registration.findUnique({
-      where: { id: target.id },
-      include: { shareholder: { select: { firstName: true, lastName: true, companyName: true } } },
-    });
-    if (reg) {
-      const sh = reg.shareholder;
-      const shareholderName = sh.companyName || [sh.firstName, sh.lastName].filter(Boolean).join(' ');
-      this.adminNotificationsService.notifyAdminsOnEvent(data.coopId, 'payment_received', {
-        shareholderName,
-        paymentAmount: data.amount,
-      }).catch(() => {});
-    }
-
-    // Update registration status based on cumulative payments
-    const totalPaid = computeTotalPaid(registration.payments) + data.amount;
-
-    if (totalPaid >= target.totalAmount) {
-      await this.prisma.registration.update({
-        where: { id: target.id },
-        data: { status: 'COMPLETED' },
-      });
-
-      // Generate gift code if applicable
-      await this.registrationsService.onRegistrationCompleted(target.id);
-    } else if (target.status === 'PENDING_PAYMENT') {
-      // First payment received — mark as ACTIVE (payments in progress)
-      await this.prisma.registration.update({
-        where: { id: target.id },
-        data: { status: 'ACTIVE' },
-      });
-      await this.shareholderStatus.recompute(target.shareholderId);
-    }
-
-    return payment;
-  }
-
-  async findPendingRegistrationsByCoopId(coopId: string) {
-    return this.prisma.registration.findMany({
-      where: {
-        coopId,
-        status: { in: ['PENDING_PAYMENT', 'ACTIVE'] },
-        type: 'BUY',
-      },
-      include: {
-        shareholder: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            companyName: true,
-          },
-        },
-        shareClass: true,
-        payments: { orderBy: { bankDate: 'asc' } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-}
-```
-
-The removed `findByOgmCode` had no callers (`grep -rn findByOgmCode apps/api/src` finds only the definition) and was a fifth registration-only OGM lookup.
-
-In `apps/api/src/modules/payments/payments.module.ts`, add `import { OgmModule } from '../ogm/ogm.module';` and change imports to `[RegistrationsModule, AdminNotificationsModule, ShareholderStatusModule, OgmModule]`.
-
-Replace `apps/api/src/modules/payments/payments.service.spec.ts` with:
-
-```ts
-// documents.service (pulled in transitively via registrations.service) imports
-// @react-pdf/renderer (ESM-only). Mock the whole module before any imports trigger the chain.
-jest.mock('../documents/documents.service', () => ({
-  DocumentsService: class DocumentsServiceMock {},
-}));
-
-import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
-import { PaymentsService } from './payments.service';
-import { PrismaService } from '../../prisma/prisma.service';
-import { RegistrationsService } from '../registrations/registrations.service';
-import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
-import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
-import { OgmService } from '../ogm/ogm.service';
-
-const registrationTarget = {
-  kind: 'registration' as const,
-  id: 'reg-A',
-  coopId: 'coop-A',
-  shareholderId: 'sh-A',
-  status: 'PENDING_PAYMENT' as const,
-  totalAmount: 100,
-  isGift: false,
-  ogmCode: null,
-};
-
-describe('PaymentsService.addPayment', () => {
-  let service: PaymentsService;
-  let prisma: any;
-  let registrationsService: { onRegistrationCompleted: jest.Mock };
-  let shareholderStatus: { recompute: jest.Mock };
-  let ogm: { findTarget: jest.Mock };
-
-  beforeEach(async () => {
-    prisma = {
-      registration: { findUnique: jest.fn(), update: jest.fn() },
-      payment: { create: jest.fn() },
-    };
-    registrationsService = { onRegistrationCompleted: jest.fn().mockResolvedValue(null) };
-    shareholderStatus = { recompute: jest.fn().mockResolvedValue(null) };
-    ogm = { findTarget: jest.fn() };
-    const mod = await Test.createTestingModule({
-      providers: [
-        PaymentsService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: RegistrationsService, useValue: registrationsService },
-        { provide: AdminNotificationsService, useValue: { notifyAdminsOnEvent: jest.fn().mockResolvedValue(undefined) } },
-        { provide: ShareholderStatusService, useValue: shareholderStatus },
-        { provide: OgmService, useValue: ogm },
-      ],
-    }).compile();
-    service = mod.get(PaymentsService);
-  });
-
-  it('rejects a payment when the target is not in the caller coop', async () => {
-    ogm.findTarget.mockResolvedValue(null);
-
-    await expect(
-      service.addPayment({ target: { kind: 'registration', id: 'reg-B' }, coopId: 'coop-A', amount: 50, bankDate: new Date() }),
-    ).rejects.toThrow(NotFoundException);
-    expect(ogm.findTarget).toHaveBeenCalledWith('coop-A', { kind: 'registration', id: 'reg-B' });
-    expect(prisma.payment.create).not.toHaveBeenCalled();
-  });
-
-  it('accepts a payment for a registration in the caller coop', async () => {
-    ogm.findTarget.mockResolvedValue(registrationTarget);
-    prisma.registration.findUnique
-      .mockResolvedValueOnce({ id: 'reg-A', coopId: 'coop-A', shareholderId: 'sh-A', status: 'PENDING_PAYMENT', totalAmount: 100, payments: [] })
-      .mockResolvedValueOnce({ id: 'reg-A', coopId: 'coop-A', shareholder: { firstName: 'Jan', lastName: 'Peeters', companyName: null } });
-    prisma.payment.create.mockResolvedValue({ id: 'pay-1', amount: 50 });
-    prisma.registration.update.mockResolvedValue({});
-
-    const result = await service.addPayment({ target: { kind: 'registration', id: 'reg-A' }, coopId: 'coop-A', amount: 50, bankDate: new Date() });
-
-    expect(result).toEqual({ id: 'pay-1', amount: 50 });
-    expect(prisma.payment.create).toHaveBeenCalled();
-    expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh-A');
-  });
-
-  it('calls onRegistrationCompleted for a fully paid registration', async () => {
-    ogm.findTarget.mockResolvedValue(registrationTarget);
-    prisma.registration.findUnique
-      .mockResolvedValueOnce({ id: 'reg-A', coopId: 'coop-A', shareholderId: 'sh-A', status: 'PENDING_PAYMENT', totalAmount: 100, payments: [] })
-      .mockResolvedValueOnce({ id: 'reg-A', coopId: 'coop-A', shareholder: { firstName: 'Jan', lastName: 'Peeters', companyName: null } });
-    prisma.payment.create.mockResolvedValue({ id: 'pay-1', amount: 100 });
-    prisma.registration.update.mockResolvedValue({});
-
-    await service.addPayment({ target: { kind: 'registration', id: 'reg-A' }, coopId: 'coop-A', amount: 100, bankDate: new Date() });
-
-    expect(registrationsService.onRegistrationCompleted).toHaveBeenCalledWith('reg-A');
-    expect(shareholderStatus.recompute).not.toHaveBeenCalled();
-  });
-});
-```
-
-In `apps/api/src/modules/admin/admin.controller.ts`:
-
-1. Add imports:
-
-```ts
-import { MatchBankTransactionDto } from '../bank-import/dto/match-bank-transaction.dto';
-import { parsePaymentTargetRef } from '../ogm/payment-target';
-```
-
-2. In `addPayment`, replace `registrationId: id,` with `target: { kind: 'registration', id },`.
-3. Replace the method `matchBankTransaction` with:
-
-```ts
-  @Post('bank-transactions/:id/match')
-  @RequirePermission('canManageTransactions')
-  @ApiOperation({ summary: 'Manually match a bank transaction to a registration' })
-  async matchBankTransaction(
-    @Param('coopId') coopId: string,
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserData,
-    @Body() body: MatchBankTransactionDto,
-  ) {
-    return this.bankImportService.manualMatch(coopId, id, parsePaymentTargetRef(body), user.id);
-  }
-```
-
-The body still accepts `{ registrationId }`, so the web match dialog and external callers keep working.
-
-- [ ] **Step 12: Update the remaining Ponto expectations**
-
-In `apps/api/src/modules/ponto/ponto.service.spec.ts`, test `'should auto-match structured OGM and create payment'`:
-
-1. Change `mockRegistration` to:
-
-```ts
-      const mockRegistration = {
-        id: 'reg-1',
-        coopId: 'coop-1',
-        shareholderId: 'sh-1',
-        ogmCode: '+++090/9337/55493+++',
-        status: 'PENDING_PAYMENT',
-        totalAmount: 250,
-        isGift: false,
-      };
-      mockPrisma.registration.findMany.mockResolvedValue([mockRegistration]);
-```
-
-and delete the line `mockPrisma.registration.findFirst.mockResolvedValue(mockRegistration);`.
-2. In its `bankTransaction.create` expectation, change `ogmCode: '090933755493',` to `ogmCode: '+++090/9337/55493+++',`.
-3. Change the `addPayment` expectation to:
-
-```ts
-      expect(mockPaymentsService.addPayment).toHaveBeenCalledWith({
-        target: { kind: 'registration', id: 'reg-1' },
-        coopId: 'coop-1',
-        amount: 250,
-        bankDate: new Date('2024-01-15'),
-        bankTransactionId: 'bt-1',
-      });
-```
-
-In test `'should not create payment when autoMatch is false even if matched'`, replace `mockPrisma.registration.findFirst.mockResolvedValue({ ... });` with:
-
-```ts
-      mockPrisma.registration.findMany.mockResolvedValue([
-        {
-          id: 'reg-1',
-          coopId: 'coop-1',
-          shareholderId: 'sh-1',
-          ogmCode: '+++090/9337/55493+++',
-          status: 'PENDING_PAYMENT',
-          totalAmount: 250,
-          isGift: false,
-        },
-      ]);
-```
-
-The stored `BankTransaction.ogmCode` from Ponto is now formatted, the same as CSV imports.
-
-- [ ] **Step 13: Run every touched suite and watch it pass**
-
-Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm src/modules/bank-import src/modules/ponto src/modules/payments src/modules/registrations`
-Expected: PASS, including "matches a digit-only structured OGM…", "matches a bare 12-digit OGM…" and "refuses to match a bank transaction that belongs to another coop".
-
-- [ ] **Step 14: Build, full test run, commit**
+- [ ] **Step 7: Build, full test run, commit**
 
 ```bash
 pnpm --filter @opencoop/api build
@@ -2284,18 +1501,15 @@ pnpm --filter @opencoop/api lint
 Expected: build exits 0; all suites pass; lint reports 0 errors.
 
 ```bash
-git add apps/api/src/modules/ogm/ogm.ts apps/api/src/modules/ogm/ogm.spec.ts \
-  apps/api/src/modules/ogm/payment-target.ts apps/api/src/modules/ogm/ogm.service.ts \
+git add apps/api/src/modules/ogm/payment-target.ts apps/api/src/modules/ogm/ogm.service.ts \
   apps/api/src/modules/ogm/ogm.service.spec.ts \
+  apps/api/src/modules/bank-import/bank-matching.service.ts \
+  apps/api/src/modules/bank-import/bank-matching.service.spec.ts \
   apps/api/src/modules/bank-import/bank-import.service.ts apps/api/src/modules/bank-import/bank-import.module.ts \
   apps/api/src/modules/bank-import/bank-import.service.spec.ts \
-  apps/api/src/modules/bank-import/dto/match-bank-transaction.dto.ts \
-  apps/api/src/modules/ponto/ponto.service.ts apps/api/src/modules/ponto/ponto.module.ts \
-  apps/api/src/modules/ponto/ponto.service.spec.ts \
-  apps/api/src/modules/payments/payments.service.ts apps/api/src/modules/payments/payments.module.ts \
-  apps/api/src/modules/payments/payments.service.spec.ts \
-  apps/api/src/modules/admin/admin.controller.ts
-git commit -m "fix(payments): resolve OGMs in one place; Ponto now matches structured OGMs"
+  apps/api/src/modules/bank-import/bank-reconciliation.service.spec.ts \
+  apps/api/src/modules/payments/payments.service.ts
+git commit -m "refactor(bank-import): resolve OGMs through one OgmService lookup"
 ```
 
 ---
@@ -2304,7 +1518,7 @@ git commit -m "fix(payments): resolve OGMs in one place; Ponto now matches struc
 
 **Files:**
 - Create: `apps/api/src/modules/shareholders/shareholder-access.ts`, `apps/api/src/modules/shareholders/shareholder-access.spec.ts`
-- Modify: `apps/api/src/modules/shareholders/shareholder-actions.controller.ts:142-161` (`verifyShareholder`)
+- Modify: `apps/api/src/modules/shareholders/shareholder-actions.controller.ts:150-167` (`verifyShareholder`)
 - Create: `apps/api/src/modules/charge-cards/charge-card-view.ts`
 - Create: `apps/api/src/modules/charge-cards/charge-card-transition.ts`
 - Create: `apps/api/src/modules/charge-cards/dto/request-charge-card.dto.ts`
@@ -2383,7 +1597,8 @@ In `apps/api/src/modules/shareholders/shareholder-actions.controller.ts`, add `i
 
 ```ts
     const isOwner = shareholder.userId === userId;
-    const isParentOfMinor = shareholder.type === 'MINOR' && shareholder.registeredByUserId === userId;
+    const isParentOfMinor =
+      shareholder.type === 'MINOR' && shareholder.registeredByUserId === userId;
 
     if (!isOwner && !isParentOfMinor) {
 ```
@@ -2843,7 +2058,7 @@ In `apps/api/src/modules/email/email.processor.ts`, inside the `templates` objec
 Add the copy to the four email locale files with this script (the email files round-trip through `JSON.stringify` unchanged; Setup proved it for `fr.json`, and the script checks each file before it writes):
 
 ```bash
-cd /Users/wouterhermans/Developer/opencoop
+cd /Users/wouterhermans/Developer/opencoop-worktrees/charge-cards
 node -e '
 const fs = require("fs");
 const copy = {
@@ -3479,33 +2694,35 @@ git commit -m "feat(charge-cards): shareholders can request, cancel and report c
 ---
 ### Task 5: Charge cards accept payment
 
+CSV import, Ponto and rematch all reach a card through `BankMatchingService` (Task 3), so the automatic path changes in one method. Manual match gets a third target, `chargeCardId`. `PaymentsService.addPayment` stays registration-only: Ponto no longer calls it, and a card fee always arrives as a bank transfer.
+
 **Files:**
 - Modify: `apps/api/src/modules/ogm/payment-target.ts` (whole file)
 - Create: `apps/api/src/modules/ogm/payment-target.spec.ts`
-- Modify: `apps/api/src/modules/ogm/ogm.service.ts` (resolvers include charge cards), `apps/api/src/modules/ogm/ogm.service.spec.ts`
+- Modify: `apps/api/src/modules/ogm/ogm.service.ts` (cards in both resolvers, `findChargeCardTarget`), `apps/api/src/modules/ogm/ogm.service.spec.ts`
 - Create: `apps/api/src/modules/charge-cards/charge-card-payments.ts`, `apps/api/src/modules/charge-cards/charge-card-payments.spec.ts`
-- Modify: `apps/api/src/modules/bank-import/bank-import.service.ts` (`importCsv` transaction body, `manualMatch`), `apps/api/src/modules/bank-import/bank-import.service.spec.ts`
+- Modify: `apps/api/src/modules/bank-import/bank-matching.service.ts` (card branch), `apps/api/src/modules/bank-import/bank-matching.service.spec.ts`
+- Modify: `apps/api/src/modules/bank-import/bank-import.service.ts` (`manualMatch`), `apps/api/src/modules/bank-import/bank-import.service.spec.ts`, `apps/api/src/modules/bank-import/bank-reconciliation.service.spec.ts` (prisma mock)
 - Modify: `apps/api/src/modules/bank-import/dto/match-bank-transaction.dto.ts`
-- Modify: `apps/api/src/modules/ponto/ponto.service.ts` (`acceptsAutoMatch` call), `apps/api/src/modules/ponto/ponto.service.spec.ts`
-- Modify: `apps/api/src/modules/payments/payments.service.ts`, `apps/api/src/modules/payments/payments.service.spec.ts`
+- Modify: `apps/api/src/modules/admin/admin.controller.ts:948-960` (`matchBankTransaction`)
 
 **Interfaces:**
-- Consumes: Task 3 resolver and types; Task 2 `ChargeCard`.
+- Consumes: Task 3 resolver and `RegistrationTarget`; Task 2 `ChargeCard`.
 - Produces:
   - `ChargeCardTarget = { kind: 'chargeCard'; id; coopId; shareholderId; status: ChargeCardStatus; feeInclVat: number; ogmCode: string }`.
-  - `PaymentTarget = RegistrationTarget | ChargeCardTarget`; `PaymentTargetRef = { kind: 'registration'; id } | { kind: 'chargeCard'; id }`.
-  - `toCents(amount: number): number`; `acceptsAutoMatch(target: PaymentTarget, amount: number): boolean` (signature gains `amount`).
-  - `parsePaymentTargetRef(body: { registrationId?: string; chargeCardId?: string }): PaymentTargetRef` (exactly one).
+  - `PaymentTarget = RegistrationTarget | ChargeCardTarget`.
+  - `toCents(amount: number): number`; `acceptsCardPayment(card: ChargeCardTarget, amount: number): boolean`.
   - `recordChargeCardPayment(tx: Prisma.TransactionClient, card: ChargeCardTarget, input: { amount; bankDate; bankTransactionId?; matchedByUserId? }): Promise<{ payment: Payment; paid: boolean }>`.
-  - `MatchBankTransactionDto { registrationId?: string; chargeCardId?: string }`.
+  - `OgmService.findChargeCardTarget(coopId: string, cardId: string): Promise<ChargeCardTarget | null>`.
+  - `BankImportService.manualMatch(coopId, bankTransactionId, target: { registrationId?: string; paymentId?: string; chargeCardId?: string }, userId)`: exactly one id.
+  - `MatchBankTransactionDto { registrationId?; paymentId?; chargeCardId? }`, so `POST /admin/coops/:coopId/bank-transactions/:id/match` accepts `{ chargeCardId }`.
 
 - [ ] **Step 1: Write the failing rule tests**
 
 Create `apps/api/src/modules/ogm/payment-target.spec.ts`:
 
 ```ts
-import { BadRequestException } from '@nestjs/common';
-import { ChargeCardTarget, RegistrationTarget, acceptsAutoMatch, parsePaymentTargetRef, toPaymentTargetRef } from './payment-target';
+import { ChargeCardTarget, acceptsCardPayment, toCents } from './payment-target';
 
 const card = (overrides: Partial<ChargeCardTarget> = {}): ChargeCardTarget => ({
   kind: 'chargeCard',
@@ -3518,58 +2735,32 @@ const card = (overrides: Partial<ChargeCardTarget> = {}): ChargeCardTarget => ({
   ...overrides,
 });
 
-const registration: RegistrationTarget = {
-  kind: 'registration',
-  id: 'reg-1',
-  coopId: 'coop-1',
-  shareholderId: 'sh-1',
-  status: 'PENDING_PAYMENT',
-  totalAmount: 100,
-  isGift: false,
-  ogmCode: null,
-};
-
-describe('acceptsAutoMatch', () => {
+describe('acceptsCardPayment', () => {
   it('accepts a REQUESTED card paid in full', () => {
-    expect(acceptsAutoMatch(card(), 6)).toBe(true);
+    expect(acceptsCardPayment(card(), 6)).toBe(true);
   });
 
   it('accepts an overpayment', () => {
-    expect(acceptsAutoMatch(card(), 10)).toBe(true);
+    expect(acceptsCardPayment(card(), 10)).toBe(true);
   });
 
   it('refuses a short payment', () => {
-    expect(acceptsAutoMatch(card(), 5.99)).toBe(false);
+    expect(acceptsCardPayment(card(), 5.99)).toBe(false);
   });
 
   it('compares in cents, not floats', () => {
-    expect(acceptsAutoMatch(card({ feeInclVat: 6.05 }), 0.1 + 0.2 + 5.75)).toBe(true);
+    expect(acceptsCardPayment(card({ feeInclVat: 6.05 }), 0.1 + 0.2 + 5.75)).toBe(true);
   });
 
   it.each(['PAID', 'ACTIVE', 'BLOCKED', 'CANCELLED'] as const)('refuses a %s card', (status) => {
-    expect(acceptsAutoMatch(card({ status }), 6)).toBe(false);
-  });
-
-  it('keeps the registration rule', () => {
-    expect(acceptsAutoMatch(registration, 1)).toBe(true);
-    expect(acceptsAutoMatch({ ...registration, status: 'COMPLETED' }, 1)).toBe(false);
+    expect(acceptsCardPayment(card({ status }), 6)).toBe(false);
   });
 });
 
-describe('payment target references', () => {
-  it('builds a reference for each kind', () => {
-    expect(toPaymentTargetRef(card())).toEqual({ kind: 'chargeCard', id: 'card-1' });
-    expect(toPaymentTargetRef(registration)).toEqual({ kind: 'registration', id: 'reg-1' });
-  });
-
-  it('parses exactly one id from a request body', () => {
-    expect(parsePaymentTargetRef({ registrationId: 'reg-1' })).toEqual({ kind: 'registration', id: 'reg-1' });
-    expect(parsePaymentTargetRef({ chargeCardId: 'card-1' })).toEqual({ kind: 'chargeCard', id: 'card-1' });
-  });
-
-  it('refuses both or neither id', () => {
-    expect(() => parsePaymentTargetRef({})).toThrow(BadRequestException);
-    expect(() => parsePaymentTargetRef({ registrationId: 'reg-1', chargeCardId: 'card-1' })).toThrow(BadRequestException);
+describe('toCents', () => {
+  it('rounds to whole cents', () => {
+    expect(toCents(0.1 + 0.2)).toBe(30);
+    expect(toCents(12)).toBe(1200);
   });
 });
 ```
@@ -3657,26 +2848,27 @@ describe('recordChargeCardPayment', () => {
 ```
 
 Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm/payment-target src/modules/charge-cards/charge-card-payments`
-Expected: FAIL — `ChargeCardTarget` is not exported and `./charge-card-payments` does not exist.
+Expected: FAIL — `ChargeCardTarget`, `acceptsCardPayment` and `toCents` are not exported, and `./charge-card-payments` does not exist.
 
 - [ ] **Step 2: Widen the target types and add the card payment rule**
 
 Replace `apps/api/src/modules/ogm/payment-target.ts` with:
 
 ```ts
-import { BadRequestException } from '@nestjs/common';
-import type { ChargeCardStatus, RegistrationStatus } from '@opencoop/database';
+import type { ChargeCardStatus } from '@opencoop/database';
 
-/** Something a bank payment can be booked on. */
+/**
+ * Something a bank payment can be booked on. A registration keeps the shape
+ * BankMatchingService works with; a charge card carries its frozen fee.
+ */
 export interface RegistrationTarget {
   kind: 'registration';
   id: string;
   coopId: string;
-  shareholderId: string;
-  status: RegistrationStatus;
-  totalAmount: number;
-  isGift: boolean;
-  ogmCode: string | null;
+  status: string;
+  totalAmount?: unknown;
+  ogmCode?: string | null;
+  payments?: { id: string; amount: unknown; bankDate: Date; bankTransactionId: string | null }[];
 }
 
 export interface ChargeCardTarget {
@@ -3691,38 +2883,17 @@ export interface ChargeCardTarget {
 
 export type PaymentTarget = RegistrationTarget | ChargeCardTarget;
 
-export type PaymentTargetRef = { kind: 'registration'; id: string } | { kind: 'chargeCard'; id: string };
-
 export function toCents(amount: number): number {
   return Math.round(amount * 100);
 }
 
 /**
- * True when CSV import or Ponto may book this payment without an admin.
- * A charge card takes money only while REQUESTED, and only a payment of at
- * least its fee: short payments stay UNMATCHED for an admin to handle.
+ * True when CSV import, Ponto or rematch may book this amount on the card
+ * without an admin: the card is REQUESTED and the amount covers its fee.
+ * Short payments and payments for any other state stay UNMATCHED.
  */
-export function acceptsAutoMatch(target: PaymentTarget, amount: number): boolean {
-  if (target.kind === 'chargeCard') {
-    return target.status === 'REQUESTED' && toCents(amount) >= toCents(target.feeInclVat);
-  }
-  return target.status === 'PENDING_PAYMENT' || target.status === 'ACTIVE';
-}
-
-export function toPaymentTargetRef(target: PaymentTarget): PaymentTargetRef {
-  return target.kind === 'chargeCard'
-    ? { kind: 'chargeCard', id: target.id }
-    : { kind: 'registration', id: target.id };
-}
-
-/** Builds a target reference from a request body with exactly one id. */
-export function parsePaymentTargetRef(body: { registrationId?: string; chargeCardId?: string }): PaymentTargetRef {
-  if (Boolean(body.registrationId) === Boolean(body.chargeCardId)) {
-    throw new BadRequestException('Provide exactly one of registrationId and chargeCardId');
-  }
-  return body.registrationId
-    ? { kind: 'registration', id: body.registrationId }
-    : { kind: 'chargeCard', id: body.chargeCardId as string };
+export function acceptsCardPayment(card: ChargeCardTarget, amount: number): boolean {
+  return card.status === 'REQUESTED' && toCents(amount) >= toCents(card.feeInclVat);
 }
 ```
 
@@ -3777,67 +2948,72 @@ export async function recordChargeCardPayment(
 ```
 
 Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm/payment-target src/modules/charge-cards/charge-card-payments`
-Expected: PASS, 16 tests. (The bank-import, Ponto and payments suites do not compile yet: `acceptsAutoMatch` now needs the amount. Steps 4 and 5 fix them.)
+Expected: PASS, 13 tests. (The bank-import suites do not compile yet: `registration.payments` in `bank-matching.service.ts` does not exist on `ChargeCardTarget`. Step 4 fixes it.)
 
 - [ ] **Step 3: Resolve charge cards (TDD)**
 
 In `apps/api/src/modules/ogm/ogm.service.spec.ts`, inside `describe('OgmService resolvers')`:
 
-1. Change the `prisma` set-up in `beforeEach` to:
+1. In `beforeEach`, add to the `prisma` object:
 
 ```ts
-    prisma = {
-      registration: {
-        findMany: jest.fn().mockResolvedValue([registrationRow]),
-        findFirst: jest.fn().mockResolvedValue(registrationRow),
-      },
       chargeCard: {
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn().mockResolvedValue(null),
       },
-    };
 ```
 
 2. Append these tests at the end of that `describe`:
 
 ```ts
-  it('resolves a charge-card OGM in the same call, scoped to the coop', async () => {
-    const CARD_OGM = '+++001/0000/04221+++';
+  const CARD_OGM = '+++001/0000/04221+++';
+  const cardRow = {
+    id: 'card-1',
+    coopId: 'coop-1',
+    shareholderId: 'sh-1',
+    status: 'REQUESTED',
+    feeInclVat: new Prisma.Decimal('6.00'),
+    ogmCode: CARD_OGM,
+  };
+  const cardTarget = { ...cardRow, kind: 'chargeCard', feeInclVat: 6 };
+
+  it('resolves a charge-card OGM in the same batch, scoped to the coop', async () => {
     prisma.registration.findMany.mockResolvedValue([]);
-    prisma.chargeCard.findMany.mockResolvedValue([
-      { id: 'card-1', coopId: 'coop-1', shareholderId: 'sh-1', status: 'REQUESTED', feeInclVat: new Prisma.Decimal('6.00'), ogmCode: CARD_OGM },
-    ]);
+    prisma.chargeCard.findMany.mockResolvedValue([cardRow]);
 
     const targets = await service.resolveOgmTargets('coop-1', ['001000004221']);
 
-    expect(prisma.chargeCard.findMany.mock.calls[0][0].where).toEqual({ coopId: 'coop-1', ogmCode: { in: [CARD_OGM] } });
-    expect(targets.get(CARD_OGM)).toEqual({
-      kind: 'chargeCard',
-      id: 'card-1',
+    expect(prisma.chargeCard.findMany.mock.calls[0][0].where).toEqual({
       coopId: 'coop-1',
-      shareholderId: 'sh-1',
-      status: 'REQUESTED',
-      feeInclVat: 6,
-      ogmCode: CARD_OGM,
+      ogmCode: { in: [CARD_OGM] },
     });
+    expect(targets.get(CARD_OGM)).toEqual(cardTarget);
   });
 
-  it('findTarget looks a charge card up by id within the coop', async () => {
-    await service.findTarget('coop-1', { kind: 'chargeCard', id: 'card-1' });
+  it('resolveOgmTarget falls back to a charge card when no registration has the OGM', async () => {
+    prisma.registration.findFirst.mockResolvedValue(null);
+    prisma.chargeCard.findFirst.mockResolvedValue(cardRow);
 
+    await expect(service.resolveOgmTarget('coop-1', CARD_OGM)).resolves.toEqual(cardTarget);
+    expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({ coopId: 'coop-1', ogmCode: CARD_OGM });
+  });
+
+  it('findChargeCardTarget looks a card up by id within the coop', async () => {
+    prisma.chargeCard.findFirst.mockResolvedValue(cardRow);
+
+    await expect(service.findChargeCardTarget('coop-1', 'card-1')).resolves.toEqual(cardTarget);
     expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({ id: 'card-1', coopId: 'coop-1' });
-    expect(prisma.registration.findFirst).not.toHaveBeenCalled();
   });
 ```
 
 `+++001/0000/04221+++` is `generateOgmCode('001', 42)` (check digits `0010000042 mod 97 = 21`).
 
 Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm/ogm.service.spec`
-Expected: FAIL — `prisma.chargeCard.findMany.mock.calls[0]` is undefined.
+Expected: FAIL — `prisma.chargeCard.findMany.mock.calls[0]` is undefined, and `service.findChargeCardTarget is not a function`.
 
 In `apps/api/src/modules/ogm/ogm.service.ts`:
 
-1. Change the payment-target import to `import { ChargeCardTarget, PaymentTarget, PaymentTargetRef, RegistrationTarget } from './payment-target';`.
+1. Change the payment-target import to `import { ChargeCardTarget, PaymentTarget, RegistrationTarget } from './payment-target';`.
 2. Add below `toRegistrationTarget`:
 
 ```ts
@@ -3886,31 +3062,210 @@ function toChargeCardTarget(row: ChargeCardTargetRow): ChargeCardTarget {
     }
 ```
 
-4. Replace the body of `findTarget` with:
+4. In `resolveOgmTarget`, replace `return registration ? toRegistrationTarget(registration) : null;` with:
 
 ```ts
-    if (ref.kind === 'chargeCard') {
-      const card = await this.prisma.chargeCard.findFirst({
-        where: { id: ref.id, coopId },
-        select: CHARGE_CARD_TARGET_SELECT,
-      });
-      return card ? toChargeCardTarget(card) : null;
-    }
-    const row = await this.prisma.registration.findFirst({
-      where: { id: ref.id, coopId },
-      select: REGISTRATION_TARGET_SELECT,
+    if (registration) return toRegistrationTarget(registration);
+    const card = await this.prisma.chargeCard.findFirst({
+      where: { coopId, ogmCode },
+      select: CHARGE_CARD_TARGET_SELECT,
     });
-    return row ? toRegistrationTarget(row) : null;
+    return card ? toChargeCardTarget(card) : null;
+```
+
+5. Add after `resolveOgmTarget`:
+
+```ts
+  /** Looks a charge card up by id, scoped to the coop (manual match). */
+  async findChargeCardTarget(coopId: string, cardId: string): Promise<ChargeCardTarget | null> {
+    const card = await this.prisma.chargeCard.findFirst({
+      where: { id: cardId, coopId },
+      select: CHARGE_CARD_TARGET_SELECT,
+    });
+    return card ? toChargeCardTarget(card) : null;
+  }
 ```
 
 Run: `pnpm --filter @opencoop/api exec jest src/modules/ogm`
 Expected: PASS.
 
-- [ ] **Step 4: CSV import and manual match book card payments (TDD)**
+- [ ] **Step 4: The matcher books card payments (TDD)**
 
-In `apps/api/src/modules/bank-import/bank-import.service.spec.ts`:
+In `apps/api/src/modules/bank-import/bank-matching.service.spec.ts`:
 
-1. Add to the `prisma` mock in `beforeEach`:
+1. Add `import { Prisma } from '@opencoop/database';` and `import { ChargeCardTarget } from '../ogm/payment-target';`.
+2. In the `prisma` mock of `beforeEach`, add `create: jest.fn().mockResolvedValue({ id: 'pay-card' }),` to `payment`, and add:
+
+```ts
+      chargeCard: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+```
+
+3. Append before the final `});`:
+
+```ts
+  describe('charge cards', () => {
+    const cardRow = {
+      id: 'card-1',
+      coopId: 'coop-1',
+      shareholderId: 'sh-1',
+      status: 'REQUESTED',
+      feeInclVat: new Prisma.Decimal('6.00'),
+      ogmCode: OGM,
+    };
+    const cardTx = { ...bankTransaction, amount: 6 };
+
+    beforeEach(() => {
+      prisma.registration.findFirst.mockResolvedValue(null);
+      prisma.chargeCard.findFirst.mockResolvedValue(cardRow);
+      prisma.payment.findMany.mockResolvedValue([{ amount: 6 }]);
+    });
+
+    it('AUTO_MATCHES a payment of at least the fee and marks the card PAID', async () => {
+      const result = await service.matchTransaction('coop-1', cardTx, 'user-1');
+
+      expect(result).toEqual({ status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true });
+      expect(prisma.bankTransaction.updateMany).toHaveBeenCalledWith({
+        where: { id: 'bank-tx-1', matchStatus: 'UNMATCHED' },
+        data: { matchStatus: 'AUTO_MATCHED', ogmCode: OGM },
+      });
+      expect(prisma.payment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          chargeCardId: 'card-1',
+          coopId: 'coop-1',
+          amount: 6,
+          bankTransactionId: 'bank-tx-1',
+          matchedByUserId: 'user-1',
+        }),
+      });
+      expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
+        where: { id: 'card-1', status: 'REQUESTED' },
+        data: { status: 'PAID', paidAt: expect.any(Date) },
+      });
+      expect(paymentsService.addPayment).not.toHaveBeenCalled();
+    });
+
+    it('leaves a short payment UNMATCHED', async () => {
+      const result = await service.matchTransaction('coop-1', { ...cardTx, amount: 5 });
+
+      expect(result.status).toBe('UNMATCHED');
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+      expect(prisma.bankTransaction.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('leaves a payment for a CANCELLED card UNMATCHED', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue({ ...cardRow, status: 'CANCELLED' });
+
+      await expect(service.matchTransaction('coop-1', cardTx)).resolves.toMatchObject({ status: 'UNMATCHED' });
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('books nothing when auto-match is off (Ponto with autoMatchPayments = false)', async () => {
+      await expect(service.matchTransaction('coop-1', cardTx, undefined, false)).resolves.toMatchObject({
+        status: 'UNMATCHED',
+      });
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('second transfer for a paid card stays UNMATCHED', async () => {
+      // The CSV import hands the same cached target to every row of the file.
+      const cached: ChargeCardTarget = {
+        kind: 'chargeCard',
+        id: 'card-1',
+        coopId: 'coop-1',
+        shareholderId: 'sh-1',
+        status: 'REQUESTED',
+        feeInclVat: 6,
+        ogmCode: OGM,
+      };
+
+      const first = await service.matchTransaction('coop-1', cardTx, 'user-1', true, cached);
+      const second = await service.matchTransaction('coop-1', { ...cardTx, id: 'bank-tx-2' }, 'user-1', true, cached);
+
+      expect(first.status).toBe('AUTO_MATCHED');
+      expect(second.status).toBe('UNMATCHED');
+      expect(prisma.payment.create).toHaveBeenCalledTimes(1);
+      expect(cached.status).toBe('PAID');
+    });
+  });
+```
+
+Run: `pnpm --filter @opencoop/api exec jest src/modules/bank-import/bank-matching`
+Expected: FAIL — ts-jest reports `TS2339: Property 'payments' does not exist on type 'ChargeCardTarget'` in `bank-matching.service.ts`.
+
+In `apps/api/src/modules/bank-import/bank-matching.service.ts`:
+
+1. Change the payment-target import to `import { ChargeCardTarget, PaymentTarget, acceptsCardPayment } from '../ogm/payment-target';` and add `import { recordChargeCardPayment } from '../charge-cards/charge-card-payments';`.
+2. In `matchTransaction`, directly after the `if (!target) { ... }` block and before `const registration = target;`, add:
+
+```ts
+    if (target.kind === 'chargeCard') {
+      return this.matchChargeCard(target, transaction, ogmCode, amount, matchedByUserId, allowCreate);
+    }
+```
+
+3. Add this method directly above `private toCents`:
+
+```ts
+  /**
+   * A charge card takes a payment only while REQUESTED and only for at least its
+   * fee. Anything else stays UNMATCHED for an admin (refund or manual match).
+   */
+  private async matchChargeCard(
+    card: ChargeCardTarget,
+    transaction: BankTransactionMatchInput,
+    ogmCode: string,
+    amount: number,
+    matchedByUserId: string | undefined,
+    allowCreate: boolean,
+  ): Promise<BankTransactionMatchResult> {
+    if (!allowCreate || !acceptsCardPayment(card, amount)) {
+      return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+    }
+
+    const paid = await this.prisma
+      .$transaction(async (tx) => {
+        // Claim the bank row first, so a concurrent linker cannot book it twice.
+        const claimed = await tx.bankTransaction.updateMany({
+          where: { id: transaction.id, matchStatus: 'UNMATCHED' },
+          data: { matchStatus: 'AUTO_MATCHED', ogmCode },
+        });
+        if (claimed.count !== 1) throw new LinkConflictError();
+        const result = await recordChargeCardPayment(tx, card, {
+          amount,
+          bankDate: transaction.date,
+          bankTransactionId: transaction.id,
+          matchedByUserId,
+        });
+        return result.paid;
+      })
+      .catch((error: unknown) => {
+        if (error instanceof LinkConflictError) return null;
+        throw error;
+      });
+    if (paid === null) {
+      return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+    }
+
+    // The CSV import reuses this object for later rows: a second transfer must see PAID.
+    if (paid) card.status = 'PAID';
+    return { status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true };
+  }
+```
+
+After the early return, TypeScript narrows `target` to `RegistrationTarget`, so the registration code below compiles unchanged.
+
+Run: `pnpm --filter @opencoop/api exec jest src/modules/bank-import/bank-matching`
+Expected: PASS, including the 5 new charge-card tests.
+
+- [ ] **Step 5: Manual match books on a card (TDD)**
+
+The resolvers now query `chargeCard` whenever no registration matches, so the two other bank-import specs need a `chargeCard` mock:
+
+- In `apps/api/src/modules/bank-import/bank-reconciliation.service.spec.ts`, add to the `prisma` object: `chargeCard: { findFirst: jest.fn().mockResolvedValue(null), findMany: jest.fn().mockResolvedValue([]) },`.
+- In `apps/api/src/modules/bank-import/bank-import.service.spec.ts`, add to the `prisma` object:
 
 ```ts
       chargeCard: {
@@ -3920,308 +3275,168 @@ In `apps/api/src/modules/bank-import/bank-import.service.spec.ts`:
       },
 ```
 
-2. Append before the final `});`:
+In `apps/api/src/modules/bank-import/bank-import.service.spec.ts`, change the `@nestjs/common` import to `import { BadRequestException, NotFoundException } from '@nestjs/common';` and append before the final `});`:
 
 ```ts
-  describe('charge-card OGMs', () => {
+  describe('manual match to a charge card', () => {
     const CARD = { id: 'card-1', coopId: COOP_ID, shareholderId: 'sh-1', status: 'REQUESTED', feeInclVat: 6, ogmCode: OGM };
 
     beforeEach(() => {
-      prisma.chargeCard.findMany.mockResolvedValue([CARD]);
-    });
-
-    it('AUTO_MATCHES a payment of at least the fee and marks the card PAID', async () => {
-      prisma.payment.findMany.mockResolvedValue([{ amount: 6 }]);
-
-      await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-10-06', '6.00', 'Jan', OGM), 'generic');
-
-      expect(prisma.payment.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ chargeCardId: 'card-1', amount: 6 }) }),
-      );
-      expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
-        where: { id: 'card-1', status: 'REQUESTED' },
-        data: { status: 'PAID', paidAt: expect.any(Date) },
-      });
-      expect(prisma.registration.update).not.toHaveBeenCalled();
-      expect(prisma.bankImport.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ matchedCount: 1, unmatchedCount: 0 }) }),
-      );
-    });
-
-    it('leaves a short payment UNMATCHED', async () => {
-      await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-10-06', '5.00', 'Jan', OGM), 'generic');
-
-      expect(prisma.payment.create).not.toHaveBeenCalled();
-      expect(prisma.bankTransaction.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ matchStatus: 'UNMATCHED', ogmCode: OGM }) }),
-      );
-    });
-
-    it('leaves a payment for a CANCELLED card UNMATCHED', async () => {
-      prisma.chargeCard.findMany.mockResolvedValue([{ ...CARD, status: 'CANCELLED' }]);
-
-      await service.importCsv(COOP_ID, IMPORTER_ID, 'test.csv', csv('2026-10-06', '6.00', 'Jan', OGM), 'generic');
-
-      expect(prisma.payment.create).not.toHaveBeenCalled();
-    });
-
-    it('second transfer for a paid card stays UNMATCHED', async () => {
-      prisma.payment.findMany.mockResolvedValue([{ amount: 6 }]);
-
-      await service.importCsv(
-        COOP_ID,
-        IMPORTER_ID,
-        'test.csv',
-        csvRows([
-          ['2026-10-06', '6.00', 'Jan', OGM],
-          ['2026-10-07', '6.00', 'Jan', OGM],
-        ]),
-        'generic',
-      );
-
-      expect(prisma.payment.create).toHaveBeenCalledTimes(1);
-      expect(prisma.bankImport.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ matchedCount: 1, unmatchedCount: 1 }) }),
-      );
-    });
-
-    it('manual match books a short payment on a REQUESTED card without marking it PAID', async () => {
-      prisma.bankTransaction.findFirst = jest.fn().mockResolvedValue({
-        id: 'btx-1', coopId: COOP_ID, matchStatus: 'UNMATCHED', amount: 3, date: new Date('2026-10-06'),
+      prisma.bankTransaction.findFirst.mockResolvedValue({
+        id: 'btx-1',
+        coopId: COOP_ID,
+        matchStatus: 'UNMATCHED',
+        amount: 3,
+        date: new Date('2026-10-06'),
       });
       prisma.chargeCard.findFirst.mockResolvedValue(CARD);
       prisma.payment.findMany.mockResolvedValue([{ amount: 3 }]);
+    });
 
-      await service.manualMatch(COOP_ID, 'btx-1', { kind: 'chargeCard', id: 'card-1' }, IMPORTER_ID);
+    it('books a short payment on a REQUESTED card without marking it PAID', async () => {
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).resolves.toEqual({ success: true });
 
-      expect(prisma.payment.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ chargeCardId: 'card-1', amount: 3 }) }),
-      );
+      expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({ id: 'card-1', coopId: COOP_ID });
+      expect(prisma.payment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          chargeCardId: 'card-1',
+          amount: 3,
+          bankTransactionId: 'btx-1',
+          matchedByUserId: IMPORTER_ID,
+        }),
+      });
       expect(prisma.chargeCard.updateMany).not.toHaveBeenCalled();
-      expect(prisma.bankTransaction.update).toHaveBeenCalledWith({
-        where: { id: 'btx-1' },
+      expect(prisma.bankTransaction.updateMany).toHaveBeenCalledWith({
+        where: { id: 'btx-1', matchStatus: 'UNMATCHED' },
         data: { matchStatus: 'MANUAL_MATCHED' },
       });
     });
 
-    it('manual match refuses a card that is not REQUESTED', async () => {
-      prisma.bankTransaction.findFirst = jest.fn().mockResolvedValue({
-        id: 'btx-1', coopId: COOP_ID, matchStatus: 'UNMATCHED', amount: 6, date: new Date('2026-10-06'),
+    it('marks the card PAID once its payments reach the fee', async () => {
+      prisma.payment.findMany.mockResolvedValue([{ amount: 3 }, { amount: 3 }]);
+
+      await service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID);
+
+      expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
+        where: { id: 'card-1', status: 'REQUESTED' },
+        data: { status: 'PAID', paidAt: expect.any(Date) },
       });
+    });
+
+    it('refuses a card that is not REQUESTED', async () => {
       prisma.chargeCard.findFirst.mockResolvedValue({ ...CARD, status: 'PAID' });
 
       await expect(
-        service.manualMatch(COOP_ID, 'btx-1', { kind: 'chargeCard', id: 'card-1' }, IMPORTER_ID),
-      ).rejects.toThrow(BadRequestException);
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 for a card of another coop', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses a registration and a card at once', async () => {
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { registrationId: 'reg-1', chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(BadRequestException);
       expect(prisma.payment.create).not.toHaveBeenCalled();
     });
   });
 ```
 
-3. Change the `@nestjs/common` import of the spec to `import { BadRequestException, NotFoundException } from '@nestjs/common';`.
-
 Run: `pnpm --filter @opencoop/api exec jest src/modules/bank-import`
-Expected: FAIL — ts-jest reports `TS2554: Expected 2 arguments, but got 1` on `acceptsAutoMatch(target)` in `bank-import.service.ts`.
+Expected: FAIL — ts-jest reports `TS2353: Object literal may only specify known properties, and 'chargeCardId' does not exist` on the new `manualMatch` calls.
 
 In `apps/api/src/modules/bank-import/bank-import.service.ts`:
 
 1. Add `import { recordChargeCardPayment } from '../charge-cards/charge-card-payments';`.
-2. Change `if (target && target.coopId === coopId && acceptsAutoMatch(target)) {` to `if (target && target.coopId === coopId && acceptsAutoMatch(target, row.amount)) {`.
-3. Inside that `$transaction` callback, directly after the `const bankTx = await tx.bankTransaction.create({ ... });` statement, add:
+2. In `manualMatch`, change the parameter `target: { registrationId?: string; paymentId?: string },` to `target: { registrationId?: string; paymentId?: string; chargeCardId?: string },`.
+3. Replace:
 
 ```ts
-          if (target.kind === 'chargeCard') {
-            const { paid } = await recordChargeCardPayment(tx, target, {
-              amount: row.amount,
-              bankDate: row.date,
-              bankTransactionId: bankTx.id,
-              matchedByUserId: importedById,
-            });
-            // A second transfer for the same card in this file must see PAID.
-            if (paid) target.status = 'PAID';
-            return;
-          }
+    const { registrationId, paymentId } = target;
+    if ((registrationId && paymentId) || (!registrationId && !paymentId)) {
+      throw new BadRequestException('Provide either registrationId or paymentId');
+    }
 ```
 
-4. In `manualMatch`, directly after the `if (!target) { throw new NotFoundException('Registration not found'); }` block, add:
+with:
 
 ```ts
-    if (target.kind === 'chargeCard') {
-      if (target.status !== 'REQUESTED') {
+    const { registrationId, paymentId, chargeCardId } = target;
+    if ([registrationId, paymentId, chargeCardId].filter(Boolean).length !== 1) {
+      throw new BadRequestException('Provide exactly one of registrationId, paymentId and chargeCardId');
+    }
+```
+
+4. Directly after the `if (bankTx.matchStatus !== 'UNMATCHED') { ... }` block and before `if (paymentId) {`, add:
+
+```ts
+    if (chargeCardId) {
+      const card = await this.ogm.findChargeCardTarget(coopId, chargeCardId);
+      if (!card) {
+        throw new NotFoundException('Charge card not found');
+      }
+      if (card.status !== 'REQUESTED') {
         throw new BadRequestException('Only a requested charge card accepts a payment');
       }
+      // Any amount: an admin may book a partial payment. The card turns PAID once
+      // its payments reach the fee.
       await this.prisma.$transaction(async (tx) => {
-        await recordChargeCardPayment(tx, target, {
+        const claimedTransaction = await tx.bankTransaction.updateMany({
+          where: { id: bankTransactionId, matchStatus: 'UNMATCHED' },
+          data: { matchStatus: 'MANUAL_MATCHED' },
+        });
+        if (claimedTransaction.count !== 1) {
+          throw new ConflictException('Bank transaction was linked in the meantime');
+        }
+        await recordChargeCardPayment(tx, card, {
           amount: Number(bankTx.amount),
           bankDate: bankTx.date,
           bankTransactionId,
           matchedByUserId: userId,
-        });
-        await tx.bankTransaction.update({
-          where: { id: bankTransactionId },
-          data: { matchStatus: 'MANUAL_MATCHED' },
         });
       });
       return { success: true };
     }
 ```
 
-and change the message `'Registration not found'` in that `if (!target)` block to `'Payment target not found'`.
-
 Replace `apps/api/src/modules/bank-import/dto/match-bank-transaction.dto.ts` with:
 
 ```ts
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-/** Exactly one of the two ids; parsePaymentTargetRef enforces it. */
+// Exactly one of the three is required; the service rejects any other combination with a 400.
 export class MatchBankTransactionDto {
-  @ApiProperty({ required: false, description: 'Registration to book the payment on' })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   registrationId?: string;
 
-  @ApiProperty({ required: false, description: 'Charge card to book the payment on' })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
+  paymentId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
   chargeCardId?: string;
 }
 ```
 
-Run: `pnpm --filter @opencoop/api exec jest src/modules/bank-import`
-Expected: PASS, including the 6 new charge-card tests.
+In `apps/api/src/modules/admin/admin.controller.ts`, `matchBankTransaction`, change `{ registrationId: dto.registrationId, paymentId: dto.paymentId },` to `{ registrationId: dto.registrationId, paymentId: dto.paymentId, chargeCardId: dto.chargeCardId },`. The MCP tool `match_bank_transaction` (`mcp-bank.tools.ts:112`) keeps sending `{ registrationId }`; it needs no change.
 
-- [ ] **Step 5: Ponto and `addPayment` book card payments (TDD)**
-
-In `apps/api/src/modules/ponto/ponto.service.spec.ts`:
-
-1. Add `chargeCard: { findMany: jest.fn().mockResolvedValue([]) },` to `mockPrisma`.
-2. Append inside `describe('processTransaction')`:
-
-```ts
-    it('books a structured payment for a REQUESTED charge card', async () => {
-      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
-      mockPrisma.registration.findMany.mockResolvedValue([]);
-      mockPrisma.chargeCard.findMany.mockResolvedValueOnce([
-        { id: 'card-1', coopId: 'coop-1', shareholderId: 'sh-1', status: 'REQUESTED', feeInclVat: 6, ogmCode: '+++090/9337/55493+++' },
-      ]);
-      mockPrisma.bankTransaction.create.mockResolvedValue({ id: 'bt-c' });
-      mockPaymentsService.addPayment.mockResolvedValue({ id: 'pay-c' });
-
-      await (service as any).processTransaction({ ...structuredTxn, amount: 6 }, 'coop-1', true);
-
-      expect(mockPaymentsService.addPayment).toHaveBeenCalledWith(
-        expect.objectContaining({ target: { kind: 'chargeCard', id: 'card-1' }, amount: 6 }),
-      );
-    });
-
-    it('leaves a short charge-card payment UNMATCHED', async () => {
-      mockPrisma.bankTransaction.findUnique.mockResolvedValue(null);
-      mockPrisma.registration.findMany.mockResolvedValue([]);
-      mockPrisma.chargeCard.findMany.mockResolvedValueOnce([
-        { id: 'card-1', coopId: 'coop-1', shareholderId: 'sh-1', status: 'REQUESTED', feeInclVat: 6, ogmCode: '+++090/9337/55493+++' },
-      ]);
-      mockPrisma.bankTransaction.create.mockResolvedValue({ id: 'bt-s' });
-
-      await (service as any).processTransaction({ ...structuredTxn, amount: 5 }, 'coop-1', true);
-
-      expect(mockPrisma.bankTransaction.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ matchStatus: 'UNMATCHED' }),
-      });
-      expect(mockPaymentsService.addPayment).not.toHaveBeenCalled();
-    });
-```
-
-In `apps/api/src/modules/ponto/ponto.service.ts`, change `const matched = target !== null && acceptsAutoMatch(target);` to `const matched = target !== null && acceptsAutoMatch(target, txn.amount);`.
-
-In `apps/api/src/modules/payments/payments.service.spec.ts`:
-
-1. Add `import { BadRequestException } from '@nestjs/common';` (extend the existing `@nestjs/common` import).
-2. In `beforeEach`, replace the `prisma = { ... };` assignment with:
-
-```ts
-    prisma = {
-      registration: { findUnique: jest.fn(), update: jest.fn() },
-      payment: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([{ amount: 6 }]) },
-      chargeCard: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
-    };
-    prisma.$transaction = jest.fn((cb: (tx: unknown) => unknown) => cb(prisma));
-```
-3. Append:
-
-```ts
-  describe('charge cards', () => {
-    const cardTarget = {
-      kind: 'chargeCard' as const,
-      id: 'card-1',
-      coopId: 'coop-A',
-      shareholderId: 'sh-A',
-      status: 'REQUESTED' as const,
-      feeInclVat: 6,
-      ogmCode: '+++090/9337/55493+++',
-    };
-
-    it('books a payment on a REQUESTED card and returns it', async () => {
-      ogm.findTarget.mockResolvedValue(cardTarget);
-      prisma.payment.create.mockResolvedValue({ id: 'pay-c', amount: 6 });
-
-      const result = await service.addPayment({ target: { kind: 'chargeCard', id: 'card-1' }, coopId: 'coop-A', amount: 6, bankDate: new Date() });
-
-      expect(result).toEqual({ id: 'pay-c', amount: 6 });
-      expect(prisma.payment.create).toHaveBeenCalledWith({ data: expect.objectContaining({ chargeCardId: 'card-1' }) });
-      expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
-        where: { id: 'card-1', status: 'REQUESTED' },
-        data: { status: 'PAID', paidAt: expect.any(Date) },
-      });
-    });
-
-    it('refuses a payment for a card that is not REQUESTED', async () => {
-      ogm.findTarget.mockResolvedValue({ ...cardTarget, status: 'PAID' });
-
-      await expect(
-        service.addPayment({ target: { kind: 'chargeCard', id: 'card-1' }, coopId: 'coop-A', amount: 6, bankDate: new Date() }),
-      ).rejects.toThrow(BadRequestException);
-      expect(prisma.payment.create).not.toHaveBeenCalled();
-    });
-  });
-```
-
-Run: `pnpm --filter @opencoop/api exec jest src/modules/payments src/modules/ponto`
-Expected: FAIL — ts-jest reports `TS2345: Argument of type 'PaymentTarget' is not assignable to parameter of type 'RegistrationTarget'` in `payments.service.ts`. The Ponto suite already passes with the one-line fix above.
-
-In `apps/api/src/modules/payments/payments.service.ts`:
-
-1. Change the payment-target import to `import { ChargeCardTarget, PaymentTargetRef, RegistrationTarget } from '../ogm/payment-target';` and add `import { recordChargeCardPayment } from '../charge-cards/charge-card-payments';`.
-2. In `addPayment`, replace `return this.addRegistrationPayment(target, data);` with:
-
-```ts
-    if (target.kind === 'chargeCard') {
-      return this.addChargeCardPayment(target, data);
-    }
-    return this.addRegistrationPayment(target, data);
-```
-
-3. Add this method after `addPayment`:
-
-```ts
-  private async addChargeCardPayment(target: ChargeCardTarget, data: AddPaymentInput) {
-    if (target.status !== 'REQUESTED') {
-      throw new BadRequestException(`Cannot add payment to charge card with status ${target.status}`);
-    }
-    const { payment } = await this.prisma.$transaction((tx) =>
-      recordChargeCardPayment(tx, target, {
-        amount: data.amount,
-        bankDate: data.bankDate,
-        bankTransactionId: data.bankTransactionId,
-        matchedByUserId: data.matchedByUserId,
-      }),
-    );
-    return payment;
-  }
-```
-
-Run: `pnpm --filter @opencoop/api exec jest src/modules/payments src/modules/ponto src/modules/bank-import src/modules/ogm src/modules/charge-cards`
-Expected: PASS.
+Run: `pnpm --filter @opencoop/api exec jest src/modules/bank-import src/modules/ogm src/modules/charge-cards src/modules/ponto src/modules/payments src/modules/mcp src/modules/admin`
+Expected: PASS, including the 5 new manual-match tests.
 
 - [ ] **Step 6: Build, full test, commit**
 
@@ -4238,11 +3453,13 @@ git add apps/api/src/modules/ogm/payment-target.ts apps/api/src/modules/ogm/paym
   apps/api/src/modules/ogm/ogm.service.ts apps/api/src/modules/ogm/ogm.service.spec.ts \
   apps/api/src/modules/charge-cards/charge-card-payments.ts \
   apps/api/src/modules/charge-cards/charge-card-payments.spec.ts \
+  apps/api/src/modules/bank-import/bank-matching.service.ts \
+  apps/api/src/modules/bank-import/bank-matching.service.spec.ts \
   apps/api/src/modules/bank-import/bank-import.service.ts \
   apps/api/src/modules/bank-import/bank-import.service.spec.ts \
+  apps/api/src/modules/bank-import/bank-reconciliation.service.spec.ts \
   apps/api/src/modules/bank-import/dto/match-bank-transaction.dto.ts \
-  apps/api/src/modules/ponto/ponto.service.ts apps/api/src/modules/ponto/ponto.service.spec.ts \
-  apps/api/src/modules/payments/payments.service.ts apps/api/src/modules/payments/payments.service.spec.ts
+  apps/api/src/modules/admin/admin.controller.ts
 git commit -m "feat(charge-cards): a matched fee payment moves a requested card to paid"
 ```
 
@@ -4703,7 +3920,7 @@ In `apps/api/src/modules/email/email.processor.ts`, add after the `'charge-card-
 Add the copy:
 
 ```bash
-cd /Users/wouterhermans/Developer/opencoop
+cd /Users/wouterhermans/Developer/opencoop-worktrees/charge-cards
 node -e '
 const fs = require("fs");
 const copy = {
@@ -5462,7 +4679,10 @@ describeDb('ChargeCardSyncService (database)', () => {
 Run:
 
 ```bash
-DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate reset --force --skip-seed --skip-generate
+docker compose -f docker-compose.test.yml up -d --force-recreate --wait postgres-test
+docker compose -f docker-compose.test.yml exec -T postgres-test createdb -U opencoop opencoop_shadow
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate deploy
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma db push --skip-generate --accept-data-loss
 TEST_DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/api exec jest --runInBand db.spec
 ```
 
@@ -5855,7 +5075,7 @@ These two server pages already `await params`, so awaiting `searchParams` follow
 The script inserts the namespace as text before the final `}` of each file, so the duplicate keys elsewhere in `en.json` stay untouched. It refuses to run twice.
 
 ```bash
-cd /Users/wouterhermans/Developer/opencoop
+cd /Users/wouterhermans/Developer/opencoop-worktrees/charge-cards
 node - <<'JS'
 const fs = require('fs');
 const ns = {
@@ -6479,7 +5699,7 @@ git commit -m "feat(web): shareholder charge-cards page; login returns to the re
 - Modify: `apps/web/src/app/[locale]/dashboard/layout.tsx` (`adminNav`)
 - Create: `apps/web/src/app/[locale]/dashboard/admin/charge-cards/page.tsx`
 - Modify: `apps/web/src/app/[locale]/dashboard/admin/settings/page.tsx` (form state, load, save, a new card before "Ecopower Integration")
-- Modify: `apps/web/src/app/[locale]/dashboard/admin/transactions/page.tsx` (match dialog)
+- Modify: `apps/web/src/app/[locale]/dashboard/admin/bank-import/page.tsx` (match dialog)
 - Create: `e2e/tests/admin/charge-cards.spec.ts`
 - Modify: `e2e/tests/admin/settings.spec.ts`
 
@@ -6987,11 +6207,13 @@ function toOptionalNumber(value: string): number | undefined {
 
 ```
 
-- [ ] **Step 5: Let the manual match dialog book on a card**
+- [ ] **Step 5: Let the bank-import match dialog book on a card**
 
-In `apps/web/src/app/[locale]/dashboard/admin/transactions/page.tsx`:
+Main (v2026.39.4) moved manual matching for every bank row, CSV and Ponto, to the dialog on `admin/bank-import/page.tsx`. A short card payment from a CSV import lands there, so the card list goes into that dialog. (The older dialog on `admin/transactions/page.tsx` lists Ponto rows only; leave it as it is.)
 
-1. Add near the other interfaces:
+In `apps/web/src/app/[locale]/dashboard/admin/bank-import/page.tsx`:
+
+1. Add near the other interfaces (after `interface UnlinkedPayment { ... }`):
 
 ```ts
 interface MatchableChargeCard {
@@ -6999,77 +6221,64 @@ interface MatchableChargeCard {
   label: string | null;
   ogmCode: string;
   feeInclVat: number;
+  totalPaid: number;
   shareholderName: string;
 }
 ```
 
-2. Below `const [matchRegistrations, setMatchRegistrations] = useState<TransactionRow[]>([]);`, add `const [matchCards, setMatchCards] = useState<MatchableChargeCard[]>([]);`.
-3. In `openMatchDialog`, directly after `setMatchRegistrations([...(pending.items || []), ...(active.items || [])]);`, add:
+2. Below `const [registrations, setRegistrations] = useState<Registration[]>([]);`, add `const [matchCards, setMatchCards] = useState<MatchableChargeCard[]>([]);`.
+3. In `openMatchDialog`, directly after the closing `}` of its `try { ... } catch { ... } finally { ... }` block, add:
 
 ```ts
-      // Cards need canManageShareholders; an admin without it simply sees none.
-      setMatchCards(
-        selectedCoop.chargeCardsEnabled
-          ? await api<MatchableChargeCard[]>(`/admin/coops/${selectedCoop.id}/charge-cards?status=REQUESTED`).catch(
-              () => [],
-            )
-          : [],
-      );
+    // Cards need canManageShareholders; an admin without it simply sees none.
+    setMatchCards(
+      selectedCoop?.chargeCardsEnabled
+        ? await api<MatchableChargeCard[]>(`/admin/coops/${selectedCoop.id}/charge-cards?status=REQUESTED`).catch(
+            () => [],
+          )
+        : [],
+    );
 ```
 
-4. Replace the `handleMatch` signature and body line:
-
-```ts
-  const handleMatch = async (registrationId: string) => {
-```
-
-with
-
-```ts
-  const handleMatch = async (target: { registrationId: string } | { chargeCardId: string }) => {
-```
-
-and inside it replace `body: { registrationId },` with `body: target,`.
-5. Replace `onClick={() => handleMatch(reg.id)}` with `onClick={() => handleMatch({ registrationId: reg.id })}`.
-6. Directly below the definition of `filteredMatchRegistrations`, add:
-
-```ts
-  const filteredMatchCards = matchCards.filter((card) =>
-    `${card.shareholderName} ${card.label ?? ''} ${card.ogmCode}`.toLowerCase().includes(matchSearch.toLowerCase()),
-  );
-```
-
-7. In the match dialog, directly after the closing `)}` of the `matchLoading ? … : filteredMatchRegistrations.length === 0 ? … : …` block (still inside `<div className="space-y-4">`), add:
+4. Change the `handleMatch` signature from `async (target: { registrationId?: string; paymentId?: string })` to `async (target: { registrationId?: string; paymentId?: string; chargeCardId?: string })`. Its body already posts `target` as is.
+5. In the match dialog, directly after the closing `</div>` of the section headed `{t('admin.bankImport.openRegistration')}` (still inside the dialog's outer wrapper `<div>`), add:
 
 ```tsx
-            {!matchLoading && filteredMatchCards.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">{t('chargeCards.match.heading')}</p>
-                {filteredMatchCards.map((card) => (
-                  <button
-                    key={card.id}
-                    onClick={() => handleMatch({ chargeCardId: card.id })}
-                    disabled={matching}
-                    className="w-full text-left p-3 rounded-md border hover:bg-accent transition-colors disabled:opacity-50"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-sm">{card.shareholderName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {t('chargeCards.match.card')}
-                          {card.label ? ` · ${card.label}` : ''}
-                        </p>
-                        <p className="text-xs font-mono text-muted-foreground mt-0.5">{card.ogmCode}</p>
-                      </div>
-                      <p className="font-medium text-sm">{formatCurrency(card.feeInclVat, locale)}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+              {matchCards.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">{t('chargeCards.match.heading')}</h4>
+                  <div className="max-h-60 overflow-y-auto space-y-1">
+                    {matchCards.map((card) => (
+                      <button
+                        key={card.id}
+                        className="w-full flex items-center justify-between rounded-md border p-3 text-sm hover:bg-accent transition-colors disabled:opacity-50"
+                        onClick={() => handleMatch({ chargeCardId: card.id })}
+                        disabled={matching}
+                      >
+                        <div className="text-left">
+                          <p className="font-medium">{card.shareholderName}</p>
+                          <p className="text-muted-foreground text-xs">
+                            {t('chargeCards.match.card')}
+                            {card.label ? ` · ${card.label}` : ''}
+                          </p>
+                          <p className="text-muted-foreground font-mono text-xs">{card.ogmCode}</p>
+                        </div>
+                        <div className="text-right">
+                          <p>{formatCurrency(card.feeInclVat, locale)}</p>
+                          {card.totalPaid > 0 && (
+                            <p className="text-muted-foreground text-xs">
+                              {t('chargeCards.admin.paid')}: {formatCurrency(card.totalPaid, locale)}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 ```
 
-The unmatched list on this page shows Ponto transactions only (existing behaviour), so no seeded e2e data reaches this dialog. Check it by hand once Ponto delivers a short card payment on acc; the API path is covered by the Task 5 unit tests.
+The admin e2e from Step 1 pays a card in full through a CSV import, so it never opens this dialog. A short CSV payment for a card shows up as UNMATCHED on this page: check the dialog by hand once on acc. The API path is covered by the Task 5 unit tests.
 
 - [ ] **Step 6: Run the e2e specs and watch them pass**
 
@@ -7089,7 +6298,7 @@ Expected: build exits 0; lint reports no errors.
 git add apps/web/src/contexts/admin-context.tsx "apps/web/src/app/[locale]/dashboard/layout.tsx" \
   "apps/web/src/app/[locale]/dashboard/admin/charge-cards/page.tsx" \
   "apps/web/src/app/[locale]/dashboard/admin/settings/page.tsx" \
-  "apps/web/src/app/[locale]/dashboard/admin/transactions/page.tsx" \
+  "apps/web/src/app/[locale]/dashboard/admin/bank-import/page.tsx" \
   e2e/tests/admin/charge-cards.spec.ts e2e/tests/admin/settings.spec.ts
 git commit -m "feat(web): admin charge-cards page, settings, and manual match to a card"
 ```
@@ -7110,7 +6319,7 @@ The user's task list puts i18n last. The strings and emails already landed with 
 - [ ] **Step 1: Check locale parity and key usage**
 
 ```bash
-cd /Users/wouterhermans/Developer/opencoop
+cd /Users/wouterhermans/Developer/opencoop-worktrees/charge-cards
 node - <<'JS'
 const fs = require('fs');
 const flatten = (obj, prefix = '') =>
@@ -7142,7 +6351,7 @@ for (const [file, prefix] of pages) {
 for (const file of [
   'apps/web/src/app/[locale]/dashboard/layout.tsx',
   'apps/web/src/app/[locale]/dashboard/admin/settings/page.tsx',
-  'apps/web/src/app/[locale]/dashboard/admin/transactions/page.tsx',
+  'apps/web/src/app/[locale]/dashboard/admin/bank-import/page.tsx',
 ]) {
   for (const m of fs.readFileSync(file, 'utf8').matchAll(/\bt\('(chargeCards\.[^']+)'/g)) {
     if (!known.has(m[1])) fail(`${file}: unknown key ${m[1]}`);
@@ -7159,11 +6368,14 @@ Expected: `ok: 86 web keys and 18 email keys in 4 locales` and `exit=0`. Templat
 - [ ] **Step 2: Run every check on the branch**
 
 ```bash
-cd /Users/wouterhermans/Developer/opencoop
+cd /Users/wouterhermans/Developer/opencoop-worktrees/charge-cards
 pnpm --filter "@opencoop/api^..." build
 pnpm --filter @opencoop/api lint
 pnpm --filter @opencoop/api test
-DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate reset --force --skip-seed --skip-generate
+docker compose -f docker-compose.test.yml up -d --force-recreate --wait postgres-test
+docker compose -f docker-compose.test.yml exec -T postgres-test createdb -U opencoop opencoop_shadow
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma migrate deploy
+DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/database exec prisma db push --skip-generate --accept-data-loss
 TEST_DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm --filter @opencoop/api exec jest --runInBand db.spec
 pnpm build
 pnpm --filter @opencoop/web exec next lint
@@ -7184,12 +6396,8 @@ Insert directly above the first `## [` release heading in `CHANGELOG.md`:
 ## [Unreleased]
 
 ### Added
-- **Charge cards (laadpassen).** A coop can turn on charge cards in Settings and set the card fee and the replacement fee (incl. VAT). Active shareholders request a card in the dashboard, see the IBAN, amount and OGM, and pay by bank transfer. A CSV import or Ponto matches the payment and marks the card paid. Admins issue the card with its number, block and unblock it, and see how many working days each open card has waited; cards older than 5 working days are highlighted. Cards block themselves when the shareholder no longer holds shares and unblock when they do again. Each block or unblock shows up under "To do in provider portal" until an admin confirms the same change there.
+- **Charge cards (laadpassen).** A coop can turn on charge cards in Settings and set the card fee and the replacement fee (incl. VAT). Active shareholders request a card in the dashboard, see the IBAN, amount and OGM, and pay by bank transfer. A CSV import, Ponto or a rematch matches the payment and marks the card paid; an admin can also match a bank row to a card by hand on the bank-import page. Admins issue the card with its number, block and unblock it, and see how many working days each open card has waited; cards older than 5 working days are highlighted. Cards block themselves when the shareholder no longer holds shares and unblock when they do again. Each block or unblock shows up under "To do in provider portal" until an admin confirms the same change there.
 - **Login returns you to the page you asked for.** A deep link such as `/nl/dashboard/charge-cards`, or a coop login link with `?redirect=`, survives the login.
-
-### Fixed
-- **Ponto now matches structured payments.** Ponto delivers the OGM as 12 digits; OpenCoop stored it formatted, so no Ponto payment ever matched automatically.
-- **Manual bank-transaction matching stays within the admin's coop.**
 
 ### Changed
 - **OGM codes come from one counter per coop.** Registrations and charge cards share it, so codes never collide, and two simultaneous registrations no longer risk the same code.
@@ -7229,18 +6437,20 @@ Swap both `nl` for `fr`, `en` or `de` on the other language versions of `/[local
 ## Divergences from the spec and the task list
 
 1. **The ChargeCard schema lands in Task 2, not Task 4.** `Payment.chargeCardId` is a foreign key to `charge_cards`, so the table must exist when Payment becomes generic. Task 4 adds only the API.
-2. **`resolveOgmTarget` covers CSV import and Ponto only.** `addPayment` and `manualMatch` receive an id, never an OGM. They call the sibling `OgmService.findTarget(coopId, ref)`, which returns the same `PaymentTarget`, so all four entry points still share one lookup.
+2. **The spec's four entry points are now three, and `addPayment` stays registration-only.** On main, CSV import, Ponto and rematch all call `BankMatchingService.matchTransaction`, which takes its target from `OgmService.resolveOgmTarget(s)`. `manualMatch` receives an id, not an OGM, and looks a card up with `OgmService.findChargeCardTarget`. `PaymentsService.addPayment` (admin "add payment" on a registration, MCP `add_payment`) keeps its registration signature: Ponto no longer calls it, and a card fee always arrives as a bank transfer.
 3. **`lastUsedAt`, `INACTIVITY` and `chargeCardInactivityMonths` are left out.** Adding them in v2 is one column and one enum value; carrying them now adds dead states to every switch.
 4. **Two fields not in the spec's schema:** `paidAt` (the admin waiting time for a PAID card starts at payment) and `replacesCardId @unique` (the database enforces "replaced once").
 5. **Short payments:** CSV and Ponto auto-match a card only when the amount covers `feeInclVat`; anything shorter stays UNMATCHED, as the spec says. A manual match may book a partial amount, and the card turns PAID once its payments add up.
 6. **Admin cancel also works on PAID cards.** The lifecycle diagram cancels from REQUESTED only, but a paid card whose holder sold all shares has no other way out (issuing is refused). The refund happens outside OpenCoop.
 7. **i18n is not a separate last task.** Emails and strings land with the code whose tests render them; Task 10 checks parity.
 8. **Login return-to did not exist.** The spec assumes "not logged in → OpenCoop login" ends on the charge-cards page. Task 8 adds that.
-9. **Bug found and fixed on the way:** `manualMatch` did not check that the bank transaction or the registration belonged to the admin's coop (`bank-import.service.ts:375-394`). Task 3 scopes both lookups.
+9. **Dropped after the rebase on 4e6b2840:** the Ponto OGM-format fix, the coop scoping of `manualMatch`, the OGM normaliser in `ogm.ts` and `MatchBankTransactionDto` all shipped on main (v2026.39.1, v2026.39.2, v2026.39.4). Main's `extractOgmCode` matches a bare 12-digit OGM only when the whole reference is those 12 digits; the old plan also searched free text for one. This plan keeps main's rule.
+10. **DB specs bootstrap with `migrate deploy` + `db push`, not `migrate reset`.** The existing migrations do not replay to the current schema, and Prisma refuses `migrate reset` from an AI agent. See Global Constraints.
+11. **Manual match to a card lives on the bank-import page**, where main now matches every bank row; the Ponto-only dialog on the transactions page stays as it is.
 
 ## Open points (not in v1)
 
 - **VAT invoicing.** Not built. Later: push paid cards to Odoo (odoo.bronsgroen.be) for invoicing; `Coop.chargeCardVatRate` is stored for that and unused in v1.
 - **Replacement fee** of €12.00 incl. VAT is still to be confirmed by Bronsgroen.
 - **Card number format** (printed number, RFID UID, or both) and **charging platform / OCPI** remain the spec's open questions.
-- **Existing issues seen while planning, not changed here:** with `Coop.autoMatchPayments = false`, Ponto marks a matched transaction `AUTO_MATCHED` without booking a payment, so it never shows in the unmatched list (`ponto.service.ts:357-385`); `e2e/helpers/api-client.ts` reads `access_token` although `/auth/login` returns `accessToken`; `e2e/tests/auth/*.spec.ts` matches no Playwright project and never runs; `apps/web/messages/en.json` defines `meetings.convocation` twice.
+- **Existing issues seen while planning, not changed here:** the migration history does not replay to `schema.prisma` (Ecopower, API-key and gift columns, `webauthn_credentials`, `refresh_tokens`, `audit_logs` exist only through an old `db push`), so a fresh DB built with `prisma migrate deploy` alone is unusable; `e2e/helpers/api-client.ts` reads `access_token` although `/auth/login` returns `accessToken`; `e2e/tests/auth/*.spec.ts` matches no Playwright project and never runs; `apps/web/messages/en.json` defines `meetings.convocation` twice.
