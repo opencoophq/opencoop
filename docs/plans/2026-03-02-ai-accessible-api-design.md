@@ -106,7 +106,7 @@ AI Agent (Claude, Cursor, etc.)
 
 ## What This Enables
 
-1. **AI website builders**: Connect to `https://api.opencoop.be/mcp`, call `list_projects("zonnecooperatie")`, get back structured data, generate correct share purchase links on the coop's website.
+1. **AI website builders**: Connect to `https://mcp.opencoop.be/mcp`, call `list_projects("zonnecooperatie")`, get back structured data, generate correct share purchase links on the coop's website.
 2. **Any LLM**: Fetch `/llms-full.txt`, get a complete plain-text overview of all coops and their purchase URLs — no special tooling needed.
 3. **CMS integrations**: The MCP tools provide a clean API for syncing project data to any CMS.
 

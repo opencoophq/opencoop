@@ -152,6 +152,7 @@ Swagger UI available at: `http://localhost:3001/docs` (mounted via `SwaggerModul
 ## AI Integration
 
 - **MCP endpoint:** `POST /mcp` is the only MCP endpoint. It uses stateless Streamable HTTP transport with JSON responses, not SSE streaming. `GET` and `DELETE` on `/mcp` return `405`.
+- **Public URLs:** Give external clients `https://mcp.opencoop.be/mcp` (acc: `https://mcp-acc.opencoop.be/mcp`). The old path `https://opencoop.be/api/mcp` still works.
 - **Authentication:** Send `Authorization: Bearer oc_<key>`. Each API key belongs to exactly one user and one coop. It is not a session token.
 - **Key scope:** Keys use `READ_ONLY` by default or `READ_WRITE` when selected during creation in the dashboard.
 - Every tool call re-checks the key owner's live coop permissions at call time. It uses the same permission checks as the REST API's `@RequirePermission` decorator and applies the same `canViewPII` masking logic to returned data.
@@ -261,6 +262,16 @@ CI/CD builds GHCR Docker images via GitHub Actions, then deploys them over SSH t
 - Next.js Web (standalone output)
 - A dedicated one-shot migrate container that runs `prisma migrate deploy` **before** the API starts
 - Caddy reverse proxy on fsn1 (shared `proxy` network, not bundled in this compose file)
+
+Caddy routes these hostnames to the containers (DNS is in Cloudflare, proxied):
+
+| Host | Target |
+|------|--------|
+| `opencoop.be`, `acc.opencoop.be` | web; `/api/*` goes to the API with the `/api` prefix stripped |
+| `api.opencoop.be`, `api-acc.opencoop.be` | API, no path prefix (e.g. `/health`) |
+| `mcp.opencoop.be`, `mcp-acc.opencoop.be` | API `/mcp*` only; every other path returns `404` |
+
+The web app keeps calling `/api` on its own origin, so it needs no CORS change.
 
 Deploys recreate containers without touching volumes (`--force-recreate`); the migrate
 container applies pending migrations, so there is no manual `docker compose exec api ...`
