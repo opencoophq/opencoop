@@ -1,0 +1,10 @@
+- generic [active] [ref=e1]:
+  - paragraph [ref=e3]: Page not found
+  - alert [ref=e4]
+  - generic [ref=e5]:
+    - img [ref=e6]
+    - paragraph [ref=e8]:
+      - text: This website uses essential cookies for functionality. No tracking or advertising cookies are used.
+      - link "Learn more" [ref=e9] [cursor=pointer]:
+        - /url: /en/privacy
+    - button "OK" [ref=e10] [cursor=pointer]
