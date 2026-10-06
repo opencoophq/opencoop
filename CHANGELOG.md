@@ -17,6 +17,8 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+## [2026.41.0] - 2026-10-06
+
 ### Added
 - **Charge cards (laadpassen).** A coop can turn on charge cards in Settings and set the card fee and the replacement fee (incl. VAT). Active shareholders request a card in the dashboard, see the IBAN, amount and OGM, and pay by bank transfer. A CSV import, Ponto or a rematch matches the payment and marks the card paid; an admin can also match a bank row to a card by hand on the bank-import page. Admins issue the card with its number, block and unblock it, and see how many working days each open card has waited; cards older than 5 working days are highlighted. Cards block themselves when the shareholder no longer holds shares and unblock when they do again. Each block or unblock shows up under "To do in provider portal" until an admin confirms the same change there.
 - **Login returns you to the page you asked for.** A deep link such as `/nl/dashboard/charge-cards`, or a coop login link with `?redirect=`, survives the login.
