@@ -133,6 +133,7 @@ Optional:
 ```
 LAUNCH_MODE=waitlist    # Set on prod to show waitlist dialog instead of onboarding links
 SENTRY_DSN=https://...  # Sentry error tracking DSN (API only, no-op if unset)
+MCP_PUBLIC_URL=https://mcp.opencoop.be/mcp  # Web, runtime: MCP URL shown in admin settings snippet
 ```
 
 ## Feature Flags
