@@ -17,6 +17,14 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+## [2026.41.1] - 2026-10-06
+
+### Added
+- **Public API and MCP hostnames.** The API is now also served at `https://api.opencoop.be` and the MCP server at `https://mcp.opencoop.be/mcp` (acc: `api-acc.opencoop.be`, `mcp-acc.opencoop.be`). The old `opencoop.be/api` paths keep working.
+
+### Changed
+- **Admin settings show the new MCP URL.** The MCP config snippet now uses `https://mcp.opencoop.be/mcp`, set at runtime by `MCP_PUBLIC_URL`.
+
 ## [2026.41.0] - 2026-10-06
 
 ### Added
