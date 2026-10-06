@@ -12,13 +12,17 @@ import { EmailService } from '../email/email.service';
 import { DocumentsService } from '../documents/documents.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+import { OgmService } from '../ogm/ogm.service';
+import { generateOgmCode } from '@opencoop/shared';
 
 describe('RegistrationsService', () => {
   let service: RegistrationsService;
   let prisma: any;
   let emailService: any;
+  let ogm: { nextOgmCode: jest.Mock };
 
   beforeEach(async () => {
+    ogm = { nextOgmCode: jest.fn() };
     emailService = {
       sendSharePurchaseConfirmation: jest.fn().mockResolvedValue(undefined),
       sendPaymentConfirmation: jest.fn().mockResolvedValue(undefined),
@@ -40,7 +44,11 @@ describe('RegistrationsService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EmailService, useValue: emailService },
         { provide: DocumentsService, useValue: {} },
-        { provide: AdminNotificationsService, useValue: {} },
+        {
+          provide: AdminNotificationsService,
+          useValue: { notifyAdminsOnEvent: jest.fn().mockResolvedValue(undefined) },
+        },
+        { provide: OgmService, useValue: ogm },
         {
           provide: ShareholderStatusService,
           useValue: { recompute: jest.fn().mockResolvedValue(null), recomputeMany: jest.fn() },
@@ -261,6 +269,40 @@ describe('RegistrationsService', () => {
           quantity: 10,
           totalValue: 1000,
         }),
+      );
+    });
+  });
+
+  describe('createBuy — OGM from the shared coop counter', () => {
+    it('takes the OGM from OgmService inside the create transaction, not from a registration count', async () => {
+      const ogmCode = generateOgmCode('001', 7);
+      prisma.shareClass = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'sc-1', name: 'A', pricePerShare: 25 }),
+      };
+      prisma.shareholder = {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'sh-1', firstName: 'Jan', lastName: 'Peeters', companyName: null, email: null, user: null,
+        }),
+      };
+      prisma.coop.findUnique.mockResolvedValue({
+        requiresApproval: false, emailEnabled: false, bankIban: null, bankBic: null,
+      });
+      const tx = {
+        registration: {
+          count: jest.fn().mockResolvedValue(99),
+          create: jest.fn().mockResolvedValue({ id: 'reg-1', ogmCode }),
+        },
+      };
+      prisma.$transaction = jest.fn((cb: (t: unknown) => unknown) => cb(tx));
+      prisma.registration.count.mockResolvedValue(1);
+      ogm.nextOgmCode.mockResolvedValue(ogmCode);
+
+      await service.createBuy({ coopId: 'coop-1', shareholderId: 'sh-1', shareClassId: 'sc-1', quantity: 1 });
+
+      expect(ogm.nextOgmCode).toHaveBeenCalledWith(tx, 'coop-1');
+      expect(tx.registration.count).not.toHaveBeenCalled();
+      expect(tx.registration.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ ogmCode }) }),
       );
     });
   });

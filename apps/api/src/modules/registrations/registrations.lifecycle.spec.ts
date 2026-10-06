@@ -12,6 +12,7 @@ import { EmailService } from '../email/email.service';
 import { DocumentsService } from '../documents/documents.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+import { OgmService } from '../ogm/ogm.service';
 
 /**
  * Behavioural specs for the registration state machine:
@@ -52,6 +53,7 @@ describe('RegistrationsService — lifecycle', () => {
         { provide: DocumentsService, useValue: {} },
         { provide: AdminNotificationsService, useValue: {} },
         { provide: ShareholderStatusService, useValue: shareholderStatus },
+        { provide: OgmService, useValue: { nextOgmCode: jest.fn() } },
       ],
     }).compile();
     service = moduleRef.get(RegistrationsService);

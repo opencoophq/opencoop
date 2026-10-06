@@ -376,6 +376,50 @@ export class EmailProcessor {
           <p>${s.thanks}</p>
         `;
       },
+      'charge-card-coop-notice': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const sn = escapeHtml(d.shareholderName);
+        const s = buildCopy('charge-card-coop-notice', lang, { coopName: escapeHtml(cn), shareholderName: sn });
+        const reenable = d.kind === 'reenable';
+        const amount = typeof d.amount === 'number' ? d.amount.toFixed(2) : '';
+        return `
+    <h1>${reenable ? s.reenableTitle : s.requestedTitle}</h1>
+    <p>${reenable ? s.reenableIntro : s.requestedIntro}</p>
+    <ul>
+      <li>${s.shareholder}: ${sn}</li>
+      ${d.label ? `<li>${s.label}: ${escapeHtml(d.label)}</li>` : ''}
+      <li>${s.ogm}: ${escapeHtml(d.ogmCode)}</li>
+      ${reenable ? '' : `<li>${s.amount}: €${amount}${d.isReplacement ? ` (${s.replacement})` : ''}</li>`}
+    </ul>
+    <p>${reenable ? s.reenableAction : s.requestedAction}</p>
+  `;
+      },
+      'charge-card-issued': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const s = buildCopy('charge-card-issued', lang, {
+          coopName: escapeHtml(cn),
+          shareholderName: escapeHtml(d.shareholderName),
+        });
+        return `
+    <h1>${s.title}</h1>
+    <p>${s.dear}</p>
+    <p>${s.intro}</p>
+    <ul>
+      ${d.label ? `<li>${s.label}: ${escapeHtml(d.label)}</li>` : ''}
+      <li>${s.cardNumber}: <strong>${escapeHtml(d.cardNumber)}</strong></li>
+    </ul>
+    ${d.dashboardUrl ? `
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${d.dashboardUrl}"
+         style="background-color: #1e40af; color: white; padding: 12px 24px;
+                text-decoration: none; border-radius: 6px; display: inline-block;">
+        ${s.dashboard}
+      </a>
+    </p>
+    ` : ''}
+    <p>${s.thanks}</p>
+  `;
+      },
       'dividend-statement': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const sn = escapeHtml(d.shareholderName);

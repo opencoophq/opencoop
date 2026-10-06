@@ -1,4 +1,5 @@
 import { clearAllSessions, removeSession, getActiveSessionId, getAllSessions, switchSession, updateActiveSessionToken } from './sessions';
+import { hasPendingPostLoginRedirect, rememberPostLoginRedirect } from './post-login-redirect';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -54,6 +55,16 @@ function clearAuthAndRedirect() {
     switchSession(remaining[0].id);
     window.location.href = '/dashboard';
     return;
+  }
+
+  // A stale token can fail here after the dashboard layout already consumed
+  // a deep link and navigated (e.g. a coop login page saw a token and
+  // replaced to /dashboard before this request discovered the session was
+  // actually dead). Keep whatever is already queued; only fall back to the
+  // page the user is on now if nothing better is waiting. Same sanitiser
+  // and storage the dashboard layout and login pages use.
+  if (!hasPendingPostLoginRedirect()) {
+    rememberPostLoginRedirect(window.location.pathname);
   }
 
   localStorage.removeItem('accessToken');
@@ -139,7 +150,9 @@ export async function api<T = unknown>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+    const err = new Error(error.message || `HTTP ${response.status}`) as Error & { status?: number };
+    err.status = response.status;
+    throw err;
   }
 
   // Handle empty responses (204 No Content, or 200 with empty body)

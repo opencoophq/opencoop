@@ -49,6 +49,20 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
       amount: 75,
       dashboardUrl: 'https://opencoop.test/dashboard',
     },
+    'charge-card-coop-notice': {
+      kind: 'requested',
+      shareholderName: 'Jan Peeters',
+      label: 'Auto <Anna>',
+      ogmCode: '+++090/9337/55493+++',
+      amount: 6,
+      isReplacement: true,
+    },
+    'charge-card-issued': {
+      shareholderName: 'Jan Peeters',
+      label: 'Auto <Anna>',
+      cardNumber: 'NL-ABC-123',
+      dashboardUrl: 'https://opencoop.test/dashboard/charge-cards',
+    },
     'dividend-statement': {
       shareholderName: 'Jan Peeters',
       year: 2025,
@@ -235,6 +249,18 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
         coopName: 'Coöp & Co',
       },
     },
+    {
+      name: 'charge-card-coop-notice (re-enable)',
+      key: 'charge-card-coop-notice',
+      data: {
+        kind: 'reenable',
+        shareholderName: 'Jan Peeters',
+        label: null,
+        ogmCode: '+++090/9337/55493+++',
+        amount: 6,
+        isReplacement: false,
+      },
+    },
   ];
 
   describe.each(templateKeys)('template "%s"', (key) => {
@@ -279,5 +305,15 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
     expect(html).toContain('Beste Christiane,');
     expect(html).toContain('Dit bericht bevat bijlagen.');
     expect(html).not.toContain('&lt;h2&gt;');
+  });
+
+  it('escapes the card label in the charge-card coop notice', () => {
+    const html = createProcessor().renderTemplate(
+      'charge-card-coop-notice',
+      { ...sampleData['charge-card-coop-notice'], language: 'nl' },
+      coopName,
+    );
+    expect(html).toContain('Auto &lt;Anna&gt;');
+    expect(html).toContain('€6.00 (vervanging van een verloren pas)');
   });
 });

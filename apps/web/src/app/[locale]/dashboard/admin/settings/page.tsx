@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { api } from '@/lib/api';
+import { isValidAmount } from '@/lib/charge-cards-validation';
 import {
   Info,
   AlertTriangle,
@@ -73,6 +74,10 @@ interface FormState {
   ecoPowerEnabled: boolean;
   ecoPowerMinThresholdType: string;
   ecoPowerMinThreshold: string;
+  chargeCardsEnabled: boolean;
+  chargeCardFee: string;
+  chargeCardReplacementFee: string;
+  chargeCardVatRate: string;
   legalForm: string;
   foundedDate: string;
   certificateSignatory: string;
@@ -111,6 +116,10 @@ interface SettingsResponse {
   ecoPowerEnabled: boolean;
   ecoPowerMinThresholdType: string | null;
   ecoPowerMinThreshold: number | null;
+  chargeCardsEnabled: boolean;
+  chargeCardFee: string | null;
+  chargeCardReplacementFee: string | null;
+  chargeCardVatRate: string | null;
   apiKeyPrefix: string | null;
   legalForm: string | null;
   foundedDate: string | null;
@@ -178,6 +187,11 @@ function getDaysUntilExpiry(dateString: string): number {
   return Math.ceil((expiry.getTime() - now.getTime()) / 86400000);
 }
 
+function toOptionalNumber(value: string): number | undefined {
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 export default function AdminSettingsPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
@@ -207,6 +221,10 @@ export default function AdminSettingsPage() {
     ecoPowerEnabled: false,
     ecoPowerMinThresholdType: 'EURO',
     ecoPowerMinThreshold: '',
+    chargeCardsEnabled: false,
+    chargeCardFee: '6.00',
+    chargeCardReplacementFee: '12.00',
+    chargeCardVatRate: '21',
     legalForm: '',
     foundedDate: '',
     certificateSignatory: '',
@@ -354,6 +372,11 @@ export default function AdminSettingsPage() {
           ecoPowerEnabled: settings.ecoPowerEnabled || false,
           ecoPowerMinThresholdType: settings.ecoPowerMinThresholdType || 'EURO',
           ecoPowerMinThreshold: settings.ecoPowerMinThreshold?.toString() || '',
+          chargeCardsEnabled: settings.chargeCardsEnabled || false,
+          chargeCardFee: settings.chargeCardFee != null ? Number(settings.chargeCardFee).toFixed(2) : '6.00',
+          chargeCardReplacementFee:
+            settings.chargeCardReplacementFee != null ? Number(settings.chargeCardReplacementFee).toFixed(2) : '12.00',
+          chargeCardVatRate: settings.chargeCardVatRate != null ? String(Number(settings.chargeCardVatRate)) : '21',
           legalForm: settings.legalForm || '',
           foundedDate: settings.foundedDate || '',
           certificateSignatory: settings.certificateSignatory || '',
@@ -400,6 +423,17 @@ export default function AdminSettingsPage() {
   const handleSave = async () => {
     if (!selectedCoop) return;
     setError('');
+
+    if (
+      form.chargeCardsEnabled &&
+      (!isValidAmount(form.chargeCardFee) ||
+        !isValidAmount(form.chargeCardReplacementFee) ||
+        !isValidAmount(form.chargeCardVatRate, { min: 0, max: 100 }))
+    ) {
+      setError(t('chargeCards.settings.invalidAmount'));
+      return;
+    }
+
     try {
       const body: Record<string, unknown> = {
         name: form.name,
@@ -412,6 +446,10 @@ export default function AdminSettingsPage() {
         ecoPowerEnabled: form.ecoPowerEnabled,
         ecoPowerMinThresholdType: form.ecoPowerEnabled ? form.ecoPowerMinThresholdType : null,
         ecoPowerMinThreshold: form.ecoPowerEnabled ? (parseFloat(form.ecoPowerMinThreshold) || null) : null,
+        chargeCardsEnabled: form.chargeCardsEnabled,
+        chargeCardFee: toOptionalNumber(form.chargeCardFee),
+        chargeCardReplacementFee: toOptionalNumber(form.chargeCardReplacementFee),
+        chargeCardVatRate: toOptionalNumber(form.chargeCardVatRate),
         legalForm: form.legalForm || null,
         foundedDate: form.foundedDate || null,
         certificateSignatory: form.certificateSignatory || null,
@@ -1071,6 +1109,62 @@ export default function AdminSettingsPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Charge cards */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('chargeCards.settings.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t('chargeCards.settings.description')}</p>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="charge-cards-enabled"
+                checked={form.chargeCardsEnabled}
+                onCheckedChange={(c) => setForm({ ...form, chargeCardsEnabled: !!c })}
+              />
+              <Label htmlFor="charge-cards-enabled">{t('chargeCards.settings.enabled')}</Label>
+            </div>
+            {form.chargeCardsEnabled && (
+              <div className="grid gap-4 pl-6 border-l-2 border-muted sm:grid-cols-3">
+                <div className="space-y-1">
+                  <Label htmlFor="charge-card-fee">{t('chargeCards.settings.fee')}</Label>
+                  <Input
+                    id="charge-card-fee"
+                    type="number"
+                    min={0.01}
+                    step="0.01"
+                    value={form.chargeCardFee}
+                    onChange={(e) => setForm({ ...form, chargeCardFee: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="charge-card-replacement-fee">{t('chargeCards.settings.replacementFee')}</Label>
+                  <Input
+                    id="charge-card-replacement-fee"
+                    type="number"
+                    min={0.01}
+                    step="0.01"
+                    value={form.chargeCardReplacementFee}
+                    onChange={(e) => setForm({ ...form, chargeCardReplacementFee: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="charge-card-vat-rate">{t('chargeCards.settings.vatRate')}</Label>
+                  <Input
+                    id="charge-card-vat-rate"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.01"
+                    value={form.chargeCardVatRate}
+                    onChange={(e) => setForm({ ...form, chargeCardVatRate: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Ecopower Integration */}
         <Card>

@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 import { PaymentsService } from '../payments/payments.service';
+import { OgmService } from '../ogm/ogm.service';
 
 describe('bank reconciliation regressions', () => {
   let service: BankImportService;
@@ -83,6 +84,7 @@ describe('bank reconciliation regressions', () => {
         findMany: jest.fn().mockResolvedValue([]),
         update: jest.fn().mockResolvedValue({}),
       },
+      chargeCard: { findFirst: jest.fn().mockResolvedValue(null), findMany: jest.fn().mockResolvedValue([]) },
       $transaction: jest.fn((callback: (tx: any) => Promise<unknown>) => callback(prisma)),
     };
     const payments: any[] = [];
@@ -140,6 +142,7 @@ describe('bank reconciliation regressions', () => {
       providers: [
         BankImportService,
         BankMatchingService,
+        OgmService,
         { provide: PrismaService, useValue: prisma },
         { provide: PaymentsService, useValue: paymentsService },
         { provide: RegistrationsService, useValue: { onRegistrationCompleted: jest.fn() } },

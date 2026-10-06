@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, ShareholderStatus } from '@opencoop/database';
 import { Queue } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ChargeCardSyncService } from '../charge-cards/charge-card-sync.service';
 import { deriveShareholderStatus } from './shareholder-status';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class ShareholderStatusService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('audience-sync') private readonly audienceQueue: Queue,
+    private readonly chargeCardSync: ChargeCardSyncService,
   ) {}
 
   async recompute(shareholderId: string): Promise<ShareholderStatus | null> {
@@ -51,6 +53,13 @@ export class ShareholderStatusService {
       this.logger.warn(
         `audience-sync enqueue failed for ${shareholder.id}: ${(err as Error).message}`,
       );
+    }
+
+    try {
+      await this.chargeCardSync.syncShareholder(shareholder.id);
+    } catch (err) {
+      // The nightly sync catches up; a failed card sync must not undo a status change.
+      this.logger.warn(`charge-card sync failed for ${shareholder.id}: ${(err as Error).message}`);
     }
 
     return status;

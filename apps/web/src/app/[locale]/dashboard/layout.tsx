@@ -32,6 +32,7 @@ import {
   UserPlus,
   Megaphone,
   CalendarCheck,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +49,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { FeedbackButton } from '@/components/feedback-button';
 import { api, resolveLogoUrl } from '@/lib/api';
 import { getAllSessions, switchSession, removeSession, getActiveSessionId, clearAllSessions, type Session } from '@/lib/sessions';
+import { consumePostLoginRedirect, rememberPostLoginRedirect } from '@/lib/post-login-redirect';
 
 interface NavItem {
   href: string;
@@ -74,7 +76,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     pendingShareholders: number;
     unmatchedBankTransactions: number;
   } | null>(null);
-  const [shareholderCoop, setShareholderCoop] = useState<{ name: string; logoUrl?: string } | null>(null);
+  const [shareholderCoop, setShareholderCoop] = useState<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -82,6 +84,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const userData = localStorage.getItem('user');
 
     if (!token || !userData) {
+      rememberPostLoginRedirect(pathname);
       router.push('/login');
       return;
     }
@@ -96,10 +99,19 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       api<{
         emailVerified?: boolean;
         adminCoops?: typeof adminCoops;
-        shareholderCoops?: Array<{ name: string; logoUrl?: string }>;
+        shareholderCoops?: Array<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean }>;
         shareholders?: Array<{ id: string }>;
       }>('/auth/me')
         .then((data) => {
+          // Only now do we know the token actually works: a stale token fails
+          // here, `api()` redirects to /login itself (see api.ts), and that
+          // redirect re-remembers the path. Consuming it before this point
+          // would discard the deep link for exactly that case.
+          const pendingRedirect = consumePostLoginRedirect();
+          if (pendingRedirect && pendingRedirect !== pathname) {
+            router.replace(pendingRedirect);
+          }
+
           setEmailVerified(data.emailVerified ?? true);
 
           if (data.adminCoops) {
@@ -181,6 +193,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" /> },
     { href: '/dashboard/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
     { href: '/dashboard/meetings', label: t('meetings.title'), icon: <CalendarCheck className="h-4 w-4" /> },
+    ...(shareholderCoop?.chargeCardsEnabled || shareholderCoop?.hasChargeCards
+      ? [{ href: '/dashboard/charge-cards', label: t('chargeCards.nav'), icon: <Zap className="h-4 w-4" /> }]
+      : []),
     { href: '/dashboard/documents', label: t('common.documents'), icon: <FileDown className="h-4 w-4" /> },
     { href: '/dashboard/inbox', label: t('messages.title'), icon: <MailIcon className="h-4 w-4" />, badge: unreadCount },
     { href: '/dashboard/personal-data', label: t('personalData.title'), icon: <UserCog className="h-4 w-4" /> },
@@ -190,6 +205,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     ? ([
         { href: '/dashboard/admin', label: t('common.overview'), icon: <LayoutDashboard className="h-4 w-4" /> },
         hasPermission('canManageShareholders') && { href: '/dashboard/admin/shareholders', label: t('admin.shareholders.title'), icon: <Users className="h-4 w-4" />, badge: adminStats?.pendingShareholders },
+        hasPermission('canManageShareholders') && (selectedCoop.chargeCardsEnabled || selectedCoop.hasChargeCards) && { href: '/dashboard/admin/charge-cards', label: t('chargeCards.admin.title'), icon: <Zap className="h-4 w-4" /> },
         hasPermission('canManageShareClasses') && { href: '/dashboard/admin/share-classes', label: t('admin.shareClasses.title'), icon: <FileText className="h-4 w-4" /> },
         hasPermission('canManageTransactions') && { href: '/dashboard/admin/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" />, badge: adminStats?.pendingRegistrations },
         hasPermission('canManageProjects') && { href: '/dashboard/admin/projects', label: t('admin.projects.title'), icon: <Building2 className="h-4 w-4" /> },

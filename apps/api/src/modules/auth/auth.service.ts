@@ -413,6 +413,7 @@ export class AuthService {
                 active: true,
                 plan: true,
                 trialEndsAt: true,
+                chargeCardsEnabled: true,
                 channels: {
                   where: { isDefault: true },
                   select: { logoUrl: true },
@@ -435,6 +436,7 @@ export class AuthService {
                 bankIban: true,
                 bankBic: true,
                 minimumHoldingPeriod: true,
+                chargeCardsEnabled: true,
                 channels: {
                   where: { isDefault: true },
                   select: { logoUrl: true },
@@ -442,6 +444,10 @@ export class AuthService {
                 },
               },
             },
+            // Excludes CANCELLED, mirroring adminCoops.hasChargeCards: a
+            // shareholder who still holds a card keeps the nav entry even
+            // after an admin switches the feature off for the coop.
+            _count: { select: { chargeCards: { where: { status: { not: 'CANCELLED' } } } } },
             registrations: {
               include: {
                 shareClass: true,
@@ -523,7 +529,7 @@ export class AuthService {
     if (user.role === 'SYSTEM_ADMIN') {
       adminCoopsRaw = await this.prisma.coop.findMany({
         select: {
-          id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true,
+          id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true, chargeCardsEnabled: true,
           channels: { where: { isDefault: true }, select: { logoUrl: true }, take: 1 },
         },
         orderBy: { name: 'asc' },
@@ -535,7 +541,14 @@ export class AuthService {
       adminCoopsRaw.map(async (coop) => {
         const full = await this.prisma.coop.findUnique({
           where: { id: coop.id },
-          select: { plan: true, trialEndsAt: true, subscription: { select: { status: true } } },
+          select: {
+            plan: true,
+            trialEndsAt: true,
+            subscription: { select: { status: true } },
+            // Excludes CANCELLED: a coop that tried the feature, cancelled every
+            // card and switched it off should not keep the nav entry forever.
+            _count: { select: { chargeCards: { where: { status: { not: 'CANCELLED' } } } } },
+          },
         });
         const isReadOnly = full ? computeIsReadOnly(full) : false;
         const { channels, ...rest } = coop as typeof coop & { channels?: { logoUrl: string | null }[] };
@@ -545,6 +558,10 @@ export class AuthService {
           plan: full?.plan ?? 'FREE',
           trialEndsAt: full?.trialEndsAt?.toISOString() ?? undefined,
           isReadOnly,
+          // The nav entry shows for a disabled coop that still holds cards: the
+          // nightly sync keeps blocking them even after an admin switches the
+          // feature off, so the to-do list must stay reachable from the nav.
+          hasChargeCards: (full?._count.chargeCards ?? 0) > 0,
         };
       }),
     );
@@ -609,7 +626,11 @@ export class AuthService {
       adminCoops,
       shareholderCoops: user.shareholders.map((s) => {
         const { channels, ...rest } = s.coop as typeof s.coop & { channels?: { logoUrl: string | null }[] };
-        return { ...rest, logoUrl: channels?.[0]?.logoUrl ?? null };
+        return {
+          ...rest,
+          logoUrl: channels?.[0]?.logoUrl ?? null,
+          hasChargeCards: ((s as typeof s & { _count?: { chargeCards: number } })._count?.chargeCards ?? 0) > 0,
+        };
       }),
     };
   }

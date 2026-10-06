@@ -1,11 +1,12 @@
 import { Injectable, Inject, forwardRef, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { generateOgmCode, computeTotalPaid, computeVestedShares } from '@opencoop/shared';
+import { computeTotalPaid, computeVestedShares } from '@opencoop/shared';
 import { DocumentsService } from '../documents/documents.service';
 import { EmailService } from '../email/email.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+import { OgmService } from '../ogm/ogm.service';
 
 @Injectable()
 export class RegistrationsService {
@@ -16,6 +17,7 @@ export class RegistrationsService {
     private emailService: EmailService,
     private adminNotificationsService: AdminNotificationsService,
     private shareholderStatus: ShareholderStatusService,
+    private ogm: OgmService,
   ) {}
 
   private readonly defaultInclude = {
@@ -353,19 +355,16 @@ export class RegistrationsService {
     // C6: Guard against null coop
     const coop = await this.prisma.coop.findUnique({
       where: { id: data.coopId },
-      select: { ogmPrefix: true, requiresApproval: true, emailEnabled: true, bankIban: true, bankBic: true },
+      select: { requiresApproval: true, emailEnabled: true, bankIban: true, bankBic: true },
     });
 
     if (!coop) {
       throw new NotFoundException('Cooperative not found');
     }
 
-    // I2: Wrap count+create in transaction for OGM uniqueness
+    // The OGM comes from the coop's shared counter (registrations + charge cards).
     const registration = await this.prisma.$transaction(async (tx) => {
-      const registrationCount = await tx.registration.count({
-        where: { coopId: data.coopId },
-      });
-      const ogmCode = generateOgmCode(coop.ogmPrefix, registrationCount + 1);
+      const ogmCode = await this.ogm.nextOgmCode(tx, data.coopId);
 
       const initialStatus = coop.requiresApproval ? 'PENDING' : 'PENDING_PAYMENT';
 

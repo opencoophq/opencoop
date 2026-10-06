@@ -5,6 +5,9 @@ import { ShareholderStatusService } from '../shareholder-status/shareholder-stat
 import { computeTotalPaid, extractOgmCode } from '@opencoop/shared';
 import { BankPreset, BANK_PRESETS } from './bank-presets';
 import { BankMatchingService } from './bank-matching.service';
+import { OgmService } from '../ogm/ogm.service';
+import { ChargeCardNotPayableError, recordChargeCardPayment } from '../charge-cards/charge-card-payments';
+import { toCents } from '../ogm/payment-target';
 
 @Injectable()
 export class BankImportService {
@@ -13,6 +16,7 @@ export class BankImportService {
     private registrationsService: RegistrationsService,
     private shareholderStatus: ShareholderStatusService,
     private bankMatchingService: BankMatchingService,
+    private ogm: OgmService,
   ) {}
 
   async getImports(coopId: string) {
@@ -48,6 +52,12 @@ export class BankImportService {
                 shareholder: {
                   select: { firstName: true, lastName: true, companyName: true },
                 },
+              },
+            },
+            chargeCard: {
+              select: {
+                label: true,
+                shareholder: { select: { firstName: true, lastName: true, companyName: true } },
               },
             },
           },
@@ -177,25 +187,8 @@ export class BankImportService {
           .filter((ogmCode): ogmCode is string => ogmCode !== null),
       ),
     ];
-    const registrationMap = new Map<string, any>();
-    if (uniqueOgms.length > 0) {
-      const registrations = await this.prisma.registration.findMany({
-        where: { coopId, ogmCode: { in: uniqueOgms } },
-        select: {
-          id: true,
-          coopId: true,
-          status: true,
-          totalAmount: true,
-          ogmCode: true,
-          payments: {
-            select: { id: true, amount: true, bankDate: true, bankTransactionId: true },
-          },
-        },
-      });
-      for (const registration of registrations) {
-        if (registration.ogmCode) registrationMap.set(registration.ogmCode, registration);
-      }
-    }
+    // One batched lookup for every OGM in the file (no per-row N+1).
+    const targets = await this.ogm.resolveOgmTargets(coopId, uniqueOgms);
 
     for (const row of importRows) {
       const ogmCode = extractOgmCode(row.reference);
@@ -234,7 +227,7 @@ export class BankImportService {
         amount: row.amount,
         referenceText: row.reference || null,
         ogmCode,
-      }, importedById, true, ogmCode ? registrationMap.get(ogmCode) : undefined);
+      }, importedById, true, ogmCode ? targets.get(ogmCode) : undefined);
       if (result.status === 'AUTO_MATCHED') matchedCount++;
       else unmatchedCount++;
     }
@@ -407,12 +400,12 @@ export class BankImportService {
   async manualMatch(
     coopId: string,
     bankTransactionId: string,
-    target: { registrationId?: string; paymentId?: string },
+    target: { registrationId?: string; paymentId?: string; chargeCardId?: string },
     userId: string,
   ) {
-    const { registrationId, paymentId } = target;
-    if ((registrationId && paymentId) || (!registrationId && !paymentId)) {
-      throw new BadRequestException('Provide either registrationId or paymentId');
+    const { registrationId, paymentId, chargeCardId } = target;
+    if ([registrationId, paymentId, chargeCardId].filter(Boolean).length !== 1) {
+      throw new BadRequestException('Provide exactly one of registrationId, paymentId and chargeCardId');
     }
 
     const bankTx = await this.prisma.bankTransaction.findFirst({
@@ -425,6 +418,44 @@ export class BankImportService {
 
     if (bankTx.matchStatus !== 'UNMATCHED') {
       throw new BadRequestException('Bank transaction is already matched');
+    }
+
+    if (chargeCardId) {
+      // An outgoing or zero row is not a fee payment, and would lower the card's total.
+      if (this.toCents(bankTx.amount) <= 0) {
+        throw new BadRequestException('Only an incoming bank transaction can pay a charge card');
+      }
+      const card = await this.ogm.findChargeCardTarget(coopId, chargeCardId);
+      if (!card) {
+        throw new NotFoundException('Charge card not found');
+      }
+      if (card.status !== 'REQUESTED') {
+        throw new BadRequestException('Only a requested charge card accepts a payment');
+      }
+      // Any amount: an admin may book a partial payment. The card turns PAID once
+      // its payments reach the fee.
+      await this.prisma.$transaction(async (tx) => {
+        const claimedTransaction = await tx.bankTransaction.updateMany({
+          where: { id: bankTransactionId, matchStatus: 'UNMATCHED' },
+          data: { matchStatus: 'MANUAL_MATCHED' },
+        });
+        if (claimedTransaction.count !== 1) {
+          throw new ConflictException('Bank transaction was linked in the meantime');
+        }
+        await recordChargeCardPayment(tx, card, {
+          amount: Number(bankTx.amount),
+          bankDate: bankTx.date,
+          bankTransactionId,
+          matchedByUserId: userId,
+        }).catch((error: unknown) => {
+          // Re-checked under the card lock: paid or cancelled since the read above.
+          if (error instanceof ChargeCardNotPayableError) {
+            throw new ConflictException('Charge card changed in the meantime');
+          }
+          throw error;
+        });
+      });
+      return { success: true };
     }
 
     if (paymentId) {
@@ -608,6 +639,6 @@ export class BankImportService {
   }
 
   private toCents(amount: unknown): number {
-    return Math.round(Number(amount) * 100);
+    return toCents(Number(amount));
   }
 }

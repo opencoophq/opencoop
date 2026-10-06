@@ -1,12 +1,14 @@
 import { Test } from '@nestjs/testing';
 import { ShareholderStatus } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ChargeCardSyncService } from '../charge-cards/charge-card-sync.service';
 import { ShareholderStatusService } from './shareholder-status.service';
 
 describe('ShareholderStatusService', () => {
   let service: ShareholderStatusService;
   let prisma: any;
   let audienceQueue: any;
+  let chargeCardSync: { syncShareholder: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -17,12 +19,14 @@ describe('ShareholderStatusService', () => {
       $executeRaw: jest.fn(),
     };
     audienceQueue = { add: jest.fn().mockResolvedValue({}) };
+    chargeCardSync = { syncShareholder: jest.fn().mockResolvedValue({ blocked: 0, unblocked: 0, cancelled: 0 }) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         ShareholderStatusService,
         { provide: PrismaService, useValue: prisma },
         { provide: 'BullQueue_audience-sync', useValue: audienceQueue },
+        { provide: ChargeCardSyncService, useValue: chargeCardSync },
       ],
     }).compile();
     service = moduleRef.get(ShareholderStatusService);
@@ -93,6 +97,47 @@ describe('ShareholderStatusService', () => {
       registrations: [{ type: 'BUY', status: 'COMPLETED', quantity: 10 }],
     });
     audienceQueue.add.mockRejectedValue(new Error('queue unavailable'));
+
+    await expect(service.recompute('sh1')).resolves.toBe(ShareholderStatus.ACTIVE);
+    expect(prisma.shareholder.update).toHaveBeenCalled();
+  });
+
+  it('syncs the shareholder charge cards when the status changes', async () => {
+    prisma.shareholder.findUnique.mockResolvedValue({
+      id: 'sh1',
+      coopId: 'coop1',
+      status: ShareholderStatus.ACTIVE,
+      registrations: [
+        { type: 'BUY', status: 'COMPLETED', quantity: 10 },
+        { type: 'SELL', status: 'COMPLETED', quantity: 10 },
+      ],
+    });
+
+    await expect(service.recompute('sh1')).resolves.toBe(ShareholderStatus.INACTIVE);
+    expect(chargeCardSync.syncShareholder).toHaveBeenCalledWith('sh1');
+  });
+
+  it('does not sync charge cards when the status is unchanged', async () => {
+    prisma.shareholder.findUnique.mockResolvedValue({
+      id: 'sh1',
+      coopId: 'coop1',
+      status: ShareholderStatus.ACTIVE,
+      registrations: [{ type: 'BUY', status: 'COMPLETED', quantity: 10 }],
+    });
+
+    await service.recompute('sh1');
+
+    expect(chargeCardSync.syncShareholder).not.toHaveBeenCalled();
+  });
+
+  it('keeps the new status when the charge-card sync fails', async () => {
+    prisma.shareholder.findUnique.mockResolvedValue({
+      id: 'sh1',
+      coopId: 'coop1',
+      status: ShareholderStatus.PENDING,
+      registrations: [{ type: 'BUY', status: 'COMPLETED', quantity: 10 }],
+    });
+    chargeCardSync.syncShareholder.mockRejectedValue(new Error('db down'));
 
     await expect(service.recompute('sh1')).resolves.toBe(ShareholderStatus.ACTIVE);
     expect(prisma.shareholder.update).toHaveBeenCalled();

@@ -33,6 +33,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AddressDto } from './dto/create-shareholder.dto';
+import { canActForShareholder } from './shareholder-access';
 import { DocumentsService } from '../documents/documents.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -157,11 +158,7 @@ export class ShareholderActionsController {
       throw new NotFoundException('Shareholder not found');
     }
 
-    const isOwner = shareholder.userId === userId;
-    const isParentOfMinor =
-      shareholder.type === 'MINOR' && shareholder.registeredByUserId === userId;
-
-    if (!isOwner && !isParentOfMinor) {
+    if (!canActForShareholder(shareholder, userId)) {
       throw new ForbiddenException('You can only manage your own shareholder records');
     }
 

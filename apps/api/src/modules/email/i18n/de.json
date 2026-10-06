@@ -105,5 +105,27 @@
     "dear": "Liebe/r {shareholderName},",
     "body": "Erinnerung: die <strong>{meetingTitle}</strong> findet in <strong>{days}</strong> Tag(en) am <strong>{humanDate}</strong> statt. Sie haben noch nicht geantwortet. Bitte bestätigen Sie:",
     "cta": "Hier antworten"
+  },
+  "charge-card-coop-notice": {
+    "requestedTitle": "Neuer Antrag auf Ladekarte",
+    "requestedIntro": "{shareholderName} hat eine Ladekarte beantragt.",
+    "requestedAction": "Die Karte wechselt zu Bezahlt, sobald die Zahlung eingeht. Geben Sie sie dann unter Verwaltung → Ladekarten aus.",
+    "reenableTitle": "Antrag auf Reaktivierung einer Ladekarte",
+    "reenableIntro": "{shareholderName} meldet, dass die Ladekarte nicht mehr funktioniert.",
+    "reenableAction": "Aktivieren Sie die Karte im Portal des Anbieters erneut und klicken Sie dann unter Verwaltung → Ladekarten auf Erledigt.",
+    "shareholder": "Anteilseigner",
+    "label": "Bezeichnung",
+    "ogm": "Strukturierte Mitteilung",
+    "amount": "Betrag",
+    "replacement": "Ersatz für eine verlorene Karte"
+  },
+  "charge-card-issued": {
+    "title": "Ihre Ladekarte ist bereit",
+    "dear": "Liebe/r {shareholderName},",
+    "intro": "Ihre Ladekarte wurde ausgegeben und aktiviert. Sie können jetzt laden.",
+    "label": "Bezeichnung",
+    "cardNumber": "Kartennummer",
+    "dashboard": "Meine Ladekarten ansehen",
+    "thanks": "Mit freundlichen Grüßen, {coopName}"
   }
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { EmailFirstLogin } from '@/components/auth/email-first-login';
+import { rememberPostLoginRedirect } from '@/lib/post-login-redirect';
 
 interface CoopPublicInfo {
   id: string;
@@ -21,16 +22,19 @@ export function CoopLoginContent({
   channelSlug: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [coop, setCoop] = useState<CoopPublicInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFoundError, setNotFoundError] = useState(false);
 
   useEffect(() => {
+    // ?redirect=/nl/dashboard/... survives the login; the dashboard layout consumes it.
+    rememberPostLoginRedirect(searchParams.get('redirect'));
     if (localStorage.getItem('accessToken')) {
       router.replace('/dashboard');
       return;
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   useEffect(() => {
     const fetchCoop = async () => {

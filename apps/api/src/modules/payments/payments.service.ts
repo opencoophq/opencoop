@@ -21,23 +21,6 @@ export class PaymentsService {
     });
   }
 
-  async findByOgmCode(ogmCode: string) {
-    return this.prisma.registration.findUnique({
-      where: { ogmCode },
-      include: {
-        payments: true,
-        shareholder: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            companyName: true,
-          },
-        },
-      },
-    });
-  }
-
   async addPayment(data: {
     registrationId: string;
     coopId: string;
@@ -147,6 +130,8 @@ export class PaymentsService {
       where: {
         coopId,
         bankTransactionId: null,
+        // Charge-card payments are never offered for linking; the dialog reads payment.registration.
+        registrationId: { not: null },
         ...(parsedAmount === undefined ? {} : { amount: parsedAmount.toFixed(2) }),
         ...(shareholderSearch
           ? {

@@ -117,6 +117,20 @@ enum AdminNotificationFrequency {
   WEEKLY
 }
 
+enum ChargeCardStatus {
+  REQUESTED
+  PAID
+  ACTIVE
+  BLOCKED
+  CANCELLED
+}
+
+enum ChargeCardBlockReason {
+  NO_SHARES
+  LOST
+  ADMIN
+}
+
 // ============================================================================
 // MULTI-TENANCY: COOPS
 // ============================================================================
@@ -134,6 +148,7 @@ model Coop {
   trialEndsAt          DateTime?
   requiresApproval     Boolean   @default(true)
   ogmPrefix            String    @unique // Unique prefix for OGM codes (e.g., "001")
+  ogmSequence          Int       @default(0) // last OGM sequence handed out (registrations + charge cards)
   minimumHoldingPeriod Int       @default(0) // months, 0 = no restriction
   minConvocationDays   Int       @default(15) // statutory notice period for AGM convocation (per-coop bylaws)
   pontoEnabled         Boolean   @default(false)
@@ -145,6 +160,12 @@ model Coop {
   ecoPowerMinThreshold     Decimal?               @db.Decimal(10, 2)
   apiKeyHash               String?                @unique
   apiKeyPrefix             String?
+
+  // Charge cards (laadpassen). Fees are incl. VAT; the VAT rate is stored for later invoicing.
+  chargeCardsEnabled       Boolean @default(false)
+  chargeCardFee            Decimal @default(6.00) @db.Decimal(12, 2)
+  chargeCardReplacementFee Decimal @default(12.00) @db.Decimal(12, 2)
+  chargeCardVatRate        Decimal @default(21) @db.Decimal(5, 2)
 
   // Email configuration (encrypted in production)
   emailEnabled      Boolean @default(true)
@@ -207,6 +228,7 @@ model Coop {
   auditLogs        AuditLog[]
   apiKeys          ApiKey[]
   meetings         Meeting[]
+  chargeCards      ChargeCard[]
 
   @@map("coops")
 }
@@ -560,6 +582,7 @@ model Shareholder {
   proxiesHeld              Proxy[]                       @relation("ProxyDelegate")
   meetingAttendances       MeetingAttendance[]
   votes                    Vote[]
+  chargeCards              ChargeCard[]
 
   // Unique email per coop (null emails allowed for minors - PostgreSQL allows multiple nulls)
   @@unique([coopId, email])
@@ -753,7 +776,9 @@ model Registration {
 
 model Payment {
   id             String   @id @default(cuid())
-  registrationId String
+  // Exactly one of registrationId / chargeCardId is set (DB CHECK payments_exactly_one_target_check).
+  registrationId String?
+  chargeCardId   String?
   coopId         String
   amount         Decimal  @db.Decimal(12, 2) // always positive
   bankDate       DateTime // when the bank transaction cleared
@@ -767,14 +792,47 @@ model Payment {
   matchedAt       DateTime?
 
   // Relations
-  registration    Registration     @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  registration    Registration?    @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  chargeCard      ChargeCard?      @relation(fields: [chargeCardId], references: [id], onDelete: Cascade)
   coop            Coop             @relation(fields: [coopId], references: [id], onDelete: Cascade)
   bankTransaction BankTransaction? @relation(fields: [bankTransactionId], references: [id], onDelete: SetNull)
   matchedBy       User?            @relation("PaymentMatcher", fields: [matchedByUserId], references: [id], onDelete: SetNull)
 
   @@index([registrationId])
+  @@index([chargeCardId])
   @@index([bankDate])
   @@map("payments")
+}
+
+model ChargeCard {
+  id                 String                 @id @default(cuid())
+  coopId             String
+  shareholderId      String
+  label              String?
+  status             ChargeCardStatus       @default(REQUESTED)
+  blockReason        ChargeCardBlockReason?
+  ogmCode            String                 @unique
+  cardNumber         String? // printed number or RFID UID, set on issue
+  feeInclVat         Decimal                @db.Decimal(12, 2) // frozen at request time
+  isReplacement      Boolean                @default(false)
+  replacesCardId     String?                @unique // a LOST card is replaced at most once
+  providerSyncNeeded Boolean                @default(false) // v1: admin must mirror a block/unblock in the provider portal
+  requestedAt        DateTime               @default(now())
+  paidAt             DateTime?
+  issuedAt           DateTime?
+  blockedAt          DateTime?
+  activatedAt        DateTime? // set on issue, re-enable request and every unblock
+
+  coop         Coop        @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shareholder  Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+  replacesCard ChargeCard? @relation("ChargeCardReplacement", fields: [replacesCardId], references: [id], onDelete: SetNull)
+  replacedBy   ChargeCard? @relation("ChargeCardReplacement")
+  payments     Payment[]
+
+  @@unique([coopId, cardNumber])
+  @@index([shareholderId])
+  @@index([coopId, status])
+  @@map("charge_cards")
 }
 
 // ============================================================================

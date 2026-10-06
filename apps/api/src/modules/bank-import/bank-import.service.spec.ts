@@ -5,12 +5,13 @@ jest.mock('../documents/documents.service', () => ({
 }));
 
 import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { BankImportService } from './bank-import.service';
 import { BankMatchingService } from './bank-matching.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationsService } from '../registrations/registrations.service';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+import { OgmService } from '../ogm/ogm.service';
 import { generateOgmCode, validateOgmCode } from '@opencoop/shared';
 
 /**
@@ -31,6 +32,7 @@ describe('BankImportService — importCsv OGM matching', () => {
   let registrationsService: any;
   let shareholderStatus: any;
   let bankMatchingService: any;
+  let ogmService: OgmService;
 
   // A real, checksum-valid OGM produced the same way the app generates them.
   const OGM = generateOgmCode('001', 42);
@@ -64,6 +66,14 @@ describe('BankImportService — importCsv OGM matching', () => {
         update: jest.fn().mockResolvedValue({}),
         findFirst: jest.fn(),
       },
+      chargeCard: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({}),
+      },
+      // The card row lock in recordChargeCardPayment.
+      $queryRaw: jest.fn().mockResolvedValue([{ status: 'REQUESTED' }]),
       $transaction: jest.fn((cb: any) => cb(prisma)),
     };
     bankMatchingService = {
@@ -120,6 +130,7 @@ describe('BankImportService — importCsv OGM matching', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         BankImportService,
+        OgmService,
         { provide: PrismaService, useValue: prisma },
         { provide: RegistrationsService, useValue: registrationsService },
         { provide: ShareholderStatusService, useValue: shareholderStatus },
@@ -127,6 +138,7 @@ describe('BankImportService — importCsv OGM matching', () => {
       ],
     }).compile();
     service = moduleRef.get(BankImportService);
+    ogmService = moduleRef.get(OgmService);
   });
 
   // Build a generic-preset CSV: header line + one data row.
@@ -693,5 +705,136 @@ describe('BankImportService — importCsv OGM matching', () => {
       where: { id: 'reg-1', coopId: COOP_ID },
     });
     expect(prisma.payment.create).not.toHaveBeenCalled();
+  });
+
+  it('loads the charge card owner of a matched payment for the transaction list', async () => {
+    prisma.bankTransaction.findMany = jest.fn().mockResolvedValue([]);
+
+    await service.getTransactions(COOP_ID);
+
+    const include = prisma.bankTransaction.findMany.mock.calls[0][0].include;
+    expect(include.matchedPayment.include.chargeCard).toEqual({
+      select: {
+        label: true,
+        shareholder: { select: { firstName: true, lastName: true, companyName: true } },
+      },
+    });
+  });
+
+  it('resolves every OGM of the file in one OgmService call, scoped to the coop', async () => {
+    const resolve = jest.spyOn(ogmService, 'resolveOgmTargets');
+
+    await service.importCsv(
+      COOP_ID,
+      IMPORTER_ID,
+      'test.csv',
+      csvRows([
+        ['2026-01-15', '100', 'A', OGM],
+        ['2026-01-16', '50', 'B', `ref ${OGM}`],
+        ['2026-01-17', '-20', 'C', OGM],
+      ]),
+      'generic',
+    );
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).toHaveBeenCalledWith(COOP_ID, [OGM]);
+  });
+
+  describe('manual match to a charge card', () => {
+    const CARD = { id: 'card-1', coopId: COOP_ID, shareholderId: 'sh-1', status: 'REQUESTED', feeInclVat: 6, ogmCode: OGM };
+
+    beforeEach(() => {
+      prisma.bankTransaction.findFirst.mockResolvedValue({
+        id: 'btx-1',
+        coopId: COOP_ID,
+        matchStatus: 'UNMATCHED',
+        amount: 3,
+        date: new Date('2026-10-06'),
+      });
+      prisma.chargeCard.findFirst.mockResolvedValue(CARD);
+      prisma.payment.findMany.mockResolvedValue([{ amount: 3 }]);
+    });
+
+    it('books a short payment on a REQUESTED card without marking it PAID', async () => {
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).resolves.toEqual({ success: true });
+
+      expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({ id: 'card-1', coopId: COOP_ID });
+      expect(prisma.payment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          chargeCardId: 'card-1',
+          amount: 3,
+          bankTransactionId: 'btx-1',
+          matchedByUserId: IMPORTER_ID,
+        }),
+      });
+      expect(prisma.chargeCard.updateMany).not.toHaveBeenCalled();
+      expect(prisma.bankTransaction.updateMany).toHaveBeenCalledWith({
+        where: { id: 'btx-1', matchStatus: 'UNMATCHED' },
+        data: { matchStatus: 'MANUAL_MATCHED' },
+      });
+    });
+
+    it('marks the card PAID once its payments reach the fee', async () => {
+      prisma.payment.findMany.mockResolvedValue([{ amount: 3 }, { amount: 3 }]);
+
+      await service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID);
+
+      expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith({
+        where: { AND: [{ id: 'card-1' }, { status: 'REQUESTED' }] },
+        data: { status: 'PAID', paidAt: expect.any(Date) },
+      });
+    });
+
+    it.each([0, -6, 0.004])('rejects a bank amount of %p (not above 0 cents) with 400', async (amount) => {
+      prisma.bankTransaction.findFirst.mockResolvedValue({
+        id: 'btx-1',
+        coopId: COOP_ID,
+        matchStatus: 'UNMATCHED',
+        amount,
+        date: new Date('2026-10-06'),
+      });
+
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+      expect(prisma.bankTransaction.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('returns 409 when the card left REQUESTED before its row was locked', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ status: 'CANCELLED' }]);
+
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses a card that is not REQUESTED', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue({ ...CARD, status: 'PAID' });
+
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 for a card of another coop', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses a registration and a card at once', async () => {
+      await expect(
+        service.manualMatch(COOP_ID, 'btx-1', { registrationId: 'reg-1', chargeCardId: 'card-1' }, IMPORTER_ID),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
   });
 });

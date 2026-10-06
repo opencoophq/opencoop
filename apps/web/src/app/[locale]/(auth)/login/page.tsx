@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { EmailFirstLogin } from '@/components/auth/email-first-login';
+import { rememberPostLoginRedirect } from '@/lib/post-login-redirect';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // ?redirect=/nl/dashboard/... survives the login; the dashboard layout consumes it.
+    rememberPostLoginRedirect(searchParams.get('redirect'));
     const addAccount = searchParams.get('addAccount') === 'true';
     if (!addAccount && localStorage.getItem('accessToken')) {
       router.replace('/dashboard');

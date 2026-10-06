@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
+import { isSilentChargeCardsLoadFailure } from '@/lib/charge-cards-validation';
 import { formatCurrency } from '@opencoop/shared';
 import { Upload, Link2, RefreshCw, EyeOff, RotateCcw } from 'lucide-react';
 
@@ -51,8 +52,14 @@ interface MatchedRegistration {
   shareholder?: MatchedShareholder;
 }
 
+interface MatchedChargeCard {
+  label: string | null;
+  shareholder?: MatchedShareholder;
+}
+
 interface MatchedPayment {
-  registration?: MatchedRegistration;
+  registration?: MatchedRegistration | null;
+  chargeCard?: MatchedChargeCard | null;
 }
 
 interface BankTx {
@@ -91,6 +98,15 @@ interface UnlinkedPayment {
   };
 }
 
+interface MatchableChargeCard {
+  id: string;
+  label: string | null;
+  ogmCode: string;
+  feeInclVat: number;
+  totalPaid: number;
+  shareholderName: string;
+}
+
 export default function BankImportPage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
@@ -102,6 +118,8 @@ export default function BankImportPage() {
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [matchingTx, setMatchingTx] = useState<BankTx | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [matchCards, setMatchCards] = useState<MatchableChargeCard[]>([]);
+  const [matchCardsError, setMatchCardsError] = useState('');
   const [unlinkedPayments, setUnlinkedPayments] = useState<UnlinkedPayment[]>([]);
   const [paymentSearch, setPaymentSearch] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -208,9 +226,30 @@ export default function BankImportPage() {
     } finally {
       setLoadingRegistrations(false);
     }
+    setMatchCardsError('');
+    // The feature can be on without the admin having canManageShareholders
+    // (403) — that's an ordinary "no cards for you" case, same as a coop
+    // without any cards yet. Same nav-reachability rule as the sidebar: a
+    // coop that switched the feature off while a card is still waiting on
+    // payment must still be matchable here.
+    if (selectedCoop?.chargeCardsEnabled || selectedCoop?.hasChargeCards) {
+      try {
+        setMatchCards(
+          await api<MatchableChargeCard[]>(`/admin/coops/${selectedCoop.id}/charge-cards?status=REQUESTED`),
+        );
+      } catch (err) {
+        const status = err instanceof Error ? (err as Error & { status?: number }).status : undefined;
+        setMatchCards([]);
+        if (!isSilentChargeCardsLoadFailure(status)) {
+          setMatchCardsError(t('chargeCards.match.loadError'));
+        }
+      }
+    } else {
+      setMatchCards([]);
+    }
   };
 
-  const handleMatch = async (target: { registrationId?: string; paymentId?: string }) => {
+  const handleMatch = async (target: { registrationId?: string; paymentId?: string; chargeCardId?: string }) => {
     if (!matchingTx || !selectedCoop) return;
     setMatching(true);
     try {
@@ -409,7 +448,8 @@ export default function BankImportPage() {
               </TableHeader>
               <TableBody>
                 {visibleTransactions.map((tx) => {
-                  const shareholder = tx.matchedPayment?.registration?.shareholder;
+                  const shareholder =
+                    tx.matchedPayment?.registration?.shareholder ?? tx.matchedPayment?.chargeCard?.shareholder;
                   const matchedName = shareholder
                     ? `${shareholder.firstName || ''} ${shareholder.lastName || ''}`.trim()
                     : null;
@@ -456,7 +496,15 @@ export default function BankImportPage() {
                       </TableCell>
                       <TableCell>
                         {matchedName ? (
-                          matchedName
+                          <>
+                            {matchedName}
+                            {tx.matchedPayment?.chargeCard && (
+                              <span className="text-muted-foreground text-xs">
+                                {' '}
+                                · {tx.matchedPayment.chargeCard.label || t('chargeCards.untitled')}
+                              </span>
+                            )}
+                          </>
                         ) : tx.matchStatus === 'UNMATCHED' ? (
                           <div className="flex items-center gap-1">
                             {Number(tx.amount) > 0 && (
@@ -616,6 +664,45 @@ export default function BankImportPage() {
                   </div>
                 )}
               </div>
+
+              {matchCardsError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{matchCardsError}</AlertDescription>
+                </Alert>
+              )}
+
+              {matchCards.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">{t('chargeCards.match.heading')}</h4>
+                  <div className="max-h-60 overflow-y-auto space-y-1">
+                    {matchCards.map((card) => (
+                      <button
+                        key={card.id}
+                        className="w-full flex items-center justify-between rounded-md border p-3 text-sm hover:bg-accent transition-colors disabled:opacity-50"
+                        onClick={() => handleMatch({ chargeCardId: card.id })}
+                        disabled={matching}
+                      >
+                        <div className="text-left">
+                          <p className="font-medium">{card.shareholderName}</p>
+                          <p className="text-muted-foreground text-xs">
+                            {t('chargeCards.match.card')}
+                            {card.label ? ` · ${card.label}` : ''}
+                          </p>
+                          <p className="text-muted-foreground font-mono text-xs">{card.ogmCode}</p>
+                        </div>
+                        <div className="text-right">
+                          <p>{formatCurrency(card.feeInclVat, locale)}</p>
+                          {card.totalPaid > 0 && (
+                            <p className="text-muted-foreground text-xs">
+                              {t('chargeCards.admin.paid')}: {formatCurrency(card.totalPaid, locale)}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

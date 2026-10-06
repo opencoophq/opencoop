@@ -105,5 +105,27 @@
     "dear": "Dear {shareholderName},",
     "body": "Reminder: the <strong>{meetingTitle}</strong> is in <strong>{days}</strong> day(s) on <strong>{humanDate}</strong>. You haven't yet responded. Please RSVP:",
     "cta": "RSVP here"
+  },
+  "charge-card-coop-notice": {
+    "requestedTitle": "New charge card request",
+    "requestedIntro": "{shareholderName} requested a charge card.",
+    "requestedAction": "The card moves to Paid when the payment arrives. Then issue it in Admin → Charge cards.",
+    "reenableTitle": "Charge card re-enable request",
+    "reenableIntro": "{shareholderName} reports that their charge card no longer works.",
+    "reenableAction": "Re-enable the card in the provider portal, then click Done in Admin → Charge cards.",
+    "shareholder": "Shareholder",
+    "label": "Label",
+    "ogm": "Structured communication",
+    "amount": "Amount",
+    "replacement": "replacement for a lost card"
+  },
+  "charge-card-issued": {
+    "title": "Your charge card is ready",
+    "dear": "Dear {shareholderName},",
+    "intro": "Your charge card has been issued and activated. You can start charging.",
+    "label": "Label",
+    "cardNumber": "Card number",
+    "dashboard": "View my charge cards",
+    "thanks": "Kind regards, {coopName}"
   }
 }

@@ -105,5 +105,27 @@
     "dear": "Cher/Chère {shareholderName},",
     "body": "Rappel : <strong>{meetingTitle}</strong> aura lieu dans <strong>{days}</strong> jour(s), le <strong>{humanDate}</strong>. Vous n'avez pas encore répondu. Veuillez confirmer :",
     "cta": "Répondre ici"
+  },
+  "charge-card-coop-notice": {
+    "requestedTitle": "Nouvelle demande de carte de recharge",
+    "requestedIntro": "{shareholderName} a demandé une carte de recharge.",
+    "requestedAction": "La carte passe à Payée dès réception du paiement. Délivrez-la ensuite via Administration → Cartes de recharge.",
+    "reenableTitle": "Demande de réactivation de carte de recharge",
+    "reenableIntro": "{shareholderName} signale que sa carte de recharge ne fonctionne plus.",
+    "reenableAction": "Réactivez la carte dans le portail du fournisseur, puis cliquez sur Fait dans Administration → Cartes de recharge.",
+    "shareholder": "Actionnaire",
+    "label": "Libellé",
+    "ogm": "Communication structurée",
+    "amount": "Montant",
+    "replacement": "remplacement d’une carte perdue"
+  },
+  "charge-card-issued": {
+    "title": "Votre carte de recharge est prête",
+    "dear": "Cher/Chère {shareholderName},",
+    "intro": "Votre carte de recharge a été délivrée et activée. Vous pouvez commencer à recharger.",
+    "label": "Libellé",
+    "cardNumber": "Numéro de carte",
+    "dashboard": "Voir mes cartes de recharge",
+    "thanks": "Cordialement, {coopName}"
   }
 }

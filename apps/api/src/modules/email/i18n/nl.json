@@ -105,5 +105,27 @@
     "dear": "Beste {shareholderName},",
     "body": "Herinnering: de <strong>{meetingTitle}</strong> vindt plaats over <strong>{days}</strong> dag(en) op <strong>{humanDate}</strong>. U heeft nog niet geantwoord. Gelieve te bevestigen:",
     "cta": "RSVP hier"
+  },
+  "charge-card-coop-notice": {
+    "requestedTitle": "Nieuwe aanvraag laadpas",
+    "requestedIntro": "{shareholderName} vroeg een laadpas aan.",
+    "requestedAction": "De pas gaat naar Betaald zodra de betaling binnen is. Geef hem daarna uit via Beheer → Laadpassen.",
+    "reenableTitle": "Vraag om een laadpas opnieuw te activeren",
+    "reenableIntro": "{shareholderName} meldt dat de laadpas niet meer werkt.",
+    "reenableAction": "Activeer de pas opnieuw in het portaal van de leverancier en klik daarna op Gedaan in Beheer → Laadpassen.",
+    "shareholder": "Aandeelhouder",
+    "label": "Label",
+    "ogm": "Gestructureerde mededeling",
+    "amount": "Bedrag",
+    "replacement": "vervanging van een verloren pas"
+  },
+  "charge-card-issued": {
+    "title": "Je laadpas is klaar",
+    "dear": "Beste {shareholderName},",
+    "intro": "Je laadpas is uitgegeven en geactiveerd. Je kunt nu laden.",
+    "label": "Label",
+    "cardNumber": "Kaartnummer",
+    "dashboard": "Bekijk mijn laadpassen",
+    "thanks": "Met vriendelijke groeten, {coopName}"
   }
 }

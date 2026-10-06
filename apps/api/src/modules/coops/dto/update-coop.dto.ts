@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, MaxLength, IsNumber, IsEnum, ValidateIf } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, Max, MaxLength, IsNumber, IsEnum, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { EcoPowerThresholdType } from '@opencoop/database';
 
@@ -110,6 +110,30 @@ export class UpdateCoopDto {
   @ValidateIf((o) => o.ecoPowerMinThreshold !== null)
   @IsNumber()
   ecoPowerMinThreshold?: number | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  chargeCardsEnabled?: boolean;
+
+  @ApiProperty({ required: false, description: 'Charge card fee incl. VAT (first card)' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  chargeCardFee?: number;
+
+  @ApiProperty({ required: false, description: 'Replacement fee incl. VAT (after loss or theft)' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  chargeCardReplacementFee?: number;
+
+  @ApiProperty({ required: false, description: 'VAT rate in percent; stored for later invoicing' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  chargeCardVatRate?: number;
 
   @ApiProperty({ required: false, description: 'Audience sync provider: null or "brevo"' })
   @IsOptional()

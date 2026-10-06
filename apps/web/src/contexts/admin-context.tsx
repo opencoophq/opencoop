@@ -11,6 +11,8 @@ interface AdminCoop {
   trialEndsAt?: string;
   isReadOnly?: boolean;
   logoUrl?: string;
+  chargeCardsEnabled?: boolean;
+  hasChargeCards?: boolean;
 }
 
 interface AdminContextValue {

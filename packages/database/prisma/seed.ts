@@ -439,6 +439,9 @@ async function main() {
           });
         }
       }
+
+      // The seed writes OGM sequences 1..buys.length; move the counter past them.
+      await tx.coop.update({ where: { id: coop!.id }, data: { ogmSequence: buys.length } });
     });
 
     console.log(`  Created ${buys.length} registrations & payments`);

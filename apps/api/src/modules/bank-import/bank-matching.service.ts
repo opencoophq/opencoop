@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { computeTotalPaid, extractOgmCode } from '@opencoop/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
+import { OgmService } from '../ogm/ogm.service';
+import { ChargeCardTarget, PaymentTarget, acceptsCardPayment, toCents } from '../ogm/payment-target';
+import { ChargeCardNotPayableError, recordChargeCardPayment } from '../charge-cards/charge-card-payments';
 
 export interface BankTransactionMatchInput {
   id: string;
@@ -17,14 +20,6 @@ export interface BankTransactionMatchResult {
   createdPayment: boolean;
 }
 
-export interface BankMatchingRegistration {
-  id: string;
-  coopId: string;
-  status: string;
-  totalAmount?: unknown;
-  payments?: { id: string; amount: unknown; bankDate: Date; bankTransactionId: string | null }[];
-}
-
 class LinkConflictError extends Error {}
 
 @Injectable()
@@ -32,6 +27,7 @@ export class BankMatchingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
+    private readonly ogm: OgmService,
   ) {}
 
   async matchTransaction(
@@ -39,7 +35,7 @@ export class BankMatchingService {
     transaction: BankTransactionMatchInput,
     matchedByUserId?: string,
     allowCreate = true,
-    registrationOverride?: BankMatchingRegistration,
+    targetOverride?: PaymentTarget,
   ): Promise<BankTransactionMatchResult> {
     const amount = Number(transaction.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -51,21 +47,18 @@ export class BankMatchingService {
       return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
     }
 
-    const registration = registrationOverride || await this.prisma.registration.findFirst({
-      where: { coopId, ogmCode },
-      select: {
-        id: true,
-        coopId: true,
-        status: true,
-        totalAmount: true,
-        payments: {
-          select: { id: true, amount: true, bankDate: true, bankTransactionId: true },
-        },
-      },
-    });
-    if (!registration) {
+    // One resolver for every OGM. The CSV import passes the target it batch-loaded
+    // (targetOverride) and reuses that object for later rows of the same file, so the
+    // updates to `cached` below keep it current. A freshly resolved target is not cached.
+    const target = targetOverride ?? (await this.ogm.resolveOgmTarget(coopId, ogmCode));
+    if (!target) {
       return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
     }
+    if (target.kind === 'chargeCard') {
+      return this.matchChargeCard(target, transaction, ogmCode, amount, matchedByUserId, allowCreate);
+    }
+    const registration = target;
+    const cached = targetOverride ? registration : undefined;
 
     const unlinkedPayments = registration.payments
       ? registration.payments.filter((payment) => payment.bankTransactionId === null)
@@ -109,8 +102,8 @@ export class BankMatchingService {
       if (!linked) {
         return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
       }
-      if (registrationOverride?.payments) {
-        const linkedPayment = registrationOverride.payments.find((payment) => payment.id === closestPayment.id);
+      if (cached?.payments) {
+        const linkedPayment = cached.payments.find((payment) => payment.id === closestPayment.id);
         if (linkedPayment) linkedPayment.bankTransactionId = transaction.id;
       }
 
@@ -129,21 +122,21 @@ export class BankMatchingService {
       bankTransactionId: transaction.id,
       ...(matchedByUserId ? { matchedByUserId } : {}),
     });
-    if (registrationOverride?.payments) {
-      registrationOverride.payments.push({
+    if (cached?.payments) {
+      cached.payments.push({
         id: createdPayment?.id || `created-${transaction.id}`,
         amount,
         bankDate: transaction.date,
         bankTransactionId: transaction.id,
       });
       if (
-        registrationOverride.totalAmount !== undefined &&
-        computeTotalPaid(registrationOverride.payments.map((payment) => ({ amount: Number(payment.amount) }))) >=
-          Number(registrationOverride.totalAmount)
+        cached.totalAmount !== undefined &&
+        computeTotalPaid(cached.payments.map((payment) => ({ amount: Number(payment.amount) }))) >=
+          Number(cached.totalAmount)
       ) {
-        registrationOverride.status = 'COMPLETED';
-      } else if (registrationOverride.status === 'PENDING_PAYMENT') {
-        registrationOverride.status = 'ACTIVE';
+        cached.status = 'COMPLETED';
+      } else if (cached.status === 'PENDING_PAYMENT') {
+        cached.status = 'ACTIVE';
       }
     }
     await this.prisma.bankTransaction.update({
@@ -154,8 +147,59 @@ export class BankMatchingService {
     return { status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true };
   }
 
+  /**
+   * A charge card takes a payment only while REQUESTED and only for at least its
+   * fee. Anything else stays UNMATCHED for an admin (refund or manual match).
+   */
+  private async matchChargeCard(
+    card: ChargeCardTarget,
+    transaction: BankTransactionMatchInput,
+    ogmCode: string,
+    amount: number,
+    matchedByUserId: string | undefined,
+    allowCreate: boolean,
+  ): Promise<BankTransactionMatchResult> {
+    if (!allowCreate || !acceptsCardPayment(card, amount)) {
+      return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+    }
+
+    const paid = await this.prisma
+      .$transaction(async (tx) => {
+        // Claim the bank row first, so a concurrent linker cannot book it twice.
+        const claimed = await tx.bankTransaction.updateMany({
+          where: { id: transaction.id, matchStatus: 'UNMATCHED' },
+          data: { matchStatus: 'AUTO_MATCHED', ogmCode },
+        });
+        if (claimed.count !== 1) throw new LinkConflictError();
+        const result = await recordChargeCardPayment(tx, card, {
+          amount,
+          bankDate: transaction.date,
+          bankTransactionId: transaction.id,
+          matchedByUserId,
+        });
+        return result.paid;
+      })
+      .catch((error: unknown) => {
+        // Lost the bank row, or the card left REQUESTED before we locked it: the
+        // transaction rolled back, so the row stays UNMATCHED for an admin.
+        if (error instanceof ChargeCardNotPayableError) {
+          if (error.status) card.status = error.status;
+          return null;
+        }
+        if (error instanceof LinkConflictError) return null;
+        throw error;
+      });
+    if (paid === null) {
+      return { status: 'UNMATCHED', linkedExisting: false, createdPayment: false };
+    }
+
+    // The CSV import reuses this object for later rows: a second transfer must see PAID.
+    if (paid) card.status = 'PAID';
+    return { status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true };
+  }
+
   private toCents(amount: number): number {
-    return Math.round(amount * 100);
+    return toCents(amount);
   }
 
   private dateDistance(left: Date, right: Date): number {

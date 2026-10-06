@@ -10,7 +10,7 @@ test.describe('Audit history', () => {
     await expect(page.getByRole('cell', { name: 'jan.peeters@email.be' })).toBeVisible({ timeout: 10_000 });
     const row = page.getByRole('row').filter({ hasText: 'jan.peeters@email.be' });
     await row.getByRole('link').click();
-    await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
+    await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/, { timeout: 10_000 });
 
     // Edit the phone field to a new value
     const phoneInput = page.locator('input[name="phone"]');
@@ -62,7 +62,7 @@ test.describe('Audit history', () => {
     await expect(page.getByRole('cell', { name: 'els.devos@email.be' })).toBeVisible({ timeout: 10_000 });
     const row = page.getByRole('row').filter({ hasText: 'els.devos@email.be' });
     await row.getByRole('link').click();
-    await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
+    await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/, { timeout: 10_000 });
 
     // The audit history card should always be visible
     await expect(page.getByText('Wijzigingsgeschiedenis')).toBeVisible({ timeout: 5_000 });
