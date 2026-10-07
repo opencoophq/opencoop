@@ -88,3 +88,6 @@ memory/
 packages/database/prisma/*.js
 packages/database/prisma/*.d.ts
 !packages/database/prisma/seed*.js
+
+# Claude Code per-machine settings (permission allowlists, may hold local tokens)
+.claude/settings.local.json
