@@ -666,8 +666,8 @@ export default function ShareholderDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button asChild variant="ghost" size="sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <Button asChild variant="ghost" size="sm" className="self-start sm:self-auto">
           <Link href="/dashboard/admin/shareholders">
             <ChevronLeft className="h-4 w-4 mr-1" />
             {t('common.back')}
@@ -681,7 +681,7 @@ export default function ShareholderDetailPage() {
               : `${shareholder.firstName || ''} ${shareholder.lastName || ''}`.trim()}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button asChild variant="secondary">
             <Link href={`/dashboard/shares?previewShareholderId=${shareholder.id}`}>
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -947,7 +947,7 @@ export default function ShareholderDetailPage() {
       {/* Household Linking */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
               {t('household.linkTitle')}

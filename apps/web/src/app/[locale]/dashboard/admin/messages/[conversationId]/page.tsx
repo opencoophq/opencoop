@@ -328,7 +328,7 @@ export default function AdminConversationDetailPage() {
               placeholder={t('messages.replyPlaceholder')}
               rows={3}
             />
-            <div className="flex items-center justify-between mt-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-3">
               <div>
                 <input
                   type="file"

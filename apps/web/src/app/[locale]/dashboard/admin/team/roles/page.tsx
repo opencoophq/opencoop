@@ -188,7 +188,7 @@ export default function RolesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Link href="/dashboard/admin/team">
             <Button variant="ghost" size="icon">
@@ -197,7 +197,7 @@ export default function RolesPage() {
           </Link>
           <h1 className="text-2xl font-bold">{t('team.roles.title')}</h1>
         </div>
-        <Button size="sm" onClick={openCreate}>
+        <Button size="sm" onClick={openCreate} className="self-start sm:self-auto">
           <Plus className="h-4 w-4 mr-2" />
           {t('team.roles.createRole')}
         </Button>

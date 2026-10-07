@@ -481,9 +481,9 @@ export default function ShareholdersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <h1 className="text-2xl font-bold">{t('admin.shareholders.title')}</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={openImportDialog}>
             <Upload className="h-4 w-4 mr-2" />
             {t('admin.shareholders.import.button')}
