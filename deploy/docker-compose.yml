@@ -79,6 +79,7 @@ services:
       PONTO_WEBHOOK_SIGNING_KEY: ${PONTO_WEBHOOK_SIGNING_KEY:-}
       PONTO_SANDBOX: ${PONTO_SANDBOX:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
       WEBAUTHN_RP_NAME: ${WEBAUTHN_RP_NAME:-OpenCoop}
       NODE_ENV: production
     volumes:
@@ -116,6 +117,7 @@ services:
       LAUNCH_MODE: ${LAUNCH_MODE:-}
       MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
     depends_on:
       - api
     networks:

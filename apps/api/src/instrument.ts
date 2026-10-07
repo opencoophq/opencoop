@@ -1,10 +1,12 @@
 import * as Sentry from '@sentry/nestjs';
 
-// Only initialize Sentry if DSN is configured (skip in dev environments)
+// Only initialize Sentry if DSN is configured (skip in dev environments).
+// GlitchTip (errors.armlab.com) handles errors only: no tracing, no replay,
+// no profiling, so tracesSampleRate stays at 0.
 if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'development',
-    tracesSampleRate: 0.2,
+    environment: process.env.SENTRY_ENVIRONMENT || 'production',
+    tracesSampleRate: 0,
   });
 }

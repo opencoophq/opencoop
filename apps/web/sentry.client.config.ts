@@ -1,12 +1,12 @@
-// Sentry client-side configuration.
-// No-op when NEXT_PUBLIC_SENTRY_DSN is unset (e.g. local dev), mirroring the
-// API's instrument.ts pattern. The DSN is inlined at build time by Next.js.
+// Sentry (GlitchTip) client-side configuration.
+// DSN comes from NEXT_PUBLIC_SENTRY_DSN (inlined at build time), falling back
+// to the committed self-hosted GlitchTip DSN when the secret isn't set.
+// GlitchTip is errors-only: no tracing, no replay, no profiling.
 import * as Sentry from '@sentry/nextjs';
+import { getClientSentryEnvironment, getSentryDsn } from './src/lib/sentry';
 
-if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'development',
-    tracesSampleRate: 0.1,
-  });
-}
+Sentry.init({
+  dsn: getSentryDsn(),
+  environment: getClientSentryEnvironment(),
+  tracesSampleRate: 0,
+});
