@@ -9,4 +9,5 @@ Sentry.init({
   dsn: getSentryDsn(),
   environment: getClientSentryEnvironment(),
   tracesSampleRate: 0,
+  sendDefaultPii: false,
 });

@@ -116,7 +116,6 @@ services:
       NEXTAUTH_SECRET: ${JWT_SECRET}
       LAUNCH_MODE: ${LAUNCH_MODE:-}
       MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-}
-      SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
     depends_on:
       - api
