@@ -261,9 +261,9 @@ export default function DividendsListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">{t('admin.dividends.title')}</h1>
-        <Button onClick={openCreateDialog}>
+        <Button onClick={openCreateDialog} className="self-start sm:self-auto">
           <Plus className="h-4 w-4 mr-2" />
           {t('admin.dividends.addPeriod')}
         </Button>

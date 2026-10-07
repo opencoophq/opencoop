@@ -341,9 +341,9 @@ export default function BankImportPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <h1 className="text-2xl font-bold">{t('admin.bankImport.title')}</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Select value={selectedPreset} onValueChange={setSelectedPreset}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder={t('admin.bankImport.selectBank')} />
@@ -387,7 +387,7 @@ export default function BankImportPage() {
         </Alert>
       )}
 
-      <div className="flex items-center justify-between mb-4 gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[220px]">
             <SelectValue />

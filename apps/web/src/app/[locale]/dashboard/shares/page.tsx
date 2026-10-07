@@ -510,7 +510,7 @@ export default function SharesPage() {
         </Alert>
       )}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>{t('shares.myShares')}</CardTitle>
           {!isPreviewMode && shareClasses.length > 0 && (
             <Button onClick={() => {
@@ -668,7 +668,7 @@ export default function SharesPage() {
         );
         return (
           <Card key={minor.id} className="mt-6">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-2">
                 {t('shares.childSharesOf', { name: `${minor.firstName} ${minor.lastName}` })}
                 {!isPreviewMode && (

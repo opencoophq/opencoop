@@ -193,9 +193,9 @@ export default function AdminMessagesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">{t('messages.title')}</h1>
-        <Button asChild>
+        <Button asChild className="self-start sm:self-auto">
           <Link href="/dashboard/admin/messages/new">
             <Plus className="h-4 w-4 mr-2" />
             {t('messages.newConversation')}

@@ -96,7 +96,7 @@ export default function MigrationPage() {
           </FadeIn>
 
           <FadeIn delay={80}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-balance">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-balance break-words">
               {t('hero.title')}
             </h1>
           </FadeIn>
