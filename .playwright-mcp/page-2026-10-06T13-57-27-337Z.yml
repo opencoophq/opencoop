@@ -1,0 +1,174 @@
+- generic [active] [ref=f12e1]:
+  - generic [ref=f12e2]:
+    - generic [ref=f12e3]:
+      - generic [ref=f12e15]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f12e16]:
+        - button "🇳🇱" [ref=f12e17] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f12e18] [cursor=pointer]
+        - button [ref=f12e27] [cursor=pointer]
+    - complementary [ref=f12e28]:
+      - generic [ref=f12e29]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f12e31]
+        - button "Zonnecoöperatie Vlaanderen" [ref=f12e33] [cursor=pointer]
+        - generic [ref=f12e35]:
+          - heading "Coöperatiebeheer" [level=3] [ref=f12e36]
+          - navigation [ref=f12e37]:
+            - link "Overzicht" [ref=f12e38] [cursor=pointer]:
+              - /url: /nl/dashboard/admin
+            - link "Aandeelhouders 2" [ref=f12e45] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/shareholders
+              - generic [ref=f12e51]: Aandeelhouders
+              - generic [ref=f12e52]: "2"
+            - link "Aandelenklassen" [ref=f12e53] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/share-classes
+            - link "Transacties 1" [ref=f12e58] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/transactions
+              - generic [ref=f12e62]: Transacties
+              - generic [ref=f12e63]: "1"
+            - link "Projecten" [ref=f12e64] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/projects
+            - link "Dividenden" [ref=f12e70] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/dividends
+            - link "Vergaderingen" [ref=f12e77] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/meetings
+            - link "Postvak" [ref=f12e82] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/messages
+            - link "Bank import" [ref=f12e87] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/bank-import
+            - link "Rapporten" [ref=f12e92] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/reports
+            - link "Instellingen" [ref=f12e96] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings
+            - link "Kanalen" [ref=f12e101] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings/channels
+            - link "Facturatie" [ref=f12e107] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/billing
+            - link "Team" [ref=f12e111] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/team
+            - link "Wat is nieuw" [ref=f12e125] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/changelog
+        - link "Documentatie" [ref=f12e131] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f12e136] [cursor=pointer]:
+          - generic [ref=f12e137]:
+            - paragraph [ref=f12e138]: Demo Admin
+            - paragraph [ref=f12e139]: admin@zonnecooperatie.be
+    - main [ref=f12e142]:
+      - generic [ref=f12e144]:
+        - generic [ref=f12e145]:
+          - heading "Aandeelhouders" [level=1] [ref=f12e146]
+          - generic [ref=f12e147]:
+            - button "Importeren" [ref=f12e148] [cursor=pointer]
+            - button "Aandeelhouder toevoegen" [ref=f12e149] [cursor=pointer]
+        - generic [ref=f12e151]:
+          - generic [ref=f12e152]:
+            - textbox "Zoeken" [ref=f12e157]
+            - combobox [ref=f12e158] [cursor=pointer]:
+              - generic: Alle
+            - combobox [ref=f12e161] [cursor=pointer]:
+              - generic: Alle
+          - table [ref=f12e165]:
+            - rowgroup [ref=f12e166]:
+              - row [ref=f12e167]:
+                - columnheader [ref=f12e168]:
+                  - button "Naam" [ref=f12e169] [cursor=pointer]
+                - columnheader [ref=f12e170]:
+                  - button "Type" [ref=f12e171] [cursor=pointer]
+                - columnheader [ref=f12e172]:
+                  - button "E-mail" [ref=f12e173] [cursor=pointer]
+                - columnheader [ref=f12e174]:
+                  - button "Aandelen" [ref=f12e175] [cursor=pointer]
+                - columnheader [ref=f12e176]:
+                  - button "Status" [ref=f12e177] [cursor=pointer]
+                - columnheader [ref=f12e178]:
+                  - button "Lid sinds" [ref=f12e179] [cursor=pointer]
+              - row [ref=f12e180]:
+                - columnheader [ref=f12e181]:
+                  - textbox "Filteren" [ref=f12e182]
+                - columnheader [ref=f12e183]:
+                  - textbox "Filteren" [ref=f12e184]
+                - columnheader [ref=f12e185]:
+                  - textbox "Filteren" [ref=f12e186]
+                - columnheader [ref=f12e187]:
+                  - textbox "Filteren" [ref=f12e188]
+                - columnheader [ref=f12e189]:
+                  - textbox "Filteren" [ref=f12e190]
+                - columnheader [ref=f12e191]:
+                  - textbox "Filteren" [ref=f12e192]
+            - rowgroup [ref=f12e193]:
+              - row [ref=f12e194]:
+                - cell [ref=f12e195]:
+                  - link "stendert.vansoens@gmail.com" [ref=f12e196] [cursor=pointer]:
+                    - /url: /nl/dashboard/admin/shareholders/cmtsfj5z2008bpo015wsvemao
+                - cell "Particulier Als cadeau" [ref=f12e197]:
+                  - generic [ref=f12e198]:
+                    - generic [ref=f12e199]: Particulier
+                    - generic "Als cadeau" [ref=f12e200]:
+                      - img "Als cadeau" [ref=f12e201]
+                - cell "stendert.vansoens@gmail.com" [ref=f12e205]
+                - cell "0" [ref=f12e206]
+                - cell "In behandeling" [ref=f12e207]
+                - cell "8/9/2026" [ref=f12e209]
+              - row [ref=f12e210]:
+                - cell [ref=f12e211]:
+                  - link "Lucas Peeters" [ref=f12e212] [cursor=pointer]:
+                    - /url: /nl/dashboard/admin/shareholders/cmm143wy9000t81t0f1tz2tsx
+                - cell "Minderjarige" [ref=f12e213]
+                - cell "-" [ref=f12e216]
+                - cell "1" [ref=f12e217]
+                - cell "Actief" [ref=f12e218]
+                - cell "10/9/2024" [ref=f12e220]
+              - row [ref=f12e221]:
+                - cell [ref=f12e222]:
+                  - link "Sophie Lambert" [ref=f12e223] [cursor=pointer]:
+                    - /url: /nl/dashboard/admin/shareholders/cmm143wll000r81t0fxutgfrm
+                - cell "Particulier" [ref=f12e224]
+                - cell "sophie.lambert@email.be" [ref=f12e227]
+                - cell "0" [ref=f12e228]
+                - cell "In behandeling" [ref=f12e229]
+                - cell "24/2/2026" [ref=f12e231]
+              - row [ref=f12e232]:
+                - cell [ref=f12e233]:
+                  - link "Marc Willems" [ref=f12e234] [cursor=pointer]:
+                    - /url: /nl/dashboard/admin/shareholders/cmm143wcc000p81t0r129z8si
+                - cell "Particulier" [ref=f12e235]
+                - cell "marc.willems@email.be" [ref=f12e238]
+                - cell "2" [ref=f12e239]
+                - cell "Actief" [ref=f12e240]
+                - cell "5/6/2024" [ref=f12e242]
+              - row [ref=f12e243]:
+                - cell [ref=f12e244]:
+                  - link "Bakkerij Janssens BV" [ref=f12e245] [cursor=pointer]:
+                    - /url: /nl/dashboard/admin/shareholders/cmm143vx8000l81t0i6tanbjy
+                - cell "Bedrijf" [ref=f12e246]
+                - cell "info@bakkerijjanssens.be" [ref=f12e249]
+                - cell "14" [ref=f12e250]
+                - cell "Actief" [ref=f12e251]
+                - cell "20/4/2024" [ref=f12e253]
+              - row [ref=f12e254]:
+                - cell [ref=f12e255]:
+                  - link "Els De Vos" [ref=f12e256] [cursor=pointer]:
+                    - /url: /nl/dashboard/admin/shareholders/cmm143vo1000j81t0nep96ql5
+                - cell "Particulier" [ref=f12e257]
+                - cell "els.devos@email.be" [ref=f12e260]
+                - cell "2" [ref=f12e261]
+                - cell "Actief" [ref=f12e262]
+                - cell "10/5/2024" [ref=f12e264]
+              - row [ref=f12e265]:
+                - cell [ref=f12e266]:
+                  - link "Jan Peeters" [ref=f12e267] [cursor=pointer]:
+                    - /url: /nl/dashboard/admin/shareholders/cmm143va8000h81t0qwivjnal
+                - cell "Particulier" [ref=f12e268]
+                - cell "jan.peeters@email.be" [ref=f12e271]
+                - cell "6" [ref=f12e272]
+                - cell "Actief" [ref=f12e273]
+                - cell "1/4/2024" [ref=f12e275]
+    - button "Feedback geven" [ref=f12e276] [cursor=pointer]
+  - alert [ref=f12e4]
+  - generic [ref=f12e5]:
+    - paragraph [ref=f12e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f12e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f12e10] [cursor=pointer]
+    - button "Close" [ref=f12e11] [cursor=pointer]

@@ -1,0 +1,140 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e4]:
+      - link "OpenCoop" [ref=e5] [cursor=pointer]:
+        - /url: /nl
+      - button "Toggle menu" [ref=e12] [cursor=pointer]
+  - generic [ref=e15]:
+    - generic [ref=e16]: Open source — AGPL-3.0
+    - heading "Aandeelhoudersbeheer voor coöperaties" [level=1] [ref=e21]
+    - paragraph [ref=e23]: Het open-source platform waarmee coöperaties hun aandeelhouders, aandelen, dividenden en documenten beheren — alles op één plek.
+    - generic [ref=e25]:
+      - link [ref=e26] [cursor=pointer]:
+        - /url: /nl/pricing
+        - button "Aan de slag" [ref=e27]
+      - link [ref=e28] [cursor=pointer]:
+        - /url: "#demo"
+        - button "Probeer de demo" [ref=e29]
+      - link [ref=e30] [cursor=pointer]:
+        - /url: https://github.com/opencoophq/opencoop
+        - button "Bekijk op GitHub" [ref=e31]
+  - generic [ref=e36]:
+    - generic [ref=e37]:
+      - heading "Alles wat uw coöperatie nodig heeft" [level=2] [ref=e38]
+      - paragraph [ref=e39]: "Van aandeelhoudersregistratie tot dividenduitkering: OpenCoop beheert de volledige levenscyclus."
+    - generic [ref=e40]:
+      - generic [ref=e42]:
+        - heading "Aandeelhoudersbeheer" [level=3] [ref=e49]
+        - paragraph [ref=e50]: Registreer particulieren, bedrijven en minderjarigen. Volg statussen, contactgegevens en uiteindelijke begunstigden op.
+      - generic [ref=e52]:
+        - heading "Aandelenklassen & Transacties" [level=3] [ref=e58]
+        - paragraph [ref=e59]: Configureer meerdere aandelenklassen met prijzen, limieten en stemrechten. Verwerk aankopen, verkopen en overdrachten.
+      - generic [ref=e61]:
+        - heading "Dividenduitkering" [level=3] [ref=e68]
+        - paragraph [ref=e69]: Bereken dividenden met automatische roerende voorheffing. Genereer afschriften per aandeelhouder.
+      - generic [ref=e71]:
+        - heading "Bank import & OGM-matching" [level=3] [ref=e75]
+        - paragraph [ref=e76]: Importeer bankafschriften en koppel betalingen automatisch via gestructureerde mededelingen.
+      - generic [ref=e78]:
+        - heading "Documentgeneratie" [level=3] [ref=e83]
+        - paragraph [ref=e84]: Genereer aandelencertificaten, aankoopbewijzen en dividendafschriften als PDF-documenten in uw huisstijl.
+      - generic [ref=e86]:
+        - heading "Multi-tenant & White Label" [level=3] [ref=e94]
+        - paragraph [ref=e95]: Host meerdere coöperaties op één installatie. Elke coöperatie krijgt eigen huisstijl, eigen URL en instellingen.
+  - generic [ref=e97]:
+    - generic [ref=e98]:
+      - heading "In enkele minuten operationeel" [level=2] [ref=e99]
+      - paragraph [ref=e100]: Drie eenvoudige stappen om uw coöperatie te digitaliseren.
+    - generic [ref=e101]:
+      - generic [ref=e102]:
+        - generic [ref=e103]: "01"
+        - generic [ref=e104]:
+          - heading "Maak uw coöperatie aan" [level=3] [ref=e105]
+          - paragraph [ref=e106]: Stel uw coöperatie in met aandelenklassen, bankgegevens en huisstijl.
+      - generic [ref=e107]:
+        - generic [ref=e108]: "02"
+        - generic [ref=e109]:
+          - heading "Nodig aandeelhouders uit" [level=3] [ref=e110]
+          - paragraph [ref=e111]: Aandeelhouders registreren zich online en kopen aandelen via overschrijving.
+      - generic [ref=e112]:
+        - generic [ref=e113]: "03"
+        - generic [ref=e114]:
+          - heading "Beheer & groei" [level=3] [ref=e115]
+          - paragraph [ref=e116]: Volg transacties op, koppel betalingen, keer dividenden uit en genereer documenten.
+  - generic [ref=e118]:
+    - heading "Bekijk het in actie" [level=2] [ref=e122]
+    - paragraph [ref=e123]: Ontdek een volledig ingerichte democoöperatie — geen registratie nodig. Probeer het beheerdersdashboard of het aandeelhoudersportaal.
+    - link [ref=e125] [cursor=pointer]:
+      - /url: /nl/demo
+      - button "Probeer de demo" [ref=e126]
+  - generic [ref=e128]:
+    - generic [ref=e129]:
+      - heading "Kies hoe u OpenCoop gebruikt" [level=2] [ref=e130]
+      - paragraph [ref=e131]: Gebruik ons beheerd platform en focus op uw coöperatie, of host het zelf voor volledige controle.
+    - generic [ref=e132]:
+      - generic [ref=e134]:
+        - generic [ref=e135]: Beheerd platform
+        - heading "OpenCoop Cloud" [level=3] [ref=e139]
+        - paragraph [ref=e140]: Wij zorgen voor hosting, updates en back-ups. U focust op uw coöperatie.
+        - list [ref=e141]:
+          - listitem [ref=e142]: Klaar binnen 24 uur
+          - listitem [ref=e145]: Automatische updates & back-ups
+          - listitem [ref=e148]: E-mailsupport inbegrepen
+        - link [ref=e151] [cursor=pointer]:
+          - /url: /nl/pricing
+          - button "Bekijk prijzen" [ref=e152]
+      - generic [ref=e154]:
+        - heading "OpenCoop Community" [level=3] [ref=e159]
+        - paragraph [ref=e160]: Deploy op uw eigen infrastructuur met Docker. Volledige broncode onder AGPL-3.0.
+        - list [ref=e161]:
+          - listitem [ref=e162]: Gratis & open source
+          - listitem [ref=e165]: Volledige data-eigendom
+          - listitem [ref=e168]: U beheert hosting & updates
+        - link [ref=e171] [cursor=pointer]:
+          - /url: https://github.com/opencoophq/opencoop
+          - button "Bekijk op GitHub" [ref=e172]
+  - generic [ref=e174]:
+    - heading "Klaar om uw coöperatie te moderniseren?" [level=2] [ref=e175]
+    - paragraph [ref=e176]: Sluit u aan bij de coöperaties die OpenCoop al gebruiken om hun aandeelhouders te beheren.
+    - generic [ref=e177]:
+      - link [ref=e178] [cursor=pointer]:
+        - /url: /nl/pricing
+        - button "Aan de slag" [ref=e179]
+      - link [ref=e180] [cursor=pointer]:
+        - /url: https://github.com/opencoophq/opencoop
+        - button "Bekijk broncode op GitHub" [ref=e181]
+  - generic [ref=e183]:
+    - heading "Overstappen van een ander platform?" [level=2] [ref=e188]
+    - paragraph [ref=e189]: Wij migreren uw aandeelhouders, aandelen en transactiegeschiedenis — zodat u meteen aan de slag kunt.
+    - link [ref=e191] [cursor=pointer]:
+      - /url: /nl/migration
+      - button "Migratie aanvragen" [ref=e192]
+  - generic [ref=e194]:
+    - heading "Mist u een functie?" [level=2] [ref=e198]
+    - paragraph [ref=e199]: Vertel ons wat u nodig heeft — we bouwen OpenCoop samen met onze gebruikers.
+    - link [ref=e201] [cursor=pointer]:
+      - /url: /nl/feature-request
+      - button "Stel een functie voor" [ref=e202]
+  - contentinfo [ref=e203]:
+    - generic [ref=e204]:
+      - generic [ref=e205]:
+        - generic [ref=e206]: OpenCoop
+        - generic [ref=e212]: Gelicentieerd onder AGPL-3.0
+        - link "Algemene Voorwaarden" [ref=e213] [cursor=pointer]:
+          - /url: /nl/terms
+        - link "Privacybeleid" [ref=e214] [cursor=pointer]:
+          - /url: /nl/privacy
+        - link "Verwerkersovereenkomst" [ref=e215] [cursor=pointer]:
+          - /url: /nl/dpa
+      - generic [ref=e216]:
+        - generic [ref=e220]: "Taal:"
+        - button "NL" [ref=e222] [cursor=pointer]
+        - generic [ref=e223]:
+          - generic [ref=e224]: /
+          - button "EN" [ref=e225] [cursor=pointer]
+        - generic [ref=e226]:
+          - generic [ref=e227]: /
+          - button "FR" [ref=e228] [cursor=pointer]
+        - generic [ref=e229]:
+          - generic [ref=e230]: /
+          - button "DE" [ref=e231] [cursor=pointer]

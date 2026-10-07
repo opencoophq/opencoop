@@ -1,0 +1,185 @@
+- generic [active] [ref=f18e1]:
+  - generic [ref=f18e2]:
+    - generic [ref=f18e3]:
+      - generic [ref=f18e15]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f18e16]:
+        - button "🇳🇱" [ref=f18e17] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f18e18] [cursor=pointer]
+        - button [ref=f18e27] [cursor=pointer]
+    - complementary [ref=f18e28]:
+      - generic [ref=f18e29]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f18e31]
+        - button "Zonnecoöperatie Vlaanderen" [ref=f18e33] [cursor=pointer]
+        - generic [ref=f18e35]:
+          - heading "Coöperatiebeheer" [level=3] [ref=f18e36]
+          - navigation [ref=f18e37]:
+            - link "Overzicht" [ref=f18e38] [cursor=pointer]:
+              - /url: /nl/dashboard/admin
+            - link "Aandeelhouders 2" [ref=f18e45] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/shareholders
+              - generic [ref=f18e51]: Aandeelhouders
+              - generic [ref=f18e52]: "2"
+            - link "Aandelenklassen" [ref=f18e53] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/share-classes
+            - link "Transacties 1" [ref=f18e58] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/transactions
+              - generic [ref=f18e62]: Transacties
+              - generic [ref=f18e63]: "1"
+            - link "Projecten" [ref=f18e64] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/projects
+            - link "Dividenden" [ref=f18e70] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/dividends
+            - link "Vergaderingen" [ref=f18e77] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/meetings
+            - link "Postvak" [ref=f18e82] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/messages
+            - link "Bank import" [ref=f18e87] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/bank-import
+            - link "Rapporten" [ref=f18e92] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/reports
+            - link "Instellingen" [ref=f18e96] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings
+            - link "Kanalen" [ref=f18e101] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings/channels
+            - link "Facturatie" [ref=f18e107] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/billing
+            - link "Team" [ref=f18e111] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/team
+            - link "Wat is nieuw" [ref=f18e125] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/changelog
+        - link "Documentatie" [ref=f18e131] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f18e136] [cursor=pointer]:
+          - generic [ref=f18e137]:
+            - paragraph [ref=f18e138]: Demo Admin
+            - paragraph [ref=f18e139]: admin@zonnecooperatie.be
+    - main [ref=f18e142]:
+      - generic [ref=f18e144]:
+        - heading "Rapporten" [level=1] [ref=f18e145]
+        - paragraph [ref=f18e146]: Genereer en download rapporten voor bestuursvergaderingen en de algemene vergadering.
+        - generic [ref=f18e147]:
+          - tablist [ref=f18e148]:
+            - tab "Jaaroverzicht" [selected] [ref=f18e149] [cursor=pointer]
+            - tab "Kapitaaloverzicht" [ref=f18e150] [cursor=pointer]
+            - tab "Aandeelhoudersregister" [ref=f18e151] [cursor=pointer]
+            - tab "Dividendoverzicht" [ref=f18e152] [cursor=pointer]
+            - tab "Projectinvestering" [ref=f18e153] [cursor=pointer]
+            - tab "Aandeelhouders per project" [ref=f18e154] [cursor=pointer]
+          - tabpanel "Jaaroverzicht" [ref=f18e155]:
+            - generic [ref=f18e156]:
+              - generic [ref=f18e157]:
+                - generic [ref=f18e159]:
+                  - generic [ref=f18e160]: Jaar
+                  - combobox [ref=f18e161] [cursor=pointer]:
+                    - generic: "2026"
+                - generic [ref=f18e164]:
+                  - button "PDF exporteren" [ref=f18e165] [cursor=pointer]
+                  - button "CSV exporteren" [ref=f18e166] [cursor=pointer]
+              - generic [ref=f18e167]:
+                - generic [ref=f18e168]:
+                  - generic [ref=f18e170]:
+                    - paragraph [ref=f18e171]: Kapitaal (begin jaar)
+                    - paragraph [ref=f18e172]: € 7.750,00
+                  - generic [ref=f18e174]:
+                    - paragraph [ref=f18e175]: Kapitaal (einde jaar)
+                    - paragraph [ref=f18e176]: € 7.750,00
+                    - paragraph [ref=f18e177]: +0.0%
+                  - generic [ref=f18e179]:
+                    - paragraph [ref=f18e180]: Aandeelhouders (begin)
+                    - paragraph [ref=f18e181]: "5"
+                  - generic [ref=f18e183]:
+                    - paragraph [ref=f18e184]: Aandeelhouders (einde)
+                    - paragraph [ref=f18e185]: "5"
+                    - paragraph [ref=f18e186]: +0.0%
+                - generic [ref=f18e187]:
+                  - generic [ref=f18e189]:
+                    - heading "Transacties" [level=3] [ref=f18e190]
+                    - generic [ref=f18e191]:
+                      - generic [ref=f18e192]:
+                        - generic [ref=f18e193]: Aankopen
+                        - generic [ref=f18e194]: € 0,00
+                      - generic [ref=f18e195]:
+                        - generic [ref=f18e196]: Verkopen
+                        - generic [ref=f18e197]: € 0,00
+                  - generic [ref=f18e199]:
+                    - heading "Dividenden" [level=3] [ref=f18e200]
+                    - generic [ref=f18e201]:
+                      - generic [ref=f18e202]:
+                        - generic [ref=f18e203]: Bruto
+                        - generic [ref=f18e204]: € 0,00
+                      - generic [ref=f18e205]:
+                        - generic [ref=f18e206]: Netto
+                        - generic [ref=f18e207]: € 0,00
+                - generic [ref=f18e208]:
+                  - generic [ref=f18e209]:
+                    - heading "Kapitaalevolutie per project" [level=3] [ref=f18e210]
+                    - button [ref=f18e211] [cursor=pointer]
+                  - generic [ref=f18e214]:
+                    - list [ref=f18e216]:
+                      - listitem [ref=f18e217]:
+                        - img "[object Object] legend icon" [ref=f18e218]
+                        - generic [ref=f18e220]: Zonnepark Gent-Zuid
+                      - listitem [ref=f18e221]:
+                        - img "[object Object] legend icon" [ref=f18e222]
+                        - generic [ref=f18e224]: Windturbine Oostende
+                    - application [ref=f18e225]:
+                      - generic [ref=f18e244]:
+                        - generic [ref=f18e245]:
+                          - generic [ref=f18e246]: 1/26
+                          - generic [ref=f18e248]: 2/26
+                          - generic [ref=f18e250]: 3/26
+                          - generic [ref=f18e252]: 4/26
+                          - generic [ref=f18e254]: 5/26
+                          - generic [ref=f18e256]: 6/26
+                          - generic [ref=f18e258]: 7/26
+                          - generic [ref=f18e260]: 8/26
+                          - generic [ref=f18e262]: 10/26
+                        - generic [ref=f18e264]:
+                          - generic [ref=f18e265]: "0"
+                          - generic [ref=f18e267]: 2k
+                          - generic [ref=f18e269]: 4k
+                          - generic [ref=f18e271]: 6k
+                          - generic [ref=f18e273]: 8k
+                - generic [ref=f18e275]:
+                  - generic [ref=f18e276]:
+                    - heading "Verdeling per aandelenklasse" [level=3] [ref=f18e277]
+                    - generic [ref=f18e278]:
+                      - button [ref=f18e279] [cursor=pointer]
+                      - button "Kopieer tabel" [ref=f18e280] [cursor=pointer]
+                  - generic [ref=f18e283]:
+                    - list [ref=f18e285]:
+                      - listitem [ref=f18e286]:
+                        - img "[object Object] legend icon" [ref=f18e287]
+                        - generic [ref=f18e289]: Aandeel A
+                      - listitem [ref=f18e290]:
+                        - img "[object Object] legend icon" [ref=f18e291]
+                        - generic [ref=f18e293]: Aandeel B
+                    - application [ref=f18e294]
+                  - table [ref=f18e303]:
+                    - rowgroup [ref=f18e304]:
+                      - row [ref=f18e305]:
+                        - columnheader "Klasse" [ref=f18e306]
+                        - columnheader "Code" [ref=f18e307]
+                        - columnheader "Aandelen" [ref=f18e308]
+                        - columnheader "Kapitaal" [ref=f18e309]
+                    - rowgroup [ref=f18e310]:
+                      - row [ref=f18e311]:
+                        - cell "Aandeel A" [ref=f18e312]
+                        - cell "A" [ref=f18e313]
+                        - cell "19" [ref=f18e314]
+                        - cell "€ 4.750,00" [ref=f18e315]
+                      - row [ref=f18e316]:
+                        - cell "Aandeel B" [ref=f18e317]
+                        - cell "B" [ref=f18e318]
+                        - cell "6" [ref=f18e319]
+                        - cell "€ 3.000,00" [ref=f18e320]
+    - button "Feedback geven" [ref=f18e321] [cursor=pointer]
+  - alert [ref=f18e4]
+  - generic [ref=f18e5]:
+    - paragraph [ref=f18e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f18e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f18e10] [cursor=pointer]
+    - button "Close" [ref=f18e11] [cursor=pointer]
+  - generic [aria-hidden] [ref=f18e322]: "0"

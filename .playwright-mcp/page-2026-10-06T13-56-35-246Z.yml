@@ -1,0 +1,109 @@
+- generic [active] [ref=f9e1]:
+  - generic [ref=f9e2]:
+    - generic [ref=f9e3]:
+      - generic [ref=f9e15]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f9e16]:
+        - button "🇳🇱" [ref=f9e17] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f9e18] [cursor=pointer]
+        - button [ref=f9e27] [cursor=pointer]
+    - complementary [ref=f9e28]:
+      - generic [ref=f9e29]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f9e31]
+        - generic [ref=f9e33]:
+          - heading "Mijn account" [level=3] [ref=f9e34]
+          - navigation [ref=f9e35]:
+            - link "Overzicht" [ref=f9e36] [cursor=pointer]:
+              - /url: /nl/dashboard
+            - link "Aandelen" [ref=f9e43] [cursor=pointer]:
+              - /url: /nl/dashboard/shares
+            - link "Transacties" [ref=f9e48] [cursor=pointer]:
+              - /url: /nl/dashboard/transactions
+            - link "Dividenden" [ref=f9e53] [cursor=pointer]:
+              - /url: /nl/dashboard/dividends
+            - link "Vergaderingen" [ref=f9e60] [cursor=pointer]:
+              - /url: /nl/dashboard/meetings
+            - link "Documenten" [ref=f9e65] [cursor=pointer]:
+              - /url: /nl/dashboard/documents
+            - link "Postvak" [ref=f9e71] [cursor=pointer]:
+              - /url: /nl/dashboard/inbox
+            - link "Persoonlijke gegevens" [ref=f9e76] [cursor=pointer]:
+              - /url: /nl/dashboard/personal-data
+        - link "Documentatie" [ref=f9e91] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f9e96] [cursor=pointer]:
+          - generic [ref=f9e97]:
+            - paragraph [ref=f9e98]: Jan Peeters
+            - paragraph [ref=f9e99]: jan.peeters@email.be
+    - main [ref=f9e102]:
+      - generic [ref=f9e104]:
+        - heading "Instellingen" [level=1] [ref=f9e105]
+        - generic [ref=f9e106]:
+          - generic [ref=f9e107]:
+            - heading "Weergavenaam" [level=3] [ref=f9e109]
+            - generic [ref=f9e110]:
+              - generic [ref=f9e111]:
+                - text: Weergavenaam
+                - textbox "Je naam" [ref=f9e112]: Jan Peeters
+              - button "Opslaan" [ref=f9e113] [cursor=pointer]
+          - generic [ref=f9e114]:
+            - generic [ref=f9e115]:
+              - heading "Taal" [level=3] [ref=f9e116]
+              - paragraph [ref=f9e117]: Kies de taal voor de beheerinterface
+            - generic [ref=f9e118]:
+              - generic [ref=f9e119]:
+                - text: Interfacetaal
+                - combobox [ref=f9e120] [cursor=pointer]:
+                  - generic: Nederlands
+              - generic [ref=f9e123]:
+                - text: Opmaaklocatie
+                - combobox [ref=f9e124] [cursor=pointer]:
+                  - generic: Nederlands (België)
+          - generic [ref=f9e127]:
+            - generic [ref=f9e128]:
+              - heading "Wachtwoord wijzigen" [level=3] [ref=f9e129]
+              - paragraph [ref=f9e130]: Werk uw accountwachtwoord bij
+            - generic [ref=f9e131]:
+              - generic [ref=f9e132]:
+                - text: Huidig wachtwoord
+                - textbox [ref=f9e133]
+              - generic [ref=f9e134]:
+                - text: Nieuw wachtwoord
+                - textbox [ref=f9e135]
+              - generic [ref=f9e136]:
+                - text: Bevestig nieuw wachtwoord
+                - textbox [ref=f9e137]
+              - button "Opslaan" [ref=f9e138] [cursor=pointer]
+          - generic [ref=f9e139]:
+            - generic [ref=f9e140]:
+              - heading "Tweestapsverificatie" [level=3] [ref=f9e141]
+              - paragraph [ref=f9e144]: Voeg een extra beveiligingslaag toe aan je account met een authenticator-app.
+            - button "2FA inschakelen" [ref=f9e147] [cursor=pointer]
+          - generic [ref=f9e148]:
+            - generic [ref=f9e149]:
+              - heading "Passkeys" [level=3] [ref=f9e150]
+              - paragraph [ref=f9e160]: Log in met je vingerafdruk, gezicht of apparaat-PIN. Passkeys zijn veiliger dan wachtwoorden.
+            - generic [ref=f9e161]:
+              - paragraph [ref=f9e162]: Nog geen passkeys geregistreerd.
+              - generic [ref=f9e163]:
+                - textbox "bijv. MacBook, iPhone" [ref=f9e164]
+                - button "Passkey toevoegen" [ref=f9e165] [cursor=pointer]
+          - generic [ref=f9e166]:
+            - generic [ref=f9e167]:
+              - heading "Gekoppelde accounts" [level=3] [ref=f9e168]
+              - paragraph [ref=f9e169]: Beheer je gekoppelde social login-accounts.
+            - generic [ref=f9e170]:
+              - generic [ref=f9e171]:
+                - generic [ref=f9e172]: Google
+                - generic [ref=f9e179]: Niet gekoppeld
+              - generic [ref=f9e180]:
+                - generic [ref=f9e181]: Apple
+                - generic [ref=f9e185]: Niet gekoppeld
+    - button "Feedback geven" [ref=f9e186] [cursor=pointer]
+  - alert [ref=f9e4]
+  - generic [ref=f9e5]:
+    - paragraph [ref=f9e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f9e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f9e10] [cursor=pointer]
+    - button "Close" [ref=f9e11] [cursor=pointer]

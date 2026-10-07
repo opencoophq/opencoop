@@ -1,0 +1,62 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e2]:
+    - generic [ref=f7e3]:
+      - generic [ref=f7e15]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f7e16]:
+        - button "🇳🇱" [ref=f7e17] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f7e18] [cursor=pointer]
+        - button [ref=f7e27] [cursor=pointer]
+    - complementary [ref=f7e28]:
+      - generic [ref=f7e29]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f7e31]
+        - generic [ref=f7e33]:
+          - heading "Mijn account" [level=3] [ref=f7e34]
+          - navigation [ref=f7e35]:
+            - link "Overzicht" [ref=f7e36] [cursor=pointer]:
+              - /url: /nl/dashboard
+            - link "Aandelen" [ref=f7e43] [cursor=pointer]:
+              - /url: /nl/dashboard/shares
+            - link "Transacties" [ref=f7e48] [cursor=pointer]:
+              - /url: /nl/dashboard/transactions
+            - link "Dividenden" [ref=f7e53] [cursor=pointer]:
+              - /url: /nl/dashboard/dividends
+            - link "Vergaderingen" [ref=f7e60] [cursor=pointer]:
+              - /url: /nl/dashboard/meetings
+            - link "Documenten" [ref=f7e65] [cursor=pointer]:
+              - /url: /nl/dashboard/documents
+            - link "Postvak" [ref=f7e71] [cursor=pointer]:
+              - /url: /nl/dashboard/inbox
+            - link "Persoonlijke gegevens" [ref=f7e76] [cursor=pointer]:
+              - /url: /nl/dashboard/personal-data
+        - link "Documentatie" [ref=f7e91] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f7e96] [cursor=pointer]:
+          - generic [ref=f7e97]:
+            - paragraph [ref=f7e98]: Jan Peeters
+            - paragraph [ref=f7e99]: jan.peeters@email.be
+    - main [ref=f7e102]:
+      - generic [ref=f7e104]:
+        - generic [ref=f7e105]:
+          - heading "Documenten" [level=1] [ref=f7e106]
+          - button "Certificaat genereren" [ref=f7e107] [cursor=pointer]
+        - table [ref=f7e111]:
+          - rowgroup [ref=f7e112]:
+            - row [ref=f7e113]:
+              - columnheader "Type" [ref=f7e114]
+              - columnheader "Datum" [ref=f7e115]
+              - columnheader "Acties" [ref=f7e116]
+          - rowgroup [ref=f7e117]:
+            - row [ref=f7e118]:
+              - cell "Certificaat" [ref=f7e119]
+              - cell "4/3/2026" [ref=f7e121]
+              - cell [ref=f7e122]:
+                - button "Downloaden" [ref=f7e123] [cursor=pointer]
+    - button "Feedback geven" [ref=f7e124] [cursor=pointer]
+  - alert [ref=f7e4]
+  - generic [ref=f7e5]:
+    - paragraph [ref=f7e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f7e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f7e10] [cursor=pointer]
+    - button "Close" [ref=f7e11] [cursor=pointer]

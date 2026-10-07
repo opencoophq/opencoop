@@ -1,0 +1,74 @@
+- generic [active] [ref=f4e1]:
+  - alert [ref=f4e35]
+  - generic [ref=f4e78]:
+    - generic [ref=f4e79]:
+      - generic [ref=f4e80]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f4e81]:
+        - button "🇳🇱" [ref=f4e82] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f4e83] [cursor=pointer]
+        - button [ref=f4e92] [cursor=pointer]
+    - complementary [ref=f4e93]:
+      - generic [ref=f4e94]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f4e96]
+        - generic [ref=f4e98]:
+          - heading "Mijn account" [level=3] [ref=f4e99]
+          - navigation [ref=f4e100]:
+            - link "Overzicht" [ref=f4e101] [cursor=pointer]:
+              - /url: /nl/dashboard
+            - link "Aandelen" [ref=f4e108] [cursor=pointer]:
+              - /url: /nl/dashboard/shares
+            - link "Transacties" [ref=f4e113] [cursor=pointer]:
+              - /url: /nl/dashboard/transactions
+            - link "Dividenden" [ref=f4e118] [cursor=pointer]:
+              - /url: /nl/dashboard/dividends
+            - link "Vergaderingen" [ref=f4e125] [cursor=pointer]:
+              - /url: /nl/dashboard/meetings
+            - link "Documenten" [ref=f4e130] [cursor=pointer]:
+              - /url: /nl/dashboard/documents
+            - link "Postvak" [ref=f4e136] [cursor=pointer]:
+              - /url: /nl/dashboard/inbox
+            - link "Persoonlijke gegevens" [ref=f4e141] [cursor=pointer]:
+              - /url: /nl/dashboard/personal-data
+        - link "Documentatie" [ref=f4e156] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f4e161] [cursor=pointer]:
+          - generic [ref=f4e162]:
+            - paragraph [ref=f4e163]: Jan Peeters
+            - paragraph [ref=f4e164]: jan.peeters@email.be
+    - main [ref=f4e167]:
+      - generic [ref=f4e169]:
+        - heading "Overzicht" [level=1] [ref=f4e170]
+        - generic [ref=f4e171]:
+          - generic [ref=f4e172]:
+            - heading "Aandelen" [level=3] [ref=f4e174]
+            - generic [ref=f4e178]: "7"
+          - generic [ref=f4e180]:
+            - heading "Totale waarde" [level=3] [ref=f4e182]
+            - generic [ref=f4e186]: € 2.250,00
+          - generic [ref=f4e188]:
+            - heading "In behandeling" [level=3] [ref=f4e190]
+            - generic [ref=f4e194]: "0"
+          - generic [ref=f4e196]:
+            - heading "Dividenden" [level=3] [ref=f4e198]
+            - generic [ref=f4e204]: € 0,00
+        - generic [ref=f4e207]:
+          - heading "Nodig een vriend uit" [level=3] [ref=f4e209]
+          - generic [ref=f4e213]:
+            - paragraph [ref=f4e214]: Deel je unieke link en nodig vrienden uit om cooperant te worden.
+            - generic [ref=f4e215]:
+              - text: Jouw doorverwijslink
+              - generic [ref=f4e216]:
+                - textbox [ref=f4e217]: https://opencoop.be/r/jan3771
+                - button [ref=f4e218] [cursor=pointer]
+            - generic [ref=f4e219]:
+              - button "Delen via WhatsApp" [ref=f4e220] [cursor=pointer]
+              - button "Delen via e-mail" [ref=f4e221] [cursor=pointer]
+            - paragraph [ref=f4e222]: Je hebt nog niemand doorverwezen. Deel je link om te beginnen!
+    - button "Feedback geven" [ref=f4e223] [cursor=pointer]
+  - generic [ref=f4e36]:
+    - paragraph [ref=f4e39]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f4e40] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f4e41] [cursor=pointer]
+    - button "Close" [ref=f4e42] [cursor=pointer]
