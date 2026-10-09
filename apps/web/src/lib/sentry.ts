@@ -3,7 +3,7 @@
 // DSN: NEXT_PUBLIC_SENTRY_DSN is a GitHub Actions secret, inlined at build
 // time via a Docker build arg. Fall back to the committed self-hosted
 // GlitchTip DSN when the secret is unset (`undefined`) or empty (`""`).
-import type { ErrorEvent } from '@sentry/nextjs';
+import type { Breadcrumb, ErrorEvent } from '@sentry/nextjs';
 
 const FALLBACK_SENTRY_DSN = 'https://fc042137f1984c4588e9e22a1efd875c@errors.armlab.com/12';
 
@@ -34,41 +34,66 @@ export function getServerSentryEnvironment(): string {
 }
 
 const SENSITIVE_HEADERS = new Set(['authorization', 'cookie', 'set-cookie', 'x-api-key']);
+const REFERER_HEADERS = new Set(['referer', 'referrer']);
 
-function stripQuery(url: string | undefined): string | undefined {
+// Strips everything from `?` or `#` onward, so query strings and fragments
+// (magic-link / reset tokens) never leave the client.
+export function stripQuery(url: string | undefined): string | undefined {
   if (!url) return url;
-  const index = url.indexOf('?');
-  return index === -1 ? url : url.slice(0, index);
+  const queryIndex = url.indexOf('?');
+  const hashIndex = url.indexOf('#');
+  const candidates = [queryIndex, hashIndex].filter((index) => index !== -1);
+  if (candidates.length === 0) return url;
+  return url.slice(0, Math.min(...candidates));
+}
+
+function scrubRequest(request: ErrorEvent['request'] | undefined): void {
+  if (!request) return;
+
+  delete request.data;
+  delete request.cookies;
+  delete request.query_string;
+  request.url = stripQuery(request.url);
+
+  if (request.headers) {
+    for (const key of Object.keys(request.headers)) {
+      const lower = key.toLowerCase();
+      if (SENSITIVE_HEADERS.has(lower)) {
+        delete request.headers[key];
+      } else if (REFERER_HEADERS.has(lower)) {
+        const stripped = stripQuery(request.headers[key]);
+        if (stripped !== undefined) request.headers[key] = stripped;
+      }
+    }
+  }
+}
+
+// Strips query strings/fragments from breadcrumb navigation and fetch URLs.
+// Shared by beforeSend (existing breadcrumbs) and beforeBreadcrumb (new ones).
+export function scrubBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb {
+  const data = breadcrumb.data;
+  if (data) {
+    if (typeof data.url === 'string') data.url = stripQuery(data.url);
+    if (typeof data.from === 'string') data.from = stripQuery(data.from);
+    if (typeof data.to === 'string') data.to = stripQuery(data.to);
+  }
+  return breadcrumb;
 }
 
 // Strips request bodies, cookies, query strings, and sensitive headers
 // before an event leaves the server/edge runtime.
 export function scrubSentryEvent(event: ErrorEvent): ErrorEvent {
-  if (event.request) {
-    delete event.request.data;
-    delete event.request.cookies;
-    delete event.request.query_string;
-    event.request.url = stripQuery(event.request.url);
-
-    if (event.request.headers) {
-      for (const key of Object.keys(event.request.headers)) {
-        if (SENSITIVE_HEADERS.has(key.toLowerCase())) {
-          delete event.request.headers[key];
-        }
-      }
-    }
-  }
+  scrubRequest(event.request);
 
   if (event.breadcrumbs) {
-    for (const breadcrumb of event.breadcrumbs) {
-      const data = breadcrumb.data;
-      if (data) {
-        if (typeof data.url === 'string') data.url = stripQuery(data.url);
-        if (typeof data.from === 'string') data.from = stripQuery(data.from);
-        if (typeof data.to === 'string') data.to = stripQuery(data.to);
-      }
-    }
+    event.breadcrumbs = event.breadcrumbs.map(scrubBreadcrumb);
   }
 
   return event;
+}
+
+// Browser-side beforeSend: the page URL and navigation/fetch breadcrumbs can
+// carry magic-link or reset tokens in `?query`/`#fragment`.
+export function scrubBrowserEvent(event: ErrorEvent): ErrorEvent {
+  return scrubSentryEvent(event);
 }
