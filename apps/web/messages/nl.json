@@ -1204,7 +1204,8 @@
     "linked": "Gekoppeld",
     "notLinked": "Niet gekoppeld",
     "linkAccount": "Account koppelen",
-    "unlinkAccount": "Ontkoppelen"
+    "unlinkAccount": "Ontkoppelen",
+    "loginFailed": "Inloggen met Google of Apple is niet gelukt. Probeer het opnieuw of log in met je e-mailadres."
   },
   "errors": {
     "generic": "Er is iets misgegaan",

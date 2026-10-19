@@ -1201,7 +1201,8 @@
     "linked": "Lié",
     "notLinked": "Non lié",
     "linkAccount": "Lier le compte",
-    "unlinkAccount": "Délier"
+    "unlinkAccount": "Délier",
+    "loginFailed": "La connexion avec Google ou Apple a échoué. Réessayez ou connectez-vous avec votre adresse e-mail."
   },
   "errors": {
     "generic": "Une erreur est survenue",

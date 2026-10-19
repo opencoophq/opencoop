@@ -1201,7 +1201,8 @@
     "linked": "Verknüpft",
     "notLinked": "Nicht verknüpft",
     "linkAccount": "Konto verknüpfen",
-    "unlinkAccount": "Trennen"
+    "unlinkAccount": "Trennen",
+    "loginFailed": "Die Anmeldung mit Google oder Apple ist fehlgeschlagen. Bitte versuchen Sie es erneut oder melden Sie sich mit Ihrer E-Mail-Adresse an."
   },
   "errors": {
     "generic": "Etwas ist schiefgelaufen",

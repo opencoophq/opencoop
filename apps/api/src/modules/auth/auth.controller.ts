@@ -1,4 +1,4 @@
-import { Controller, Post, Put, Body, Get, Query, UseGuards, Delete, Param, Req, Res } from '@nestjs/common';
+import { Controller, Post, Put, Body, Get, Query, UseGuards, UseFilters, Delete, Param, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
@@ -34,6 +34,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { WebAuthnService } from './webauthn.service';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AppleAuthGuard } from './guards/apple-auth.guard';
+import { OAuthCallbackExceptionFilter } from './filters/oauth-callback.filter';
 import { CoopAdminsService } from '../coop-admins/coop-admins.service';
 import { AuditService } from '../audit/audit.service';
 
@@ -397,6 +398,7 @@ export class AuthController {
   @Public()
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
+  @UseFilters(OAuthCallbackExceptionFilter)
   @ApiOperation({ summary: 'Google OAuth callback' })
   async googleCallback(@Req() req: any, @Res() res: any) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
@@ -444,6 +446,7 @@ export class AuthController {
   @Public()
   @Get('apple')
   @UseGuards(AppleAuthGuard)
+  @UseFilters(OAuthCallbackExceptionFilter)
   @ApiOperation({ summary: 'Initiate Apple OAuth login' })
   async appleLogin() {
     // Guard redirects to Apple
@@ -452,6 +455,7 @@ export class AuthController {
   @Public()
   @Post('apple/callback')
   @UseGuards(AppleAuthGuard)
+  @UseFilters(OAuthCallbackExceptionFilter)
   @ApiOperation({ summary: 'Apple OAuth callback (POST)' })
   async appleCallback(@Req() req: any, @Res() res: any) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';

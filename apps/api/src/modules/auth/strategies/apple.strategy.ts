@@ -1,20 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-apple';
+import type { AuthenticateOptions } from 'passport-apple';
 import { ConfigService } from '@nestjs/config';
+
+export function buildAppleStrategyOptions(configService: ConfigService): AuthenticateOptions {
+  return {
+    clientID: configService.get<string>('APPLE_CLIENT_ID') as string,
+    teamID: configService.get<string>('APPLE_TEAM_ID') as string,
+    keyID: configService.get<string>('APPLE_KEY_ID') as string,
+    // passport-apple only reads `privateKeyLocation` / `privateKeyString`.
+    // The previous `keyFilePath` option was silently ignored, so the client
+    // secret was signed with an undefined key and every Apple login 500'd.
+    // The key itself is checked at boot by resolveAppleLogin().
+    privateKeyLocation: configService.get<string>('APPLE_KEY_PATH'),
+    callbackURL: configService.get<string>('APPLE_CALLBACK_URL'),
+    scope: ['name', 'email'],
+    passReqToCallback: false,
+  };
+}
 
 @Injectable()
 export class AppleStrategy extends PassportStrategy(Strategy, 'apple') {
   constructor(configService: ConfigService) {
-    super({
-      clientID: configService.get<string>('APPLE_CLIENT_ID'),
-      teamID: configService.get<string>('APPLE_TEAM_ID'),
-      keyID: configService.get<string>('APPLE_KEY_ID'),
-      keyFilePath: configService.get<string>('APPLE_KEY_PATH'),
-      callbackURL: configService.get<string>('APPLE_CALLBACK_URL'),
-      scope: ['name', 'email'],
-      passReqToCallback: false,
-    });
+    super(buildAppleStrategyOptions(configService));
   }
 
   // Apple sends user info (name, email) via POST body on first auth only
