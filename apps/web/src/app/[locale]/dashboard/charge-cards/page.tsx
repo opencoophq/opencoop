@@ -1,9 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useLocale as useUrlLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { api } from '@/lib/api';
+import {
+  chargeCardEntryPath,
+  isCoopSlug,
+  pickChargeCardShareholder,
+  type ChargeCardShareholderRef,
+} from '@/lib/charge-card-entry';
 import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,7 +81,12 @@ const money = (value: number | string): number => Number(value);
 export default function ChargeCardsPage() {
   const t = useTranslations('chargeCards');
   const { locale } = useLocale();
+  const urlLocale = useUrlLocale();
+  const searchParams = useSearchParams();
+  const requestedCoop = searchParams.get('coop');
+  const coopSlug = isCoopSlug(requestedCoop) ? requestedCoop : null;
   const [shareholderId, setShareholderId] = useState<string | null>(null);
+  const [wrongCoop, setWrongCoop] = useState(false);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,22 +95,38 @@ export default function ChargeCardsPage() {
   const [label, setLabel] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [payment, setPayment] = useState<PaymentDetails | null>(null);
+  const openedRequest = useRef(false);
 
   const load = useCallback(async (id: string) => {
     setOverview(await api<Overview>(`/shareholders/${id}/charge-cards`));
   }, []);
 
   useEffect(() => {
-    api<{ shareholders?: Array<{ id: string }> }>('/auth/me')
+    api<{ shareholders?: ChargeCardShareholderRef[] }>('/auth/me')
       .then(async (profile) => {
-        // Same convention as the other dashboard pages: the first shareholder record.
-        const id = profile.shareholders?.[0]?.id ?? null;
+        const shareholder = pickChargeCardShareholder(profile.shareholders ?? [], coopSlug);
+        // A coop was named in the URL and this account has no share there.
+        // Don't fall through to another coop's cards.
+        if (coopSlug && !shareholder) {
+          setWrongCoop(true);
+          setShareholderId(null);
+          return;
+        }
+        const id = shareholder?.id ?? null;
         setShareholderId(id);
         if (id) await load(id);
       })
       .catch(() => setError(t('actionError')))
       .finally(() => setLoading(false));
-  }, [load, t]);
+  }, [coopSlug, load, t]);
+
+  useEffect(() => {
+    if (openedRequest.current || loading || !overview) return;
+    if (searchParams.get('request') === '1' && overview.enabled && overview.shareholderStatus === 'ACTIVE') {
+      openedRequest.current = true;
+      setRequestOpen(true);
+    }
+  }, [loading, overview, searchParams]);
 
   const paymentFor = (card: ChargeCardView): PaymentDetails | null =>
     overview
@@ -158,6 +186,20 @@ export default function ChargeCardsPage() {
     );
   }
 
+  if (wrongCoop && coopSlug) {
+    const returnTo = encodeURIComponent(chargeCardEntryPath(urlLocale, coopSlug, true));
+    return (
+      <Card>
+        <CardContent className="py-12 text-center space-y-4">
+          <p className="text-muted-foreground">{t('notMemberOfCoop')}</p>
+          <Button asChild>
+            <Link href={`/${coopSlug}/register?returnTo=${returnTo}`}>{t('becomeShareholder')}</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!shareholderId || !overview) {
     return (
       <Card>
@@ -201,11 +243,22 @@ export default function ChargeCardsPage() {
 
       {!isActive && (
         <Alert>
-          <AlertDescription className="flex flex-wrap items-center gap-2">
-            <span>{t('notActive')}</span>
-            <Link href={`/${overview.coop.slug}/register`} className="font-medium underline">
-              {t('becomeShareholder')}
-            </Link>
+          <AlertDescription className="space-y-2">
+            <p>
+              {overview.shareholderStatus === 'PENDING' ? t('pendingMembership') : t('inactiveMembership')}
+            </p>
+            {overview.shareholderStatus === 'PENDING' ? (
+              <Link href="/dashboard/shares" className="font-medium underline">
+                {t('viewShares')}
+              </Link>
+            ) : (
+              <Link
+                href={`/${overview.coop.slug}/register?returnTo=${encodeURIComponent(chargeCardEntryPath(urlLocale, overview.coop.slug, true))}`}
+                className="font-medium underline"
+              >
+                {t('becomeShareholder')}
+              </Link>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -284,7 +337,7 @@ export default function ChargeCardsPage() {
       )}
 
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
-        <DialogContent>
+        <DialogContent data-testid="charge-card-request">
           <DialogHeader>
             <DialogTitle>{t('requestTitle')}</DialogTitle>
             <DialogDescription>

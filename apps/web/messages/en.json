@@ -23,6 +23,10 @@
     "volunteers": {
       "title": "Volunteer registration",
       "description": "Register as a volunteer for a cooperative. Members and non-members can sign up."
+    },
+    "chargeCards": {
+      "title": "Request a charge card",
+      "description": "Request a charge card as a member. Not a member yet? Become a shareholder of this cooperative first."
     }
   },
   "common": {
@@ -501,6 +505,9 @@
     "copyAll": "Copy all details",
     "copyAllCopied": "All details copied",
     "imDone": "I'm done",
+    "chargeCardNextTitle": "Next: your charge card",
+    "chargeCardNextBody": "A charge card can only be requested once your membership is active. Pay for your shares first. The next page explains what happens after that. Once you are active, the request form opens.",
+    "chargeCardContinue": "Continue to the charge card",
     "selectShareClass": "Select share class",
     "selectProject": "Select project (optional)",
     "enterQuantity": "Enter quantity",
@@ -553,6 +560,7 @@
     "registrationLink": "Registration",
     "loginLink": "Login",
     "volunteerSignupLink": "Volunteer signup",
+    "chargeCardEntryLink": "Request a charge card",
     "copied": "Copied!",
     "nav": {
       "overview": "Overview",
@@ -2426,7 +2434,36 @@
     "notEnabled": "Charge cards are not available at your cooperative.",
     "noShareholder": "Charge cards are for shareholders. Log in with the account you used to buy shares.",
     "notActive": "Only active shareholders can request a charge card.",
+    "pendingMembership": "Your membership is not active yet. Pay for your shares first, using the structured communication from your registration. Once we match the payment you become active — usually within 1 to 2 working days. You can then request a charge card here. The card is paid separately.",
+    "inactiveMembership": "Only active members can request a charge card. Buy a share to activate your membership. Once you are active, you can request a charge card here.",
+    "notMemberOfCoop": "This account is not a member of this cooperative. Become a member first. Once your membership is active, you can request a charge card.",
+    "viewShares": "View your shares",
     "becomeShareholder": "Become a shareholder",
+    "entry": {
+      "title": "Request a charge card",
+      "intro": "A charge card from {coop} costs {fee} (incl. VAT). You pay once by bank transfer with a structured communication. A replacement after loss or theft costs {replacementFee}.",
+      "question": "Are you already a member?",
+      "yes": "Yes, I am a member",
+      "yesHint": "You log in and land straight on the request form.",
+      "no": "No, I want to become a member",
+      "noHint": "You buy a share first. Once your membership is active, you request the charge card.",
+      "unavailable": "Charge cards are not available at this cooperative.",
+      "notFound": "We could not find this cooperative.",
+      "pendingTitle": "Your membership is not active yet",
+      "pendingBody": "You are registered with {coop}, but your membership is not active yet. Pay for your shares first, using the structured communication from your registration. Once we match the payment you become active, usually within 1 to 2 working days, and you receive an email. This page then opens the request form. The charge card is paid separately ({fee}, incl. VAT).",
+      "inactiveTitle": "Only active members can request a charge card",
+      "inactiveBody": "Your membership at {coop} is not active. Buy a share to become a member again. Once your membership is active, you can request a charge card here.",
+      "joinTitle": "Become a member first",
+      "joinBody": "This account is not a member of {coop}. Buy a share first. Once your membership is active, you can request a charge card.",
+      "buyShares": "Buy a share",
+      "viewShares": "View your shares",
+      "afterTitle": "First you become a member, then the charge card follows",
+      "afterIntro": "Your registration is recorded. A charge card can only be requested once your membership is active.",
+      "afterStepPay": "Transfer the amount for your shares with the structured communication from the previous step.",
+      "afterStepWait": "We activate your membership once the payment is matched, usually within 1 to 2 working days. You receive an email about that.",
+      "afterStepReturn": "Then come back to this page, choose “Yes, I am a member” and log in. You land directly on the request form. The charge card costs {fee} (incl. VAT) and is paid separately.",
+      "loginWhenActive": "I am already active — request a charge card"
+    },
     "request": "Request a card",
     "requestTitle": "Request a charge card",
     "requestDescription": "A card costs {fee} (incl. VAT), paid once by bank transfer.",

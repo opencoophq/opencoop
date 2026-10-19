@@ -73,6 +73,42 @@ export class ChargeCardsService {
     private readonly email: EmailService,
   ) {}
 
+  /**
+   * Anonymous entry page. A missing coop is a 404. A coop that exists with the
+   * feature switched off still returns its name, so the page can say the
+   * feature is unavailable without offering the fee or the request.
+   */
+  async publicInfo(slug: string) {
+    const coop = await this.prisma.coop.findUnique({
+      where: { slug },
+      select: {
+        name: true,
+        slug: true,
+        chargeCardsEnabled: true,
+        chargeCardFee: true,
+        chargeCardReplacementFee: true,
+        channels: {
+          where: { isDefault: true },
+          select: { logoUrl: true, primaryColor: true },
+          take: 1,
+        },
+      },
+    });
+    if (!coop) {
+      throw new NotFoundException('Cooperative not found');
+    }
+    const channel = coop.channels[0];
+    return {
+      coopName: coop.name,
+      coopSlug: coop.slug,
+      logoUrl: channel?.logoUrl ?? null,
+      primaryColor: channel?.primaryColor ?? '#1e40af',
+      enabled: coop.chargeCardsEnabled,
+      feeInclVat: coop.chargeCardsEnabled ? coop.chargeCardFee.toString() : null,
+      replacementFeeInclVat: coop.chargeCardsEnabled ? coop.chargeCardReplacementFee.toString() : null,
+    };
+  }
+
   async listForShareholder(shareholderId: string, userId: string) {
     const sh = await this.loadOwnShareholder(shareholderId, userId);
     // Always return existing cards, even with the feature switched off: a

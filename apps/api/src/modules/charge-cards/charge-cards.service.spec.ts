@@ -434,4 +434,49 @@ describe('ChargeCardsService (shareholder side)', () => {
       expect(prisma.chargeCard.findFirst).not.toHaveBeenCalled();
     });
   });
+
+  describe('publicInfo', () => {
+    const coopRow = {
+      name: 'Bronsgroen',
+      slug: 'bronsgroen',
+      chargeCardsEnabled: true,
+      chargeCardFee: new Prisma.Decimal('6.00'),
+      chargeCardReplacementFee: new Prisma.Decimal('12.00'),
+      channels: [{ logoUrl: '/logos/bronsgroen.png', primaryColor: '#33691e' }],
+    };
+
+    beforeEach(() => {
+      prisma.coop = { findUnique: jest.fn().mockResolvedValue(coopRow) };
+    });
+
+    it('returns the fee and branding when charge cards are enabled', async () => {
+      await expect(service.publicInfo('bronsgroen')).resolves.toEqual({
+        coopName: 'Bronsgroen',
+        coopSlug: 'bronsgroen',
+        logoUrl: '/logos/bronsgroen.png',
+        primaryColor: '#33691e',
+        enabled: true,
+        feeInclVat: '6',
+        replacementFeeInclVat: '12',
+      });
+    });
+
+    it('hides the fee when the coop has charge cards switched off', async () => {
+      prisma.coop.findUnique.mockResolvedValue({ ...coopRow, chargeCardsEnabled: false, channels: [] });
+
+      await expect(service.publicInfo('bronsgroen')).resolves.toMatchObject({
+        enabled: false,
+        feeInclVat: null,
+        replacementFeeInclVat: null,
+        logoUrl: null,
+        primaryColor: '#1e40af',
+      });
+    });
+
+    it('returns 404 for an unknown coop', async () => {
+      prisma.coop.findUnique.mockResolvedValue(null);
+
+      await expect(service.publicInfo('missing')).rejects.toThrow(NotFoundException);
+    });
+  });
 });
