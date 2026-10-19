@@ -179,8 +179,11 @@ export class McpMessageTools {
     return `${frontendUrl}/en/dashboard/admin/messages/${conversationId}`;
   }
 
-  private async describe(conversationId: string, coopId: string) {
+  private async describe(conversationId: string, coopId: string, canViewVolunteers = false) {
     const conv = await this.messages.findByIdForAdmin(conversationId, coopId);
+    if (conv.audienceType === 'VOLUNTEERS' && !canViewVolunteers) {
+      throw new NotFoundException('Conversation not found');
+    }
     const first = conv.messages[0];
     return {
       id: conv.id,
@@ -243,7 +246,7 @@ export class McpMessageTools {
           'mcp',
           { apiKeyId: ctx.apiKeyId },
         );
-        return this.describe(conv.id, ctx.coopId);
+        return this.describe(conv.id, ctx.coopId, ctx.canViewVolunteers);
       },
     );
   }
@@ -268,7 +271,7 @@ export class McpMessageTools {
         }
         if (params.audience) dto.audience = await this.resolveAudience(ctx.coopId, params.audience);
         await this.messages.updateDraft(params.conversationId, ctx.coopId, dto, ctx.userId);
-        return this.describe(params.conversationId, ctx.coopId);
+        return this.describe(params.conversationId, ctx.coopId, ctx.canViewVolunteers);
       },
     );
   }
@@ -282,7 +285,7 @@ export class McpMessageTools {
   })
   async getMessageDraft(params: GetMessageDraftParams) {
     return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) =>
-      this.describe(params.conversationId, ctx.coopId),
+      this.describe(params.conversationId, ctx.coopId, ctx.canViewVolunteers),
     );
   }
 
@@ -294,7 +297,9 @@ export class McpMessageTools {
   })
   async listConversations(params: ListConversationsParams) {
     return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) =>
-      this.messages.findAllForCoop(ctx.coopId, params.page ?? 1),
+      this.messages.findAllForCoop(ctx.coopId, params.page ?? 1, {
+        includeVolunteers: ctx.canViewVolunteers,
+      }),
     );
   }
 
@@ -305,9 +310,13 @@ export class McpMessageTools {
     parameters: getConversationParameters,
   })
   async getConversation(params: GetConversationParams) {
-    return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) =>
-      this.messages.findByIdForAdmin(params.conversationId, ctx.coopId),
-    );
+    return this.toolkit.run({ permission: 'canManageMessages' }, params, async (ctx) => {
+      const conv = await this.messages.findByIdForAdmin(params.conversationId, ctx.coopId);
+      if (conv.audienceType === 'VOLUNTEERS' && !ctx.canViewVolunteers) {
+        throw new NotFoundException('Conversation not found');
+      }
+      return conv;
+    });
   }
 
   // Mirrors POST admin/coops/:coopId/conversations/audience-preview

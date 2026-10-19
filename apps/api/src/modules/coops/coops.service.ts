@@ -13,6 +13,7 @@ import { EmailService } from '../email/email.service';
 import { getAudienceProvider } from '../audience-sync/audience-provider.factory';
 import { encryptField } from '../../common/crypto/field-encryption';
 import { PRIVACY_VERSION } from '@opencoop/shared';
+import { sanitizeInterestTags } from '../volunteers/volunteer-record';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -376,6 +377,8 @@ export class CoopsService {
         ecoPowerMinThresholdType: true,
         ecoPowerMinThreshold: true,
         chargeCardsEnabled: true,
+        volunteersEnabled: true,
+        volunteerInterests: true,
         chargeCardFee: true,
         chargeCardReplacementFee: true,
         chargeCardVatRate: true,
@@ -479,6 +482,9 @@ export class CoopsService {
     }
 
     const data: Record<string, unknown> = { ...updateCoopDto };
+    if (Array.isArray(data.volunteerInterests)) {
+      data.volunteerInterests = sanitizeInterestTags(data.volunteerInterests as string[]);
+    }
 
     // Don't overwrite secrets with empty strings
     if (!data.smtpPass) delete data.smtpPass;

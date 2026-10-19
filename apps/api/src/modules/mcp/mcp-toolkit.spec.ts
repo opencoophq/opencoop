@@ -99,6 +99,7 @@ describe('McpToolkit', () => {
         apiKeyId: 'key1',
         scope: 'READ_WRITE',
         canViewPII: true,
+        canViewVolunteers: false,
         audit: {
           userId: 'user1',
           ip: 'mcp',

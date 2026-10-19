@@ -74,6 +74,8 @@ interface FormState {
   ecoPowerEnabled: boolean;
   ecoPowerMinThresholdType: string;
   ecoPowerMinThreshold: string;
+  volunteersEnabled: boolean;
+  volunteerInterests: string;
   chargeCardsEnabled: boolean;
   chargeCardFee: string;
   chargeCardReplacementFee: string;
@@ -116,6 +118,8 @@ interface SettingsResponse {
   ecoPowerEnabled: boolean;
   ecoPowerMinThresholdType: string | null;
   ecoPowerMinThreshold: number | null;
+  volunteersEnabled: boolean;
+  volunteerInterests: string[] | null;
   chargeCardsEnabled: boolean;
   chargeCardFee: string | null;
   chargeCardReplacementFee: string | null;
@@ -225,6 +229,8 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     ecoPowerEnabled: false,
     ecoPowerMinThresholdType: 'EURO',
     ecoPowerMinThreshold: '',
+    volunteersEnabled: false,
+    volunteerInterests: '',
     chargeCardsEnabled: false,
     chargeCardFee: '6.00',
     chargeCardReplacementFee: '12.00',
@@ -377,6 +383,8 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
           ecoPowerMinThresholdType: settings.ecoPowerMinThresholdType || 'EURO',
           ecoPowerMinThreshold: settings.ecoPowerMinThreshold?.toString() || '',
           chargeCardsEnabled: settings.chargeCardsEnabled || false,
+          volunteersEnabled: settings.volunteersEnabled || false,
+          volunteerInterests: (settings.volunteerInterests || []).join(', '),
           chargeCardFee: settings.chargeCardFee != null ? Number(settings.chargeCardFee).toFixed(2) : '6.00',
           chargeCardReplacementFee:
             settings.chargeCardReplacementFee != null ? Number(settings.chargeCardReplacementFee).toFixed(2) : '12.00',
@@ -451,6 +459,11 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
         ecoPowerMinThresholdType: form.ecoPowerEnabled ? form.ecoPowerMinThresholdType : null,
         ecoPowerMinThreshold: form.ecoPowerEnabled ? (parseFloat(form.ecoPowerMinThreshold) || null) : null,
         chargeCardsEnabled: form.chargeCardsEnabled,
+        volunteersEnabled: form.volunteersEnabled,
+        volunteerInterests: form.volunteerInterests
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
         chargeCardFee: toOptionalNumber(form.chargeCardFee),
         chargeCardReplacementFee: toOptionalNumber(form.chargeCardReplacementFee),
         chargeCardVatRate: toOptionalNumber(form.chargeCardVatRate),
@@ -707,6 +720,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     { key: 'publicPage', url: coopBasePath },
     { key: 'registrationLink', url: `${coopBasePath}/default/register` },
     { key: 'loginLink', url: `${coopBasePath}/login` },
+    ...(form.volunteersEnabled
+      ? [{ key: 'volunteerSignupLink', url: `${coopBasePath}/vrijwilligers` }]
+      : []),
   ];
 
   // Ponto expiry calculations
@@ -1113,6 +1129,35 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('volunteers.settings.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t('volunteers.settings.description')}</p>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="volunteers-enabled"
+                checked={form.volunteersEnabled}
+                onCheckedChange={(c) => setForm({ ...form, volunteersEnabled: !!c })}
+              />
+              <Label htmlFor="volunteers-enabled">{t('volunteers.settings.enabled')}</Label>
+            </div>
+            {form.volunteersEnabled && (
+              <div className="space-y-1">
+                <Label htmlFor="volunteer-interests">{t('volunteers.settings.interests')}</Label>
+                <Input
+                  id="volunteer-interests"
+                  value={form.volunteerInterests}
+                  onChange={(e) => setForm({ ...form, volunteerInterests: e.target.value })}
+                  placeholder="flyers, stands, workshops, technical, admin"
+                />
+                <p className="text-xs text-muted-foreground">{t('volunteers.settings.interestsHelp')}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Charge cards */}
         <Card>

@@ -64,6 +64,7 @@ export interface McpToolContext {
   apiKeyId: string;
   scope: 'READ_ONLY' | 'READ_WRITE';
   canViewPII: boolean;
+  canViewVolunteers: boolean;
   audit: {
     userId: string;
     ip: string;
@@ -130,6 +131,7 @@ export class McpToolkit {
       apiKeyId,
       scope,
       canViewPII: permissions.canViewPII !== false,
+      canViewVolunteers: role === 'SYSTEM_ADMIN' || isPermitted(permissions, 'canViewVolunteers'),
       audit: {
         userId,
         ip: 'mcp',

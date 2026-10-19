@@ -127,5 +127,29 @@
     "cardNumber": "Card number",
     "dashboard": "View my charge cards",
     "thanks": "Kind regards, {coopName}"
+  },
+  "volunteer-confirm": {
+    "subject": "Confirm your volunteer registration at {coopName}",
+    "title": "Confirm your registration",
+    "dear": "Dear {volunteerName},",
+    "intro": "Thanks for offering to help {coopName}. Confirm your email address so the cooperative may contact you about volunteer tasks.",
+    "confirm": "Confirm my registration",
+    "ignore": "If you did not request this, you can ignore this email.",
+    "expires": "This link expires in 14 days."
+  },
+  "volunteer-welcome": {
+    "subject": "You are registered as a volunteer at {coopName}",
+    "title": "You are registered",
+    "dear": "Dear {volunteerName},",
+    "thanks": "Thank you. {coopName} may contact you about volunteer tasks you signed up for.",
+    "withdrawHint": "You can withdraw this consent at any time.",
+    "withdraw": "Withdraw my registration"
+  },
+  "volunteer-message": {
+    "title": "Message from {coopName}",
+    "dear": "Dear {volunteerName},",
+    "subject": "Subject",
+    "withdrawHint": "You can withdraw your volunteer registration at any time.",
+    "withdraw": "Withdraw my registration"
   }
 }

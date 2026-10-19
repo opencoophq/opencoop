@@ -33,6 +33,7 @@ import {
   Megaphone,
   CalendarCheck,
   Zap,
+  HeartHandshake,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -76,7 +77,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     pendingShareholders: number;
     unmatchedBankTransactions: number;
   } | null>(null);
-  const [shareholderCoop, setShareholderCoop] = useState<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean } | null>(null);
+  const [shareholderCoop, setShareholderCoop] = useState<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean; volunteersEnabled?: boolean } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -99,7 +100,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       api<{
         emailVerified?: boolean;
         adminCoops?: typeof adminCoops;
-        shareholderCoops?: Array<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean }>;
+        shareholderCoops?: Array<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean; volunteersEnabled?: boolean }>;
         shareholders?: Array<{ id: string }>;
       }>('/auth/me')
         .then((data) => {
@@ -206,6 +207,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { href: '/dashboard/admin', label: t('common.overview'), icon: <LayoutDashboard className="h-4 w-4" /> },
         hasPermission('canManageShareholders') && { href: '/dashboard/admin/shareholders', label: t('admin.shareholders.title'), icon: <Users className="h-4 w-4" />, badge: adminStats?.pendingShareholders },
         hasPermission('canManageShareholders') && (selectedCoop.chargeCardsEnabled || selectedCoop.hasChargeCards) && { href: '/dashboard/admin/charge-cards', label: t('chargeCards.admin.title'), icon: <Zap className="h-4 w-4" /> },
+        hasPermission('canViewVolunteers') && selectedCoop.volunteersEnabled && { href: '/dashboard/admin/volunteers', label: t('volunteers.nav'), icon: <HeartHandshake className="h-4 w-4" /> },
         hasPermission('canManageShareClasses') && { href: '/dashboard/admin/share-classes', label: t('admin.shareClasses.title'), icon: <FileText className="h-4 w-4" /> },
         hasPermission('canManageTransactions') && { href: '/dashboard/admin/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" />, badge: adminStats?.pendingRegistrations },
         hasPermission('canManageProjects') && { href: '/dashboard/admin/projects', label: t('admin.projects.title'), icon: <Building2 className="h-4 w-4" /> },

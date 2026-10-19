@@ -167,6 +167,11 @@ model Coop {
   chargeCardReplacementFee Decimal @default(12.00) @db.Decimal(12, 2)
   chargeCardVatRate        Decimal @default(21) @db.Decimal(5, 2)
 
+  // Volunteer registration. Off until a coop turns it on. Empty interests
+  // means the built-in defaults (flyers, stands, workshops, technical, admin).
+  volunteersEnabled  Boolean  @default(false)
+  volunteerInterests String[] @default([])
+
   // Email configuration (encrypted in production)
   emailEnabled      Boolean @default(true)
   emailProvider     String? // "smtp" | "graph"
@@ -229,6 +234,7 @@ model Coop {
   apiKeys          ApiKey[]
   meetings         Meeting[]
   chargeCards      ChargeCard[]
+  volunteers       Volunteer[]
 
   @@map("coops")
 }
@@ -326,6 +332,7 @@ model User {
   refreshTokens              RefreshToken[]
   apiKeys                    ApiKey[]
   emancipationTokensReceived ShareholderEmancipationToken[] @relation("EmancipationRecipient")
+  volunteers                 Volunteer[]
 
   @@map("users")
 }
@@ -583,6 +590,7 @@ model Shareholder {
   meetingAttendances       MeetingAttendance[]
   votes                    Vote[]
   chargeCards              ChargeCard[]
+  volunteers               Volunteer[]
 
   // Unique email per coop (null emails allowed for minors - PostgreSQL allows multiple nulls)
   @@unique([coopId, email])
@@ -967,6 +975,7 @@ enum AudienceType {
   ALL
   PROJECT
   SELECTED
+  VOLUNTEERS
 }
 
 enum MessageFormat {
@@ -988,10 +997,14 @@ model Conversation {
   scheduledAt            DateTime?
   sentAt                 DateTime?
   sendAttempts           Int                @default(0)
-  audienceType           AudienceType       @default(ALL)
-  audienceProjectId      String?
-  audienceShareholderIds String[]           @default([])
-  createdByApiKeyId      String?
+  audienceType            AudienceType       @default(ALL)
+  audienceProjectId       String?
+  audienceShareholderIds  String[]           @default([])
+  /// Filter snapshot for a VOLUNTEERS audience: municipality, postalCode, interests.
+  audienceVolunteerFilter Json?
+  /// Active volunteer ids resolved at send time. Replies go to this snapshot.
+  audienceVolunteerIds    String[]           @default([])
+  createdByApiKeyId       String?
 
   coop            Coop                      @relation(fields: [coopId], references: [id], onDelete: Cascade)
   createdBy       User                      @relation("ConversationCreatedBy", fields: [createdById], references: [id])
@@ -1434,4 +1447,49 @@ model BrevoSyncRun {
   errors     Json?     // [{ shareholderId, email, message }]
 
   @@index([coopId, startedAt])
+}
+
+// ============================================================================
+// VOLUNTEERS
+// ============================================================================
+
+enum VolunteerStatus {
+  PENDING_CONFIRMATION
+  ACTIVE
+  WITHDRAWN
+}
+
+/// People who consented to be contacted for volunteer tasks.
+/// A row is never a shareholding: shareholderId is only an optional link.
+model Volunteer {
+  id                 String          @id @default(cuid())
+  coopId             String
+  shareholderId      String?         @unique
+  userId             String?
+  name               String
+  email              String
+  phone              String?
+  postalCode         String
+  municipality       String
+  interests          String[]        @default([])
+  locale             String          @default("nl")
+  consentAt          DateTime?
+  consentTextVersion String
+  status             VolunteerStatus @default(PENDING_CONFIRMATION)
+  confirmTokenHash   String?         @unique
+  confirmExpiresAt   DateTime?
+  withdrawToken      String?         @unique
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  coop        Coop         @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  shareholder Shareholder? @relation(fields: [shareholderId], references: [id], onDelete: SetNull)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([coopId, email])
+  @@index([coopId, status])
+  @@index([coopId, municipality])
+  @@index([coopId, postalCode])
+  @@index([status, createdAt])
+  @@map("volunteers")
 }

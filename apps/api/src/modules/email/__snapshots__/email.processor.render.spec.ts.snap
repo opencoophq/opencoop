@@ -3828,6 +3828,422 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "share-p
     "
 `;
 
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-confirm" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Bestätigen Sie Ihre Registrierung</h1>
+          <p>Guten Tag Jan Peeters,</p>
+          <p>Danke, dass Sie Coöp &amp; Co helfen möchten. Bestätigen Sie Ihre E-Mail-Adresse, damit die Genossenschaft Sie zu Freiwilligenaufgaben kontaktieren darf.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/bevestig/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Registrierung bestätigen
+            </a>
+          </p>
+          <p>Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren.</p>
+          <p style="color:#666;font-size:12px;">Dieser Link läuft nach 14 Tagen ab.</p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-confirm" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Confirm your registration</h1>
+          <p>Dear Jan Peeters,</p>
+          <p>Thanks for offering to help Coöp &amp; Co. Confirm your email address so the cooperative may contact you about volunteer tasks.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/bevestig/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Confirm my registration
+            </a>
+          </p>
+          <p>If you did not request this, you can ignore this email.</p>
+          <p style="color:#666;font-size:12px;">This link expires in 14 days.</p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-confirm" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Confirmez votre inscription</h1>
+          <p>Bonjour Jan Peeters,</p>
+          <p>Merci de vouloir aider Coöp &amp; Co. Confirmez votre adresse e-mail pour que la coopérative puisse vous contacter pour des tâches de bénévolat.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/bevestig/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Confirmer mon inscription
+            </a>
+          </p>
+          <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.</p>
+          <p style="color:#666;font-size:12px;">Ce lien expire dans 14 jours.</p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-confirm" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Bevestig je registratie</h1>
+          <p>Beste Jan Peeters,</p>
+          <p>Bedankt dat je Coöp &amp; Co wilt helpen. Bevestig je e-mailadres zodat de coöperatie je mag contacteren voor vrijwilligerstaken.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/bevestig/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Bevestig mijn registratie
+            </a>
+          </p>
+          <p>Heb je dit niet aangevraagd, dan mag je deze e-mail negeren.</p>
+          <p style="color:#666;font-size:12px;">Deze link vervalt na 14 dagen.</p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-message" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Nachricht von Coöp &amp; Co</h1>
+          <p>Guten Tag Jan Peeters,</p>
+          <p><strong>Betreff:</strong> Flyers in Genk</p>
+          <div style="margin: 16px 0; line-height: 1.5;"><p>Kan je helpen op zaterdag?</p></div>
+          <p>Sie können Ihre Freiwilligenregistrierung jederzeit zurückziehen.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Registrierung zurückziehen
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-message" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Message from Coöp &amp; Co</h1>
+          <p>Dear Jan Peeters,</p>
+          <p><strong>Subject:</strong> Flyers in Genk</p>
+          <div style="margin: 16px 0; line-height: 1.5;"><p>Kan je helpen op zaterdag?</p></div>
+          <p>You can withdraw your volunteer registration at any time.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Withdraw my registration
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-message" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Message de Coöp &amp; Co</h1>
+          <p>Bonjour Jan Peeters,</p>
+          <p><strong>Objet:</strong> Flyers in Genk</p>
+          <div style="margin: 16px 0; line-height: 1.5;"><p>Kan je helpen op zaterdag?</p></div>
+          <p>Vous pouvez retirer votre inscription de bénévole à tout moment.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Retirer mon inscription
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-message" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Bericht van Coöp &amp; Co</h1>
+          <p>Beste Jan Peeters,</p>
+          <p><strong>Onderwerp:</strong> Flyers in Genk</p>
+          <div style="margin: 16px 0; line-height: 1.5;"><p>Kan je helpen op zaterdag?</p></div>
+          <p>Je kunt je vrijwilligersregistratie altijd intrekken.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Trek mijn registratie in
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-welcome" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Sie sind registriert</h1>
+          <p>Guten Tag Jan Peeters,</p>
+          <p>Danke. Coöp &amp; Co darf Sie zu den Freiwilligenaufgaben kontaktieren, für die Sie sich gemeldet haben.</p>
+          <p>Sie können diese Einwilligung jederzeit widerrufen.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Registrierung zurückziehen
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-welcome" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>You are registered</h1>
+          <p>Dear Jan Peeters,</p>
+          <p>Thank you. Coöp &amp; Co may contact you about volunteer tasks you signed up for.</p>
+          <p>You can withdraw this consent at any time.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Withdraw my registration
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-welcome" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Vous êtes inscrit</h1>
+          <p>Bonjour Jan Peeters,</p>
+          <p>Merci. Coöp &amp; Co peut vous contacter pour les tâches de bénévolat auxquelles vous vous êtes inscrit.</p>
+          <p>Vous pouvez retirer ce consentement à tout moment.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Retirer mon inscription
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunteer-welcome" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+          <h1>Je bent geregistreerd</h1>
+          <p>Beste Jan Peeters,</p>
+          <p>Bedankt. Coöp &amp; Co mag je contacteren voor de vrijwilligerstaken waarvoor je je hebt opgegeven.</p>
+          <p>Je kunt deze toestemming altijd intrekken.</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Trek mijn registratie in
+            </a>
+          </p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
 exports[`EmailProcessor render snapshots (byte-exact baseline) template "welcome" renders in de 1`] = `
 "
       <!DOCTYPE html>
