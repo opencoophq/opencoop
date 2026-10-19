@@ -5,12 +5,20 @@ export const API_URL = process.env.API_URL || 'http://localhost:3001';
 
 type Role = 'admin' | 'shareholder';
 
+const tokens = new Map<Role, { value: string; at: number }>();
+// Access tokens outlive a test run; refresh at most every 5 minutes per worker.
+const TOKEN_TTL_MS = 5 * 60 * 1000;
+
 /**
- * A fresh access token for a role, from the refresh token that global-setup
+ * An access token for a role, from the refresh token that global-setup
  * stored in .auth/<role>.json. No extra login: /auth/login is throttled to
- * 5 per minute, and global-setup already uses 2.
+ * 5 per minute, and global-setup already uses 2. /auth/refresh is throttled
+ * to 10 per minute, so the token is cached per worker instead of refreshed
+ * on every API call.
  */
 export async function tokenFor(role: Role): Promise<string> {
+  const cached = tokens.get(role);
+  if (cached && Date.now() - cached.at < TOKEN_TTL_MS) return cached.value;
   const file = path.resolve(__dirname, '..', '.auth', `${role}.json`);
   const state = JSON.parse(fs.readFileSync(file, 'utf-8')) as {
     origins: Array<{ localStorage: Array<{ name: string; value: string }> }>;
@@ -23,7 +31,9 @@ export async function tokenFor(role: Role): Promise<string> {
     body: JSON.stringify({ refreshToken }),
   });
   if (!res.ok) throw new Error(`refresh for ${role} failed: ${res.status}`);
-  return ((await res.json()) as { accessToken: string }).accessToken;
+  const { accessToken } = (await res.json()) as { accessToken: string };
+  tokens.set(role, { value: accessToken, at: Date.now() });
+  return accessToken;
 }
 
 export async function apiAs<T>(role: Role, method: 'GET' | 'POST' | 'PUT', urlPath: string, body?: unknown): Promise<T> {

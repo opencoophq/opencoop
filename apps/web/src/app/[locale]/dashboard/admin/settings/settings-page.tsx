@@ -720,6 +720,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     { key: 'publicPage', url: coopBasePath },
     { key: 'registrationLink', url: `${coopBasePath}/default/register` },
     { key: 'loginLink', url: `${coopBasePath}/login` },
+    ...(form.chargeCardsEnabled
+      ? [{ key: 'chargeCardEntryLink', url: `${coopBasePath}/laadpas` }]
+      : []),
     ...(form.volunteersEnabled
       ? [{ key: 'volunteerSignupLink', url: `${coopBasePath}/vrijwilligers` }]
       : []),

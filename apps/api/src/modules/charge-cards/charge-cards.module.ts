@@ -6,10 +6,11 @@ import { ChargeCardsController } from './charge-cards.controller';
 import { ChargeCardsService } from './charge-cards.service';
 import { ChargeCardsAdminController } from './charge-cards-admin.controller';
 import { ChargeCardsAdminService } from './charge-cards-admin.service';
+import { ChargeCardsPublicController } from './charge-cards-public.controller';
 
 @Module({
   imports: [EmailModule, OgmModule, BillingModule],
-  controllers: [ChargeCardsController, ChargeCardsAdminController],
+  controllers: [ChargeCardsController, ChargeCardsAdminController, ChargeCardsPublicController],
   providers: [ChargeCardsService, ChargeCardsAdminService],
 })
 export class ChargeCardsModule {}

@@ -23,6 +23,10 @@
     "volunteers": {
       "title": "Freiwilligenregistrierung",
       "description": "Registrieren Sie sich als Freiwillige oder Freiwilliger einer Genossenschaft. Mitglieder und Nichtmitglieder können sich anmelden."
+    },
+    "chargeCards": {
+      "title": "Ladekarte beantragen",
+      "description": "Beantragen Sie eine Ladekarte als Mitglied. Noch kein Mitglied? Werden Sie zuerst Anteilseigner dieser Genossenschaft."
     }
   },
   "common": {
@@ -499,6 +503,9 @@
     "copyAll": "Alle Angaben kopieren",
     "copyAllCopied": "Alle Angaben kopiert",
     "imDone": "Fertig",
+    "chargeCardNextTitle": "Danach: Ihre Ladekarte",
+    "chargeCardNextBody": "Eine Ladekarte kann erst beantragt werden, wenn Ihre Mitgliedschaft aktiv ist. Zahlen Sie zuerst Ihre Anteile. Die nächste Seite erklärt, was danach geschieht. Sobald Sie aktiv sind, öffnet sich das Antragsformular.",
+    "chargeCardContinue": "Weiter zur Ladekarte",
     "selectShareClass": "Anteilsklasse auswählen",
     "selectProject": "Projekt auswählen (optional)",
     "enterQuantity": "Anzahl eingeben",
@@ -551,6 +558,7 @@
     "registrationLink": "Registrierung",
     "loginLink": "Anmeldung",
     "volunteerSignupLink": "Freiwilligenanmeldung",
+    "chargeCardEntryLink": "Ladekarte beantragen",
     "copied": "Kopiert!",
     "nav": {
       "overview": "Übersicht",
@@ -2425,7 +2433,36 @@
     "notEnabled": "Ladekarten sind bei Ihrer Genossenschaft nicht verfügbar.",
     "noShareholder": "Ladekarten sind für Anteilseigner. Melden Sie sich mit dem Konto an, mit dem Sie Anteile gekauft haben.",
     "notActive": "Nur aktive Anteilseigner können eine Ladekarte beantragen.",
+    "pendingMembership": "Ihre Mitgliedschaft ist noch nicht aktiv. Zahlen Sie zuerst Ihre Anteile mit der strukturierten Mitteilung aus Ihrer Registrierung. Sobald wir die Zahlung zuordnen, werden Sie aktiv — in der Regel innerhalb von 1 bis 2 Werktagen. Danach können Sie hier eine Ladekarte beantragen. Die Karte zahlen Sie getrennt.",
+    "inactiveMembership": "Nur aktive Mitglieder können eine Ladekarte beantragen. Kaufen Sie einen Anteil, um Ihre Mitgliedschaft zu aktivieren. Sobald Sie aktiv sind, können Sie hier eine Ladekarte beantragen.",
+    "notMemberOfCoop": "Dieses Konto ist kein Mitglied dieser Genossenschaft. Werden Sie zuerst Mitglied. Sobald Ihre Mitgliedschaft aktiv ist, können Sie eine Ladekarte beantragen.",
+    "viewShares": "Ihre Anteile ansehen",
     "becomeShareholder": "Anteilseigner werden",
+    "entry": {
+      "title": "Ladekarte beantragen",
+      "intro": "Eine Ladekarte von {coop} kostet {fee} (inkl. MwSt.). Sie zahlen einmalig per Überweisung mit einer strukturierten Mitteilung. Eine Ersatzkarte nach Verlust oder Diebstahl kostet {replacementFee}.",
+      "question": "Sind Sie bereits Mitglied?",
+      "yes": "Ja, ich bin Mitglied",
+      "yesHint": "Sie melden sich an und gelangen direkt zum Antragsformular.",
+      "no": "Nein, ich möchte Mitglied werden",
+      "noHint": "Sie kaufen zuerst einen Anteil. Sobald Ihre Mitgliedschaft aktiv ist, beantragen Sie die Ladekarte.",
+      "unavailable": "Ladekarten sind bei dieser Genossenschaft nicht verfügbar.",
+      "notFound": "Wir haben diese Genossenschaft nicht gefunden.",
+      "pendingTitle": "Ihre Mitgliedschaft ist noch nicht aktiv",
+      "pendingBody": "Sie sind bei {coop} registriert, aber Ihre Mitgliedschaft ist noch nicht aktiv. Zahlen Sie zuerst Ihre Anteile mit der strukturierten Mitteilung aus Ihrer Registrierung. Sobald wir die Zahlung zuordnen, werden Sie aktiv, in der Regel innerhalb von 1 bis 2 Werktagen, und Sie erhalten eine E-Mail. Diese Seite öffnet dann das Antragsformular. Die Ladekarte zahlen Sie getrennt ({fee}, inkl. MwSt.).",
+      "inactiveTitle": "Nur aktive Mitglieder können eine Ladekarte beantragen",
+      "inactiveBody": "Ihre Mitgliedschaft bei {coop} ist nicht aktiv. Kaufen Sie einen Anteil, um wieder Mitglied zu werden. Sobald Ihre Mitgliedschaft aktiv ist, können Sie hier eine Ladekarte beantragen.",
+      "joinTitle": "Werden Sie zuerst Mitglied",
+      "joinBody": "Dieses Konto ist kein Mitglied von {coop}. Kaufen Sie zuerst einen Anteil. Sobald Ihre Mitgliedschaft aktiv ist, können Sie eine Ladekarte beantragen.",
+      "buyShares": "Anteil kaufen",
+      "viewShares": "Ihre Anteile ansehen",
+      "afterTitle": "Zuerst werden Sie Mitglied, danach folgt die Ladekarte",
+      "afterIntro": "Ihre Registrierung ist erfasst. Eine Ladekarte kann erst beantragt werden, wenn Ihre Mitgliedschaft aktiv ist.",
+      "afterStepPay": "Überweisen Sie den Betrag für Ihre Anteile mit der strukturierten Mitteilung aus dem vorherigen Schritt.",
+      "afterStepWait": "Wir aktivieren Ihre Mitgliedschaft, sobald die Zahlung zugeordnet ist, in der Regel innerhalb von 1 bis 2 Werktagen. Sie erhalten dazu eine E-Mail.",
+      "afterStepReturn": "Kommen Sie danach auf diese Seite zurück, wählen Sie „Ja, ich bin Mitglied“ und melden Sie sich an. Sie gelangen direkt zum Antragsformular. Die Ladekarte kostet {fee} (inkl. MwSt.) und wird getrennt bezahlt.",
+      "loginWhenActive": "Ich bin bereits aktiv — Ladekarte beantragen"
+    },
     "request": "Karte beantragen",
     "requestTitle": "Ladekarte beantragen",
     "requestDescription": "Eine Karte kostet {fee} (inkl. MwSt.), einmalig per Überweisung.",

@@ -23,6 +23,10 @@
     "volunteers": {
       "title": "Vrijwilligersregistratie",
       "description": "Registreer u als vrijwilliger bij een coöperatie. Leden en niet-leden kunnen zich aanmelden."
+    },
+    "chargeCards": {
+      "title": "Laadpas aanvragen",
+      "description": "Vraag een laadpas aan als coöperant. Nog geen lid? Word eerst coöperant van deze coöperatie."
     }
   },
   "common": {
@@ -501,6 +505,9 @@
     "copyAll": "Kopieer alle gegevens",
     "copyAllCopied": "Alle gegevens gekopieerd",
     "imDone": "Ik ben klaar",
+    "chargeCardNextTitle": "Daarna: uw laadpas",
+    "chargeCardNextBody": "Een laadpas kan pas worden aangevraagd als uw lidmaatschap actief is. Betaal eerst uw aandelen. Op de volgende pagina leest u wat er daarna gebeurt. Zodra u actief bent, opent het aanvraagformulier.",
+    "chargeCardContinue": "Verder naar de laadpas",
     "selectShareClass": "Selecteer aandelenklasse",
     "selectProject": "Selecteer project (optioneel)",
     "enterQuantity": "Voer aantal in",
@@ -553,6 +560,7 @@
     "registrationLink": "Registratie",
     "loginLink": "Inloggen",
     "volunteerSignupLink": "Vrijwilligersaanmelding",
+    "chargeCardEntryLink": "Laadpas aanvragen",
     "copied": "Gekopieerd!",
     "nav": {
       "overview": "Overzicht",
@@ -2428,7 +2436,36 @@
     "notEnabled": "Laadpassen zijn niet beschikbaar bij jouw coöperatie.",
     "noShareholder": "Laadpassen zijn voor aandeelhouders. Log in met het account waarmee je aandelen kocht.",
     "notActive": "Alleen actieve aandeelhouders kunnen een laadpas aanvragen.",
+    "pendingMembership": "Uw lidmaatschap is nog niet actief. Betaal eerst uw aandelen met de gestructureerde mededeling die u bij de inschrijving ontving. Zodra wij de betaling koppelen, wordt u actief — meestal binnen 1 à 2 werkdagen. Daarna kunt u hier een laadpas aanvragen. De pas betaalt u apart.",
+    "inactiveMembership": "Alleen actieve coöperanten kunnen een laadpas aanvragen. Koop een aandeel om uw lidmaatschap te activeren. Zodra u actief bent, kunt u hier een laadpas aanvragen.",
+    "notMemberOfCoop": "U bent met dit account geen coöperant van deze coöperatie. Word eerst coöperant. Zodra uw lidmaatschap actief is, kunt u een laadpas aanvragen.",
+    "viewShares": "Bekijk uw aandelen",
     "becomeShareholder": "Word aandeelhouder",
+    "entry": {
+      "title": "Laadpas aanvragen",
+      "intro": "Een laadpas van {coop} kost {fee} (incl. btw). U betaalt eenmalig per overschrijving met een gestructureerde mededeling. Een vervangpas na verlies of diefstal kost {replacementFee}.",
+      "question": "Bent u al coöperant?",
+      "yes": "Ja, ik ben coöperant",
+      "yesHint": "U logt in en komt meteen op het aanvraagformulier.",
+      "no": "Nee, ik wil coöperant worden",
+      "noHint": "U koopt eerst een aandeel. Zodra uw lidmaatschap actief is, vraagt u de laadpas aan.",
+      "unavailable": "Laadpassen zijn bij deze coöperatie niet beschikbaar.",
+      "notFound": "Wij vonden deze coöperatie niet.",
+      "pendingTitle": "Uw lidmaatschap is nog niet actief",
+      "pendingBody": "U staat geregistreerd bij {coop}, maar uw lidmaatschap is nog niet actief. Betaal eerst uw aandelen met de gestructureerde mededeling van uw inschrijving. Zodra wij de betaling koppelen, wordt u actief. Dat gebeurt meestal binnen 1 à 2 werkdagen en u ontvangt daarover een e-mail. Daarna opent deze pagina het aanvraagformulier. De laadpas betaalt u apart ({fee}, incl. btw).",
+      "inactiveTitle": "Alleen actieve coöperanten kunnen een laadpas aanvragen",
+      "inactiveBody": "Uw lidmaatschap bij {coop} is niet actief. Koop een aandeel om opnieuw coöperant te worden. Zodra uw lidmaatschap actief is, kunt u hier een laadpas aanvragen.",
+      "joinTitle": "Word eerst coöperant",
+      "joinBody": "Met dit account bent u geen coöperant van {coop}. Koop eerst een aandeel. Zodra uw lidmaatschap actief is, kunt u een laadpas aanvragen.",
+      "buyShares": "Aandeel kopen",
+      "viewShares": "Bekijk uw aandelen",
+      "afterTitle": "Eerst wordt u coöperant, daarna volgt de laadpas",
+      "afterIntro": "Uw inschrijving is geregistreerd. Een laadpas kan pas worden aangevraagd als uw lidmaatschap actief is.",
+      "afterStepPay": "Schrijf het bedrag voor uw aandelen over met de gestructureerde mededeling uit de vorige stap.",
+      "afterStepWait": "Wij activeren uw lidmaatschap zodra de betaling is gekoppeld, meestal binnen 1 à 2 werkdagen. U ontvangt daarover een e-mail.",
+      "afterStepReturn": "Kom daarna terug naar deze pagina, kies “Ja, ik ben coöperant” en log in. U komt dan rechtstreeks op het aanvraagformulier. De laadpas kost {fee} (incl. btw) en betaalt u apart.",
+      "loginWhenActive": "Ik ben al actief — laadpas aanvragen"
+    },
     "request": "Pas aanvragen",
     "requestTitle": "Laadpas aanvragen",
     "requestDescription": "Een pas kost {fee} (incl. btw), eenmalig te betalen per overschrijving.",
