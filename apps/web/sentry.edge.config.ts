@@ -1,13 +1,13 @@
-// Sentry edge runtime configuration (middleware, edge routes).
-// No-op when no DSN is set.
+// Sentry (GlitchTip) edge runtime configuration (middleware, edge routes).
+// Same DSN/environment resolution as sentry.server.config.ts. GlitchTip is
+// errors-only: no tracing, no replay, no profiling.
 import * as Sentry from '@sentry/nextjs';
+import { getServerSentryDsn, getServerSentryEnvironment, scrubSentryEvent } from './src/lib/sentry';
 
-const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
-
-if (dsn) {
-  Sentry.init({
-    dsn,
-    environment: process.env.NODE_ENV || 'development',
-    tracesSampleRate: 0.1,
-  });
-}
+Sentry.init({
+  dsn: getServerSentryDsn(),
+  environment: getServerSentryEnvironment(),
+  tracesSampleRate: 0,
+  sendDefaultPii: false,
+  beforeSend: scrubSentryEvent,
+});
