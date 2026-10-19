@@ -73,6 +73,21 @@ export class VolunteersAdminController {
     });
   }
 
+  @Post(':id/withdraw')
+  @ApiOperation({ summary: 'Withdraw a volunteer registration. The row stays until it is deleted.' })
+  withdraw(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+  ) {
+    return this.volunteers.adminWithdraw(coopId, id, {
+      userId: user.id,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a volunteer record' })
   remove(

@@ -19,7 +19,7 @@ original SemVer-style tags.
 
 ### Added
 
-- **Volunteer registration.** A cooperative can turn this on in Settings (off by default). Members opt in from the dashboard with “Ik wil helpen”. Anyone else uses the public page `/{locale}/{coop}/vrijwilligers`, confirms by email, and can withdraw from the link in that email. The board sees only people who opted in, filtered by municipality, postcode and interest, and never the share register. The new permission `canViewVolunteers` is required; the Admin role receives it, other roles do not. Matching volunteers can be emailed and exported to CSV. Every export is written to the audit log. Unconfirmed public sign-ups are removed after 30 days.
+- **Volunteer registration.** A cooperative turns this on in Settings (off by default). Members opt in from the dashboard. Anyone else uses `/{locale}/{coopSlug}/vrijwilligers`, confirms by email, and can withdraw from the link in that email. A public sign-up is linked to a shareholder only when the visitor is logged in and the email matches that user. The board sees only people who opted in, filtered by municipality, postcode and interest, and never the share register. `canViewVolunteers` gates the list, the CSV export and messages to volunteers. It is not granted to existing roles or to the Admin role of a new cooperative; assign it under Team → Roles. An admin with that permission can withdraw a registration or delete it. Every CSV export is written to the audit log. Unconfirmed sign-ups are removed after 30 days. Dutch volunteer text uses the formal “u”.
 
 ## [2026.41.1] - 2026-10-06
 

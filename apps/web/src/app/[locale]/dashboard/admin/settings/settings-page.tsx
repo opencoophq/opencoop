@@ -1136,6 +1136,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">{t('volunteers.settings.description')}</p>
+            <p className="text-sm text-muted-foreground">{t('volunteers.settings.permissionHint')}</p>
             <div className="flex items-center gap-2">
               <Checkbox
                 id="volunteers-enabled"

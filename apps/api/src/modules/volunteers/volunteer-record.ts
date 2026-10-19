@@ -87,7 +87,7 @@ export function sanitizeInterestTags(tags: string[]): string[] {
   for (const raw of tags) {
     const tag = raw.trim().replace(/\s+/g, ' ');
     if (!tag || tag.length > 40) continue;
-    if (!/^[\p{L}\p{N}][\p{L}\p{N} _-]{0,39}$/u.test(tag)) continue;
+    if (!/^[\p{L}\p{N}][\p{L}\p{N} _/-]{0,39}$/u.test(tag)) continue;
     const key = tag.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);

@@ -129,27 +129,27 @@
     "thanks": "Met vriendelijke groeten, {coopName}"
   },
   "volunteer-confirm": {
-    "subject": "Bevestig je vrijwilligersregistratie bij {coopName}",
-    "title": "Bevestig je registratie",
+    "subject": "Bevestig uw vrijwilligersregistratie bij {coopName}",
+    "title": "Bevestig uw registratie",
     "dear": "Beste {volunteerName},",
-    "intro": "Bedankt dat je {coopName} wilt helpen. Bevestig je e-mailadres zodat de coöperatie je mag contacteren voor vrijwilligerstaken.",
+    "intro": "Bedankt dat u {coopName} wilt helpen. Bevestig uw e-mailadres zodat de coöperatie u mag contacteren voor vrijwilligerstaken.",
     "confirm": "Bevestig mijn registratie",
-    "ignore": "Heb je dit niet aangevraagd, dan mag je deze e-mail negeren.",
+    "ignore": "Hebt u dit niet aangevraagd, dan mag u deze e-mail negeren.",
     "expires": "Deze link vervalt na 14 dagen."
   },
   "volunteer-welcome": {
-    "subject": "Je bent geregistreerd als vrijwilliger bij {coopName}",
-    "title": "Je bent geregistreerd",
+    "subject": "U bent geregistreerd als vrijwilliger bij {coopName}",
+    "title": "U bent geregistreerd",
     "dear": "Beste {volunteerName},",
-    "thanks": "Bedankt. {coopName} mag je contacteren voor de vrijwilligerstaken waarvoor je je hebt opgegeven.",
-    "withdrawHint": "Je kunt deze toestemming altijd intrekken.",
+    "thanks": "Bedankt. {coopName} mag u contacteren voor de vrijwilligerstaken waarvoor u zich hebt opgegeven.",
+    "withdrawHint": "U kunt deze toestemming altijd intrekken.",
     "withdraw": "Trek mijn registratie in"
   },
   "volunteer-message": {
     "title": "Bericht van {coopName}",
     "dear": "Beste {volunteerName},",
     "subject": "Onderwerp",
-    "withdrawHint": "Je kunt je vrijwilligersregistratie altijd intrekken.",
+    "withdrawHint": "U kunt uw vrijwilligersregistratie altijd intrekken.",
     "withdraw": "Trek mijn registratie in"
   }
 }
