@@ -104,7 +104,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: true,
     canViewReports: true,
     canViewShareholderRegister: true,
-    canViewVolunteers: true,
+    canViewVolunteers: false,
   },
   Viewer: {
     canManageShareholders: false,

@@ -70,7 +70,11 @@ export class VolunteersService {
     };
   }
 
-  async publicSignup(slug: string, dto: PublicVolunteerSignupDto) {
+  async publicSignup(
+    slug: string,
+    dto: PublicVolunteerSignupDto,
+    actor?: { id: string; email: string } | null,
+  ) {
     if (dto.website?.trim()) return { ok: true as const };
 
     const coop = await this.prisma.coop.findUnique({
@@ -108,7 +112,10 @@ export class VolunteersService {
     if (existing?.status === 'ACTIVE') return { ok: true as const };
 
     const rawConfirm = randomBytes(32).toString('hex');
-    const link = await this.linkableShareholder(coop.id, email, existing?.id);
+    const link = await this.linkableShareholder(coop.id, email, existing?.id, actor);
+    const keepExistingLink =
+      !link.shareholderId ||
+      Boolean(existing?.shareholderId && existing.shareholderId !== link.shareholderId);
     const data = {
       name,
       phone,
@@ -122,8 +129,8 @@ export class VolunteersService {
       confirmTokenHash: hashToken(rawConfirm),
       confirmExpiresAt: new Date(Date.now() + CONFIRM_TTL_DAYS * 24 * 60 * 60 * 1000),
       withdrawToken: existing?.withdrawToken ?? randomBytes(32).toString('hex'),
-      shareholderId: link.shareholderId,
-      userId: link.userId,
+      shareholderId: keepExistingLink ? (existing?.shareholderId ?? null) : link.shareholderId,
+      userId: keepExistingLink ? (existing?.userId ?? null) : link.userId,
     };
 
     if (existing) {
@@ -376,6 +383,35 @@ export class VolunteersService {
     return volunteersToCsv(views);
   }
 
+  async adminWithdraw(
+    coopId: string,
+    id: string,
+    actor: { userId: string; ip?: string; userAgent?: string },
+  ) {
+    const row = await this.prisma.volunteer.findFirst({
+      where: { id, coopId },
+      select: { ...VOLUNTEER_VIEW_SELECT, status: true },
+    });
+    if (!row) throw new NotFoundException('Volunteer not found');
+    if (row.status === 'WITHDRAWN') return toVolunteerView(row);
+    const saved = await this.prisma.volunteer.update({
+      where: { id: row.id },
+      data: { status: 'WITHDRAWN', confirmTokenHash: null, confirmExpiresAt: null },
+      select: VOLUNTEER_VIEW_SELECT,
+    });
+    await this.audit.log({
+      coopId,
+      entity: 'Volunteer',
+      entityId: row.id,
+      action: 'UPDATE',
+      changes: [{ field: 'status', oldValue: row.status, newValue: 'WITHDRAWN' }],
+      actorId: actor.userId,
+      ipAddress: actor.ip,
+      userAgent: actor.userAgent,
+    });
+    return toVolunteerView(saved);
+  }
+
   async adminDelete(
     coopId: string,
     id: string,
@@ -455,20 +491,32 @@ export class VolunteersService {
     return { purged: result.count };
   }
 
-  private async linkableShareholder(coopId: string, email: string, existingVolunteerId?: string) {
-    const shareholder = await this.prisma.shareholder.findFirst({
-      where: { coopId, email },
-      select: { id: true, userId: true },
+  /**
+   * A public signup is linked only when the visitor is logged in and the
+   * form email is that user's email. An anonymous signup that happens to
+   * use a member's address stays unlinked until that member opts in.
+   */
+  private async linkableShareholder(
+    coopId: string,
+    email: string,
+    existingVolunteerId?: string,
+    actor?: { id: string; email: string } | null,
+  ) {
+    const none = { shareholderId: null as string | null, userId: null as string | null };
+    if (!actor || actor.email.trim().toLowerCase() !== email) return none;
+    const matches = await this.prisma.shareholder.findMany({
+      where: { coopId, userId: actor.id },
+      select: { id: true, userId: true, email: true },
+      take: 10,
     });
-    if (!shareholder)
-      return { shareholderId: null as string | null, userId: null as string | null };
+    const shareholder =
+      matches.find((row) => row.email?.trim().toLowerCase() === email) ?? matches[0];
+    if (!shareholder) return none;
     const linked = await this.prisma.volunteer.findUnique({
       where: { shareholderId: shareholder.id },
       select: { id: true },
     });
-    if (linked && linked.id !== existingVolunteerId) {
-      return { shareholderId: null as string | null, userId: null as string | null };
-    }
+    if (linked && linked.id !== existingVolunteerId) return none;
     return { shareholderId: shareholder.id, userId: shareholder.userId };
   }
 

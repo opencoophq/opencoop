@@ -20,7 +20,7 @@ describe('VolunteersService', () => {
       deleteMany: jest.fn(),
       groupBy: jest.fn(),
     },
-    shareholder: { findFirst: jest.fn() },
+    shareholder: { findFirst: jest.fn(), findMany: jest.fn() },
   };
   const audit = { log: jest.fn() };
   const email = { send: jest.fn() };
@@ -91,6 +91,113 @@ describe('VolunteersService', () => {
       }),
     ).resolves.toEqual({ ok: true });
     expect(prisma.volunteer.create).not.toHaveBeenCalled();
+  });
+
+  it('does not link an anonymous signup to a shareholder with the same email', async () => {
+    prisma.coop.findUnique.mockResolvedValue({
+      id: 'c1',
+      name: 'Bronsgroen',
+      volunteersEnabled: true,
+      volunteerInterests: [],
+      emailEnabled: true,
+    });
+    prisma.volunteer.findUnique.mockResolvedValue(null);
+    prisma.volunteer.create.mockResolvedValue({ id: 'v1' });
+    email.send.mockResolvedValue(undefined);
+
+    await service.publicSignup('bronsgroen', {
+      name: 'An',
+      email: 'an@example.be',
+      postalCode: '3600',
+      municipality: 'Genk',
+      interests: ['flyers'],
+      consent: true,
+    });
+
+    expect(prisma.shareholder.findMany).not.toHaveBeenCalled();
+    expect(prisma.volunteer.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ shareholderId: null, userId: null, email: 'an@example.be' }),
+      }),
+    );
+  });
+
+  it('links a signup when the email matches the logged-in user', async () => {
+    prisma.coop.findUnique.mockResolvedValue({
+      id: 'c1',
+      name: 'Bronsgroen',
+      volunteersEnabled: true,
+      volunteerInterests: [],
+      emailEnabled: true,
+    });
+    prisma.volunteer.findUnique.mockResolvedValue(null);
+    prisma.shareholder.findMany.mockResolvedValue([
+      { id: 'sh-1', userId: 'u1', email: 'an@example.be' },
+    ]);
+    prisma.volunteer.create.mockResolvedValue({ id: 'v1' });
+    email.send.mockResolvedValue(undefined);
+
+    await service.publicSignup(
+      'bronsgroen',
+      {
+        name: 'An',
+        email: 'An@Example.be',
+        postalCode: '3600',
+        municipality: 'Genk',
+        interests: ['flyers'],
+        consent: true,
+      },
+      { id: 'u1', email: 'an@example.be' },
+    );
+
+    expect(prisma.volunteer.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ shareholderId: 'sh-1', userId: 'u1' }),
+      }),
+    );
+  });
+
+  it('withdraws a volunteer and writes an audit entry', async () => {
+    prisma.volunteer.findFirst.mockResolvedValue({
+      id: 'v1',
+      name: 'An',
+      email: 'an@example.be',
+      phone: null,
+      postalCode: '3600',
+      municipality: 'Genk',
+      interests: ['flyers'],
+      status: 'ACTIVE',
+      consentAt: new Date('2026-10-19T08:00:00.000Z'),
+      consentTextVersion: 'volunteer-consent-v1',
+      createdAt: new Date('2026-10-19T08:00:00.000Z'),
+      shareholderId: null,
+    });
+    prisma.volunteer.update.mockResolvedValue({
+      id: 'v1',
+      name: 'An',
+      email: 'an@example.be',
+      phone: null,
+      postalCode: '3600',
+      municipality: 'Genk',
+      interests: ['flyers'],
+      status: 'WITHDRAWN',
+      consentAt: new Date('2026-10-19T08:00:00.000Z'),
+      consentTextVersion: 'volunteer-consent-v1',
+      createdAt: new Date('2026-10-19T08:00:00.000Z'),
+      shareholderId: null,
+    });
+
+    const view = await service.adminWithdraw('c1', 'v1', { userId: 'admin-1' });
+
+    expect(view.status).toBe('WITHDRAWN');
+    expect(view).not.toHaveProperty('shareholderId');
+    expect(audit.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'UPDATE',
+        entityId: 'v1',
+        changes: [{ field: 'status', oldValue: 'ACTIVE', newValue: 'WITHDRAWN' }],
+      }),
+    );
   });
 
   it('lists with the volunteer select and drops a shareholder payload if one is present', async () => {

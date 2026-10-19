@@ -35,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Download, Loader2, Mail, Trash2 } from 'lucide-react';
+import { Download, Loader2, Mail, Trash2, UserMinus } from 'lucide-react';
 
 interface VolunteerRow {
   id: string;
@@ -146,6 +146,12 @@ export default function AdminVolunteersPage() {
     } finally {
       setSending(false);
     }
+  };
+
+  const withdraw = async (id: string) => {
+    if (!selectedCoop || !window.confirm(t('admin.withdrawConfirm'))) return;
+    await api(`/admin/coops/${selectedCoop.id}/volunteers/${id}/withdraw`, { method: 'POST' });
+    load();
   };
 
   const remove = async (id: string) => {
@@ -281,14 +287,26 @@ export default function AdminVolunteersPage() {
                       {row.consentAt ? new Date(row.consentAt).toLocaleDateString(locale) : '—'}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => remove(row.id)}
-                        aria-label={t('admin.delete')}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end">
+                        {row.status !== 'WITHDRAWN' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => withdraw(row.id)}
+                            aria-label={t('admin.withdraw')}
+                          >
+                            <UserMinus className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(row.id)}
+                          aria-label={t('admin.delete')}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

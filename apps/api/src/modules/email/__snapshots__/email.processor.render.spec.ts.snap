@@ -3946,9 +3946,9 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunte
       </head>
       <body>
         
-          <h1>Bevestig je registratie</h1>
+          <h1>Bevestig uw registratie</h1>
           <p>Beste Jan Peeters,</p>
-          <p>Bedankt dat je Coöp &amp; Co wilt helpen. Bevestig je e-mailadres zodat de coöperatie je mag contacteren voor vrijwilligerstaken.</p>
+          <p>Bedankt dat u Coöp &amp; Co wilt helpen. Bevestig uw e-mailadres zodat de coöperatie u mag contacteren voor vrijwilligerstaken.</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="https://opencoop.test/nl/vrijwilligers/bevestig/token"
                style="background-color: #1e40af; color: white; padding: 12px 24px;
@@ -3956,7 +3956,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunte
               Bevestig mijn registratie
             </a>
           </p>
-          <p>Heb je dit niet aangevraagd, dan mag je deze e-mail negeren.</p>
+          <p>Hebt u dit niet aangevraagd, dan mag u deze e-mail negeren.</p>
           <p style="color:#666;font-size:12px;">Deze link vervalt na 14 dagen.</p>
         
         <hr>
@@ -4090,7 +4090,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunte
           <p>Beste Jan Peeters,</p>
           <p><strong>Onderwerp:</strong> Flyers in Genk</p>
           <div style="margin: 16px 0; line-height: 1.5;"><p>Kan je helpen op zaterdag?</p></div>
-          <p>Je kunt je vrijwilligersregistratie altijd intrekken.</p>
+          <p>U kunt uw vrijwilligersregistratie altijd intrekken.</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
                style="background-color: #1e40af; color: white; padding: 12px 24px;
@@ -4223,10 +4223,10 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunte
       </head>
       <body>
         
-          <h1>Je bent geregistreerd</h1>
+          <h1>U bent geregistreerd</h1>
           <p>Beste Jan Peeters,</p>
-          <p>Bedankt. Coöp &amp; Co mag je contacteren voor de vrijwilligerstaken waarvoor je je hebt opgegeven.</p>
-          <p>Je kunt deze toestemming altijd intrekken.</p>
+          <p>Bedankt. Coöp &amp; Co mag u contacteren voor de vrijwilligerstaken waarvoor u zich hebt opgegeven.</p>
+          <p>U kunt deze toestemming altijd intrekken.</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="https://opencoop.test/nl/vrijwilligers/afmelden/token"
                style="background-color: #1e40af; color: white; padding: 12px 24px;

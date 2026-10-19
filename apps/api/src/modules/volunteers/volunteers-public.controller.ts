@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
+import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { VolunteersService } from './volunteers.service';
 import { PublicVolunteerSignupDto, VolunteerTokenDto } from './dto/public-signup.dto';
 
@@ -18,11 +20,17 @@ export class VolunteersPublicController {
   }
 
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('public/coops/:slug/volunteers')
   @Throttle({ default: { ttl: 900000, limit: 5 } })
   @ApiOperation({ summary: 'Public volunteer signup. Sends a confirmation email.' })
-  signup(@Param('slug') slug: string, @Body() dto: PublicVolunteerSignupDto) {
-    return this.volunteers.publicSignup(slug, dto);
+  signup(
+    @Param('slug') slug: string,
+    @Body() dto: PublicVolunteerSignupDto,
+    @CurrentUser() user?: CurrentUserData | null,
+  ) {
+    const actor = user?.id && user.email ? { id: user.id, email: user.email } : null;
+    return this.volunteers.publicSignup(slug, dto, actor);
   }
 
   @Public()
