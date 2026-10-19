@@ -23,6 +23,10 @@
     "volunteers": {
       "title": "Inscription des bénévoles",
       "description": "Inscrivez-vous comme bénévole d'une coopérative. Membres et non-membres peuvent s'inscrire."
+    },
+    "chargeCardEntry": {
+      "title": "Demander une carte de recharge",
+      "description": "Demandez une carte de recharge en tant que coopérateur. Si vous ne l'êtes pas encore, inscrivez-vous d'abord."
     }
   },
   "common": {
@@ -2416,14 +2420,45 @@
       "unknown": "Une erreur est survenue. Veuillez réessayer."
     }
   },
+  "chargeCardEntry": {
+    "title": "Demander une carte de recharge",
+    "intro": "Une carte de recharge de {coop} coûte {fee} par carte (TVA incluse). Une carte de remplacement après perte coûte {replacementFee}. Seuls les coopérateurs actifs peuvent en demander une. Vous payez une seule fois par virement avec une communication structurée.",
+    "question": "Êtes-vous déjà coopérateur de {coop} ?",
+    "yes": "Oui, je suis coopérateur",
+    "yesHelp": "Connectez-vous avec votre compte. Vous arrivez ensuite directement à la demande.",
+    "no": "Non, je deviens d'abord coopérateur",
+    "noHelp": "Une carte de recharge est réservée aux coopérateurs. Vous vous inscrivez d'abord.",
+    "becomeTitle": "Devenez d'abord coopérateur",
+    "becomeBody": "Une carte de recharge est réservée aux coopérateurs de {coop}. Inscrivez-vous et payez vos parts. Dès que votre adhésion est active, vous revenez sur cette page pour demander votre carte.",
+    "becomeButton": "S'inscrire comme coopérateur",
+    "alreadyMember": "Je suis déjà coopérateur",
+    "loggedInBecomeTitle": "Vous n'êtes pas encore coopérateur de {coop}",
+    "loggedInBecomeBody": "Vous êtes connecté, mais pas encore coopérateur. Inscrivez-vous et payez vos parts. Vous pourrez ensuite demander votre carte ici.",
+    "pendingTitle": "Votre adhésion n'est pas encore active",
+    "pendingBody": "Nous avons votre inscription, mais le paiement de vos parts n'est pas encore traité. Vous pourrez demander une carte dès que vous serez coopérateur actif. Conservez cette page : vous y reviendrez après le paiement.",
+    "pendingButton": "Voir le paiement de vos parts",
+    "inactiveTitle": "Vous n'êtes pas coopérateur actif",
+    "inactiveBody": "Seuls les coopérateurs actifs de {coop} peuvent demander une carte de recharge. Achetez à nouveau des parts. Dès que votre adhésion est active, vous revenez sur cette page.",
+    "inactiveButton": "Acheter à nouveau des parts",
+    "unavailable": "{coop} ne propose pas encore de cartes de recharge.",
+    "loadError": "Cette page n'a pas pu être chargée. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "registrationNextTitle": "Ensuite, votre carte de recharge",
+    "registrationNextBody": "Payez d'abord vos parts avec la communication structurée ci-dessus. Dès que votre adhésion est active, vous demandez votre carte sur cette page.",
+    "registrationNextButton": "Vers la demande de carte"
+  },
   "chargeCards": {
     "nav": "Cartes de recharge",
     "title": "Cartes de recharge",
     "subtitle": "Demandez une carte de recharge pour votre voiture électrique. Vous payez des frais uniques par virement.",
     "notEnabled": "Les cartes de recharge ne sont pas disponibles dans votre coopérative.",
-    "noShareholder": "Les cartes de recharge sont réservées aux actionnaires. Connectez-vous avec le compte utilisé pour acheter vos parts.",
-    "notActive": "Seuls les actionnaires actifs peuvent demander une carte de recharge.",
-    "becomeShareholder": "Devenir actionnaire",
+    "noShareholder": "Une carte de recharge est réservée aux coopérateurs. Connectez-vous avec le compte utilisé pour acheter vos parts.",
+    "notActive": "Seuls les coopérateurs actifs peuvent demander une carte de recharge.",
+    "becomeShareholder": "Devenir coopérateur",
+    "pendingPayment": "Votre adhésion n'est pas encore active. Dès que nous aurons reçu le paiement de vos parts, vous pourrez demander une carte ici.",
+    "viewSharePayment": "Voir le paiement de vos parts",
+    "inactiveShareholder": "Vous n'êtes plus coopérateur actif. Achetez à nouveau des parts pour demander une carte de recharge.",
+    "buySharesAgain": "Acheter à nouveau des parts",
     "request": "Demander une carte",
     "requestTitle": "Demander une carte de recharge",
     "requestDescription": "Une carte coûte {fee} (TVA incl.), à payer une seule fois par virement.",

@@ -5,8 +5,11 @@
  */
 const KEY = 'opencoop-post-login-redirect';
 const TTL_MS = 30 * 60 * 1000;
-// Only dashboard paths, with an optional locale prefix. No hosts, no "//", no "/\".
-const SAFE_PATH = /^\/(?:(?:nl|en|fr|de)\/)?dashboard(?:\/[A-Za-z0-9_-]+)*\/?$/;
+// Dashboard paths (optional locale) and the public charge-card entry
+// `/{locale}/{coopSlug}/laadpas`. One path segment for the slug, no query.
+// No hosts, no "//", no "/\".
+const SAFE_PATH =
+  /^\/(?:(?:(?:nl|en|fr|de)\/)?dashboard(?:\/[A-Za-z0-9_-]+)*|(?:nl|en|fr|de)\/[a-z0-9-]{1,50}\/laadpas)\/?$/;
 
 export function isSafeRedirectPath(path: string | null | undefined): path is string {
   if (typeof path !== 'string') return false;
@@ -46,6 +49,11 @@ function readPending(): { path: string; at: number } | null {
  */
 export function hasPendingPostLoginRedirect(): boolean {
   return readPending() !== null;
+}
+
+/** The queued path, without consuming it. Used to show a return link. */
+export function peekPostLoginRedirect(): string | null {
+  return readPending()?.path ?? null;
 }
 
 export function consumePostLoginRedirect(): string | null {

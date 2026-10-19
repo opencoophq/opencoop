@@ -282,3 +282,67 @@ describe('CoopsService — Brevo audience-sync config', () => {
     expect(factory.getAudienceProvider).not.toHaveBeenCalled();
   });
 });
+
+describe('CoopsService.getPublicInfo charge cards', () => {
+  let service: CoopsService;
+  let prisma: { coop: { findUnique: jest.Mock } };
+
+  const coopRow = {
+    id: 'coop-1',
+    slug: 'bronsgroen',
+    name: 'Bronsgroen',
+    bankName: null,
+    bankIban: 'BE68539007547034',
+    bankBic: 'GKCCBEBB',
+    chargeCardsEnabled: true,
+    chargeCardFee: { toString: () => '6' },
+    chargeCardReplacementFee: { toString: () => '12' },
+    channels: [{ logoUrl: null, primaryColor: '#1e40af', secondaryColor: '#3b82f6', termsUrl: null }],
+    shareClasses: [],
+    projects: [],
+  };
+
+  beforeEach(async () => {
+    prisma = { coop: { findUnique: jest.fn().mockResolvedValue(coopRow) } };
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        CoopsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ShareholdersService, useValue: {} },
+        { provide: RegistrationsService, useValue: {} },
+        { provide: AuditService, useValue: {} },
+        { provide: EmailService, useValue: {} },
+        { provide: getQueueToken('audience-sync'), useValue: { add: jest.fn() } },
+      ],
+    }).compile();
+    service = moduleRef.get(CoopsService);
+  });
+
+  it('selects the charge-card prices and publishes them when the feature is on', async () => {
+    const result = await service.getPublicInfo('bronsgroen');
+
+    expect(prisma.coop.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          chargeCardsEnabled: true,
+          chargeCardFee: true,
+          chargeCardReplacementFee: true,
+        }),
+      }),
+    );
+    expect(result.chargeCards).toEqual({ feeInclVat: '6', replacementFeeInclVat: '12' });
+  });
+
+  it('publishes no charge-card block when the feature is off', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ ...coopRow, chargeCardsEnabled: false });
+
+    const result = await service.getPublicInfo('bronsgroen');
+
+    expect(result.chargeCards).toBeNull();
+  });
+
+  it('throws when the coop does not exist', async () => {
+    prisma.coop.findUnique.mockResolvedValue(null);
+    await expect(service.getPublicInfo('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+});

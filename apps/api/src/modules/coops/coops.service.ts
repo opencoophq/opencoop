@@ -14,6 +14,7 @@ import { getAudienceProvider } from '../audience-sync/audience-provider.factory'
 import { encryptField } from '../../common/crypto/field-encryption';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import { sanitizeInterestTags } from '../volunteers/volunteer-record';
+import { publicChargeCards } from './public-charge-cards';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -140,6 +141,9 @@ export class CoopsService {
         bankName: true,
         bankIban: true,
         bankBic: true,
+        chargeCardsEnabled: true,
+        chargeCardFee: true,
+        chargeCardReplacementFee: true,
         channels: {
           where: { isDefault: true },
           select: {
@@ -194,6 +198,7 @@ export class CoopsService {
       termsUrl: ch?.termsUrl ?? null,
       shareClasses: coop.shareClasses,
       projects: coop.projects,
+      chargeCards: publicChargeCards(coop),
     };
   }
 

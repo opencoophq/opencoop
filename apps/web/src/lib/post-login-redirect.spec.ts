@@ -2,6 +2,7 @@ import {
   consumePostLoginRedirect,
   hasPendingPostLoginRedirect,
   isSafeRedirectPath,
+  peekPostLoginRedirect,
   rememberPostLoginRedirect,
 } from './post-login-redirect';
 
@@ -37,7 +38,15 @@ describe('isSafeRedirectPath', () => {
     expect(isSafeRedirectPath('javascript:alert(1)')).toBe(false);
   });
 
-  it('rejects paths outside the dashboard', () => {
+  it('accepts the public charge-card entry and nothing beside it', () => {
+    expect(isSafeRedirectPath('/nl/bronsgroen/laadpas')).toBe(true);
+    expect(isSafeRedirectPath('/de/my-coop/laadpas/')).toBe(true);
+    expect(isSafeRedirectPath('/nl/bronsgroen/laadpas/extra')).toBe(false);
+    expect(isSafeRedirectPath('/nl/bronsgroen/register')).toBe(false);
+    expect(isSafeRedirectPath('//evil.com/nl/x/laadpas')).toBe(false);
+  });
+
+  it('rejects paths outside the dashboard and the charge-card entry', () => {
     expect(isSafeRedirectPath('/login')).toBe(false);
     expect(isSafeRedirectPath('/')).toBe(false);
     expect(isSafeRedirectPath('')).toBe(false);
@@ -60,6 +69,18 @@ describe('rememberPostLoginRedirect / consumePostLoginRedirect', () => {
     rememberPostLoginRedirect('/nl/dashboard/charge-cards');
     expect(consumePostLoginRedirect()).toBe('/nl/dashboard/charge-cards');
     // Consuming removes the stored entry.
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('round-trips the charge-card entry and lets a peek leave it queued', () => {
+    rememberPostLoginRedirect('/nl/bronsgroen/laadpas');
+    expect(peekPostLoginRedirect()).toBe('/nl/bronsgroen/laadpas');
+    expect(consumePostLoginRedirect()).toBe('/nl/bronsgroen/laadpas');
+  });
+
+  it('does not store an open redirect dressed up as the charge-card entry', () => {
+    rememberPostLoginRedirect('https://evil.com/nl/bronsgroen/laadpas');
+    rememberPostLoginRedirect('//evil.com/laadpas');
     expect(localStorage.getItem(KEY)).toBeNull();
   });
 
