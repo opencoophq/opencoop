@@ -73,8 +73,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Register user and create a new cooperative' })
   @ApiResponse({ status: 201, description: 'User and cooperative created successfully' })
   @ApiResponse({ status: 409, description: 'Email or slug already in use' })
-  async onboard(@Body() onboardingDto: OnboardingDto) {
-    return this.authService.onboard(onboardingDto);
+  async onboard(@Body() onboardingDto: OnboardingDto, @Req() req: Request) {
+    return this.authService.onboard(onboardingDto, req.ip, req.headers['user-agent']);
   }
 
   @Public()

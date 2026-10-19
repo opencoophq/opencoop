@@ -14,6 +14,8 @@ import { getAudienceProvider } from '../audience-sync/audience-provider.factory'
 import { encryptField } from '../../common/crypto/field-encryption';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import { sanitizeInterestTags } from '../volunteers/volunteer-record';
+import { countryFromAddress } from '../email/coop-signup-notice';
+import * as Sentry from '@sentry/nestjs';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -417,7 +419,10 @@ export class CoopsService {
     return coop;
   }
 
-  async create(createCoopDto: CreateCoopDto) {
+  async create(
+    createCoopDto: CreateCoopDto,
+    actor?: { id?: string; email?: string; ip?: string; userAgent?: string },
+  ) {
     // Check if slug is already in use
     const existingSlug = await this.prisma.coop.findUnique({
       where: { slug: createCoopDto.slug },
@@ -430,8 +435,8 @@ export class CoopsService {
     // Auto-generate a unique OGM prefix
     const ogmPrefix = await this.generateUniqueOgmPrefix();
 
-    return this.prisma.$transaction(async (tx) => {
-      const coop = await tx.coop.create({
+    const coop = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.coop.create({
         data: {
           ...createCoopDto,
           ogmPrefix,
@@ -441,15 +446,54 @@ export class CoopsService {
       // Create default channel for the new coop
       await tx.channel.create({
         data: {
-          coopId: coop.id,
+          coopId: created.id,
           slug: 'default',
-          name: coop.name,
+          name: created.name,
           isDefault: true,
         },
       });
 
-      return coop;
+      return created;
     });
+
+    await this.auditService.log({
+      coopId: coop.id,
+      entity: 'Coop',
+      entityId: coop.id,
+      action: 'CREATE',
+      changes: [
+        { field: 'name', oldValue: null, newValue: coop.name },
+        { field: 'slug', oldValue: null, newValue: coop.slug },
+        { field: 'plan', oldValue: null, newValue: coop.plan },
+        { field: 'source', oldValue: null, newValue: 'superadmin' },
+      ],
+      actorId: actor?.id,
+      ipAddress: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+
+    try {
+      this.emailService.notifyCoopCreated({
+        coopId: coop.id,
+        name: coop.name,
+        slug: coop.slug,
+        plan: coop.plan,
+        legalForm: coop.legalForm,
+        country: countryFromAddress(coop.coopAddress),
+        adminEmail: null,
+        language: null,
+        createdAt: coop.createdAt,
+        source: 'superadmin',
+        createdByEmail: actor?.email,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to send coop signup notification: ${(err as Error)?.message ?? err}`,
+      );
+      Sentry.captureException(err);
+    }
+
+    return coop;
   }
 
   async generateUniqueOgmPrefix(): Promise<string> {

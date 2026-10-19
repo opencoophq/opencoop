@@ -1,5 +1,9 @@
+jest.mock('@sentry/nestjs', () => ({ captureException: jest.fn() }));
+
+import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
+import * as Sentry from '@sentry/nestjs';
 import { EmailService } from './email.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -64,4 +68,78 @@ describe('EmailService', () => {
       });
     });
   });
+
+  describe('notifyCoopCreated', () => {
+    const notice = {
+      coopId: 'coop-1',
+      name: 'Zukunftdorf Billberge',
+      slug: 'zukunftdorf-billberge',
+      plan: 'FREE',
+      adminEmail: 'ada@zukunftdorf.example',
+      language: 'de',
+      createdAt: new Date('2026-08-13T12:00:00.000Z'),
+      source: 'self-signup' as const,
+    };
+    const envKeys = ['COOP_SIGNUP_NOTIFY_EMAIL', 'FRONTEND_URL', 'SENTRY_ENVIRONMENT', 'NODE_ENV'] as const;
+    const previous: Partial<Record<(typeof envKeys)[number], string | undefined>> = {};
+
+    beforeEach(() => {
+      for (const key of envKeys) previous[key] = process.env[key];
+      delete process.env.COOP_SIGNUP_NOTIFY_EMAIL;
+      delete process.env.SENTRY_ENVIRONMENT;
+      process.env.FRONTEND_URL = 'https://acc.opencoop.be';
+      process.env.NODE_ENV = 'production';
+    });
+
+    afterEach(() => {
+      for (const key of envKeys) {
+        if (previous[key] === undefined) delete process.env[key];
+        else process.env[key] = previous[key];
+      }
+      jest.restoreAllMocks();
+    });
+
+    it('sends the Dutch platform mail and does not wait for the caller to catch SMTP errors', async () => {
+      const send = jest.spyOn(service, 'sendPlatformEmail').mockResolvedValue(undefined);
+
+      service.notifyCoopCreated(notice);
+      await flush();
+
+      expect(send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'info@opencoop.be',
+          subject: '[acceptance] Nieuwe coöperatie: Zukunftdorf Billberge',
+          text: expect.stringContaining('Beheerder: ada@zukunftdorf.example'),
+        }),
+      );
+    });
+
+    it('skips sending when COOP_SIGNUP_NOTIFY_EMAIL=off', async () => {
+      process.env.COOP_SIGNUP_NOTIFY_EMAIL = 'off';
+      const send = jest.spyOn(service, 'sendPlatformEmail').mockResolvedValue(undefined);
+
+      service.notifyCoopCreated(notice);
+      await flush();
+
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('logs and reports to GlitchTip when sending fails, without rejecting', async () => {
+      const failure = new Error('smtp down');
+      jest.spyOn(service, 'sendPlatformEmail').mockRejectedValue(failure);
+      const capture = Sentry.captureException as jest.Mock;
+      capture.mockClear();
+      const errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+      expect(() => service.notifyCoopCreated(notice)).not.toThrow();
+      await flush();
+
+      expect(capture).toHaveBeenCalledWith(failure);
+      expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('smtp down'));
+    });
+  });
 });
+
+function flush(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
