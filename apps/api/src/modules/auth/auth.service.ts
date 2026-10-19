@@ -264,7 +264,7 @@ export class AuthService {
     });
 
     // New coop creator gets full Admin permissions
-    const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true, canViewVolunteers: true };
+    const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true, canViewVolunteers: false };
 
     const tokenResult = await this.tokenService.issueJwtForUser({
       id: result.user.id,

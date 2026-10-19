@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { useAdmin } from '@/contexts/admin-context';
+import { usePermissions } from '@/contexts/permissions-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,9 +35,10 @@ interface ShareholderOption {
 export default function AdminComposeMessagePage() {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
+  const { hasPermission } = usePermissions();
   const router = useRouter();
 
-  const [type, setType] = useState<'BROADCAST' | 'DIRECT'>('BROADCAST');
+  const [audience, setAudience] = useState<'ALL' | 'DIRECT' | 'VOLUNTEERS'>('ALL');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [shareholderId, setShareholderId] = useState('');
@@ -46,7 +48,7 @@ export default function AdminComposeMessagePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!selectedCoop || type !== 'DIRECT') return;
+    if (!selectedCoop || audience !== 'DIRECT') return;
     setLoadingShareholders(true);
     api<{ data: ShareholderOption[] } | ShareholderOption[]>(
       `/admin/coops/${selectedCoop.id}/shareholders?limit=500`,
@@ -57,11 +59,15 @@ export default function AdminComposeMessagePage() {
       })
       .catch(() => setError(t('common.error')))
       .finally(() => setLoadingShareholders(false));
-  }, [selectedCoop, type, t]);
+  }, [selectedCoop, audience, t]);
+
+  const canMessageVolunteers =
+    selectedCoop?.volunteersEnabled === true && hasPermission('canViewVolunteers');
 
   const handleSend = async () => {
     if (!selectedCoop || !subject.trim() || !body.trim()) return;
-    if (type === 'DIRECT' && !shareholderId) return;
+    if (audience === 'DIRECT' && !shareholderId) return;
+    if (audience === 'VOLUNTEERS' && !canMessageVolunteers) return;
 
     setSending(true);
     setError(null);
@@ -71,10 +77,11 @@ export default function AdminComposeMessagePage() {
         {
           method: 'POST',
           body: {
-            type,
+            type: audience === 'DIRECT' ? 'DIRECT' : 'BROADCAST',
             subject,
             body,
-            ...(type === 'DIRECT' ? { shareholderId } : {}),
+            ...(audience === 'DIRECT' ? { shareholderId } : {}),
+            ...(audience === 'VOLUNTEERS' ? { audience: { type: 'VOLUNTEERS' } } : {}),
           },
         },
       );
@@ -125,12 +132,12 @@ export default function AdminComposeMessagePage() {
           <div className="space-y-3">
             <Label>{t('messages.recipient')}</Label>
             <RadioGroup
-              value={type}
-              onValueChange={(v) => setType(v as 'BROADCAST' | 'DIRECT')}
-              className="flex gap-6"
+              value={audience}
+              onValueChange={(v) => setAudience(v as 'ALL' | 'DIRECT' | 'VOLUNTEERS')}
+              className="flex flex-wrap gap-6"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="BROADCAST" id="broadcast" />
+                <RadioGroupItem value="ALL" id="broadcast" />
                 <Label htmlFor="broadcast" className="font-normal cursor-pointer">
                   {t('messages.allShareholders')}
                 </Label>
@@ -141,10 +148,18 @@ export default function AdminComposeMessagePage() {
                   {t('messages.specificShareholder')}
                 </Label>
               </div>
+              {canMessageVolunteers && (
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="VOLUNTEERS" id="volunteers" />
+                  <Label htmlFor="volunteers" className="font-normal cursor-pointer">
+                    {t('messages.volunteers')}
+                  </Label>
+                </div>
+              )}
             </RadioGroup>
           </div>
 
-          {type === 'DIRECT' && (
+          {audience === 'DIRECT' && (
             <div className="space-y-2">
               <Label>{t('messages.selectShareholder')}</Label>
               {loadingShareholders ? (
@@ -198,7 +213,7 @@ export default function AdminComposeMessagePage() {
                 sending ||
                 !subject.trim() ||
                 !body.trim() ||
-                (type === 'DIRECT' && !shareholderId)
+                (audience === 'DIRECT' && !shareholderId)
               }
             >
               {sending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

@@ -2,6 +2,7 @@ import {
   VOLUNTEER_VIEW_KEYS,
   VOLUNTEER_VIEW_SELECT,
   interestCatalog,
+  sanitizeInterestTags,
   toVolunteerView,
   volunteerWhere,
   volunteersToCsv,
@@ -73,6 +74,8 @@ describe('volunteer records stay clear of the share register', () => {
   it('uses the default interest tags when a coop has not configured any', () => {
     expect(interestCatalog([])).toEqual(['flyers', 'stands', 'workshops', 'technical', 'admin']);
     expect(interestCatalog([' flyers ', 'Keuken'])).toEqual(['flyers', 'Keuken']);
+    expect(interestCatalog(['evenementen/standen'])).toEqual(['evenementen/standen']);
+    expect(sanitizeInterestTags(['bad!tag'])).toEqual([]);
   });
 
   it('exports csv without share columns and neutralises spreadsheet formulas', () => {
