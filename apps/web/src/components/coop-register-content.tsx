@@ -29,6 +29,8 @@ import { Gift, UserPlus, LogIn, Check, Copy, Mail } from 'lucide-react';
 import { EmailFirstLogin } from '@/components/auth/email-first-login';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { resolveLogoUrl } from '@/lib/api';
+import { isChargeCardEntryPath } from '@/lib/charge-card-entry';
+import { peekPostLoginRedirect, rememberPostLoginRedirect } from '@/lib/post-login-redirect';
 
 interface CoopPublicInfo {
   id: string;
@@ -292,6 +294,8 @@ export function CoopRegisterContent({
   const preselectedProject = searchParams.get('project');
   const preselectedShareholderId = searchParams.get('shareholderId');
   const referralCode = searchParams.get('ref');
+  const redirectParam = searchParams.get('redirect');
+  const [returnPath, setReturnPath] = useState<string | null>(null);
 
   const [coop, setCoop] = useState<CoopPublicInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -462,6 +466,13 @@ export function CoopRegisterContent({
 
     fetchData();
   }, [coopSlug, channelSlug, preselectedClass, preselectedProject, preselectedShareholderId, referralCode, form]);
+
+  // Keep a safe return target (the charge-card entry) across this registration
+  // so the confirmation can link back, and a later login on this browser can too.
+  useEffect(() => {
+    rememberPostLoginRedirect(redirectParam);
+    setReturnPath(peekPostLoginRedirect());
+  }, [redirectParam]);
 
   // Read OAuth prefill params from URL (after redirect back from Google/Apple)
   useEffect(() => {
@@ -1540,6 +1551,16 @@ export function CoopRegisterContent({
               <p className="text-sm text-amber-800 font-medium">
                 {t('registration.giftPaymentNote')}
               </p>
+            </div>
+          )}
+
+          {isChargeCardEntryPath(returnPath) && !result?.giftCode && (
+            <div className="rounded-lg border p-4 space-y-3" data-testid="charge-card-return">
+              <h4 className="font-medium">{t('chargeCardEntry.registrationNextTitle')}</h4>
+              <p className="text-sm text-muted-foreground">{t('chargeCardEntry.registrationNextBody')}</p>
+              <Button asChild className="w-full" style={{ backgroundColor: coop.primaryColor }}>
+                <a href={returnPath}>{t('chargeCardEntry.registrationNextButton')}</a>
+              </Button>
             </div>
           )}
 

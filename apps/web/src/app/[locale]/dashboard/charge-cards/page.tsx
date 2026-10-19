@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations, useLocale as useRouteLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { Link } from '@/i18n/routing';
 import { api } from '@/lib/api';
 import { useLocale } from '@/contexts/locale-context';
@@ -21,6 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { formatCurrency, formatIban } from '@opencoop/shared';
+import { chargeCardEntryPath } from '@/lib/charge-card-entry';
 import { Loader2, Plus } from 'lucide-react';
 
 type CardStatus = 'REQUESTED' | 'PAID' | 'ACTIVE' | 'BLOCKED' | 'CANCELLED';
@@ -74,6 +76,9 @@ const money = (value: number | string): number => Number(value);
 export default function ChargeCardsPage() {
   const t = useTranslations('chargeCards');
   const { locale } = useLocale();
+  const routeLocale = useRouteLocale();
+  const searchParams = useSearchParams();
+  const openedRequest = useRef(false);
   const [shareholderId, setShareholderId] = useState<string | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,6 +104,13 @@ export default function ChargeCardsPage() {
       .catch(() => setError(t('actionError')))
       .finally(() => setLoading(false));
   }, [load, t]);
+
+  useEffect(() => {
+    if (openedRequest.current || !overview?.enabled || overview.shareholderStatus !== 'ACTIVE') return;
+    if (searchParams.get('request') !== '1') return;
+    openedRequest.current = true;
+    setRequestOpen(true);
+  }, [overview, searchParams]);
 
   const paymentFor = (card: ChargeCardView): PaymentDetails | null =>
     overview
@@ -179,6 +191,10 @@ export default function ChargeCardsPage() {
   }
 
   const isActive = overview.shareholderStatus === 'ACTIVE';
+  const entryPath = chargeCardEntryPath(routeLocale, overview.coop.slug);
+  const registerHref = entryPath
+    ? `/${routeLocale}/${overview.coop.slug}/register?redirect=${encodeURIComponent(entryPath)}`
+    : `/${routeLocale}/${overview.coop.slug}/register`;
   // Fall back to the regular fee/non-replacement if the preview is somehow
   // missing (e.g. an older cached response); the server still decides for real.
   const nextRequest = overview.nextRequest ?? { feeInclVat: overview.fee, isReplacement: false };
@@ -202,10 +218,28 @@ export default function ChargeCardsPage() {
       {!isActive && (
         <Alert>
           <AlertDescription className="flex flex-wrap items-center gap-2">
-            <span>{t('notActive')}</span>
-            <Link href={`/${overview.coop.slug}/register`} className="font-medium underline">
-              {t('becomeShareholder')}
-            </Link>
+            {overview.shareholderStatus === 'PENDING' ? (
+              <>
+                <span>{t('pendingPayment')}</span>
+                <Link href="/dashboard/shares" className="font-medium underline">
+                  {t('viewSharePayment')}
+                </Link>
+              </>
+            ) : overview.shareholderStatus === 'INACTIVE' ? (
+              <>
+                <span>{t('inactiveShareholder')}</span>
+                <a href={registerHref} className="font-medium underline">
+                  {t('buySharesAgain')}
+                </a>
+              </>
+            ) : (
+              <>
+                <span>{t('notActive')}</span>
+                <Link href={`/${overview.coop.slug}/register`} className="font-medium underline">
+                  {t('becomeShareholder')}
+                </Link>
+              </>
+            )}
           </AlertDescription>
         </Alert>
       )}

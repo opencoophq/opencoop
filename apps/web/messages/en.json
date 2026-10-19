@@ -23,6 +23,10 @@
     "volunteers": {
       "title": "Volunteer registration",
       "description": "Register as a volunteer for a cooperative. Members and non-members can sign up."
+    },
+    "chargeCardEntry": {
+      "title": "Request a charge card",
+      "description": "Request a charge card as a member. If you are not a member yet, register first."
     }
   },
   "common": {
@@ -2419,14 +2423,45 @@
       "unknown": "Something went wrong. Please try again."
     }
   },
+  "chargeCardEntry": {
+    "title": "Request a charge card",
+    "intro": "A charge card from {coop} costs {fee} per card (incl. VAT). A replacement after loss costs {replacementFee}. Only active members can request a card. You pay once by bank transfer with a structured communication.",
+    "question": "Are you already a member of {coop}?",
+    "yes": "Yes, I am a member",
+    "yesHelp": "Log in with your account. You will then go straight to the request.",
+    "no": "No, I will become a member first",
+    "noHelp": "A charge card is only for members. You register first.",
+    "becomeTitle": "Become a member first",
+    "becomeBody": "A charge card is reserved for members of {coop}. Register and pay for your shares. Once your membership is active, you return to this page to request your charge card.",
+    "becomeButton": "Register as a member",
+    "alreadyMember": "I am already a member",
+    "loggedInBecomeTitle": "You are not yet a member of {coop}",
+    "loggedInBecomeBody": "You are signed in, but not yet a member. Register and pay for your shares. You can then request your charge card here.",
+    "pendingTitle": "Your membership is not active yet",
+    "pendingBody": "We have your registration, but the payment for your shares has not been processed yet. You can request a charge card once you are an active member. Keep this page: you return here after the payment.",
+    "pendingButton": "View your share payment",
+    "inactiveTitle": "You are not an active member",
+    "inactiveBody": "Only active members of {coop} can request a charge card. Buy shares again. Once your membership is active, you return to this page.",
+    "inactiveButton": "Buy shares again",
+    "unavailable": "{coop} does not offer charge cards yet.",
+    "loadError": "This page could not be loaded. Please try again.",
+    "retry": "Try again",
+    "registrationNextTitle": "Then your charge card",
+    "registrationNextBody": "First pay for your shares with the structured communication above. Once your membership is active, you request your charge card on this page.",
+    "registrationNextButton": "Go to the charge card request"
+  },
   "chargeCards": {
     "nav": "Charge cards",
     "title": "Charge cards",
     "subtitle": "Request a charging card for your electric car. You pay a one-time fee by bank transfer.",
     "notEnabled": "Charge cards are not available at your cooperative.",
-    "noShareholder": "Charge cards are for shareholders. Log in with the account you used to buy shares.",
-    "notActive": "Only active shareholders can request a charge card.",
-    "becomeShareholder": "Become a shareholder",
+    "noShareholder": "A charge card is reserved for members. Sign in with the account you used to buy shares.",
+    "notActive": "Only active members can request a charge card.",
+    "becomeShareholder": "Become a member",
+    "pendingPayment": "Your membership is not active yet. Once we have received payment for your shares, you can request a charge card here.",
+    "viewSharePayment": "View your share payment",
+    "inactiveShareholder": "You are no longer an active member. Buy shares again to request a charge card.",
+    "buySharesAgain": "Buy shares again",
     "request": "Request a card",
     "requestTitle": "Request a charge card",
     "requestDescription": "A card costs {fee} (incl. VAT), paid once by bank transfer.",

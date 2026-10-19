@@ -23,6 +23,10 @@
     "volunteers": {
       "title": "Freiwilligenregistrierung",
       "description": "Registrieren Sie sich als Freiwillige oder Freiwilliger einer Genossenschaft. Mitglieder und Nichtmitglieder können sich anmelden."
+    },
+    "chargeCardEntry": {
+      "title": "Ladekarte beantragen",
+      "description": "Beantragen Sie eine Ladekarte als Mitglied. Wenn Sie noch kein Mitglied sind, melden Sie sich zuerst an."
     }
   },
   "common": {
@@ -2416,14 +2420,45 @@
       "unknown": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
     }
   },
+  "chargeCardEntry": {
+    "title": "Ladekarte beantragen",
+    "intro": "Eine Ladekarte von {coop} kostet {fee} pro Karte (inkl. MwSt.). Eine Ersatzkarte nach Verlust kostet {replacementFee}. Nur aktive Mitglieder können eine Karte beantragen. Sie zahlen einmalig per Überweisung mit einem strukturierten Verwendungszweck.",
+    "question": "Sind Sie bereits Mitglied von {coop}?",
+    "yes": "Ja, ich bin Mitglied",
+    "yesHelp": "Melden Sie sich mit Ihrem Konto an. Danach gelangen Sie direkt zum Antrag.",
+    "no": "Nein, ich werde zuerst Mitglied",
+    "noHelp": "Eine Ladekarte ist nur für Mitglieder. Sie melden sich zuerst an.",
+    "becomeTitle": "Werden Sie zuerst Mitglied",
+    "becomeBody": "Eine Ladekarte ist Mitgliedern von {coop} vorbehalten. Melden Sie sich an und bezahlen Sie Ihre Anteile. Sobald Ihre Mitgliedschaft aktiv ist, kehren Sie auf diese Seite zurück und beantragen Ihre Ladekarte.",
+    "becomeButton": "Als Mitglied anmelden",
+    "alreadyMember": "Ich bin bereits Mitglied",
+    "loggedInBecomeTitle": "Sie sind noch kein Mitglied von {coop}",
+    "loggedInBecomeBody": "Sie sind angemeldet, aber noch kein Mitglied. Melden Sie sich an und bezahlen Sie Ihre Anteile. Danach beantragen Sie hier Ihre Ladekarte.",
+    "pendingTitle": "Ihre Mitgliedschaft ist noch nicht aktiv",
+    "pendingBody": "Wir haben Ihre Anmeldung, aber die Zahlung Ihrer Anteile ist noch nicht verarbeitet. Eine Ladekarte können Sie beantragen, sobald Sie aktives Mitglied sind. Merken Sie sich diese Seite: nach der Zahlung kehren Sie hierher zurück.",
+    "pendingButton": "Ihre Anteilzahlung ansehen",
+    "inactiveTitle": "Sie sind kein aktives Mitglied",
+    "inactiveBody": "Nur aktive Mitglieder von {coop} können eine Ladekarte beantragen. Kaufen Sie erneut Anteile. Sobald Ihre Mitgliedschaft aktiv ist, kehren Sie auf diese Seite zurück.",
+    "inactiveButton": "Erneut Anteile kaufen",
+    "unavailable": "{coop} bietet noch keine Ladekarten an.",
+    "loadError": "Diese Seite konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+    "retry": "Erneut versuchen",
+    "registrationNextTitle": "Danach Ihre Ladekarte",
+    "registrationNextBody": "Bezahlen Sie zuerst Ihre Anteile mit dem strukturierten Verwendungszweck oben. Sobald Ihre Mitgliedschaft aktiv ist, beantragen Sie auf dieser Seite Ihre Ladekarte.",
+    "registrationNextButton": "Zum Antrag Ihrer Ladekarte"
+  },
   "chargeCards": {
     "nav": "Ladekarten",
     "title": "Ladekarten",
     "subtitle": "Beantragen Sie eine Ladekarte für Ihr Elektroauto. Sie zahlen eine einmalige Gebühr per Überweisung.",
     "notEnabled": "Ladekarten sind bei Ihrer Genossenschaft nicht verfügbar.",
-    "noShareholder": "Ladekarten sind für Anteilseigner. Melden Sie sich mit dem Konto an, mit dem Sie Anteile gekauft haben.",
-    "notActive": "Nur aktive Anteilseigner können eine Ladekarte beantragen.",
-    "becomeShareholder": "Anteilseigner werden",
+    "noShareholder": "Eine Ladekarte ist Mitgliedern vorbehalten. Melden Sie sich mit dem Konto an, mit dem Sie Anteile gekauft haben.",
+    "notActive": "Nur aktive Mitglieder können eine Ladekarte beantragen.",
+    "becomeShareholder": "Mitglied werden",
+    "pendingPayment": "Ihre Mitgliedschaft ist noch nicht aktiv. Sobald wir die Zahlung für Ihre Anteile erhalten haben, können Sie hier eine Ladekarte beantragen.",
+    "viewSharePayment": "Ihre Anteilzahlung ansehen",
+    "inactiveShareholder": "Sie sind kein aktives Mitglied mehr. Kaufen Sie erneut Anteile, um eine Ladekarte zu beantragen.",
+    "buySharesAgain": "Erneut Anteile kaufen",
     "request": "Karte beantragen",
     "requestTitle": "Ladekarte beantragen",
     "requestDescription": "Eine Karte kostet {fee} (inkl. MwSt.), einmalig per Überweisung.",

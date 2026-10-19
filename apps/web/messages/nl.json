@@ -23,6 +23,10 @@
     "volunteers": {
       "title": "Vrijwilligersregistratie",
       "description": "Registreer je als vrijwilliger bij een coöperatie. Leden en niet-leden kunnen zich aanmelden."
+    },
+    "chargeCardEntry": {
+      "title": "Laadpas aanvragen",
+      "description": "Vraag een laadpas aan als coöperant. Bent u nog geen coöperant, dan schrijft u zich eerst in."
     }
   },
   "common": {
@@ -2419,14 +2423,45 @@
       "unknown": "Er is iets misgegaan. Probeer het opnieuw."
     }
   },
+  "chargeCardEntry": {
+    "title": "Laadpas aanvragen",
+    "intro": "Een laadpas van {coop} kost {fee} per pas (incl. btw). Een vervangpas na verlies kost {replacementFee}. Alleen actieve coöperanten kunnen een pas aanvragen. U betaalt eenmalig per overschrijving met een gestructureerde mededeling.",
+    "question": "Bent u al coöperant van {coop}?",
+    "yes": "Ja, ik ben coöperant",
+    "yesHelp": "Log in met uw account. U komt daarna meteen bij de aanvraag.",
+    "no": "Nee, ik word eerst coöperant",
+    "noHelp": "Een laadpas is alleen voor coöperanten. U schrijft zich eerst in.",
+    "becomeTitle": "Word eerst coöperant",
+    "becomeBody": "Een laadpas is voorbehouden aan coöperanten van {coop}. Schrijf u in en betaal uw aandelen. Zodra uw lidmaatschap actief is, keert u terug naar deze pagina om uw laadpas aan te vragen.",
+    "becomeButton": "Inschrijven als coöperant",
+    "alreadyMember": "Ik ben toch al coöperant",
+    "loggedInBecomeTitle": "U bent nog geen coöperant van {coop}",
+    "loggedInBecomeBody": "U bent aangemeld, maar nog geen coöperant. Schrijf u in en betaal uw aandelen. Daarna vraagt u hier uw laadpas aan.",
+    "pendingTitle": "Uw lidmaatschap is nog niet actief",
+    "pendingBody": "Wij hebben uw inschrijving, maar de betaling van uw aandelen is nog niet verwerkt. Een laadpas kunt u aanvragen zodra u actieve coöperant bent. Bewaar deze pagina: u keert hier terug na de betaling.",
+    "pendingButton": "Bekijk uw aandelenbetaling",
+    "inactiveTitle": "U bent geen actieve coöperant",
+    "inactiveBody": "Alleen actieve coöperanten van {coop} kunnen een laadpas aanvragen. Koop opnieuw aandelen. Zodra uw lidmaatschap actief is, keert u terug naar deze pagina.",
+    "inactiveButton": "Opnieuw aandelen kopen",
+    "unavailable": "{coop} biedt nog geen laadpassen aan.",
+    "loadError": "Deze pagina kon niet geladen worden. Probeer het opnieuw.",
+    "retry": "Opnieuw proberen",
+    "registrationNextTitle": "Daarna uw laadpas",
+    "registrationNextBody": "Betaal eerst uw aandelen met de gestructureerde mededeling hierboven. Zodra uw lidmaatschap actief is, vraagt u op deze pagina uw laadpas aan.",
+    "registrationNextButton": "Naar de aanvraag van uw laadpas"
+  },
   "chargeCards": {
     "nav": "Laadpassen",
     "title": "Laadpassen",
     "subtitle": "Vraag een laadpas voor je elektrische wagen aan. Je betaalt eenmalig per overschrijving.",
     "notEnabled": "Laadpassen zijn niet beschikbaar bij jouw coöperatie.",
-    "noShareholder": "Laadpassen zijn voor aandeelhouders. Log in met het account waarmee je aandelen kocht.",
-    "notActive": "Alleen actieve aandeelhouders kunnen een laadpas aanvragen.",
-    "becomeShareholder": "Word aandeelhouder",
+    "noShareholder": "Een laadpas is voorbehouden aan coöperanten. Meld u aan met het account waarmee u aandelen kocht.",
+    "notActive": "Alleen actieve coöperanten kunnen een laadpas aanvragen.",
+    "becomeShareholder": "Word coöperant",
+    "pendingPayment": "Uw lidmaatschap is nog niet actief. Zodra wij de betaling van uw aandelen hebben ontvangen, kunt u hier een laadpas aanvragen.",
+    "viewSharePayment": "Bekijk uw aandelenbetaling",
+    "inactiveShareholder": "U bent geen actieve coöperant meer. Koop opnieuw aandelen om een laadpas aan te vragen.",
+    "buySharesAgain": "Opnieuw aandelen kopen",
     "request": "Pas aanvragen",
     "requestTitle": "Laadpas aanvragen",
     "requestDescription": "Een pas kost {fee} (incl. btw), eenmalig te betalen per overschrijving.",
