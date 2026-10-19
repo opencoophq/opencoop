@@ -8,9 +8,12 @@ jest.mock('../../common/crypto/field-encryption', () => ({
   encryptField: jest.fn((v: string) => `encrypted:${v}`),
 }));
 
+jest.mock('@sentry/nestjs', () => ({ captureException: jest.fn() }));
+
 process.env.FIELD_ENCRYPTION_KEY = 'a'.repeat(64);
 
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import { Test } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
 import { CoopsService } from './coops.service';
@@ -280,5 +283,106 @@ describe('CoopsService — Brevo audience-sync config', () => {
 
     await expect(service.listAudienceLists('c1')).rejects.toThrow(NotFoundException);
     expect(factory.getAudienceProvider).not.toHaveBeenCalled();
+  });
+});
+
+describe('CoopsService.create', () => {
+  const createdAt = new Date('2026-08-13T12:00:00.000Z');
+
+  function build() {
+    const coop = {
+      id: 'coop-9',
+      name: 'Nieuwe Coop',
+      slug: 'nieuwe-coop',
+      plan: 'FREE',
+      legalForm: 'CV',
+      coopAddress: { country: 'BE' },
+      createdAt,
+    };
+    const tx = {
+      coop: { create: jest.fn().mockResolvedValue(coop) },
+      channel: { create: jest.fn().mockResolvedValue({ id: 'ch-1' }) },
+    };
+    const prisma = {
+      coop: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([{ ogmPrefix: '007' }]),
+      },
+      $transaction: jest.fn(async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)),
+    };
+    const auditService = { log: jest.fn().mockResolvedValue(undefined) };
+    const emailService = { notifyCoopCreated: jest.fn() };
+    const service = new CoopsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      auditService as never,
+      emailService as never,
+      { add: jest.fn() } as never,
+    );
+    return { service, prisma, auditService, emailService, tx };
+  }
+
+  it('audits the superadmin as actor and sends the internal notice', async () => {
+    const { service, auditService, emailService, tx } = build();
+
+    const created = await service.create(
+      { name: 'Nieuwe Coop', slug: 'nieuwe-coop' },
+      { id: 'admin-1', email: 'wouter@armlab.example', ip: '203.0.113.10', userAgent: 'curl' },
+    );
+
+    expect(created.id).toBe('coop-9');
+    expect(tx.channel.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ coopId: 'coop-9', isDefault: true }) }),
+    );
+    expect(auditService.log).toHaveBeenCalledWith({
+      coopId: 'coop-9',
+      entity: 'Coop',
+      entityId: 'coop-9',
+      action: 'CREATE',
+      changes: [
+        { field: 'name', oldValue: null, newValue: 'Nieuwe Coop' },
+        { field: 'slug', oldValue: null, newValue: 'nieuwe-coop' },
+        { field: 'plan', oldValue: null, newValue: 'FREE' },
+        { field: 'source', oldValue: null, newValue: 'superadmin' },
+      ],
+      actorId: 'admin-1',
+      ipAddress: '203.0.113.10',
+      userAgent: 'curl',
+    });
+    expect(emailService.notifyCoopCreated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        coopId: 'coop-9',
+        source: 'superadmin',
+        legalForm: 'CV',
+        country: 'BE',
+        adminEmail: null,
+        createdByEmail: 'wouter@armlab.example',
+        createdAt,
+      }),
+    );
+  });
+
+  it('still returns the coop when the notice throws', async () => {
+    const { service, emailService } = build();
+    emailService.notifyCoopCreated.mockImplementation(() => {
+      throw new Error('notify exploded');
+    });
+
+    await expect(
+      service.create({ name: 'Nieuwe Coop', slug: 'nieuwe-coop' }, { id: 'admin-1' }),
+    ).resolves.toMatchObject({ id: 'coop-9' });
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('does not audit or notify when the slug is taken', async () => {
+    const { service, prisma, auditService, emailService } = build();
+    prisma.coop.findUnique.mockResolvedValue({ id: 'existing' });
+
+    await expect(service.create({ name: 'Nieuwe Coop', slug: 'nieuwe-coop' })).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(auditService.log).not.toHaveBeenCalled();
+    expect(emailService.notifyCoopCreated).not.toHaveBeenCalled();
   });
 });

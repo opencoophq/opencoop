@@ -2,8 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import * as nodemailer from 'nodemailer';
+import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AdminNotificationEvent, AdminNotificationData } from '../admin-notifications/admin-notifications.service';
+import { CoopCreatedNotice, buildCoopCreatedMail } from './coop-signup-notice';
 
 export interface EmailOptions {
   coopId: string;
@@ -67,6 +69,30 @@ export class EmailService {
       html: options.html,
       text: options.text,
     });
+  }
+
+  /**
+   * Internal notice that a cooperative was created. Never throws and never
+   * blocks the caller: SMTP failures are logged and reported to GlitchTip.
+   * Set COOP_SIGNUP_NOTIFY_EMAIL=off to skip (acceptance).
+   */
+  notifyCoopCreated(notice: CoopCreatedNotice): void {
+    let mail: ReturnType<typeof buildCoopCreatedMail>;
+    try {
+      mail = buildCoopCreatedMail(notice);
+    } catch (error) {
+      this.reportCoopCreatedFailure(error);
+      return;
+    }
+    if (!mail) return;
+
+    void this.sendPlatformEmail(mail).catch((error) => this.reportCoopCreatedFailure(error));
+  }
+
+  private reportCoopCreatedFailure(error: unknown): void {
+    const message = error instanceof Error ? error.message : String(error);
+    this.logger.error(`Failed to send coop signup notification: ${message}`);
+    Sentry.captureException(error);
   }
 
   async send(options: EmailOptions) {

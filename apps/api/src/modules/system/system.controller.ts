@@ -8,7 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -46,8 +48,17 @@ export class SystemController {
 
   @Post('coops')
   @ApiOperation({ summary: 'Create a new coop' })
-  async createCoop(@Body() createCoopDto: CreateCoopDto) {
-    return this.coopsService.create(createCoopDto);
+  async createCoop(
+    @Body() createCoopDto: CreateCoopDto,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+  ) {
+    return this.coopsService.create(createCoopDto, {
+      id: user.id,
+      email: user.email,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 
   @Put('coops/:id')
