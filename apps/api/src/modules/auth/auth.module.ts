@@ -14,6 +14,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { AppleStrategy } from './strategies/apple.strategy';
+import { resolveAppleLogin } from './strategies/apple-login.config';
 import { WebAuthnService } from './webauthn.service';
 import { RedisService } from './redis.service';
 import { UsersModule } from '../users/users.module';
@@ -26,7 +27,8 @@ const conditionalProviders: any[] = [];
 if (process.env.GOOGLE_CLIENT_ID) {
   conditionalProviders.push(GoogleStrategy);
 }
-if (process.env.APPLE_CLIENT_ID) {
+// Apple also needs a readable private key; otherwise it stays off (loudly) instead of crashing the API.
+if (resolveAppleLogin()) {
   conditionalProviders.push(AppleStrategy);
 }
 

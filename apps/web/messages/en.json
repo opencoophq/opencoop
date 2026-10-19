@@ -1204,7 +1204,8 @@
     "linked": "Linked",
     "notLinked": "Not linked",
     "linkAccount": "Link account",
-    "unlinkAccount": "Unlink"
+    "unlinkAccount": "Unlink",
+    "loginFailed": "Signing in with Google or Apple failed. Please try again or sign in with your email address."
   },
   "errors": {
     "generic": "Something went wrong",
