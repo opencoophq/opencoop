@@ -19,6 +19,7 @@ original SemVer-style tags.
 
 ### Added
 
+- **Charge-card entry from a coop website.** `/{locale}/{coopSlug}/laadpas` asks whether the visitor is already a member. Members log in and land on the request form. Others buy a share first; until the membership is active, the page explains what happens next. For Bronsgroen the Dutch button should point at `https://opencoop.be/nl/bronsgroen/laadpas`.
 - **Volunteer registration.** A cooperative can turn this on in Settings (off by default). Members opt in from the dashboard with “Ik wil helpen”. Anyone else uses the public page `/{locale}/{coop}/vrijwilligers`, confirms by email, and can withdraw from the link in that email. The board sees only people who opted in, filtered by municipality, postcode and interest, and never the share register. The new permission `canViewVolunteers` is required; the Admin role receives it, other roles do not. Matching volunteers can be emailed and exported to CSV. Every export is written to the audit log. Unconfirmed public sign-ups are removed after 30 days.
 
 ## [2026.41.1] - 2026-10-06

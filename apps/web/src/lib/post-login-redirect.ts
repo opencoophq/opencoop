@@ -6,15 +6,41 @@
 const KEY = 'opencoop-post-login-redirect';
 const TTL_MS = 30 * 60 * 1000;
 // Only dashboard paths, with an optional locale prefix. No hosts, no "//", no "/\".
-const SAFE_PATH = /^\/(?:(?:nl|en|fr|de)\/)?dashboard(?:\/[A-Za-z0-9_-]+)*\/?$/;
+const DASHBOARD_PATH = /^\/(?:(?:nl|en|fr|de)\/)?dashboard(?:\/[A-Za-z0-9_-]+)*\/?$/;
+const COOP_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * The charge-card request form is the one dashboard URL that may carry a query,
+ * and only these two keys: which coop the visitor came in for, and whether to
+ * open the request dialog. A query on any other page, or any other key, is
+ * rejected so `?redirect=` cannot grow into an open redirect.
+ */
+function isAllowedChargeCardQuery(search: string): boolean {
+  if (!search || search.includes('#') || search.includes('?')) return false;
+  const params = new URLSearchParams(search);
+  const keys = [...params.keys()];
+  if (keys.length === 0 || keys.some((key) => key !== 'coop' && key !== 'request')) return false;
+  if (params.getAll('coop').length > 1 || params.getAll('request').length > 1) return false;
+  const request = params.get('request');
+  const coop = params.get('coop');
+  if (request !== null && request !== '1') return false;
+  if (coop !== null && !COOP_SLUG.test(coop)) return false;
+  return request !== null || coop !== null;
+}
 
 export function isSafeRedirectPath(path: string | null | undefined): path is string {
   if (typeof path !== 'string') return false;
-  // Belt-and-suspenders: SAFE_PATH is anchored and its character class already
-  // rejects "//" and "/\" on its own, but reject them explicitly first too, so
-  // the open-redirect guard does not depend solely on one regex being correct.
+  // Belt-and-suspenders: DASHBOARD_PATH is anchored and its character class
+  // already rejects "//" and "/\" on its own, but reject them explicitly first
+  // too, so the open-redirect guard does not depend solely on one regex.
   if (path.length < 2 || path[0] !== '/' || path[1] === '/' || path[1] === '\\') return false;
-  return SAFE_PATH.test(path);
+  if (path.includes('\\') || path.includes('//') || path.includes('#')) return false;
+  const queryAt = path.indexOf('?');
+  const pathname = queryAt === -1 ? path : path.slice(0, queryAt);
+  const search = queryAt === -1 ? '' : path.slice(queryAt + 1);
+  if (!DASHBOARD_PATH.test(pathname)) return false;
+  if (!search) return true;
+  return /\/dashboard\/charge-cards\/?$/.test(pathname) && isAllowedChargeCardQuery(search);
 }
 
 export function rememberPostLoginRedirect(path: string | null | undefined): void {
