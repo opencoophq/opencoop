@@ -19,6 +19,10 @@
     "featureRequest": {
       "title": "Feature anfragen",
       "description": "Gestalten Sie die Zukunft von OpenCoop mit. Reichen Sie Ihre Ideen und Vorschläge für die Anteilseignerverwaltung ein."
+    },
+    "volunteers": {
+      "title": "Freiwilligenregistrierung",
+      "description": "Registrieren Sie sich als Freiwillige oder Freiwilliger einer Genossenschaft. Mitglieder und Nichtmitglieder können sich anmelden."
     }
   },
   "common": {
@@ -546,6 +550,7 @@
     "publicPage": "Öffentliche Seite",
     "registrationLink": "Registrierung",
     "loginLink": "Anmeldung",
+    "volunteerSignupLink": "Freiwilligenanmeldung",
     "copied": "Kopiert!",
     "nav": {
       "overview": "Übersicht",
@@ -1026,7 +1031,8 @@
       "canManageAdmins": "Team verwalten",
       "canViewPII": "Persönliche Daten einsehen",
       "canViewReports": "Berichte einsehen",
-      "canViewShareholderRegister": "Anteilseignerregister einsehen"
+      "canViewShareholderRegister": "Anteilseignerregister einsehen",
+      "canViewVolunteers": "Freiwillige ansehen und kontaktieren"
     },
     "billing": {
       "title": "Abrechnung",
@@ -2511,6 +2517,81 @@
       "heading": "Ladekarten, die auf Zahlung warten",
       "card": "Ladekarte",
       "loadError": "Laden der Ladekarten nicht möglich."
+    }
+  },
+  "volunteers": {
+    "title": "Freiwillige",
+    "nav": "Freiwillige",
+    "helpTitle": "Ich möchte helfen",
+    "helpDescription": "Melden Sie sich als Freiwillige oder Freiwilliger. Der Vorstand sieht nur Personen, die zugestimmt haben, nie das Anteilsregister.",
+    "signupTitle": "Ich möchte helfen",
+    "signupIntro": "Melden Sie sich als Freiwillige oder Freiwilliger für {coop}. Sie müssen kein Mitglied sein.",
+    "name": "Name",
+    "email": "E-Mail",
+    "phone": "Telefon (optional)",
+    "postalCode": "Postleitzahl",
+    "municipality": "Gemeinde",
+    "interests": "Ich kann helfen bei",
+    "interestTags": {
+      "flyers": "Flyer",
+      "stands": "Stände",
+      "workshops": "Workshops",
+      "technical": "Technik",
+      "admin": "Verwaltung"
+    },
+    "consent": "Ich willige ein, dass {coop} mich zu Freiwilligenaufgaben kontaktieren darf, für die ich mich anmelde. Ich kann diese Einwilligung jederzeit widerrufen.",
+    "submit": "Anmelden",
+    "checkEmail": "Prüfen Sie Ihre E-Mail und bestätigen Sie die Registrierung. Aktiv wird sie erst danach.",
+    "unavailable": "Diese Genossenschaft nimmt keine Freiwilligenregistrierungen an.",
+    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "confirmTitle": "Registrierung bestätigt",
+    "confirmBody": "Danke. Sie können sich jederzeit über den Link in der E-Mail abmelden.",
+    "confirmError": "Dieser Bestätigungslink ist ungültig oder abgelaufen.",
+    "withdrawTitle": "Freiwilligenregistrierung zurückziehen",
+    "withdrawBody": "Sie werden nicht mehr zu Freiwilligenaufgaben kontaktiert.",
+    "withdrawButton": "Registrierung zurückziehen",
+    "withdrawDone": "Ihre Registrierung wurde zurückgezogen.",
+    "withdrawError": "Dieser Abmeldelink ist ungültig.",
+    "status": {
+      "PENDING_CONFIRMATION": "Wartet auf Bestätigung",
+      "ACTIVE": "Aktiv",
+      "WITHDRAWN": "Zurückgezogen"
+    },
+    "optIn": "Ich möchte helfen",
+    "optedIn": "Sie sind als Freiwillige oder Freiwilliger registriert.",
+    "save": "Speichern",
+    "withdraw": "Zurückziehen",
+    "prefilled": "Aus Ihrem Mitgliedsdatensatz übernommen. Postleitzahl und Gemeinde können Sie ändern.",
+    "admin": {
+      "title": "Freiwillige",
+      "description": "Personen, die zugestimmt haben, zu Freiwilligenaufgaben kontaktiert zu werden. Diese Liste enthält nie das Anteilsregister.",
+      "municipality": "Gemeinde",
+      "postalCode": "Postleitzahl",
+      "interest": "Interesse",
+      "allInterests": "Alle Interessen",
+      "allMunicipalities": "Alle Gemeinden",
+      "status": "Status",
+      "empty": "Keine Freiwilligen für diese Filter.",
+      "export": "CSV exportieren",
+      "message": "Nachricht an diese Gruppe",
+      "messageTitle": "Freiwilligen schreiben",
+      "messageDescription": "Aktive Freiwillige, die zu Gemeinde, Postleitzahl und Interesse passen, erhalten diese E-Mail.",
+      "subject": "Betreff",
+      "body": "Nachricht",
+      "send": "Senden",
+      "sent": "Nachricht gesendet.",
+      "delete": "Löschen",
+      "deleteConfirm": "Diese freiwillige Person endgültig löschen?",
+      "member": "Mitglied",
+      "guest": "Kein Mitglied",
+      "consent": "Einwilligung"
+    },
+    "settings": {
+      "title": "Freiwillige",
+      "description": "Mitglieder und Nichtmitglieder können sich als Freiwillige registrieren. Aus, bis Sie es einschalten.",
+      "enabled": "Freiwilligenregistrierung aktivieren",
+      "interests": "Interessen-Tags",
+      "interestsHelp": "Kommagetrennt. Leer lassen für die Vorgaben: flyers, stands, workshops, technical, admin."
     }
   }
 }

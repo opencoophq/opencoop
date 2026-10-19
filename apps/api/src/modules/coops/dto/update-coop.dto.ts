@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, Max, MaxLength, IsNumber, IsEnum, ValidateIf } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, Max, MaxLength, IsNumber, IsEnum, ValidateIf, IsArray, ArrayMaxSize } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { EcoPowerThresholdType } from '@opencoop/database';
 
@@ -110,6 +110,23 @@ export class UpdateCoopDto {
   @ValidateIf((o) => o.ecoPowerMinThreshold !== null)
   @IsNumber()
   ecoPowerMinThreshold?: number | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  volunteersEnabled?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description: 'Interest tags for volunteers. Empty uses the built-in defaults.',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  volunteerInterests?: string[];
 
   @ApiProperty({ required: false })
   @IsOptional()

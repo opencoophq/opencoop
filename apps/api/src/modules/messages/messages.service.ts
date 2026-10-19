@@ -8,12 +8,13 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
-import { AudienceService, Audience } from './audience.service';
+import { AudienceService, Audience, VolunteerRecipient } from './audience.service';
 import { sanitizeMessageHtml, textToMessageHtml } from './message-body';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { UpdateDraftDto } from './dto/update-draft.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { AudienceDto } from './dto/audience.dto';
+import { Prisma } from '@prisma/client';
 import * as path from 'path';
 import * as fs from 'fs';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
@@ -44,12 +45,20 @@ export class MessagesService {
 
   // --- Admin methods ---
 
-  async findAllForCoop(coopId: string, page: number = 1) {
+  async findAllForCoop(
+    coopId: string,
+    page: number = 1,
+    options?: { includeVolunteers?: boolean },
+  ) {
     const take = 20;
     const skip = (page - 1) * take;
+    const where =
+      options?.includeVolunteers === false
+        ? { coopId, audienceType: { not: 'VOLUNTEERS' as const } }
+        : { coopId };
     const [conversations, total] = await Promise.all([
       this.prisma.conversation.findMany({
-        where: { coopId },
+        where,
         // Drafts and scheduled first, then most recently updated.
         orderBy: [{ status: 'asc' }, { updatedAt: 'desc' }],
         skip,
@@ -72,12 +81,16 @@ export class MessagesService {
           _count: { select: { participants: true, messages: true } },
         },
       }),
-      this.prisma.conversation.count({ where: { coopId } }),
+      this.prisma.conversation.count({ where }),
     ]);
     const withCounts = await Promise.all(
       conversations.map(async (c) => {
         if (c.status === 'SENT') {
-          return { ...c, recipientCount: c._count.participants };
+          const recipientCount =
+            c.audienceType === 'VOLUNTEERS' && c.audienceVolunteerIds.length > 0
+              ? c.audienceVolunteerIds.length
+              : c._count.participants;
+          return { ...c, recipientCount };
         }
         try {
           const recipientCount = await this.audienceService.count(coopId, this.audienceOf(c));
@@ -94,12 +107,19 @@ export class MessagesService {
 
   private audienceOf(c: {
     type: 'BROADCAST' | 'DIRECT';
-    audienceType: 'ALL' | 'PROJECT' | 'SELECTED';
+    audienceType: 'ALL' | 'PROJECT' | 'SELECTED' | 'VOLUNTEERS';
     audienceProjectId: string | null;
     audienceShareholderIds: string[];
+    audienceVolunteerFilter?: unknown;
   }): Audience {
     if (c.type === 'DIRECT') {
       return { type: 'DIRECT', shareholderId: c.audienceShareholderIds[0] };
+    }
+    if (c.audienceType === 'VOLUNTEERS') {
+      return {
+        type: 'VOLUNTEERS',
+        volunteerFilter: (c.audienceVolunteerFilter ?? {}) as Audience['volunteerFilter'],
+      };
     }
     return {
       type: c.audienceType,
@@ -166,7 +186,15 @@ export class MessagesService {
       await this.audienceService.assertProjectBelongsToCoop(coopId, audience.projectId!);
     }
     let shareholderIds: string[] | undefined;
-    if (sendsImmediately) {
+    if (sendsImmediately && audience.type === 'VOLUNTEERS') {
+      const delivery = await this.audienceService.resolveVolunteerDelivery(
+        coopId,
+        audience.volunteerFilter,
+      );
+      if (delivery.recipients.length === 0) {
+        throw new BadRequestException({ code: 'EMPTY_AUDIENCE', message: 'No recipients' });
+      }
+    } else if (sendsImmediately) {
       const resolved = await this.audienceService.resolve(
         coopId,
         dto.type === 'DIRECT' ? { type: 'DIRECT', shareholderId: dto.shareholderId } : audience,
@@ -189,6 +217,10 @@ export class MessagesService {
           audienceProjectId: audience.type === 'PROJECT' ? audience.projectId! : null,
           audienceShareholderIds:
             audience.type === 'SELECTED' ? (audience.shareholderIds ?? []) : [],
+          audienceVolunteerFilter:
+            audience.type === 'VOLUNTEERS'
+              ? ((audience.volunteerFilter ?? {}) as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
           createdByApiKeyId: origin?.apiKeyId ?? null,
         },
       });
@@ -326,6 +358,10 @@ export class MessagesService {
       data.audienceProjectId = dto.audience.type === 'PROJECT' ? dto.audience.projectId : null;
       data.audienceShareholderIds =
         dto.audience.type === 'SELECTED' ? (dto.audience.shareholderIds ?? []) : [];
+      data.audienceVolunteerFilter =
+        dto.audience.type === 'VOLUNTEERS'
+          ? ((dto.audience.volunteerFilter ?? {}) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
     }
     data.updatedAt = new Date();
     const updated = await this.prisma.conversation.update({ where: { id: conversationId }, data });
@@ -363,11 +399,26 @@ export class MessagesService {
     const conv = await this.loadForAdmin(conversationId, coopId);
     if (conv.status === 'SENT') throw new ConflictException('Conversation already sent');
 
-    const shareholderIds =
-      options?.shareholderIds ??
-      (await this.audienceService.resolve(coopId, this.audienceOf(conv))).shareholderIds;
-    if (shareholderIds.length === 0) {
-      throw new BadRequestException({ code: 'EMPTY_AUDIENCE', message: 'No recipients' });
+    const audience = this.audienceOf(conv);
+    let volunteerRecipients: VolunteerRecipient[] | null = null;
+    let shareholderIds: string[];
+    if (audience.type === 'VOLUNTEERS') {
+      const delivery = await this.audienceService.resolveVolunteerDelivery(
+        coopId,
+        audience.volunteerFilter,
+      );
+      if (delivery.recipients.length === 0) {
+        throw new BadRequestException({ code: 'EMPTY_AUDIENCE', message: 'No recipients' });
+      }
+      shareholderIds = delivery.shareholderIds;
+      volunteerRecipients = delivery.recipients;
+    } else {
+      shareholderIds =
+        options?.shareholderIds ??
+        (await this.audienceService.resolve(coopId, audience)).shareholderIds;
+      if (shareholderIds.length === 0) {
+        throw new BadRequestException({ code: 'EMPTY_AUDIENCE', message: 'No recipients' });
+      }
     }
 
     const now = new Date();
@@ -383,10 +434,20 @@ export class MessagesService {
         data: { status: 'SENT', sentAt: now, scheduledAt: null, updatedAt: now },
       });
       if (r.count === 0) return false;
-      await tx.conversationParticipant.createMany({
-        data: shareholderIds.map((shareholderId) => ({ conversationId, shareholderId })),
-        skipDuplicates: true,
-      });
+      if (shareholderIds.length > 0) {
+        await tx.conversationParticipant.createMany({
+          data: shareholderIds.map((shareholderId) => ({ conversationId, shareholderId })),
+          skipDuplicates: true,
+        });
+      }
+      if (volunteerRecipients) {
+        await tx.conversation.update({
+          where: { id: conversationId },
+          data: {
+            audienceVolunteerIds: volunteerRecipients.map((recipient) => recipient.volunteerId),
+          },
+        });
+      }
       return true;
     });
     if (!claimed) {
@@ -397,7 +458,11 @@ export class MessagesService {
 
     let notificationFailures = 0;
     try {
-      await this.notifyParticipants(conversationId, coopId);
+      if (volunteerRecipients) {
+        await this.notifyVolunteerRecipients(conversationId, coopId, volunteerRecipients);
+      } else {
+        await this.notifyParticipants(conversationId, coopId);
+      }
     } catch (error) {
       notificationFailures = 1;
       const reason = error instanceof Error ? error.message : String(error);
@@ -423,7 +488,11 @@ export class MessagesService {
       action: 'UPDATE',
       changes: [
         { field: 'status', oldValue: conv.status, newValue: 'SENT' },
-        { field: 'recipients', oldValue: null, newValue: shareholderIds.length },
+        {
+          field: 'recipients',
+          oldValue: null,
+          newValue: volunteerRecipients ? volunteerRecipients.length : shareholderIds.length,
+        },
       ],
       actorId: actor.userId,
       ipAddress: actor.ip,
@@ -433,7 +502,7 @@ export class MessagesService {
       id: conversationId,
       status: 'SENT' as const,
       sentAt: now,
-      recipientCount: shareholderIds.length,
+      recipientCount: volunteerRecipients ? volunteerRecipients.length : shareholderIds.length,
       notificationFailures,
     };
   }
@@ -531,7 +600,14 @@ export class MessagesService {
       return msg;
     });
 
-    await this.notifyParticipants(conversationId, coopId);
+    if (conversation.audienceType === 'VOLUNTEERS') {
+      const delivery = await this.audienceService.resolveVolunteerDelivery(coopId, {
+        volunteerIds: conversation.audienceVolunteerIds,
+      });
+      await this.notifyVolunteerRecipients(conversationId, coopId, delivery.recipients);
+    } else {
+      await this.notifyParticipants(conversationId, coopId);
+    }
 
     return message;
   }
@@ -756,6 +832,61 @@ export class MessagesService {
   }
 
   // --- Email notifications ---
+
+  private async notifyVolunteerRecipients(
+    conversationId: string,
+    coopId: string,
+    recipients: VolunteerRecipient[],
+  ) {
+    if (recipients.length === 0) return;
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+    if (!conversation) return;
+
+    const coop = await this.prisma.coop.findUnique({
+      where: { id: coopId },
+      select: { name: true, emailEnabled: true },
+    });
+    if (!coop?.emailEnabled) return;
+
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be').replace(/\/$/, '');
+    const last = conversation.messages[0];
+    const messageBody = !last
+      ? ''
+      : last.format === 'HTML'
+        ? last.body
+        : textToMessageHtml(last.body);
+
+    for (const recipient of recipients) {
+      const locale = ['nl', 'en', 'fr', 'de'].includes(recipient.language)
+        ? recipient.language
+        : 'nl';
+      const withdrawUrl = recipient.withdrawToken
+        ? `${appUrl}/${locale}/vrijwilligers/afmelden/${recipient.withdrawToken}`
+        : '';
+      await this.emailService.send({
+        coopId,
+        to: recipient.email,
+        subject: `${coop.name}: ${conversation.subject}`,
+        templateKey: 'volunteer-message',
+        templateData: {
+          coopName: coop.name,
+          volunteerName: recipient.name,
+          messageSubject: conversation.subject,
+          messageBody,
+          withdrawUrl,
+          language: locale,
+        },
+      });
+    }
+  }
 
   private async notifyParticipants(conversationId: string, coopId: string) {
     const conversation = await this.prisma.conversation.findUnique({

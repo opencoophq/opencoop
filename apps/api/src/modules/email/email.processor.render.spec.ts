@@ -192,6 +192,20 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
       referredName: 'Marie Dubois',
       dashboardUrl: 'https://opencoop.test/dashboard',
     },
+    'volunteer-confirm': {
+      volunteerName: 'Jan Peeters',
+      confirmUrl: 'https://opencoop.test/nl/vrijwilligers/bevestig/token',
+    },
+    'volunteer-welcome': {
+      volunteerName: 'Jan Peeters',
+      withdrawUrl: 'https://opencoop.test/nl/vrijwilligers/afmelden/token',
+    },
+    'volunteer-message': {
+      volunteerName: 'Jan Peeters',
+      messageSubject: 'Flyers in Genk',
+      messageBody: '<p>Kan je helpen op zaterdag?</p>',
+      withdrawUrl: 'https://opencoop.test/nl/vrijwilligers/afmelden/token',
+    },
     'agenda-documents': {
       introHtml: '<p>Beste aandeelhouder, hier zijn de documenten.</p>',
       documents: [

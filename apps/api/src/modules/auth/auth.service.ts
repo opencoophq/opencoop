@@ -264,7 +264,7 @@ export class AuthService {
     });
 
     // New coop creator gets full Admin permissions
-    const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true };
+    const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true, canViewVolunteers: true };
 
     const tokenResult = await this.tokenService.issueJwtForUser({
       id: result.user.id,
@@ -414,6 +414,7 @@ export class AuthService {
                 plan: true,
                 trialEndsAt: true,
                 chargeCardsEnabled: true,
+                volunteersEnabled: true,
                 channels: {
                   where: { isDefault: true },
                   select: { logoUrl: true },
@@ -437,6 +438,7 @@ export class AuthService {
                 bankBic: true,
                 minimumHoldingPeriod: true,
                 chargeCardsEnabled: true,
+                volunteersEnabled: true,
                 channels: {
                   where: { isDefault: true },
                   select: { logoUrl: true },
@@ -528,8 +530,8 @@ export class AuthService {
     let adminCoopsRaw = user.coopAdminOf.map((ca) => ca.coop);
     if (user.role === 'SYSTEM_ADMIN') {
       adminCoopsRaw = await this.prisma.coop.findMany({
-        select: {
-          id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true, chargeCardsEnabled: true,
+          select: {
+            id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true, chargeCardsEnabled: true, volunteersEnabled: true,
           channels: { where: { isDefault: true }, select: { logoUrl: true }, take: 1 },
         },
         orderBy: { name: 'asc' },

@@ -28,6 +28,23 @@ describe('PermissionGuard', () => {
     expect(guard.canActivate(context({ coopPermissions: { 'coop-1': {} } }))).toBe(true);
   });
 
+  it('denies canViewVolunteers when the permission is missing or false', () => {
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValue(['canViewVolunteers']);
+    expect(() => guard.canActivate(context({ coopPermissions: { 'coop-1': {} } }))).toThrow(
+      'Insufficient permissions',
+    );
+    expect(() =>
+      guard.canActivate(
+        context({ coopPermissions: { 'coop-1': { canViewVolunteers: false } } }),
+      ),
+    ).toThrow('Insufficient permissions');
+    expect(
+      guard.canActivate(
+        context({ coopPermissions: { 'coop-1': { canViewVolunteers: true } } }),
+      ),
+    ).toBe(true);
+  });
+
   it('requires present permissions and denies absent or false values', () => {
     expect(
       guard.canActivate(

@@ -16,6 +16,7 @@ import {
   UploadedFile,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -75,6 +76,7 @@ import { UpdateDraftDto } from '../messages/dto/update-draft.dto';
 import { ScheduleConversationDto } from '../messages/dto/schedule-conversation.dto';
 import { AudienceDto } from '../messages/dto/audience.dto';
 import { AudienceService } from '../messages/audience.service';
+import { isPermitted } from '../../common/utils/coop-permissions';
 
 @ApiTags('admin')
 @Controller('admin/coops/:coopId')
@@ -1271,8 +1273,14 @@ export class AdminController {
   @Get('conversations')
   @RequirePermission('canManageMessages')
   @ApiOperation({ summary: 'List all conversations for this coop' })
-  async listConversations(@Param('coopId') coopId: string, @Query('page') page?: number) {
-    return this.messagesService.findAllForCoop(coopId, Number(page) || 1);
+  async listConversations(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Query('page') page?: number,
+  ) {
+    return this.messagesService.findAllForCoop(coopId, Number(page) || 1, {
+      includeVolunteers: this.mayViewVolunteers(user, coopId),
+    });
   }
 
   @Post('conversations')
@@ -1284,6 +1292,7 @@ export class AdminController {
     @Req() req: Request,
     @Body() dto: CreateConversationDto,
   ) {
+    if (dto.audience?.type === 'VOLUNTEERS') this.assertCanViewVolunteers(user, coopId);
     return this.messagesService.createConversation(
       coopId,
       dto,
@@ -1296,9 +1305,41 @@ export class AdminController {
   @Post('conversations/audience-preview')
   @RequirePermission('canManageMessages')
   @ApiOperation({ summary: 'Count the recipients an audience resolves to' })
-  async previewAudience(@Param('coopId') coopId: string, @Body() audience: AudienceDto) {
-    const { shareholderIds } = await this.audienceService.resolve(coopId, audience);
-    return { count: shareholderIds.length };
+  async previewAudience(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() audience: AudienceDto,
+  ) {
+    if (audience.type === 'VOLUNTEERS') this.assertCanViewVolunteers(user, coopId);
+    const count = await this.audienceService.count(coopId, audience);
+    return { count };
+  }
+
+  private mayViewVolunteers(user: CurrentUserData, coopId: string): boolean {
+    if (user.role === 'SYSTEM_ADMIN') return true;
+    const permissions = user.coopPermissions?.[coopId];
+    return Boolean(permissions && isPermitted(permissions, 'canViewVolunteers'));
+  }
+
+  private assertCanViewVolunteers(user: CurrentUserData, coopId: string) {
+    if (!this.mayViewVolunteers(user, coopId)) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+  }
+
+  private async assertVolunteerConversation(
+    user: CurrentUserData,
+    coopId: string,
+    conversationId: string,
+  ) {
+    if (this.mayViewVolunteers(user, coopId)) return;
+    const conv = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, coopId },
+      select: { audienceType: true },
+    });
+    if (conv?.audienceType === 'VOLUNTEERS') {
+      throw new NotFoundException('Conversation not found');
+    }
   }
 
   @Get('conversations/:conversationId/recipient-count')
@@ -1307,7 +1348,9 @@ export class AdminController {
   async recipientCount(
     @Param('coopId') coopId: string,
     @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
   ) {
+    await this.assertVolunteerConversation(user, coopId, conversationId);
     return { count: await this.messagesService.countRecipients(conversationId, coopId) };
   }
 
@@ -1320,6 +1363,8 @@ export class AdminController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: UpdateDraftDto,
   ) {
+    if (dto.audience?.type === 'VOLUNTEERS') this.assertCanViewVolunteers(user, coopId);
+    await this.assertVolunteerConversation(user, coopId, conversationId);
     return this.messagesService.updateDraft(conversationId, coopId, dto, user.id);
   }
 
@@ -1332,6 +1377,7 @@ export class AdminController {
     @Param('conversationId') conversationId: string,
     @CurrentUser() user: CurrentUserData,
   ) {
+    await this.assertVolunteerConversation(user, coopId, conversationId);
     await this.messagesService.deleteDraft(conversationId, coopId, user.id);
   }
 
@@ -1344,6 +1390,7 @@ export class AdminController {
     @CurrentUser() user: CurrentUserData,
     @Req() req: Request,
   ) {
+    await this.assertVolunteerConversation(user, coopId, conversationId);
     return this.messagesService.send(conversationId, coopId, {
       userId: user.id,
       ip: req.ip,
@@ -1360,6 +1407,7 @@ export class AdminController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: ScheduleConversationDto,
   ) {
+    await this.assertVolunteerConversation(user, coopId, conversationId);
     return this.messagesService.schedule(
       conversationId,
       coopId,
@@ -1376,6 +1424,7 @@ export class AdminController {
     @Param('conversationId') conversationId: string,
     @CurrentUser() user: CurrentUserData,
   ) {
+    await this.assertVolunteerConversation(user, coopId, conversationId);
     return this.messagesService.cancelSchedule(conversationId, coopId, user.id);
   }
 
@@ -1385,7 +1434,9 @@ export class AdminController {
   async getConversation(
     @Param('coopId') coopId: string,
     @Param('conversationId') conversationId: string,
+    @CurrentUser() user: CurrentUserData,
   ) {
+    await this.assertVolunteerConversation(user, coopId, conversationId);
     return this.messagesService.findByIdForAdmin(conversationId, coopId);
   }
 
@@ -1398,6 +1449,7 @@ export class AdminController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: CreateMessageDto,
   ) {
+    await this.assertVolunteerConversation(user, coopId, conversationId);
     return this.messagesService.addAdminReply(conversationId, coopId, dto, user.id);
   }
 

@@ -19,6 +19,10 @@
     "featureRequest": {
       "title": "Demander une fonctionnalité",
       "description": "Aidez à façonner l'avenir d'OpenCoop. Soumettez vos idées et suggestions pour la gestion coopérative des coopérateurs."
+    },
+    "volunteers": {
+      "title": "Inscription des bénévoles",
+      "description": "Inscrivez-vous comme bénévole d'une coopérative. Membres et non-membres peuvent s'inscrire."
     }
   },
   "common": {
@@ -546,6 +550,7 @@
     "publicPage": "Page publique",
     "registrationLink": "Inscription",
     "loginLink": "Connexion",
+    "volunteerSignupLink": "Inscription bénévoles",
     "copied": "Copié !",
     "nav": {
       "overview": "Aperçu",
@@ -1026,7 +1031,8 @@
       "canManageAdmins": "Gérer l'équipe",
       "canViewPII": "Voir les informations personnelles",
       "canViewReports": "Voir les rapports",
-      "canViewShareholderRegister": "Voir le registre des coopérateurs"
+      "canViewShareholderRegister": "Voir le registre des coopérateurs",
+      "canViewVolunteers": "Voir et contacter les bénévoles"
     },
     "billing": {
       "title": "Facturation",
@@ -2511,6 +2517,81 @@
       "heading": "Cartes de recharge en attente de paiement",
       "card": "Carte de recharge",
       "loadError": "Impossible de charger les cartes de recharge."
+    }
+  },
+  "volunteers": {
+    "title": "Bénévoles",
+    "nav": "Bénévoles",
+    "helpTitle": "Je veux aider",
+    "helpDescription": "Inscrivez-vous comme bénévole. Le conseil ne voit que les personnes qui se sont inscrites, jamais le registre des parts.",
+    "signupTitle": "Je veux aider",
+    "signupIntro": "Inscrivez-vous comme bénévole pour {coop}. Vous ne devez pas être membre.",
+    "name": "Nom",
+    "email": "E-mail",
+    "phone": "Téléphone (facultatif)",
+    "postalCode": "Code postal",
+    "municipality": "Commune",
+    "interests": "Je peux aider pour",
+    "interestTags": {
+      "flyers": "Flyers",
+      "stands": "Stands",
+      "workshops": "Ateliers",
+      "technical": "Technique",
+      "admin": "Administration"
+    },
+    "consent": "J'accepte que {coop} me contacte pour les tâches de bénévolat auxquelles je m'inscris. Je peux retirer ce consentement à tout moment.",
+    "submit": "S'inscrire",
+    "checkEmail": "Vérifiez votre e-mail et confirmez votre inscription. Rien n'est actif avant cela.",
+    "unavailable": "Cette coopérative n'accepte pas les inscriptions de bénévoles.",
+    "error": "Une erreur s'est produite. Veuillez réessayer.",
+    "confirmTitle": "Inscription confirmée",
+    "confirmBody": "Merci. Vous pouvez vous retirer à tout moment via le lien dans l'e-mail.",
+    "confirmError": "Ce lien de confirmation est invalide ou a expiré.",
+    "withdrawTitle": "Retirer l'inscription de bénévole",
+    "withdrawBody": "Vous ne serez plus contacté pour des tâches de bénévolat.",
+    "withdrawButton": "Retirer mon inscription",
+    "withdrawDone": "Votre inscription a été retirée.",
+    "withdrawError": "Ce lien de retrait est invalide.",
+    "status": {
+      "PENDING_CONFIRMATION": "En attente de confirmation",
+      "ACTIVE": "Actif",
+      "WITHDRAWN": "Retiré"
+    },
+    "optIn": "Je veux aider",
+    "optedIn": "Vous êtes inscrit comme bénévole.",
+    "save": "Enregistrer",
+    "withdraw": "Retirer",
+    "prefilled": "Rempli à partir de votre fiche de membre. Vous pouvez modifier le code postal et la commune.",
+    "admin": {
+      "title": "Bénévoles",
+      "description": "Personnes qui ont accepté d'être contactées pour des tâches de bénévolat. Cette liste ne contient jamais le registre des parts.",
+      "municipality": "Commune",
+      "postalCode": "Code postal",
+      "interest": "Intérêt",
+      "allInterests": "Tous les intérêts",
+      "allMunicipalities": "Toutes les communes",
+      "status": "Statut",
+      "empty": "Aucun bénévole ne correspond à ces filtres.",
+      "export": "Exporter en CSV",
+      "message": "Écrire à ce groupe",
+      "messageTitle": "Écrire aux bénévoles",
+      "messageDescription": "Les bénévoles actifs correspondant à la commune, au code postal et à l'intérêt reçoivent cet e-mail.",
+      "subject": "Objet",
+      "body": "Message",
+      "send": "Envoyer",
+      "sent": "Message envoyé.",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer définitivement ce bénévole ?",
+      "member": "Membre",
+      "guest": "Pas membre",
+      "consent": "Consentement"
+    },
+    "settings": {
+      "title": "Bénévoles",
+      "description": "Permettre aux membres et non-membres de s'inscrire comme bénévoles. Désactivé tant que vous ne l'activez pas.",
+      "enabled": "Activer l'inscription des bénévoles",
+      "interests": "Étiquettes d'intérêt",
+      "interestsHelp": "Séparées par des virgules. Laissez vide pour les valeurs par défaut : flyers, stands, workshops, technical, admin."
     }
   }
 }

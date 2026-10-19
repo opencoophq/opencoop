@@ -19,6 +19,10 @@
     "featureRequest": {
       "title": "Request a Feature",
       "description": "Help shape the future of OpenCoop. Submit your feature ideas and suggestions for cooperative shareholder management."
+    },
+    "volunteers": {
+      "title": "Volunteer registration",
+      "description": "Register as a volunteer for a cooperative. Members and non-members can sign up."
     }
   },
   "common": {
@@ -548,6 +552,7 @@
     "publicPage": "Public page",
     "registrationLink": "Registration",
     "loginLink": "Login",
+    "volunteerSignupLink": "Volunteer signup",
     "copied": "Copied!",
     "nav": {
       "overview": "Overview",
@@ -1028,7 +1033,8 @@
       "canManageAdmins": "Manage team",
       "canViewPII": "View personal information",
       "canViewReports": "View reports",
-      "canViewShareholderRegister": "View shareholder register"
+      "canViewShareholderRegister": "View shareholder register",
+      "canViewVolunteers": "View and contact volunteers"
     },
     "billing": {
       "title": "Billing",
@@ -2514,6 +2520,81 @@
       "heading": "Charge cards awaiting payment",
       "card": "Charge card",
       "loadError": "Could not load charge cards."
+    }
+  },
+  "volunteers": {
+    "title": "Volunteers",
+    "nav": "Volunteers",
+    "helpTitle": "I want to help",
+    "helpDescription": "Sign up as a volunteer. The board only sees people who opted in, and never the share register.",
+    "signupTitle": "I want to help",
+    "signupIntro": "Register as a volunteer for {coop}. You do not have to be a member.",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone (optional)",
+    "postalCode": "Postcode",
+    "municipality": "Municipality",
+    "interests": "I can help with",
+    "interestTags": {
+      "flyers": "Flyers",
+      "stands": "Stands",
+      "workshops": "Workshops",
+      "technical": "Technical",
+      "admin": "Administration"
+    },
+    "consent": "I agree that {coop} may contact me about volunteer tasks I sign up for. I can withdraw this consent at any time.",
+    "submit": "Sign up",
+    "checkEmail": "Check your email and confirm your registration. Nothing is active until you do.",
+    "unavailable": "This cooperative is not accepting volunteer registrations.",
+    "error": "Something went wrong. Please try again.",
+    "confirmTitle": "Registration confirmed",
+    "confirmBody": "Thank you. You can withdraw at any time with the link in the email.",
+    "confirmError": "This confirmation link is invalid or has expired.",
+    "withdrawTitle": "Withdraw volunteer registration",
+    "withdrawBody": "You will no longer be contacted about volunteer tasks.",
+    "withdrawButton": "Withdraw my registration",
+    "withdrawDone": "Your registration has been withdrawn.",
+    "withdrawError": "This withdrawal link is invalid.",
+    "status": {
+      "PENDING_CONFIRMATION": "Awaiting confirmation",
+      "ACTIVE": "Active",
+      "WITHDRAWN": "Withdrawn"
+    },
+    "optIn": "I want to help",
+    "optedIn": "You are registered as a volunteer.",
+    "save": "Save",
+    "withdraw": "Withdraw",
+    "prefilled": "Filled in from your member record. You can change the postcode and municipality.",
+    "admin": {
+      "title": "Volunteers",
+      "description": "People who agreed to be contacted for volunteer tasks. This list never includes the share register.",
+      "municipality": "Municipality",
+      "postalCode": "Postcode",
+      "interest": "Interest",
+      "allInterests": "All interests",
+      "allMunicipalities": "All municipalities",
+      "status": "Status",
+      "empty": "No volunteers match these filters.",
+      "export": "Export CSV",
+      "message": "Message this group",
+      "messageTitle": "Message volunteers",
+      "messageDescription": "Active volunteers matching the current municipality, postcode and interest receive this email.",
+      "subject": "Subject",
+      "body": "Message",
+      "send": "Send",
+      "sent": "Message sent.",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this volunteer permanently?",
+      "member": "Member",
+      "guest": "Not a member",
+      "consent": "Consent"
+    },
+    "settings": {
+      "title": "Volunteers",
+      "description": "Let members and non-members register as volunteers. Off until you enable it.",
+      "enabled": "Enable volunteer registration",
+      "interests": "Interest tags",
+      "interestsHelp": "Comma-separated. Leave empty to use the defaults: flyers, stands, workshops, technical, admin."
     }
   }
 }

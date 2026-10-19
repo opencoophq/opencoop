@@ -864,6 +864,72 @@ export class EmailProcessor {
     <img src="${esc(pixelUrl)}" width="1" height="1" alt="" style="display:block" />
   `;
       },
+      'volunteer-confirm': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const s = buildCopy('volunteer-confirm', lang, {
+          coopName: escapeHtml(cn),
+          volunteerName: escapeHtml(d.volunteerName),
+        });
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.intro}</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.confirmUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.confirm}
+            </a>
+          </p>
+          <p>${s.ignore}</p>
+          <p style="color:#666;font-size:12px;">${s.expires}</p>
+        `;
+      },
+      'volunteer-welcome': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const s = buildCopy('volunteer-welcome', lang, {
+          coopName: escapeHtml(cn),
+          volunteerName: escapeHtml(d.volunteerName),
+        });
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.thanks}</p>
+          <p>${s.withdrawHint}</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.withdrawUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.withdraw}
+            </a>
+          </p>
+        `;
+      },
+      'volunteer-message': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const s = buildCopy('volunteer-message', lang, {
+          coopName: escapeHtml(cn),
+          volunteerName: escapeHtml(d.volunteerName),
+        });
+        const body = (d.messageBody as string) || '';
+        const withdraw = d.withdrawUrl
+          ? `<p>${s.withdrawHint}</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.withdrawUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.withdraw}
+            </a>
+          </p>`
+          : '';
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p><strong>${s.subject}:</strong> ${escapeHtml(d.messageSubject)}</p>
+          <div style="margin: 16px 0; line-height: 1.5;">${body}</div>
+          ${withdraw}
+        `;
+      },
     };
 
     const template = templates[templateKey];

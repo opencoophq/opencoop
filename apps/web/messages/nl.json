@@ -19,6 +19,10 @@
     "featureRequest": {
       "title": "Feature aanvragen",
       "description": "Help de toekomst van OpenCoop vorm te geven. Dien uw ideeën en suggesties in voor coöperatief aandeelhoudersbeheer."
+    },
+    "volunteers": {
+      "title": "Vrijwilligersregistratie",
+      "description": "Registreer je als vrijwilliger bij een coöperatie. Leden en niet-leden kunnen zich aanmelden."
     }
   },
   "common": {
@@ -548,6 +552,7 @@
     "publicPage": "Publieke pagina",
     "registrationLink": "Registratie",
     "loginLink": "Inloggen",
+    "volunteerSignupLink": "Vrijwilligersaanmelding",
     "copied": "Gekopieerd!",
     "nav": {
       "overview": "Overzicht",
@@ -1028,7 +1033,8 @@
       "canManageAdmins": "Team beheren",
       "canViewPII": "Persoonlijke gegevens inzien",
       "canViewReports": "Rapporten inzien",
-      "canViewShareholderRegister": "Aandeelhoudersregister inzien"
+      "canViewShareholderRegister": "Aandeelhoudersregister inzien",
+      "canViewVolunteers": "Vrijwilligers bekijken en contacteren"
     },
     "billing": {
       "title": "Facturatie",
@@ -2514,6 +2520,81 @@
       "heading": "Laadpassen die wachten op betaling",
       "card": "Laadpas",
       "loadError": "Kon laadpassen niet laden."
+    }
+  },
+  "volunteers": {
+    "title": "Vrijwilligers",
+    "nav": "Vrijwilligers",
+    "helpTitle": "Ik wil helpen",
+    "helpDescription": "Meld je aan als vrijwilliger. Het bestuur ziet alleen mensen die zich hebben opgegeven, nooit het aandelenregister.",
+    "signupTitle": "Ik wil helpen",
+    "signupIntro": "Meld je aan als vrijwilliger voor {coop}. Je hoeft geen lid te zijn.",
+    "name": "Naam",
+    "email": "E-mail",
+    "phone": "Telefoon (optioneel)",
+    "postalCode": "Postcode",
+    "municipality": "Gemeente",
+    "interests": "Ik kan helpen met",
+    "interestTags": {
+      "flyers": "Folders",
+      "stands": "Infostands",
+      "workshops": "Workshops",
+      "technical": "Technisch",
+      "admin": "Administratie"
+    },
+    "consent": "Ik geef {coop} toestemming om mij te contacteren voor vrijwilligerstaken waarvoor ik me opgeef. Ik kan deze toestemming altijd intrekken.",
+    "submit": "Aanmelden",
+    "checkEmail": "Controleer je e-mail en bevestig je registratie. Je bent pas actief nadat je dat doet.",
+    "unavailable": "Deze coöperatie neemt geen vrijwilligersregistraties aan.",
+    "error": "Er ging iets mis. Probeer het opnieuw.",
+    "confirmTitle": "Registratie bevestigd",
+    "confirmBody": "Bedankt. Je kunt je altijd afmelden via de link in de e-mail.",
+    "confirmError": "Deze bevestigingslink is ongeldig of verlopen.",
+    "withdrawTitle": "Vrijwilligersregistratie intrekken",
+    "withdrawBody": "Je wordt niet meer gecontacteerd voor vrijwilligerstaken.",
+    "withdrawButton": "Trek mijn registratie in",
+    "withdrawDone": "Je registratie is ingetrokken.",
+    "withdrawError": "Deze afmeldlink is ongeldig.",
+    "status": {
+      "PENDING_CONFIRMATION": "Wacht op bevestiging",
+      "ACTIVE": "Actief",
+      "WITHDRAWN": "Ingetrokken"
+    },
+    "optIn": "Ik wil helpen",
+    "optedIn": "Je bent geregistreerd als vrijwilliger.",
+    "save": "Opslaan",
+    "withdraw": "Intrekken",
+    "prefilled": "Ingevuld vanuit je ledenfiche. Je kunt postcode en gemeente aanpassen.",
+    "admin": {
+      "title": "Vrijwilligers",
+      "description": "Mensen die toestemming gaven om gecontacteerd te worden voor vrijwilligerstaken. Deze lijst bevat nooit het aandelenregister.",
+      "municipality": "Gemeente",
+      "postalCode": "Postcode",
+      "interest": "Interesse",
+      "allInterests": "Alle interesses",
+      "allMunicipalities": "Alle gemeenten",
+      "status": "Status",
+      "empty": "Geen vrijwilligers voor deze filters.",
+      "export": "CSV exporteren",
+      "message": "Bericht naar deze groep",
+      "messageTitle": "Vrijwilligers een bericht sturen",
+      "messageDescription": "Actieve vrijwilligers die overeenkomen met gemeente, postcode en interesse krijgen deze e-mail.",
+      "subject": "Onderwerp",
+      "body": "Bericht",
+      "send": "Versturen",
+      "sent": "Bericht verstuurd.",
+      "delete": "Verwijderen",
+      "deleteConfirm": "Deze vrijwilliger definitief verwijderen?",
+      "member": "Lid",
+      "guest": "Geen lid",
+      "consent": "Toestemming"
+    },
+    "settings": {
+      "title": "Vrijwilligers",
+      "description": "Laat leden en niet-leden zich registreren als vrijwilliger. Staat uit tot je het inschakelt.",
+      "enabled": "Vrijwilligersregistratie inschakelen",
+      "interests": "Interesse-labels",
+      "interestsHelp": "Komma's gescheiden. Laat leeg voor de standaard: flyers, stands, workshops, technical, admin."
     }
   }
 }

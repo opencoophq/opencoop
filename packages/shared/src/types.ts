@@ -87,6 +87,7 @@ export interface CoopPermissions {
   canViewPII: boolean;
   canViewReports: boolean;
   canViewShareholderRegister: boolean;
+  canViewVolunteers: boolean;
 }
 
 export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
@@ -103,6 +104,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: true,
     canViewReports: true,
     canViewShareholderRegister: true,
+    canViewVolunteers: true,
   },
   Viewer: {
     canManageShareholders: false,
@@ -117,6 +119,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: true,
     canViewReports: true,
     canViewShareholderRegister: true,
+    canViewVolunteers: false,
   },
   'Meeting Admin': {
     // Run AGMs without seeing or changing financial / shareholder data.
@@ -132,6 +135,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: true, // needs names/addresses for the attendance sheet
     canViewReports: false,
     canViewShareholderRegister: true, // needs the register to verify proxies
+    canViewVolunteers: false,
   },
   'GDPR Viewer': {
     canManageShareholders: false,
@@ -146,6 +150,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: false,
     canViewReports: true,
     canViewShareholderRegister: false,
+    canViewVolunteers: false,
   },
   'GDPR Admin': {
     canManageShareholders: false,
@@ -160,8 +165,23 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: false,
     canViewReports: true,
     canViewShareholderRegister: false,
+    canViewVolunteers: false,
   },
 };
+
+/** Bump when the volunteer consent copy in the four locales changes meaning. */
+export const VOLUNTEER_CONSENT_TEXT_VERSION = 'volunteer-consent-v1';
+
+/** Used when a coop has not configured its own interest tags. */
+export const DEFAULT_VOLUNTEER_INTERESTS = [
+  'flyers',
+  'stands',
+  'workshops',
+  'technical',
+  'admin',
+] as const;
+
+export type DefaultVolunteerInterest = (typeof DEFAULT_VOLUNTEER_INTERESTS)[number];
 
 export type CoopPermissionKey = keyof CoopPermissions;
 

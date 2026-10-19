@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
 import { FileText, ArrowLeftRight, Coins, TrendingUp } from 'lucide-react';
 import { ReferralCard } from '@/components/referral-card';
+import { VolunteerOptIn } from '@/components/volunteer-opt-in';
 
 export default function DashboardPage() {
   const t = useTranslations();
@@ -22,6 +23,7 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
   const [shareholderId, setShareholderId] = useState<string | null>(null);
+  const [volunteersEnabled, setVolunteersEnabled] = useState(false);
   const [coopName, setCoopName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function DashboardPage() {
           shareholderCoops: Array<{ id: string }>;
           shareholders: Array<{
             id: string;
-            coop?: { name?: string };
+            coop?: { name?: string; volunteersEnabled?: boolean };
             registrations: Array<{ sharesOwned: number; quantity: number; pricePerShare: number; status: string }>;
           }>;
           minorShareholders?: Array<{
@@ -66,6 +68,7 @@ export default function DashboardPage() {
           if (profile.shareholders[0]) {
             setShareholderId(profile.shareholders[0].id);
             setCoopName(profile.shareholders[0].coop?.name);
+            setVolunteersEnabled(profile.shareholders[0].coop?.volunteersEnabled === true);
           }
           for (const sh of profile.shareholders) {
             if (sh.registrations) {
@@ -166,6 +169,7 @@ export default function DashboardPage() {
           <ReferralCard shareholderId={shareholderId} coopName={coopName} />
         </div>
       )}
+      {shareholderId && volunteersEnabled && <VolunteerOptIn shareholderId={shareholderId} />}
     </div>
   );
 }

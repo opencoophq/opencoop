@@ -38,6 +38,7 @@ import { ChangelogModule } from './modules/changelog/changelog.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { McpToolsModule } from './modules/mcp/mcp.module';
 import { ChargeCardsModule } from './modules/charge-cards/charge-cards.module';
+import { VolunteersModule } from './modules/volunteers/volunteers.module';
 import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
 
 @Module({
@@ -82,6 +83,7 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
     AudienceSyncModule,
     ShareholderStatusModule,
     ChargeCardsModule,
+    VolunteersModule,
     DividendsModule,
     MeetingsModule,
     DocumentsModule,

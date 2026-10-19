@@ -13,6 +13,7 @@ interface AdminCoop {
   logoUrl?: string;
   chargeCardsEnabled?: boolean;
   hasChargeCards?: boolean;
+  volunteersEnabled?: boolean;
 }
 
 interface AdminContextValue {
