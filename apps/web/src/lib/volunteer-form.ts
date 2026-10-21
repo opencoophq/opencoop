@@ -1,6 +1,6 @@
-import { DEFAULT_VOLUNTEER_INTERESTS } from '@opencoop/shared';
+import { DEFAULT_VOLUNTEER_INTERESTS, KNOWN_VOLUNTEER_INTERESTS } from '@opencoop/shared';
 
-export { DEFAULT_VOLUNTEER_INTERESTS };
+export { DEFAULT_VOLUNTEER_INTERESTS, KNOWN_VOLUNTEER_INTERESTS };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -19,7 +19,7 @@ export function parseInterestList(raw: string): string[] {
 }
 
 export function isKnownInterest(tag: string): boolean {
-  return (DEFAULT_VOLUNTEER_INTERESTS as readonly string[]).includes(tag);
+  return (KNOWN_VOLUNTEER_INTERESTS as readonly string[]).includes(tag);
 }
 
 export interface VolunteerSignupInput {

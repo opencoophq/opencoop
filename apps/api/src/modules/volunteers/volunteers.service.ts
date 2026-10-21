@@ -8,6 +8,7 @@ import {
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { CoopsService } from '../coops/coops.service';
 import { EmailService } from '../email/email.service';
 import { applyTokens, getCopy } from '../email/email-copy';
 import { hashToken } from '../../common/crypto/hash-token';
@@ -16,13 +17,19 @@ import { PublicVolunteerSignupDto } from './dto/public-signup.dto';
 import { MemberVolunteerOptInDto } from './dto/member-opt-in.dto';
 import { ListVolunteersQueryDto } from './dto/list-volunteers.query';
 import { MessageVolunteersDto } from './dto/message-volunteers.dto';
+import { UpdateVolunteerDto } from './dto/update-volunteer.dto';
+import { UpdateVolunteerInterestsDto } from './dto/update-volunteer-interests.dto';
 import {
   CONSENT_TEXT_VERSION,
   CONFIRM_TTL_DAYS,
   UNCONFIRMED_RETENTION_DAYS,
   VOLUNTEER_VIEW_SELECT,
+  VolunteerFilter,
   addressParts,
+  applyVolunteerInterestUpdate,
+  describeVolunteerInterests,
   displayName,
+  hasVolunteerInterestUpdate,
   interestCatalog,
   normalizeChosenInterests,
   toVolunteerView,
@@ -41,6 +48,7 @@ export class VolunteersService {
     private readonly audit: AuditService,
     private readonly email: EmailService,
     private readonly messages: MessagesService,
+    private readonly coops: CoopsService,
   ) {}
 
   async publicInfo(slug: string) {
@@ -311,10 +319,117 @@ export class VolunteersService {
     return toVolunteerView(saved);
   }
 
+  async adminGet(coopId: string, id: string) {
+    const row = await this.prisma.volunteer.findFirst({
+      where: { id, coopId },
+      select: VOLUNTEER_VIEW_SELECT,
+    });
+    if (!row) throw new NotFoundException('Volunteer not found');
+    return toVolunteerView(row);
+  }
+
+  async adminUpdate(
+    coopId: string,
+    id: string,
+    dto: UpdateVolunteerDto,
+    actor: { userId: string; ip?: string; userAgent?: string },
+  ) {
+    const row = await this.prisma.volunteer.findFirst({
+      where: { id, coopId },
+      select: VOLUNTEER_VIEW_SELECT,
+    });
+    if (!row) throw new NotFoundException('Volunteer not found');
+    if (dto.status === undefined && dto.interests === undefined && dto.tags === undefined) {
+      throw new BadRequestException('Nothing to update');
+    }
+
+    const data: {
+      interests?: string[];
+      status?: 'WITHDRAWN';
+      confirmTokenHash?: null;
+      confirmExpiresAt?: null;
+    } = {};
+    const changes: { field: string; oldValue: unknown; newValue: unknown }[] = [];
+
+    if (dto.interests !== undefined || dto.tags !== undefined) {
+      const coop = await this.coopOrThrow(coopId);
+      const catalog = interestCatalog(coop.volunteerInterests);
+      const interests = dto.interests
+        ? normalizeChosenInterests(dto.interests, catalog)
+        : undefined;
+      const tags = dto.tags ? normalizeChosenInterests(dto.tags, catalog) : undefined;
+      if (interests && tags && interests.join('\n') !== tags.join('\n')) {
+        throw new BadRequestException('tags and interests must match');
+      }
+      const next = interests ?? tags;
+      if (!next) throw new BadRequestException('Choose at least one interest');
+      if (next.join('\n') !== row.interests.join('\n')) {
+        data.interests = next;
+        changes.push({ field: 'interests', oldValue: row.interests, newValue: next });
+      }
+    }
+
+    if (dto.status && dto.status !== row.status) {
+      if (dto.status !== 'WITHDRAWN') {
+        throw new BadRequestException(
+          'Only a withdrawal can be recorded here. A sign-up becomes active when the person confirms the email link, and a withdrawn registration is not reactivated.',
+        );
+      }
+      data.status = 'WITHDRAWN';
+      data.confirmTokenHash = null;
+      data.confirmExpiresAt = null;
+      changes.push({ field: 'status', oldValue: row.status, newValue: 'WITHDRAWN' });
+    }
+
+    if (changes.length === 0) return toVolunteerView(row);
+
+    const saved = await this.prisma.volunteer.update({
+      where: { id: row.id },
+      data,
+      select: VOLUNTEER_VIEW_SELECT,
+    });
+    await this.audit.log({
+      coopId,
+      entity: 'Volunteer',
+      entityId: row.id,
+      action: 'UPDATE',
+      changes,
+      actorId: actor.userId,
+      ipAddress: actor.ip,
+      userAgent: actor.userAgent,
+    });
+    return toVolunteerView(saved);
+  }
+
+  async adminInterestOptions(coopId: string) {
+    const coop = await this.coopOrThrow(coopId);
+    return describeVolunteerInterests(coop.volunteerInterests);
+  }
+
+  async adminUpdateInterests(
+    coopId: string,
+    dto: UpdateVolunteerInterestsDto,
+    actor: { userId: string; ip?: string; userAgent?: string },
+  ) {
+    const coop = await this.coopOrThrow(coopId);
+    if (!hasVolunteerInterestUpdate(dto)) {
+      throw new BadRequestException('Nothing to update');
+    }
+    const next = applyVolunteerInterestUpdate(coop.volunteerInterests, dto);
+    await this.coops.update(
+      coopId,
+      { volunteerInterests: next },
+      actor.userId,
+      actor.ip,
+      actor.userAgent,
+    );
+    return describeVolunteerInterests(next);
+  }
+
   async adminList(coopId: string, query: ListVolunteersQueryDto) {
     const coop = await this.coopOrThrow(coopId);
-    const status = query.status ?? 'ACTIVE';
-    const where = volunteerWhere(coopId, query, status);
+    const { status, filter } = this.resolvedFilter(query);
+    const where = volunteerWhere(coopId, filter, status);
     const page = Math.max(1, Number(query.page) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 25));
     const [rows, total, municipalities] = await Promise.all([
@@ -350,8 +465,8 @@ export class VolunteersService {
     actor: { userId: string; ip?: string; userAgent?: string },
   ) {
     await this.coopOrThrow(coopId);
-    const status = query.status ?? 'ACTIVE';
-    const where = volunteerWhere(coopId, query, status);
+    const { status, filter } = this.resolvedFilter(query);
+    const where = volunteerWhere(coopId, filter, status);
     const rows = await this.prisma.volunteer.findMany({
       where,
       select: VOLUNTEER_VIEW_SELECT,
@@ -370,7 +485,7 @@ export class VolunteersService {
           newValue: {
             municipality: query.municipality ?? null,
             postalCode: query.postalCode ?? null,
-            interest: query.interest ?? null,
+            interest: filter.interest ?? null,
             status,
           },
         },
@@ -569,6 +684,27 @@ export class VolunteersService {
       where: { coopId_email: { coopId: shareholder.coopId, email } },
       select: { ...VOLUNTEER_VIEW_SELECT, withdrawToken: true, email: true, consentAt: true },
     });
+  }
+
+  private resolvedFilter(query: ListVolunteersQueryDto): {
+    status: 'PENDING_CONFIRMATION' | 'ACTIVE' | 'WITHDRAWN' | 'ALL';
+    filter: VolunteerFilter;
+  } {
+    if (
+      query.interest &&
+      query.tag &&
+      query.interest.trim().toLowerCase() !== query.tag.trim().toLowerCase()
+    ) {
+      throw new BadRequestException('interest and tag filters must match');
+    }
+    return {
+      status: query.status ?? 'ACTIVE',
+      filter: {
+        municipality: query.municipality,
+        postalCode: query.postalCode,
+        interest: query.interest ?? query.tag,
+      },
+    };
   }
 
   private async coopOrThrow(coopId: string) {

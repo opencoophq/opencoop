@@ -58,6 +58,8 @@ import { McpCoopTools } from './tools/mcp-coop.tools';
 import { McpMessageTools } from './tools/mcp-message.tools';
 import { McpMeetingTools } from './tools/mcp-meeting.tools';
 import { McpReportTools } from './tools/mcp-report.tools';
+import { McpVolunteerTools } from './tools/mcp-volunteer.tools';
+import { VolunteersService } from '../volunteers/volunteers.service';
 import { McpShareholderTools } from './tools/mcp-shareholder.tools';
 import { McpTransactionTools } from './tools/mcp-transaction.tools';
 import { AgendaService } from '../meetings/agenda.service';
@@ -95,6 +97,9 @@ jest.mock('../registrations/registrations.service', () => ({
 }));
 jest.mock('../shareholders/shareholders.service', () => ({
   ShareholdersService: class ShareholdersService {},
+}));
+jest.mock('../volunteers/volunteers.service', () => ({
+  VolunteersService: class VolunteersService {},
 }));
 
 const EXISTING_TOOL_NAMES = [
@@ -185,6 +190,11 @@ const EXISTING_TOOL_NAMES = [
   'preview_documents_email',
   'email_meeting_documents',
   'list_rsvp_statuses',
+  'list_volunteers',
+  'get_volunteer',
+  'list_volunteer_interests',
+  'update_volunteer',
+  'update_volunteer_interests',
 ];
 
 const apiKeysService = {
@@ -308,6 +318,7 @@ const toolProviders = [
   McpMessageTools,
   McpMeetingTools,
   McpReportTools,
+  McpVolunteerTools,
   TestWriteTools,
 ];
 
@@ -339,6 +350,7 @@ const toolProviders = [
     { provide: AttendanceService, useValue: attendanceService },
     { provide: MinutesService, useValue: minutesService },
     { provide: MeetingDocumentsService, useValue: meetingDocumentsService },
+    { provide: VolunteersService, useValue: {} },
   ],
   exports: [McpAuthStore],
 })

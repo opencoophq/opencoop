@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -23,6 +24,8 @@ import { CurrentUser, CurrentUserData } from '../../common/decorators/current-us
 import { VolunteersService } from './volunteers.service';
 import { ListVolunteersQueryDto } from './dto/list-volunteers.query';
 import { MessageVolunteersDto } from './dto/message-volunteers.dto';
+import { UpdateVolunteerDto } from './dto/update-volunteer.dto';
+import { UpdateVolunteerInterestsDto } from './dto/update-volunteer-interests.dto';
 
 @ApiTags('volunteers-admin')
 @ApiBearerAuth()
@@ -37,6 +40,31 @@ export class VolunteersAdminController {
   @ApiOperation({ summary: 'List volunteers who opted in. Never includes shareholdings.' })
   list(@Param('coopId') coopId: string, @Query() query: ListVolunteersQueryDto) {
     return this.volunteers.adminList(coopId, query);
+  }
+
+  @Get('interests')
+  @ApiOperation({ summary: 'Interest tags on the public sign-up form, with nl/fr/de/en labels' })
+  interests(@Param('coopId') coopId: string) {
+    return this.volunteers.adminInterestOptions(coopId);
+  }
+
+  @Patch('interests')
+  @RequirePermission('canViewVolunteers', 'canManageSettings')
+  @ApiOperation({
+    summary:
+      'Add, rename, reorder or deactivate the sign-up form interest tags. Requires canViewVolunteers and canManageSettings.',
+  })
+  updateInterests(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+    @Body() dto: UpdateVolunteerInterestsDto,
+  ) {
+    return this.volunteers.adminUpdateInterests(coopId, dto, {
+      userId: user.id,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 
   @Get('export')
@@ -73,8 +101,36 @@ export class VolunteersAdminController {
     });
   }
 
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get one volunteer or unconfirmed sign-up. Never includes shareholdings.',
+  })
+  getOne(@Param('coopId') coopId: string, @Param('id') id: string) {
+    return this.volunteers.adminGet(coopId, id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Update tags, or withdraw the registration. Activation stays on the email link.',
+  })
+  update(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+    @Body() dto: UpdateVolunteerDto,
+  ) {
+    return this.volunteers.adminUpdate(coopId, id, dto, {
+      userId: user.id,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+  }
+
   @Post(':id/withdraw')
-  @ApiOperation({ summary: 'Withdraw a volunteer registration. The row stays until it is deleted.' })
+  @ApiOperation({
+    summary: 'Withdraw a volunteer registration. The row stays until it is deleted.',
+  })
   withdraw(
     @Param('coopId') coopId: string,
     @Param('id') id: string,

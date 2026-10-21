@@ -5,7 +5,16 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { AnalyticsService } from '../../admin/analytics.service';
 import { CoopsService } from '../../coops/coops.service';
 import { UpdateCoopSettingsDto } from '../../coops/dto/mcp-update-coop-settings.dto';
+import { VOLUNTEER_INTEREST_TAG } from '../../volunteers/volunteer-record';
 import { McpToolkit } from '../mcp-toolkit';
+
+const safeVolunteerInterest = z
+  .string()
+  .max(40)
+  .regex(
+    VOLUNTEER_INTEREST_TAG,
+    'Interest tags may contain letters, numbers, spaces, underscores, slashes and hyphens only',
+  );
 
 export const updateCoopSettingsParameters = z
   .object({
@@ -19,6 +28,13 @@ export const updateCoopSettingsParameters = z
     coopWebsite: z.string().optional(),
     vatNumber: z.string().optional(),
     coopAddress: z.record(z.string(), z.string()).nullable().optional(),
+    volunteerInterests: z
+      .array(safeVolunteerInterest)
+      .max(20)
+      .optional()
+      .describe(
+        'Ordered sign-up interest tags for this coop. Empty restores the defaults (flyers, stands, workshops, technical, admin) and does not add board. Known translated tags: flyers, stands, workshops, technical, admin, board.',
+      ),
   })
   .strict();
 
@@ -187,7 +203,7 @@ export class McpCoopTools {
   @Tool({
     name: 'update_coop_settings',
     description:
-      'Update general cooperative settings. Bank details, email transport, reply-to address, audience sync, and other integrations can only be changed in the dashboard.',
+      'Update general cooperative settings, including volunteerInterests (the ordered sign-up tags for this coop). Bank details, email transport, reply-to address, audience sync, and other integrations can only be changed in the dashboard.',
     parameters: updateCoopSettingsParameters,
   })
   async updateCoopSettings(params: UpdateCoopSettingsParams) {

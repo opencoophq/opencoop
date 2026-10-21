@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+
+const STATUSES = ['PENDING_CONFIRMATION', 'ACTIVE', 'WITHDRAWN', 'ALL'] as const;
 
 export class ListVolunteersQueryDto {
   @ApiProperty({ required: false })
@@ -20,18 +23,29 @@ export class ListVolunteersQueryDto {
   @MaxLength(40)
   interest?: string;
 
-  @ApiProperty({ required: false, enum: ['PENDING_CONFIRMATION', 'ACTIVE', 'WITHDRAWN'] })
+  @ApiProperty({ required: false, description: 'Alias of interest' })
   @IsOptional()
-  @IsIn(['PENDING_CONFIRMATION', 'ACTIVE', 'WITHDRAWN'])
-  status?: 'PENDING_CONFIRMATION' | 'ACTIVE' | 'WITHDRAWN';
+  @IsString()
+  @MaxLength(40)
+  tag?: string;
+
+  @ApiProperty({ required: false, enum: STATUSES })
+  @IsOptional()
+  @IsIn(STATUSES)
+  status?: (typeof STATUSES)[number];
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsString()
-  page?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsString()
-  pageSize?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
 }

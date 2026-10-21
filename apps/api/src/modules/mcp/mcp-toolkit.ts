@@ -73,7 +73,8 @@ export interface McpToolContext {
 }
 
 interface McpToolOptions<D> {
-  permission?: CoopPermissionKey;
+  /** One permission, or several that must all be granted. SYSTEM_ADMIN bypasses, like PermissionGuard. */
+  permission?: CoopPermissionKey | CoopPermissionKey[];
   write?: boolean;
   dto?: ClassConstructor<D>;
 }
@@ -115,7 +116,18 @@ export class McpToolkit {
     const scope = this.auth.getScope();
     const { permissions, role } = await this.coopPermissions.permissionsWithRole(userId, coopId);
 
-    if (opts.permission && !isPermitted(permissions, opts.permission)) {
+    // PermissionGuard lets SYSTEM_ADMIN through. canViewVolunteers is off on the
+    // default Admin role, so this bypass is what keeps that REST exception.
+    const required = !opts.permission
+      ? []
+      : Array.isArray(opts.permission)
+        ? opts.permission
+        : [opts.permission];
+    if (
+      required.length > 0 &&
+      role !== 'SYSTEM_ADMIN' &&
+      required.some((key) => !isPermitted(permissions, key))
+    ) {
       throw new ForbiddenException('Insufficient permissions');
     }
     if (opts.write && scope !== 'READ_WRITE') {
