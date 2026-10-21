@@ -95,6 +95,11 @@ describe('McpVolunteerTools', () => {
     await tools.getVolunteer({ volunteerId: 'v1' });
     await tools.listVolunteerInterests();
     await tools.updateVolunteer({ volunteerId: 'v1', tags: ['board'], status: 'WITHDRAWN' });
+    permissions.permissions.mockResolvedValue({
+      canViewVolunteers: true,
+      canManageSettings: true,
+      canViewPII: true,
+    });
     await tools.updateVolunteerInterests({ add: ['board'] });
 
     expect(volunteers.adminList).toHaveBeenCalledWith(
@@ -141,6 +146,42 @@ describe('McpVolunteerTools', () => {
     expect(volunteers.adminInterestOptions).not.toHaveBeenCalled();
     expect(volunteers.adminUpdate).not.toHaveBeenCalled();
     expect(volunteers.adminUpdateInterests).not.toHaveBeenCalled();
+  });
+
+  it('refuses to change form options with only canViewVolunteers and allows it with both permissions', async () => {
+    permissions.permissions.mockResolvedValue({ canViewVolunteers: true, canManageSettings: false });
+
+    await expect(tools.updateVolunteerInterests({ add: ['board'] })).rejects.toBeInstanceOf(McpError);
+    expect(volunteers.adminUpdateInterests).not.toHaveBeenCalled();
+    await expect(
+      tools.updateVolunteer({ volunteerId: 'v1', status: 'WITHDRAWN' }),
+    ).resolves.toEqual(expect.objectContaining({ id: 'v1' }));
+
+    permissions.permissions.mockResolvedValue({
+      canViewVolunteers: true,
+      canManageSettings: true,
+    });
+    await tools.updateVolunteerInterests({ deactivate: ['board'] });
+    expect(volunteers.adminUpdateInterests).toHaveBeenCalledWith(
+      'coop-from-auth',
+      expect.objectContaining({ deactivate: ['board'] }),
+      expect.objectContaining({ userId: 'u1' }),
+    );
+  });
+
+  it('lets a system admin change form options without either volunteer permission', async () => {
+    permissions.permissionsWithRole.mockResolvedValue({
+      permissions: {},
+      role: 'SYSTEM_ADMIN',
+    });
+
+    await tools.updateVolunteerInterests({ add: ['board'] });
+
+    expect(volunteers.adminUpdateInterests).toHaveBeenCalledWith(
+      'coop-from-auth',
+      expect.objectContaining({ add: ['board'] }),
+      expect.any(Object),
+    );
   });
 
   it('refuses volunteer writes for a read-only key', async () => {

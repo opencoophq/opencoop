@@ -236,13 +236,7 @@ export interface UserDto {
 
 export type CoopPlan = 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL';
 export type BillingPeriod = 'MONTHLY' | 'YEARLY';
-export type SubscriptionStatus =
-  | 'TRIALING'
-  | 'ACTIVE'
-  | 'PAST_DUE'
-  | 'CANCELED'
-  | 'UNPAID'
-  | 'INCOMPLETE';
+export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE';
 
 export interface SubscriptionDto {
   id: string;
@@ -445,12 +439,7 @@ export interface UpdateProjectRequest {
 // ============================================================================
 
 export type RegistrationType = 'BUY' | 'SELL';
-export type RegistrationStatus =
-  | 'PENDING'
-  | 'PENDING_PAYMENT'
-  | 'ACTIVE'
-  | 'COMPLETED'
-  | 'CANCELLED';
+export type RegistrationStatus = 'PENDING' | 'PENDING_PAYMENT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
 export interface RegistrationDto {
   id: string;

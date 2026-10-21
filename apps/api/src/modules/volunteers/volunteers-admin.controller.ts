@@ -49,8 +49,10 @@ export class VolunteersAdminController {
   }
 
   @Patch('interests')
+  @RequirePermission('canViewVolunteers', 'canManageSettings')
   @ApiOperation({
-    summary: 'Add, rename, reorder or deactivate the sign-up form interest tags for this coop',
+    summary:
+      'Add, rename, reorder or deactivate the sign-up form interest tags. Requires canViewVolunteers and canManageSettings.',
   })
   updateInterests(
     @Param('coopId') coopId: string,

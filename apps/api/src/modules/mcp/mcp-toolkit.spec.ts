@@ -561,6 +561,44 @@ describe('McpToolkit', () => {
     ).resolves.toEqual({ ok: true });
   });
 
+  it('requires every listed permission and still lets SYSTEM_ADMIN through', async () => {
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: { canViewVolunteers: true, canManageSettings: false },
+      role: 'COOP_ADMIN',
+    });
+    await expect(
+      toolkit.run(
+        { permission: ['canViewVolunteers', 'canManageSettings'] },
+        undefined,
+        async () => ({ ok: true }),
+      ),
+    ).rejects.toMatchObject({ message: 'Insufficient permissions' });
+
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: { canViewVolunteers: true, canManageSettings: true },
+      role: 'COOP_ADMIN',
+    });
+    await expect(
+      toolkit.run(
+        { permission: ['canViewVolunteers', 'canManageSettings'] },
+        undefined,
+        async () => ({ ok: true }),
+      ),
+    ).resolves.toEqual({ ok: true });
+
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: {},
+      role: 'SYSTEM_ADMIN',
+    });
+    await expect(
+      toolkit.run(
+        { permission: ['canViewVolunteers', 'canManageSettings'] },
+        undefined,
+        async () => ({ ok: true }),
+      ),
+    ).resolves.toEqual({ ok: true });
+  });
+
   it('still denies a coop admin when canViewVolunteers is false', async () => {
     permissionService.permissionsWithRole.mockResolvedValue({
       permissions: { canViewVolunteers: false },

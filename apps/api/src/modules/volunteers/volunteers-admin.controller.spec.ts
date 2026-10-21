@@ -12,4 +12,10 @@ describe('VolunteersAdminController permissions', () => {
       'canViewVolunteers',
     ]);
   });
+
+  it('requires canViewVolunteers and canManageSettings to change the form options', () => {
+    expect(
+      Reflect.getMetadata(PERMISSIONS_KEY, VolunteersAdminController.prototype.updateInterests),
+    ).toEqual(['canViewVolunteers', 'canManageSettings']);
+  });
 });

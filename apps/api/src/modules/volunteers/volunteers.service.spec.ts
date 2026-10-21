@@ -487,6 +487,32 @@ describe('VolunteersService', () => {
     );
   });
 
+  it('deactivating an interest leaves existing sign-ups untouched', async () => {
+    prisma.coop.findUnique.mockResolvedValue({
+      id: 'c1',
+      volunteerInterests: ['flyers', 'board'],
+      volunteersEnabled: true,
+    });
+
+    const updated = await service.adminUpdateInterests(
+      'c1',
+      { deactivate: ['board'] },
+      { userId: 'admin-1' },
+    );
+
+    expect(coops.update).toHaveBeenCalledWith(
+      'c1',
+      { volunteerInterests: ['flyers'] },
+      'admin-1',
+      undefined,
+      undefined,
+    );
+    expect(updated.options.map((option) => option.tag)).toEqual(['flyers']);
+    expect(prisma.volunteer.update).not.toHaveBeenCalled();
+    expect(prisma.volunteer.findMany).not.toHaveBeenCalled();
+    expect(prisma.volunteer.deleteMany).not.toHaveBeenCalled();
+  });
+
   it('adds board to this coop form and leaves the defaults without it', async () => {
     prisma.coop.findUnique.mockResolvedValue({
       id: 'c1',

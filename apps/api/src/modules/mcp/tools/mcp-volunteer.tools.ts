@@ -194,12 +194,16 @@ export class McpVolunteerTools {
   @Tool({
     name: 'update_volunteer_interests',
     description:
-      'Change this coop’s sign-up form tags: add, rename, reorder, deactivate, or replace the list. Labels for known tags are fixed (nl/fr/de/en); board is translated but is not a default. Deactivate removes a tag from the form. Rename does not change tags already stored on sign-ups. Requires canViewVolunteers and a READ_WRITE key. Tag text cannot contain an apostrophe.',
+      'Change this coop’s sign-up form tags: add, rename, reorder, deactivate, or replace the list. Labels for known tags are fixed (nl/fr/de/en); board is translated but is not a default. Deactivate removes a tag from the form and does not change tags stored on existing sign-ups. Rename does not rewrite those tags either. Requires both canViewVolunteers and canManageSettings, plus a READ_WRITE key. SYSTEM_ADMIN bypasses the permission check. Tag text cannot contain an apostrophe.',
     parameters: updateVolunteerInterestsParameters,
   })
   async updateVolunteerInterests(params: UpdateVolunteerInterestsParams) {
     return this.toolkit.run(
-      { permission: 'canViewVolunteers', write: true, dto: UpdateVolunteerInterestsDto },
+      {
+        permission: ['canViewVolunteers', 'canManageSettings'],
+        write: true,
+        dto: UpdateVolunteerInterestsDto,
+      },
       params,
       async (ctx, dto) => this.volunteers.adminUpdateInterests(ctx.coopId, dto, ctx.audit),
     );

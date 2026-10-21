@@ -15,7 +15,7 @@
 --
 -- 1. list_volunteer_interests
 --    Expect flyers, stands, workshops, technisch, administratie.
--- 2. update_volunteer_interests (needs canViewVolunteers)
+-- 2. update_volunteer_interests (needs canViewVolunteers and canManageSettings)
 --    {
 --      "rename": [
 --        {"from": "technisch", "to": "technical"},
