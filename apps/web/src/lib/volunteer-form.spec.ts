@@ -1,4 +1,5 @@
-import { isVolunteerSignupValid, parseInterestList } from './volunteer-form';
+import { DEFAULT_VOLUNTEER_INTERESTS } from '@opencoop/shared';
+import { isKnownInterest, isVolunteerSignupValid, parseInterestList } from './volunteer-form';
 
 const valid = {
   name: 'An Peeters',
@@ -29,5 +30,13 @@ describe('volunteer signup validation', () => {
 
   it('parses comma-separated tags without duplicates', () => {
     expect(parseInterestList(' flyers, Flyers, keuken ')).toEqual(['flyers', 'keuken']);
+  });
+
+  it('translates board without making it a default tag', () => {
+    expect(isKnownInterest('board')).toBe(true);
+    expect(isKnownInterest('technical')).toBe(true);
+    expect(isKnownInterest('technisch')).toBe(false);
+    expect(isKnownInterest('administratie')).toBe(false);
+    expect(DEFAULT_VOLUNTEER_INTERESTS).not.toContain('board');
   });
 });

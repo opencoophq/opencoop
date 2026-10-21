@@ -115,7 +115,9 @@ export class McpToolkit {
     const scope = this.auth.getScope();
     const { permissions, role } = await this.coopPermissions.permissionsWithRole(userId, coopId);
 
-    if (opts.permission && !isPermitted(permissions, opts.permission)) {
+    // PermissionGuard lets SYSTEM_ADMIN through. canViewVolunteers is off on the
+    // default Admin role, so this bypass is what keeps that REST exception.
+    if (opts.permission && role !== 'SYSTEM_ADMIN' && !isPermitted(permissions, opts.permission)) {
       throw new ForbiddenException('Insufficient permissions');
     }
     if (opts.write && scope !== 'READ_WRITE') {

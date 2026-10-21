@@ -181,7 +181,37 @@ export const DEFAULT_VOLUNTEER_INTERESTS = [
   'admin',
 ] as const;
 
+/**
+ * Tags the signup form can translate. `board` is intentionally absent from
+ * the defaults, so a coop only shows it after adding the tag itself.
+ */
+export const KNOWN_VOLUNTEER_INTERESTS = [...DEFAULT_VOLUNTEER_INTERESTS, 'board'] as const;
+
 export type DefaultVolunteerInterest = (typeof DEFAULT_VOLUNTEER_INTERESTS)[number];
+export type KnownVolunteerInterest = (typeof KNOWN_VOLUNTEER_INTERESTS)[number];
+
+/** Labels for known tags. A coop-specific tag has no entry and is shown as itself. */
+export const VOLUNTEER_INTEREST_LABELS: Record<
+  KnownVolunteerInterest,
+  { nl: string; fr: string; de: string; en: string }
+> = {
+  flyers: { nl: 'Flyers', fr: 'Flyers', de: 'Flyer', en: 'Flyers' },
+  stands: {
+    nl: 'Evenementen/standen',
+    fr: 'Événements et stands',
+    de: 'Veranstaltungen und Stände',
+    en: 'Events and stands',
+  },
+  workshops: { nl: 'Workshops', fr: 'Ateliers', de: 'Workshops', en: 'Workshops' },
+  technical: { nl: 'Technisch', fr: 'Technique', de: 'Technik', en: 'Technical' },
+  admin: { nl: 'Administratie', fr: 'Administration', de: 'Verwaltung', en: 'Administration' },
+  board: {
+    nl: 'Bestuur',
+    fr: "Conseil d'administration",
+    de: 'Vorstand',
+    en: 'Board of directors',
+  },
+};
 
 export type CoopPermissionKey = keyof CoopPermissions;
 
@@ -206,7 +236,13 @@ export interface UserDto {
 
 export type CoopPlan = 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL';
 export type BillingPeriod = 'MONTHLY' | 'YEARLY';
-export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE';
+export type SubscriptionStatus =
+  | 'TRIALING'
+  | 'ACTIVE'
+  | 'PAST_DUE'
+  | 'CANCELED'
+  | 'UNPAID'
+  | 'INCOMPLETE';
 
 export interface SubscriptionDto {
   id: string;
@@ -409,7 +445,12 @@ export interface UpdateProjectRequest {
 // ============================================================================
 
 export type RegistrationType = 'BUY' | 'SELL';
-export type RegistrationStatus = 'PENDING' | 'PENDING_PAYMENT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+export type RegistrationStatus =
+  | 'PENDING'
+  | 'PENDING_PAYMENT'
+  | 'ACTIVE'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export interface RegistrationDto {
   id: string;

@@ -2580,7 +2580,8 @@
       "stands": "Events and stands",
       "workshops": "Workshops",
       "technical": "Technical",
-      "admin": "Administration"
+      "admin": "Administration",
+      "board": "Board of directors"
     },
     "consent": "I agree that {coop} may contact me about volunteer tasks I sign up for. I can withdraw this consent at any time.",
     "submit": "Sign up",

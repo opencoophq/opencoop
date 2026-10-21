@@ -160,6 +160,14 @@ Swagger UI available at: `http://localhost:3001/docs` (mounted via `SwaggerModul
 - Write tools require both `READ_WRITE` key scope and a coop subscription tier that is not read-only.
 - All tool calls go through `McpToolkit.run()` in `apps/api/src/modules/mcp/mcp-toolkit.ts`. This method centrally enforces the permission, PII, and scope checks above.
 - Tools live in `apps/api/src/modules/mcp/tools/`. See `tools/*.tools.ts` for the current tool list.
+- **Volunteer tools** (`mcp-volunteer.tools.ts`) are scoped to the API key's coop and require `canViewVolunteers`, the same permission as `GET/PATCH /admin/coops/:coopId/volunteers`. `SYSTEM_ADMIN` bypasses that check, as `PermissionGuard` does.
+  - `list_volunteers` — volunteers and unconfirmed sign-ups. Filter by `status` (`ACTIVE`, `PENDING_CONFIRMATION`, `WITHDRAWN`, `ALL`), `interest` or `tag`, municipality, postcode. Paginated.
+  - `get_volunteer` — one row. An id from another coop is not found.
+  - `list_volunteer_interests` — this coop's sign-up tags in form order, with `nl` / `fr` / `de` / `en` labels. Known tags are `flyers`, `stands`, `workshops`, `technical`, `admin`, and `board`. Any other tag is returned as itself in every language. An empty configuration returns the five defaults and does **not** include `board`.
+  - `update_volunteer` — replace tags with tags from this coop's form, and/or set `status` to `WITHDRAWN`. A sign-up becomes active only through the confirmation email. A withdrawal is not undone. `READ_WRITE` key required.
+  - `update_volunteer_interests` — add, rename, reorder, deactivate, or replace the form's tag list for this coop. Deactivate removes the tag from the form. Rename does not rewrite tags already stored on sign-ups. `READ_WRITE` key required.
+- `update_coop_settings` also accepts `volunteerInterests` (same ordered list; empty restores the defaults). That tool still requires `canManageSettings`, matching the settings screen. Tags cannot contain an apostrophe; the French label `Conseil d'administration` is a translation of the tag `board`, not a tag.
+- Bronsgroen's current tags (`technisch`, `administratie`) are coop-specific strings, so the form shows them untranslated until they are remapped. The idempotent script `packages/database/scripts/bronsgroen-volunteer-board.sql` does that after deploy. It is not a migration and must not be run from CI.
 
 ## Testing
 

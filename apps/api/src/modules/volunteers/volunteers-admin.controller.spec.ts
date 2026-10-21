@@ -1,3 +1,7 @@
+jest.mock('../coops/coops.service', () => ({
+  CoopsService: class CoopsService {},
+}));
+
 import 'reflect-metadata';
 import { PERMISSIONS_KEY } from '../../common/decorators/permissions.decorator';
 import { VolunteersAdminController } from './volunteers-admin.controller';

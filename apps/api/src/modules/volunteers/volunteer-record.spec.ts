@@ -1,6 +1,12 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { BadRequestException } from '@nestjs/common';
+import { KNOWN_VOLUNTEER_INTERESTS, VOLUNTEER_INTEREST_LABELS } from '@opencoop/shared';
 import {
   VOLUNTEER_VIEW_KEYS,
   VOLUNTEER_VIEW_SELECT,
+  applyVolunteerInterestUpdate,
+  describeVolunteerInterests,
   interestCatalog,
   sanitizeInterestTags,
   toVolunteerView,
@@ -73,9 +79,70 @@ describe('volunteer records stay clear of the share register', () => {
 
   it('uses the default interest tags when a coop has not configured any', () => {
     expect(interestCatalog([])).toEqual(['flyers', 'stands', 'workshops', 'technical', 'admin']);
+    expect(interestCatalog([])).not.toContain('board');
     expect(interestCatalog([' flyers ', 'Keuken'])).toEqual(['flyers', 'Keuken']);
     expect(interestCatalog(['evenementen/standen'])).toEqual(['evenementen/standen']);
-    expect(sanitizeInterestTags(['bad!tag'])).toEqual([]);
+    expect(sanitizeInterestTags(['bad!tag', "Conseil d'administration"])).toEqual([]);
+  });
+
+  it('lists every status when asked and still scopes the query to one coop', () => {
+    expect(volunteerWhere('coop-1', { interest: 'board' }, 'ALL')).toEqual({
+      coopId: 'coop-1',
+      interests: { has: 'board' },
+    });
+  });
+
+  it('renames, appends, reorders and deactivates without adding board to the defaults', () => {
+    const bronsgroen = ['flyers', 'stands', 'workshops', 'technisch', 'administratie'];
+    expect(
+      applyVolunteerInterestUpdate(bronsgroen, {
+        rename: [
+          { from: 'technisch', to: 'technical' },
+          { from: 'administratie', to: 'admin' },
+        ],
+        add: ['board'],
+      }),
+    ).toEqual(['flyers', 'stands', 'workshops', 'technical', 'admin', 'board']);
+
+    expect(
+      applyVolunteerInterestUpdate(
+        ['flyers', 'stands', 'workshops', 'technical', 'admin', 'board'],
+        {
+          deactivate: ['board'],
+          reorder: ['admin', 'technical', 'workshops', 'stands', 'flyers'],
+        },
+      ),
+    ).toEqual(['admin', 'technical', 'workshops', 'stands', 'flyers']);
+
+    expect(applyVolunteerInterestUpdate([], { add: ['board'] })).toEqual([
+      'flyers',
+      'stands',
+      'workshops',
+      'technical',
+      'admin',
+      'board',
+    ]);
+    expect(() => applyVolunteerInterestUpdate([], { add: ["Conseil d'administration"] })).toThrow(
+      BadRequestException,
+    );
+    expect(describeVolunteerInterests([]).options.map((option) => option.tag)).not.toContain(
+      'board',
+    );
+    expect(describeVolunteerInterests(['technisch']).options[0].labels.nl).toBe('technisch');
+    expect(describeVolunteerInterests(['board']).options[0].labels.fr).toBe(
+      "Conseil d'administration",
+    );
+  });
+
+  it('keeps the four message catalogs aligned with the known interest labels', () => {
+    for (const locale of ['nl', 'fr', 'de', 'en'] as const) {
+      const messages = JSON.parse(
+        readFileSync(join(__dirname, '../../../../web/messages', `${locale}.json`), 'utf8'),
+      ) as { volunteers: { interestTags: Record<string, string> } };
+      for (const tag of KNOWN_VOLUNTEER_INTERESTS) {
+        expect(messages.volunteers.interestTags[tag]).toBe(VOLUNTEER_INTEREST_LABELS[tag][locale]);
+      }
+    }
   });
 
   it('exports csv without share columns and neutralises spreadsheet formulas', () => {

@@ -1,7 +1,12 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+jest.mock('../coops/coops.service', () => ({
+  CoopsService: class CoopsService {},
+}));
+
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { VolunteersService } from './volunteers.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { CoopsService } from '../coops/coops.service';
 import { EmailService } from '../email/email.service';
 import { MessagesService } from '../messages/messages.service';
 import { VOLUNTEER_VIEW_SELECT } from './volunteer-record';
@@ -25,11 +30,13 @@ describe('VolunteersService', () => {
   const audit = { log: jest.fn() };
   const email = { send: jest.fn() };
   const messages = { createConversation: jest.fn() };
+  const coops = { update: jest.fn() };
   const service = new VolunteersService(
     prisma as unknown as PrismaService,
     audit as unknown as AuditService,
     email as unknown as EmailService,
     messages as unknown as MessagesService,
+    coops as unknown as CoopsService,
   );
 
   beforeEach(() => {
@@ -117,7 +124,11 @@ describe('VolunteersService', () => {
     expect(prisma.shareholder.findMany).not.toHaveBeenCalled();
     expect(prisma.volunteer.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ shareholderId: null, userId: null, email: 'an@example.be' }),
+        data: expect.objectContaining({
+          shareholderId: null,
+          userId: null,
+          email: 'an@example.be',
+        }),
       }),
     );
   });
@@ -382,6 +393,177 @@ describe('VolunteersService', () => {
       'admin-1',
       undefined,
       undefined,
+    );
+  });
+
+  const storedVolunteer = {
+    id: 'v1',
+    name: 'An',
+    email: 'an@example.be',
+    phone: null,
+    postalCode: '3600',
+    municipality: 'Genk',
+    interests: ['technisch'],
+    status: 'PENDING_CONFIRMATION' as const,
+    consentAt: null,
+    consentTextVersion: 'volunteer-consent-v1',
+    createdAt: new Date('2026-10-19T08:00:00.000Z'),
+    shareholderId: null,
+  };
+
+  it('loads one volunteer only inside the requested coop', async () => {
+    prisma.volunteer.findFirst.mockResolvedValue(storedVolunteer);
+
+    const view = await service.adminGet('c1', 'v1');
+
+    expect(prisma.volunteer.findFirst).toHaveBeenCalledWith({
+      where: { id: 'v1', coopId: 'c1' },
+      select: VOLUNTEER_VIEW_SELECT,
+    });
+    expect(view.email).toBe('an@example.be');
+    expect(view).not.toHaveProperty('shareholderId');
+
+    prisma.volunteer.findFirst.mockResolvedValue(null);
+    await expect(service.adminGet('c2', 'v1')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('replaces tags from this coop catalog and refuses to activate a sign-up', async () => {
+    prisma.coop.findUnique.mockResolvedValue({
+      id: 'c1',
+      volunteerInterests: ['flyers', 'technical', 'admin', 'board'],
+      volunteersEnabled: true,
+    });
+    prisma.volunteer.findFirst.mockResolvedValue({ ...storedVolunteer, status: 'ACTIVE' });
+    prisma.volunteer.update.mockResolvedValue({
+      ...storedVolunteer,
+      status: 'ACTIVE',
+      interests: ['technical', 'board'],
+    });
+
+    await service.adminUpdate(
+      'c1',
+      'v1',
+      { tags: ['technical', 'board'] },
+      { userId: 'admin-1', ip: 'mcp', userAgent: 'mcp-api-key:k1' },
+    );
+
+    expect(prisma.volunteer.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'v1' },
+        data: { interests: ['technical', 'board'] },
+      }),
+    );
+    expect(audit.log).toHaveBeenCalledWith(
+      expect.objectContaining({ coopId: 'c1', entityId: 'v1', action: 'UPDATE' }),
+    );
+
+    prisma.volunteer.findFirst.mockResolvedValue(storedVolunteer);
+    await expect(
+      service.adminUpdate('c1', 'v1', { status: 'ACTIVE' }, { userId: 'admin-1' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.volunteer.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('withdraws a sign-up and does not touch another coop', async () => {
+    prisma.volunteer.findFirst.mockResolvedValue({ ...storedVolunteer, status: 'ACTIVE' });
+    prisma.volunteer.update.mockResolvedValue({ ...storedVolunteer, status: 'WITHDRAWN' });
+
+    const view = await service.adminUpdate(
+      'c1',
+      'v1',
+      { status: 'WITHDRAWN' },
+      { userId: 'admin-1' },
+    );
+
+    expect(view.status).toBe('WITHDRAWN');
+    expect(prisma.volunteer.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'v1' },
+        data: expect.objectContaining({ status: 'WITHDRAWN', confirmTokenHash: null }),
+      }),
+    );
+    expect(prisma.volunteer.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'v1', coopId: 'c1' } }),
+    );
+  });
+
+  it('adds board to this coop form and leaves the defaults without it', async () => {
+    prisma.coop.findUnique.mockResolvedValue({
+      id: 'c1',
+      volunteerInterests: ['flyers', 'stands', 'workshops', 'technisch', 'administratie'],
+      volunteersEnabled: true,
+    });
+
+    const updated = await service.adminUpdateInterests(
+      'c1',
+      {
+        rename: [
+          { from: 'technisch', to: 'technical' },
+          { from: 'administratie', to: 'admin' },
+        ],
+        add: ['board'],
+      },
+      { userId: 'admin-1', ip: 'mcp', userAgent: 'mcp-api-key:k1' },
+    );
+
+    expect(coops.update).toHaveBeenCalledWith(
+      'c1',
+      {
+        volunteerInterests: ['flyers', 'stands', 'workshops', 'technical', 'admin', 'board'],
+      },
+      'admin-1',
+      'mcp',
+      'mcp-api-key:k1',
+    );
+    expect(updated.options.map((option) => option.tag)).toEqual([
+      'flyers',
+      'stands',
+      'workshops',
+      'technical',
+      'admin',
+      'board',
+    ]);
+    expect(updated.options.find((option) => option.tag === 'board')?.labels).toEqual({
+      nl: 'Bestuur',
+      fr: "Conseil d'administration",
+      de: 'Vorstand',
+      en: 'Board of directors',
+    });
+
+    prisma.coop.findUnique.mockResolvedValue({
+      id: 'c2',
+      volunteerInterests: [],
+      volunteersEnabled: true,
+    });
+    const defaults = await service.adminInterestOptions('c2');
+    expect(defaults.source).toBe('default');
+    expect(defaults.options.map((option) => option.tag)).toEqual([
+      'flyers',
+      'stands',
+      'workshops',
+      'technical',
+      'admin',
+    ]);
+    expect(defaults.options.map((option) => option.tag)).not.toContain('board');
+  });
+
+  it('filters sign-ups by tag inside one coop', async () => {
+    prisma.coop.findUnique.mockResolvedValue({
+      id: 'c1',
+      volunteerInterests: ['technisch'],
+      volunteersEnabled: true,
+    });
+    prisma.volunteer.findMany.mockResolvedValue([]);
+    prisma.volunteer.count.mockResolvedValue(0);
+
+    await service.adminList('c1', { status: 'ALL', tag: 'technisch', page: 2, pageSize: 10 });
+
+    expect(prisma.volunteer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { coopId: 'c1', interests: { has: 'technisch' } },
+        skip: 10,
+        take: 10,
+      }),
     );
   });
 });

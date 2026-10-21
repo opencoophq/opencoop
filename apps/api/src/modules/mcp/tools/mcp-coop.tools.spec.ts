@@ -246,6 +246,33 @@ describe('McpCoopTools', () => {
     expect(updateCoopSettingsParameters.safeParse({ minimumHoldingPeriod: -1 }).success).toBe(
       false,
     );
+    expect(
+      updateCoopSettingsParameters.safeParse({
+        volunteerInterests: ['flyers', 'stands', 'workshops', 'technical', 'admin', 'board'],
+      }).success,
+    ).toBe(true);
+    expect(
+      updateCoopSettingsParameters.safeParse({
+        volunteerInterests: ["Conseil d'administration"],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('passes volunteerInterests to the coop update for the authenticated coop', async () => {
+    coops.getSettings.mockResolvedValue({
+      id: 'coop-from-auth',
+      volunteerInterests: ['flyers', 'board'],
+    });
+
+    await tools.updateCoopSettings({ volunteerInterests: ['flyers', 'board'] });
+
+    expect(coops.update).toHaveBeenCalledWith(
+      'coop-from-auth',
+      expect.objectContaining({ volunteerInterests: ['flyers', 'board'] }),
+      'u1',
+      'mcp',
+      'mcp-api-key:k1',
+    );
   });
 
   it.each(Object.entries(excludedCoopSettingFields))(

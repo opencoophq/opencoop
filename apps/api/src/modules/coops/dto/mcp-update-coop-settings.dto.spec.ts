@@ -15,11 +15,33 @@ describe('UpdateCoopSettingsDto', () => {
       coopWebsite: 'https://coop.example',
       vatNumber: 'BE0123456789',
       coopAddress: { street: 'Main Street', city: 'Brussels' },
+      volunteerInterests: ['flyers', 'stands', 'workshops', 'technical', 'admin', 'board'],
     });
 
     await expect(validate(dto, { whitelist: true, forbidNonWhitelisted: true })).resolves.toEqual(
       [],
     );
+  });
+
+  it('rejects interest tags that the sanitiser would drop', async () => {
+    const apostrophe = plainToInstance(UpdateCoopSettingsDto, {
+      volunteerInterests: ["Conseil d'administration"],
+    });
+    const duplicate = plainToInstance(UpdateCoopSettingsDto, {
+      volunteerInterests: ['board', 'Board'],
+    });
+
+    const apostropheErrors = await validate(apostrophe, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
+    const duplicateErrors = await validate(duplicate, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
+
+    expect(apostropheErrors.map((error) => error.property)).toContain('volunteerInterests');
+    expect(duplicateErrors.map((error) => error.property)).toContain('volunteerInterests');
   });
 
   it.each([

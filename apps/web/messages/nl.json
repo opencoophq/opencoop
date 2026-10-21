@@ -2580,7 +2580,8 @@
       "stands": "Evenementen/standen",
       "workshops": "Workshops",
       "technical": "Technisch",
-      "admin": "Administratie"
+      "admin": "Administratie",
+      "board": "Bestuur"
     },
     "consent": "Ik geef {coop} toestemming om mij te contacteren voor vrijwilligerstaken waarvoor ik mij opgeef. Ik kan deze toestemming altijd intrekken.",
     "submit": "Aanmelden",
