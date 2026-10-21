@@ -27,13 +27,23 @@ network with **no host ports exposed**.
 
 `.github/workflows/build-deploy.yml`:
 
-1. **test** — lint + api unit tests (+ workspace dep build) + `pnpm audit --prod` report. Gates merge.
+1. **test** — remote deploy script, lint + api unit tests (+ workspace dep build) + `pnpm audit --prod` report. Gates merge.
 2. **e2e** — Playwright against a seeded Postgres+Redis. Gates merge + deploy.
 3. **build** — builds & pushes 3 GHCR images (`opencoop-{api,web,migrate}:<sha>`), immutable, SHA-tagged.
    On PRs the images build but are **not** pushed and **no deploy runs** (`github.event_name == 'push'` guard).
-4. **deploy-acc** / **deploy-prod** (`needs: [build, e2e, test]`) — SSH to fsn1, set `TAG=<sha>` in `.env`,
-   `docker compose pull && docker compose up -d`, then **poll `/api/health` for up to 60s**; a deploy that
-   never becomes healthy **fails the workflow** (it used to report green regardless).
+4. **deploy-acc** / **deploy-prod** (`needs: [build, e2e, test]`) — SSH to fsn1 and run
+   `deploy/remote-deploy.sh` with `set -euo pipefail`. The script retries `docker compose pull`
+   (backoff 10s, 20s, 40s, 80s) while the candidate `TAG` is set only on that command, **not** in
+   `.env`. It writes `TAG=<sha>` only after api, web, and migrate are present locally and each has a
+   registry digest. If `up` or the image check fails, it restores the previous `TAG`, so a later
+   `docker compose up` cannot target a release that was not activated. After `up -d` it `docker inspect`s
+   api (running), web (running), and migrate (exited 0) and fails unless the container image id matches
+   that tag. **Only then** it polls `/api/health` (30 attempts, 2s apart, 5s curl cap). A failed pull,
+   a tag/digest mismatch, or an unhealthy API fails the workflow. The script never prints `.env`.
+
+   **Docs** (`.github/workflows/docs-deploy.yml`) uses the same script for `DOCS_TAG` and the `docs`
+   service (`docker compose pull docs`). There is no HTTP healthcheck; the image inspect is the gate.
+   A failed pull leaves `DOCS_TAG` unchanged.
 
 A one-shot **migrate** container runs `prisma migrate deploy` before the API starts
 (`api.depends_on.migrate: service_completed_successfully`). If a migration fails, the new API never
