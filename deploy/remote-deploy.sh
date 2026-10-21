@@ -63,20 +63,19 @@ require_nonneg_int() {
 cleanup() {
   local status=$?
   trap - EXIT
-  if [ -n "${ENV_TMP}" ] && [ -f "${ENV_TMP}" ]; then
-    rm -f "${ENV_TMP}" || true
-    ENV_TMP=""
-  fi
+  rm_env_tmp
   # Pull failed: .env was never updated. Up/verify failed after the write:
   # put the previous tag back so a later `compose up` cannot target a release
-  # whose images were not activated. Healthcheck failures leave the new tag in
-  # place — those containers were already verified.
+  # whose images were not activated. This rewrites .env only — it does not
+  # recreate containers or roll back a migration. Healthcheck failures leave
+  # the new tag in place — those containers were already verified.
   if [ "$tag_written" -eq 1 ] && [ "$release_activated" -ne 1 ]; then
     echo "Restoring ${DEPLOY_ENV_KEY} in .env after a failed deploy"
     if ! write_env_key "$prev_tag"; then
       echo "::error::failed to restore ${DEPLOY_ENV_KEY} in .env"
     fi
   fi
+  rm_env_tmp
   exit "$status"
 }
 
@@ -92,9 +91,17 @@ read_env_value() {
   ' .env
 }
 
+rm_env_tmp() {
+  if [ -n "${ENV_TMP}" ] && [ -f "${ENV_TMP}" ]; then
+    rm -f "${ENV_TMP}" || true
+  fi
+  ENV_TMP=""
+}
+
 write_env_key() {
   local value="$1"
-  ENV_TMP=$(mktemp "./.env.tmp.XXXXXX")
+  # Not `.env.*`: envvault treats that pattern as an env file and could commit a leftover.
+  ENV_TMP=$(mktemp "./.deploy-envtmp.XXXXXX")
   chmod --reference .env "$ENV_TMP" 2>/dev/null || chmod 600 "$ENV_TMP"
   if ! awk -v key="$DEPLOY_ENV_KEY" -v value="$value" '
     BEGIN { replaced = 0 }
@@ -106,35 +113,29 @@ write_env_key() {
     { print }
     END { if (replaced != 1) exit 1 }
   ' .env > "$ENV_TMP"; then
-    rm -f "$ENV_TMP"
-    ENV_TMP=""
+    rm_env_tmp
     return 1
   fi
-  mv "$ENV_TMP" .env
+  # Called as `write_env_key || exit`, which disables errexit for this function.
+  mv "$ENV_TMP" .env || return 1
   ENV_TMP=""
 }
 
 compose_with_tag() {
   # Shell env wins over the project .env file. Override only the key this
   # deploy owns so `docker compose pull` can fetch the candidate tag before
-  # that tag is persisted.
-  env "${DEPLOY_ENV_KEY}=${DEPLOY_TAG}" "$@"
+  # that tag is persisted. stdin is /dev/null because bash -s is reading this
+  # script from stdin; `env` would otherwise hand that stream to docker.
+  env "${DEPLOY_ENV_KEY}=${DEPLOY_TAG}" "$@" </dev/null
 }
 
 pull_images() {
   local attempt=1
   local delay="$PULL_RETRY_DELAY_SECONDS"
   local -a services=()
-  if [ -n "$DEPLOY_PULL_SERVICES" ]; then
-    read -r -a services <<< "$DEPLOY_PULL_SERVICES"
-  fi
+  read -r -a services <<< "$DEPLOY_PULL_SERVICES"
   while [ "$attempt" -le "$PULL_MAX_ATTEMPTS" ]; do
-    if [ "${#services[@]}" -eq 0 ]; then
-      if compose_with_tag docker compose pull; then
-        echo "docker compose pull succeeded on attempt ${attempt}"
-        return 0
-      fi
-    elif compose_with_tag docker compose pull "${services[@]}"; then
+    if compose_with_tag docker compose pull "${services[@]}" </dev/null; then
       echo "docker compose pull succeeded on attempt ${attempt}"
       return 0
     fi
@@ -157,7 +158,7 @@ require_local_images() {
   esac
   for svc in "${services[@]}"; do
     expected="ghcr.io/${IMAGE_OWNER}/opencoop-${svc}:${DEPLOY_TAG}"
-    if ! digest=$(docker image inspect --format '{{if .RepoDigests}}{{index .RepoDigests 0}}{{end}}' "$expected"); then
+    if ! digest=$(docker image inspect --format '{{if .RepoDigests}}{{index .RepoDigests 0}}{{end}}' "$expected" </dev/null); then
       die "image ${expected} is not present locally after pull"
     fi
     case "$digest" in
@@ -169,26 +170,22 @@ require_local_images() {
 }
 
 compose_up() {
-  if [ -n "$DEPLOY_UP_SERVICES" ]; then
-    local -a services=()
-    read -r -a services <<< "$DEPLOY_UP_SERVICES"
-    compose_with_tag docker compose up -d "${services[@]}" || return 1
-  else
-    compose_with_tag docker compose up -d || return 1
-  fi
+  local -a services=()
+  read -r -a services <<< "$DEPLOY_UP_SERVICES"
+  compose_with_tag docker compose up -d "${services[@]}" </dev/null || return 1
 }
 
 newest_container() {
   local svc="$1"
   local cids cid created newest="" newest_created=""
-  cids=$(docker compose ps -aq "$svc") || return 1
+  cids=$(docker compose ps -aq "$svc" </dev/null) || return 1
   if [ -z "$cids" ]; then
     echo "::error::no container for service ${svc}" >&2
     return 1
   fi
   while IFS= read -r cid; do
     [ -n "$cid" ] || continue
-    created=$(docker inspect --format '{{.Created}}' "$cid") || return 1
+    created=$(docker inspect --format '{{.Created}}' "$cid" </dev/null) || return 1
     if [ -z "$newest_created" ] || [ "$created" \> "$newest_created" ]; then
       newest=$cid
       newest_created=$created
@@ -208,7 +205,7 @@ verify_service() {
   local attempts=1
   cid=$(newest_container "$svc") || return 1
   expected_ref="ghcr.io/${IMAGE_OWNER}/opencoop-${svc}:${DEPLOY_TAG}"
-  config_image=$(docker inspect --format '{{.Config.Image}}' "$cid") || return 1
+  config_image=$(docker inspect --format '{{.Config.Image}}' "$cid" </dev/null) || return 1
   case "$config_image" in
     "$expected_ref"|"${expected_ref}@sha256:"*) ;;
     *)
@@ -216,13 +213,13 @@ verify_service() {
       return 1
       ;;
   esac
-  expected_id=$(docker image inspect --format '{{.Id}}' "$expected_ref") || return 1
-  actual_id=$(docker inspect --format '{{.Image}}' "$cid") || return 1
+  expected_id=$(docker image inspect --format '{{.Id}}' "$expected_ref" </dev/null) || return 1
+  actual_id=$(docker inspect --format '{{.Image}}' "$cid" </dev/null) || return 1
   if [ -z "$expected_id" ] || [ "$actual_id" != "$expected_id" ]; then
     echo "::error::${svc} container image ${actual_id} does not match ${expected_ref} (${expected_id})"
     return 1
   fi
-  digest=$(docker image inspect --format '{{if .RepoDigests}}{{index .RepoDigests 0}}{{end}}' "$expected_ref") || return 1
+  digest=$(docker image inspect --format '{{if .RepoDigests}}{{index .RepoDigests 0}}{{end}}' "$expected_ref" </dev/null) || return 1
   case "$digest" in
     *"@sha256:"*) ;;
     *)
@@ -231,14 +228,14 @@ verify_service() {
       ;;
   esac
   if [ "$mode" = running ]; then
-    status=$(docker inspect --format '{{.State.Status}}' "$cid") || return 1
+    status=$(docker inspect --format '{{.State.Status}}' "$cid" </dev/null) || return 1
     if [ "$status" != running ]; then
       echo "::error::${svc} status is ${status}, expected running"
       return 1
     fi
   elif [ "$mode" = exited0 ]; then
     while [ "$attempts" -le "$MIGRATE_WAIT_ATTEMPTS" ]; do
-      status=$(docker inspect --format '{{.State.Status}}' "$cid") || return 1
+      status=$(docker inspect --format '{{.State.Status}}' "$cid" </dev/null) || return 1
       case "$status" in
         running|restarting|created)
           if [ "$attempts" -eq "$MIGRATE_WAIT_ATTEMPTS" ]; then
@@ -250,7 +247,7 @@ verify_service() {
       esac
       attempts=$((attempts + 1))
     done
-    exit_code=$(docker inspect --format '{{.State.ExitCode}}' "$cid") || return 1
+    exit_code=$(docker inspect --format '{{.State.ExitCode}}' "$cid" </dev/null) || return 1
     if [ "$status" != exited ] || [ "$exit_code" != 0 ]; then
       echo "::error::${svc} status is ${status} exit ${exit_code}, expected exited 0"
       return 1
@@ -288,7 +285,7 @@ wait_healthy() {
   fi
   echo "Waiting for ${DEPLOY_HEALTH_URL}"
   while [ "$attempt" -le "$HEALTH_ATTEMPTS" ]; do
-    if curl -fsS --max-time 5 "$DEPLOY_HEALTH_URL" >/dev/null 2>&1; then
+    if curl -fsS --max-time 5 "$DEPLOY_HEALTH_URL" </dev/null >/dev/null 2>&1; then
       echo "healthcheck passed"
       return 0
     fi
@@ -340,13 +337,16 @@ if [ "${#DEPLOY_TAG}" -ne 40 ]; then
   die "DEPLOY_TAG must be a 40-character git sha"
 fi
 case "${DEPLOY_PULL_SERVICES:-}" in
-  ""|docs) ;;
-  *) die "DEPLOY_PULL_SERVICES must be empty or docs" ;;
+  "migrate api web"|docs) ;;
+  *) die "DEPLOY_PULL_SERVICES must be 'migrate api web' or docs" ;;
 esac
 case "${DEPLOY_UP_SERVICES:-}" in
-  ""|docs) ;;
-  *) die "DEPLOY_UP_SERVICES must be empty or docs" ;;
+  "migrate api web"|docs) ;;
+  *) die "DEPLOY_UP_SERVICES must be 'migrate api web' or docs" ;;
 esac
+if [ "$DEPLOY_PULL_SERVICES" != "$DEPLOY_UP_SERVICES" ]; then
+  die "DEPLOY_PULL_SERVICES and DEPLOY_UP_SERVICES must match"
+fi
 case "${DEPLOY_VERIFY:-}" in
   "api:running web:running migrate:exited0"|"docs:running") ;;
   *) die "DEPLOY_VERIFY is not a known service list" ;;
@@ -364,6 +364,10 @@ case "${DEPLOY_ENV_KEY}:${DEPLOY_VERIFY}" in
   TAG:"api:running web:running migrate:exited0"|DOCS_TAG:docs:running) ;;
   *) die "DEPLOY_ENV_KEY does not match DEPLOY_VERIFY" ;;
 esac
+case "${DEPLOY_ENV_KEY}:${DEPLOY_PULL_SERVICES}" in
+  "TAG:migrate api web"|DOCS_TAG:docs) ;;
+  *) die "DEPLOY_ENV_KEY does not match the compose services" ;;
+esac
 
 export COMPOSE_ANSI=never
 
@@ -372,8 +376,9 @@ if [ ! -f .env ]; then
   die ".env not found in ${HOME}/opencoop/${DEPLOY_DIR}"
 fi
 
-exec 9>".deploy.lock"
-if ! flock -w 1800 9; then
+# The project directory is a git checkout. A lock file there shows up as untracked.
+exec 9>"/tmp/opencoop-deploy-${DEPLOY_DIR}.lock"
+if ! flock -w 600 9; then
   die "timed out waiting for the deploy lock"
 fi
 

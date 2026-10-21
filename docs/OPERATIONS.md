@@ -32,18 +32,21 @@ network with **no host ports exposed**.
 3. **build** — builds & pushes 3 GHCR images (`opencoop-{api,web,migrate}:<sha>`), immutable, SHA-tagged.
    On PRs the images build but are **not** pushed and **no deploy runs** (`github.event_name == 'push'` guard).
 4. **deploy-acc** / **deploy-prod** (`needs: [build, e2e, test]`) — SSH to fsn1 and run
-   `deploy/remote-deploy.sh` with `set -euo pipefail`. The script retries `docker compose pull`
-   (backoff 10s, 20s, 40s, 80s) while the candidate `TAG` is set only on that command, **not** in
-   `.env`. It writes `TAG=<sha>` only after api, web, and migrate are present locally and each has a
-   registry digest. If `up` or the image check fails, it restores the previous `TAG`, so a later
-   `docker compose up` cannot target a release that was not activated. After `up -d` it `docker inspect`s
+   `deploy/remote-deploy.sh` with `set -euo pipefail`. The script retries
+   `docker compose pull migrate api web` (backoff 10s, 20s, 40s, 80s) while the candidate `TAG` is set
+   only on that command, **not** in `.env`. Postgres, redis, and the docs container are not pulled or
+   recreated. It writes `TAG=<sha>` only after api, web, and migrate are present locally and each has a
+   registry digest. If `up` or the image check fails, it restores the previous `TAG` **in `.env` only**.
+   That restore does not stop or recreate containers and does not roll back a migration that already
+   ran; use the manual rollback below for that. After `up -d migrate api web` it `docker inspect`s
    api (running), web (running), and migrate (exited 0) and fails unless the container image id matches
    that tag. **Only then** it polls `/api/health` (30 attempts, 2s apart, 5s curl cap). A failed pull,
    a tag/digest mismatch, or an unhealthy API fails the workflow. The script never prints `.env`.
 
-   **Docs** (`.github/workflows/docs-deploy.yml`) uses the same script for `DOCS_TAG` and the `docs`
-   service (`docker compose pull docs`). There is no HTTP healthcheck; the image inspect is the gate.
-   A failed pull leaves `DOCS_TAG` unchanged.
+   **Docs** (`.github/workflows/docs-deploy.yml`) uses the same script for `DOCS_TAG` and only the `docs`
+   service (`docker compose pull docs` / `up -d docs`). There is no HTTP healthcheck; the image inspect
+   is the gate. A failed pull leaves `DOCS_TAG` unchanged. A failed `up` or image check restores
+   `DOCS_TAG` in `.env` only.
 
 A one-shot **migrate** container runs `prisma migrate deploy` before the API starts
 (`api.depends_on.migrate: service_completed_successfully`). If a migration fails, the new API never
@@ -53,7 +56,12 @@ starts — see Rollback.
 
 ## Rollback (manual, ~2 min)
 
-Images are immutable and SHA-tagged, so rollback = repoint `TAG` to the last good SHA.
+Images are immutable and SHA-tagged, so rollback = repoint `TAG` to the last good SHA and recreate
+the app containers.
+
+The deploy script's automatic failure path only writes the previous `TAG` or `DOCS_TAG` back into
+`.env`. It does not recreate containers and does not undo a migration. If the new containers are
+already running, or `migrate` already applied SQL, run the steps below (and check the database).
 
 ```bash
 # SSH to fsn1 (Tailscale) as wouter, then:

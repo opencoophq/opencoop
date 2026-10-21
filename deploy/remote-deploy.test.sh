@@ -36,6 +36,7 @@ cleanup_case() {
     rm -rf "$LAST_TMP"
   fi
   LAST_TMP=""
+  rm -f /tmp/opencoop-deploy-acc.lock /tmp/opencoop-deploy-prod.lock
   unset DEPLOY_DIR DEPLOY_TAG DEPLOY_ENV_KEY DEPLOY_PULL_SERVICES DEPLOY_UP_SERVICES DEPLOY_VERIFY DEPLOY_HEALTH_URL || true
   unset FAKE_PULL_FAILURES FAKE_UP_FAIL FAKE_IMAGE_MISSING FAKE_DIGEST FAKE_IMAGE_TAG || true
   unset FAKE_BAD_CONTAINER_ID FAKE_API_STATUS FAKE_MIGRATE_STATUS FAKE_MIGRATE_CODE || true
@@ -71,9 +72,13 @@ file_val() {
   awk -v key="$key" 'index($0, key "=")==1 { print substr($0, length(key)+2); exit }' .env
 }
 
+stdin_dev() {
+  readlink -f /dev/stdin 2>/dev/null || echo unknown
+}
+
 log() {
-  printf 'cmd=%s envTAG=%s envDOCS=%s fileTAG=%s fileDOCS=%s args=%s\n' \
-    "$1" "${TAG:-}" "${DOCS_TAG:-}" "$(file_val TAG)" "$(file_val DOCS_TAG)" "${2:-}" \
+  printf 'cmd=%s stdin=%s envTAG=%s envDOCS=%s fileTAG=%s fileDOCS=%s args=%s\n' \
+    "$1" "$(stdin_dev)" "${TAG:-}" "${DOCS_TAG:-}" "$(file_val TAG)" "$(file_val DOCS_TAG)" "${2:-}" \
     >> "${FAKE_LOG}"
 }
 
@@ -239,7 +244,7 @@ STUB
   cat > "$LAST_TMP/bin/curl" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
-printf 'cmd=curl args=%s\n' "$*" >> "${FAKE_LOG}"
+printf 'cmd=curl stdin=%s args=%s\n' "$(readlink -f /dev/stdin 2>/dev/null || echo unknown)" "$*" >> "${FAKE_LOG}"
 if [ "${FAKE_CURL_FAIL:-0}" = 1 ]; then
   echo "fake health failure" >&2
   exit 22
@@ -302,7 +307,7 @@ assert_no_secrets() {
     fail "secret from .env leaked into logs"
   fi
   local leftovers
-  leftovers=$(find "$LAST_TMP/home" -name '.env.tmp.*' -print)
+  leftovers=$(find "$LAST_TMP/home" \( -name '.deploy-envtmp.*' -o -name '.env.tmp.*' -o -name '.env.*' -o -name '.deploy.lock' \) -print)
   if [ -n "$leftovers" ]; then
     fail "left .env temp files behind: ${leftovers}"
   fi
@@ -320,8 +325,8 @@ app_env() {
   export DEPLOY_DIR="${1:-acc}"
   export DEPLOY_TAG="$NEW_TAG"
   export DEPLOY_ENV_KEY=TAG
-  export DEPLOY_PULL_SERVICES=""
-  export DEPLOY_UP_SERVICES=""
+  export DEPLOY_PULL_SERVICES="migrate api web"
+  export DEPLOY_UP_SERVICES="migrate api web"
   export DEPLOY_VERIFY="api:running web:running migrate:exited0"
   export DEPLOY_HEALTH_URL="https://acc.opencoop.be/api/health"
   if [ "$DEPLOY_DIR" = prod ]; then
@@ -346,7 +351,8 @@ assert_app_success() {
   assert awk -v new="$NEW_TAG" -v old="$OLD_TAG" '
     index($0, "cmd=pull ") {
       if (index($0, "envTAG=" new) == 0 || index($0, "fileTAG=" old) == 0) exit 1
-      if ($0 !~ /args=$/) exit 1
+      if ($0 !~ /args=migrate api web$/) exit 1
+      if (index($0, "stdin=/dev/null") == 0) exit 1
       n++
     }
     END { if (n < 1) exit 1 }
@@ -354,7 +360,8 @@ assert_app_success() {
   assert awk -v new="$NEW_TAG" '
     index($0, "cmd=up ") {
       if (index($0, "envTAG=" new) == 0 || index($0, "fileTAG=" new) == 0) exit 1
-      if ($0 !~ /args=-d$/) exit 1
+      if ($0 !~ /args=-d migrate api web$/) exit 1
+      if (index($0, "stdin=/dev/null") == 0) exit 1
       found=1
     }
     END { if (!found) exit 1 }
@@ -395,6 +402,19 @@ assert_app_success() {
     fail "successful deploy restored the tag"
   fi
   assert grep -q 'https://acc.opencoop.be/api/health' "$LAST_TMP/fake.log"
+  assert awk '
+    index($0, "cmd=") {
+      if (index($0, "stdin=/dev/null") == 0) exit 1
+      n++
+    }
+    END { if (n < 1) exit 1 }
+  ' "$LAST_TMP/fake.log"
+  if [ -e "$LAST_TMP/home/opencoop/${dir}/.deploy.lock" ]; then
+    fail "deploy lock was created inside the project checkout"
+  fi
+  if [ ! -f "/tmp/opencoop-deploy-${dir}.lock" ]; then
+    fail "missing /tmp/opencoop-deploy-${dir}.lock"
+  fi
 }
 
 test_app_success() {
@@ -625,12 +645,15 @@ test_docs_success() {
       if (index($0, "envDOCS=" new) == 0 || index($0, "fileDOCS=" old) == 0) exit 1
       if (index($0, "fileTAG=" app) == 0) exit 1
       if ($0 !~ /args=docs$/) exit 1
+      if (index($0, "stdin=/dev/null") == 0) exit 1
+      if (index($0, "postgres") || index($0, "redis")) exit 1
       pulls++
     }
     index($0, "cmd=up ") {
       if (index($0, "fileDOCS=" new) == 0 || index($0, "envDOCS=" new) == 0) exit 1
       if (index($0, "fileTAG=" app) == 0) exit 1
       if ($0 !~ /args=-d docs$/) exit 1
+      if (index($0, "stdin=/dev/null") == 0) exit 1
       ups++
     }
     END { if (pulls != 1 || ups != 1) exit 1 }
@@ -640,13 +663,69 @@ test_docs_success() {
   if grep -q 'Restoring ' "$LAST_TMP/stdout"; then
     fail "docs success restored DOCS_TAG"
   fi
+  if [ -e "$LAST_TMP/home/opencoop/prod/.deploy.lock" ]; then
+    fail "deploy lock was created inside the project checkout"
+  fi
+  if [ ! -f /tmp/opencoop-deploy-prod.lock ]; then
+    fail "missing /tmp/opencoop-deploy-prod.lock"
+  fi
   cleanup_case
   echo "ok docs deploy"
+}
+
+test_mv_failure_does_not_publish_tag() {
+  prepare_case
+  local real_mv
+  real_mv=$(command -v mv)
+  cat > "$LAST_TMP/bin/mv" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+if [ "\${2:-}" = ".env" ]; then
+  printf '%s\n' "\$1" > "${LAST_TMP}/state/mv-src"
+  echo "fake mv failure" >&2
+  exit 1
+fi
+exec ${real_mv} "\$@"
+EOF
+  chmod 755 "$LAST_TMP/bin/mv"
+  app_env acc
+  invoke bash
+  assert [ "$CODE" -eq 1 ]
+  assert_no_secrets
+  assert_mode_600 acc
+  assert [ "$(read_key TAG "$(env_file acc)")" = "$OLD_TAG" ]
+  assert [ "$(count_log 'cmd=pull ')" -ge 1 ]
+  assert [ "$(count_log 'cmd=up ')" -eq 0 ]
+  assert [ "$(count_log 'cmd=curl ')" -eq 0 ]
+  local src
+  src=$(cat "$LAST_TMP/state/mv-src")
+  case "$src" in
+    ./.deploy-envtmp.*|.deploy-envtmp.*) ;;
+    *) fail "temp env file was '${src}', expected .deploy-envtmp.*" ;;
+  esac
+  case "$src" in
+    .env.*|./.env.*) fail "temp env file '${src}' matches .env.* and envvault could commit it" ;;
+  esac
+  if [ -e "$LAST_TMP/home/opencoop/acc/${src#./}" ]; then
+    fail "temp env file was left behind: ${src}"
+  fi
+  if grep -q 'healthcheck passed' "$LAST_TMP/stdout"; then
+    fail "healthcheck ran after .env replace failed"
+  fi
+  cleanup_case
+  echo "ok mv failure does not publish TAG"
 }
 
 test_rejects_bad_input_without_touching_env() {
   prepare_case
   app_env acc
+  export DEPLOY_PULL_SERVICES=""
+  invoke bash
+  assert [ "$CODE" -eq 1 ]
+  assert [ "$(count_log 'cmd=pull ')" -eq 0 ]
+  assert grep -q "DEPLOY_PULL_SERVICES must be 'migrate api web' or docs" "$LAST_TMP/stdout"
+  export DEPLOY_PULL_SERVICES="migrate api web"
+
   export DEPLOY_TAG='not-a-sha'
   invoke bash
   assert [ "$CODE" -eq 1 ]
@@ -714,6 +793,27 @@ test_static_contracts() {
   assert grep -q 'health_url: https://acc.opencoop.be/api/health' "${ROOT}/.github/workflows/build-deploy.yml"
   assert grep -q 'health_url: https://opencoop.be/api/health' "${ROOT}/.github/workflows/build-deploy.yml"
   assert grep -q 'pull_services: docs' "${ROOT}/.github/workflows/docs-deploy.yml"
+  assert grep -q 'pull_services: migrate api web' "${ROOT}/.github/workflows/build-deploy.yml"
+  assert grep -q 'up_services: migrate api web' "${ROOT}/.github/workflows/build-deploy.yml"
+  assert grep -q 'flock -w 600' "${ROOT}/deploy/remote-deploy.sh"
+  assert grep -q '/tmp/opencoop-deploy-${DEPLOY_DIR}.lock' "${ROOT}/deploy/remote-deploy.sh"
+  assert grep -q '.deploy-envtmp.XXXXXX' "${ROOT}/deploy/remote-deploy.sh"
+  assert grep -q 'mv "$ENV_TMP" .env || return 1' "${ROOT}/deploy/remote-deploy.sh"
+  if awk '
+    /^[[:space:]]*#/ { next }
+    /^[[:space:]]*(echo|die) / { next }
+    /(^|[^[:alnum:]_])(docker|curl)[[:space:]]/ {
+      if ($0 !~ /<\/dev\/null/) {
+        printf "%d:%s\n", NR, $0 > "/dev/stderr"
+        bad = 1
+      }
+    }
+    END { exit bad }
+  ' "${ROOT}/deploy/remote-deploy.sh"; then
+    :
+  else
+    fail "a docker or curl call is missing </dev/null"
+  fi
   command -v flock >/dev/null
   echo "ok static contracts"
 }
@@ -734,6 +834,7 @@ test_api_not_running
 test_migrate_failed
 test_health_failure_keeps_tag
 test_docs_success
+test_mv_failure_does_not_publish_tag
 test_rejects_bad_input_without_touching_env
 
 echo "all remote deploy tests passed"

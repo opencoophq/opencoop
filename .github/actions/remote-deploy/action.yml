@@ -24,13 +24,13 @@ inputs:
     description: Container checks to run after up, before the healthcheck
     required: true
   pull_services:
-    description: Empty runs `docker compose pull` for the project. `docs` pulls only docs.
+    description: Services for `docker compose pull`. App deploys use `migrate api web` so postgres, redis, and docs stay untouched. Docs deploys use `docs`.
     required: false
-    default: ""
+    default: "migrate api web"
   up_services:
-    description: Empty runs `docker compose up -d`. `docs` starts only docs.
+    description: Services for `docker compose up -d`. App deploys use `migrate api web`. Docs deploys use `docs`.
     required: false
-    default: ""
+    default: "migrate api web"
   health_url:
     description: Optional HTTP healthcheck. Run only after image verification.
     required: false
