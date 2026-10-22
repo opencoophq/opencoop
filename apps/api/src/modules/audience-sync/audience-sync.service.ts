@@ -7,6 +7,7 @@ import {
   UpsertResult,
 } from './audience-provider.interface';
 import { AudienceProviderConfig, getAudienceProvider } from './audience-provider.factory';
+import { memberContactAttributes } from './audience-sync.attributes';
 import { SyncErrorDetail, toSyncErrorDetail } from './audience-sync.errors';
 import { groupShareholdersByEmail, resolvedGroupEmail } from './audience-sync.grouping';
 
@@ -61,6 +62,7 @@ const SHAREHOLDER_SELECT = {
 type CoopAudienceConfig = AudienceProviderConfig & {
   brevoMembersListId: string | null;
   brevoResignedListId: string | null;
+  brevoProspectsListId?: string | null;
 };
 
 type SelectedShareholder = {
@@ -263,12 +265,13 @@ export class AudienceSyncService {
   ): Promise<void> {
     const membersList = listId(coop.brevoMembersListId);
     const resignedList = listId(coop.brevoResignedListId);
+    const prospectsList = listId(coop.brevoProspectsListId);
     if (!membersList) {
       summary.skipped += shareholders.length;
       return;
     }
 
-    const managedListIds = resignedList ? [membersList, resignedList] : [membersList];
+    const managedListIds = uniqueNumbers([membersList, resignedList, prospectsList]);
 
     for (const group of groupShareholdersByEmail(shareholders)) {
       if (!group.email) {
@@ -290,6 +293,7 @@ export class AudienceSyncService {
         group.email,
         membersList,
         resignedList,
+        prospectsList,
         summary,
       );
       for (const secondary of secondaries) {
@@ -305,16 +309,17 @@ export class AudienceSyncService {
     email: string,
     membersList: number,
     resignedList: number | null,
+    prospectsList: number | null,
     summary: ReconcileSummary,
   ): Promise<void> {
-    const plan = planForStatus(shareholder.status, membersList, resignedList, true);
+    const plan = planForStatus(shareholder.status, membersList, resignedList, prospectsList, true);
     await this.runContact(
       provider,
       shareholder.id,
       {
         extId: shareholder.id,
         email,
-        attributes: nameAttributes(shareholder),
+        attributes: memberContactAttributes(shareholder),
         addListIds: plan.addListIds,
         removeListIds: plan.removeListIds,
         createIfMissing: plan.createIfMissing,
@@ -336,7 +341,7 @@ export class AudienceSyncService {
     // An ACTIVE shareholder whose email was removed may still sit on the members
     // list under their EXT_ID. Unlink that contact. Do not create one, and do
     // not delete it. INACTIVE/PENDING follow the same list plan, still by EXT_ID.
-    const plan = planForStatus(shareholder.status, membersList, resignedList, false);
+    const plan = planForStatus(shareholder.status, membersList, resignedList, null, false);
     await this.runContact(
       provider,
       shareholder.id,
@@ -405,10 +410,20 @@ function listId(value: string | null | undefined): number | null {
 }
 
 function nameAttributes(shareholder: SelectedShareholder): UpsertContactInput['attributes'] {
-  return {
-    FIRSTNAME: shareholder.firstName ?? undefined,
-    LASTNAME: shareholder.lastName ?? shareholder.companyName ?? undefined,
-  };
+  const attributes: UpsertContactInput['attributes'] = {};
+  if (shareholder.firstName) attributes.FIRSTNAME = shareholder.firstName;
+  const lastName = shareholder.lastName ?? shareholder.companyName;
+  if (lastName) attributes.LASTNAME = lastName;
+  return attributes;
+}
+
+function uniqueNumbers(ids: Array<number | null | undefined>): number[] {
+  const out: number[] = [];
+  for (const id of ids) {
+    if (id == null || out.includes(id)) continue;
+    out.push(id);
+  }
+  return out;
 }
 
 /**
@@ -421,6 +436,7 @@ function planForStatus(
   status: string,
   membersList: number,
   resignedList: number | null,
+  prospectsList: number | null,
   withEmail: boolean,
 ): {
   addListIds: number[];
@@ -439,7 +455,11 @@ function planForStatus(
     }
     return {
       addListIds: [membersList],
-      removeListIds: resignedList ? [resignedList] : [],
+      // Drop the contact from prospects when they become (or stay) ACTIVE.
+      // Never remove the members list we are adding them to.
+      removeListIds: uniqueNumbers([resignedList, prospectsList]).filter(
+        (id) => id !== membersList,
+      ),
       createIfMissing: true,
       intent: 'active',
     };

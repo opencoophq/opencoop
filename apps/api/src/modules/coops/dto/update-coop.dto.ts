@@ -172,6 +172,15 @@ export class UpdateCoopDto {
   @IsString()
   brevoResignedListId?: string;
 
+  @ApiProperty({
+    required: false,
+    description: 'Brevo prospects list id. Active members are removed from it.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  brevoProspectsListId?: string | null;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()

@@ -365,15 +365,31 @@ model BrevoSyncRun {
 | email          | `resolveShareholderEmail(shareholder)`  | contact email (mutable)    |
 | `FIRSTNAME`    | `Shareholder.firstName`                 | merge field                |
 | `LASTNAME`     | `Shareholder.lastName` / `companyName`  | merge field                |
+| `COOPERANT`    | `true` when ACTIVE, otherwise `false`   | boolean; must already exist |
+| `STATUS`       | `'active'` or `'resigned'`              | text; must already exist    |
+
+`STATUS` is set to `active` for ACTIVE and `resigned` for INACTIVE. PENDING shareholders
+are not labelled resigned (`COOPERANT=false`, `STATUS` omitted). The provider interface
+accepts a generic `attributes` map (`string | number | boolean | null`) in addition to
+the name fields.
+
+`Coop.brevoProspectsListId` (nullable) is optional. When it is set, an ACTIVE shareholder
+is removed from that list as well as from the resigned list. The id is edited in the
+audience-sync settings section. Test connection (`POST .../audience-sync/test`) checks
+that `COOPERANT` (boolean) and `STATUS` (text) already exist and reports
+`MISSING_ATTRIBUTES` when they do not. It does not create them. A sync that sends an
+unknown attribute gets Brevo `400` and is stored as `UNKNOWN_ATTRIBUTE` on that
+shareholder; the rest of the run continues.
 
 Verified live (`GET /v3/contacts/attributes`, Bronsgroen CV, 2026-06-18) — the account's
-editable attributes are `FIRSTNAME`, `LASTNAME`, `SMS`, `EXT_ID`, `LANDLINE_NUMBER`,
+editable attributes were `FIRSTNAME`, `LASTNAME`, `SMS`, `EXT_ID`, `LANDLINE_NUMBER`,
 `CONTACT_TIMEZONE`, `JOB_TITLE`, `LINKEDIN` (plus computed globals `BLACKLIST`,
-`READERS`, `CLICKERS`). There is **no** `LANGUAGE` / `SHARES` / `MEMBER_SINCE` attribute,
-so v1 maps only the fields that already exist.
+`READERS`, `CLICKERS`). There is **no** `LANGUAGE` / `SHARES` / `MEMBER_SINCE` attribute.
 
-Richer attributes are a future iteration, gated on first **creating** the matching custom
-attributes in the coop's Brevo account (`POST /v3/contacts/attributes`).
+`COOPERANT` and `STATUS` are not in that snapshot. They must be created in the Brevo
+account before a coop turns them on (boolean and text). OpenCoop does not create them.
+Test connection reports them missing; a sync that still sends an unknown name records
+`UNKNOWN_ATTRIBUTE` for that shareholder and continues.
 
 ### 7. Error handling & safety
 

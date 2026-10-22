@@ -26,10 +26,19 @@ describe('BrevoProvider', () => {
     global.fetch = jest.fn();
   });
 
-  it('verifyConnection returns ok on 200', async () => {
+  it('verifyConnection returns ok on 200 when COOPERANT and STATUS exist', async () => {
     mockFetchOnce(200, { email: 'x@y.z' });
+    mockFetchOnce(200, {
+      attributes: [
+        { name: 'COOPERANT', type: 'boolean' },
+        { name: 'STATUS', type: 'text' },
+        { name: 'FIRSTNAME', type: 'text' },
+      ],
+    });
     const p = new BrevoProvider('key');
     expect(await p.verifyConnection()).toEqual({ ok: true });
+    const [attrUrl] = (global.fetch as jest.Mock).mock.calls[1];
+    expect(attrUrl).toBe('https://api.brevo.com/v3/contacts/attributes');
     const [url, opts] = (global.fetch as jest.Mock).mock.calls[0];
     expect(url).toBe('https://api.brevo.com/v3/account');
     expect(opts.headers['api-key']).toBe('key');
@@ -41,6 +50,21 @@ describe('BrevoProvider', () => {
     const r = await p.verifyConnection();
     expect(r.ok).toBe(false);
     expect(r.detail).toContain('unrecognised IP');
+  });
+
+  it('verifyConnection reports missing COOPERANT and STATUS without creating them', async () => {
+    mockFetchOnce(200, { email: 'x@y.z' });
+    mockFetchOnce(200, { attributes: [{ name: 'STATUS', type: 'float' }] });
+    const p = new BrevoProvider('key');
+    const r = await p.verifyConnection();
+    expect(r.ok).toBe(false);
+    expect(r.detail).toContain('MISSING_ATTRIBUTES');
+    expect(r.detail).toContain('COOPERANT (boolean) is not defined');
+    expect(r.detail).toContain('STATUS must be text, found float');
+    expect((global.fetch as jest.Mock).mock.calls.map((call) => call[1].method)).toEqual([
+      'GET',
+      'GET',
+    ]);
   });
 
   it('listLists maps id+name', async () => {

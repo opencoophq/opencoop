@@ -52,6 +52,7 @@ describe('UpdateCoopSettingsDto', () => {
     ['emailAudienceProvider', 'brevo'],
     ['brevoMembersListId', 'members-list'],
     ['brevoResignedListId', 'resigned-list'],
+    ['brevoProspectsListId', 'prospects-list'],
     ['ecoPowerEnabled', true],
     ['ecoPowerMinThresholdType', 'EURO'],
     ['ecoPowerMinThreshold', 100],

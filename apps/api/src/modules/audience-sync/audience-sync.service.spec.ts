@@ -75,11 +75,70 @@ describe('AudienceSyncService', () => {
     expect(input).toMatchObject({
       extId: 'sh1',
       email: 'ann@x.be',
-      attributes: { FIRSTNAME: 'Ann', LASTNAME: 'De Vries' },
+      attributes: { FIRSTNAME: 'Ann', LASTNAME: 'De Vries', COOPERANT: true, STATUS: 'active' },
       addListIds: [3],
       removeListIds: [],
       createIfMissing: true,
     });
+  });
+
+  it('reconcileOne removes an ACTIVE member from the prospects list', async () => {
+    prisma.coop.findUnique.mockResolvedValue({
+      ...COOP,
+      brevoResignedListId: '9',
+      brevoProspectsListId: '15',
+    });
+    prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ status: 'ACTIVE' }));
+    await service.reconcileOne('c1', 'sh1');
+    expect(upsert.mock.calls[0][0]).toMatchObject({
+      addListIds: [3],
+      removeListIds: [9, 15],
+      attributes: { COOPERANT: true, STATUS: 'active' },
+    });
+  });
+
+  it('reconcileOne marks an INACTIVE shareholder as resigned and does not touch prospects', async () => {
+    prisma.coop.findUnique.mockResolvedValue({
+      ...COOP,
+      brevoResignedListId: '9',
+      brevoProspectsListId: '15',
+    });
+    prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ status: 'INACTIVE' }));
+    await service.reconcileOne('c1', 'sh1');
+    expect(upsert.mock.calls[0][0]).toMatchObject({
+      addListIds: [9],
+      removeListIds: [3],
+      attributes: { COOPERANT: false, STATUS: 'resigned' },
+    });
+    expect(upsert.mock.calls[0][0].removeListIds).not.toContain(15);
+  });
+
+  it('reconcileOne does not label a PENDING shareholder as resigned', async () => {
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ status: 'PENDING' }));
+    await service.reconcileOne('c1', 'sh1');
+    expect(upsert.mock.calls[0][0].attributes).toMatchObject({ COOPERANT: false });
+    expect(upsert.mock.calls[0][0].attributes).not.toHaveProperty('STATUS');
+  });
+
+  it('reconcileAll records UNKNOWN_ATTRIBUTE and keeps going', async () => {
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    prisma.shareholder.findMany.mockResolvedValue([
+      makeShareholder({ id: 'a', email: 'a@x.be' }),
+      makeShareholder({ id: 'b', email: 'b@x.be' }),
+    ]);
+    upsert
+      .mockRejectedValueOnce(new AudienceProviderError('UNKNOWN_ATTRIBUTE'))
+      .mockResolvedValueOnce('updated');
+    const s = await service.reconcileAll('c1', 'cron');
+    expect(s.failed).toBe(1);
+    expect(s.updated).toBe(1);
+    expect(s.errors[0]).toMatchObject({ shareholderId: 'a', code: 'UNKNOWN_ATTRIBUTE' });
+    expect(prisma.brevoSyncRun.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'PARTIAL' }),
+      }),
+    );
   });
 
   it('reconcileOne counts a created contact separately from an update', async () => {
@@ -246,7 +305,12 @@ describe('AudienceSyncService', () => {
     expect(upsert.mock.calls[0][0]).toMatchObject({
       extId: 'parent',
       email: 'parent@x.be',
-      attributes: { FIRSTNAME: 'Ann', LASTNAME: 'De Vries' },
+      attributes: {
+        FIRSTNAME: 'Ann',
+        LASTNAME: 'De Vries',
+        COOPERANT: true,
+        STATUS: 'active',
+      },
       addListIds: [3],
       removeListIds: [9],
       createIfMissing: true,

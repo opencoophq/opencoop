@@ -1929,6 +1929,8 @@
     "testConnection": "Tester la connexion",
     "membersList": "Liste des membres",
     "resignedList": "Liste des membres démissionnaires (facultatif)",
+    "prospectsList": "Liste des prospects (facultatif)",
+    "prospectsListHint": "Lorsqu'une personne devient membre actif, son contact est retiré de cette liste.",
     "pickList": "Choisir une liste",
     "optional": "Facultatif",
     "syncNow": "Synchroniser maintenant",

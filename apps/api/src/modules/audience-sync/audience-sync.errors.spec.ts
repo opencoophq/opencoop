@@ -28,6 +28,16 @@ describe('mapBrevoHttpError', () => {
       mapBrevoHttpError(400, JSON.stringify({ code: 'invalid_parameter', message: 'bad a@b.c' }))
         .code,
     ).toBe('INVALID_PARAMETER');
+    const unknown = mapBrevoHttpError(
+      400,
+      JSON.stringify({
+        code: 'invalid_parameter',
+        message: 'Attribute COOPERANT does not exist for hidden@x.be',
+      }),
+    );
+    expect(unknown.code).toBe('UNKNOWN_ATTRIBUTE');
+    expect(unknown.message).toBe('UNKNOWN_ATTRIBUTE');
+    expect(unknown.message).not.toContain('hidden@x.be');
     expect(
       mapBrevoHttpError(401, JSON.stringify({ code: 'unauthorized', message: 'unrecognised IP' }))
         .code,

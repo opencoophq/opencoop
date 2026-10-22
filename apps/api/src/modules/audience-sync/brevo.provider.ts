@@ -5,6 +5,7 @@ import {
   UpsertContactInput,
   UpsertResult,
 } from './audience-provider.interface';
+import { describeMissingBrevoAttributes } from './audience-sync.attributes';
 import { AudienceProviderError, mapBrevoHttpError } from './audience-sync.errors';
 import { normalizeEmail } from './audience-sync.grouping';
 
@@ -25,9 +26,25 @@ export class BrevoProvider implements EmailAudienceProvider {
 
   async verifyConnection(): Promise<{ ok: boolean; detail?: string }> {
     const res = await fetch(`${BASE}/account`, { method: 'GET', headers: this.headers() });
-    if (res.ok) return { ok: true };
-    const body = await res.text();
-    return { ok: false, detail: `${res.status}: ${body}` };
+    if (!res.ok) {
+      const body = await res.text();
+      return { ok: false, detail: `${res.status}: ${body}` };
+    }
+
+    // Report missing COOPERANT / STATUS. Do not create them.
+    const attrRes = await fetch(`${BASE}/contacts/attributes`, {
+      method: 'GET',
+      headers: this.headers(),
+    });
+    if (!attrRes.ok) {
+      return { ok: false, detail: `ATTRIBUTES_UNAVAILABLE: ${attrRes.status}` };
+    }
+    const json = (await attrRes.json()) as {
+      attributes?: Array<{ name?: string; type?: string }>;
+    };
+    const missing = describeMissingBrevoAttributes(json.attributes ?? []);
+    if (missing) return { ok: false, detail: missing };
+    return { ok: true };
   }
 
   async listLists(): Promise<BrevoList[]> {

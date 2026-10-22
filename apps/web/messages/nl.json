@@ -1932,6 +1932,8 @@
     "testConnection": "Verbinding testen",
     "membersList": "Ledenlijst",
     "resignedList": "Lijst voor uitgetreden leden (optioneel)",
+    "prospectsList": "Prospectenlijst (optioneel)",
+    "prospectsListHint": "Wanneer iemand actief lid wordt, wordt het contact van deze lijst gehaald.",
     "pickList": "Kies een lijst",
     "optional": "Optioneel",
     "syncNow": "Nu synchroniseren",

@@ -23,6 +23,13 @@ describe('UpdateCoopDto charge-card fields', () => {
     expect(errors.some((e) => e.property === 'chargeCardReplacementFee')).toBe(true);
   });
 
+  it('accepts a prospects list id and null, and rejects a non-string', async () => {
+    expect(await errorsFor({ brevoProspectsListId: '42' })).toHaveLength(0);
+    expect(await errorsFor({ brevoProspectsListId: null })).toHaveLength(0);
+    const errors = await errorsFor({ brevoProspectsListId: 42 });
+    expect(errors.some((e) => e.property === 'brevoProspectsListId')).toBe(true);
+  });
+
   it('rejects a VAT rate above 100', async () => {
     const errors = await errorsFor({ chargeCardVatRate: 121 });
     expect(errors.some((e) => e.property === 'chargeCardVatRate')).toBe(true);
