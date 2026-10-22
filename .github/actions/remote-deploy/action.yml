@@ -24,11 +24,11 @@ inputs:
     description: Container checks to run after up, before the healthcheck
     required: true
   pull_services:
-    description: Services for `docker compose pull`. App deploys use `migrate api web` so postgres, redis, and docs stay untouched. Docs deploys use `docs`.
+    description: Services for `docker compose pull`. App deploys use `migrate api web` so postgres, redis, and docs are not pulled. Docs deploys use `docs`.
     required: false
     default: "migrate api web"
   up_services:
-    description: Services for `docker compose up -d`. App deploys use `migrate api web`. Docs deploys use `docs`.
+    description: Services for `docker compose up -d --no-deps`. App deploys use `migrate api web` (migrate finishes before api and web). Docs deploys use `docs`. Infra services are not recreated.
     required: false
     default: "migrate api web"
   health_url:

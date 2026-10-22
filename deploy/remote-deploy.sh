@@ -172,7 +172,17 @@ require_local_images() {
 compose_up() {
   local -a services=()
   read -r -a services <<< "$DEPLOY_UP_SERVICES"
-  compose_with_tag docker compose up -d "${services[@]}" </dev/null || return 1
+  # --no-deps: only the named services. Postgres, redis, and anything else
+  # in the compose file are not started and not recreated. --no-deps also
+  # drops depends_on, so an app deploy brings migrate to a successful exit
+  # before api and web are recreated.
+  if [ "$DEPLOY_UP_SERVICES" = "migrate api web" ]; then
+    compose_with_tag docker compose up -d --no-deps migrate </dev/null || return 1
+    verify_service migrate exited0 || return 1
+    compose_with_tag docker compose up -d --no-deps api web </dev/null || return 1
+    return 0
+  fi
+  compose_with_tag docker compose up -d --no-deps "${services[@]}" </dev/null || return 1
 }
 
 newest_container() {

@@ -346,12 +346,13 @@ assert_app_success() {
   assert grep -q '^SMTP_PASS=SUPERSECRETVALUE$' "$file"
   assert grep -q 'SUPERSECRETVALUE@postgres' "$file"
   assert [ "$(count_log 'cmd=pull ')" -eq 3 ]
-  assert [ "$(count_log 'cmd=up ')" -eq 1 ]
+  assert [ "$(count_log 'cmd=up ')" -eq 2 ]
   assert [ "$(count_log 'cmd=curl ')" -eq 1 ]
   assert awk -v new="$NEW_TAG" -v old="$OLD_TAG" '
     index($0, "cmd=pull ") {
       if (index($0, "envTAG=" new) == 0 || index($0, "fileTAG=" old) == 0) exit 1
       if ($0 !~ /args=migrate api web$/) exit 1
+      if (index($0, "postgres") || index($0, "redis")) exit 1
       if (index($0, "stdin=/dev/null") == 0) exit 1
       n++
     }
@@ -360,11 +361,16 @@ assert_app_success() {
   assert awk -v new="$NEW_TAG" '
     index($0, "cmd=up ") {
       if (index($0, "envTAG=" new) == 0 || index($0, "fileTAG=" new) == 0) exit 1
-      if ($0 !~ /args=-d migrate api web$/) exit 1
       if (index($0, "stdin=/dev/null") == 0) exit 1
-      found=1
+      if (index($0, "postgres") || index($0, "redis")) exit 1
+      n++
+      line[n] = $0
     }
-    END { if (!found) exit 1 }
+    END {
+      if (n != 2) exit 1
+      if (line[1] !~ /args=-d --no-deps migrate$/) exit 1
+      if (line[2] !~ /args=-d --no-deps api web$/) exit 1
+    }
   ' "$LAST_TMP/fake.log"
   local pull_line pre_line up_line ps_line curl_line
   pull_line=$(first_line 'cmd=pull ')
@@ -545,7 +551,7 @@ test_wrong_image_tag() {
   assert [ "$(count_log 'cmd=curl ')" -eq 0 ]
   assert [ "$(count_log 'cmd=ps ')" -ge 1 ]
   assert grep -q 'Restoring TAG' "$LAST_TMP/stdout"
-  assert grep -q "expected ghcr.io/opencoophq/opencoop-api:${NEW_TAG}" "$LAST_TMP/stdout"
+  assert grep -q "expected ghcr.io/opencoophq/opencoop-migrate:${NEW_TAG}" "$LAST_TMP/stdout"
   if grep -q 'healthcheck passed' "$LAST_TMP/stdout"; then
     fail "healthcheck ran after a bad image"
   fi
@@ -652,7 +658,7 @@ test_docs_success() {
     index($0, "cmd=up ") {
       if (index($0, "fileDOCS=" new) == 0 || index($0, "envDOCS=" new) == 0) exit 1
       if (index($0, "fileTAG=" app) == 0) exit 1
-      if ($0 !~ /args=-d docs$/) exit 1
+      if ($0 !~ /args=-d --no-deps docs$/) exit 1
       if (index($0, "stdin=/dev/null") == 0) exit 1
       ups++
     }
@@ -799,6 +805,9 @@ test_static_contracts() {
   assert grep -q '/tmp/opencoop-deploy-${DEPLOY_DIR}.lock' "${ROOT}/deploy/remote-deploy.sh"
   assert grep -q '.deploy-envtmp.XXXXXX' "${ROOT}/deploy/remote-deploy.sh"
   assert grep -q 'mv "$ENV_TMP" .env || return 1' "${ROOT}/deploy/remote-deploy.sh"
+  assert grep -q 'docker compose up -d --no-deps migrate' "${ROOT}/deploy/remote-deploy.sh"
+  assert grep -q 'docker compose up -d --no-deps api web' "${ROOT}/deploy/remote-deploy.sh"
+  assert grep -qF 'docker compose up -d --no-deps "${services[@]}"' "${ROOT}/deploy/remote-deploy.sh"
   if awk '
     /^[[:space:]]*#/ { next }
     /^[[:space:]]*(echo|die) / { next }
