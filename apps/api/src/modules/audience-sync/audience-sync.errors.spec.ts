@@ -39,6 +39,24 @@ describe('mapBrevoHttpError', () => {
     expect(unknown.message).toBe('UNKNOWN_ATTRIBUTE');
     expect(unknown.message).not.toContain('hidden@x.be');
     expect(
+      mapBrevoHttpError(
+        400,
+        JSON.stringify({
+          code: 'invalid_parameter',
+          message: 'Contact attribute STATUS is not defined',
+        }),
+      ).code,
+    ).toBe('UNKNOWN_ATTRIBUTE');
+    expect(
+      mapBrevoHttpError(
+        400,
+        JSON.stringify({
+          code: 'invalid_parameter',
+          message: 'Invalid contact attribute value',
+        }),
+      ).code,
+    ).toBe('INVALID_PARAMETER');
+    expect(
       mapBrevoHttpError(401, JSON.stringify({ code: 'unauthorized', message: 'unrecognised IP' }))
         .code,
     ).toBe('UNAUTHORIZED');

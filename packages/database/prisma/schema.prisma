@@ -1455,6 +1455,8 @@ model BrevoSyncRun {
   failed     Int       @default(0)
   /// [{ shareholderId?, email (masked), code, message }] — never raw Brevo text, never a full email.
   errors     Json?
+  /// Run-level warnings that do not fail the run. Example: { attributeStatus: "MISSING_ATTRIBUTES: ..." }.
+  warnings   Json?
 
   @@index([coopId, startedAt])
 }

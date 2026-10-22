@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, Max, MaxLength, IsNumber, IsEnum, ValidateIf, IsArray, ArrayMaxSize } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, Max, MaxLength, IsNumber, IsEnum, ValidateIf, IsArray, ArrayMaxSize, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { EcoPowerThresholdType } from '@opencoop/database';
 
@@ -162,23 +162,26 @@ export class UpdateCoopDto {
   @IsString()
   brevoApiKey?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: 'Numeric Brevo list id' })
   @IsOptional()
   @IsString()
-  brevoMembersListId?: string;
+  @Matches(/^\d+$/, { message: 'Brevo list id must contain only digits' })
+  brevoMembersListId?: string | null;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: 'Numeric Brevo list id' })
   @IsOptional()
   @IsString()
-  brevoResignedListId?: string;
+  @Matches(/^\d+$/, { message: 'Brevo list id must contain only digits' })
+  brevoResignedListId?: string | null;
 
   @ApiProperty({
     required: false,
-    description: 'Brevo prospects list id. Active members are removed from it.',
+    description: 'Numeric Brevo prospects list id. Active members are removed from it.',
   })
   @IsOptional()
   @IsString()
   @MaxLength(64)
+  @Matches(/^\d+$/, { message: 'Brevo list id must contain only digits' })
   brevoProspectsListId?: string | null;
 
   @ApiProperty({ required: false })

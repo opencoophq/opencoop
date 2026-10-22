@@ -69,3 +69,37 @@ export function describeMissingBrevoAttributes(
   if (problems.length === 0) return null;
   return `MISSING_ATTRIBUTES: ${problems.join('; ')}`;
 }
+
+export interface MemberAttributeSupport {
+  cooperant: boolean;
+  status: boolean;
+  /** Set when COOPERANT or STATUS cannot be sent. This does not fail the run. */
+  warning: string | null;
+}
+
+/** Which of COOPERANT / STATUS may be written. A wrong type counts as absent. */
+export function memberAttributeSupport(
+  attributes: readonly BrevoAttributeDefinition[],
+): MemberAttributeSupport {
+  const byName = new Map<string, string>();
+  for (const attribute of attributes) {
+    if (!attribute.name) continue;
+    byName.set(attribute.name.toUpperCase(), (attribute.type ?? '').toLowerCase());
+  }
+  return {
+    cooperant: byName.get('COOPERANT') === 'boolean',
+    status: byName.get('STATUS') === 'text',
+    warning: describeMissingBrevoAttributes(attributes),
+  };
+}
+
+/** Drop COOPERANT / STATUS when this Brevo account does not define them. */
+export function filterMemberAttributes(
+  attributes: Record<string, ContactAttributeValue>,
+  support: MemberAttributeSupport,
+): Record<string, ContactAttributeValue> {
+  const next = { ...attributes };
+  if (!support.cooperant) delete next.COOPERANT;
+  if (!support.status) delete next.STATUS;
+  return next;
+}

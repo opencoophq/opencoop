@@ -58,7 +58,10 @@ export class AudienceProviderError extends Error {
   }
 }
 
-/** True when a Brevo 400 is about an attribute the account does not define. */
+/**
+ * True only for Brevo's unknown-attribute wording. A message that merely
+ * contains "attribute" (an invalid value, for example) stays INVALID_PARAMETER.
+ */
 export function isUnknownAttributeBody(bodyText: string): boolean {
   let message = bodyText;
   try {
@@ -67,7 +70,9 @@ export function isUnknownAttributeBody(bodyText: string): boolean {
   } catch {
     message = bodyText;
   }
-  return /attribute/i.test(message);
+  return /attribute[^.]*does not exist|attribute[^.]*is not defined|unknown attribute/i.test(
+    message,
+  );
 }
 
 export function mapBrevoHttpError(status: number, bodyText: string): AudienceProviderError {

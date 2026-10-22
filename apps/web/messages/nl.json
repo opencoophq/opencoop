@@ -1939,6 +1939,7 @@
     "syncNow": "Nu synchroniseren",
     "syncQueued": "Synchronisatie gestart.",
     "testOk": "Verbinding OK.",
+    "missingAttributes": "COOPERANT (ja/nee) of STATUS (tekst) ontbreekt in Brevo, dus die kenmerken worden niet meegestuurd. Maak ze aan in Brevo; deze synchronisatie maakt ze niet aan.",
     "testFail": "Verbinding mislukt",
     "loadListsFail": "Kon lijsten niet laden",
     "error": "Er ging iets mis."

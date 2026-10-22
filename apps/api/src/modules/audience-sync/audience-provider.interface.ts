@@ -33,7 +33,16 @@ export type UpsertResult = 'created' | 'updated' | 'noop';
 
 /** Provider-agnostic seam. Knows nothing about shareholders or coops. */
 export interface EmailAudienceProvider {
-  verifyConnection(): Promise<{ ok: boolean; detail?: string }>;
+  /**
+   * Account check. `ok` is the connection. A missing COOPERANT/STATUS attribute
+   * is `warning`, not a failed connection. The sync does not create attributes.
+   */
+  verifyConnection(): Promise<{ ok: boolean; detail?: string; warning?: string }>;
+  /**
+   * Contact attribute definitions. Implementations may cache this briefly so a
+   * burst of reconcile-one calls does not refetch.
+   */
+  listContactAttributes(): Promise<Array<{ name?: string; type?: string }>>;
   listLists(): Promise<BrevoList[]>;
   /** Idempotent upsert addressed by EXT_ID; never sets emailBlacklisted. */
   upsertContact(input: UpsertContactInput): Promise<UpsertResult>;

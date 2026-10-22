@@ -38,6 +38,11 @@ describe('AudienceSyncService', () => {
     jest.spyOn(factory, 'getAudienceProvider').mockReturnValue({
       verifyConnection: jest.fn(),
       listLists: jest.fn(),
+      listContactAttributes: jest.fn().mockResolvedValue([
+        { name: 'COOPERANT', type: 'boolean' },
+        { name: 'STATUS', type: 'text' },
+        { name: 'FIRSTNAME', type: 'text' },
+      ]),
       upsertContact: upsert,
     } as any);
 
@@ -82,7 +87,7 @@ describe('AudienceSyncService', () => {
     });
   });
 
-  it('reconcileOne removes an ACTIVE member from the prospects list', async () => {
+  it('reconcileOne removes an ACTIVE member from the prospects list on create as well as update', async () => {
     prisma.coop.findUnique.mockResolvedValue({
       ...COOP,
       brevoResignedListId: '9',
@@ -93,7 +98,24 @@ describe('AudienceSyncService', () => {
     expect(upsert.mock.calls[0][0]).toMatchObject({
       addListIds: [3],
       removeListIds: [9, 15],
+      createIfMissing: true,
       attributes: { COOPERANT: true, STATUS: 'active' },
+    });
+  });
+
+  it('sends resigned attributes for an INACTIVE shareholder with no email', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ ...COOP, brevoResignedListId: '9' });
+    prisma.shareholder.findFirst.mockResolvedValue(
+      makeShareholder({ status: 'INACTIVE', email: null, user: null }),
+    );
+    await service.reconcileOne('c1', 'sh1');
+    expect(upsert.mock.calls[0][0]).toMatchObject({
+      extId: 'sh1',
+      email: null,
+      createIfMissing: false,
+      addListIds: [9],
+      removeListIds: [3],
+      attributes: expect.objectContaining({ COOPERANT: false, STATUS: 'resigned' }),
     });
   });
 
@@ -119,6 +141,39 @@ describe('AudienceSyncService', () => {
     await service.reconcileOne('c1', 'sh1');
     expect(upsert.mock.calls[0][0].attributes).toMatchObject({ COOPERANT: false });
     expect(upsert.mock.calls[0][0].attributes).not.toHaveProperty('STATUS');
+  });
+
+  it('omits missing COOPERANT and STATUS without marking the run PARTIAL', async () => {
+    const provider = factory.getAudienceProvider({} as never) as any;
+    provider.listContactAttributes.mockResolvedValue([{ name: 'FIRSTNAME', type: 'text' }]);
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    prisma.shareholder.findMany.mockResolvedValue([
+      makeShareholder({ id: 'a', email: 'a@x.be' }),
+      makeShareholder({ id: 'b', email: 'b@x.be' }),
+    ]);
+
+    const s = await service.reconcileAll('c1', 'cron');
+
+    expect(provider.listContactAttributes).toHaveBeenCalledTimes(1);
+    expect(s.failed).toBe(0);
+    expect(s.updated).toBe(2);
+    expect(s.errors).toEqual([]);
+    for (const call of upsert.mock.calls) {
+      expect(call[0].attributes).not.toHaveProperty('COOPERANT');
+      expect(call[0].attributes).not.toHaveProperty('STATUS');
+      expect(call[0].addListIds).toEqual([3]);
+    }
+    expect(prisma.brevoSyncRun.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'OK',
+          failed: 0,
+          warnings: {
+            attributeStatus: expect.stringContaining('MISSING_ATTRIBUTES'),
+          },
+        }),
+      }),
+    );
   });
 
   it('reconcileAll records UNKNOWN_ATTRIBUTE and keeps going', async () => {
@@ -364,6 +419,7 @@ describe('AudienceSyncService', () => {
       removeListIds: [],
       createIfMissing: true,
       claimFromExtIds: ['inactive'],
+      attributes: expect.objectContaining({ COOPERANT: true, STATUS: 'active' }),
     });
     const unlinked = upsert.mock.calls.filter(
       (call) => (call[0] as { addListIds: number[] }).addListIds.length === 0,

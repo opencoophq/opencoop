@@ -1,4 +1,4 @@
-import { BrevoProvider } from './brevo.provider';
+import { BrevoProvider, clearBrevoAttributeCache } from './brevo.provider';
 
 function mockFetchOnce(status: number, body: unknown) {
   (global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -24,6 +24,7 @@ function expectNoEmailOnOtherContacts(primaryExtId: string) {
 describe('BrevoProvider', () => {
   beforeEach(() => {
     global.fetch = jest.fn();
+    clearBrevoAttributeCache();
   });
 
   it('verifyConnection returns ok on 200 when COOPERANT and STATUS exist', async () => {
@@ -57,14 +58,32 @@ describe('BrevoProvider', () => {
     mockFetchOnce(200, { attributes: [{ name: 'STATUS', type: 'float' }] });
     const p = new BrevoProvider('key');
     const r = await p.verifyConnection();
-    expect(r.ok).toBe(false);
-    expect(r.detail).toContain('MISSING_ATTRIBUTES');
-    expect(r.detail).toContain('COOPERANT (boolean) is not defined');
-    expect(r.detail).toContain('STATUS must be text, found float');
+    expect(r.ok).toBe(true);
+    expect(r.detail).toBeUndefined();
+    expect(r.warning).toContain('MISSING_ATTRIBUTES');
+    expect(r.warning).toContain('COOPERANT (boolean) is not defined');
+    expect(r.warning).toContain('STATUS must be text, found float');
     expect((global.fetch as jest.Mock).mock.calls.map((call) => call[1].method)).toEqual([
       'GET',
       'GET',
     ]);
+  });
+
+  it('caches contact attributes so a second read does not fetch again', async () => {
+    mockFetchOnce(200, {
+      attributes: [
+        { name: 'COOPERANT', type: 'boolean' },
+        { name: 'STATUS', type: 'text' },
+      ],
+    });
+    const first = new BrevoProvider('same-key');
+    const second = new BrevoProvider('same-key');
+    await first.listContactAttributes();
+    await second.listContactAttributes();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe(
+      'https://api.brevo.com/v3/contacts/attributes',
+    );
   });
 
   it('listLists maps id+name', async () => {

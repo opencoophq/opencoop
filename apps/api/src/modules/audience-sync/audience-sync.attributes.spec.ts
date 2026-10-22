@@ -1,5 +1,7 @@
 import {
   describeMissingBrevoAttributes,
+  filterMemberAttributes,
+  memberAttributeSupport,
   memberContactAttributes,
 } from './audience-sync.attributes';
 
@@ -57,5 +59,15 @@ describe('describeMissingBrevoAttributes', () => {
     const detail = describeMissingBrevoAttributes([{ name: 'STATUS', type: 'float' }]);
     expect(detail).toContain('COOPERANT (boolean) is not defined');
     expect(detail).toContain('STATUS must be text, found float');
+  });
+
+  it('drops only the attributes the account does not define', () => {
+    const support = memberAttributeSupport([{ name: 'STATUS', type: 'text' }]);
+    expect(support.cooperant).toBe(false);
+    expect(support.status).toBe(true);
+    expect(support.warning).toContain('MISSING_ATTRIBUTES');
+    expect(
+      filterMemberAttributes({ FIRSTNAME: 'Ann', COOPERANT: true, STATUS: 'active' }, support),
+    ).toEqual({ FIRSTNAME: 'Ann', STATUS: 'active' });
   });
 });

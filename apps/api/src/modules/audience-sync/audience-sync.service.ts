@@ -7,7 +7,12 @@ import {
   UpsertResult,
 } from './audience-provider.interface';
 import { AudienceProviderConfig, getAudienceProvider } from './audience-provider.factory';
-import { memberContactAttributes } from './audience-sync.attributes';
+import {
+  filterMemberAttributes,
+  memberAttributeSupport,
+  memberContactAttributes,
+  MemberAttributeSupport,
+} from './audience-sync.attributes';
 import { SyncErrorDetail, toSyncErrorDetail } from './audience-sync.errors';
 import { groupShareholdersByEmail, resolvedGroupEmail } from './audience-sync.grouping';
 
@@ -108,8 +113,9 @@ export class AudienceSyncService {
     }
 
     const provider = this.providerFor(coop);
+    const attributeSupport = await this.loadAttributeSupport(coopId, provider);
     const shareholders = await this.loadEmailGroup(coopId, shareholder);
-    await this.applyShareholders(provider, coop, shareholders, summary);
+    await this.applyShareholders(provider, coop, shareholders, summary, attributeSupport);
     return summary;
   }
 
@@ -127,6 +133,7 @@ export class AudienceSyncService {
       return summary;
     }
 
+    let attributeSupport: MemberAttributeSupport | null = null;
     try {
       await this.prisma.coop.update({
         where: { id: coopId },
@@ -134,11 +141,12 @@ export class AudienceSyncService {
       });
 
       const provider = this.providerFor(coop);
+      attributeSupport = await this.loadAttributeSupport(coopId, provider);
       const shareholders = await this.prisma.shareholder.findMany({
         where: { coopId },
         select: SHAREHOLDER_SELECT,
       });
-      await this.applyShareholders(provider, coop, shareholders, summary);
+      await this.applyShareholders(provider, coop, shareholders, summary, attributeSupport);
 
       const status = summary.failed > 0 ? 'PARTIAL' : 'OK';
       await this.prisma.brevoSyncRun.update({
@@ -157,6 +165,7 @@ export class AudienceSyncService {
           errors: summary.errors.length
             ? (summary.errors as unknown as Prisma.InputJsonValue)
             : undefined,
+          warnings: warningJson(attributeSupport),
         },
       });
       await this.prisma.coop.update({
@@ -173,6 +182,7 @@ export class AudienceSyncService {
             status: 'ERROR',
             finishedAt: new Date(),
             errors: [detail] as unknown as Prisma.InputJsonValue,
+            warnings: warningJson(attributeSupport),
           },
         });
       } catch (recoveryErr) {
@@ -257,11 +267,36 @@ export class AudienceSyncService {
     return grouped.length > 0 ? grouped : [shareholder];
   }
 
+  /**
+   * One attribute read per run. A short provider cache covers reconcile-one
+   * bursts. Missing COOPERANT/STATUS is a warning: those keys are left out and
+   * the list sync still runs. It does not increment `failed`.
+   */
+  private async loadAttributeSupport(
+    coopId: string,
+    provider: EmailAudienceProvider,
+  ): Promise<MemberAttributeSupport> {
+    try {
+      const definitions = await provider.listContactAttributes();
+      const support = memberAttributeSupport(definitions);
+      if (support.warning) {
+        this.logger.warn(`audience-sync ${coopId}: ${support.warning}`);
+      }
+      return support;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const warning = 'MISSING_ATTRIBUTES: contact attributes could not be read';
+      this.logger.warn(`audience-sync ${coopId}: ${warning} (${message})`);
+      return { cooperant: false, status: false, warning };
+    }
+  }
+
   private async applyShareholders(
     provider: EmailAudienceProvider,
     coop: CoopAudienceConfig,
     shareholders: SelectedShareholder[],
     summary: ReconcileSummary,
+    attributeSupport: MemberAttributeSupport,
   ): Promise<void> {
     const membersList = listId(coop.brevoMembersListId);
     const resignedList = listId(coop.brevoResignedListId);
@@ -281,6 +316,7 @@ export class AudienceSyncService {
           membersList,
           resignedList,
           summary,
+          attributeSupport,
         );
         continue;
       }
@@ -295,6 +331,7 @@ export class AudienceSyncService {
         resignedList,
         prospectsList,
         summary,
+        attributeSupport,
       );
       for (const secondary of secondaries) {
         await this.unlinkContact(provider, secondary.id, managedListIds, true, summary);
@@ -311,6 +348,7 @@ export class AudienceSyncService {
     resignedList: number | null,
     prospectsList: number | null,
     summary: ReconcileSummary,
+    attributeSupport: MemberAttributeSupport,
   ): Promise<void> {
     const plan = planForStatus(shareholder.status, membersList, resignedList, prospectsList, true);
     await this.runContact(
@@ -319,7 +357,7 @@ export class AudienceSyncService {
       {
         extId: shareholder.id,
         email,
-        attributes: memberContactAttributes(shareholder),
+        attributes: filterMemberAttributes(memberContactAttributes(shareholder), attributeSupport),
         addListIds: plan.addListIds,
         removeListIds: plan.removeListIds,
         createIfMissing: plan.createIfMissing,
@@ -337,18 +375,24 @@ export class AudienceSyncService {
     membersList: number,
     resignedList: number | null,
     summary: ReconcileSummary,
+    attributeSupport: MemberAttributeSupport,
   ): Promise<void> {
     // An ACTIVE shareholder whose email was removed may still sit on the members
     // list under their EXT_ID. Unlink that contact. Do not create one, and do
-    // not delete it. INACTIVE/PENDING follow the same list plan, still by EXT_ID.
+    // not delete it. A resigned shareholder with no email still gets
+    // COOPERANT=false and STATUS=resigned when that contact exists.
     const plan = planForStatus(shareholder.status, membersList, resignedList, null, false);
+    const raw =
+      shareholder.status === 'INACTIVE'
+        ? memberContactAttributes(shareholder)
+        : nameAttributes(shareholder);
     await this.runContact(
       provider,
       shareholder.id,
       {
         extId: shareholder.id,
         email: null,
-        attributes: nameAttributes(shareholder),
+        attributes: filterMemberAttributes(raw, attributeSupport),
         addListIds: plan.addListIds,
         removeListIds: plan.removeListIds,
         createIfMissing: false,
@@ -501,4 +545,9 @@ function tally(
   }
   if (result === 'created') summary.created++;
   else summary.updated++;
+}
+
+function warningJson(support: MemberAttributeSupport | null): Prisma.InputJsonValue | undefined {
+  if (!support?.warning) return undefined;
+  return { attributeStatus: support.warning };
 }

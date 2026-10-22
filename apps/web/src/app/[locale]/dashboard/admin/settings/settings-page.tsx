@@ -607,13 +607,19 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     if (!selectedCoop) return;
     setAudienceLoading(true);
     try {
-      const r = await api<{ ok: boolean; detail?: string }>(
+      const r = await api<{ ok: boolean; detail?: string; warning?: string }>(
         `/admin/coops/${selectedCoop.id}/audience-sync/test`,
         { method: 'POST' }
       );
+      const warningText = r.warning?.startsWith('MISSING_ATTRIBUTES')
+        ? t('brevo.missingAttributes')
+        : r.warning;
       setAudienceMsg(
         r.ok
-          ? { text: t('brevo.testOk'), error: false }
+          ? {
+              text: warningText ? `${t('brevo.testOk')} ${warningText}` : t('brevo.testOk'),
+              error: false,
+            }
           : { text: `${t('brevo.testFail')}: ${r.detail ?? ''}`, error: true }
       );
     } catch {

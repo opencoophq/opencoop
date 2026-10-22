@@ -1936,6 +1936,7 @@
     "syncNow": "Synchroniser maintenant",
     "syncQueued": "Synchronisation démarrée.",
     "testOk": "Connexion OK.",
+    "missingAttributes": "COOPERANT (oui/non) ou STATUS (texte) manque dans Brevo, donc ces attributs ne sont pas envoyés. Créez-les dans Brevo ; cette synchronisation ne les crée pas.",
     "testFail": "Échec de la connexion",
     "loadListsFail": "Impossible de charger les listes",
     "error": "Une erreur s'est produite."

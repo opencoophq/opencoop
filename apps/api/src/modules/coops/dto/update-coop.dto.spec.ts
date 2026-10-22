@@ -9,7 +9,12 @@ describe('UpdateCoopDto charge-card fields', () => {
 
   it('accepts the Bronsgroen values', async () => {
     expect(
-      await errorsFor({ chargeCardsEnabled: true, chargeCardFee: 6, chargeCardReplacementFee: 12, chargeCardVatRate: 21 }),
+      await errorsFor({
+        chargeCardsEnabled: true,
+        chargeCardFee: 6,
+        chargeCardReplacementFee: 12,
+        chargeCardVatRate: 21,
+      }),
     ).toHaveLength(0);
   });
 
@@ -23,10 +28,32 @@ describe('UpdateCoopDto charge-card fields', () => {
     expect(errors.some((e) => e.property === 'chargeCardReplacementFee')).toBe(true);
   });
 
-  it('accepts a prospects list id and null, and rejects a non-string', async () => {
-    expect(await errorsFor({ brevoProspectsListId: '42' })).toHaveLength(0);
-    expect(await errorsFor({ brevoProspectsListId: null })).toHaveLength(0);
-    const errors = await errorsFor({ brevoProspectsListId: 42 });
+  it('accepts numeric Brevo list ids and null, and rejects anything else', async () => {
+    expect(
+      await errorsFor({
+        brevoMembersListId: '3',
+        brevoResignedListId: '9',
+        brevoProspectsListId: '42',
+      }),
+    ).toHaveLength(0);
+    expect(
+      await errorsFor({
+        brevoMembersListId: null,
+        brevoResignedListId: null,
+        brevoProspectsListId: null,
+      }),
+    ).toHaveLength(0);
+    const errors = await errorsFor({
+      brevoMembersListId: '3a',
+      brevoResignedListId: 'list-9',
+      brevoProspectsListId: 42,
+    });
+    expect(errors.find((e) => e.property === 'brevoMembersListId')?.constraints?.matches).toBe(
+      'Brevo list id must contain only digits',
+    );
+    expect(errors.find((e) => e.property === 'brevoResignedListId')?.constraints?.matches).toBe(
+      'Brevo list id must contain only digits',
+    );
     expect(errors.some((e) => e.property === 'brevoProspectsListId')).toBe(true);
   });
 
