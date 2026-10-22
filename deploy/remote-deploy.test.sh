@@ -801,6 +801,8 @@ test_static_contracts() {
   assert grep -q 'pull_services: docs' "${ROOT}/.github/workflows/docs-deploy.yml"
   assert grep -q 'pull_services: migrate api web' "${ROOT}/.github/workflows/build-deploy.yml"
   assert grep -q 'up_services: migrate api web' "${ROOT}/.github/workflows/build-deploy.yml"
+  assert grep -q 'MIGRATE_WAIT_ATTEMPTS:-300' "${ROOT}/deploy/remote-deploy.sh"
+  assert grep -q 'envvault git repo' "${ROOT}/deploy/remote-deploy.sh"
   assert grep -q 'flock -w 600' "${ROOT}/deploy/remote-deploy.sh"
   assert grep -q '/tmp/opencoop-deploy-${DEPLOY_DIR}.lock' "${ROOT}/deploy/remote-deploy.sh"
   assert grep -q '.deploy-envtmp.XXXXXX' "${ROOT}/deploy/remote-deploy.sh"

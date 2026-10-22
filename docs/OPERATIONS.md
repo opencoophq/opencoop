@@ -35,7 +35,8 @@ network with **no host ports exposed**.
    `deploy/remote-deploy.sh` with `set -euo pipefail`. The script retries
    `docker compose pull migrate api web` (backoff 10s, 20s, 40s, 80s) while the candidate `TAG` is set
    only on that command, **not** in `.env`. It then runs `docker compose up -d --no-deps migrate`, waits
-   until that container has exited 0, and runs `docker compose up -d --no-deps api web`. Postgres, redis,
+   up to 10 minutes (300 attempts, 2s apart) until that container has exited 0, and runs
+   `docker compose up -d --no-deps api web`. Postgres, redis,
    and the docs container are not pulled and not recreated. It writes `TAG=<sha>` only after api, web,
    and migrate are present locally and each has a registry digest. If `up` or the image check fails, it
    restores the previous `TAG` **in `.env` only**. That restore does not stop or recreate containers and
@@ -59,48 +60,70 @@ on `depends_on`. If a migration fails, the new API is not started — see Rollba
 
 ## Infra images (Postgres, Redis, nginx)
 
-Infra images are pinned to an exact tag in every compose file (`deploy/docker-compose.yml`
-for acc and prod, plus `docker-compose.yml`, `docker-compose.dev.yml`, and
+Infra images are pinned to an exact tag in every compose file in this repo
+(`deploy/docker-compose.yml`, plus `docker-compose.yml`, `docker-compose.dev.yml`, and
 `docker-compose.test.yml`). The e2e job in `.github/workflows/build-deploy.yml` uses the
 same Postgres and Redis tags. Dependabot does not edit that workflow, so an infra PR
 should bump those two lines with the compose files.
 
 An app deploy never pulls or recreates `postgres` or `redis`. Merging a pin change,
-including a Dependabot PR, only ships app images. The server compose file is not updated
-by the deploy job. Replacing `postgres:16-alpine` with `postgres:16.15-alpine` in git does
+including a Dependabot PR, only ships app images. The deploy job does not edit the compose
+file on the server. Replacing `postgres:16-alpine` with `postgres:16.15-alpine` in git does
 not restart the database.
+
+**Host compose files are managed by hand and differ from this repo.** Each one sets
+`name: opencoop-<env>` and local values such as `SENTRY_ENVIRONMENT`. Never copy
+`deploy/docker-compose.yml` from the repo onto the host. Without `name:`, Compose takes
+the directory name (`acc` or `prod`) as the project name and starts on **new empty
+volumes**.
+
+Known compose drift, not fixed in this PR: the host file is behind the repo on `PONTO_*`,
+`WEBAUTHN_RP_NAME`, `COOP_SIGNUP_NOTIFY_EMAIL`, the web `SENTRY_DSN`, the api healthcheck,
+and logging.
 
 `.github/dependabot.yml` uses the `docker-compose` ecosystem (supported for Compose v2/v3)
 on `/` and `/deploy`, weekly, at most 5 open pull requests, grouped as `infra-images`.
 Major Postgres and Redis bumps are ignored (`version-update:semver-major`): a major
-Postgres upgrade cannot reuse the existing data directory and needs a dump plus a restore
-into a new volume. Minor and patch bumps are opened. Dockerfiles (`node` base images,
-including `deploy/migrate.Dockerfile`) are the separate `docker` ecosystem, also weekly.
+Postgres upgrade cannot reuse the existing data directory and needs an encrypted dump plus
+a restore into a new volume. Minor and patch bumps are opened. Dockerfiles (`node` base
+images, including `deploy/migrate.Dockerfile`) are the separate `docker` ecosystem, also
+weekly.
 
-To apply a newer pinned image, acc first, then prod. Do this only when the tag in the
-compose file on the host is different from the image the container is already running.
-The pins landed with the deploy-hardening change match the images already running
-(`postgres:16.15-alpine`, `redis:7.4.11-alpine`); do not recreate them just to adopt that
-tag string. A later Dependabot bump is the point at which this command runs.
+To apply a newer pinned image, change **only the image line** on the host. Acc first, then
+prod. Do this only when the new tag is not the image the container is already running. The
+pins in this change match the images already running (`postgres:16.15-alpine`,
+`redis:7.4.11-alpine`); do not recreate them just to adopt that tag string. A later
+Dependabot bump is when the command below runs.
 
 ```bash
 # SSH to fsn1 (Tailscale) as wouter. Acc first.
 cd ~/opencoop/acc
-# Put the merged deploy/docker-compose.yml on the host (the app deploy does not).
+cp docker-compose.yml "docker-compose.yml.pre-infra-$(date -u +%Y%m%dT%H%M%SZ)"
+sed -i -E 's#^(\s*image:\s*)postgres:[0-9.]+-alpine#\1postgres:<NEW>-alpine#; s#^(\s*image:\s*)redis:[0-9.]+-alpine#\1redis:<NEW>-alpine#' docker-compose.yml
+grep -nE '^name:|image: (postgres|redis)' docker-compose.yml   # name must be opencoop-acc
 docker compose pull postgres redis
-docker compose up -d postgres redis
+docker compose up -d --no-deps postgres redis
+curl -fsS https://acc.opencoop.be/api/health
 
-# Prod, only after acc is healthy and after a fresh dump:
+# Prod, only after acc is healthy. Encrypted dump first (same as ~/opencoop/backup/backup.sh):
+set -o pipefail
 cd ~/opencoop/prod
-docker compose exec -T postgres pg_dump -U opencoop opencoop > "/tmp/opencoop-prod-$(date -u +%Y%m%dT%H%M%SZ).sql"
-docker compose pull postgres redis
-docker compose up -d postgres redis
+( umask 077; mkdir -p ~/backups/opencoop
+  F=~/backups/opencoop/opencoop_prod-pre-infra-$(date -u +%Y%m%dT%H%MZ).dump.age
+  docker exec opencoop-prod-postgres-1 pg_dump -U opencoop -Fc opencoop \
+    | age -R ~/.age-recipients -o "$F.partial" && mv "$F.partial" "$F" && chmod 600 "$F" \
+    && [ "$(stat -c %s "$F")" -gt 102400 ] && ls -l "$F" )   # stop if this fails
+# then the same cp/sed/grep (name must be opencoop-prod), pull, up -d --no-deps postgres redis, health check.
 ```
 
-> Never `docker compose down` here. `up -d postgres redis` recreates those containers
+Never write a plaintext dump, in `/tmp` or anywhere else. Restore with
+`age -d -i <identity> F | docker exec -i … pg_restore`. The age identity is in 1Password.
+
+> Never `docker compose down`. `up -d --no-deps postgres redis` recreates those containers
 > when the image tag changes and leaves the named volumes in place. A **major** Postgres
-> upgrade (for example 16 to 17) will not start on the old data directory. Dump, create a
-> new volume, restore, and change the pin by hand. Dependabot will not open that PR.
+> upgrade (for example 16 to 17) will not start on the old data directory. Take the
+> encrypted dump above, restore into a new volume, and change the pin by hand. Dependabot
+> will not open that PR.
 
 `nginx:1.31.8-alpine` is only in the local `docker-compose.yml`. It is not on acc or prod
 (Caddy terminates TLS there).
@@ -132,7 +155,7 @@ curl -fsS https://opencoop.be/api/health   # confirm healthy (acc.opencoop.be fo
 > (volumes `opencoop-prod_postgres_data`); a `down && up` can create a *new empty* volume and you
 > lose the database. Recreate app containers with `docker compose up -d --no-deps --force-recreate`.
 > To replace a single stuck container, `docker rm -f <name>` it, never `down`. Infra upgrades are
-> the separate `postgres` / `redis` commands above, after a dump on prod.
+> the separate image-line edit above, and on prod only after the encrypted `age` dump.
 
 ### If a migration failed mid-deploy
 The new API won't have started. Either fix-forward (push a corrected migration) or roll the `TAG`

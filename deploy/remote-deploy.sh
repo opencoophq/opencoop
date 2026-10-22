@@ -312,7 +312,7 @@ PULL_MAX_ATTEMPTS="${PULL_MAX_ATTEMPTS:-5}"
 PULL_RETRY_DELAY_SECONDS="${PULL_RETRY_DELAY_SECONDS:-10}"
 HEALTH_ATTEMPTS="${HEALTH_ATTEMPTS:-30}"
 HEALTH_DELAY_SECONDS="${HEALTH_DELAY_SECONDS:-2}"
-MIGRATE_WAIT_ATTEMPTS="${MIGRATE_WAIT_ATTEMPTS:-30}"
+MIGRATE_WAIT_ATTEMPTS="${MIGRATE_WAIT_ATTEMPTS:-300}"
 MIGRATE_WAIT_DELAY_SECONDS="${MIGRATE_WAIT_DELAY_SECONDS:-2}"
 
 require_shell_flags
@@ -386,7 +386,7 @@ if [ ! -f .env ]; then
   die ".env not found in ${HOME}/opencoop/${DEPLOY_DIR}"
 fi
 
-# The project directory is a git checkout. A lock file there shows up as untracked.
+# ~/opencoop/<env> sits inside the envvault git repo in ~. A lock file there shows up as untracked.
 exec 9>"/tmp/opencoop-deploy-${DEPLOY_DIR}.lock"
 if ! flock -w 600 9; then
   die "timed out waiting for the deploy lock"
