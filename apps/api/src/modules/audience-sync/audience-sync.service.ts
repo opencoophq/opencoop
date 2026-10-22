@@ -1,22 +1,45 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
-import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
-import { EmailAudienceProvider, UpsertContactInput } from './audience-provider.interface';
+import {
+  EmailAudienceProvider,
+  UpsertContactInput,
+  UpsertResult,
+} from './audience-provider.interface';
 import { AudienceProviderConfig, getAudienceProvider } from './audience-provider.factory';
+import { SyncErrorDetail, toSyncErrorDetail } from './audience-sync.errors';
+import { groupShareholdersByEmail, resolvedGroupEmail } from './audience-sync.grouping';
 
 export interface ReconcileSummary {
-  added: number;
+  created: number;
   updated: number;
+  /**
+   * Lists re-applied: Brevo accepted a PUT that adds one managed list and
+   * removes another. Membership was not re-read, so this is not a verified move.
+   */
   moved: number;
+  /**
+   * Lists re-applied: Brevo accepted a PUT that only removes managed lists.
+   * Membership was not re-read.
+   */
+  unlinked: number;
+  /** Provider returned 404 and nothing was created. The shareholder had an email. */
+  noop: number;
+  /** No resolvable email and no existing contact to change, or sync is not configured. */
   skipped: number;
   failed: number;
-  errors: Array<{ shareholderId: string; email: string | null; message: string }>;
+  errors: SyncErrorDetail[];
 }
 
+/** A RUNNING row older than this is a dead process. A younger one means skip. */
+const STALE_RUN_MS = 2 * 60 * 60 * 1000;
+
 const EMPTY = (): ReconcileSummary => ({
-  added: 0,
+  created: 0,
   updated: 0,
   moved: 0,
+  unlinked: 0,
+  noop: 0,
   skipped: 0,
   failed: 0,
   errors: [],
@@ -30,6 +53,8 @@ const SHAREHOLDER_SELECT = {
   lastName: true,
   companyName: true,
   email: true,
+  createdAt: true,
+  userId: true,
   user: { select: { email: true } },
 } as const;
 
@@ -45,8 +70,12 @@ type SelectedShareholder = {
   lastName: string | null;
   companyName: string | null;
   email: string | null;
+  createdAt: Date;
+  userId: string | null;
   user: { email: string | null } | null;
 };
+
+type ContactIntent = 'active' | 'move' | 'unlink';
 
 @Injectable()
 export class AudienceSyncService {
@@ -77,7 +106,8 @@ export class AudienceSyncService {
     }
 
     const provider = this.providerFor(coop);
-    await this.applyOne(provider, coop, shareholder, summary);
+    const shareholders = await this.loadEmailGroup(coopId, shareholder);
+    await this.applyShareholders(provider, coop, shareholders, summary);
     return summary;
   }
 
@@ -89,35 +119,42 @@ export class AudienceSyncService {
       return summary;
     }
 
-    await this.prisma.coop.update({
-      where: { id: coopId },
-      data: { brevoLastSyncStatus: 'RUNNING' },
-    });
+    const run = await this.openRun(coopId, trigger);
+    if (!run) {
+      this.logger.warn(`audience-sync skipped for ${coopId}: a run is already in progress`);
+      return summary;
+    }
 
     try {
-      const provider = this.providerFor(coop);
+      await this.prisma.coop.update({
+        where: { id: coopId },
+        data: { brevoLastSyncStatus: 'RUNNING' },
+      });
 
+      const provider = this.providerFor(coop);
       const shareholders = await this.prisma.shareholder.findMany({
         where: { coopId },
         select: SHAREHOLDER_SELECT,
       });
-      for (const shareholder of shareholders) {
-        await this.applyOne(provider, coop, shareholder, summary);
-      }
+      await this.applyShareholders(provider, coop, shareholders, summary);
 
       const status = summary.failed > 0 ? 'PARTIAL' : 'OK';
-      await this.prisma.brevoSyncRun.create({
+      await this.prisma.brevoSyncRun.update({
+        where: { id: run.id },
         data: {
-          coopId,
-          trigger,
           status,
           finishedAt: new Date(),
-          added: summary.added,
+          added: summary.created,
+          created: summary.created,
           updated: summary.updated,
           moved: summary.moved,
+          unlinked: summary.unlinked,
+          noop: summary.noop,
           skipped: summary.skipped,
           failed: summary.failed,
-          errors: summary.errors.length ? summary.errors : undefined,
+          errors: summary.errors.length
+            ? (summary.errors as unknown as Prisma.InputJsonValue)
+            : undefined,
         },
       });
       await this.prisma.coop.update({
@@ -126,7 +163,21 @@ export class AudienceSyncService {
       });
       return summary;
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const detail = toSyncErrorDetail(err);
+      try {
+        await this.prisma.brevoSyncRun.update({
+          where: { id: run.id },
+          data: {
+            status: 'ERROR',
+            finishedAt: new Date(),
+            errors: [detail] as unknown as Prisma.InputJsonValue,
+          },
+        });
+      } catch (recoveryErr) {
+        const recoveryMessage =
+          recoveryErr instanceof Error ? recoveryErr.message : String(recoveryErr);
+        this.logger.error(`audience-sync recovery run update failed: ${recoveryMessage}`);
+      }
       try {
         await this.prisma.coop.update({
           where: { id: coopId },
@@ -137,95 +188,297 @@ export class AudienceSyncService {
           recoveryErr instanceof Error ? recoveryErr.message : String(recoveryErr);
         this.logger.error(`audience-sync recovery coop update failed: ${recoveryMessage}`);
       }
-      try {
-        await this.prisma.brevoSyncRun.create({
-          data: {
-            coopId,
-            trigger,
-            finishedAt: new Date(),
-            status: 'ERROR',
-            errors: [{ message }],
-          },
-        });
-      } catch (recoveryErr) {
-        const recoveryMessage =
-          recoveryErr instanceof Error ? recoveryErr.message : String(recoveryErr);
-        this.logger.error(`audience-sync recovery run create failed: ${recoveryMessage}`);
-      }
       throw err;
     }
   }
 
-  private async applyOne(
+  /**
+   * One reconcile-all at a time per coop. The advisory lock is transaction-scoped
+   * so it is safe on the Prisma pool: it only covers marking a stale RUNNING row
+   * and inserting the new one. A RUNNING row younger than two hours is left
+   * alone and this call does nothing. Only an older RUNNING row is RUN_INTERRUPTED.
+   */
+  private async openRun(coopId: string, trigger: 'cron' | 'manual') {
+    const staleBefore = new Date(Date.now() - STALE_RUN_MS);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`audience-sync:${coopId}`})::bigint)`;
+      await tx.brevoSyncRun.updateMany({
+        where: { coopId, status: 'RUNNING', startedAt: { lt: staleBefore } },
+        data: {
+          status: 'ERROR',
+          finishedAt: new Date(),
+          errors: [{ code: 'RUN_INTERRUPTED', message: 'RUN_INTERRUPTED', email: null }],
+        },
+      });
+      const busy = await tx.brevoSyncRun.findFirst({
+        where: { coopId, status: 'RUNNING', startedAt: { gte: staleBefore } },
+        select: { id: true },
+      });
+      if (busy) return null;
+      return tx.brevoSyncRun.create({
+        data: { coopId, trigger, status: 'RUNNING' },
+      });
+    });
+  }
+
+  /**
+   * Shareholders that resolve to the same email must be reconciled together,
+   * including from reconcileOne, or the secondary would be pushed as its own
+   * contact and Brevo would reject the shared address.
+   *
+   * The lookup trims and lowercases stored emails. Prisma `equals` is
+   * case-insensitive but does not trim, so ` Ann@X.be ` would miss the group.
+   */
+  private async loadEmailGroup(
+    coopId: string,
+    shareholder: SelectedShareholder,
+  ): Promise<SelectedShareholder[]> {
+    const email = resolvedGroupEmail(shareholder);
+    if (!email) return [shareholder];
+
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT s."id"
+      FROM "shareholders" s
+      LEFT JOIN "users" u ON u."id" = s."userId"
+      WHERE s."coopId" = ${coopId}
+        AND (
+          lower(trim(s."email")) = ${email}
+          OR lower(trim(u."email")) = ${email}
+        )
+    `;
+    const ids = [...new Set([shareholder.id, ...rows.map((row) => row.id)])];
+    const candidates = await this.prisma.shareholder.findMany({
+      where: { coopId, id: { in: ids } },
+      select: SHAREHOLDER_SELECT,
+    });
+    const grouped = candidates.filter((candidate) => resolvedGroupEmail(candidate) === email);
+    return grouped.length > 0 ? grouped : [shareholder];
+  }
+
+  private async applyShareholders(
     provider: EmailAudienceProvider,
     coop: CoopAudienceConfig,
-    shareholder: SelectedShareholder,
+    shareholders: SelectedShareholder[],
     summary: ReconcileSummary,
   ): Promise<void> {
-    const email = resolveShareholderEmail(shareholder);
-    const membersList = coop.brevoMembersListId ? Number(coop.brevoMembersListId) : null;
-    const resignedList = coop.brevoResignedListId ? Number(coop.brevoResignedListId) : null;
-
+    const membersList = listId(coop.brevoMembersListId);
+    const resignedList = listId(coop.brevoResignedListId);
     if (!membersList) {
-      summary.skipped++;
-      return;
-    }
-    if (shareholder.status === 'ACTIVE' && !email) {
-      summary.skipped++;
+      summary.skipped += shareholders.length;
       return;
     }
 
-    const attributes = {
-      FIRSTNAME: shareholder.firstName ?? undefined,
-      LASTNAME: shareholder.lastName ?? shareholder.companyName ?? undefined,
-    };
+    const managedListIds = resignedList ? [membersList, resignedList] : [membersList];
 
-    let input: UpsertContactInput;
-    if (shareholder.status === 'ACTIVE') {
-      input = {
+    for (const group of groupShareholdersByEmail(shareholders)) {
+      if (!group.email) {
+        await this.applyWithoutEmail(
+          provider,
+          group.shareholders[0],
+          membersList,
+          resignedList,
+          summary,
+        );
+        continue;
+      }
+
+      const [primary, ...secondaries] = group.shareholders;
+      await this.applyWithEmail(
+        provider,
+        primary,
+        secondaries.map((secondary) => secondary.id),
+        group.email,
+        membersList,
+        resignedList,
+        summary,
+      );
+      for (const secondary of secondaries) {
+        await this.unlinkContact(provider, secondary.id, managedListIds, true, summary);
+      }
+    }
+  }
+
+  private async applyWithEmail(
+    provider: EmailAudienceProvider,
+    shareholder: SelectedShareholder,
+    claimFromExtIds: string[],
+    email: string,
+    membersList: number,
+    resignedList: number | null,
+    summary: ReconcileSummary,
+  ): Promise<void> {
+    const plan = planForStatus(shareholder.status, membersList, resignedList, true);
+    await this.runContact(
+      provider,
+      shareholder.id,
+      {
         extId: shareholder.id,
         email,
-        attributes,
-        addListIds: [membersList],
-        removeListIds: resignedList ? [resignedList] : [],
-        createIfMissing: true,
-      };
-    } else if (shareholder.status === 'INACTIVE') {
-      // INACTIVE: remove from members, move to resigned iff configured; never create.
-      input = {
+        attributes: nameAttributes(shareholder),
+        addListIds: plan.addListIds,
+        removeListIds: plan.removeListIds,
+        createIfMissing: plan.createIfMissing,
+        claimFromExtIds,
+      },
+      plan.intent,
+      true,
+      summary,
+    );
+  }
+
+  private async applyWithoutEmail(
+    provider: EmailAudienceProvider,
+    shareholder: SelectedShareholder,
+    membersList: number,
+    resignedList: number | null,
+    summary: ReconcileSummary,
+  ): Promise<void> {
+    // An ACTIVE shareholder whose email was removed may still sit on the members
+    // list under their EXT_ID. Unlink that contact. Do not create one, and do
+    // not delete it. INACTIVE/PENDING follow the same list plan, still by EXT_ID.
+    const plan = planForStatus(shareholder.status, membersList, resignedList, false);
+    await this.runContact(
+      provider,
+      shareholder.id,
+      {
         extId: shareholder.id,
-        email,
-        attributes,
-        addListIds: resignedList ? [resignedList] : [],
-        removeListIds: [membersList],
+        email: null,
+        attributes: nameAttributes(shareholder),
+        addListIds: plan.addListIds,
+        removeListIds: plan.removeListIds,
         createIfMissing: false,
-      };
-    } else {
-      // PENDING: never held paid shares; remove from members, never resigned, never create.
-      input = {
-        extId: shareholder.id,
-        email,
-        attributes,
+      },
+      plan.intent,
+      false,
+      summary,
+    );
+  }
+
+  private async unlinkContact(
+    provider: EmailAudienceProvider,
+    shareholderId: string,
+    removeListIds: number[],
+    hadEmail: boolean,
+    summary: ReconcileSummary,
+  ): Promise<void> {
+    await this.runContact(
+      provider,
+      shareholderId,
+      {
+        extId: shareholderId,
+        email: null,
+        attributes: {},
+        addListIds: [],
+        removeListIds,
+        createIfMissing: false,
+      },
+      'unlink',
+      hadEmail,
+      summary,
+    );
+  }
+
+  private async runContact(
+    provider: EmailAudienceProvider,
+    shareholderId: string,
+    input: UpsertContactInput,
+    intent: ContactIntent,
+    hadEmail: boolean,
+    summary: ReconcileSummary,
+  ): Promise<void> {
+    try {
+      const result = await provider.upsertContact(input);
+      tally(summary, intent, result, hadEmail);
+    } catch (err) {
+      const detail = toSyncErrorDetail(err, shareholderId, input.email);
+      summary.failed++;
+      summary.errors.push(detail);
+      this.logger.warn(`audience-sync failed for ${shareholderId}: ${detail.code}`);
+    }
+  }
+}
+
+function listId(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function nameAttributes(shareholder: SelectedShareholder): UpsertContactInput['attributes'] {
+  return {
+    FIRSTNAME: shareholder.firstName ?? undefined,
+    LASTNAME: shareholder.lastName ?? shareholder.companyName ?? undefined,
+  };
+}
+
+/**
+ * List plan for one shareholder.
+ * `withEmail` ACTIVE contacts are created when missing.
+ * Without an email the same lists are updated only when the EXT_ID already exists.
+ * ACTIVE without an email is unlinked from the members list only.
+ */
+function planForStatus(
+  status: string,
+  membersList: number,
+  resignedList: number | null,
+  withEmail: boolean,
+): {
+  addListIds: number[];
+  removeListIds: number[];
+  createIfMissing: boolean;
+  intent: ContactIntent;
+} {
+  if (status === 'ACTIVE') {
+    if (!withEmail) {
+      return {
         addListIds: [],
         removeListIds: [membersList],
         createIfMissing: false,
+        intent: 'unlink',
       };
     }
-
-    try {
-      const result = await provider.upsertContact(input);
-      if (shareholder.status === 'INACTIVE' || shareholder.status === 'PENDING') {
-        summary.moved++;
-      } else if (result === 'created') {
-        summary.added++;
-      } else {
-        summary.updated++;
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      summary.failed++;
-      summary.errors.push({ shareholderId: shareholder.id, email, message });
-      this.logger.warn(`audience-sync failed for ${shareholder.id}: ${message}`);
-    }
+    return {
+      addListIds: [membersList],
+      removeListIds: resignedList ? [resignedList] : [],
+      createIfMissing: true,
+      intent: 'active',
+    };
   }
+  if (status === 'INACTIVE' && resignedList) {
+    return {
+      addListIds: [resignedList],
+      removeListIds: [membersList],
+      createIfMissing: false,
+      intent: 'move',
+    };
+  }
+  return {
+    addListIds: [],
+    removeListIds: [membersList],
+    createIfMissing: false,
+    intent: 'unlink',
+  };
+}
+
+function tally(
+  summary: ReconcileSummary,
+  intent: ContactIntent,
+  result: UpsertResult,
+  hadEmail: boolean,
+): void {
+  if (result === 'noop') {
+    if (hadEmail) summary.noop++;
+    else summary.skipped++;
+    return;
+  }
+  if (intent === 'move') {
+    summary.moved++;
+    return;
+  }
+  if (intent === 'unlink') {
+    summary.unlinked++;
+    return;
+  }
+  if (result === 'created') summary.created++;
+  else summary.updated++;
 }

@@ -132,7 +132,7 @@ describe('CoopsService.publicRegister — orphan-shareholder preflight', () => {
 
 describe('CoopsService — Brevo audience-sync config', () => {
   let service: CoopsService;
-  let audienceQueue: { add: jest.Mock };
+  let audienceQueue: { add: jest.Mock; getJob: jest.Mock };
   let prisma: {
     coop: {
       findUnique: jest.Mock;
@@ -152,7 +152,7 @@ describe('CoopsService — Brevo audience-sync config', () => {
         create: jest.fn().mockResolvedValue({}),
       },
     };
-    audienceQueue = { add: jest.fn() };
+    audienceQueue = { add: jest.fn(), getJob: jest.fn().mockResolvedValue(null) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -250,8 +250,24 @@ describe('CoopsService — Brevo audience-sync config', () => {
   });
 
   it('triggerAudienceSync enqueues a manual reconcile-all', async () => {
-    await service.triggerAudienceSync('c1');
-    expect(audienceQueue.add).toHaveBeenCalledWith('reconcile-all', { coopId: 'c1', trigger: 'manual' });
+    await expect(service.triggerAudienceSync('c1')).resolves.toEqual({
+      queued: true,
+      skipped: false,
+    });
+    expect(audienceQueue.add).toHaveBeenCalledWith(
+      'reconcile-all',
+      { coopId: 'c1', trigger: 'manual' },
+      { jobId: 'reconcile-all:c1', removeOnComplete: true, removeOnFail: true },
+    );
+  });
+
+  it('triggerAudienceSync skips when that coop already has an active reconcile-all', async () => {
+    audienceQueue.getJob.mockResolvedValue({ getState: jest.fn().mockResolvedValue('waiting') });
+    await expect(service.triggerAudienceSync('c1')).resolves.toEqual({
+      queued: false,
+      skipped: true,
+    });
+    expect(audienceQueue.add).not.toHaveBeenCalled();
   });
 
   it('testAudienceConnection returns the provider verify result', async () => {

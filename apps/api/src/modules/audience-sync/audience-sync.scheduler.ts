@@ -4,6 +4,7 @@ import { Cron } from '@nestjs/schedule';
 import * as Sentry from '@sentry/nestjs';
 import { Queue } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
+import { enqueueReconcileAll } from './audience-sync.queue';
 
 @Injectable()
 export class AudienceSyncScheduler {
@@ -23,7 +24,10 @@ export class AudienceSyncScheduler {
     this.logger.log(`Enqueuing nightly audience reconcile for ${coops.length} coop(s)`);
     for (const coop of coops) {
       try {
-        await this.queue.add('reconcile-all', { coopId: coop.id, trigger: 'cron' });
+        const result = await enqueueReconcileAll(this.queue, coop.id, 'cron');
+        if (result.skipped) {
+          this.logger.log(`Nightly audience reconcile already queued for coop ${coop.id}`);
+        }
       } catch (error) {
         Sentry.captureException(error);
         this.logger.error(

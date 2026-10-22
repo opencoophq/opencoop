@@ -1437,14 +1437,23 @@ model BrevoSyncRun {
   coop       Coop      @relation(fields: [coopId], references: [id], onDelete: Cascade)
   startedAt  DateTime  @default(now())
   finishedAt DateTime?
-  status     String    // "OK" | "PARTIAL" | "ERROR"
+  status     String    // "RUNNING" | "OK" | "PARTIAL" | "ERROR"
   trigger    String    // "cron" | "manual"
+  /// Legacy alias of `created` (contacts created). Still written so older readers keep working.
   added      Int       @default(0)
+  created    Int       @default(0)
   updated    Int       @default(0)
+  /// Lists re-applied: Brevo accepted a PUT that adds one managed list and removes another. Not a verified membership diff.
   moved      Int       @default(0)
+  /// Lists re-applied: Brevo accepted a PUT that only removes managed lists. Not a verified membership diff.
+  unlinked   Int       @default(0)
+  /// Provider call changed nothing (contact absent — 404).
+  noop       Int       @default(0)
+  /// No resolvable email, and no existing contact to unlink. Also used when sync is not configured.
   skipped    Int       @default(0)
   failed     Int       @default(0)
-  errors     Json?     // [{ shareholderId, email, message }]
+  /// [{ shareholderId?, email (masked), code, message }] — never raw Brevo text, never a full email.
+  errors     Json?
 
   @@index([coopId, startedAt])
 }

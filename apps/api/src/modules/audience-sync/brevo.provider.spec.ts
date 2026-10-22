@@ -9,6 +9,18 @@ function mockFetchOnce(status: number, body: unknown) {
   });
 }
 
+/** Email may be written only on the primary contact. Other PUTs must not carry it. */
+function expectNoEmailOnOtherContacts(primaryExtId: string) {
+  const calls = (global.fetch as jest.Mock).mock.calls as Array<
+    [string, { method?: string; body?: string }]
+  >;
+  for (const [url, opts] of calls) {
+    if (opts.method !== 'PUT') continue;
+    if (url.includes(`/contacts/${encodeURIComponent(primaryExtId)}?`)) continue;
+    expect(JSON.parse(opts.body ?? '{}')).not.toHaveProperty('email');
+  }
+}
+
 describe('BrevoProvider', () => {
   beforeEach(() => {
     global.fetch = jest.fn();
@@ -55,6 +67,28 @@ describe('BrevoProvider', () => {
     expect(JSON.parse(opts.body)).not.toHaveProperty('emailBlacklisted');
   });
 
+  it('unlinks lists after create when POST cannot carry unlinkListIds', async () => {
+    mockFetchOnce(404, { code: 'document_not_found' });
+    mockFetchOnce(201, { id: 99 });
+    mockFetchOnce(204, {});
+    const p = new BrevoProvider('key');
+    const res = await p.upsertContact({
+      extId: 'sh_new',
+      email: 'n@b.c',
+      attributes: { FIRSTNAME: 'N' },
+      addListIds: [3],
+      removeListIds: [9],
+      createIfMissing: true,
+    });
+    expect(res).toBe('created');
+    const calls = (global.fetch as jest.Mock).mock.calls;
+    expect(calls.map((call) => call[1].method)).toEqual(['PUT', 'POST', 'PUT']);
+    const unlink = JSON.parse(calls[2][1].body);
+    expect(unlink).toEqual({ unlinkListIds: [9] });
+    expect(calls[2][0]).toContain('/contacts/sh_new?identifierType=ext_id');
+    expect(JSON.parse(calls[1][1].body)).not.toHaveProperty('unlinkListIds');
+  });
+
   it('upsertContact falls back to POST create when ext_id missing (PUT 404) → "created"', async () => {
     mockFetchOnce(404, { code: 'document_not_found' }); // PUT
     mockFetchOnce(201, { id: 99 }); // POST
@@ -90,8 +124,11 @@ describe('BrevoProvider', () => {
     expect((global.fetch as jest.Mock).mock.calls.length).toBe(1); // no POST
   });
 
-  it('upsertContact throws on unexpected error (400)', async () => {
-    mockFetchOnce(400, { message: 'duplicate_parameter' });
+  it('upsertContact maps duplicate_parameter to DUPLICATE_EMAIL and hides the raw body', async () => {
+    mockFetchOnce(400, {
+      code: 'duplicate_parameter',
+      message: 'email dup@b.c is already associated with another Contact',
+    });
     const p = new BrevoProvider('key');
     await expect(
       p.upsertContact({
@@ -102,6 +139,173 @@ describe('BrevoProvider', () => {
         removeListIds: [],
         createIfMissing: true,
       }),
-    ).rejects.toThrow(/duplicate_parameter/);
+    ).rejects.toMatchObject({ code: 'DUPLICATE_EMAIL', message: 'DUPLICATE_EMAIL' });
+  });
+
+  it('retries PUT once after POST duplicate_parameter and stops when that succeeds', async () => {
+    mockFetchOnce(404, { code: 'document_not_found' });
+    mockFetchOnce(400, { code: 'duplicate_parameter', message: 'email shared@x.be already used' });
+    mockFetchOnce(204, {});
+
+    const p = new BrevoProvider('key');
+    const res = await p.upsertContact({
+      extId: 'primary',
+      email: 'shared@x.be',
+      attributes: { FIRSTNAME: 'Ann' },
+      addListIds: [3],
+      removeListIds: [9],
+      createIfMissing: true,
+      claimFromExtIds: ['secondary'],
+    });
+
+    expect(res).toBe('updated');
+    const calls = (global.fetch as jest.Mock).mock.calls;
+    expect(calls.map((call) => call[1].method)).toEqual(['PUT', 'POST', 'PUT']);
+    expect(calls[2][0]).toContain('/contacts/primary?identifierType=ext_id');
+    expect(JSON.parse(calls[2][1].body).unlinkListIds).toEqual([9]);
+  });
+
+  it('adopts a secondary EXT_ID that already holds the email instead of deleting it', async () => {
+    mockFetchOnce(404, { code: 'document_not_found' }); // PUT primary
+    mockFetchOnce(400, {
+      code: 'duplicate_parameter',
+      message: 'email shared@x.be already used',
+    }); // POST
+    mockFetchOnce(404, { code: 'document_not_found' }); // retry PUT still missing
+    mockFetchOnce(200, { email: 'shared@x.be' }); // GET secondary
+    mockFetchOnce(404, { code: 'document_not_found' }); // GET primary
+    mockFetchOnce(204, {}); // PUT reassign ext_id
+
+    const p = new BrevoProvider('key');
+    const res = await p.upsertContact({
+      extId: 'primary',
+      email: 'shared@x.be',
+      attributes: { FIRSTNAME: 'Ann' },
+      addListIds: [3],
+      removeListIds: [9],
+      createIfMissing: true,
+      claimFromExtIds: ['secondary'],
+    });
+
+    expect(res).toBe('updated');
+    const calls = (global.fetch as jest.Mock).mock.calls;
+    expect(calls.map((call) => call[1].method)).toEqual([
+      'PUT',
+      'POST',
+      'PUT',
+      'GET',
+      'GET',
+      'PUT',
+    ]);
+    const reassign = JSON.parse(calls[5][1].body);
+    expect(reassign.ext_id).toBe('primary');
+    expect(reassign.listIds).toEqual([3]);
+    expect(reassign.unlinkListIds).toEqual([9]);
+    expect(reassign).not.toHaveProperty('forceMerge');
+    expect(calls[5][0]).toContain('/contacts/secondary?identifierType=ext_id');
+    expect(calls.map((call) => call[1].method)).not.toContain('DELETE');
+    expectNoEmailOnOtherContacts('primary');
+  });
+
+  it('does not put an email field on any contact except the primary', async () => {
+    mockFetchOnce(404, { code: 'document_not_found' });
+    mockFetchOnce(400, { code: 'duplicate_parameter', message: 'email shared@x.be already used' });
+    mockFetchOnce(404, { code: 'document_not_found' });
+    mockFetchOnce(200, { email: 'shared@x.be' });
+    mockFetchOnce(404, { code: 'document_not_found' });
+    mockFetchOnce(204, {});
+
+    const p = new BrevoProvider('key');
+    await p.upsertContact({
+      extId: 'primary',
+      email: 'shared@x.be',
+      attributes: { FIRSTNAME: 'Ann' },
+      addListIds: [3],
+      removeListIds: [9],
+      createIfMissing: true,
+      claimFromExtIds: ['secondary'],
+    });
+
+    const foreignPuts = (global.fetch as jest.Mock).mock.calls.filter(
+      (call) => call[1].method === 'PUT' && !String(call[0]).includes('/contacts/primary?'),
+    );
+    expect(foreignPuts.length).toBeGreaterThan(0);
+    expectNoEmailOnOtherContacts('primary');
+  });
+
+  it('fails with GROUP_EMAIL_CONFLICT when the primary already has a contact and a secondary holds the address', async () => {
+    mockFetchOnce(400, { code: 'duplicate_parameter', message: 'email new@x.be already used' });
+    mockFetchOnce(200, { email: 'new@x.be' }); // GET secondary
+    mockFetchOnce(200, { email: 'old@x.be' }); // GET primary
+
+    const p = new BrevoProvider('key');
+    await expect(
+      p.upsertContact({
+        extId: 'primary',
+        email: 'new@x.be',
+        attributes: { FIRSTNAME: 'Ann' },
+        addListIds: [3],
+        removeListIds: [9],
+        createIfMissing: true,
+        claimFromExtIds: ['secondary'],
+      }),
+    ).rejects.toMatchObject({
+      code: 'GROUP_EMAIL_CONFLICT',
+      message: 'GROUP_EMAIL_CONFLICT',
+    });
+
+    const calls = (global.fetch as jest.Mock).mock.calls;
+    expect(calls.map((call) => call[1].method)).toEqual(['PUT', 'GET', 'GET']);
+    expect(calls[0][0]).toContain('/contacts/primary?identifierType=ext_id');
+    const secondaryCalls = calls.filter((call) => String(call[0]).includes('/contacts/secondary'));
+    expect(secondaryCalls.map((call) => call[1].method)).toEqual(['GET']);
+    expect(calls.filter((call) => call[1].method === 'PUT')).toHaveLength(1);
+    expectNoEmailOnOtherContacts('primary');
+    expect(JSON.stringify(calls.map((call) => call[1].body))).not.toContain('old@x.be');
+  });
+
+  it('keeps DUPLICATE_EMAIL when the address is not held by a same-group EXT_ID', async () => {
+    mockFetchOnce(400, { code: 'duplicate_parameter', message: 'email new@x.be already used' });
+    mockFetchOnce(200, { email: 'other@x.be' });
+
+    const p = new BrevoProvider('key');
+    await expect(
+      p.upsertContact({
+        extId: 'primary',
+        email: 'new@x.be',
+        attributes: {},
+        addListIds: [3],
+        removeListIds: [],
+        createIfMissing: true,
+        claimFromExtIds: ['secondary'],
+      }),
+    ).rejects.toMatchObject({ code: 'DUPLICATE_EMAIL' });
+    const calls = (global.fetch as jest.Mock).mock.calls;
+    expect(calls.map((call) => call[1].method)).toEqual(['PUT', 'GET']);
+    expect(calls[1][0]).toContain('/contacts/secondary');
+    expect(calls.map((call) => call[1].method)).not.toContain('DELETE');
+  });
+
+  it('does not adopt a secondary contact that holds a different email', async () => {
+    mockFetchOnce(404, { code: 'document_not_found' });
+    mockFetchOnce(400, { code: 'duplicate_parameter', message: 'email shared@x.be already used' });
+    mockFetchOnce(404, { code: 'document_not_found' }); // retry PUT
+    mockFetchOnce(200, { email: 'other@x.be' });
+
+    const p = new BrevoProvider('key');
+    await expect(
+      p.upsertContact({
+        extId: 'primary',
+        email: 'shared@x.be',
+        attributes: {},
+        addListIds: [3],
+        removeListIds: [],
+        createIfMissing: true,
+        claimFromExtIds: ['secondary'],
+      }),
+    ).rejects.toMatchObject({ code: 'DUPLICATE_EMAIL' });
+    expect((global.fetch as jest.Mock).mock.calls.map((call) => call[1].method)).not.toContain(
+      'DELETE',
+    );
   });
 });
