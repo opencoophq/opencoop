@@ -41,21 +41,12 @@ export class BrevoProvider implements EmailAudienceProvider {
   }
 
   async upsertContact(input: UpsertContactInput): Promise<UpsertResult> {
-    // 1) Address the existing contact by EXT_ID (handles email changes, no duplicates).
     // Contacts are never deleted. Unlink is list membership only.
-    const putBody: Record<string, unknown> = {
-      attributes: input.attributes,
-      listIds: input.addListIds,
-      unlinkListIds: input.removeListIds,
-    };
-    if (input.email) putBody.email = input.email;
     // NOTE: never set emailBlacklisted — preserve Brevo's unsubscribe state.
     // NOTE: never set forceMerge — that deletes the other contact.
+    const putBody = this.contactBody(input);
 
-    const putRes = await fetch(
-      `${BASE}/contacts/${encodeURIComponent(input.extId)}?identifierType=ext_id`,
-      { method: 'PUT', headers: this.headers(), body: JSON.stringify(putBody) },
-    );
+    const putRes = await this.putContact(input.extId, putBody);
     if (putRes.ok) return 'updated';
 
     if (putRes.status === 404) {
@@ -63,79 +54,145 @@ export class BrevoProvider implements EmailAudienceProvider {
       if (!input.email) {
         throw new AudienceProviderError('MISSING_EMAIL');
       }
-      // 2) Create (or match-by-email and set ext_id) for active members.
-      const postBody = {
-        email: input.email,
-        ext_id: input.extId,
-        attributes: input.attributes,
-        listIds: input.addListIds,
-        updateEnabled: true,
-      };
       const postRes = await fetch(`${BASE}/contacts`, {
         method: 'POST',
         headers: this.headers(),
-        body: JSON.stringify(postBody),
+        body: JSON.stringify({
+          email: input.email,
+          ext_id: input.extId,
+          attributes: input.attributes,
+          listIds: input.addListIds,
+          updateEnabled: true,
+        }),
       });
-      if (postRes.ok) return 'created';
-      const postError = await this.errorFrom(postRes);
-      if (postError.code === 'DUPLICATE_EMAIL') {
-        const claimed = await this.claimExistingEmail(input);
-        if (claimed) return 'updated';
+      if (postRes.ok) {
+        // POST cannot unlink. Apply removals (resigned, later prospects) once the EXT_ID exists.
+        if (input.removeListIds.length > 0) {
+          const unlinkRes = await this.putContact(input.extId, {
+            unlinkListIds: input.removeListIds,
+          });
+          if (!unlinkRes.ok) throw await this.fail(unlinkRes);
+        }
+        return 'created';
       }
-      throw postError;
+      const postError = await this.readError(postRes);
+      if (postError.code === 'DUPLICATE_EMAIL') {
+        const retry = await this.putContact(input.extId, putBody);
+        if (retry.ok) return 'updated';
+        if (retry.status !== 404) {
+          const retryError = await this.readError(retry);
+          if (retryError.code !== 'DUPLICATE_EMAIL') throw this.warn(retry.status, retryError);
+          if (await this.resolveDuplicateEmail(input)) return 'updated';
+          throw this.warn(retry.status, retryError);
+        }
+        if (await this.resolveDuplicateEmail(input)) return 'updated';
+      }
+      throw this.warn(postRes.status, postError);
     }
 
-    throw await this.errorFrom(putRes);
+    const putError = await this.readError(putRes);
+    if (putError.code === 'DUPLICATE_EMAIL' && (await this.resolveDuplicateEmail(input))) {
+      return 'updated';
+    }
+    throw this.warn(putRes.status, putError);
   }
 
   /**
-   * The email already belongs to another contact. If that contact is one of
-   * the shareholder EXT_IDs we are allowed to claim, point it at the primary
-   * EXT_ID. This does not delete anyone (no forceMerge).
+   * The email already belongs to another contact.
+   *
+   * Only EXT_IDs in `claimFromExtIds` (the same email group) may be touched.
+   * If the primary contact does not exist, that contact's EXT_ID is reassigned
+   * to the primary. If the primary already exists under an old address, the
+   * secondary contact is parked on that old address and its EXT_ID is cleared
+   * so the primary can take the new address. Clearing EXT_ID leaves an orphan
+   * contact; this sync does not look those up or delete them.
+   * Anything else stays DUPLICATE_EMAIL.
    */
-  private async claimExistingEmail(input: UpsertContactInput): Promise<boolean> {
+  private async resolveDuplicateEmail(input: UpsertContactInput): Promise<boolean> {
     const wanted = normalizeEmail(input.email);
     if (!wanted) return false;
 
-    for (const fromExtId of input.claimFromExtIds ?? []) {
-      if (fromExtId === input.extId) continue;
-      const existing = await this.readContactEmail(fromExtId);
-      if (!existing || normalizeEmail(existing) !== wanted) continue;
+    const holder = await this.findEmailHolder(input, wanted);
+    if (!holder) return false;
 
-      const res = await fetch(
-        `${BASE}/contacts/${encodeURIComponent(fromExtId)}?identifierType=ext_id`,
-        {
-          method: 'PUT',
-          headers: this.headers(),
-          body: JSON.stringify({
-            ext_id: input.extId,
-            attributes: input.attributes,
-            listIds: input.addListIds,
-            unlinkListIds: input.removeListIds,
-          }),
-        },
-      );
+    const primary = await this.readContact(input.extId);
+    if (!primary) {
+      const res = await this.putContact(holder, {
+        ext_id: input.extId,
+        attributes: input.attributes,
+        listIds: input.addListIds,
+        unlinkListIds: input.removeListIds,
+      });
       if (res.ok) return true;
-      throw await this.errorFrom(res);
+      throw await this.fail(res);
     }
-    return false;
+
+    const oldEmail = primary.email?.trim();
+    if (!oldEmail || normalizeEmail(oldEmail) === wanted) return false;
+
+    const unlinkIds = [...new Set([...input.addListIds, ...input.removeListIds])];
+    const park = await this.putContact(holder, {
+      email: oldEmail,
+      ext_id: '',
+      listIds: [],
+      unlinkListIds: unlinkIds,
+    });
+    if (!park.ok) throw await this.fail(park);
+
+    const moved = await this.putContact(input.extId, this.contactBody(input));
+    if (moved.ok) return true;
+    throw await this.fail(moved);
   }
 
-  private async readContactEmail(extId: string): Promise<string | null | undefined> {
+  private async findEmailHolder(input: UpsertContactInput, wanted: string): Promise<string | null> {
+    for (const fromExtId of input.claimFromExtIds ?? []) {
+      if (fromExtId === input.extId) continue;
+      const existing = await this.readContact(fromExtId);
+      if (existing && normalizeEmail(existing.email) === wanted) return fromExtId;
+    }
+    return null;
+  }
+
+  private contactBody(input: UpsertContactInput): Record<string, unknown> {
+    const body: Record<string, unknown> = {
+      attributes: input.attributes,
+      listIds: input.addListIds,
+      unlinkListIds: input.removeListIds,
+    };
+    if (input.email) body.email = input.email;
+    return body;
+  }
+
+  private putContact(extId: string, body: Record<string, unknown>): Promise<Response> {
+    return fetch(`${BASE}/contacts/${encodeURIComponent(extId)}?identifierType=ext_id`, {
+      method: 'PUT',
+      headers: this.headers(),
+      body: JSON.stringify(body),
+    });
+  }
+
+  private async readContact(extId: string): Promise<{ email: string | null } | undefined> {
     const res = await fetch(`${BASE}/contacts/${encodeURIComponent(extId)}?identifierType=ext_id`, {
       method: 'GET',
       headers: this.headers(),
     });
     if (res.status === 404) return undefined;
-    if (!res.ok) throw await this.errorFrom(res);
+    if (!res.ok) throw await this.fail(res);
     const json = (await res.json()) as { email?: string | null };
-    return json.email ?? null;
+    return { email: json.email ?? null };
   }
 
-  private async errorFrom(res: Response): Promise<AudienceProviderError> {
-    const body = await res.text();
-    const error = mapBrevoHttpError(res.status, body);
-    this.logger.warn(`Brevo contact call failed status=${res.status} code=${error.code}`);
+  private async readError(res: Response): Promise<AudienceProviderError> {
+    return mapBrevoHttpError(res.status, await res.text());
+  }
+
+  private warn(status: number, error: AudienceProviderError): AudienceProviderError {
+    this.logger.warn(`Brevo contact call failed status=${status} code=${error.code}`);
     return error;
+  }
+
+  private async fail(res: Response): Promise<AudienceProviderError> {
+    const error = await this.readError(res);
+    return this.warn(res.status, error);
   }
 }

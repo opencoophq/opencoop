@@ -24,7 +24,50 @@ describe('normalizeEmail', () => {
 });
 
 describe('selectPrimary', () => {
-  it('picks the shareholder whose User owns the email, even if they are newer', () => {
+  it('prefers ACTIVE over an older INACTIVE shareholder, even when both User emails match', () => {
+    const inactive = sh({
+      id: 'inactive',
+      status: 'INACTIVE',
+      createdAt: new Date('2015-01-01'),
+      userId: 'u1',
+      user: { email: 'shared@x.be' },
+    });
+    const active = sh({
+      id: 'active',
+      status: 'ACTIVE',
+      createdAt: new Date('2024-01-01'),
+      userId: 'u1',
+      user: { email: 'shared@x.be' },
+    });
+    expect(selectPrimary([inactive, active], 'shared@x.be').id).toBe('active');
+  });
+
+  it('ranks ACTIVE, then INACTIVE, then PENDING, before the User email match', () => {
+    const pending = sh({
+      id: 'pending',
+      status: 'PENDING',
+      createdAt: new Date('2010-01-01'),
+      user: { email: 'shared@x.be' },
+    });
+    const inactive = sh({
+      id: 'inactive',
+      status: 'INACTIVE',
+      createdAt: new Date('2011-01-01'),
+      email: 'shared@x.be',
+      user: null,
+    });
+    const active = sh({
+      id: 'active',
+      status: 'ACTIVE',
+      createdAt: new Date('2024-01-01'),
+      email: 'shared@x.be',
+      user: null,
+    });
+    expect(selectPrimary([pending, inactive, active], 'shared@x.be').id).toBe('active');
+    expect(selectPrimary([pending, inactive], 'shared@x.be').id).toBe('inactive');
+  });
+
+  it('picks the shareholder whose linked User.email matches, even if they are newer', () => {
     const older = sh({
       id: 'older',
       createdAt: new Date('2018-01-01'),
@@ -63,7 +106,7 @@ describe('selectPrimary', () => {
     expect(selectPrimary([later, earlierSameDayB, earlierSameDayA], 'shared@x.be').id).toBe('a-id');
   });
 
-  it('falls back to the oldest shareholder when no User owns the email', () => {
+  it('falls back to the oldest shareholder when no linked User.email matches', () => {
     const newer = sh({
       id: 'newer',
       createdAt: new Date('2022-01-01'),

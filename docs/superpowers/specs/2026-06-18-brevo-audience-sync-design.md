@@ -214,32 +214,50 @@ own EXT_ID returns `duplicate_parameter`.
 `reconcileAll` and `reconcileOne` both group the coop's shareholders by the resolved
 email after trim + lowercase.
 
-- **Primary** (this id is the contact's EXT_ID): the shareholder whose own `User.email`
-  normalizes to the group email. If several do (they share one user), the oldest
-  `createdAt` wins, then the lowest id. If none of their users own the address, the
-  oldest shareholder in the group wins, with the same id tie-break.
-- The contact's lists and name follow the **primary's** status. Secondaries are not
-  given their own contact.
+- **Primary** (this id is the contact's EXT_ID), in order:
+  1. Status: `ACTIVE`, then `INACTIVE`, then `PENDING`, then any other status.
+  2. A linked `User` whose email normalizes to the group email. Several shareholders
+     can share that user, so a match does not mean this shareholder owns the account.
+  3. Oldest `createdAt`.
+  4. Lowest id.
+- The contact's lists and name follow the **primary's** status. An older `INACTIVE`
+  family member therefore does not pull an `ACTIVE` member off the members list.
+  Secondaries are not given their own contact.
 - **Secondaries** are unlinked from the coop's managed lists (members, and resigned when
   configured), addressed by their own EXT_ID, with no email written on that call.
   Contacts are never deleted (`forceMerge` is never set; it would delete the other contact).
+- `loadEmailGroup` matches stored shareholder and user emails with `lower(trim(...))`,
+  so surrounding whitespace does not split the group.
 - If the primary contact does not exist yet and the email already sits on a secondary
-  EXT_ID, that contact's EXT_ID is reassigned to the primary. Two contacts that both
-  already exist are not merged.
+  EXT_ID in the same group, that contact's EXT_ID is reassigned to the primary.
+- POST cannot unlink lists. After a successful create, a follow-up PUT sends
+  `unlinkListIds` when there are lists to remove.
+- POST `duplicate_parameter` retries the same PUT once on the primary EXT_ID.
+- When that primary contact already exists under an old address and the new address
+  sits on a secondary EXT_ID in the same group, the secondary contact is given the
+  old address, its EXT_ID is cleared, and it is unlinked from the lists on that call.
+  The primary is then updated to the new address. No contact is deleted. If the holder
+  is not in the group, or there is no old address to park, the failure stays
+  `DUPLICATE_EMAIL`.
+- Contacts left without an EXT_ID (the parked secondary, or a pre-existing contact that
+  never received one) are **not managed**. This sync does not look them up and does not
+  clean them up.
 
 Brevo error bodies are not stored. Known codes map to internal codes (`duplicate_parameter`
 → `DUPLICATE_EMAIL`, plus invalid/missing parameter, unauthorized, not found, rate limit,
 and a generic `BREVO_BAD_REQUEST` / `BREVO_ERROR`). Emails in run error details are masked
-(`a***@domain`).
+on both the local part and the domain (`jan@bronsgroen.be` → `j***@b***.be`).
 
-Run counters, one per shareholder outcome:
+Run counters, one per shareholder outcome. `moved` and `unlinked` count a successful
+list-application PUT (lists re-applied). Brevo's 204 does not say whether membership
+changed, and the sync does not GET the contact to check.
 
 | Counter    | Meaning                                                                 |
 |------------|-------------------------------------------------------------------------|
 | `created`  | contact created                                                         |
 | `updated`  | existing active contact updated                                         |
-| `moved`    | contact actually moved between two managed lists                        |
-| `unlinked` | contact removed from managed lists and not added to another             |
+| `moved`    | lists re-applied: PUT added one managed list and removed another        |
+| `unlinked` | lists re-applied: PUT only removed managed lists                        |
 | `noop`     | shareholder had an email, provider returned 404, nothing created        |
 | `skipped`  | no resolvable email and no contact to change, or sync is not configured |
 | `failed`   | provider or unexpected error                                            |
@@ -248,8 +266,14 @@ Run counters, one per shareholder outcome:
 
 `reconcileAll` inserts `BrevoSyncRun` with status `RUNNING` before calling Brevo
 (`startedAt` is the insert time) and updates that row when it finishes. A thrown failure
-sets the same row to `ERROR`. A later run marks any `RUNNING` row still open for that
-coop as `ERROR` / `RUN_INTERRUPTED` (the process died before it could finish).
+sets the same row to `ERROR`. Opening the row takes a transaction-scoped Postgres
+advisory lock (`pg_advisory_xact_lock` on `audience-sync:${coopId}`) so two workers
+cannot both insert a fresh `RUNNING` row. The lock is not held for the Brevo calls.
+A `RUNNING` row older than two hours is marked `ERROR` / `RUN_INTERRUPTED`. A younger
+`RUNNING` row means this run is skipped: no second row, no thrown error. Cron and the
+manual trigger enqueue with Bull job id `reconcile-all:${coopId}`. If that job is
+already waiting or active, the enqueue is skipped. A finished job is removed so the
+id can be reused (`removeOnComplete` / `removeOnFail`).
 
 ### 4. Units (each independently testable)
 
@@ -273,8 +297,9 @@ coop as `ERROR` / `RUN_INTERRUPTED` (the process died before it could finish).
 - **`audience-sync` Bull queue + processor** — handles two job kinds against the same
   service: `reconcile-one` (per-change) and `reconcile-all` (cron / manual). Retryable
   (existing default: 3 attempts, exponential backoff). Resolves the provider via a small
-  factory keyed on `Coop.emailAudienceProvider`. A coop-scoped dedup/lock prevents a
-  `reconcile-all` and `reconcile-one` for the same coop from overlapping.
+  factory keyed on `Coop.emailAudienceProvider`. `reconcile-all` is deduped per coop
+  (Bull job id `reconcile-all:${coopId}` plus the advisory lock in §3a). `reconcile-one`
+  is not locked against it; the nightly run is the backstop.
 - **Shareholder service emit points** — after a committed mutation, enqueue a
   `reconcile-one` job (best-effort; failures fall through to the nightly pass). See §1a.
 - **Cron scheduler** — nightly `@Cron(..., { timeZone: 'Europe/Brussels' })`; enqueues
@@ -317,8 +342,8 @@ model BrevoSyncRun {
   added     Int      @default(0)  // legacy alias of created
   created   Int      @default(0)
   updated   Int      @default(0)
-  moved     Int      @default(0)  // actually moved between managed lists
-  unlinked  Int      @default(0)
+  moved     Int      @default(0)  // lists re-applied (add one managed list, remove another)
+  unlinked  Int      @default(0)  // lists re-applied (remove only; not a verified diff)
   noop      Int      @default(0)
   skipped   Int      @default(0)  // no email and nothing to unlink, or not configured
   failed    Int      @default(0)

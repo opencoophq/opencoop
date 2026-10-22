@@ -1443,9 +1443,9 @@ model BrevoSyncRun {
   added      Int       @default(0)
   created    Int       @default(0)
   updated    Int       @default(0)
-  /// Contact actually moved between two managed lists (members ↔ resigned).
+  /// Lists re-applied: Brevo accepted a PUT that adds one managed list and removes another. Not a verified membership diff.
   moved      Int       @default(0)
-  /// Contact removed from a managed list and not placed on another.
+  /// Lists re-applied: Brevo accepted a PUT that only removes managed lists. Not a verified membership diff.
   unlinked   Int       @default(0)
   /// Provider call changed nothing (contact absent — 404).
   noop       Int       @default(0)

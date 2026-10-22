@@ -46,10 +46,12 @@ describe('mapBrevoHttpError', () => {
 
 describe('email masking', () => {
   it('masks a stored address and any address inside free text', () => {
-    expect(maskEmail('Ann@Example.be')).toBe('A***@Example.be');
+    expect(maskEmail('Jan@Bronsgroen.be')).toBe('j***@b***.be');
+    expect(maskEmail('Ann@Example.be')).toBe('a***@e***.be');
+    expect(maskEmail('ann@x.be')).toBe('a***@x***.be');
     expect(maskEmail(null)).toBeNull();
     expect(maskEmailsInText('failed for ann@example.be and bob@x.be')).toBe(
-      'failed for a***@example.be and b***@x.be',
+      'failed for a***@e***.be and b***@x***.be',
     );
   });
 
@@ -61,7 +63,7 @@ describe('email masking', () => {
     );
     expect(detail).toEqual({
       shareholderId: 'sh1',
-      email: 'a***@example.be',
+      email: 'a***@e***.be',
       code: 'DUPLICATE_EMAIL',
       message: 'DUPLICATE_EMAIL',
     });

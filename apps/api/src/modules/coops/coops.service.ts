@@ -11,6 +11,7 @@ import { RegistrationsService } from '../registrations/registrations.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
 import { getAudienceProvider } from '../audience-sync/audience-provider.factory';
+import { enqueueReconcileAll } from '../audience-sync/audience-sync.queue';
 import { encryptField } from '../../common/crypto/field-encryption';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import { sanitizeInterestTags } from '../volunteers/volunteer-record';
@@ -344,8 +345,7 @@ export class CoopsService {
   }
 
   async triggerAudienceSync(coopId: string) {
-    await this.audienceQueue.add('reconcile-all', { coopId, trigger: 'manual' });
-    return { queued: true };
+    return enqueueReconcileAll(this.audienceQueue, coopId, 'manual');
   }
 
   async testAudienceConnection(coopId: string) {

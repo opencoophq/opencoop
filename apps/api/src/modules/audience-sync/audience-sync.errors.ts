@@ -23,13 +23,25 @@ const BREVO_CODE_MAP: Record<string, string> = {
 
 const EMAIL_IN_TEXT = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 
-/** First character of the local part plus the domain. Null stays null. */
+/**
+ * First character of the local part and of the domain label; the rest of both
+ * is hidden (`jan@bronsgroen.be` → `j***@b***.be`). Null stays null.
+ */
 export function maskEmail(email: string | null | undefined): string | null {
   if (!email) return null;
-  const trimmed = email.trim();
+  const trimmed = email.trim().toLowerCase();
   const at = trimmed.indexOf('@');
   if (at <= 0) return '***';
-  return `${trimmed.slice(0, 1)}***@${trimmed.slice(at + 1)}`;
+  const local = trimmed.slice(0, at);
+  const domain = trimmed.slice(at + 1);
+  const dot = domain.lastIndexOf('.');
+  if (dot <= 0 || dot === domain.length - 1) {
+    const label = domain.replace(/\./g, '') || '*';
+    return `${local.slice(0, 1)}***@${label.slice(0, 1)}***`;
+  }
+  const label = domain.slice(0, dot);
+  const tld = domain.slice(dot);
+  return `${local.slice(0, 1)}***@${label.slice(0, 1)}***${tld}`;
 }
 
 export function maskEmailsInText(text: string): string {

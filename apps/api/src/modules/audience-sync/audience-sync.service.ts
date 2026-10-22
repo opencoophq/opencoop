@@ -13,9 +13,15 @@ import { groupShareholdersByEmail, resolvedGroupEmail } from './audience-sync.gr
 export interface ReconcileSummary {
   created: number;
   updated: number;
-  /** Contact was placed on one managed list and removed from another. */
+  /**
+   * Lists re-applied: Brevo accepted a PUT that adds one managed list and
+   * removes another. Membership was not re-read, so this is not a verified move.
+   */
   moved: number;
-  /** Contact was removed from managed lists and not added to another. */
+  /**
+   * Lists re-applied: Brevo accepted a PUT that only removes managed lists.
+   * Membership was not re-read.
+   */
   unlinked: number;
   /** Provider returned 404 and nothing was created. The shareholder had an email. */
   noop: number;
@@ -24,6 +30,9 @@ export interface ReconcileSummary {
   failed: number;
   errors: SyncErrorDetail[];
 }
+
+/** A RUNNING row older than this is a dead process. A younger one means skip. */
+const STALE_RUN_MS = 2 * 60 * 60 * 1000;
 
 const EMPTY = (): ReconcileSummary => ({
   created: 0,
@@ -110,19 +119,11 @@ export class AudienceSyncService {
       return summary;
     }
 
-    // A row left RUNNING means the process died mid-run. Close it before starting another.
-    await this.prisma.brevoSyncRun.updateMany({
-      where: { coopId, status: 'RUNNING' },
-      data: {
-        status: 'ERROR',
-        finishedAt: new Date(),
-        errors: [{ code: 'RUN_INTERRUPTED', message: 'RUN_INTERRUPTED', email: null }],
-      },
-    });
-
-    const run = await this.prisma.brevoSyncRun.create({
-      data: { coopId, trigger, status: 'RUNNING' },
-    });
+    const run = await this.openRun(coopId, trigger);
+    if (!run) {
+      this.logger.warn(`audience-sync skipped for ${coopId}: a run is already in progress`);
+      return summary;
+    }
 
     try {
       await this.prisma.coop.update({
@@ -192,9 +193,41 @@ export class AudienceSyncService {
   }
 
   /**
+   * One reconcile-all at a time per coop. The advisory lock is transaction-scoped
+   * so it is safe on the Prisma pool: it only covers marking a stale RUNNING row
+   * and inserting the new one. A RUNNING row younger than two hours is left
+   * alone and this call does nothing. Only an older RUNNING row is RUN_INTERRUPTED.
+   */
+  private async openRun(coopId: string, trigger: 'cron' | 'manual') {
+    const staleBefore = new Date(Date.now() - STALE_RUN_MS);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`audience-sync:${coopId}`})::bigint)`;
+      await tx.brevoSyncRun.updateMany({
+        where: { coopId, status: 'RUNNING', startedAt: { lt: staleBefore } },
+        data: {
+          status: 'ERROR',
+          finishedAt: new Date(),
+          errors: [{ code: 'RUN_INTERRUPTED', message: 'RUN_INTERRUPTED', email: null }],
+        },
+      });
+      const busy = await tx.brevoSyncRun.findFirst({
+        where: { coopId, status: 'RUNNING', startedAt: { gte: staleBefore } },
+        select: { id: true },
+      });
+      if (busy) return null;
+      return tx.brevoSyncRun.create({
+        data: { coopId, trigger, status: 'RUNNING' },
+      });
+    });
+  }
+
+  /**
    * Shareholders that resolve to the same email must be reconciled together,
    * including from reconcileOne, or the secondary would be pushed as its own
    * contact and Brevo would reject the shared address.
+   *
+   * The lookup trims and lowercases stored emails. Prisma `equals` is
+   * case-insensitive but does not trim, so ` Ann@X.be ` would miss the group.
    */
   private async loadEmailGroup(
     coopId: string,
@@ -203,15 +236,19 @@ export class AudienceSyncService {
     const email = resolvedGroupEmail(shareholder);
     if (!email) return [shareholder];
 
-    const or: Prisma.ShareholderWhereInput[] = [
-      { id: shareholder.id },
-      { email: { equals: email, mode: 'insensitive' } },
-      { user: { is: { email: { equals: email, mode: 'insensitive' } } } },
-    ];
-    if (shareholder.userId) or.push({ userId: shareholder.userId });
-
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT s."id"
+      FROM "shareholders" s
+      LEFT JOIN "users" u ON u."id" = s."userId"
+      WHERE s."coopId" = ${coopId}
+        AND (
+          lower(trim(s."email")) = ${email}
+          OR lower(trim(u."email")) = ${email}
+        )
+    `;
+    const ids = [...new Set([shareholder.id, ...rows.map((row) => row.id)])];
     const candidates = await this.prisma.shareholder.findMany({
-      where: { coopId, OR: or },
+      where: { coopId, id: { in: ids } },
       select: SHAREHOLDER_SELECT,
     });
     const grouped = candidates.filter((candidate) => resolvedGroupEmail(candidate) === email);

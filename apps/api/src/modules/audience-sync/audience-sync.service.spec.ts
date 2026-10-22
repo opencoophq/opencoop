@@ -52,7 +52,11 @@ describe('AudienceSyncService', () => {
         create: jest.fn().mockResolvedValue({ id: 'run1' }),
         update: jest.fn().mockResolvedValue({}),
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        findFirst: jest.fn().mockResolvedValue(null),
       },
+      $transaction: jest.fn(async (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma)),
+      $executeRaw: jest.fn().mockResolvedValue(0),
+      $queryRaw: jest.fn().mockResolvedValue([]),
     };
 
     const mod = await Test.createTestingModule({
@@ -87,7 +91,7 @@ describe('AudienceSyncService', () => {
     expect(s.updated).toBe(0);
   });
 
-  it('reconcileOne moves an INACTIVE member onto the resigned list', async () => {
+  it('counts a successful resigned-list PUT as moved (lists re-applied, not a verified diff)', async () => {
     prisma.coop.findUnique.mockResolvedValue({ ...COOP, brevoResignedListId: '9' });
     prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ status: 'INACTIVE' }));
     const s = await service.reconcileOne('c1', 'sh1');
@@ -233,6 +237,7 @@ describe('AudienceSyncService', () => {
       firstName: 'Bo',
     });
     prisma.shareholder.findFirst.mockResolvedValue(child);
+    prisma.$queryRaw.mockResolvedValue([{ id: 'child' }, { id: 'parent' }]);
     prisma.shareholder.findMany.mockResolvedValue([child, parent]);
 
     const s = await service.reconcileOne('c1', 'child');
@@ -258,6 +263,51 @@ describe('AudienceSyncService', () => {
     expect(s.updated).toBe(1);
     expect(s.unlinked).toBe(1);
     expect(s.failed).toBe(0);
+    const sql = prisma.$queryRaw.mock.calls[0][0].join(' ');
+    expect(sql).toContain('lower(trim(');
+    expect(prisma.$queryRaw.mock.calls[0]).toContain('parent@x.be');
+  });
+
+  it('keeps the shared contact on the members list when the active member is not the oldest', async () => {
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    const inactive = makeShareholder({
+      id: 'inactive',
+      status: 'INACTIVE',
+      createdAt: new Date('2015-01-01'),
+      email: null,
+      userId: 'user-1',
+      user: { email: 'shared@x.be' },
+    });
+    const active = makeShareholder({
+      id: 'active',
+      status: 'ACTIVE',
+      createdAt: new Date('2024-06-01'),
+      email: null,
+      userId: 'user-1',
+      user: { email: 'shared@x.be' },
+      firstName: 'Bo',
+    });
+    prisma.shareholder.findFirst.mockResolvedValue(inactive);
+    prisma.$queryRaw.mockResolvedValue([{ id: 'inactive' }, { id: 'active' }]);
+    prisma.shareholder.findMany.mockResolvedValue([inactive, active]);
+
+    const s = await service.reconcileOne('c1', 'inactive');
+
+    expect(upsert.mock.calls[0][0]).toMatchObject({
+      extId: 'active',
+      email: 'shared@x.be',
+      addListIds: [3],
+      removeListIds: [],
+      createIfMissing: true,
+      claimFromExtIds: ['inactive'],
+    });
+    const unlinked = upsert.mock.calls.filter(
+      (call) => (call[0] as { addListIds: number[] }).addListIds.length === 0,
+    );
+    expect(unlinked.map((call) => (call[0] as { extId: string }).extId)).toEqual(['inactive']);
+    expect(s.updated).toBe(1);
+    expect(s.unlinked).toBe(1);
+    expect(s.failed).toBe(0);
   });
 
   it('reconcileAll tallies a failure without aborting and writes a PARTIAL run', async () => {
@@ -275,7 +325,7 @@ describe('AudienceSyncService', () => {
     expect(s.errors).toEqual([
       {
         shareholderId: 'b',
-        email: 'b***@x.be',
+        email: 'b***@x***.be',
         code: 'DUPLICATE_EMAIL',
         message: 'DUPLICATE_EMAIL',
       },
@@ -343,19 +393,54 @@ describe('AudienceSyncService', () => {
     });
   });
 
-  it('reconcileAll opens the run as RUNNING and closes a crashed previous run', async () => {
+  it('reconcileAll opens the run as RUNNING and closes only a stale previous run', async () => {
     prisma.coop.findUnique.mockResolvedValue(COOP);
     prisma.shareholder.findMany.mockResolvedValue([]);
     await service.reconcileAll('c1', 'cron');
     expect(prisma.brevoSyncRun.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { coopId: 'c1', status: 'RUNNING' },
-        data: expect.objectContaining({ status: 'ERROR' }),
+        where: {
+          coopId: 'c1',
+          status: 'RUNNING',
+          startedAt: { lt: expect.any(Date) },
+        },
+        data: expect.objectContaining({
+          status: 'ERROR',
+          errors: [expect.objectContaining({ code: 'RUN_INTERRUPTED' })],
+        }),
       }),
     );
+    const cutoff = prisma.brevoSyncRun.updateMany.mock.calls[0][0].where.startedAt.lt as Date;
+    const ageMs = Date.now() - cutoff.getTime();
+    expect(ageMs).toBeGreaterThan(2 * 60 * 60 * 1000 - 5_000);
+    expect(ageMs).toBeLessThan(2 * 60 * 60 * 1000 + 5_000);
+    const lockSql = prisma.$executeRaw.mock.calls[0][0].join('');
+    expect(lockSql).toContain('pg_advisory_xact_lock');
+    expect(prisma.$executeRaw.mock.calls[0][1]).toBe('audience-sync:c1');
+    expect(prisma.brevoSyncRun.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          coopId: 'c1',
+          status: 'RUNNING',
+          startedAt: { gte: expect.any(Date) },
+        },
+      }),
+    );
+    const updateManyOrder = prisma.brevoSyncRun.updateMany.mock.invocationCallOrder[0];
     const createOrder = prisma.brevoSyncRun.create.mock.invocationCallOrder[0];
     const updateOrder = prisma.brevoSyncRun.update.mock.invocationCallOrder[0];
+    expect(updateManyOrder).toBeLessThan(createOrder);
     expect(createOrder).toBeLessThan(updateOrder);
+  });
+
+  it('reconcileAll skips when a run from the last two hours is still RUNNING', async () => {
+    prisma.coop.findUnique.mockResolvedValue(COOP);
+    prisma.brevoSyncRun.findFirst.mockResolvedValue({ id: 'busy' });
+    const s = await service.reconcileAll('c1', 'manual');
+    expect(s).toMatchObject({ created: 0, updated: 0, failed: 0, errors: [] });
+    expect(prisma.brevoSyncRun.create).not.toHaveBeenCalled();
+    expect(prisma.shareholder.findMany).not.toHaveBeenCalled();
+    expect(prisma.coop.update).not.toHaveBeenCalled();
   });
 
   it('reconcileAll records ERROR on the open run and rethrows when provider creation fails', async () => {
@@ -378,7 +463,7 @@ describe('AudienceSyncService', () => {
           errors: [
             expect.objectContaining({
               code: 'SYNC_FAILED',
-              message: 'factory boom for h***@x.be',
+              message: 'factory boom for h***@x***.be',
             }),
           ],
         }),
