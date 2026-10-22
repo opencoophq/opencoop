@@ -147,11 +147,13 @@ testable.
 
 Each shareholder with a resolvable email maps to exactly one destination:
 
-| OpenCoop status         | Destination                                                        |
-|-------------------------|-------------------------------------------------------------------|
-| `ACTIVE`                | existing members list (reused)                                    |
-| `INACTIVE`              | removed from members list; moved to resigned list **iff** one is configured |
-| `PENDING` / no email    | skipped                                                           |
+| OpenCoop status          | Destination                                                                  |
+|--------------------------|------------------------------------------------------------------------------|
+| `ACTIVE` with email      | existing members list (reused); removed from the resigned list if one is set |
+| `INACTIVE` with email    | removed from members; moved to the resigned list **iff** one is configured   |
+| `PENDING` with email     | removed from the members list; never created; not placed on resigned         |
+| `ACTIVE` without email   | if a contact still exists by EXT_ID, unlink it from the members list only    |
+| no email, contact absent | skipped (nothing to unlink)                                                  |
 
 (No local "was synced" flag is needed — removing an `ext_id` that isn't on a list is an
 idempotent no-op, so `INACTIVE` shareholders are reconciled the same whether or not they
@@ -201,6 +203,53 @@ This removes the need for a `Shareholder.brevoSyncedEmail` shadow column — the
 schema change on `Shareholder`**. "Was this shareholder ever synced?" is answered
 idempotently by the provider (removing a non-present contact from a list is a no-op), not
 by local state.
+
+### 3a. One contact per resolved email (2026-10-22)
+
+`resolveShareholderEmail` falls back to `User.email` when `Shareholder.email` is null.
+Family shareholders linked to another shareholder's user therefore resolve to that
+user's address. Brevo allows one contact per email, so pushing each shareholder as its
+own EXT_ID returns `duplicate_parameter`.
+
+`reconcileAll` and `reconcileOne` both group the coop's shareholders by the resolved
+email after trim + lowercase.
+
+- **Primary** (this id is the contact's EXT_ID): the shareholder whose own `User.email`
+  normalizes to the group email. If several do (they share one user), the oldest
+  `createdAt` wins, then the lowest id. If none of their users own the address, the
+  oldest shareholder in the group wins, with the same id tie-break.
+- The contact's lists and name follow the **primary's** status. Secondaries are not
+  given their own contact.
+- **Secondaries** are unlinked from the coop's managed lists (members, and resigned when
+  configured), addressed by their own EXT_ID, with no email written on that call.
+  Contacts are never deleted (`forceMerge` is never set; it would delete the other contact).
+- If the primary contact does not exist yet and the email already sits on a secondary
+  EXT_ID, that contact's EXT_ID is reassigned to the primary. Two contacts that both
+  already exist are not merged.
+
+Brevo error bodies are not stored. Known codes map to internal codes (`duplicate_parameter`
+→ `DUPLICATE_EMAIL`, plus invalid/missing parameter, unauthorized, not found, rate limit,
+and a generic `BREVO_BAD_REQUEST` / `BREVO_ERROR`). Emails in run error details are masked
+(`a***@domain`).
+
+Run counters, one per shareholder outcome:
+
+| Counter    | Meaning                                                                 |
+|------------|-------------------------------------------------------------------------|
+| `created`  | contact created                                                         |
+| `updated`  | existing active contact updated                                         |
+| `moved`    | contact actually moved between two managed lists                        |
+| `unlinked` | contact removed from managed lists and not added to another             |
+| `noop`     | shareholder had an email, provider returned 404, nothing created        |
+| `skipped`  | no resolvable email and no contact to change, or sync is not configured |
+| `failed`   | provider or unexpected error                                            |
+
+`added` remains as a legacy alias of `created`. A 404 or a missing email is not `moved`.
+
+`reconcileAll` inserts `BrevoSyncRun` with status `RUNNING` before calling Brevo
+(`startedAt` is the insert time) and updates that row when it finishes. A thrown failure
+sets the same row to `ERROR`. A later run marks any `RUNNING` row still open for that
+coop as `ERROR` / `RUN_INTERRUPTED` (the process died before it could finish).
 
 ### 4. Units (each independently testable)
 
@@ -264,13 +313,16 @@ model BrevoSyncRun {
   coop      Coop     @relation(fields: [coopId], references: [id], onDelete: Cascade)
   startedAt DateTime @default(now())
   finishedAt DateTime?
-  status    String   // "OK" | "PARTIAL" | "ERROR"
-  added     Int      @default(0)
+  status    String   // "RUNNING" | "OK" | "PARTIAL" | "ERROR"
+  added     Int      @default(0)  // legacy alias of created
+  created   Int      @default(0)
   updated   Int      @default(0)
-  moved     Int      @default(0)  // active → resigned
-  skipped   Int      @default(0)  // no email / PENDING
+  moved     Int      @default(0)  // actually moved between managed lists
+  unlinked  Int      @default(0)
+  noop      Int      @default(0)
+  skipped   Int      @default(0)  // no email and nothing to unlink, or not configured
   failed    Int      @default(0)
-  errors    Json?    // [{ email, message }]
+  errors    Json?    // [{ shareholderId, email (masked), code, message }]
   trigger   String   // "per-change" | "cron" | "manual"
   scope     String   // "one" (reconcileOne) | "all" (reconcileAll)
   @@index([coopId, startedAt])
@@ -307,9 +359,10 @@ attributes in the coop's Brevo account (`POST /v3/contacts/attributes`).
   the backstop** that repairs the drift. This safety net is what makes fire-and-forget
   per-change safe.
 - **Per-contact failures do not fail the batch.** They are collected into
-  `BrevoSyncRun.errors`; the run is marked `PARTIAL` and still counts as a success for
+  `BrevoSyncRun.errors` as internal codes with masked emails (never the raw Brevo body);
+  the run is marked `PARTIAL` and still counts as a success for
   the job (no infinite retry on one bad address). Whole-job/transport failures use the
-  existing Bull retry (3× exponential backoff).
+  existing Bull retry (3× exponential backoff) and set the open run to `ERROR`.
 - **Never force-resubscribe.** Upserts set attributes and list membership but rely on
   the provider's own unsubscribe state — re-importing will not revive an unsubscribed
   contact. GDPR-safe. This is concrete, not theoretical: the Coöperanten list already

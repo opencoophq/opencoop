@@ -13,6 +13,11 @@ export interface UpsertContactInput {
   removeListIds: number[];
   /** Active members may be created if absent; resigned contacts must not be. */
   createIfMissing: boolean;
+  /**
+   * When create hits duplicate_parameter, adopt the contact that already holds
+   * this email if its EXT_ID is one of these ids (reassign EXT_ID; never delete).
+   */
+  claimFromExtIds?: string[];
 }
 
 export type UpsertResult = 'created' | 'updated' | 'noop';
