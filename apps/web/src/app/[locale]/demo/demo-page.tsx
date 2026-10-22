@@ -42,7 +42,7 @@ function CopyableCredential({
       <button
         type="button"
         onClick={handleCopy}
-        className="flex items-center gap-2 font-mono text-sm bg-muted/60 rounded-md px-3 py-1.5 hover:bg-muted transition-colors cursor-pointer"
+        className="flex items-center gap-2 font-mono text-sm bg-muted/60 rounded-md px-3 py-1.5 hover:bg-muted transition-colors cursor-pointer min-w-0"
       >
         <span className="truncate">{value}</span>
         {copied ? (
@@ -81,7 +81,7 @@ export default function DemoPage() {
           </FadeIn>
 
           <FadeIn delay={80}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-balance">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-balance break-words">
               {t('hero.title')}
             </h1>
           </FadeIn>
@@ -117,7 +117,7 @@ export default function DemoPage() {
             </p>
           </FadeIn>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Admin card */}
             <FadeIn>
               <div className="rounded-2xl border-2 border-primary bg-card p-8 flex flex-col h-full relative">
