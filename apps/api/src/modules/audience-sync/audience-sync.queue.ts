@@ -15,8 +15,6 @@ export function reconcileAllJobId(coopId: string): string {
 /**
  * One reconcile-all job per coop. A waiting or active job is left alone.
  * A finished job is removed so the deterministic id can be reused.
- * A duplicate-id add (two replicas raced) is a skip, not an error, so Bull
- * does not retry it.
  */
 export async function enqueueReconcileAll(
   queue: Pick<Queue, 'add' | 'getJob'>,
@@ -38,16 +36,10 @@ export async function enqueueReconcileAll(
     }
   }
 
-  try {
-    await queue.add(
-      'reconcile-all',
-      { coopId, trigger },
-      { jobId, removeOnComplete: true, removeOnFail: true },
-    );
-    return { queued: true, skipped: false };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    if (/already exists/i.test(message)) return { queued: false, skipped: true };
-    throw err;
-  }
+  await queue.add(
+    'reconcile-all',
+    { coopId, trigger },
+    { jobId, removeOnComplete: true, removeOnFail: true },
+  );
+  return { queued: true, skipped: false };
 }

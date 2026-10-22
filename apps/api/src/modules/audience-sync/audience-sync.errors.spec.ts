@@ -68,4 +68,19 @@ describe('email masking', () => {
       message: 'DUPLICATE_EMAIL',
     });
   });
+
+  it('stores GROUP_EMAIL_CONFLICT with a masked address and no raw email', () => {
+    const detail = toSyncErrorDetail(
+      new AudienceProviderError('GROUP_EMAIL_CONFLICT'),
+      'primary',
+      'new@x.be',
+    );
+    expect(detail).toEqual({
+      shareholderId: 'primary',
+      email: 'n***@x***.be',
+      code: 'GROUP_EMAIL_CONFLICT',
+      message: 'GROUP_EMAIL_CONFLICT',
+    });
+    expect(JSON.stringify(detail)).not.toContain('new@x.be');
+  });
 });

@@ -102,10 +102,12 @@ export class BrevoProvider implements EmailAudienceProvider {
    *
    * Only EXT_IDs in `claimFromExtIds` (the same email group) may be touched.
    * If the primary contact does not exist, that contact's EXT_ID is reassigned
-   * to the primary. If the primary already exists under an old address, the
-   * secondary contact is parked on that old address and its EXT_ID is cleared
-   * so the primary can take the new address. Clearing EXT_ID leaves an orphan
-   * contact; this sync does not look those up or delete them.
+   * to the primary. That write never includes an email: email is only ever
+   * sent to the primary's own contact. Unsubscribe state, history and journeys
+   * stay on the contact that already has them.
+   *
+   * If the primary contact already exists and a same-group secondary holds the
+   * address, this throws GROUP_EMAIL_CONFLICT and writes nothing else.
    * Anything else stays DUPLICATE_EMAIL.
    */
   private async resolveDuplicateEmail(input: UpsertContactInput): Promise<boolean> {
@@ -116,32 +118,18 @@ export class BrevoProvider implements EmailAudienceProvider {
     if (!holder) return false;
 
     const primary = await this.readContact(input.extId);
-    if (!primary) {
-      const res = await this.putContact(holder, {
-        ext_id: input.extId,
-        attributes: input.attributes,
-        listIds: input.addListIds,
-        unlinkListIds: input.removeListIds,
-      });
-      if (res.ok) return true;
-      throw await this.fail(res);
+    if (primary) {
+      throw new AudienceProviderError('GROUP_EMAIL_CONFLICT');
     }
 
-    const oldEmail = primary.email?.trim();
-    if (!oldEmail || normalizeEmail(oldEmail) === wanted) return false;
-
-    const unlinkIds = [...new Set([...input.addListIds, ...input.removeListIds])];
-    const park = await this.putContact(holder, {
-      email: oldEmail,
-      ext_id: '',
-      listIds: [],
-      unlinkListIds: unlinkIds,
+    const res = await this.putContact(holder, {
+      ext_id: input.extId,
+      attributes: input.attributes,
+      listIds: input.addListIds,
+      unlinkListIds: input.removeListIds,
     });
-    if (!park.ok) throw await this.fail(park);
-
-    const moved = await this.putContact(input.extId, this.contactBody(input));
-    if (moved.ok) return true;
-    throw await this.fail(moved);
+    if (res.ok) return true;
+    throw await this.fail(res);
   }
 
   private async findEmailHolder(input: UpsertContactInput, wanted: string): Promise<string | null> {

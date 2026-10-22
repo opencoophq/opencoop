@@ -44,13 +44,4 @@ describe('enqueueReconcileAll', () => {
       expect.objectContaining({ jobId: 'reconcile-all:c1' }),
     );
   });
-
-  it('treats a duplicate job id as a skip', async () => {
-    const queue = queueWith(null);
-    queue.add.mockRejectedValue(new Error('Job reconcile-all:c1 already exists'));
-    await expect(enqueueReconcileAll(queue as never, 'c1', 'manual')).resolves.toEqual({
-      queued: false,
-      skipped: true,
-    });
-  });
 });

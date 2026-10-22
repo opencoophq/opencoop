@@ -14,8 +14,9 @@ export interface UpsertContactInput {
   /** Active members may be created if absent; resigned contacts must not be. */
   createIfMissing: boolean;
   /**
-   * When create hits duplicate_parameter, adopt the contact that already holds
-   * this email if its EXT_ID is one of these ids (reassign EXT_ID; never delete).
+   * When create hits duplicate_parameter and the primary contact does not exist
+   * yet, reassign EXT_ID from one of these ids. That call never includes email.
+   * If the primary contact already exists, the sync fails with GROUP_EMAIL_CONFLICT.
    */
   claimFromExtIds?: string[];
 }

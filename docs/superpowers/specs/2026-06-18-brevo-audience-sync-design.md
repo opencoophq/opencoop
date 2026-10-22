@@ -230,18 +230,18 @@ email after trim + lowercase.
   so surrounding whitespace does not split the group.
 - If the primary contact does not exist yet and the email already sits on a secondary
   EXT_ID in the same group, that contact's EXT_ID is reassigned to the primary.
+  That call does not include an email. Email is only ever written to the primary's
+  own contact, so unsubscribe state, history and journeys are not moved onto
+  someone else's address.
 - POST cannot unlink lists. After a successful create, a follow-up PUT sends
   `unlinkListIds` when there are lists to remove.
 - POST `duplicate_parameter` retries the same PUT once on the primary EXT_ID.
-- When that primary contact already exists under an old address and the new address
-  sits on a secondary EXT_ID in the same group, the secondary contact is given the
-  old address, its EXT_ID is cleared, and it is unlinked from the lists on that call.
-  The primary is then updated to the new address. No contact is deleted. If the holder
-  is not in the group, or there is no old address to park, the failure stays
-  `DUPLICATE_EMAIL`.
-- Contacts left without an EXT_ID (the parked secondary, or a pre-existing contact that
-  never received one) are **not managed**. This sync does not look them up and does not
-  clean them up.
+- When the primary contact already exists and the group address sits on a secondary
+  contact in the same group, that shareholder fails with `GROUP_EMAIL_CONFLICT`
+  and nothing else is written. If the address is not on a same-group EXT_ID, the
+  failure stays `DUPLICATE_EMAIL`.
+- Contacts that never received an EXT_ID are **not managed**. This sync does not
+  look them up and does not clean them up.
 
 Brevo error bodies are not stored. Known codes map to internal codes (`duplicate_parameter`
 → `DUPLICATE_EMAIL`, plus invalid/missing parameter, unauthorized, not found, rate limit,
