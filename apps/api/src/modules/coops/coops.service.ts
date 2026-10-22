@@ -397,6 +397,7 @@ export class CoopsService {
         emailAudienceProvider: true,
         brevoMembersListId: true,
         brevoResignedListId: true,
+        brevoProspectsListId: true,
         brevoLastSyncAt: true,
         brevoLastSyncStatus: true,
         // Coop info

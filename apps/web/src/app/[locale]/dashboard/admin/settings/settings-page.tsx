@@ -96,6 +96,7 @@ interface FormState {
   brevoApiKey: string;
   brevoMembersListId: string;
   brevoResignedListId: string;
+  brevoProspectsListId: string;
 }
 
 interface SettingsResponse {
@@ -137,6 +138,7 @@ interface SettingsResponse {
   emailAudienceProvider: string | null;
   brevoMembersListId: string | null;
   brevoResignedListId: string | null;
+  brevoProspectsListId: string | null;
   brevoLastSyncAt: string | null;
   brevoLastSyncStatus: string | null;
 }
@@ -251,6 +253,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     brevoApiKey: '',
     brevoMembersListId: '',
     brevoResignedListId: '',
+    brevoProspectsListId: '',
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -405,6 +408,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
           brevoApiKey: '',
           brevoMembersListId: settings.brevoMembersListId || '',
           brevoResignedListId: settings.brevoResignedListId || '',
+          brevoProspectsListId: settings.brevoProspectsListId || '',
         });
         setSignatureUrl(settings.certificateSignatureUrl || null);
         setApiKeyPrefix(settings.apiKeyPrefix || null);
@@ -507,6 +511,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
       body.emailAudienceProvider = form.emailAudienceProvider || null;
       body.brevoMembersListId = form.brevoMembersListId || null;
       body.brevoResignedListId = form.brevoResignedListId || null;
+      body.brevoProspectsListId = form.brevoProspectsListId || null;
       if (form.brevoApiKey) body.brevoApiKey = form.brevoApiKey;
 
       await api(`/admin/coops/${selectedCoop.id}/settings`, { method: 'PUT', body });
@@ -602,13 +607,19 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     if (!selectedCoop) return;
     setAudienceLoading(true);
     try {
-      const r = await api<{ ok: boolean; detail?: string }>(
+      const r = await api<{ ok: boolean; detail?: string; warning?: string }>(
         `/admin/coops/${selectedCoop.id}/audience-sync/test`,
         { method: 'POST' }
       );
+      const warningText = r.warning?.startsWith('MISSING_ATTRIBUTES')
+        ? t('brevo.missingAttributes')
+        : r.warning;
       setAudienceMsg(
         r.ok
-          ? { text: t('brevo.testOk'), error: false }
+          ? {
+              text: warningText ? `${t('brevo.testOk')} ${warningText}` : t('brevo.testOk'),
+              error: false,
+            }
           : { text: `${t('brevo.testFail')}: ${r.detail ?? ''}`, error: true }
       );
     } catch {
@@ -1363,6 +1374,16 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                     placeholder={t('brevo.optional')}
                     onChange={(e) => setForm({ ...form, brevoResignedListId: e.target.value })}
                   />
+                </div>
+
+                <div>
+                  <Label>{t('brevo.prospectsList')}</Label>
+                  <Input
+                    value={form.brevoProspectsListId}
+                    placeholder={t('brevo.optional')}
+                    onChange={(e) => setForm({ ...form, brevoProspectsListId: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{t('brevo.prospectsListHint')}</p>
                 </div>
 
                 <div className="flex gap-2 pt-2">

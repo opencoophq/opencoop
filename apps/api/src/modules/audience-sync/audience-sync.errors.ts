@@ -58,6 +58,23 @@ export class AudienceProviderError extends Error {
   }
 }
 
+/**
+ * True only for Brevo's unknown-attribute wording. A message that merely
+ * contains "attribute" (an invalid value, for example) stays INVALID_PARAMETER.
+ */
+export function isUnknownAttributeBody(bodyText: string): boolean {
+  let message = bodyText;
+  try {
+    const parsed = JSON.parse(bodyText) as { message?: unknown };
+    if (typeof parsed.message === 'string') message = parsed.message;
+  } catch {
+    message = bodyText;
+  }
+  return /attribute[^.]*does not exist|attribute[^.]*is not defined|unknown attribute/i.test(
+    message,
+  );
+}
+
 export function mapBrevoHttpError(status: number, bodyText: string): AudienceProviderError {
   let brevoCode: string | undefined;
   try {
@@ -65,6 +82,12 @@ export function mapBrevoHttpError(status: number, bodyText: string): AudiencePro
     if (typeof parsed.code === 'string') brevoCode = parsed.code;
   } catch {
     brevoCode = undefined;
+  }
+
+  // Unknown attributes are a 400 invalid_parameter. Keep that distinct from
+  // other bad parameters so a run can record it without treating it as a crash.
+  if (brevoCode === 'invalid_parameter' && isUnknownAttributeBody(bodyText)) {
+    return new AudienceProviderError('UNKNOWN_ATTRIBUTE');
   }
 
   if (brevoCode && BREVO_CODE_MAP[brevoCode]) {

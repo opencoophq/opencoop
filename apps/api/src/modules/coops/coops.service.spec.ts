@@ -204,6 +204,7 @@ describe('CoopsService — Brevo audience-sync config', () => {
     expect(select.brevoApiKey).toBeFalsy();
     expect(select.brevoMembersListId).toBe(true);
     expect(select.brevoResignedListId).toBe(true);
+    expect(select.brevoProspectsListId).toBe(true);
     expect(select.emailAudienceProvider).toBe(true);
     expect(select.brevoLastSyncAt).toBe(true);
     expect(select.brevoLastSyncStatus).toBe(true);

@@ -192,6 +192,7 @@ model Coop {
   brevoApiKey           String?   // AES-256-GCM encrypted at rest; never returned to client
   brevoMembersListId    String?   // existing list reused (Bronsgroen = "3" Coöperanten)
   brevoResignedListId   String?   // optional; if null, resigned contacts are just unlisted
+  brevoProspectsListId  String?   // optional; ACTIVE members are removed from this list
   brevoLastSyncAt       DateTime?
   brevoLastSyncStatus   String?   // "OK" | "PARTIAL" | "ERROR" | "RUNNING"
   brevoSyncRuns         BrevoSyncRun[]
@@ -1454,6 +1455,8 @@ model BrevoSyncRun {
   failed     Int       @default(0)
   /// [{ shareholderId?, email (masked), code, message }] — never raw Brevo text, never a full email.
   errors     Json?
+  /// Run-level warnings that do not fail the run. Example: { attributeStatus: "MISSING_ATTRIBUTES: ..." }.
+  warnings   Json?
 
   @@index([coopId, startedAt])
 }

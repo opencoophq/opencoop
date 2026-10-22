@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { Logger } from '@nestjs/common';
 import {
   BrevoList,
@@ -5,10 +6,21 @@ import {
   UpsertContactInput,
   UpsertResult,
 } from './audience-provider.interface';
+import {
+  BrevoAttributeDefinition,
+  describeMissingBrevoAttributes,
+} from './audience-sync.attributes';
 import { AudienceProviderError, mapBrevoHttpError } from './audience-sync.errors';
 import { normalizeEmail } from './audience-sync.grouping';
 
 const BASE = 'https://api.brevo.com/v3';
+/** Shared by reconcile-one bursts. A reconcile-all still reads once per run. */
+const ATTRIBUTE_TTL_MS = 60_000;
+const attributeCache = new Map<string, { at: number; attributes: BrevoAttributeDefinition[] }>();
+
+export function clearBrevoAttributeCache(): void {
+  attributeCache.clear();
+}
 
 export class BrevoProvider implements EmailAudienceProvider {
   private readonly logger = new Logger(BrevoProvider.name);
@@ -23,11 +35,38 @@ export class BrevoProvider implements EmailAudienceProvider {
     };
   }
 
-  async verifyConnection(): Promise<{ ok: boolean; detail?: string }> {
+  async verifyConnection(): Promise<{ ok: boolean; detail?: string; warning?: string }> {
     const res = await fetch(`${BASE}/account`, { method: 'GET', headers: this.headers() });
-    if (res.ok) return { ok: true };
-    const body = await res.text();
-    return { ok: false, detail: `${res.status}: ${body}` };
+    if (!res.ok) {
+      const body = await res.text();
+      return { ok: false, detail: `${res.status}: ${body}` };
+    }
+
+    // The account answered. Missing attributes are a warning, not a failed connection.
+    try {
+      const attributes = await this.listContactAttributes();
+      const missing = describeMissingBrevoAttributes(attributes);
+      if (missing) return { ok: true, warning: missing };
+      return { ok: true };
+    } catch {
+      return { ok: true, warning: 'ATTRIBUTES_UNAVAILABLE' };
+    }
+  }
+
+  async listContactAttributes(): Promise<BrevoAttributeDefinition[]> {
+    const key = createHash('sha256').update(this.apiKey).digest('hex');
+    const cached = attributeCache.get(key);
+    if (cached && Date.now() - cached.at < ATTRIBUTE_TTL_MS) return cached.attributes;
+
+    const res = await fetch(`${BASE}/contacts/attributes`, {
+      method: 'GET',
+      headers: this.headers(),
+    });
+    if (!res.ok) throw new AudienceProviderError('ATTRIBUTES_UNAVAILABLE');
+    const json = (await res.json()) as { attributes?: BrevoAttributeDefinition[] };
+    const attributes = json.attributes ?? [];
+    attributeCache.set(key, { at: Date.now(), attributes });
+    return attributes;
   }
 
   async listLists(): Promise<BrevoList[]> {

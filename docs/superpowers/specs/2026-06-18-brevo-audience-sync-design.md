@@ -348,6 +348,7 @@ model BrevoSyncRun {
   skipped   Int      @default(0)  // no email and nothing to unlink, or not configured
   failed    Int      @default(0)
   errors    Json?    // [{ shareholderId, email (masked), code, message }]
+  warnings  Json?    // { attributeStatus?: string } — does not fail the run
   trigger   String   // "per-change" | "cron" | "manual"
   scope     String   // "one" (reconcileOne) | "all" (reconcileAll)
   @@index([coopId, startedAt])
@@ -365,15 +366,38 @@ model BrevoSyncRun {
 | email          | `resolveShareholderEmail(shareholder)`  | contact email (mutable)    |
 | `FIRSTNAME`    | `Shareholder.firstName`                 | merge field                |
 | `LASTNAME`     | `Shareholder.lastName` / `companyName`  | merge field                |
+| `COOPERANT`    | `true` when ACTIVE, otherwise `false`   | boolean; must already exist |
+| `STATUS`       | `'active'` or `'resigned'`              | text; must already exist    |
+
+`STATUS` is set to `active` for ACTIVE and `resigned` for INACTIVE. PENDING shareholders
+are not labelled resigned (`COOPERANT=false`, `STATUS` omitted). The provider interface
+accepts a generic `attributes` map (`string | number | boolean | null`) in addition to
+the name fields.
+
+`Coop.brevoProspectsListId` (nullable) is optional. When it is set, an ACTIVE shareholder
+is removed from that list as well as from the resigned list, including on create (the
+follow-up `unlinkListIds` PUT, because POST cannot unlink). The id is a numeric string.
+The id is edited in the audience-sync settings section. Test connection
+(`POST .../audience-sync/test`) stays OK when the account answers. If `COOPERANT`
+(boolean) or `STATUS` (text) is missing it returns a separate `MISSING_ATTRIBUTES`
+warning and does not create them. Each reconcile reads `GET /contacts/attributes` once
+(cached for about a minute across reconcile-one calls). Missing or wrong-typed
+attributes are left out of the payload, list sync continues, and one warning is stored
+on the run as `warnings.attributeStatus`. That alone does not make the run `PARTIAL`.
+A Brevo 400 whose message says the attribute does not exist is `UNKNOWN_ATTRIBUTE`.
+Any other `invalid_parameter` stays `INVALID_PARAMETER`. An INACTIVE shareholder with
+no email still gets `STATUS=resigned` and `COOPERANT=false` when a contact exists for
+their EXT_ID.
 
 Verified live (`GET /v3/contacts/attributes`, Bronsgroen CV, 2026-06-18) — the account's
-editable attributes are `FIRSTNAME`, `LASTNAME`, `SMS`, `EXT_ID`, `LANDLINE_NUMBER`,
+editable attributes were `FIRSTNAME`, `LASTNAME`, `SMS`, `EXT_ID`, `LANDLINE_NUMBER`,
 `CONTACT_TIMEZONE`, `JOB_TITLE`, `LINKEDIN` (plus computed globals `BLACKLIST`,
-`READERS`, `CLICKERS`). There is **no** `LANGUAGE` / `SHARES` / `MEMBER_SINCE` attribute,
-so v1 maps only the fields that already exist.
+`READERS`, `CLICKERS`). There is **no** `LANGUAGE` / `SHARES` / `MEMBER_SINCE` attribute.
 
-Richer attributes are a future iteration, gated on first **creating** the matching custom
-attributes in the coop's Brevo account (`POST /v3/contacts/attributes`).
+`COOPERANT` and `STATUS` are not in that snapshot. They must be created in the Brevo
+account (boolean and text) before those values are written. OpenCoop does not create
+them. Until they exist, the nightly run still syncs lists and records one
+`MISSING_ATTRIBUTES` warning. Contacts without an EXT_ID stay unmanaged.
 
 ### 7. Error handling & safety
 
