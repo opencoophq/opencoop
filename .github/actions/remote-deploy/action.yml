@@ -1,0 +1,66 @@
+name: Remote compose deploy
+description: |
+  Pull release images with retries, record the tag only after that pull, then
+  verify the running containers before any HTTP healthcheck. Does not print
+  secrets or enable SSH debug logs.
+
+inputs:
+  host:
+    description: SSH host
+    required: true
+  username:
+    description: SSH user
+    required: true
+  ssh_key:
+    description: SSH private key
+    required: true
+  deploy_dir:
+    description: acc or prod (directory under ~/opencoop on the server)
+    required: true
+  env_key:
+    description: TAG or DOCS_TAG
+    required: true
+  verify:
+    description: Container checks to run after up, before the healthcheck
+    required: true
+  pull_services:
+    description: Services for `docker compose pull`. App deploys use `migrate api web` so postgres, redis, and docs are not pulled. Docs deploys use `docs`.
+    required: false
+    default: "migrate api web"
+  up_services:
+    description: Services for `docker compose up -d --no-deps`. App deploys use `migrate api web` (migrate finishes before api and web). Docs deploys use `docs`. Infra services are not recreated.
+    required: false
+    default: "migrate api web"
+  health_url:
+    description: Optional HTTP healthcheck. Run only after image verification.
+    required: false
+    default: ""
+  command_timeout:
+    description: Remote command timeout, including pull retries
+    required: false
+    default: 30m
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare remote deploy script
+      shell: bash
+      run: bash "${GITHUB_WORKSPACE}/deploy/wrap-remote-deploy.sh" "${RUNNER_TEMP}/remote-deploy.sh"
+
+    - name: Deploy over SSH
+      uses: appleboy/ssh-action@v1
+      env:
+        DEPLOY_DIR: ${{ inputs.deploy_dir }}
+        DEPLOY_TAG: ${{ github.sha }}
+        DEPLOY_ENV_KEY: ${{ inputs.env_key }}
+        DEPLOY_PULL_SERVICES: ${{ inputs.pull_services }}
+        DEPLOY_UP_SERVICES: ${{ inputs.up_services }}
+        DEPLOY_VERIFY: ${{ inputs.verify }}
+        DEPLOY_HEALTH_URL: ${{ inputs.health_url }}
+      with:
+        host: ${{ inputs.host }}
+        username: ${{ inputs.username }}
+        key: ${{ inputs.ssh_key }}
+        command_timeout: ${{ inputs.command_timeout }}
+        script_path: ${{ runner.temp }}/remote-deploy.sh
+        envs: DEPLOY_DIR,DEPLOY_TAG,DEPLOY_ENV_KEY,DEPLOY_PULL_SERVICES,DEPLOY_UP_SERVICES,DEPLOY_VERIFY,DEPLOY_HEALTH_URL
