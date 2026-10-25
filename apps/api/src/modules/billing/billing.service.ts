@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service';
+import { computeIsReadOnly } from '../auth/compute-readonly';
 import { STRIPE_CLIENT } from './stripe.provider';
 
 const PRICE_MAP: Record<string, string | undefined> = {
@@ -25,6 +26,32 @@ function getSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
   if (typeof sub === 'string') return sub;
   if (sub && typeof sub === 'object' && 'id' in sub) return sub.id;
   return null;
+}
+
+/**
+ * Map a Stripe subscription status onto our enum.
+ * Unknown values fail closed (UNPAID) so a new or paused status cannot be
+ * stored as ACTIVE and keep a lapsed coop writable.
+ */
+export function mapStripeSubscriptionStatus(status: string): string {
+  switch (status) {
+    case 'active':
+      return 'ACTIVE';
+    case 'past_due':
+    case 'paused':
+      return 'PAST_DUE';
+    case 'canceled':
+      return 'CANCELED';
+    case 'unpaid':
+      return 'UNPAID';
+    case 'incomplete':
+    case 'incomplete_expired':
+      return 'INCOMPLETE';
+    case 'trialing':
+      return 'TRIALING';
+    default:
+      return 'UNPAID';
+  }
 }
 
 /** Get current period timestamps from subscription items (clover API). */
@@ -142,7 +169,7 @@ export class BillingService {
     return {
       plan: coop.plan,
       trialEndsAt: coop.trialEndsAt?.toISOString() ?? undefined,
-      isReadOnly: this.computeIsReadOnly(coop),
+      isReadOnly: computeIsReadOnly(coop),
       subscription: coop.subscription
         ? {
             id: coop.subscription.id,
@@ -164,18 +191,7 @@ export class BillingService {
       include: { subscription: true },
     });
     if (!coop) return false;
-    return this.computeIsReadOnly(coop);
-  }
-
-  private computeIsReadOnly(coop: {
-    plan: string;
-    trialEndsAt: Date | null;
-    subscription: { status: string } | null;
-  }): boolean {
-    if (coop.plan === 'FREE') return false;
-    if (coop.subscription?.status === 'ACTIVE') return false;
-    if (coop.trialEndsAt && coop.trialEndsAt > new Date()) return false;
-    return true;
+    return computeIsReadOnly(coop);
   }
 
   // ============================================================================
@@ -244,21 +260,12 @@ export class BillingService {
     });
     if (!existing) return;
 
-    const statusMap: Record<string, string> = {
-      active: 'ACTIVE',
-      past_due: 'PAST_DUE',
-      canceled: 'CANCELED',
-      unpaid: 'UNPAID',
-      incomplete: 'INCOMPLETE',
-      trialing: 'TRIALING',
-    };
-
     const period = getItemPeriod(subscription);
 
     await this.prisma.subscription.update({
       where: { id: existing.id },
       data: {
-        status: (statusMap[subscription.status] ?? 'ACTIVE') as any,
+        status: mapStripeSubscriptionStatus(subscription.status) as any,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
         currentPeriodStart: period.start,
