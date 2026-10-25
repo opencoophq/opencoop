@@ -6,7 +6,7 @@ Multi-tenant SaaS platform for managing cooperative shareholding. Enables cooper
 
 - **Monorepo**: pnpm workspaces + Turbo
 - **Backend**: NestJS 10, Prisma 6, PostgreSQL 16
-- **Frontend**: Next.js 14 (App Router), React 18, Tailwind CSS
+- **Frontend**: Next.js 15 (App Router), React 18, Tailwind CSS
 - **Auth**: JWT (Passport.js), Passkeys (WebAuthn), Google/Apple OAuth, MFA/TOTP
 - **Queue**: Bull + Redis
 - **i18n**: next-intl (EN/NL/FR/DE)
