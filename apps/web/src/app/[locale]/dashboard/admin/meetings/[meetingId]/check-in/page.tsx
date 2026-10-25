@@ -399,7 +399,7 @@ export default function CheckInPage() {
           <h1 className="text-2xl font-bold">{t('meetings.checkIn.heading')}</h1>
           <p className="text-sm text-muted-foreground">{meeting.title}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             onClick={downloadPrintableSheet}

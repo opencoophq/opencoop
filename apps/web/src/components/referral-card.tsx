@@ -81,7 +81,7 @@ export function ReferralCard({ shareholderId, coopName }: { shareholderId: strin
         </div>
 
         {/* Share buttons */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={handleWhatsApp} className="flex-1">
             <MessageCircle className="h-4 w-4 mr-1.5" />
             {t('shareWhatsapp')}

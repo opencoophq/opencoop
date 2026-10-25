@@ -140,9 +140,9 @@ export default function AdminPage() {
       </div>
 
       {/* Charts */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold">{t('analytics.charts')}</h2>
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)} className="max-w-full overflow-x-auto">
           <TabsList className="h-8">
             <TabsTrigger value="day" className="text-xs px-2 py-1">{t('analytics.periods.day')}</TabsTrigger>
             <TabsTrigger value="month" className="text-xs px-2 py-1">{t('analytics.periods.month')}</TabsTrigger>

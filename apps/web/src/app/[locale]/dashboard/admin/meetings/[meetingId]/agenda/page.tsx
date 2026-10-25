@@ -274,12 +274,12 @@ export default function MeetingAgendaPage() {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t('meetings.agenda.heading')}</h1>
           <p className="text-sm text-muted-foreground">{meeting.title}</p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="self-start sm:self-auto">
           <Plus className="h-4 w-4 mr-2" />
           {t('meetings.agenda.addItem')}
         </Button>
