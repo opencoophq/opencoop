@@ -19,8 +19,9 @@ export interface CoopCreatedNotice {
 /**
  * Recipient for the internal "a coop was created" mail.
  * Unset or blank keeps the default. `off` disables sending so acceptance can
- * stay quiet without a code change. The subject always carries the environment,
- * so acc and prod can share one inbox and still be filtered.
+ * stay quiet without a code change. Non-production subjects are prefixed with
+ * the environment (`[acc]`, `[development]`, …) so those mails can be filtered.
+ * Production mail has no prefix and does not name its environment.
  */
 export function coopSignupNotifyRecipient(
   raw: string | undefined,
@@ -51,7 +52,7 @@ export function buildCoopCreatedMail(
   const to = coopSignupNotifyRecipient(env.COOP_SIGNUP_NOTIFY_EMAIL);
   if (!to) return null;
 
-  const environment = sentryEnvironment(env.FRONTEND_URL, env.SENTRY_ENVIRONMENT, env.NODE_ENV);
+  const environment = visibleEnvironment(env.FRONTEND_URL, env.SENTRY_ENVIRONMENT, env.NODE_ENV);
   const sourceLabel = notice.source === 'self-signup' ? 'zelfregistratie' : 'superadmin';
   const createdAt = notice.createdAt instanceof Date ? notice.createdAt : new Date(notice.createdAt);
   const when = Number.isNaN(createdAt.getTime())
@@ -69,19 +70,30 @@ export function buildCoopCreatedMail(
     `Beheerder: ${oneLine(notice.adminEmail) || 'nog niet ingesteld'}`,
     `Taal: ${oneLine(notice.language) || 'onbekend'}`,
     `Aangemaakt: ${when}`,
-    `Omgeving: ${environment}`,
-    `Bron: ${sourceLabel}`,
   ];
+  if (environment) lines.push(`Omgeving: ${environment}`);
+  lines.push(`Bron: ${sourceLabel}`);
   if (notice.createdByEmail) {
     lines.push(`Aangemaakt door: ${oneLine(notice.createdByEmail)}`);
   }
   lines.push('', `Platform: ${coopPlatformUrl(notice.coopId, env.FRONTEND_URL)}`);
 
+  const title = `Nieuwe coöperatie: ${oneLine(notice.name).slice(0, 120)}`;
   return {
     to,
-    subject: `[${environment}] Nieuwe coöperatie: ${oneLine(notice.name).slice(0, 120)}`,
+    subject: environment ? `[${environment}] ${title}` : title,
     text: lines.join('\n'),
   };
+}
+
+/**
+ * Label for user- and admin-visible text. Same short name as the GlitchTip tag,
+ * except production is unlabeled: the live site must never mention its environment.
+ */
+function visibleEnvironment(appUrl?: string | null, explicit?: string, nodeEnv?: string): string | null {
+  const tag = sentryEnvironment(appUrl, explicit, nodeEnv);
+  if (tag === 'prod') return null;
+  return tag;
 }
 
 function oneLine(value: string | null | undefined): string {
