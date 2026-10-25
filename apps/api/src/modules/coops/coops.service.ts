@@ -13,6 +13,7 @@ import { EmailService } from '../email/email.service';
 import { getAudienceProvider } from '../audience-sync/audience-provider.factory';
 import { enqueueReconcileAll } from '../audience-sync/audience-sync.queue';
 import { encryptField } from '../../common/crypto/field-encryption';
+import { encryptStoredSecret } from '../../common/crypto/stored-secret';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import { sanitizeInterestTags } from '../volunteers/volunteer-record';
 import { countryFromAddress } from '../email/coop-signup-notice';
@@ -531,9 +532,12 @@ export class CoopsService {
       data.volunteerInterests = sanitizeInterestTags(data.volunteerInterests as string[]);
     }
 
-    // Don't overwrite secrets with empty strings
+    // Don't overwrite secrets with empty strings. Non-empty mail secrets are
+    // encrypted at rest; blank means "leave the stored value alone".
     if (!data.smtpPass) delete data.smtpPass;
+    else data.smtpPass = encryptStoredSecret(data.smtpPass as string);
     if (!data.graphClientSecret) delete data.graphClientSecret;
+    else data.graphClientSecret = encryptStoredSecret(data.graphClientSecret as string);
     if (!data.brevoApiKey) delete data.brevoApiKey;
     else data.brevoApiKey = encryptField(data.brevoApiKey as string);
 
@@ -570,9 +574,12 @@ export class CoopsService {
       });
     }
 
-    // Never return the Brevo API key (plaintext or ciphertext) in the HTTP response
-    if (updated && typeof updated === 'object' && 'brevoApiKey' in updated) {
-      delete (updated as Record<string, unknown>).brevoApiKey;
+    // Never return mail or audience credentials (plaintext or ciphertext).
+    if (updated && typeof updated === 'object') {
+      const row = updated as Record<string, unknown>;
+      delete row.brevoApiKey;
+      delete row.smtpPass;
+      delete row.graphClientSecret;
     }
 
     return updated;

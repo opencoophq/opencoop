@@ -11,6 +11,7 @@ import {
   TokenCredentialAuthenticationProvider,
 } from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
 import { buildCopy, getCopy } from './email-copy';
+import { decryptStoredSecret } from '../../common/crypto/stored-secret';
 
 /**
  * Escape HTML-significant characters so user/coop-controlled free text can be
@@ -218,7 +219,7 @@ export class EmailProcessor {
       port: coop.smtpPort || 587,
       secure: coop.smtpPort === 465,
       auth: coop.smtpUser && coop.smtpPass
-        ? { user: coop.smtpUser, pass: coop.smtpPass }
+        ? { user: coop.smtpUser, pass: decryptStoredSecret(coop.smtpPass) }
         : undefined,
     });
 
@@ -253,7 +254,7 @@ export class EmailProcessor {
     const credential = new ClientSecretCredential(
       coop.graphTenantId,
       coop.graphClientId,
-      coop.graphClientSecret,
+      decryptStoredSecret(coop.graphClientSecret),
     );
 
     const authProvider = new TokenCredentialAuthenticationProvider(credential, {
