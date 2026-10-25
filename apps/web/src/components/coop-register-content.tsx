@@ -31,6 +31,7 @@ import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { resolveLogoUrl } from '@/lib/api';
 import { chargeCardRequestPath, chargeCardReturnHref } from '@/lib/charge-card-entry';
 import { rememberPostLoginRedirect } from '@/lib/post-login-redirect';
+import { registrationErrorMessage } from '@/lib/registration-error';
 
 interface CoopPublicInfo {
   id: string;
@@ -704,7 +705,7 @@ export function CoopRegisterContent({
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || 'Registration failed');
+        throw new Error(registrationErrorMessage(err, t('registration.signupClosed')));
       }
 
       const data = await response.json();

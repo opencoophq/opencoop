@@ -541,7 +541,8 @@
     "claimDescription": "Geben Sie den Code Ihres Geschenkgutscheins ein, um Ihre Anteile zu beanspruchen.",
     "yourDetails": "Ihre Angaben",
     "acceptPrivacyPrefix": "Ich akzeptiere die",
-    "privacyPolicy": "Datenschutzerklärung"
+    "privacyPolicy": "Datenschutzerklärung",
+    "signupClosed": "Diese Genossenschaft nimmt derzeit keine neuen Beitritte an. Bitte kontaktieren Sie die Genossenschaft, wenn Sie das für einen Irrtum halten."
   },
   "home": {
     "title": "OpenCoop",

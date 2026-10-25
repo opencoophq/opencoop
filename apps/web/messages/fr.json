@@ -541,7 +541,8 @@
     "claimDescription": "Saisissez le code de votre bon cadeau pour réclamer vos parts.",
     "yourDetails": "Vos coordonnées",
     "acceptPrivacyPrefix": "J'accepte la",
-    "privacyPolicy": "Politique de Confidentialité"
+    "privacyPolicy": "Politique de Confidentialité",
+    "signupClosed": "Cette coopérative n'accepte pas de nouvelles inscriptions pour le moment. Contactez la coopérative si vous pensez qu'il s'agit d'une erreur."
   },
   "home": {
     "title": "OpenCoop",

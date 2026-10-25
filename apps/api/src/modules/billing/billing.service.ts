@@ -9,6 +9,7 @@ import {
 import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service';
 import { computeIsReadOnly } from '../auth/compute-readonly';
+import { nextLapsedAt } from './signup-grace';
 import { STRIPE_CLIENT } from './stripe.provider';
 
 const PRICE_MAP: Record<string, string | undefined> = {
@@ -215,6 +216,7 @@ export class BillingService {
       data: {
         stripeSubscriptionId: subscriptionId,
         status: 'ACTIVE',
+        lapsedAt: null,
         stripePriceId: stripeSub.items.data[0]?.price.id,
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
@@ -238,6 +240,7 @@ export class BillingService {
       where: { id: subscription.id },
       data: {
         status: 'ACTIVE',
+        lapsedAt: null,
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
       },
@@ -248,9 +251,18 @@ export class BillingService {
     const subscriptionId = getSubscriptionIdFromInvoice(invoice);
     if (!subscriptionId) return;
 
-    await this.prisma.subscription.updateMany({
+    const existing = await this.prisma.subscription.findUnique({
       where: { stripeSubscriptionId: subscriptionId },
-      data: { status: 'PAST_DUE' },
+    });
+    if (!existing) return;
+
+    const now = new Date();
+    await this.prisma.subscription.update({
+      where: { id: existing.id },
+      data: {
+        status: 'PAST_DUE',
+        lapsedAt: nextLapsedAt('PAST_DUE', existing.lapsedAt, now),
+      },
     });
   }
 
@@ -261,11 +273,14 @@ export class BillingService {
     if (!existing) return;
 
     const period = getItemPeriod(subscription);
+    const status = mapStripeSubscriptionStatus(subscription.status);
+    const now = new Date();
 
     await this.prisma.subscription.update({
       where: { id: existing.id },
       data: {
-        status: mapStripeSubscriptionStatus(subscription.status) as any,
+        status: status as any,
+        lapsedAt: nextLapsedAt(status, existing.lapsedAt, now),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
         currentPeriodStart: period.start,
@@ -276,11 +291,18 @@ export class BillingService {
   }
 
   async handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-    await this.prisma.subscription.updateMany({
+    const existing = await this.prisma.subscription.findUnique({
       where: { stripeSubscriptionId: subscription.id },
+    });
+    if (!existing) return;
+
+    const now = new Date();
+    await this.prisma.subscription.update({
+      where: { id: existing.id },
       data: {
         status: 'CANCELED',
-        canceledAt: new Date(),
+        canceledAt: now,
+        lapsedAt: nextLapsedAt('CANCELED', existing.lapsedAt, now),
       },
     });
   }

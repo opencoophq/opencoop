@@ -1129,6 +1129,8 @@ model Subscription {
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean            @default(false)
   canceledAt           DateTime?
+  // When the subscription last entered a lapsed status. Null while active or trialing.
+  lapsedAt             DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 

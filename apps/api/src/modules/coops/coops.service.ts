@@ -17,6 +17,7 @@ import { encryptStoredSecret } from '../../common/crypto/stored-secret';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import { sanitizeInterestTags } from '../volunteers/volunteer-record';
 import { countryFromAddress } from '../email/coop-signup-notice';
+import { refusePublicSignupIfLapsed } from '../billing/signup-grace';
 import * as Sentry from '@sentry/nestjs';
 import sharp from 'sharp';
 import * as path from 'path';
@@ -879,6 +880,7 @@ export class CoopsService {
     }
 
     const coop = await this.findBySlug(slug);
+    await refusePublicSignupIfLapsed(this.prisma, coop);
 
     // Resolve referral code to referring shareholder
     let referralShareholderId: string | null = null;
