@@ -31,6 +31,9 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3002',
     credentials: true,
+    // The browser hides this response header unless it is listed. It carries
+    // a replacement refresh token for clients that opted into rotation.
+    exposedHeaders: ['X-Session-Token'],
   });
 
   // Global validation pipe

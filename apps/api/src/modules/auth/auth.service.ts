@@ -401,6 +401,8 @@ export class AuthService {
       },
     });
 
+    await this.tokenService.revokeRefreshTokens(user.id);
+
     await this.auditService.log({
       entity: 'Auth',
       entityId: user.id,
@@ -702,6 +704,8 @@ export class AuthService {
         passwordResetExpires: null,
       },
     });
+
+    await this.tokenService.revokeRefreshTokens(userId);
 
     await this.auditService.log({
       entity: 'User',

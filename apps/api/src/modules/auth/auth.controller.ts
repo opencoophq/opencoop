@@ -37,6 +37,7 @@ import { AppleAuthGuard } from './guards/apple-auth.guard';
 import { OAuthCallbackExceptionFilter } from './filters/oauth-callback.filter';
 import { CoopAdminsService } from '../coop-admins/coop-admins.service';
 import { AuditService } from '../audit/audit.service';
+import { SESSION_ROTATION_REQUEST_HEADER } from './session-lifetime';
 
 function isSafeRedirectPath(path: string): boolean {
   return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//');
@@ -93,8 +94,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
   @ApiResponse({ status: 200, description: 'New access token issued' })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
-  async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
-    return this.tokenService.refreshAccessToken(refreshTokenDto.refreshToken);
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto, @Req() req: Request) {
+    const header = req.headers[SESSION_ROTATION_REQUEST_HEADER];
+    return this.tokenService.refreshAccessToken(refreshTokenDto.refreshToken, {
+      rotate: header === '1',
+    });
   }
 
   @UseGuards(JwtAuthGuard)

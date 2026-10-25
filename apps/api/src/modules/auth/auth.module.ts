@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -17,6 +18,7 @@ import { AppleStrategy } from './strategies/apple.strategy';
 import { resolveAppleLogin } from './strategies/apple-login.config';
 import { WebAuthnService } from './webauthn.service';
 import { RedisService } from './redis.service';
+import { SessionRotationInterceptor } from './session-rotation.interceptor';
 import { UsersModule } from '../users/users.module';
 import { EmailModule } from '../email/email.module';
 import { CoopsModule } from '../coops/coops.module';
@@ -64,6 +66,7 @@ if (resolveAppleLogin()) {
     LocalStrategy,
     WebAuthnService,
     RedisService,
+    { provide: APP_INTERCEPTOR, useClass: SessionRotationInterceptor },
     ...conditionalProviders,
   ],
   exports: [AuthService, EmancipationService],
