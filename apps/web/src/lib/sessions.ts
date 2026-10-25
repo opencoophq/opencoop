@@ -106,8 +106,9 @@ export function clearAllSessions(): void {
   localStorage.removeItem('activeSessionId');
 }
 
-export function updateActiveSessionToken(accessToken: string): void {
+export function updateActiveSessionToken(accessToken: string, refreshToken?: string): void {
   localStorage.setItem('accessToken', accessToken);
+  if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
 
   const activeId = getActiveSessionId();
   if (!activeId) return;
@@ -116,6 +117,7 @@ export function updateActiveSessionToken(accessToken: string): void {
   const index = sessions.findIndex((s) => s.id === activeId);
   if (index >= 0) {
     sessions[index].accessToken = accessToken;
+    if (refreshToken) sessions[index].refreshToken = refreshToken;
     setSessions(sessions);
   }
 }
