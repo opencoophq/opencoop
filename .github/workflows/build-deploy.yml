@@ -35,6 +35,10 @@ jobs:
         run: pnpm db:generate
       - name: Build workspace dependencies (shared, pdf-templates)
         run: pnpm --filter "@opencoop/api^..." build
+      - name: Typecheck (api + web)
+        run: |
+          pnpm --filter @opencoop/api exec tsc --noEmit -p tsconfig.json
+          pnpm --filter @opencoop/web exec tsc --noEmit
       - name: Lint (api + web)
         run: |
           pnpm --filter @opencoop/api lint
