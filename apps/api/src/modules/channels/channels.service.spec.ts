@@ -5,6 +5,7 @@ jest.mock('../documents/documents.service', () => ({
 }));
 
 import { Test } from '@nestjs/testing';
+import { LAPSED_SIGNUP_GRACE_MS, PublicSignupClosedException } from '../billing/signup-grace';
 import { ChannelsService } from './channels.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -36,6 +37,7 @@ describe('ChannelsService.publicRegister — orphan-shareholder preflight', () =
   beforeEach(async () => {
     prisma = {
       coop: { findUnique: jest.fn().mockResolvedValue(baseCoop) },
+      subscription: { findUnique: jest.fn().mockResolvedValue(null) },
       channel: { findFirst: jest.fn().mockResolvedValue(baseChannel) },
       shareholder: {
         findFirst: jest.fn(),
@@ -123,5 +125,30 @@ describe('ChannelsService.publicRegister — orphan-shareholder preflight', () =
 
     expect(prisma.shareholder.findFirst).not.toHaveBeenCalled();
     expect(shareholdersService.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses public signup once the 14-day lapse grace has ended', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ ...baseCoop, plan: 'PROFESSIONAL' });
+    prisma.subscription.findUnique.mockResolvedValue({
+      status: 'UNPAID',
+      lapsedAt: new Date(Date.now() - LAPSED_SIGNUP_GRACE_MS),
+    });
+
+    await expect(service.publicRegister('bronsgroen', 'default', dto as any)).rejects.toBeInstanceOf(
+      PublicSignupClosedException,
+    );
+    expect(shareholdersService.create).not.toHaveBeenCalled();
+    expect(registrationsService.createBuy).not.toHaveBeenCalled();
+  });
+
+  it('still accepts public signup during the lapse grace window', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ ...baseCoop, plan: 'PROFESSIONAL' });
+    prisma.subscription.findUnique.mockResolvedValue({ status: 'INCOMPLETE', lapsedAt: new Date() });
+    prisma.shareholder.findFirst.mockResolvedValue(null);
+    shareholdersService.create.mockResolvedValue({ id: 'sh-new' });
+
+    await expect(service.publicRegister('bronsgroen', 'default', dto as any)).resolves.toMatchObject({
+      status: 'registered',
+    });
   });
 });

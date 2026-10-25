@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { EmailFirstLogin } from '@/components/auth/email-first-login';
 import { rememberPostLoginRedirect } from '@/lib/post-login-redirect';
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations();
+  const oauthFailed = searchParams.get('error') === 'oauth';
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -23,5 +26,17 @@ export default function LoginPage() {
 
   if (!ready) return null;
 
-  return <EmailFirstLogin />;
+  return (
+    <>
+      {oauthFailed && (
+        <div
+          role="alert"
+          className="mx-auto mb-4 max-w-md rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          {t('oauth.loginFailed')}
+        </div>
+      )}
+      <EmailFirstLogin />
+    </>
+  );
 }

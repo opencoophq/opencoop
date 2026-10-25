@@ -15,6 +15,13 @@ env:
   OWNER: opencoophq
 
 jobs:
+  deploy-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test remote deploy script
+        run: bash deploy/remote-deploy.test.sh
+
   build-docs:
     runs-on: ubuntu-latest
     permissions:
@@ -42,25 +49,28 @@ jobs:
           cache-to: type=gha,mode=max,scope=docs
 
   deploy:
-    needs: [build-docs]
+    needs: [build-docs, deploy-script]
     runs-on: ubuntu-latest
     environment: prod
     steps:
+      - name: Check out deploy script
+        uses: actions/checkout@v4
+
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
+        uses: tailscale/github-action@v3
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
       - name: Deploy docs
-        uses: appleboy/ssh-action@v1
+        uses: ./.github/actions/remote-deploy
         with:
           host: fsn1
           username: wouter
-          key: ${{ secrets.FSN1_SSH_KEY }}
-          script: |
-            cd ~/opencoop/prod
-            sed -i 's/^DOCS_TAG=.*/DOCS_TAG=${{ github.sha }}/' .env
-            docker compose pull docs
-            docker compose up -d docs
+          ssh_key: ${{ secrets.FSN1_SSH_KEY }}
+          deploy_dir: prod
+          env_key: DOCS_TAG
+          pull_services: docs
+          up_services: docs
+          verify: docs:running

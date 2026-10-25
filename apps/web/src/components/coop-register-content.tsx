@@ -29,6 +29,9 @@ import { Gift, UserPlus, LogIn, Check, Copy, Mail } from 'lucide-react';
 import { EmailFirstLogin } from '@/components/auth/email-first-login';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { resolveLogoUrl } from '@/lib/api';
+import { chargeCardRequestPath, chargeCardReturnHref } from '@/lib/charge-card-entry';
+import { rememberPostLoginRedirect } from '@/lib/post-login-redirect';
+import { registrationErrorMessage } from '@/lib/registration-error';
 
 interface CoopPublicInfo {
   id: string;
@@ -292,6 +295,9 @@ export function CoopRegisterContent({
   const preselectedProject = searchParams.get('project');
   const preselectedShareholderId = searchParams.get('shareholderId');
   const referralCode = searchParams.get('ref');
+  // Set when registration was started from the charge-card entry page.
+  // Only that page's own URL is accepted; anything else is ignored.
+  const chargeCardReturn = chargeCardReturnHref(searchParams.get('returnTo'), coopSlug);
 
   const [coop, setCoop] = useState<CoopPublicInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -365,6 +371,13 @@ export function CoopRegisterContent({
   const totalAmount = selectedShareClass
     ? selectedShareClass.pricePerShare * watchQuantity
     : 0;
+
+  useEffect(() => {
+    // A magic link opens in a new tab, so the request-form path has to live in
+    // localStorage. After login the dashboard sends them there. A membership
+    // that is not active yet sees the explanation instead of the form.
+    if (chargeCardReturn) rememberPostLoginRedirect(chargeCardRequestPath(locale, coopSlug));
+  }, [chargeCardReturn, locale, coopSlug]);
 
   useEffect(() => {
     async function fetchData() {
@@ -692,7 +705,7 @@ export function CoopRegisterContent({
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || 'Registration failed');
+        throw new Error(registrationErrorMessage(err, t('registration.signupClosed')));
       }
 
       const data = await response.json();
@@ -1543,9 +1556,19 @@ export function CoopRegisterContent({
             </div>
           )}
 
+          {chargeCardReturn && (
+            <div className="rounded-lg border p-4 space-y-3" data-testid="charge-card-return">
+              <h4 className="font-medium">{t('registration.chargeCardNextTitle')}</h4>
+              <p className="text-sm text-muted-foreground">{t('registration.chargeCardNextBody')}</p>
+              <Button asChild className="w-full" style={{ backgroundColor: coop.primaryColor }}>
+                <a href={chargeCardReturn}>{t('registration.chargeCardContinue')}</a>
+              </Button>
+            </div>
+          )}
+
           <div className="flex justify-center pt-2">
             <a
-              href={`/${locale}/${coopSlug}`}
+              href={chargeCardReturn ?? `/${locale}/${coopSlug}`}
               className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
             >
               {t('registration.imDone')}

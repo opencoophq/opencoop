@@ -255,7 +255,7 @@ describe('McpMessageTools', () => {
   it('lists conversations with the authenticated coop and requested page', async () => {
     await tools.listConversations({ page: 3 });
 
-    expect(messages.findAllForCoop).toHaveBeenCalledWith('c1', 3);
+    expect(messages.findAllForCoop).toHaveBeenCalledWith('c1', 3, { includeVolunteers: false });
   });
 
   it('gets the full conversation history with the authenticated coop', async () => {

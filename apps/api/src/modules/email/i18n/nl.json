@@ -127,5 +127,29 @@
     "cardNumber": "Kaartnummer",
     "dashboard": "Bekijk mijn laadpassen",
     "thanks": "Met vriendelijke groeten, {coopName}"
+  },
+  "volunteer-confirm": {
+    "subject": "Bevestig uw vrijwilligersregistratie bij {coopName}",
+    "title": "Bevestig uw registratie",
+    "dear": "Beste {volunteerName},",
+    "intro": "Bedankt dat u {coopName} wilt helpen. Bevestig uw e-mailadres zodat de coöperatie u mag contacteren voor vrijwilligerstaken.",
+    "confirm": "Bevestig mijn registratie",
+    "ignore": "Hebt u dit niet aangevraagd, dan mag u deze e-mail negeren.",
+    "expires": "Deze link vervalt na 14 dagen."
+  },
+  "volunteer-welcome": {
+    "subject": "U bent geregistreerd als vrijwilliger bij {coopName}",
+    "title": "U bent geregistreerd",
+    "dear": "Beste {volunteerName},",
+    "thanks": "Bedankt. {coopName} mag u contacteren voor de vrijwilligerstaken waarvoor u zich hebt opgegeven.",
+    "withdrawHint": "U kunt deze toestemming altijd intrekken.",
+    "withdraw": "Trek mijn registratie in"
+  },
+  "volunteer-message": {
+    "title": "Bericht van {coopName}",
+    "dear": "Beste {volunteerName},",
+    "subject": "Onderwerp",
+    "withdrawHint": "U kunt uw vrijwilligersregistratie altijd intrekken.",
+    "withdraw": "Trek mijn registratie in"
   }
 }

@@ -49,7 +49,7 @@ export class BillingWebhookController {
     try {
       event = this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err) {
-      throw new BadRequestException(`Webhook signature verification failed: ${(err as Error).message}`);
+      throw new BadRequestException('Webhook signature verification failed');
     }
 
     switch (event.type) {

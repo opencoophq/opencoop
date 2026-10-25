@@ -9,6 +9,7 @@ describe('AudienceService', () => {
     shareholder: { findMany: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
     project: { findFirst: jest.fn() },
     registration: { findMany: jest.fn() },
+    volunteer: { findMany: jest.fn(), count: jest.fn() },
   };
 
   beforeEach(async () => {
@@ -132,6 +133,44 @@ describe('AudienceService', () => {
       expect(prisma.shareholder.count).toHaveBeenCalledWith({
         where: { coopId: 'coop1', status: 'ACTIVE', id: { in: ['s1', 'ghost'] } },
       });
+    });
+
+    it('counts active volunteers and does not load shareholdings', async () => {
+      prisma.volunteer.count.mockResolvedValue(3);
+      prisma.volunteer.findMany.mockResolvedValue([
+        {
+          id: 'v1',
+          name: 'An',
+          email: 'an@example.be',
+          locale: 'nl',
+          withdrawToken: 'tok',
+          shareholder: { id: 's1', status: 'ACTIVE', user: { preferredLanguage: 'nl' } },
+        },
+        {
+          id: 'v2',
+          name: 'Bo',
+          email: 'bo@example.be',
+          locale: 'nl',
+          withdrawToken: 'tok2',
+          shareholder: null,
+        },
+      ]);
+
+      await expect(
+        service.count('coop1', { type: 'VOLUNTEERS', volunteerFilter: { municipality: 'Genk' } }),
+      ).resolves.toBe(3);
+      const delivery = await service.resolveVolunteerDelivery('coop1', { municipality: 'Genk' });
+
+      expect(delivery.shareholderIds).toEqual(['s1']);
+      expect(delivery.recipients).toHaveLength(2);
+      const select = prisma.volunteer.findMany.mock.calls[0][0].select;
+      expect(select.shareholder.select).toEqual({
+        id: true,
+        status: true,
+        user: { select: { preferredLanguage: true } },
+      });
+      expect(JSON.stringify(select)).not.toContain('nationalId');
+      expect(JSON.stringify(select)).not.toContain('registrations');
     });
 
     it('counts a DIRECT shareholder without filtering status', async () => {

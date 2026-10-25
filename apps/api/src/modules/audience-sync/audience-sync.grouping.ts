@@ -1,0 +1,117 @@
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
+
+/**
+ * Shareholders that share one resolved email become one Brevo contact.
+ *
+ * The contact's EXT_ID is the primary shareholder, chosen in this order:
+ * 1. Status: ACTIVE, then INACTIVE, then PENDING, then any other status.
+ * 2. A linked User whose email normalizes to the group email. Several
+ *    shareholders can share that user, so a match is not "this shareholder
+ *    owns the account".
+ * 3. Oldest `createdAt`.
+ * 4. Lowest id.
+ *
+ * Everyone else is secondary. Their old contact (EXT_ID = their own id) is
+ * unlinked from the coop's managed lists. Contacts are never deleted.
+ * A contact left without an EXT_ID is not managed and is not cleaned up here.
+ *
+ * The shared contact's list membership follows the primary's status.
+ */
+export interface GroupableShareholder {
+  id: string;
+  status: string;
+  email: string | null;
+  createdAt: Date;
+  userId?: string | null;
+  user: { email: string | null } | null;
+}
+
+export interface EmailGroup<T extends GroupableShareholder> {
+  /** Normalized email, or null when the shareholder has none. */
+  email: string | null;
+  /** When `email` is set, index 0 is the primary. */
+  shareholders: T[];
+}
+
+export function normalizeEmail(email: string | null | undefined): string | null {
+  if (!email) return null;
+  const normalized = email.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : null;
+}
+
+export function resolvedGroupEmail(shareholder: GroupableShareholder): string | null {
+  return normalizeEmail(resolveShareholderEmail(shareholder));
+}
+
+const STATUS_RANK: Record<string, number> = {
+  ACTIVE: 0,
+  INACTIVE: 1,
+  PENDING: 2,
+};
+
+function statusRank(status: string): number {
+  return STATUS_RANK[status] ?? 3;
+}
+
+function compareOldest(a: GroupableShareholder, b: GroupableShareholder): number {
+  const delta = a.createdAt.getTime() - b.createdAt.getTime();
+  if (delta !== 0) return delta;
+  if (a.id < b.id) return -1;
+  if (a.id > b.id) return 1;
+  return 0;
+}
+
+function comparePrimary(groupEmail: string) {
+  return (a: GroupableShareholder, b: GroupableShareholder): number => {
+    const byStatus = statusRank(a.status) - statusRank(b.status);
+    if (byStatus !== 0) return byStatus;
+    const aMatches = normalizeEmail(a.user?.email) === groupEmail ? 0 : 1;
+    const bMatches = normalizeEmail(b.user?.email) === groupEmail ? 0 : 1;
+    if (aMatches !== bMatches) return aMatches - bMatches;
+    return compareOldest(a, b);
+  };
+}
+
+export function selectPrimary<T extends GroupableShareholder>(
+  shareholders: readonly T[],
+  groupEmail: string,
+): T {
+  if (shareholders.length === 0) {
+    throw new Error('selectPrimary requires at least one shareholder');
+  }
+  return [...shareholders].sort(comparePrimary(groupEmail))[0];
+}
+
+export function groupShareholdersByEmail<T extends GroupableShareholder>(
+  shareholders: readonly T[],
+): EmailGroup<T>[] {
+  const buckets = new Map<string, T[]>();
+  const noEmail: T[] = [];
+
+  for (const shareholder of shareholders) {
+    const email = resolvedGroupEmail(shareholder);
+    if (!email) {
+      noEmail.push(shareholder);
+      continue;
+    }
+    const list = buckets.get(email);
+    if (list) list.push(shareholder);
+    else buckets.set(email, [shareholder]);
+  }
+
+  const groups: EmailGroup<T>[] = [];
+  for (const email of [...buckets.keys()].sort()) {
+    const members = buckets.get(email) ?? [];
+    const primary = selectPrimary(members, email);
+    const secondaries = members
+      .filter((shareholder) => shareholder.id !== primary.id)
+      .sort(compareOldest);
+    groups.push({ email, shareholders: [primary, ...secondaries] });
+  }
+
+  for (const shareholder of [...noEmail].sort(compareOldest)) {
+    groups.push({ email: null, shareholders: [shareholder] });
+  }
+
+  return groups;
+}

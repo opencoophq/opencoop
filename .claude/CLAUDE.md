@@ -133,6 +133,7 @@ Optional:
 ```
 LAUNCH_MODE=waitlist    # Set on prod to show waitlist dialog instead of onboarding links
 SENTRY_DSN=https://...  # Sentry error tracking DSN (API only, no-op if unset)
+MCP_PUBLIC_URL=https://mcp.opencoop.be/mcp  # Web, runtime: MCP URL shown in admin settings snippet
 ```
 
 ## Feature Flags
@@ -152,12 +153,21 @@ Swagger UI available at: `http://localhost:3001/docs` (mounted via `SwaggerModul
 ## AI Integration
 
 - **MCP endpoint:** `POST /mcp` is the only MCP endpoint. It uses stateless Streamable HTTP transport with JSON responses, not SSE streaming. `GET` and `DELETE` on `/mcp` return `405`.
+- **Public URLs:** Give external clients `https://mcp.opencoop.be/mcp` (acc: `https://mcp-acc.opencoop.be/mcp`). The old path `https://opencoop.be/api/mcp` still works.
 - **Authentication:** Send `Authorization: Bearer oc_<key>`. Each API key belongs to exactly one user and one coop. It is not a session token.
 - **Key scope:** Keys use `READ_ONLY` by default or `READ_WRITE` when selected during creation in the dashboard.
 - Every tool call re-checks the key owner's live coop permissions at call time. It uses the same permission checks as the REST API's `@RequirePermission` decorator and applies the same `canViewPII` masking logic to returned data.
 - Write tools require both `READ_WRITE` key scope and a coop subscription tier that is not read-only.
 - All tool calls go through `McpToolkit.run()` in `apps/api/src/modules/mcp/mcp-toolkit.ts`. This method centrally enforces the permission, PII, and scope checks above.
 - Tools live in `apps/api/src/modules/mcp/tools/`. See `tools/*.tools.ts` for the current tool list.
+- **Volunteer tools** (`mcp-volunteer.tools.ts`) are scoped to the API key's coop. Reads, `list_volunteer_interests`, and `update_volunteer` require `canViewVolunteers`, the same permission as the matching admin volunteer routes. `update_volunteer_interests` requires both `canViewVolunteers` and `canManageSettings`, the same pair as `PATCH /admin/coops/:coopId/volunteers/interests`. `SYSTEM_ADMIN` bypasses those checks, as `PermissionGuard` does.
+  - `list_volunteers` — volunteers and unconfirmed sign-ups. Filter by `status` (`ACTIVE`, `PENDING_CONFIRMATION`, `WITHDRAWN`, `ALL`), `interest` or `tag`, municipality, postcode. Paginated.
+  - `get_volunteer` — one row. An id from another coop is not found.
+  - `list_volunteer_interests` — this coop's sign-up tags in form order, with `nl` / `fr` / `de` / `en` labels. Known tags are `flyers`, `stands`, `workshops`, `technical`, `admin`, and `board`. Any other tag is returned as itself in every language. An empty configuration returns the five defaults and does **not** include `board`.
+  - `update_volunteer` — replace tags with tags from this coop's form, and/or set `status` to `WITHDRAWN`. A sign-up becomes active only through the confirmation email. A withdrawal is not undone. `READ_WRITE` key required. `canViewVolunteers` only.
+  - `update_volunteer_interests` — add, rename, reorder, deactivate, or replace the form's tag list for this coop. Deactivate removes a tag from the form and leaves tags already stored on sign-ups unchanged. Rename does not rewrite those tags either. Requires `canViewVolunteers` and `canManageSettings`, plus a `READ_WRITE` key.
+- `update_coop_settings` also accepts `volunteerInterests` (same ordered list; empty restores the defaults). That tool still requires `canManageSettings`, matching the settings screen. Tags cannot contain an apostrophe; the French label `Conseil d'administration` is a translation of the tag `board`, not a tag.
+- Bronsgroen's current tags (`technisch`, `administratie`) are coop-specific strings, so the form shows them untranslated until they are remapped. The idempotent script `packages/database/scripts/bronsgroen-volunteer-board.sql` does that after deploy. It is not a migration and must not be run from CI.
 
 ## Testing
 
@@ -261,6 +271,16 @@ CI/CD builds GHCR Docker images via GitHub Actions, then deploys them over SSH t
 - Next.js Web (standalone output)
 - A dedicated one-shot migrate container that runs `prisma migrate deploy` **before** the API starts
 - Caddy reverse proxy on fsn1 (shared `proxy` network, not bundled in this compose file)
+
+Caddy routes these hostnames to the containers (DNS is in Cloudflare, proxied):
+
+| Host | Target |
+|------|--------|
+| `opencoop.be`, `acc.opencoop.be` | web; `/api/*` goes to the API with the `/api` prefix stripped |
+| `api.opencoop.be`, `api-acc.opencoop.be` | API, no path prefix (e.g. `/health`) |
+| `mcp.opencoop.be`, `mcp-acc.opencoop.be` | API `/mcp*` only; every other path returns `404` |
+
+The web app keeps calling `/api` on its own origin, so it needs no CORS change.
 
 Deploys recreate containers without touching volumes (`--force-recreate`); the migrate
 container applies pending migrations, so there is no manual `docker compose exec api ...`

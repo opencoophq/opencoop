@@ -99,6 +99,7 @@ describe('McpToolkit', () => {
         apiKeyId: 'key1',
         scope: 'READ_WRITE',
         canViewPII: true,
+        canViewVolunteers: false,
         audit: {
           userId: 'user1',
           ip: 'mcp',
@@ -546,6 +547,66 @@ describe('McpToolkit', () => {
     ).resolves.toEqual({ ok: true });
     await expect(
       toolkit.run({ permission: 'canViewReports' }, undefined, async () => ({ ok: true })),
+    ).rejects.toMatchObject({ message: 'Insufficient permissions' });
+  });
+
+  it('lets SYSTEM_ADMIN through a permission the default Admin role does not grant', async () => {
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: { canViewVolunteers: false },
+      role: 'SYSTEM_ADMIN',
+    });
+
+    await expect(
+      toolkit.run({ permission: 'canViewVolunteers' }, undefined, async () => ({ ok: true })),
+    ).resolves.toEqual({ ok: true });
+  });
+
+  it('requires every listed permission and still lets SYSTEM_ADMIN through', async () => {
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: { canViewVolunteers: true, canManageSettings: false },
+      role: 'COOP_ADMIN',
+    });
+    await expect(
+      toolkit.run(
+        { permission: ['canViewVolunteers', 'canManageSettings'] },
+        undefined,
+        async () => ({ ok: true }),
+      ),
+    ).rejects.toMatchObject({ message: 'Insufficient permissions' });
+
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: { canViewVolunteers: true, canManageSettings: true },
+      role: 'COOP_ADMIN',
+    });
+    await expect(
+      toolkit.run(
+        { permission: ['canViewVolunteers', 'canManageSettings'] },
+        undefined,
+        async () => ({ ok: true }),
+      ),
+    ).resolves.toEqual({ ok: true });
+
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: {},
+      role: 'SYSTEM_ADMIN',
+    });
+    await expect(
+      toolkit.run(
+        { permission: ['canViewVolunteers', 'canManageSettings'] },
+        undefined,
+        async () => ({ ok: true }),
+      ),
+    ).resolves.toEqual({ ok: true });
+  });
+
+  it('still denies a coop admin when canViewVolunteers is false', async () => {
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: { canViewVolunteers: false },
+      role: 'COOP_ADMIN',
+    });
+
+    await expect(
+      toolkit.run({ permission: 'canViewVolunteers' }, undefined, async () => ({ ok: true })),
     ).rejects.toMatchObject({ message: 'Insufficient permissions' });
   });
 

@@ -22,6 +22,8 @@ import * as OTPAuth from 'otpauth';
 import { AuditService } from '../audit/audit.service';
 import { TokenService } from './token.service';
 import { computeIsReadOnly } from './compute-readonly';
+import { countryFromAddress } from '../email/coop-signup-notice';
+import * as Sentry from '@sentry/nestjs';
 
 @Injectable()
 export class AuthService {
@@ -161,7 +163,7 @@ export class AuthService {
     });
   }
 
-  async onboard(onboardingDto: OnboardingDto) {
+  async onboard(onboardingDto: OnboardingDto, ip?: string, userAgent?: string) {
     if (!onboardingDto.termsAccepted) {
       throw new BadRequestException('You must accept the terms and conditions');
     }
@@ -258,13 +260,50 @@ export class AuthService {
       return { user, coop };
     });
 
+    await this.auditService.log({
+      coopId: result.coop.id,
+      entity: 'Coop',
+      entityId: result.coop.id,
+      action: 'CREATE',
+      changes: [
+        { field: 'name', oldValue: null, newValue: result.coop.name },
+        { field: 'slug', oldValue: null, newValue: result.coop.slug },
+        { field: 'plan', oldValue: null, newValue: result.coop.plan },
+        { field: 'adminEmail', oldValue: null, newValue: result.user.email },
+        { field: 'source', oldValue: null, newValue: 'self-signup' },
+      ],
+      actorId: result.user.id,
+      ipAddress: ip,
+      userAgent,
+    });
+
     // Send verification email (non-blocking)
     this.authEmail.sendVerificationEmail(result.user.email, emailVerifyToken, onboardingDto.preferredLanguage || 'nl').catch((err) => {
       console.error('Failed to send verification email:', err.message);
     });
 
+    // Internal notice. Must not block or fail signup — notifyCoopCreated
+    // swallows SMTP errors; the try/catch covers a synchronous throw.
+    try {
+      this.emailService.notifyCoopCreated({
+        coopId: result.coop.id,
+        name: result.coop.name,
+        slug: result.coop.slug,
+        plan: result.coop.plan,
+        legalForm: result.coop.legalForm,
+        country: countryFromAddress(result.coop.coopAddress),
+        adminEmail: result.user.email,
+        language: result.user.preferredLanguage,
+        createdAt: result.coop.createdAt,
+        source: 'self-signup',
+      });
+    } catch (err) {
+      console.error('Failed to send coop signup notification:', (err as Error)?.message ?? err);
+      Sentry.captureException(err);
+    }
+
     // New coop creator gets full Admin permissions
-    const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true };
+    const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true, canViewVolunteers: false };
 
     const tokenResult = await this.tokenService.issueJwtForUser({
       id: result.user.id,
@@ -362,6 +401,8 @@ export class AuthService {
       },
     });
 
+    await this.tokenService.revokeRefreshTokens(user.id);
+
     await this.auditService.log({
       entity: 'Auth',
       entityId: user.id,
@@ -414,6 +455,7 @@ export class AuthService {
                 plan: true,
                 trialEndsAt: true,
                 chargeCardsEnabled: true,
+                volunteersEnabled: true,
                 channels: {
                   where: { isDefault: true },
                   select: { logoUrl: true },
@@ -437,6 +479,7 @@ export class AuthService {
                 bankBic: true,
                 minimumHoldingPeriod: true,
                 chargeCardsEnabled: true,
+                volunteersEnabled: true,
                 channels: {
                   where: { isDefault: true },
                   select: { logoUrl: true },
@@ -528,8 +571,8 @@ export class AuthService {
     let adminCoopsRaw = user.coopAdminOf.map((ca) => ca.coop);
     if (user.role === 'SYSTEM_ADMIN') {
       adminCoopsRaw = await this.prisma.coop.findMany({
-        select: {
-          id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true, chargeCardsEnabled: true,
+          select: {
+            id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true, chargeCardsEnabled: true, volunteersEnabled: true,
           channels: { where: { isDefault: true }, select: { logoUrl: true }, take: 1 },
         },
         orderBy: { name: 'asc' },
@@ -661,6 +704,8 @@ export class AuthService {
         passwordResetExpires: null,
       },
     });
+
+    await this.tokenService.revokeRefreshTokens(userId);
 
     await this.auditService.log({
       entity: 'User',

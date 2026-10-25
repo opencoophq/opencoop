@@ -17,23 +17,42 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+### Added
+
+- **Charge-card entry from a coop website.** `/{locale}/{coopSlug}/laadpas` asks whether the visitor is already a member. Members log in and land on the request form. Others buy a share first; until the membership is active, the page explains what happens next. For Bronsgroen the Dutch button should point at `https://opencoop.be/nl/bronsgroen/laadpas`.
+- **Volunteer registration.** A cooperative turns this on in Settings (off by default). Members opt in from the dashboard. Anyone else uses `/{locale}/{coopSlug}/vrijwilligers`, confirms by email, and can withdraw from the link in that email. A public sign-up is linked to a shareholder only when the visitor is logged in and the email matches that user. The board sees only people who opted in, filtered by municipality, postcode and interest, and never the share register. `canViewVolunteers` gates the list, the CSV export and messages to volunteers. It is not granted to existing roles or to the Admin role of a new cooperative; assign it under Team → Roles. An admin with that permission can withdraw a registration or delete it. Every CSV export is written to the audit log. Unconfirmed sign-ups are removed after 30 days. Dutch volunteer text uses the formal “u”.
+
+## [2026.41.1] - 2026-10-06
+
+### Added
+
+- **Public API and MCP hostnames.** The API is now also served at `https://api.opencoop.be` and the MCP server at `https://mcp.opencoop.be/mcp` (acc: `api-acc.opencoop.be`, `mcp-acc.opencoop.be`). The old `opencoop.be/api` paths keep working.
+
+### Changed
+
+- **Admin settings show the new MCP URL.** The MCP config snippet now uses `https://mcp.opencoop.be/mcp`, set at runtime by `MCP_PUBLIC_URL`.
+
 ## [2026.41.0] - 2026-10-06
 
 ### Added
+
 - **Charge cards (laadpassen).** A coop can turn on charge cards in Settings and set the card fee and the replacement fee (incl. VAT). Active shareholders request a card in the dashboard, see the IBAN, amount and OGM, and pay by bank transfer. A CSV import, Ponto or a rematch matches the payment and marks the card paid; an admin can also match a bank row to a card by hand on the bank-import page. Admins issue the card with its number, block and unblock it, and see how many working days each open card has waited; cards older than 5 working days are highlighted. Cards block themselves when the shareholder no longer holds shares and unblock when they do again. Each block or unblock shows up under "To do in provider portal" until an admin confirms the same change there.
 - **Login returns you to the page you asked for.** A deep link such as `/nl/dashboard/charge-cards`, or a coop login link with `?redirect=`, survives the login.
 
 ### Changed
+
 - **OGM codes come from one counter per coop.** Registrations and charge cards share it, so codes never collide, and two simultaneous registrations no longer risk the same code.
 
 ## [2026.39.5] - 2026-09-25
 
 ### Added
+
 - **Admins can record an RSVP for a shareholder.** The RSVP tracker has an inline edit
   control for phone-in replies: set the status and, when needed, the proxy holder. It uses the
   same RSVP logic as shareholders, so proxy rules still apply.
 
 ### Fixed
+
 - **AGM kiosk check-in accepts signatures.** The API rejected the iPad signature image as
   too large (413) before the kiosk's own 2 MB limit applied. A signature error on the kiosk
   page no longer crashes the page.
@@ -51,6 +70,7 @@ original SemVer-style tags.
 ## [2026.39.4] - 2026-09-25
 
 ### Fixed
+
 - **Bank rows link to payments that already exist.** Registrations marked paid by hand
   already have a payment without a bank line. Their bank rows stayed "unmatched" and the
   link dialog could not reach them. Auto-matching (CSV and Ponto) now attaches such a row to
@@ -60,6 +80,7 @@ original SemVer-style tags.
   while it is still free; a manual link that lost the race returns 409.
 
 ### Added
+
 - **"Relink automatically" button** on the bank import page. It re-runs matching on all
   unmatched rows, including rows imported before this release and older Ponto rows.
 - **Link dialog with two lists:** existing unlinked payments and open registrations,
@@ -71,6 +92,7 @@ original SemVer-style tags.
 ## [2026.39.3] - 2026-09-25
 
 ### Added
+
 - **Full admin access over MCP.** The MCP endpoint (`POST /api/mcp`) now offers 112 tools
   covering what a coop admin can do in the dashboard: shareholders and households,
   registrations, payments and transfers, share classes, projects and channels, coop
@@ -86,12 +108,14 @@ original SemVer-style tags.
   Cancel schedule.
 
 ### Changed
+
 - **Existing API keys are now read-only.** Create a new read-write key if an integration
   needs to change data.
 - Bank details, e-mail settings, the reply-to address and audience sync can only be
   changed in the dashboard, not over MCP.
 
 ### Fixed
+
 - A dividend period created with 0% withholding tax stored 30%.
 - Household linking now requires the shareholder-management permission and an active
   subscription.
@@ -103,12 +127,14 @@ original SemVer-style tags.
 ## [2026.39.2] - 2026-09-25
 
 ### Security
+
 - **Documents stay inside their coop.** Generating a share certificate or a dividend
   statement looked the shareholder up by id alone, so an admin of one coop could generate
   these documents for a shareholder of another coop. The shareholder, and for statements
   the dividend payout, must now belong to the admin's coop; anything else returns 404.
 
 ### Fixed
+
 - **Manual bank matching works again.** The bank-import screen encoded the match request
   twice, so the API rejected every manual match with a 400.
 - **Re-importing a bank export no longer duplicates payments.** Rows already imported for
@@ -118,6 +144,7 @@ original SemVer-style tags.
 ## [2026.39.1] - 2026-09-24
 
 ### Fixed
+
 - **Belfius bank import works.** The Belfius preset used column names that the real
   Belfius Web export does not have, so every upload failed. It now reads `Boekingsdatum`,
   `Naam tegenpartij bevat` and `Mededelingen`. Bank presets find their header row by its
@@ -130,6 +157,7 @@ original SemVer-style tags.
   finds a `+++…+++` or `***…***` code typed in a free-text message.
 
 ### Security
+
 - **Manual bank matching stays inside the coop.** A coop admin could match a bank
   transaction or registration of another coop by id. Both now must belong to the coop in
   the URL; anything else returns 404.
@@ -137,6 +165,7 @@ original SemVer-style tags.
 ## [2026.39.0] - 2026-09-21
 
 ### Fixed
+
 - **Gift purchases no longer create nameless shareholders.** The public purchase form's
   gift option asked the buyer for an email only. The buyer holds the shares until the
   recipient claims the gift code, so the buyer must be a complete register entry. The
@@ -146,6 +175,7 @@ original SemVer-style tags.
   shows the email instead of nothing.
 
 ### Added
+
 - **Gift icon in the admin shareholder list.** Shareholders who bought shares as a gift
   get a gift icon next to their type badge.
 
@@ -154,6 +184,7 @@ original SemVer-style tags.
 Note: tag `v2026.37.0` points at the same commit as `v2026.31.0` and shipped nothing new.
 
 ### Changed
+
 - **Shareholder status is now derived from paid shares.** A shareholder is ACTIVE when
   paid BUY shares minus completed SELL shares is above zero. INACTIVE means they once
   held shares and now hold none. PENDING means they never held paid shares. Admins can
@@ -166,13 +197,13 @@ Note: tag `v2026.37.0` points at the same commit as `v2026.31.0` and shipped not
   added while ACTIVE stayed on the list forever.
 - **Backfill.** A data migration recomputes the status of every existing shareholder on
   deploy. On production, 28 Bronsgroen records move from ACTIVE to PENDING because they
-  hold no paid shares. 6 move from ACTIVE to INACTIVE because they sold everything in
-  2026. 1 moves from INACTIVE to ACTIVE because the sale still awaits payout. The
+  hold no paid shares. 6 move from ACTIVE to INACTIVE because they sold everything in 2026. 1 moves from INACTIVE to ACTIVE because the sale still awaits payout. The
   dashboard's "active shareholders" tile and the growth chart now agree.
 
 ## [2026.31.0] - 2026-08-01
 
 ### Fixed
+
 - **Passkeys now work in deployed environments.** Sign-in with a passkey, and
   registering one, failed on both acceptance and production: the relying-party ID and
   expected origin were documented in the deployment templates but never passed through
@@ -196,6 +227,7 @@ Note: tag `v2026.37.0` points at the same commit as `v2026.31.0` and shipped not
 ## [2026.30.1] - 2026-07-21
 
 ### Fixed
+
 - Admins can now clear a shareholder's email address (explicit `null` in the update
   API previously left the stored email unchanged, making bad addresses impossible
   to remove from the dashboard or API).
@@ -205,6 +237,7 @@ Note: tag `v2026.37.0` points at the same commit as `v2026.31.0` and shipped not
 First CalVer release.
 
 ### Added
+
 - **Brevo audience sync** (per coop, opt-in): keeps a cooperative's Brevo marketing
   list in sync with its shareholders. Active members are upserted into the configured
   members list (identity anchor `EXT_ID` = shareholder id); resigned members are
@@ -230,6 +263,7 @@ performance, reliability and tooling improvements; one framework upgrade. No
 breaking changes for cooperatives or members — most of this is invisible by design.
 
 ### Security
+
 - **Closed two cross-tenant data-exposure holes (IDOR).** The dividends and payments
   endpoints could be addressed with another cooperative's record IDs; they now scope
   every lookup to the caller's `coopId` and return a generic not-found rather than
@@ -248,6 +282,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
   14.2; `pnpm audit` now runs in CI.
 
 ### Performance
+
 - **Bank import** no longer does an N+1 query per CSV row — OGM lookups are batched
   into a single query (parity with the per-row behaviour preserved, including
   same-OGM rows in one file).
@@ -261,6 +296,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
   and failed email jobs retry 3× with completed jobs auto-cleaned from Redis.
 
 ### Added
+
 - **Next.js 15** (web), retaining React 18 — closes the Next-only security advisories.
 - **Dashboard pages now show a load error with a retry** instead of a silently empty
   table when a request fails.
@@ -271,6 +307,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - **Post-deploy health gate + operations runbook** (deploy / rollback / restore).
 
 ### Changed
+
 - **Auth module refactor.** The large auth service was split into focused services
   (token issuance/refresh, MFA, OAuth, magic-link, transactional email) with no
   behavioural change. Email template copy moved into per-locale JSON files
@@ -282,11 +319,13 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - Truthed-up `CLAUDE.md` / `README` / `.env.example` to match the codebase.
 
 ### Fixed
+
 - Handled or explicitly annotated the remaining silent `catch()` sites so failures
   surface instead of vanishing.
 - Removed dead Belgian IBAN/VAT/national-ID validators that were never wired in.
 
 ### Internal
+
 - **CI now gates every PR on lint + unit tests and requires the e2e + test suites to
   pass before any deploy.** Added test coverage for tenant-isolation guards, the
   shared OGM/dividend/vesting math, the registration lifecycle and bank-import
@@ -295,34 +334,41 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.8.38] - 2026-05-08
 
 ### Fixed
+
 - **Stembiljetten download gaf 400 "Meeting has no RESOLUTION agenda items"** voor agenda's waar de items waren aangemaakt met default `type: INFORMATIONAL` maar wél een `Resolution` opgehangen kregen. De voting-pagina handelde dit al correct af; de ballot-generator nu ook. Match: `agendaItem.type === 'RESOLUTION'` OR `agendaItem.resolution != null`.
 
 ## [0.8.37] - 2026-05-08
 
 ### Added
+
 - **Paper-ballot PDF generator** for the AGM. Admins click "Stembiljetten downloaden" on the Voting page and get a print-ready PDF with **3 anonymous ballots per A4**, stacked vertically with dashed cut-lines. Each ballot lists every `RESOLUTION`-type agenda item with VOOR / TEGEN / ONTHOUDING checkboxes. Quantity auto-sizes from RSVP'd attendees + 10% buffer (admin can override). Print, cut, distribute on the day; tally the results back into the system afterwards via the existing voting flow.
 
 ## [0.8.36] - 2026-05-08
 
 ### Added
+
 - **Documents page back-link.** Top of `/dashboard/admin/meetings/:id/documents` now shows a "← Terug naar vergadering" link, matching convocation/agenda/minutes pages.
 - **Sortable + filterable recipients status table.** Each column (recipient, sent, opened, downloaded) has a sort toggle and a filter input. Click a header to sort, type in the row below to narrow.
 - **Stat cards above the recipients table** showing live counters for Sent / Opened / Downloaded / Failed with N/total and percentage. Quick-glance summary; the table below remains for drill-down.
 
 ### Changed
+
 - **Reply-To source switched from the new `replyTo` column (introduced in v0.8.35) to the existing `coopEmail` field.** The settings page already had a `coopEmail` input under coop info; that's the natural place to set the contact address. Member replies now route to `coopEmail` automatically. The `replyTo` schema column is annotated `@deprecated` and stays in place for now to avoid a destructive migration.
 
 ## [0.8.35] - 2026-05-08
 
 ### Added
+
 - **Per-coop Reply-To address.** Coop admins can now configure a `Reply-To` address from the admin settings page. When set, every outgoing email for that coop carries a `Reply-To:` header — member replies route to the configured mailbox instead of the generic `noreply@opencoop.be`. Wired through all three send paths (platform SMTP, custom SMTP, Microsoft Graph). DKIM/SPF unaffected since alignment is on the From-address domain.
 
 ### Migration notes
+
 - Adds nullable `replyTo TEXT` column to `coops`. No backfill needed — coops without a Reply-To configured fall back to the From address (existing behavior).
 
 ## [0.8.34] - 2026-05-08
 
 ### Fixed
+
 - **Status table headers showing as raw keys** (`MEETINGS.DOCUMENTS.STATUS.SENT` etc.). The locale JSON had flat dotted keys but `next-intl` interprets dots as path navigation, so lookup silently failed. All four locale files now use a nested `status` object.
 - **Email shows wrong meeting time** (8:00 instead of 10:00 for a 10:00 Belgian AGM). Server formatted with the container's UTC timezone. Both `toLocaleString` calls in the documents email path now pass `timeZone: 'Europe/Brussels'`.
 - **Sender display name shows "OpenCoop" instead of the coop's name** for any email going through platform SMTP. Cause: `process.env.SMTP_FROM` was used as a complete `From:` override (display name + address), which shadowed the coop's name. Fix parses just the address from the env var and always uses the coop's name as the display name. Affects all platform-SMTP emails on the platform — convocation, dividend notices, magic-link, registration mails, etc. — not just AGM documents. DKIM/SPF alignment is on the address domain, so deliverability is unchanged.
@@ -331,130 +377,159 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.8.33] - 2026-05-08
 
 ### Added
+
 - **HTML editor for AGM documents email body.** The plain textarea is replaced with a `contentEditable` WYSIWYG editor (same pattern as the convocation flow). Admins can paste rich HTML — `<strong>`, `<a>`, `<p>`, formatted tables, etc. — and it renders as-is in the outgoing email.
 - **Live email preview** for AGM documents. A new endpoint `GET /admin/coops/:coopId/meetings/:id/documents-email/preview?shareholderId=…` returns the rendered HTML for one recipient; the documents page shows it inline in an iframe and refreshes after every save.
 - **Explicit "Save draft" button** with "Saving..." / "Saved at HH:MM:SS" indicator. The blur-autosave on subject/intro is removed so admins always see whether their edits were persisted.
 
 ### Fixed
+
 - **"Unexpected end of JSON input" on document delete.** The `api()` helper now reads the response body as text first and only parses JSON when there's content. Our DELETE and `PATCH /documents-email` endpoints return `void`, which NestJS serves as `200` with an empty body — `response.json()` was throwing for any caller of those endpoints, surfacing as a confusing alert on delete and a silent failure on draft save. Fix is in the helper, so any other endpoint in the codebase that returns void benefits too.
 
 ## [0.8.32] - 2026-05-08
 
 ### Added
+
 - **Multi-file upload for AGM documents.** The picker on the AGM documents page now accepts multiple files at once. Uploads run sequentially with per-file error reporting — a single bad file (wrong type, oversize) doesn't block the rest.
 - **Excel file support (`.xlsx` and legacy `.xls`)** alongside `.pdf` for AGM documents — useful for sharing the jaarrekening spreadsheet directly. 10MB per-file limit unchanged. Replace-in-place semantics unchanged (matches on display name regardless of extension).
 
 ## [0.8.31] - 2026-05-08
 
 ### Added
+
 - **Share AGM agenda documents with members ahead of the meeting.** Coop admins can upload PDFs (jaarverslag, jaarrekening, begroting, etc.) per AGM, edit a per-meeting mailing (subject + intro), and send token-protected download links to every attendance via the existing email queue. Documents are reorderable (drag-and-drop) and replace-in-place when re-uploaded with the same display name, so links from already-sent mails keep working.
 - **Per-recipient email tracking.** A 1×1 transparent tracking pixel embedded in the mail records `documentsEmailOpenedAt` per attendance. The download endpoint records `documentsDownloadedAt` on first hit. Send failures land in `documentsEmailError`. The admin status table polls every 10 seconds.
 - **30-day post-AGM download window.** Download links remain valid until `meeting.scheduledAt + 30 days`, separate from the RSVP token expiry — members who couldn't attend can still review the documents afterwards.
 
 ### Security
+
 - **Token-scoped public download endpoint.** `GET /public/meetings/rsvp/:token/documents/:docId` validates the token, checks the document belongs to the token's meeting, and enforces the 30-day window before streaming the PDF. Cross-meeting access returns 403.
 - **HTML escaping on email template.** All admin-supplied or DB-stored fields (meeting title, document filenames, URLs) are escaped before interpolation into the `agenda-documents` template.
 - **Single-send concurrency lock.** `documentsEmailSentAt` set within the last 60 seconds rejects further send attempts on the same meeting to prevent double-sends.
 
 ### API
+
 - New (admin, COOP_ADMIN + canManageMeetings): `POST/GET /admin/coops/:coopId/meetings/:id/documents`, `PATCH/DELETE /admin/coops/:coopId/meetings/:id/documents/:docId`, `GET/PATCH /admin/coops/:coopId/meetings/:id/documents-email`, `POST /admin/coops/:coopId/meetings/:id/documents-email/send`, `GET /admin/coops/:coopId/meetings/:id/rsvp/attendance-statuses`.
 - New (public, token-auth): `GET /public/meetings/rsvp/:token/documents/:docId` (PDF stream), `GET /public/meetings/rsvp/:token/pixel.gif` (open tracking).
 
 ### Migration notes
+
 - Adds one new table (`meeting_documents`) and seven nullable columns across `meetings` and `meeting_attendances`. Additive only — safe rollback.
 - Stores PDFs at `<UPLOAD_DIR>/meeting-documents/<meetingId>/<uuid>.pdf` on the API container's filesystem. Bronsgroen-scale workload (~50 attendances × few MB PDFs) is well within current Docker volume capacity.
 
 ### Privacy
+
 - The tracking pixel must be disclosed in the coop's privacy policy. For Bronsgroen specifically, this requires an update to bronsgroen.be/privacy before the first send (manual step).
 
 ## [0.8.30] - 2026-05-08
 
 ### Changed
+
 - **Proxy assignment now uses typed-name resolution instead of a member-list dropdown.** Both the public RSVP page and the logged-in dashboard meeting page replace the searchable list of all coop shareholders with two text inputs (first name + last name) and a confirmation card. The server fuzzy-matches the typed name against active shareholders (case + diacritic insensitive, Levenshtein-bounded with a runner-up gap rule) and either returns the single match for confirmation, reports `not_found`/`ambiguous`, or rejects the attempt if the candidate has already reached `maxProxiesPerPerson`.
 
 ### Fixed
+
 - **GDPR: RSVP token holders no longer receive the full member directory.** The previous flow returned every active shareholder's first name, last name, and member number to anyone holding a valid RSVP token (one per coop member). The list endpoint is removed; the new resolver only ever surfaces a single name — and only one the requester typed themselves.
 - **iPad: "Ik geef volmacht" no longer appears unresponsive.** Tapping the proxy CTA mounts a small input form rather than rendering 1000+ list items inside a scrollable card (which stalled iPad Safari). The page also auto-scrolls to the new section.
 - **Generic proxy errors surface their own message.** Server errors and unparseable responses no longer fall through to the "no shareholder found with that name" copy.
 
 ### Security
+
 - **Per-token rate limit on proxy resolution.** New `MeetingAttendance.proxyResolveAttempts` counter caps each RSVP token at 20 lifetime resolve attempts to bound enumeration risk. The increment is atomic via Prisma's `{ increment: 1 }` op so concurrent calls can't bypass it.
 
 ### API
+
 - New: `POST /public/meetings/rsvp/:token/proxy/resolve` with `{ firstName, lastName }` → `{ delegateShareholderId, displayName }` on success, or `{ code }` (`not_found` | `ambiguous` | `cap_reached` | `rate_limited`) on failure.
 - Removed: `GET /public/meetings/rsvp/:token/eligible-delegates`.
 
 ### Migration notes
+
 - Adds nullable-default column `proxyResolveAttempts INTEGER NOT NULL DEFAULT 0` on `meeting_attendances`. No backfill required; existing rows pick up the default.
 
 ## [0.8.29] - 2026-05-07
 
 ### Added
+
 - **Manual partial payments for savings share registrations.** Coop admins can now record individual installment payments against any `PENDING_PAYMENT` or `ACTIVE` BUY registration directly from the Transactions page — no bank import required. A new `+` button opens a dialog with amount and date fields. The system automatically advances the registration from `PENDING_PAYMENT → ACTIVE` on the first payment and to `COMPLETED` once fully paid.
 - **Savings share payment progress indicator.** The Transactions admin list now shows "€X paid of €Y" under the total amount for incomplete savings registrations, giving admins an at-a-glance view of how far along each installment plan is. The same indicator appears on the shareholder's own Shares page under the status badge.
 
 ### Fixed
+
 - **Holding period uses earliest payment date for savings shares.** When checking whether a shareholder can sell, the minimum hold date is now anchored to the first payment's `bankDate` rather than the registration's `registerDate` — correctly reflecting when the shareholder actually started investing.
 
 ### API
+
 - `POST /admin/coops/:coopId/registrations/:id/payments` — add a manual partial payment (`amount`, `bankDate`) to a registration.
 
 ## [0.8.28] - 2026-05-05
 
 ### Added
+
 - **Multi-role admin invitations.** New invitations can attach N roles via the same multi-select dropdown used for accepted admins. New `admin_invitation_roles` join table; existing pending invitations are migrated from the legacy single `roleId` without behavior change. On acceptance every invitation role becomes a `CoopAdminRole` for the new admin.
 - **Edit roles on a pending invitation.** New `PUT /admin/coops/:coopId/team/invitations/:invitationId/roles`; the pending invitation row's static role badge is now the same multi-select dropdown as accepted admins.
 - **Edit a team member's user profile.** New `PATCH /admin/coops/:coopId/team/:adminId/user`; pencil icon on each admin row opens a dialog to update name, email, and preferred language. Changing the email clears `emailVerified` so the new owner has to re-verify the address — mitigates the change-email → password-reset → account-takeover pattern.
 
 ### Migration notes
+
 - `AdminInvitation.roleId` is kept (now nullable) for rollback safety; will be dropped in a follow-up.
 
 ## [0.8.27] - 2026-05-05
 
 ### Added
+
 - **Resend pending admin invitations.** A Send-icon button beside every pending invitation row re-fires the invitation email with a rotated token and a fresh 7-day expiry — handy when the original message ended up in spam or the invitee asks for a new link without the admin having to revoke + re-invite. Old links stop working after a resend (token is rotated).
 
 ### Fixed
+
 - Seed scripts (`seed.ts`, `seed-demo.ts`) now write CoopAdmin role assignments through the `coop_admin_roles` join table introduced in v0.8.26 — fixes the 26 e2e admin test failures from PR #110. No prod impact (seeds don't run on prod; real admins were migrated by the SQL backfill).
 
 ## [0.8.26] - 2026-05-04
 
 ### Added
+
 - **Multiple roles per CoopAdmin.** A single admin can now hold N roles (e.g. "Project Manager" + "Meeting Admin"). Effective permissions are the union (OR-merge) of every assigned role's permissions, with `permissionOverrides` applied on top. New `coop_admin_roles` join table; existing one-role admins are migrated into it without behavior change. Team page replaces the per-row role dropdown with a multi-select; the last role is non-removable (backend also enforces ≥1 role per admin). Override dialog's "base permission" is now the OR-merge across roles, mirroring backend logic.
 - **Bonus: onboarding now sources default roles from the shared `DEFAULT_ROLES` constant** instead of duplicated inline literals — fixes the drift where new coops weren't getting `canManageMeetings: true` on their seeded Admin role.
 
 ### API
+
 - `PUT /admin/coops/:coopId/team/:adminId/role` (single `roleId`) → `PUT /admin/coops/:coopId/team/:adminId/roles` with `roleIds: string[]`.
 
 ### Migration notes
+
 - `CoopAdmin.roleId` is kept (now nullable) for rollback safety; will be dropped in a follow-up after the rollout has stuck.
 
 ## [0.8.25] - 2026-05-04
 
 ### Added
+
 - **`canManageMeetings` permission and "Meeting Admin" role.** The meetings admin controller previously had no `@RequirePermission` gate, so any user with a `CoopAdmin` row could administer the AGM regardless of their role. Now there's a fine-grained permission. The new "Meeting Admin" preset role grants only meeting access + view PII + view shareholder register — for users who should run an AGM without seeing or changing financial data. Existing `CoopRole` rows are migrated with `canManageMeetings: true` so today's admins keep their access; coop admins can later edit roles like "Viewer" to drop meeting access.
 
 ### Fixed
+
 - **Backward-compat in `PermissionGuard` for in-flight access tokens.** Tokens issued before this deploy don't have `canManageMeetings` in their payload — guard treats missing entries in `LEGACY_DEFAULT_TRUE` as `true` so the 15-min refresh window doesn't lock anyone out. Drop the entry in a follow-up once all sessions have rotated past this deploy.
 
 ## [0.8.24] - 2026-05-04
 
 ### Fixed
+
 - **Printable attendance sheet header looked disconnected from the new tall body rows.** v0.8.23 made body rows ~50pt with text pinned to flex-start, but the header stayed ~18pt with default vertical alignment — so reading down a column gave inconsistent positioning between header text and the first body row. Header now also pins to `flex-start` and gets `paddingVertical: 7` (was 4) for visual weight matching the body. The walk-in section header inherits the same style and updates together.
 
 ## [0.8.23] - 2026-05-04
 
 ### Fixed
+
 - **Printable attendance sheet rows were too cramped to actually sign.** The signature column shared the row's ~34pt height with the text above it — fine for printed name + member number, not enough for a wet signature, especially on the 20 blank walk-in rows. Bumped row `minHeight` to 38 (≈50pt total) and pinned non-signature cells to `flex-start` so name/member#/via stay top-aligned and the new headroom all goes to the signature box.
 
 ## [0.8.22] - 2026-05-04
 
 ### Fixed
+
 - **RSVP-status filter on the RSVP list and check-in attendance list didn't match displayed labels.** The free-text filter input compared against the column accessor's output (raw enum: `ATTENDING`/`ABSENT`/etc.) while the cell rendered the translated label (`Aanwezig`/`Afwezig`/etc.) — so typing "aanwezig" never hit a row. Replaced the text input with a multi-select dropdown using `DropdownMenuCheckboxItem`: tick one or more statuses to filter, untick all to show every row. Selected statuses are listed comma-separated in the trigger button. The sort accessor still returns the translated label so column-sort orders by what the user sees.
 
 ## [0.8.21] - 2026-05-04
 
 ### Added
+
 - **Printable attendance sheet from the check-in page.** The `AttendanceSheetPdf` template already had a per-row signature column and 20 blank rows for walk-ins; this release wires it up to a "Printbare lijst" button that opens the PDF in a new tab, ready to print on the morning of the AGM. The endpoint (`GET /admin/coops/:coopId/meetings/:id/attendance-sheet`) is auth-guarded — fetched via bearer token + blob URL.
 - **Per-column sort + filter on the RSVP list and the check-in attendance list.** Replaces the previous single status dropdown with the same two-row sort/filter header used by admin transactions/team. Columns on the RSVP list: shareholder, email, RSVP status, delegate, RSVP timestamp. Columns on the check-in list: name, member #, RSVP status, ballots, proxy-for, checked-in time.
 - **Check-in row converted to sortable `<Table>`** while preserving the tap-to-check-in semantics — clicking any cell on the row still toggles the attendance.
@@ -462,58 +537,67 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.8.20] - 2026-05-04
 
 ### Added
+
 - **Ballot count visible at the AGM check-in desk.** When a shareholder holds active proxies, their attendance row now shows an amber "+N stembiljetten" badge (count = 1 self + N proxies) and a sub-line "Volmacht van: …" listing the grantor names. The registration desk reads the ballot count straight off the row instead of cross-referencing a separate proxy list. Backend `GET /admin/coops/:coopId/meetings/:id/attendance` now includes `proxiesHeld` per row — single extra query per request, grouped by delegate in-memory (not N+1). Translations updated for nl/en/fr/de.
 
-
-
 ### Added
+
 - **Shareholders per project report** for coop admins. New report tab in Dashboard > Admin > Reports with a project selector that lists shareholder rows (name, type, share class, share count, capital, registration date) plus totals.
 - **Backend endpoint** `GET /admin/coops/:coopId/reports/shareholders-per-project?projectId=...` with aggregation across multiple BUY registrations for the same shareholder/share class pair.
 - **CSV export support** for the new report via the existing export flow (`shareholders-per-project` report type).
 - **Translations** for the new report UI in NL/EN/FR/DE.
 
 ### Fixed
+
 - **Shareholder sell action hidden for old holdings despite passing the holding period.** Sell eligibility in the shareholder dashboard and self-service sell endpoint now uses the earliest known acquisition date (`min(registerDate, firstPayment.bankDate)`) instead of only `registerDate`, preventing migrated registrations with newer register timestamps from being incorrectly blocked (e.g. 60-month coops).
 
 ## [0.8.13] - 2026-04-25
 
 ### Fixed
+
 - **Admin "RSVPs" counter on the meeting overview always showed 0.** The GET endpoint behind that card never included `attendances` in its Prisma query, so the page's `meeting.attendances?.length` always landed on undefined. Now included, filtered to rows where `rsvpStatus != UNKNOWN` so the count reflects actual responses (not "everyone who got the convocation"). Selects only the fields the page uses, so payload stays light on 750-shareholder coops.
 
 ## [0.8.12] - 2026-04-25
 
 ### Added
+
 - **Confirmation email after every RSVP**, with the meeting `.ics` attached for ATTENDING / PROXY responses (no attachment for ABSENT). Reuses the existing `meeting-rsvp-confirmation` template, now styled to match the convocation: coop logo, brand color from default `Channel.primaryColor`, human-readable date, signoff with the coop name, and a "Wijzig uw antwoord" button using the same magic-link token. Send is fire-and-forget — the RSVP itself is already persisted so an email failure (no inbox, ICS write error, queue down) only emits a warning. Postal-only shareholders are skipped.
 - ICS title now prefixed with the coop name (e.g. `Bronsgroen — Algemene Vergadering 2026`) so events are identifiable in a busy calendar. Applied to both the new confirmation email attachment and the existing `/public/meetings/rsvp/:token/ics` download.
 
 ### Fixed
+
 - **Coop logos didn't render in convocation/confirmation emails.** Email clients (Gmail, Outlook, Apple Mail) render messages standalone with no base URL, so a relative `<img src="/uploads/logos/x.png">` silently fails. Both email flows now resolve `coop.logoUrl` through a `toAbsoluteUrl` helper that prepends `NEXT_PUBLIC_WEB_URL`.
 - `meeting-rsvp-confirmation` template now reads `coopPrimaryColor` from template data (was hardcoded platform blue), matching the convocation behaviour.
 
 ## [0.8.11] - 2026-04-25
 
 ### Added
+
 - **Inline RSVP from the dashboard meeting page.** Logged-in shareholders no longer need to dig through their inbox to find the convocation email — the dashboard meeting detail page now shows their current RSVP status (if set, with timestamp), three RSVP buttons (Ik kom / Ik kom niet / Volmacht) with an inline delegate picker for proxy, and a "Toevoegen aan agenda" button that downloads the meeting as `.ics` (works with Apple Calendar, Google, Outlook, Thunderbird). All four locales updated.
 - `GET /meetings/:id` (shareholder context) now returns `myAttendance: { rsvpStatus, rsvpAt, rsvpToken }` so the frontend can drive the existing public RSVP endpoints — same trust boundary as the magic-link flow.
 
 ## [0.8.10] - 2026-04-25
 
 ### Fixed
+
 - **RSVP click recorded correctly but showed "Link verlopen" page.** After a shareholder clicked an RSVP option, the PATCH actually persisted their response, but `router.push('./thanks?...')` from `/<locale>/meetings/rsvp/<token>` resolved per the URL spec to `/<locale>/meetings/rsvp/thanks` (the trailing `<token>` segment got treated as a "file" and replaced). The dynamic `[token]` route then matched `thanks` as the token, the API GET 404'd, and the page rendered the expired card. Replaced with an absolute path containing both locale and token.
 
 ## [0.8.9] - 2026-04-25
 
 ### Fixed
+
 - **WYSIWYG editor stayed empty despite the v0.8.8 starter pre-fill.** The starter HTML landed in `customBody` state but never reached the contentEditable DOM — the inline `editorRef.current.replaceChildren(...)` ran synchronously inside `fetchAll`, but the editor div is conditionally rendered on `meeting` being non-null and `meeting` is set in the same commit. The ref was null at write time and the call silently no-op'd. Moved the DOM sync into a dedicated `useEffect` keyed on `customBody` so it fires after render when the ref is live, with focus + content-equality guards so mid-edit refetches don't stomp on the user.
 
 ## [0.8.8] - 2026-04-25
 
 ### Fixed
+
 - **WYSIWYG editor opened to a blank box.** The contentEditable convocation editor shipped in v0.8.7 had no starter content, so admins saw a bare cursor instead of the email content they could adapt. Editor now pre-fills with a localized starter template (greeting + intro with coop name + agenda placeholder + RSVP link + signoff) when no `customBody` has been saved yet, mirroring the server-default. Variables stay as `{{...}}` text and substitute at send time. New "Reset to default copy" button replaces editor content with a fresh starter. Truly-empty editor now shows a muted placeholder hint via CSS.
 
 ## [0.8.7] - 2026-04-25
 
 ### Added
+
 - **Coop branding on convocation emails.** Emails now render with the coop logo at the top, the coop name in the title/salutation/signoff, and the brand-coloured CTA button (pulled from the default `Channel.primaryColor`, falling back to platform blue if no default channel is configured). Subject line is now `{coopName} — {title}` instead of `Oproeping - {title}`. New `{{coopName}}` placeholder for admins authoring custom bodies.
 - **Human-readable meeting date.** Email body now formats `meetingDate` via `Intl.DateTimeFormat` using the recipient's language locale (`nl-BE` / `en-US` / `fr-BE` / `de-DE`), so what used to read `"2026-05-09T08:00:00.000Z"` now reads `"zaterdag 9 mei 2026 om 10:00"`.
 - **WYSIWYG editor for the custom email body.** The HTML-source textarea on the admin convocation page is replaced with a `contentEditable` div that shows the email content rendered (paragraphs, headings, formatting). Variables like `{{rsvpUrl}}` remain visible as text so admins can position them by typing prose around them. Initial content loads via `DOMParser` + `replaceChildren` (only when the editor isn't focused, so refetches don't stomp on in-progress edits); `innerHTML` captured on blur.
@@ -521,32 +605,39 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.8.6] - 2026-04-25
 
 ### Added
+
 - **Personalized convocation PDF attached to every outgoing email.** Each shareholder now receives the official AGM letter as a PDF in their inbox (filename `oproeping-{First}-{Last}.pdf`). The PDF is rendered per shareholder via `MeetingPdfService.convocation()` and persisted to `UPLOAD_DIR/convocations/<meetingId>/<shareholderId>.pdf` so the Bull email worker can attach it by path. Shared-inbox households get one email with one attachment per named family member, so each person has their own personalized letter. Same attachment shows up in the `[TEST]` email when admins use "Send a test to me", so what they see in their own inbox matches what real recipients will get.
 
 ### Changed
+
 - **Convocation email copy emphasizes the RSVP link covers all three responses (NL/EN/FR/DE).** The CTA button is renamed from "RSVP hier" to "Reageer op de oproeping" and the body explicitly calls out attend / decline / proxy as one-click options under the same link. Lowers the cognitive load when a shareholder is deciding what to do — proxy is no longer hidden behind the "if you can't attend" framing.
 
 ### Fixed
+
 - PDF render failures for a single shareholder no longer block the entire convocation email. The flow now warns and sends the email without that one attachment instead of failing the whole inbox group.
 
 ## [0.8.5] - 2026-04-25
 
 ### Added
+
 - **Per-coop convocation notice period.** New `Coop.minConvocationDays` setting (default 15, the WVV norm). Migration sets Bronsgroen to 14 to match their statuten, so their 2026-05-09 AGM doesn't trigger a "short notice" override even though convocations go out exactly 14 days prior. Replaces the previously-hardcoded 15-day check in the convocation flow.
 - **Editable convocation email per meeting.** `Meeting.customSubject` and `Meeting.customBody` columns. Admins can now write a custom subject and HTML body with `{{rsvpUrl}}`, `{{shareholderName}}`, `{{meetingTitle}}`, `{{meetingDate}}`, `{{meetingLocation}}`, `{{agendaList}}` placeholders. Default RSVP CTA is auto-appended when the body has no link reference, so the link can never be silently dropped.
 - **Real email-body preview in admin UI.** New `GET /admin/coops/:c/meetings/:m/convocation/email-preview?shareholderId=X` endpoint returns `{subject, html, recipientEmail}` rendered exactly as that shareholder would receive it. Convocation page now shows a sandboxed iframe live-previewing the email before send.
 - **"Send a test to me" button.** New `POST /convocation/send-test` endpoint sends the actual convocation flow to the current admin's email (subject prefixed `[TEST]`). Lets an admin verify the rendered email + subject + RSVP link in their own inbox before blasting all shareholders.
 
 ### Changed
+
 - **Retry-safe convocation send.** `MeetingAttendance.convocationSentAt` is now stamped per inbox group on each successful email send. The `send()` filter targets only attendances where `convocationSentAt IS NULL`, so calling Send again after a partial failure mails only the previously-failed shareholders — no duplicates. Existing RSVP tokens are preserved on retry, so emails already in flight keep working links. Drops the previous meeting-status-based `alreadySent` early-return in favour of attendance-level truth. Uses `upsert` for the attendance create so two concurrent send() calls don't race on the unique constraint.
 - **Convocation `BadRequestException` wording**: error no longer cites "statuten Art. 22 requires 15 days" since the threshold is now per-coop. Reads "Meeting is less than {n} days away (this coop's configured minimum convocation notice). Set confirmShortNotice=true to override."
 
 ### Fixed
+
 - **Admin PDF preview button returned 401.** The "preview convocation" button on the admin convocation page was a bare `<a href>` that opened a new tab, so the browser never sent the localStorage JWT. Switched to `fetch` with `Bearer` auth + `URL.createObjectURL` to open the PDF as a blob URL.
 
 ## [0.8.4] - 2026-04-23
 
 ### Fixed
+
 - **Historical shareholders could no longer register or pay.** The public register flow (`POST /coops/:slug/register` and its channel-scoped sibling) threw a hard 409 `"A shareholder with this email already exists in this cooperative"` whenever the email matched a row in the coop's register — even when that row was a migration leftover with no linked `User` account. For Bronsgroen that's 98.8% of shareholders (751 of 760); anyone in that group trying to buy their first online share bounced. Triggered by an Els Rinkes complaint: she was in our register since May 2015 (LED groepsaankoop invoice on her name) but had never paid her €125 share, so the new "buy a share" flow refused her with no recovery path.
 
   The magic-link auth flow (`/auth/magic-link/request`) already knew how to claim orphan shareholders (auto-create `User` + link row), so the register flow now routes there instead of failing. Adds a preflight email lookup in `publicRegister` that returns a soft `{ status: 'existing_shareholder', email, hasUserAccount }` response; the frontend opens a dialog offering to send a one-time login link via the existing `/auth/magic-link/request` endpoint rather than the previous browser alert.
@@ -554,44 +645,53 @@ breaking changes for cooperatives or members — most of this is invisible by de
   Gift purchases (`isGift: true`) skip the preflight entirely — the email on a gift belongs to the recipient, not the buyer, so "already a shareholder" is not a blocker and surfacing it would leak the recipient's membership to an anonymous gift-buyer.
 
 ### Changed
+
 - Frontend dialog surfaces magic-link send failures (429/500/network) via an i18n'd red-banner instead of silently resetting the button. Translation keys `registration.existingShareholder.*` added in NL/EN/FR/DE.
 
 ## [0.8.3] - 2026-04-23
 
 ### Changed
-- **Redesigned the step-3 payment confirmation page to read unambiguously as success.** Prod DB analysis found 5 duplicate registrations out of 47 organic post-migration registrations (21%) — logged-in shareholders re-submitting the form 40s–5min after the first success because the payment-instructions page didn't look confirmed. Two pairs led to double bank transfers before users noticed. The page now leads with a large ✓ + "Je bestelling is bevestigd" + order summary, shows the email address we just sent the details to (reassuring users they can close the page), adds a 3-step "what happens next" timeline so the payment step is clearly the *next* step not a re-submit trigger, and ends with an "Ik ben klaar" exit link instead of dead-ending.
+
+- **Redesigned the step-3 payment confirmation page to read unambiguously as success.** Prod DB analysis found 5 duplicate registrations out of 47 organic post-migration registrations (21%) — logged-in shareholders re-submitting the form 40s–5min after the first success because the payment-instructions page didn't look confirmed. Two pairs led to double bank transfers before users noticed. The page now leads with a large ✓ + "Je bestelling is bevestigd" + order summary, shows the email address we just sent the details to (reassuring users they can close the page), adds a 3-step "what happens next" timeline so the payment step is clearly the _next_ step not a re-submit trigger, and ends with an "Ik ben klaar" exit link instead of dead-ending.
 - **Responsive payment-details layout.** Mobile (<md) now puts copy-to-clipboard tiles (IBAN / amount / OGM) primary and collapses the EPC QR behind a toggle — the QR was structurally useless there since you can't self-scan a code on the same device. Desktop keeps the QR as the hero (cross-device scan use case). A "Kopieer alle gegevens" button puts a formatted block on the clipboard for pasting into a banking app or messaging a partner. Every copy tile includes a `Copied ✓` / `Select and copy manually` feedback state with `aria-live` announcements for screen readers.
 - **Share-purchase confirmation email rewritten in NL/EN/FR/DE.** "Order confirmed" framing, explicit "nothing more to do on our website" reassurance, matching 3-step timeline, "no rush" closer. Dropped BIC (not needed for Belgian transfers), added a beneficiary row.
 
 ### Fixed
+
 - **`onSubmit` re-entrancy guard.** `disabled={submitting}` on the submit button relied on a React re-render that could miss a rapid double-click during the preceding `form.trigger()` await. Added an `if (submitting) return` short-circuit before the async validation. Belt + braces for the same double-submit class the UX redesign targets.
-- **`publicRegister` now resolves `recipientEmail` inside a `try/catch`.** A throw in the post-creation email lookup would have rejected the whole request *after* the registration and confirmation email had already succeeded, producing exactly the duplicate-retry scenario the PR addresses. The email is cosmetic UI reassurance and must never fail the flow.
+- **`publicRegister` now resolves `recipientEmail` inside a `try/catch`.** A throw in the post-creation email lookup would have rejected the whole request _after_ the registration and confirmation email had already succeeded, producing exactly the duplicate-retry scenario the PR addresses. The email is cosmetic UI reassurance and must never fail the flow.
 
 ### Research note
+
 - No public deep-link URI schemes exist for Belgian banking apps (BNP Easy Banking, Belfius, KBC Mobile, Argenta, ING) for arbitrary SEPA transfers as of 2026-04. Payconiq/Wero require merchant integration. Clipboard + EPC QR remains the pragmatic standard.
 
 ## [0.8.2] - 2026-04-22
 
 ### Fixed
+
 - **Coop-branded magic-link login silently bounced users back to `/login`.** The channel-scoped magic-link page (`coop-magic-link-content.tsx`) called `saveSession()` after a successful verify, but `saveSession()` only wrote to the `savedSessions[]` multi-account store — not to the top-level `accessToken`/`refreshToken`/`user` localStorage keys that `dashboard/layout.tsx` checks on mount. So shareholders verified their token successfully (audit log confirmed every attempt), got JWTs issued, then the dashboard redirect immediately sent them back to `/login` because the keys it reads were never populated. Fixed by mirroring inside `saveSession()`/`updateActiveSessionToken()` so no callsite can forget. Triggered by Jef de Bie's Bronsgroen login complaint — his audit log showed 5 successful magic-link verifies across 6 weeks, none of which landed him in the dashboard.
 - **Emancipation claim page had the same bug.** `emancipate/[token]/page.tsx` wrote tokens but not `user`, so any minor turning 18 and claiming their account would bounce to `/login` the same way. Now uses `saveSession()`.
 - **Hourly `AdminNotificationsService` Prisma error on prod** — `shareholder_emancipation_tokens.recipientUserId does not exist`. The v0.8.0 migration created the column as snake_case (`recipient_user_id`) but the Prisma schema field has no `@map`, so every scheduled query errored. Renames the column + FK constraint to match the camelCase convention used by every other column in the table.
 - **API audit logs recorded the Docker internal proxy IP (`::ffff:172.18.0.2`) instead of the real client IP.** Added `app.set('trust proxy', 2)` for the Cloudflare → Caddy → API chain so `req.ip` resolves to the actual client.
 
 ### Changed
+
 - Centralized the top-level-key mirror inside `sessions.ts` and removed 10 duplicated `localStorage.setItem` triplets from the call sites (`magic-link`, `oauth-callback`, `register`, `onboarding`, `email-first-login`, `invite`, `api.ts` refresh). New callers only need `saveSession({ accessToken, refreshToken, user })` — no more foot-guns.
 
 ### Migration
+
 - `20260422120000_fix_recipient_user_id_column_name` — idempotent rename of the stray snake_case column and its FK constraint. Guarded with `DO $$ ... END $$` existence checks so re-running after a partial failure is safe. 1 row affected on prod; rename is instant.
 
 ## [0.8.1] - 2026-04-17
 
 ### Fixed
+
 - **Household linking now works when neither shareholder has a login yet.** The admin dialog's search previously required an existing `User` account for the target, leaving the dropdown empty when both members of a household were pure imports (the common case for cooperatives migrating from spreadsheets). The search is now shareholder-keyed; when the picked target has no `User`, the backend auto-creates a passwordless one from the target's email inside the same transaction as the link. UI unchanged from the admin's perspective. Triggered by the Laurette Beusen / Jan Stevens case in prod (both imported, neither ever logged in).
 
 ## [0.8.0] - 2026-04-14
 
 ### Added
+
 - **Shared-email households** — couples, guardians with minor children, and elderly shareholders with caregivers can now share one login/inbox while each remains a distinct shareholder with their own voting rights. Generalizes the existing minor/parent pattern: a Shareholder with `email=null` and `userId=<primary-user-id>` routes all communications through that User's inbox. Triggered by a real Bronsgroen case (husband + internet-illiterate wife sharing one email) surfaced ahead of the 2026-05-09 AGM.
 - **Admin household linking UI** — on the shareholder detail page, admins can search an existing User by email and link a shareholder to that User's household. Linked shareholders inherit comms routing; `shareholder.email` is cleared to NULL.
 - **Emancipation flow** — any linked shareholder can be graduated to their own login via a token-based flow. Generalizes the existing minor-turning-18 upgrade to also serve household splits. Reuses the renamed `ShareholderEmancipationToken` table with a `reason` enum (`MINOR_COMING_OF_AGE` | `HOUSEHOLD_SPLIT`). New public claim page at `/emancipate/[token]`.
@@ -600,36 +700,43 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - **Audit script** — `packages/database/prisma/audit-household-data.ts` reports data inconsistencies (orphans, email divergences, existing multi-shareholder Users) before prod deploy.
 
 ### Changed
+
 - **BREAKING (external API):** `POST /external-api/shareholders/query` response shape changed from `[{email, found, ...}]` to `[{email, shareholders: [...]}]`. The `found` boolean is gone — consumers use `shareholders.length > 0`. Fan-out: `POST /external-api/shareholders/status` now applies updates to all household matches. See `docs/migrations/2026-04-14-ecopower-api-breaking-change.md` for the upgrade path. EcoPower integration contacts must be notified before prod deploy.
 - **Email uniqueness is no longer strict within a coop** — the `@@unique([coopId, email])` constraint stays (nullable column allows multiple nulls), but application-layer dedup in shareholder create/update now permits the same non-null email across shareholders that share a `userId` (household). Cross-household collisions still reject.
 - **Dividend CSV export gained an "Email source" column** — indicates whether the exported email came from `user`, `shareholder`, or `none`, for bank-upload diagnostics.
 
 ### Fixed
+
 - **Convocation & reminder sends dedupe by inbox** — previously a household sharing one email would receive one reminder per shareholder; now one per inbox enumerating all members.
 - **Gift certificate send respects household routing** — `onRegistrationCompleted` gift path also uses the resolver (was missed in the initial Task 2 sweep, fixed before the feature shipped).
 - **Cross-tenant shareholder access in household link endpoint** — the admin link endpoint now scopes the shareholder lookup by the route `coopId`, preventing a COOP_ADMIN in coop A from touching a shareholder in coop B.
 - **Magic-link orphan fallback hardened** — linked shareholders (userId set, email null) can never trigger auto-User-creation during magic-link lookup (already defensively correct; test coverage added to prevent regressions).
 
 ### Migration
+
 - Renames the Prisma table `minor_upgrade_tokens` → `shareholder_emancipation_tokens` in place, backfills `reason = 'MINOR_COMING_OF_AGE'` for existing rows, adds the `recipient_user_id` column. Data-preserving — no existing minor tokens lost.
 
 ## [0.7.67] - 2026-04-14
 
 ### Fixed
+
 - **AGM edit page client error** — used `use(params)` (React 19 async-params pattern) but the project is Next.js 14 + React 18. Swapped to `useParams()` matching the sibling detail page.
 
 ## [0.7.66] - 2026-04-14
 
 ### Fixed
+
 - **AGM date input showed MM/DD/YYYY on EN-browser OSes** — native `<input type="datetime-local">` uses the browser OS locale, not the app UI language. Replaced with two text inputs (`Datum DD/MM/JJJJ` + `Tijd HH:MM`) that always use European format regardless of OS.
 - **Reminder days selector was a fixed checkbox set** (14/7/3/1) — now a free-text field accepting any comma-separated numbers.
 
 ### Added
+
 - **Edit meeting settings after creation** — AGM settings (type/title/date/location/format/voting weight/max proxies/reminder days) are now editable from the meeting detail page via a new "Vergadering bewerken" button. Reuses the create form in PATCH mode.
 
 ## [0.7.65] - 2026-04-14
 
 ### Added
+
 - **Algemene Vergadering (AGM) feature** — end-to-end workflow for Belgian coop annual general meetings.
   - Admin: create meetings, build agendas (informational / resolution / election items), send convocations via email with personalized PDF attachment + RSVP magic link, track RSVPs, manage proxies (volmachten), live check-in at the door, record votes, generate and sign minutes.
   - Shareholders: public magic-link RSVP page (no login required) with ATTENDING / ABSENT / PROXY flows, `.ics` calendar download, signed volmacht upload.
@@ -643,204 +750,244 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.7.64] - 2026-04-14
 
 ### Fixed
+
 - **Emails now respect user language preference with NL fallback** — share purchase, welcome, dividend statement, password reset, magic link, and gift certificate emails were hardcoded English, ignoring `User.preferredLanguage`. All templates now render in NL/EN/FR/DE with Dutch as the fallback. Fixes Bronsgroen complaint that `nl_BE` browser users were receiving English emails.
 - **Payment confirmation and message notification fallback flipped from EN to NL** — the two already-multilingual templates were falling back to English for unknown languages; now fall back to Dutch for consistency.
 
 ### Changed
+
 - **Shareholder registration and coop onboarding persist current UI locale** — the language users are browsing in (`nl`/`en`/`fr`/`de`) is now saved as their `preferredLanguage`, so future emails match the language they signed up in.
 
 ## [0.7.63] - 2026-04-14
 
 ### Fixed
+
 - **MCP API key dialog config snippet background overflow** — the JSON config block in the "API key created" dialog cut off its background mid-line when the long `Authorization: Bearer ...` line overflowed horizontally. The `<pre>` now grows to its content width with `inline-block` inside a scroll wrapper, so the muted background spans the full snippet.
 
 ## [0.7.62] - 2026-04-13
 
 ### Fixed
+
 - **Missing migration for `api_keys` table** — the `ApiKey` model was added to the schema in 0.7.61 but no Prisma migration file was generated. Prod and acc deployments use `prisma migrate deploy` which requires migration files, so the table wasn't being created. Added the missing migration.
 
 ## [0.7.61] - 2026-04-13
 
 ### Added
+
 - **Authenticated admin MCP server** — coop admins can now connect Claude or other AI assistants to query their cooperative's data via MCP. 13 read-only tools cover shareholders, transactions, analytics, share classes, projects, and annual overviews. Date range and channel filtering support campaign attribution analysis.
 - **Per-user API keys** — admins generate personal API keys in dashboard Settings → AI API Keys. Keys are SHA-256 hashed, revocable, and scoped to one cooperative. The creation dialog shows a ready-to-paste Claude MCP config snippet.
 - **Key management REST API** — `GET/POST/DELETE /admin/coops/:coopId/api-keys` for creating, listing, and revoking API keys programmatically.
 
 ### Removed
+
 - **Public MCP endpoint** — the unauthenticated `POST /mcp` endpoint that exposed coop info, bank details, and investment stats has been replaced by the authenticated version.
 - **llms.txt endpoints** — `GET /llms.txt` and `GET /llms-full.txt` removed (exposed sensitive data without authentication).
 
 ## [0.7.59] - 2026-04-10
 
 ### Fixed
+
 - **Payment dialog date picker respects user locale** — replaced native `<input type="date">` (which shows mm/dd/yyyy on US-configured systems) with the existing locale-aware DatePicker component in both the transactions and shareholder detail payment dialogs.
 - **Clarified payment dialog dismiss button** — the "Confirm" button that only closed the dialog was confusing next to the "Mark as completed" action. Now shows "Cancel" when mark-complete is available, and "Close" when just viewing payment info.
 
 ## [0.7.58] - 2026-04-10
 
 ### Added
+
 - **Participant names in admin messages overview** — the Participants column in the admin Postvak now shows actual names instead of a count. Broadcast messages display "All shareholders"; direct messages show up to 2 participant names with an ellipsis for overflow.
 
 ## [0.7.57] - 2026-04-10
 
 ### Changed
+
 - **Removed Payconiq/Bancontact link from payment dialogs** — the link to `payconiq.com` has been removed as the site is outdated and unhelpful. The EPC QR code and copy-OGM button remain the primary payment tools.
 
 ## [0.7.56] - 2026-04-10
 
 ### Fixed
+
 - **Payconiq/Bancontact link works on iOS Safari** — replaced the `payconiq://` custom URL scheme with `https://payconiq.com` (HTTPS universal link). iOS Safari blocks custom schemes with "address is invalid" when the app is not installed; the HTTPS link opens the Payconiq website as a fallback instead.
 - **Copy OGM reference button in payment dialogs** — a clipboard icon now appears next to the structured reference (OGM) in all payment dialogs. Tapping it copies the reference and briefly shows a checkmark, making it easy to paste into any banking app on mobile.
 
 ## [0.7.55] - 2026-04-10
 
 ### Fixed
+
 - **Message notification email deep-links to conversation** — the "View message" button in shareholder notification emails now links directly to the specific conversation (`/dashboard/inbox/{conversationId}`) instead of the generic inbox. Previously shareholders would land on the inbox list and sometimes start a new thread instead of replying in-place.
 
 ## [0.7.54] - 2026-04-10
 
 ### Added
+
 - **Payconiq/Bancontact deep link in payment dialogs** — a "Pay via Payconiq / Bancontact" link now appears below the EPC QR code in all payment dialogs (admin transaction view and shareholder share purchase/pending-payment screens). On mobile, tapping opens the Payconiq or Bancontact app pre-filled with the amount, currency, and OGM structured reference.
 - **Participant names in admin messages overview** — the Participants column in the admin Postvak now shows actual names instead of a count. Broadcast messages display "All shareholders"; direct messages show up to 2 participant names with an ellipsis for overflow.
 
 ## [0.7.53] - 2026-04-09
 
 ### Fixed
+
 - **E2E test alignment** — updated shareholder dashboard E2E test to reflect settings being in the user dropdown instead of the sidebar.
 
 ## [0.7.52] - 2026-04-09
 
 ### Changed
+
 - **User settings moved to user dropdown** — the "Settings" link previously shown in the sidebar under "My Account" is now accessible directly from the user dropdown at the bottom of the sidebar. This follows standard SaaS UX patterns (Linear, GitHub, Notion) and reduces sidebar clutter.
 
 ## [0.7.51] - 2026-04-09
 
 ### Added
+
 - **Configurable notification digest time** — coop admins can now set the hour (UTC) at which their daily or weekly email digest is delivered. Previously hardcoded to 09:00 UTC; now each admin picks their preferred time in the notification settings.
 
 ### Fixed
+
 - **Notification settings unreachable for admins** — the "Settings" link was missing from the admin sidebar, making notification preferences inaccessible for coop admins. A "My Account" section with a Settings link is now visible in the admin navigation.
 
 ## [0.7.50] - 2026-04-09
 
 ### Added
+
 - **Cancel transactions for coop admins** — coop admins can now cancel erroneous or duplicate transactions directly from the transaction list. A cancel button (ban icon) appears for `PENDING` and `PENDING_PAYMENT` transactions. Clicking opens a confirmation dialog with an optional reason field. Cancellation is blocked for transactions that have already been completed or are in active payment processing.
 
 ## [0.7.49] - 2026-04-09
 
 ### Added
+
 - **Email notifications for coop admins** — coop admins can now configure per-coop email notification preferences in their account settings. Choose which events trigger a notification (new shareholder registered, share purchase, share sale, payment received) and the frequency: immediate (every event), daily digest, or weekly digest. Each admin's settings are independent per cooperative.
 
 ## [0.7.43] - 2026-04-04
 
 ### Fixed
+
 - **Sold-back shares no longer appear in Aandelenbezit table** — when a shareholder sells shares back, the sold registration was previously listed as extra "owned shares" in the Shareholdings table. The table now correctly shows only active BUY registrations with remaining share count, computed as vested shares minus sold quantity. The sell dialog also correctly limits the sellable quantity to actually-owned shares.
 
 ## [0.7.42] - 2026-04-04
 
 ### Added
+
 - **Send message button in shareholder detail** — coop admins can now send a direct message to a shareholder directly from the shareholder detail page, without navigating to the Inbox compose page. A "New Message" button in the header opens an inline dialog with subject and body fields.
 - **Multilingual message notification emails** — shareholder email notifications for new inbox messages are now sent in the shareholder's preferred language (NL/EN/FR/DE), consistent with other transactional emails.
 
 ## [0.7.41] - 2026-04-04
 
 ### Improved
+
 - **Clickable shareholder names in admin transaction list** — shareholder names in the Transactions overview are now links that navigate directly to the shareholder detail page, making it easy to verify share age and history before processing buybacks.
 
 ## [0.7.40] - 2026-03-23
 
 ### Added
+
 - **Payment confirmation email with share certificate** — when a share purchase payment is completed (via Ponto auto-match, admin manual complete, CSV import, or manual match), the shareholder now receives an automatic email confirmation with their share certificate PDF attached and a link to their dashboard. The email is translated in all 4 supported languages (NL/EN/FR/DE) based on the shareholder's preferred language setting.
 
 ## [0.7.39] - 2026-03-23
 
 ### Added
+
 - **Signature image upload in admin settings** — coop admins can now upload a PNG/JPG signature image directly from the admin settings page (under Certificate Signatory). The image is stored per-coop and rendered on share certificates above the signature line.
 
 ## [0.7.37] - 2026-03-23
 
 ### Added
+
 - **Signature image on share certificate** — coops can now configure a signature image (`certificateSignatureUrl`) that appears above the signatory name on generated share certificates. Wouter's signature has been configured for Bronsgroen.
 
 ## [0.7.35] - 2026-03-21
 
 ### Fixed
+
 - **MFA login lockout resolved** — users who enabled 2FA (password + authenticator app) were permanently locked out after setup. The MFA verification endpoint correctly validated the TOTP code but then re-issued an mfa-pending challenge token instead of the real access token, making login impossible. Fixed for both password+MFA and magic link login flows. Also fixed coop-branded magic link pages which had no MFA step at all, silently storing undefined tokens.
 
 ## [0.7.34] - 2026-03-16
 
 ### Fixed
+
 - **Admin transactions: "Type" column header now shows translated text** — the Type column header in the coop admin Transactions overview was displaying the raw translation key `transactions.type` instead of the label "Type". Fixed by using the correct `transactions.typeLabel` key, which is properly translated in all 4 supported languages (EN/NL/FR/DE).
 
 ## [0.7.33] - 2026-03-15
 
 ### Added
+
 - **Multi-bank CSV import** — bank import now supports Belfius, KBC, ING, and BNP Paribas Fortis CSV formats in addition to the generic format. Select your bank from the dropdown before uploading.
 - **Manual transaction matching** — clicking "Match" on an unmatched bank transaction now opens a dialog listing pending registrations (shareholder name, OGM code, amount) for one-click matching.
 
 ## [0.7.32] - 2026-03-15
 
 ### Added
+
 - **Changelog page for coop admins** — a "What's New" page is now available in the admin sidebar (Megaphone icon). Shows all platform releases with version, date, and categorized changes (Added/Fixed/Changed etc.) in a timeline layout with color-coded badges.
 
 ## [0.7.31] - 2026-03-15
 
 ### Fixed
+
 - **Account switcher: sidebar now updates after switching** — switching to another account in the sidebar dropdown now correctly updates the displayed name, email, role, and navigation items. Previously the sidebar kept showing the old account's info until a manual page refresh.
 
 ## [0.7.30] - 2026-03-15
 
 ### Added
+
 - **Multi-account switching** — users can now log in with multiple accounts and switch between them from the sidebar. Clicking the user area at the bottom of the dashboard opens a dropdown showing all saved accounts, an "Add account" link, and logout. Useful for switching between coop admin and shareholder views without re-entering credentials.
 
 ## [0.7.29] - 2026-03-15
 
 ### Fixed
+
 - **Coop admin homepage redirect** — coop admins landing on `/dashboard` are now immediately redirected to `/dashboard/admin` instead of seeing the shareholder overview (which showed all zeros). System admins are redirected to `/dashboard/system`.
 
 ## [0.7.28] - 2026-03-15
 
 ### Added
+
 - **Referral links use coop website URL** — referral links now use the per-coop configured website URL instead of the generic opencoop.be domain.
 
 ## [0.7.27] - 2026-03-15
 
 ### Changed
+
 - **Referral code format** — referral codes now use a `firstname1234` style format for a friendlier, more recognizable code.
 
 ## [0.7.26] - 2026-03-13
 
 ### Added
+
 - **Favicon** — OpenCoop now has a browser favicon based on the logo: a rounded blue square with the building icon. Shows in browser tabs and bookmarks.
 
 ## [0.7.25] - 2026-03-13
 
 ### Added
+
 - **EPC QR code: share count in description** — QR payment descriptions now include the number of shares, e.g. "Aankoop 3 aandelen" or "Terugbetaling 1 aandelen". Available in EN/NL/FR/DE.
 
 ## [0.7.24] - 2026-03-13
 
 ### Added
+
 - **EPC QR code: payment description** — QR codes now include a human-readable description ("Share purchase" / "Share refund") in the unstructured remittance field, so banking apps display what the payment is for when scanned. The same description also appears as a label below the QR code in the UI. Available in EN/NL/FR/DE.
 
 ## [0.7.23] - 2026-03-13
 
 ### Fixed
+
 - **EPC QR code: BIC guard in transactions page** — the admin transactions page still showed "IBAN is missing" error for shareholders with IBAN but no BIC. Missed location from the v0.7.22 fix.
 
 ## [0.7.22] - 2026-03-13
 
 ### Fixed
+
 - **EPC QR code: BIC no longer required** — shareholders with a valid IBAN but no BIC can now generate QR codes for share transactions. Per the EPC QR standard (version 002), BIC has been optional since SEPA dropped the requirement in November 2016. The QR code renders with an empty BIC field, which is fully valid and accepted by banking apps.
 
 ## [0.7.21] - 2026-03-13
 
 ### Fixed
+
 - **IBAN/BIC placeholder clarity** — updated placeholder text to explicit `e.g.` format and added helper copy below each field ("Example format only. Enter the shareholder's own IBAN/BIC.") so admins no longer mistake the example values for the shareholder's actual saved data. Also improved mobile layout with single-column stacking.
 
 ## [0.7.16] - 2026-03-12
 
 ### Fixed
+
 - **Certificate dates** — certificates now show the payment date (date of registration in shareholder register) instead of the signup date
 - **Certificate placement** — moved certificate download button from "Registration History" to "Shareholdings" table on the admin shareholder detail page
 - **Certificates restricted to completed registrations** — certificate generation now requires COMPLETED status (payment confirmed) instead of allowing ACTIVE registrations
@@ -848,18 +995,21 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.7.15] - 2026-03-12
 
 ### Changed
+
 - **Transaction tables: separate date columns** — split single "Date" column into "Registration Date" and "Payment Date" in both the transactions page and shareholder detail page, so dividend-relevant payment dates are clearly visible
 - **Inline payment date editing** — click the payment date on any completed registration to edit it directly in the table (replaces the previous modal approach)
 
 ## [0.7.14] - 2026-03-12
 
 ### Fixed
+
 - **Admin: shareholder type change error display** — show actual backend error messages instead of generic "Something went wrong" when saving shareholder changes fails
 - **Admin: parent/guardian warning** — show a clear warning when the selected parent/guardian has no user account, explaining they need an account before they can be linked as parent
 
 ## [0.7.13] - 2026-03-12
 
 ### Added
+
 - **Payment confirmation on shareholder detail page** — coop admins can now mark registrations as complete and view QR payment details directly from a shareholder's detail page (previously only available on the transactions page)
 - **Payment date picker** — when marking a registration as complete, admins can set the actual payment date (defaults to today) in both the transactions page and shareholder detail page
 - **Edit payment date** — coop admins can edit the payment date on completed registrations via a calendar icon button, useful for correcting dates after the fact
@@ -867,20 +1017,24 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.7.12] - 2026-03-12
 
 ### Added
+
 - **Admin: shareholder type management** — coop admins can now change shareholder type (Individual/Company/Minor) and set parent/guardian relationships directly from the admin shareholder detail page
 - **Data fix script** — `fix-jasmine-maurice-email-swap.ts` corrects email swap between Maurice and Jasmine Verriet from migration
 
 ## [0.7.11] - 2026-03-12
 
 ### Added
+
 - **Referral link system** — cooperators can share referral links to invite new shareholders, with tracking and referral success email notifications to the referrer
 
 ### Fixed
+
 - **Code review fixes** — addressed review issues in referral system (cookie notice click blocking, E2E test stability)
 
 ## [0.7.10] - 2026-03-11
 
 ### Added
+
 - **Data Processing Agreement (DPA)** — new `/dpa` page with full GDPR Article 28 compliant DPA content in 4 languages (EN, NL, FR, DE), covering sub-processors, data retention, breach notification, audit rights
 - **Cookie notice banner** — informational cookie banner for essential cookies, dismissible via localStorage, all 4 languages
 - **Legal footer links** — Terms & Conditions, Privacy Policy, and DPA links added to marketing footer
@@ -888,6 +1042,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.7.9] - 2026-03-10
 
 ### Added
+
 - **Shareholder bulk import** — import shareholders from CSV or Excel (.xlsx) files via the admin dashboard
   - Two-step flow: dry-run validation first, then commit on confirmation
   - Validates required fields per shareholder type (INDIVIDUAL, COMPANY, MINOR)
@@ -902,23 +1057,27 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.7.8] - 2026-03-10
 
 ### Added
+
 - **Token refresh mechanism** — JWT access tokens now expire after 15 minutes and are silently refreshed using 30-day refresh tokens, eliminating session loss on page navigation
 - **Logout endpoint** — `POST /auth/logout` revokes all refresh tokens server-side
 - **Refresh token model** — new `RefreshToken` database table with hashed tokens, expiry, and soft revocation
 
 ### Changed
+
 - **Frontend API client** — on 401, automatically attempts token refresh and retries the original request before redirecting to login (singleton pattern prevents concurrent refresh races)
 - **All auth flows** — login, register, onboarding, magic link, OAuth, passkey, MFA, and invite accept now issue and store refresh tokens
 
 ## [0.7.7] - 2026-03-10
 
 ### Fixed
+
 - **Dashboard: parent sees only minor's shares** — sort shareholders by type priority (INDIVIDUAL > COMPANY > MINOR) so the parent's own record always appears first
 - **Data fix script** — `fix-minor-shareholder.ts` corrects minor shareholders that share a userId with their parent
 
 ## [0.7.6] - 2026-03-10
 
 ### Fixed
+
 - **Security: open redirect in OAuth callbacks** — validate `state.redirect` starts with `/` and has no `//` to prevent redirect to external domains
 - **Security: Swagger docs production exposure** — restored `NODE_ENV !== 'production'` guard on Swagger setup
 - **Security: permission guard bypass** — old JWTs missing `coopPermissions` claim now get `ForbiddenException` instead of full access
@@ -926,22 +1085,26 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - **E2E: flaky sell-shares test** — added bankIban to seed data
 
 ### Changed
+
 - `.gitignore` updated to block stale build artifacts, PII exports, and `.claire/` directory
 
 ## [0.7.3] - 2026-03-10
 
 ### Fixed
+
 - **Ecopower card on shareholder detail** — squash merge also lost the Ecopower client checkbox and ID field on the shareholder detail page
 
 ## [0.7.2] - 2026-03-10
 
 ### Fixed
+
 - **API key generation endpoint missing** — squash merge of Ecopower PR lost the `POST api-key/regenerate` admin endpoint
 - **Ecopower shareholder filter missing** — squash merge also lost the `ecoPowerClient` query parameter on the shareholders list
 
 ## [0.7.1] - 2026-03-10
 
 ### Fixed
+
 - **Settings save failing** — `termsUrl` (a Channel field) was sent to the coop update endpoint, rejected by `forbidNonWhitelisted` validation
 - **Ecopower null enum validation** — sending `ecoPowerMinThresholdType: null` when Ecopower is disabled now passes validation
 - **Payment email timing** — send payment confirmation email regardless of registration status
@@ -949,6 +1112,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.7.0] - 2026-03-10
 
 ### Added
+
 - **Redesigned share certificate** — Bronsgroen-style layout with coop name, legal form, signatory, table with name+city, member number, shares, amount, registration date
 - **Coop info fields** — legalForm, foundedDate, certificateSignatory, address, phone, email, website, VAT number, logo URL (admin settings)
 - **Shareholder member number** — vennotennummer field on shareholder model
@@ -956,22 +1120,26 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - **FR/DE certificate translations** — certificate PDF template now supports all 4 languages
 
 ### Fixed
+
 - **Tenant isolation** on new certificate endpoint — validates registrationId belongs to the coop
 
 ## [0.6.2] - 2026-03-10
 
 ### Added
+
 - **Share purchase confirmation email** — automatically sends payment details (IBAN, BIC, OGM code, amount) to shareholders after registration when status is PENDING_PAYMENT
 - **Resend payment email endpoint** — admins can resend the payment info email for any registration
 
 ## [0.6.1] - 2026-03-10
 
 ### Fixed
+
 - **Personal data form not saving phone/IBAN correctly** — bank account (IBAN/BIC) fields were silently dropped when cleared due to falsy check; empty optional fields (phone, etc.) stored as empty strings instead of null
 
 ## [0.6.0] - 2026-03-10
 
 ### Added
+
 - **Ecopower shareholder integration** — track which shareholders are Ecopower energy clients and enforce minimum shareholding requirements
   - Coop settings: enable/disable Ecopower integration, configure threshold type (euro or shares) and minimum value
   - Shareholder fields: Ecopower client flag and optional Ecopower ID
@@ -984,12 +1152,14 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.5.2] - 2026-03-10
 
 ### Fixed
+
 - **Shareholdings not showing for COMPLETED registrations** — admin shareholder detail and shareholders list only filtered for ACTIVE status, missing COMPLETED registrations (affected Bronsgroen imports)
 - **Raw status string in shareholdings table** — status column showed "COMPLETED" instead of translated "Voltooid"
 
 ## [0.5.0] - 2026-03-10
 
 ### Added
+
 - **Platform terms & conditions** — coop admins must accept T&C during onboarding; acceptance is versioned and timestamped on the user record
 - **Privacy policy acceptance** — shareholders must accept the OpenCoop privacy policy when registering via a public channel; versioned and stored on the registration record
 - **Cooperative terms acceptance** — shareholders accept coop-specific terms (when a channel has a `termsUrl`); conditionally shown and stored on registration
@@ -997,11 +1167,13 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - **Version-stamped legal consent** — `TERMS_VERSION` and `PRIVACY_VERSION` constants in shared package, set server-side (never from client)
 
 ### Fixed
+
 - **E2E registration tests** — updated to handle conditional coop terms checkbox and new required privacy checkbox
 
 ## [0.4.0] - 2026-03-09
 
 ### Added
+
 - **Messaging inbox** — bank-style messaging system for coop-shareholder communication
   - Coop admins can send broadcasts (all shareholders) or direct messages to individuals
   - Shareholders can start conversations and reply to messages
@@ -1014,28 +1186,33 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.3.7] - 2026-03-09
 
 ### Fixed
+
 - **Birthdate picker navigation** — birthdate fields now show year/month dropdowns for quick navigation (1920-present) instead of requiring month-by-month clicking
 - **E2E registration test** — updated test to work with new calendar popover date picker
 
 ## [0.3.6] - 2026-03-09
 
 ### Fixed
+
 - **Date picker locale** — replaced native `<input type="date">` (which uses OS locale) with a proper calendar popover that respects the user's app locale setting
 - **Dividend period default date** — ex-dividend date now defaults to December 31 of the selected year when creating a new dividend period
 
 ## [0.3.5] - 2026-03-09
 
 ### Changed
+
 - **Pricing page yearly display** — yearly plans now show monthly-equivalent price (€33/mo, €75/mo) with annual total in subtitle, matching common SaaS pricing patterns for better conversion
 
 ## [0.3.4] - 2026-03-09
 
 ### Fixed
+
 - **Share sell button showing when holding period not met** — the `/auth/me` endpoint was missing `minimumHoldingPeriod` in the shareholder's coop data, causing the frontend to always show the sell button regardless of the configured holding period (e.g. 60 months for Bronsgroen)
 
 ## [0.3.3] - 2026-03-08
 
 ### Added
+
 - **Admin audit logging** — comprehensive audit trail for all auth events (login, register, MFA, password reset) and admin CRUD actions (channels, share classes, projects, dividends, logo uploads)
 - **IP + user-agent tracking** — all audit log entries now capture IP address and user-agent string for security investigations
 - **Auth activity in system audit page** — system admins can filter audit logs by Auth entity to see all login attempts, including failed ones with the attempted email
@@ -1044,12 +1221,14 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.3.2] - 2026-03-08
 
 ### Added
+
 - **ESLint CI integration** — `next lint` runs in CI pipeline to catch lint errors before deploy
 - **E2E test expansion** — 10 new Playwright tests: public registration (individual, company, existing user), admin dashboard/settings/transactions/share-classes, shareholder transactions/settings
 - **Public Playwright project** — new `public` project for unauthenticated E2E test scenarios
 - **Demo coop seeding in CI** — E2E tests now seed demo coop data for channel-dependent tests
 
 ### Fixed
+
 - **Flaky admin E2E tests** — tests now search shareholders by email instead of clicking by name (handles paginated data)
 - **Duplicate test files** — removed stale `.js`/`.d.ts` compiled test files that caused double execution
 - **Invalid ESLint disable comments** — removed `@typescript-eslint/no-explicit-any` disables in report preview files (rule not loaded)
@@ -1057,11 +1236,13 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.3.1] - 2026-03-08
 
 ### Added
+
 - **Umami analytics** — self-hosted privacy-friendly pageview analytics via analytics.armlab.com
 
 ## [0.3.0] - 2026-03-08
 
 ### Added
+
 - **Ponto Connect integration** — automatic bank payment reconciliation via PSD2 Open Banking. Coop admins connect their bank account through OAuth, and incoming payments are automatically matched to registrations using OGM codes.
 - **Webhook-driven transaction processing** — Ponto webhooks trigger Bull queue jobs that fetch new transactions and create payments for matching registrations.
 - **Bank connection management** — admin settings page with connect/disconnect/reauthorize flow, auto-match toggle, and connection health status.
@@ -1073,6 +1254,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.2.10] - 2026-03-08
 
 ### Fixed
+
 - **Gift claim page validation** — fixed Zod schema blocking gift code validation by making step-2 fields optional (same fix as registration form)
 - **Gift claim FK error** — claim endpoint was passing shareholder ID as user ID for `processedByUserId`, causing foreign key constraint violation
 - **Registration form per-step validation** — made step-3 schema fields optional so `trigger()` works correctly per step
@@ -1080,6 +1262,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.2.9] - 2026-03-08
 
 ### Added
+
 - **Gift badge on buyer dashboard** — gift registrations show an amber badge with status (awaiting payment / awaiting claim / claimed by [name])
 - **Gift certificate download** — buyers can download the gift certificate PDF from their shares page while the gift is unclaimed
 - **Gift claim recipient info** — `/auth/me` now returns the claimed-by shareholder name for gift registrations
@@ -1087,6 +1270,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.2.8] - 2026-03-08
 
 ### Added
+
 - **Gift certificates** — buyers can purchase shares as a gift. When payment clears, a gift code (XXXX-XXXX) is generated, a PDF certificate with QR code is created, and emailed to the buyer. Recipients claim their shares at `/{coop}/{channel}/claim` by entering the code and their personal details. Shares transfer from buyer to recipient via a TRANSFER registration.
 - **Gift claim page** — public page where recipients enter their gift code, see the gift details (share class, quantity, value), fill in shareholder information, and claim their shares.
 - **Rate limiting on gift endpoints** — validation and claim endpoints are limited to 5 requests per IP per 15 minutes.
@@ -1094,18 +1278,22 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.2.7] - 2026-03-08
 
 ### Changed
+
 - **Registration flow redesign** — replaced dark colored header with a light/white header showing the coop logo. Registration now uses 4 steps for new users (Welcome → Details → Order → Payment) and 3 steps for logged-in users (skipping the welcome gate).
 
 ### Added
+
 - **Welcome gate** — new users see "I'm new" and "I already have an account" cards as their first step. The login card embeds an inline email-first login so returning shareholders can authenticate without leaving the registration page.
 - **Smart beneficiary filtering** — when a logged-in user registers someone else, "for myself" is hidden. Gift flow skips email collection for logged-in buyers.
 
 ### Fixed
+
 - **Native date picker** — replaced custom date picker with native `<input type="date">` and enforced holding period in share sell UI
 
 ## [0.2.4] - 2026-03-07
 
 ### Fixed
+
 - **Dashboard shows 0 shares** — overview now counts both ACTIVE and COMPLETED registrations
 - **Status badges in English** — shares page now shows translated status (e.g., "Voltooid") instead of raw "COMPLETED"
 - **"transactions.type" literal** — transaction column header now uses a dedicated translation key instead of resolving to an object
@@ -1115,16 +1303,19 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.2.3] - 2026-03-07
 
 ### Fixed
+
 - **Coop-branded magic link emails** — magic link email subject, heading, body and button text now show the coop name and use the coop's brand color instead of generic OpenCoop branding
 
 ## [0.2.2] - 2026-03-07
 
 ### Added
+
 - **Auto-create user accounts for shareholders** — when an existing shareholder requests a magic link login but has no user account, one is automatically created and linked. Enables imported shareholders to self-service login.
 
 ## [0.2.1] - 2026-03-07
 
 ### Fixed
+
 - **Coop login page centered** — coop-branded login page is now properly centered on screen instead of being stuck to the left
 - **Coop root URL redirects to login** — `/{coopSlug}` now shows the login page instead of a combined login/register/share-classes landing page
 - **Logged-in users redirected** — visiting coop login while already authenticated redirects to dashboard
@@ -1132,12 +1323,15 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.2.0] - 2026-03-07
 
 ### Changed
+
 - **Registration/Payment data model** — replaced Share + Transaction tables with a unified Registration + Payment model. Registrations are a ledger of BUY/SELL intents; Payments track actual bank activity. Data-preserving SQL migration converts all existing data in-place.
 
 ### Added
+
 - **Daily chart filter** — admin dashboard charts now have a "Dagelijks" (Daily) period showing the last 90 days with daily granularity
 
 ### Fixed
+
 - **SELL payment dates** — migration correctly uses payment creation date for SELL transactions instead of the original share purchase date
 - **Timeline chart future dates** — timeline chart now includes future-dated payments instead of cutting off at the current month
 - **COMPLETED status in shares page** — shares page and sell dialogs now correctly show COMPLETED registrations
@@ -1145,6 +1339,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.78] - 2026-03-06
 
 ### Fixed
+
 - **Capital timeline uses transaction log** — capital chart now correctly subtracts sold-back shares using the transaction log (PURCHASE adds, SALE subtracts) instead of only counting active shares
 - **Shareholder growth tracks exits** — shareholder growth chart now shows exits (red bars below zero) for shareholders who sold all shares, with cumulative line adjusted accordingly
 - **Dashboard charts fill gaps to current month** — charts now fill all intermediate empty months (no more jumping from Dec to Mar)
@@ -1154,11 +1349,13 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.77] - 2026-03-06
 
 ### Fixed
+
 - **Dashboard charts extend to current month** — capital timeline and shareholder growth charts no longer stop at the last month with activity; they now always include the current month
 
 ## [0.1.76] - 2026-03-06
 
 ### Added
+
 - **Onboarding channels** — coops can now have multiple branded entry points for share registration (e.g., a partnership "Onze Energie" branding alongside the coop's own)
 - **Channel management UI** — new Settings → Channels page to create, edit, and delete channels with custom logo, colors, name, description, and terms URL
 - **Per-channel share class/project filtering** — each channel can show only a subset of share classes and projects
@@ -1167,12 +1364,14 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - **Auto-linking** — new share classes and projects are automatically linked to the default channel
 
 ### Changed
+
 - Coop branding (logo, colors, terms URL) migrated from the Coop model to the default Channel
 - Public pages now use `/{coopSlug}/{channelSlug}/` URL structure
 
 ## [0.1.74] - 2026-03-06
 
 ### Added
+
 - **Coop admin management** — admins can now invite, manage, and remove other coop admins
 - **Granular permissions** — 4 default roles (Admin, Viewer, GDPR Viewer, GDPR Admin) with 10 configurable permission flags
 - **Custom roles** — create custom named roles with individually toggled permissions per coop
@@ -1186,36 +1385,43 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.73] - 2026-04-06
 
 ### Fixed
+
 - **PDF/CSV exports respect project filter** — exporting now includes only the selected projects, not all
 - **Project type labels translated** — "SOLAR" and "WIND" now show as localized labels (e.g. "Zonne-energie", "Windenergie" in Dutch) in reports and PDFs
 
 ## [0.1.72] - 2026-04-06
 
 ### Added
+
 - **Auto-load reports** — all reports load automatically when the tab is selected, no more "Generate" button
 - **Multi-select project filter** — project investment report has a dropdown with checkboxes; typing auto-selects matching projects, manual toggle for individual projects
 
 ## [0.1.71] - 2026-04-06
 
 ### Added
+
 - **Project investment filter** — search box to filter projects by name in the project investment report (e.g., filter by "lommel", "solar", "wind")
 
 ### Fixed
+
 - **Coop logo broken image** — dashboard sidebar now correctly resolves logo URLs (was showing broken image for coops with uploaded logos like Bronsgroen)
 
 ## [0.1.70] - 2026-04-06
 
 ### Added
+
 - **Coop logo in sidebar** — dashboard sidebar shows the coop's uploaded logo (or name) instead of "OpenCoop", for both admin and shareholder dashboards
 
 ## [0.1.69] - 2026-04-06
 
 ### Added
+
 - **Bronsgroen data import** — migrated 751 shareholders, 992 shares, and 16 projects from CSV into production
 - **Shared chart period filter** — all dashboard charts now sync when changing the time filter (monthly/quarterly/yearly/all)
 - **Unassigned capital in reports** — shares without a project now show as "Niet toegewezen" in project investment reports
 
 ### Fixed
+
 - Capital timeline and shareholder growth charts now start at the correct pre-period total instead of 0
 - Pie chart (capital by project) legend moved below chart so it's fully visible with many projects
 - Report donut chart layout: legend on the left, chart on the right for better readability
@@ -1225,6 +1431,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.68] - 2026-03-05
 
 ### Added
+
 - **Audit history** — all data changes are now logged to an append-only audit trail
   - Tracks changes to shareholders (profile, bank details, status), users (password, MFA, preferences), and coop settings (branding, email config, bank details)
   - Sensitive fields (passwords, MFA secrets, national IDs) are masked in the log
@@ -1236,6 +1443,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.67] - 2026-03-02
 
 ### Added
+
 - **CSV import for projects and share classes** — admins can now bulk-import projects and share classes from semicolon-delimited CSV files
 - Import buttons on both admin pages (Projects and Share Classes) with uploaded/skipped count feedback
 - Duplicate detection: skips projects with existing names and share classes with existing codes
@@ -1244,6 +1452,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.66] - 2026-03-02
 
 ### Added
+
 - **Payment date tracking** — new `paymentDate` field on shares, set when bank import matches a payment or admin manually completes a transaction
 - Dividend eligibility now calculated from `paymentDate` instead of `purchaseDate` (order date), ensuring only paid shares qualify
 - Bank import passes the actual bank transaction date through as the payment date (both auto-match and manual match)
@@ -1253,11 +1462,13 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.65] - 2026-03-01
 
 ### Fixed
+
 - Docs sidebar no longer shows redundant section headers above each page link
 
 ## [0.1.64] - 2026-03-01
 
 ### Changed
+
 - **Docs site theming** — aligned docs.opencoop.be color palette with the marketing site (primary blue, dark mode, brand colors)
 - Added Building2 icon to docs nav title to match marketing site branding
 - Fixed docs language switcher not showing available languages (EN/NL/FR/DE)
@@ -1265,12 +1476,14 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.63] - 2026-03-01
 
 ### Added
+
 - **Shareholder registration docs** — new documentation section covering the public share purchase flow (3-step registration, beneficiary types, gift certificates, OAuth prefill, URL parameters) in all 4 languages
 - Updated README with docs app, current auth methods, and i18n languages
 
 ## [0.1.62] - 2026-03-01
 
 ### Added
+
 - **Share buying flow** — members can purchase shares directly from their dashboard: select share class, choose quantity, and pay via EPC QR code bank transfer
 - **AWAITING_PAYMENT status** — new transaction/share status for purchases waiting on bank payment
 - Approval-aware flow: coops with `requiresApproval` route purchases through admin approval before payment; others go directly to awaiting payment
@@ -1280,6 +1493,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.61] - 2026-03-01
 
 ### Added
+
 - **Documentation site** — new Fumadocs-based docs app (`apps/docs`) with i18n support (EN/NL/FR/DE), deployed at `docs.opencoop.be`
 - Starter content: Welcome page, Getting Started guide, and Coop Administration guide in all 4 languages
 - Full-text search across all documentation pages
@@ -1288,6 +1502,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.60] - 2026-03-01
 
 ### Added
+
 - **Passkeys (WebAuthn)** — passwordless login via biometrics or security keys
 - **Google OAuth & Apple Sign In** — social login options on registration and login
 - **MFA/TOTP** — two-factor authentication with authenticator apps
@@ -1297,6 +1512,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.59] - 2026-02-28
 
 ### Added
+
 - **Gift certificate flow** — selecting "As a gift" on registration now shows a simplified form (buyer email only) and generates a gift code + QR code on confirmation that the recipient can use to claim their shares
 - **Gift claim page** — new public page at `/{coopSlug}/claim` where gift recipients enter their code and fill in their own details to claim shares
 - **Beneficiary helper text** — family and company beneficiary types now show contextual guidance about whose details to enter
@@ -1305,26 +1521,31 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.58] - 2026-02-28
 
 ### Changed
+
 - **Consolidated settings page** — merged shareholder links, branding (logo & colors), and general settings into a single settings page; removed separate branding nav item
 
 ## [0.1.57] - 2026-02-28
 
 ### Added
+
 - **Shareholder links card** — admin dashboard overview now shows copyable URLs for the coop's public page, registration, and login, so admins can easily share them with shareholders
 
 ## [0.1.56] - 2026-02-28
 
 ### Changed
+
 - **Streamlined registration flow** — compressed shareholder registration from 5 steps to 3 (Details → Order → Confirmation) for better conversion
 - Step 1 now combines beneficiary type selection with the personal/company details form inline
 - Step 2 merges share class selection, payment method, order summary, and terms acceptance
 
 ### Added
+
 - **EPC QR code on confirmation** — the registration confirmation step now displays a scannable EPC QR code that banking apps can use to initiate a SEPA payment with the correct OGM reference pre-filled
 
 ## [0.1.55] - 2026-02-26
 
 ### Added
+
 - **Free early access plan** — new "Early Access (Free)" tier on the pricing page, allowing cooperatives to sign up without payment
 - **Email verification flow** — users must verify their email before accessing the dashboard; verification email sent on register and onboarding
 - **Verify email page** — `/verify-email?token=...` validates the token and shows success or error
@@ -1333,6 +1554,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - **Verification email templates** — multi-language (NL/EN/FR/DE) email with verify button
 
 ### Changed
+
 - Onboarding accepts `plan=free`; billing period is now optional
 - Free plan sets `coop.active = true` immediately (no admin review needed)
 - Pricing page grid changed from 2 to 3 columns to accommodate the free tier
@@ -1342,6 +1564,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.54] - 2026-02-26
 
 ### Added
+
 - **SEO metadata** — localized page titles and descriptions for all marketing pages (NL/EN/FR/DE)
 - **Open Graph & Twitter Cards** — social sharing meta tags on every public page
 - **Hreflang alternates** — cross-language links in HTML head and sitemap for multi-language SEO
@@ -1351,12 +1574,14 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - **JSON-LD structured data** — `SoftwareApplication` schema on the landing page
 
 ### Changed
+
 - Marketing pages split into server/client components to enable server-side metadata generation
 - Root layout enhanced with title template (`%s | OpenCoop`), `metadataBase`, and default OG/Twitter config
 
 ## [0.1.53] - 2026-02-26
 
 ### Added
+
 - **Personal Data page** — shareholders can view and edit their profile (name, company, address, bank details) from a dedicated page
 - **PDF document downloads** — shareholders can download their certificates and statements directly from the documents page
 - **Self-service certificate generation** — shareholders can generate share certificates themselves
@@ -1364,6 +1589,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - **Admin dividend statement endpoint** — admins can generate dividend statements for any shareholder
 
 ### Changed
+
 - Bank details (IBAN/BIC) moved from Settings to the new Personal Data page
 - Documents page now has a working download button and a "Generate Certificate" action
 - Dividends page now has a "Generate Statement" action per payout row
@@ -1372,48 +1598,57 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.52] - 2026-02-26
 
 ### Fixed
+
 - Demo coop routes (/demo/login, /demo/register, /demo/magic-link) returning 404 due to Next.js static/dynamic route conflict
 - Extracted coop login, register, and magic-link page logic into shared components to avoid duplication
 
 ## [0.1.51] - 2026-02-25
 
 ### Fixed
+
 - Reject transaction dialog now uses a proper styled modal instead of native browser prompt()
 - Sell shares dialog now shows EPC QR code with payment details after confirming the sale
 
 ## [0.1.50] - 2026-02-25
 
 ### Fixed
+
 - `shares.perUnit` i18n key was in wrong namespace (common instead of shares), causing literal key to display
 
 ## [0.1.49] - 2026-02-25
 
 ### Fixed
+
 - Hardcoded "ea" (each) in sell shares dialog replaced with i18n translation (ea/stuk/pièce/Stück)
 
 ## [0.1.48] - 2026-02-25
 
 ### Fixed
+
 - Dark mode on auth pages (login, register, forgot-password, reset-password, magic-link)
 - Auth pages no longer show white background in dark mode
 
 ## [0.1.44] - 2026-02-25
 
 ### Fixed
+
 - Password reset and magic link emails no longer require a coopId — works for all users regardless of coop membership or emailEnabled flag
 - Password reset and magic link emails now respect user's preferred language (NL/EN/FR/DE)
 
 ### Changed
+
 - Waitlist confirmation email consolidated through EmailService (removed raw nodemailer from auth service)
 
 ## [0.1.43] - 2026-02-25
 
 ### Fixed
+
 - Password reset and magic link emails were silently skipped when user had no shareholder record or coop had emailEnabled=false
 
 ## [0.1.46] - 2026-02-25
 
 ### Added
+
 - Helmet security headers on API and Next.js (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
 - Global rate limiting (100 req/min) with stricter limits on auth endpoints (3-5/min)
 - Stronger password policy: min 8, max 128, requires uppercase + lowercase + digit
@@ -1424,12 +1659,14 @@ breaking changes for cooperatives or members — most of this is invisible by de
 - Migration script for encrypting existing nationalId data
 
 ### Fixed
+
 - Password reset tokens now cleared when password is changed via settings
 - Swagger API docs disabled in production (NODE_ENV=production)
 
 ## [0.1.45] - 2026-02-25
 
 ### Fixed
+
 - Dividend date picker: added dropdown year/month navigation so users can quickly select dates in past years (e.g. 2024) instead of clicking arrows dozens of times
 - Dividend date pickers now open to the correct month (ex-dividend → Dec of selected year, payment → Jan of next year)
 - Dividend percentage input now accepts comma as decimal separator for NL/BE locale (e.g. `2,5` works alongside `2.5`)
@@ -1437,15 +1674,18 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.41] - 2026-02-25
 
 ### Fixed
+
 - Consolidated all email sending through EmailService (migration requests, feature requests, waitlist no longer bypass queue with raw nodemailer)
 - Added 5 missing minor-related email templates used by the birthday scheduler (minor-turned-adult, parent notification, upgrade notification/reminder, email setup reminder)
 
 ### Changed
+
 - Form notifications (migration requests, feature requests, waitlist signups) now sent to hello@opencoop.be
 
 ## [0.1.38] - 2026-02-25
 
 ### Added
+
 - Stacked area chart showing capital growth by project in Annual Overview and Capital Statement PDF reports
 - Interactive stacked area chart in on-screen report previews (Annual Overview + Capital Statement)
 - Backend `computeCapitalTimelineByProject` helper generating monthly per-project capital timeline data
@@ -1453,12 +1693,14 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.37] - 2026-02-25
 
 ### Added
+
 - Migration service CTA section on homepage, linking to `/migration` page
 - Full i18n support for migration CTA (EN, NL, FR, DE)
 
 ## [0.1.35] - 2026-02-25
 
 ### Added
+
 - Migration service marketing page (`/migration`) with contact form for cooperatives switching to OpenCoop
 - Migration request API endpoint (`POST /migration-requests`) with email notification
 - Navigation link to migration page in marketing header (desktop + mobile)
@@ -1467,6 +1709,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.34] - 2026-02-25
 
 ### Added
+
 - Charts in PDF reports: horizontal bar (capital comparison) and donut chart (share class breakdown) in annual overview PDF
 - Project investment PDF report with donut chart showing capital distribution across projects
 - Copy-to-clipboard for charts (PNG image) and tables (formatted HTML) for easy PowerPoint/Keynote use
@@ -1476,11 +1719,13 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.33] - 2026-02-25
 
 ### Fixed
+
 - Shareholder edit crash: updating shareholder info as admin caused client-side exception because the API returned incomplete data (missing shares, transactions)
 
 ## [0.1.28] - 2026-02-25
 
 ### Added
+
 - Admin buy/sell on behalf of shareholders — coop admins can create purchase and sale transactions for shareholders
 - Shareholder self-service sell — shareholders can request to sell shares back with bank account confirmation
 - EPC QR codes for SEPA payments — purchase QR (shareholder pays coop) and refund QR (coop pays shareholder)
@@ -1492,6 +1737,7 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.27] - 2026-02-25
 
 ### Fixed
+
 - Shareholder counts in annual overview, shareholder growth chart, and shareholder register now use earliest share purchase date instead of DB record creation date
 - Shareholder register join date reflects actual first share purchase, not account creation timestamp
 - Admin shareholders list shows "Member since" (earliest share purchase) instead of DB record creation date
@@ -1499,11 +1745,13 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.26] - 2026-02-25
 
 ### Added
+
 - PDF export for reports (annual overview, shareholder register, capital statement)
 
 ## [0.1.25] - 2026-02-25
 
 ### Added
+
 - Admin analytics dashboard with interactive charts (capital timeline, capital by project, shareholder growth, transaction activity)
 - Reports page with 5 pre-built reports: annual overview, capital statement, shareholder register, dividend summary, project investment
 - On-screen report preview with CSV export for all reports
@@ -1513,11 +1761,13 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.24] - 2026-02-25
 
 ### Fixed
+
 - Translation key references for transaction types and statuses on shareholder detail and transactions pages
 
 ## [0.1.23] - 2026-02-25
 
 ### Fixed
+
 - Currency formatting now respects user locale across all pages — Dutch shows `€ 2.000,00` instead of `€ 2000.00`
 - Date formatting respects user locale preference (was hardcoded to `nl-BE` in several admin pages)
 - PDF templates (dividend statement, share certificate) now use `Intl.NumberFormat` for proper thousands separators
@@ -1525,108 +1775,130 @@ breaking changes for cooperatives or members — most of this is invisible by de
 ## [0.1.22] - 2026-02-25
 
 ### Added
+
 - CHANGELOG.md covering all releases
 - Release workflow conventions in project docs
 
 ## [0.1.21] - 2026-02-25
 
 ### Added
+
 - Approve/reject actions on shareholder detail transaction history (admins no longer need to navigate to the transactions panel)
 
 ## [0.1.20] - 2026-02-25
 
 ### Added
+
 - Attention badges with counters on admin sidebar nav items (pending shareholders, pending transactions, unmatched bank imports)
 
 ## [0.1.19] - 2026-02-25
 
 ### Fixed
+
 - Pagination crash (500 Internal Server Error) on transactions and shareholders endpoints when query params are omitted (NestJS `enableImplicitConversion` converts missing params to `NaN`)
 
 ## [0.1.18] - 2026-02-24
 
 ### Added
+
 - Language switcher and theme toggle to dashboard portal (shared components with marketing pages)
 
 ### Fixed
+
 - Dark mode in coop portal using hardcoded colors instead of theme-aware CSS variables
 
 ## [0.1.17] - 2026-02-24
 
 ### Changed
+
 - Hero demo button scrolls to demo section instead of navigating away
 
 ## [0.1.16] - 2026-02-24
 
 ### Changed
+
 - Added GitHub button back to hero, demo button in the middle
 
 ## [0.1.15] - 2026-02-24
 
 ### Added
+
 - Demo CTA section on homepage with hero button linking to it
 
 ## [0.1.14] - 2026-02-24
 
 ### Added
+
 - Demo page with credentials for test-driving the platform
 
 ## [0.1.13] - 2026-02-23
 
 ### Improved
+
 - User email in sidebar links to account settings
 
 ## [0.1.12] - 2026-02-23
 
 ### Changed
+
 - Set `emailEnabled=false` for demo coop via migration
 
 ## [0.1.11] - 2026-02-23
 
 ### Added
+
 - Per-coop email provider settings with disable toggle (allows SYSTEM_ADMIN to control email sending per tenant)
 
 ## [0.1.10] - 2026-02-23
 
 ### Changed
+
 - Hide shareholder nav section for admin users (admins see only admin and system nav)
 
 ## [0.1.9] - 2026-02-23
 
 ### Added
+
 - Responsive mobile hamburger menu to marketing nav
 
 ## [0.1.8] - 2026-02-23
 
 ### Changed
+
 - Use Building2 icon as default logo on coop login page
 
 ## [0.1.7] - 2026-02-23
 
 ### Changed
+
 - Revised pricing tiers from Starter/Growth to Essentials/Professional
 
 ## [0.1.6] - 2026-02-23
 
 ### Changed
+
 - Replaced theme toggle button with animated slider switch
 
 ## [0.1.5] - 2026-02-23
 
 ### Added
+
 - Dark mode support with system preference detection and manual toggle
 
 ## [0.1.4] - 2026-02-23
 
 ### Changed
+
 - Default pricing page to monthly billing toggle
 
 ## [0.1.3] - 2026-02-23
 
 ### Fixed
+
 - Production deploy race condition by building images on tag push
 
 ## [0.1.2] - 2026-02-23
 
 ### Added
+
 - French and German locales with flag-based language switcher (NL, EN, FR, DE)

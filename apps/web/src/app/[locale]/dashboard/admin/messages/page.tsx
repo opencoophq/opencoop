@@ -41,10 +41,11 @@ interface ConversationListItem {
   type: 'BROADCAST' | 'DIRECT';
   status: 'DRAFT' | 'SCHEDULED' | 'SENT';
   scheduledAt: string | null;
-  audienceType: 'ALL' | 'PROJECT' | 'SELECTED';
+  audienceType: 'ALL' | 'PROJECT' | 'SELECTED' | 'VOLUNTEERS';
   audienceProjectId: string | null;
   audienceProject?: { name: string } | null;
   audienceShareholderIds: string[];
+  audienceVolunteerIds?: string[];
   recipientCount?: number | null;
   updatedAt: string;
   messages: Array<{
@@ -118,6 +119,10 @@ export default function AdminMessagesPage() {
         if (conv.audienceType === 'SELECTED') {
           const count = conv.recipientCount ?? conv.audienceShareholderIds.length;
           return t('messages.selectedShareholders', { count });
+        }
+        if (conv.audienceType === 'VOLUNTEERS') {
+          const count = conv.recipientCount ?? conv.audienceVolunteerIds?.length ?? 0;
+          return t('messages.volunteersCount', { count });
         }
         return t('messages.allShareholders');
       }

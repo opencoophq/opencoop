@@ -127,5 +127,29 @@
     "cardNumber": "Numéro de carte",
     "dashboard": "Voir mes cartes de recharge",
     "thanks": "Cordialement, {coopName}"
+  },
+  "volunteer-confirm": {
+    "subject": "Confirmez votre inscription comme bénévole chez {coopName}",
+    "title": "Confirmez votre inscription",
+    "dear": "Bonjour {volunteerName},",
+    "intro": "Merci de vouloir aider {coopName}. Confirmez votre adresse e-mail pour que la coopérative puisse vous contacter pour des tâches de bénévolat.",
+    "confirm": "Confirmer mon inscription",
+    "ignore": "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.",
+    "expires": "Ce lien expire dans 14 jours."
+  },
+  "volunteer-welcome": {
+    "subject": "Vous êtes inscrit comme bénévole chez {coopName}",
+    "title": "Vous êtes inscrit",
+    "dear": "Bonjour {volunteerName},",
+    "thanks": "Merci. {coopName} peut vous contacter pour les tâches de bénévolat auxquelles vous vous êtes inscrit.",
+    "withdrawHint": "Vous pouvez retirer ce consentement à tout moment.",
+    "withdraw": "Retirer mon inscription"
+  },
+  "volunteer-message": {
+    "title": "Message de {coopName}",
+    "dear": "Bonjour {volunteerName},",
+    "subject": "Objet",
+    "withdrawHint": "Vous pouvez retirer votre inscription de bénévole à tout moment.",
+    "withdraw": "Retirer mon inscription"
   }
 }

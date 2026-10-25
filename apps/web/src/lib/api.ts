@@ -3,6 +3,10 @@ import { hasPendingPostLoginRedirect, rememberPostLoginRedirect } from './post-l
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Keep in sync with apps/api/src/modules/auth/session-lifetime.ts.
+const SESSION_ROTATION_REQUEST_HEADER = 'X-Session-Rotation';
+const SESSION_ROTATION_RESPONSE_HEADER = 'x-session-token';
+
 interface FetchOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
 }
@@ -23,18 +27,27 @@ async function tryRefreshToken(): Promise<boolean> {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) return false;
 
-    try {
+    const postRefresh = async (token: string) => {
       const response = await fetch(`${API_URL}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
+        headers: {
+          'Content-Type': 'application/json',
+          [SESSION_ROTATION_REQUEST_HEADER]: '1',
+        },
+        body: JSON.stringify({ refreshToken: token }),
       });
-
       if (!response.ok) return false;
-
       const data = await response.json();
-      updateActiveSessionToken(data.accessToken);
+      updateActiveSessionToken(data.accessToken, data.refreshToken);
       return true;
+    };
+
+    try {
+      if (await postRefresh(refreshToken)) return true;
+      // Another tab may have stored the replacement after winning the rotation.
+      const latest = localStorage.getItem('refreshToken');
+      if (latest && latest !== refreshToken) return postRefresh(latest);
+      return false;
     } catch {
       return false;
     } finally {
@@ -86,6 +99,7 @@ function buildHeaders(
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    headers[SESSION_ROTATION_REQUEST_HEADER] = '1';
   }
 
   return headers;
@@ -130,6 +144,8 @@ async function fetchWithAuth(path: string, options: FetchOptions = {}): Promise<
     }
   }
 
+  rememberRotatedSession(response);
+
   // Surface subscription-required errors to the UI. Clone the response so its
   // body stays readable by the caller's own error handling below.
   if (!response.ok && response.status === 403 && typeof window !== 'undefined') {
@@ -162,7 +178,28 @@ export async function api<T = unknown>(
 
   const text = await response.text();
   if (!text) return undefined as T;
-  return JSON.parse(text) as T;
+  const data = JSON.parse(text) as T;
+  // Callers such as invitation acceptance only keep the new access token.
+  // Persist a rotated refresh token here so that response cannot strand the session.
+  const record = data as unknown as { accessToken?: unknown; refreshToken?: unknown };
+  if (
+    path === '/auth/refresh' &&
+    record &&
+    typeof record.accessToken === 'string' &&
+    typeof record.refreshToken === 'string'
+  ) {
+    updateActiveSessionToken(record.accessToken, record.refreshToken);
+  }
+  return data;
+}
+
+function rememberRotatedSession(response: Response) {
+  if (typeof window === 'undefined') return;
+  const refreshToken = response.headers.get(SESSION_ROTATION_RESPONSE_HEADER);
+  if (!refreshToken) return;
+  const accessToken = localStorage.getItem('accessToken');
+  if (!accessToken) return;
+  updateActiveSessionToken(accessToken, refreshToken);
 }
 
 export async function apiFetch(

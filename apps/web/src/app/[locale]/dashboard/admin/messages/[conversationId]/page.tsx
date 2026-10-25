@@ -50,6 +50,8 @@ interface ConversationDetail {
   type: 'BROADCAST' | 'DIRECT';
   status: 'DRAFT' | 'SCHEDULED' | 'SENT';
   scheduledAt: string | null;
+  audienceType?: 'ALL' | 'PROJECT' | 'SELECTED' | 'VOLUNTEERS';
+  audienceVolunteerIds?: string[];
   messages: Message[];
   participants: Participant[];
   _count: {
@@ -205,7 +207,10 @@ export default function AdminConversationDetailPage() {
   }
 
   const readCount = conversation.participants.filter((p) => p.readAt).length;
-  const totalParticipants = conversation._count.participants;
+  const volunteerAudience = conversation.audienceType === 'VOLUNTEERS';
+  const totalParticipants = volunteerAudience
+    ? (conversation.audienceVolunteerIds?.length ?? conversation._count.participants)
+    : conversation._count.participants;
   const scheduledDate = conversation.scheduledAt ? new Date(conversation.scheduledAt) : null;
   const scheduledDateLabel =
     scheduledDate && !Number.isNaN(scheduledDate.getTime())
@@ -268,8 +273,15 @@ export default function AdminConversationDetailPage() {
 
       {conversation.type === 'BROADCAST' && (
         <p className="text-sm text-muted-foreground">
-          {t('messages.participants')}: {totalParticipants} &middot; {t('messages.read')}:{' '}
-          {readCount}/{totalParticipants}
+          {volunteerAudience
+            ? t('messages.volunteersCount', { count: totalParticipants })
+            : `${t('messages.participants')}: ${totalParticipants}`}
+          {!volunteerAudience && (
+            <>
+              {' '}
+              &middot; {t('messages.read')}: {readCount}/{totalParticipants}
+            </>
+          )}
         </p>
       )}
 

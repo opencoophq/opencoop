@@ -87,6 +87,7 @@ export interface CoopPermissions {
   canViewPII: boolean;
   canViewReports: boolean;
   canViewShareholderRegister: boolean;
+  canViewVolunteers: boolean;
 }
 
 export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
@@ -103,6 +104,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: true,
     canViewReports: true,
     canViewShareholderRegister: true,
+    canViewVolunteers: false,
   },
   Viewer: {
     canManageShareholders: false,
@@ -117,6 +119,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: true,
     canViewReports: true,
     canViewShareholderRegister: true,
+    canViewVolunteers: false,
   },
   'Meeting Admin': {
     // Run AGMs without seeing or changing financial / shareholder data.
@@ -132,6 +135,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: true, // needs names/addresses for the attendance sheet
     canViewReports: false,
     canViewShareholderRegister: true, // needs the register to verify proxies
+    canViewVolunteers: false,
   },
   'GDPR Viewer': {
     canManageShareholders: false,
@@ -146,6 +150,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: false,
     canViewReports: true,
     canViewShareholderRegister: false,
+    canViewVolunteers: false,
   },
   'GDPR Admin': {
     canManageShareholders: false,
@@ -160,6 +165,51 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewPII: false,
     canViewReports: true,
     canViewShareholderRegister: false,
+    canViewVolunteers: false,
+  },
+};
+
+/** Bump when the volunteer consent copy in the four locales changes meaning. */
+export const VOLUNTEER_CONSENT_TEXT_VERSION = 'volunteer-consent-v1';
+
+/** Used when a coop has not configured its own interest tags. */
+export const DEFAULT_VOLUNTEER_INTERESTS = [
+  'flyers',
+  'stands',
+  'workshops',
+  'technical',
+  'admin',
+] as const;
+
+/**
+ * Tags the signup form can translate. `board` is intentionally absent from
+ * the defaults, so a coop only shows it after adding the tag itself.
+ */
+export const KNOWN_VOLUNTEER_INTERESTS = [...DEFAULT_VOLUNTEER_INTERESTS, 'board'] as const;
+
+export type DefaultVolunteerInterest = (typeof DEFAULT_VOLUNTEER_INTERESTS)[number];
+export type KnownVolunteerInterest = (typeof KNOWN_VOLUNTEER_INTERESTS)[number];
+
+/** Labels for known tags. A coop-specific tag has no entry and is shown as itself. */
+export const VOLUNTEER_INTEREST_LABELS: Record<
+  KnownVolunteerInterest,
+  { nl: string; fr: string; de: string; en: string }
+> = {
+  flyers: { nl: 'Flyers', fr: 'Flyers', de: 'Flyer', en: 'Flyers' },
+  stands: {
+    nl: 'Evenementen/standen',
+    fr: 'Événements et stands',
+    de: 'Veranstaltungen und Stände',
+    en: 'Events and stands',
+  },
+  workshops: { nl: 'Workshops', fr: 'Ateliers', de: 'Workshops', en: 'Workshops' },
+  technical: { nl: 'Technisch', fr: 'Technique', de: 'Technik', en: 'Technical' },
+  admin: { nl: 'Administratie', fr: 'Administration', de: 'Verwaltung', en: 'Administration' },
+  board: {
+    nl: 'Bestuur',
+    fr: "Conseil d'administration",
+    de: 'Vorstand',
+    en: 'Board of directors',
   },
 };
 

@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { cloudflareClientIp } from './common/http/client-ip.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
@@ -15,11 +16,13 @@ async function bootstrap() {
   app.useBodyParser('json', { limit: '5mb' });
   app.useBodyParser('urlencoded', { limit: '5mb', extended: true });
 
-  // Trust exactly 2 proxy hops (Cloudflare edge → Caddy → API container) so req.ip
-  // reflects the real client IP instead of the Docker internal proxy address. Using a
-  // specific count instead of `true` prevents X-Forwarded-For spoofing beyond the
-  // trusted chain.
+  // Trust exactly 2 proxy hops (Cloudflare edge → Caddy → API container). A
+  // count, not `true`, so a client cannot prepend extra X-Forwarded-For hops
+  // and have them treated as the visitor. Caddy records its TCP peer in that
+  // header, which is the Cloudflare edge — cloudflareClientIp then prefers
+  // CF-Connecting-IP, and only when that resolved address is a Cloudflare IP.
   app.set('trust proxy', 2);
+  app.use(cloudflareClientIp);
 
   // Security headers
   app.use(helmet());
@@ -28,6 +31,9 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3002',
     credentials: true,
+    // The browser hides this response header unless it is listed. It carries
+    // a replacement refresh token for clients that opted into rotation.
+    exposedHeaders: ['X-Session-Token'],
   });
 
   // Global validation pipe

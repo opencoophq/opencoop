@@ -34,6 +34,7 @@ const PERMISSION_KEYS = [
   'canViewPII',
   'canViewReports',
   'canViewShareholderRegister',
+  'canViewVolunteers',
 ] as const;
 
 type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -51,6 +52,7 @@ interface Permissions {
   canViewPII: boolean;
   canViewReports: boolean;
   canViewShareholderRegister: boolean;
+  canViewVolunteers: boolean;
 }
 
 interface Role {
@@ -74,6 +76,7 @@ const DEFAULT_PERMISSIONS: Permissions = {
   canViewPII: false,
   canViewReports: false,
   canViewShareholderRegister: false,
+  canViewVolunteers: false,
 };
 
 export default function RolesPage() {

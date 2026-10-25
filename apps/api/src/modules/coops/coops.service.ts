@@ -11,8 +11,14 @@ import { RegistrationsService } from '../registrations/registrations.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
 import { getAudienceProvider } from '../audience-sync/audience-provider.factory';
+import { enqueueReconcileAll } from '../audience-sync/audience-sync.queue';
 import { encryptField } from '../../common/crypto/field-encryption';
+import { encryptStoredSecret } from '../../common/crypto/stored-secret';
 import { PRIVACY_VERSION } from '@opencoop/shared';
+import { sanitizeInterestTags } from '../volunteers/volunteer-record';
+import { countryFromAddress } from '../email/coop-signup-notice';
+import { refusePublicSignupIfLapsed } from '../billing/signup-grace';
+import * as Sentry from '@sentry/nestjs';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -341,8 +347,7 @@ export class CoopsService {
   }
 
   async triggerAudienceSync(coopId: string) {
-    await this.audienceQueue.add('reconcile-all', { coopId, trigger: 'manual' });
-    return { queued: true };
+    return enqueueReconcileAll(this.audienceQueue, coopId, 'manual');
   }
 
   async testAudienceConnection(coopId: string) {
@@ -376,6 +381,8 @@ export class CoopsService {
         ecoPowerMinThresholdType: true,
         ecoPowerMinThreshold: true,
         chargeCardsEnabled: true,
+        volunteersEnabled: true,
+        volunteerInterests: true,
         chargeCardFee: true,
         chargeCardReplacementFee: true,
         chargeCardVatRate: true,
@@ -392,6 +399,7 @@ export class CoopsService {
         emailAudienceProvider: true,
         brevoMembersListId: true,
         brevoResignedListId: true,
+        brevoProspectsListId: true,
         brevoLastSyncAt: true,
         brevoLastSyncStatus: true,
         // Coop info
@@ -414,7 +422,10 @@ export class CoopsService {
     return coop;
   }
 
-  async create(createCoopDto: CreateCoopDto) {
+  async create(
+    createCoopDto: CreateCoopDto,
+    actor?: { id?: string; email?: string; ip?: string; userAgent?: string },
+  ) {
     // Check if slug is already in use
     const existingSlug = await this.prisma.coop.findUnique({
       where: { slug: createCoopDto.slug },
@@ -427,8 +438,8 @@ export class CoopsService {
     // Auto-generate a unique OGM prefix
     const ogmPrefix = await this.generateUniqueOgmPrefix();
 
-    return this.prisma.$transaction(async (tx) => {
-      const coop = await tx.coop.create({
+    const coop = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.coop.create({
         data: {
           ...createCoopDto,
           ogmPrefix,
@@ -438,15 +449,54 @@ export class CoopsService {
       // Create default channel for the new coop
       await tx.channel.create({
         data: {
-          coopId: coop.id,
+          coopId: created.id,
           slug: 'default',
-          name: coop.name,
+          name: created.name,
           isDefault: true,
         },
       });
 
-      return coop;
+      return created;
     });
+
+    await this.auditService.log({
+      coopId: coop.id,
+      entity: 'Coop',
+      entityId: coop.id,
+      action: 'CREATE',
+      changes: [
+        { field: 'name', oldValue: null, newValue: coop.name },
+        { field: 'slug', oldValue: null, newValue: coop.slug },
+        { field: 'plan', oldValue: null, newValue: coop.plan },
+        { field: 'source', oldValue: null, newValue: 'superadmin' },
+      ],
+      actorId: actor?.id,
+      ipAddress: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+
+    try {
+      this.emailService.notifyCoopCreated({
+        coopId: coop.id,
+        name: coop.name,
+        slug: coop.slug,
+        plan: coop.plan,
+        legalForm: coop.legalForm,
+        country: countryFromAddress(coop.coopAddress),
+        adminEmail: null,
+        language: null,
+        createdAt: coop.createdAt,
+        source: 'superadmin',
+        createdByEmail: actor?.email,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to send coop signup notification: ${(err as Error)?.message ?? err}`,
+      );
+      Sentry.captureException(err);
+    }
+
+    return coop;
   }
 
   async generateUniqueOgmPrefix(): Promise<string> {
@@ -479,10 +529,16 @@ export class CoopsService {
     }
 
     const data: Record<string, unknown> = { ...updateCoopDto };
+    if (Array.isArray(data.volunteerInterests)) {
+      data.volunteerInterests = sanitizeInterestTags(data.volunteerInterests as string[]);
+    }
 
-    // Don't overwrite secrets with empty strings
+    // Don't overwrite secrets with empty strings. Non-empty mail secrets are
+    // encrypted at rest; blank means "leave the stored value alone".
     if (!data.smtpPass) delete data.smtpPass;
+    else data.smtpPass = encryptStoredSecret(data.smtpPass as string);
     if (!data.graphClientSecret) delete data.graphClientSecret;
+    else data.graphClientSecret = encryptStoredSecret(data.graphClientSecret as string);
     if (!data.brevoApiKey) delete data.brevoApiKey;
     else data.brevoApiKey = encryptField(data.brevoApiKey as string);
 
@@ -519,9 +575,12 @@ export class CoopsService {
       });
     }
 
-    // Never return the Brevo API key (plaintext or ciphertext) in the HTTP response
-    if (updated && typeof updated === 'object' && 'brevoApiKey' in updated) {
-      delete (updated as Record<string, unknown>).brevoApiKey;
+    // Never return mail or audience credentials (plaintext or ciphertext).
+    if (updated && typeof updated === 'object') {
+      const row = updated as Record<string, unknown>;
+      delete row.brevoApiKey;
+      delete row.smtpPass;
+      delete row.graphClientSecret;
     }
 
     return updated;
@@ -821,6 +880,7 @@ export class CoopsService {
     }
 
     const coop = await this.findBySlug(slug);
+    await refusePublicSignupIfLapsed(this.prisma, coop);
 
     // Resolve referral code to referring shareholder
     let referralShareholderId: string | null = null;

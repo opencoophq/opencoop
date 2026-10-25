@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, Max, MaxLength, IsNumber, IsEnum, ValidateIf } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsIn, IsInt, Min, Max, MaxLength, IsNumber, IsEnum, ValidateIf, IsArray, ArrayMaxSize, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { EcoPowerThresholdType } from '@opencoop/database';
 
@@ -114,6 +114,23 @@ export class UpdateCoopDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsBoolean()
+  volunteersEnabled?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description: 'Interest tags for volunteers. Empty uses the built-in defaults.',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  volunteerInterests?: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
   chargeCardsEnabled?: boolean;
 
   @ApiProperty({ required: false, description: 'Charge card fee incl. VAT (first card)' })
@@ -145,15 +162,27 @@ export class UpdateCoopDto {
   @IsString()
   brevoApiKey?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: 'Numeric Brevo list id' })
   @IsOptional()
   @IsString()
-  brevoMembersListId?: string;
+  @Matches(/^\d+$/, { message: 'Brevo list id must contain only digits' })
+  brevoMembersListId?: string | null;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: 'Numeric Brevo list id' })
   @IsOptional()
   @IsString()
-  brevoResignedListId?: string;
+  @Matches(/^\d+$/, { message: 'Brevo list id must contain only digits' })
+  brevoResignedListId?: string | null;
+
+  @ApiProperty({
+    required: false,
+    description: 'Numeric Brevo prospects list id. Active members are removed from it.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  @Matches(/^\d+$/, { message: 'Brevo list id must contain only digits' })
+  brevoProspectsListId?: string | null;
 
   @ApiProperty({ required: false })
   @IsOptional()

@@ -11,6 +11,7 @@ import { McpDividendTools } from './tools/mcp-dividend.tools';
 import { McpCatalogTools } from './tools/mcp-catalog.tools';
 import { McpMeetingTools } from './tools/mcp-meeting.tools';
 import { McpReportTools } from './tools/mcp-report.tools';
+import { McpVolunteerTools } from './tools/mcp-volunteer.tools';
 import { ShareholdersModule } from '../shareholders/shareholders.module';
 import { RegistrationsModule } from '../registrations/registrations.module';
 import { AdminModule } from '../admin/admin.module';
@@ -27,6 +28,7 @@ import { BankImportModule } from '../bank-import/bank-import.module';
 import { DividendsModule } from '../dividends/dividends.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { MeetingsModule } from '../meetings/meetings.module';
+import { VolunteersModule } from '../volunteers/volunteers.module';
 import { McpToolkit } from './mcp-toolkit';
 
 @Module({
@@ -43,6 +45,7 @@ import { McpToolkit } from './mcp-toolkit';
         McpCatalogTools,
         McpMeetingTools,
         McpReportTools,
+        McpVolunteerTools,
       ],
       'opencoop',
     ),
@@ -61,6 +64,7 @@ import { McpToolkit } from './mcp-toolkit';
     DividendsModule,
     PaymentsModule,
     MeetingsModule,
+    VolunteersModule,
   ],
   providers: [
     McpAuthStore,
@@ -74,6 +78,7 @@ import { McpToolkit } from './mcp-toolkit';
     McpCatalogTools,
     McpMeetingTools,
     McpReportTools,
+    McpVolunteerTools,
     CoopPermissionsService,
     McpToolkit,
   ],

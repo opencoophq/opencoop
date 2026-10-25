@@ -11,6 +11,7 @@ import {
   TokenCredentialAuthenticationProvider,
 } from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
 import { buildCopy, getCopy } from './email-copy';
+import { decryptStoredSecret } from '../../common/crypto/stored-secret';
 
 /**
  * Escape HTML-significant characters so user/coop-controlled free text can be
@@ -218,7 +219,7 @@ export class EmailProcessor {
       port: coop.smtpPort || 587,
       secure: coop.smtpPort === 465,
       auth: coop.smtpUser && coop.smtpPass
-        ? { user: coop.smtpUser, pass: coop.smtpPass }
+        ? { user: coop.smtpUser, pass: decryptStoredSecret(coop.smtpPass) }
         : undefined,
     });
 
@@ -253,7 +254,7 @@ export class EmailProcessor {
     const credential = new ClientSecretCredential(
       coop.graphTenantId,
       coop.graphClientId,
-      coop.graphClientSecret,
+      decryptStoredSecret(coop.graphClientSecret),
     );
 
     const authProvider = new TokenCredentialAuthenticationProvider(credential, {
@@ -863,6 +864,72 @@ export class EmailProcessor {
     </p>
     <img src="${esc(pixelUrl)}" width="1" height="1" alt="" style="display:block" />
   `;
+      },
+      'volunteer-confirm': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const s = buildCopy('volunteer-confirm', lang, {
+          coopName: escapeHtml(cn),
+          volunteerName: escapeHtml(d.volunteerName),
+        });
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.intro}</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.confirmUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.confirm}
+            </a>
+          </p>
+          <p>${s.ignore}</p>
+          <p style="color:#666;font-size:12px;">${s.expires}</p>
+        `;
+      },
+      'volunteer-welcome': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const s = buildCopy('volunteer-welcome', lang, {
+          coopName: escapeHtml(cn),
+          volunteerName: escapeHtml(d.volunteerName),
+        });
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p>${s.thanks}</p>
+          <p>${s.withdrawHint}</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.withdrawUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.withdraw}
+            </a>
+          </p>
+        `;
+      },
+      'volunteer-message': (d, cn) => {
+        const lang = (d.language as string) || 'nl';
+        const s = buildCopy('volunteer-message', lang, {
+          coopName: escapeHtml(cn),
+          volunteerName: escapeHtml(d.volunteerName),
+        });
+        const body = (d.messageBody as string) || '';
+        const withdraw = d.withdrawUrl
+          ? `<p>${s.withdrawHint}</p>
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${d.withdrawUrl}"
+               style="background-color: #1e40af; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              ${s.withdraw}
+            </a>
+          </p>`
+          : '';
+        return `
+          <h1>${s.title}</h1>
+          <p>${s.dear}</p>
+          <p><strong>${s.subject}:</strong> ${escapeHtml(d.messageSubject)}</p>
+          <div style="margin: 16px 0; line-height: 1.5;">${body}</div>
+          ${withdraw}
+        `;
       },
     };
 

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -14,8 +15,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { AppleStrategy } from './strategies/apple.strategy';
+import { resolveAppleLogin } from './strategies/apple-login.config';
 import { WebAuthnService } from './webauthn.service';
 import { RedisService } from './redis.service';
+import { SessionRotationInterceptor } from './session-rotation.interceptor';
 import { UsersModule } from '../users/users.module';
 import { EmailModule } from '../email/email.module';
 import { CoopsModule } from '../coops/coops.module';
@@ -26,7 +29,8 @@ const conditionalProviders: any[] = [];
 if (process.env.GOOGLE_CLIENT_ID) {
   conditionalProviders.push(GoogleStrategy);
 }
-if (process.env.APPLE_CLIENT_ID) {
+// Apple also needs a readable private key; otherwise it stays off (loudly) instead of crashing the API.
+if (resolveAppleLogin()) {
   conditionalProviders.push(AppleStrategy);
 }
 
@@ -62,6 +66,7 @@ if (process.env.APPLE_CLIENT_ID) {
     LocalStrategy,
     WebAuthnService,
     RedisService,
+    { provide: APP_INTERCEPTOR, useClass: SessionRotationInterceptor },
     ...conditionalProviders,
   ],
   exports: [AuthService, EmancipationService],

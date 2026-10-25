@@ -1,0 +1,59 @@
+version: 2
+updates:
+  # Docker Compose v2/v3 is a supported Dependabot ecosystem. It reads
+  # docker-compose.yml, docker-compose.dev.yml, and docker-compose.test.yml
+  # in "/", and deploy/docker-compose.yml in "/deploy".
+  - package-ecosystem: docker-compose
+    directories:
+      - "/"
+      - "/deploy"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      infra-images:
+        patterns:
+          - "postgres"
+          - "redis"
+          - "nginx"
+          - "library/postgres"
+          - "library/redis"
+          - "library/nginx"
+        group-by: dependency-name
+    ignore:
+      # Major Postgres needs a dump and a restore into a new volume.
+      # Major Redis is a deliberate upgrade, not a weekly bump.
+      - dependency-name: "postgres"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "library/postgres"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "redis"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "library/redis"
+        update-types:
+          - "version-update:semver-major"
+      # App images are selected by TAG / DOCS_TAG in the deploy workflow.
+      - dependency-name: "ghcr.io/*"
+      - dependency-name: "*opencoop-api*"
+      - dependency-name: "*opencoop-web*"
+      - dependency-name: "*opencoop-migrate*"
+      - dependency-name: "*opencoop-docs*"
+
+  # Dockerfiles: apps/{api,web,docs}/Dockerfile and deploy/migrate.Dockerfile.
+  - package-ecosystem: docker
+    directories:
+      - "/apps/api"
+      - "/apps/web"
+      - "/apps/docs"
+      - "/deploy"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      base-images:
+        patterns:
+          - "*"
+        group-by: dependency-name

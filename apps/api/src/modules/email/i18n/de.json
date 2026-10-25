@@ -127,5 +127,29 @@
     "cardNumber": "Kartennummer",
     "dashboard": "Meine Ladekarten ansehen",
     "thanks": "Mit freundlichen Grüßen, {coopName}"
+  },
+  "volunteer-confirm": {
+    "subject": "Bestätigen Sie Ihre Freiwilligenregistrierung bei {coopName}",
+    "title": "Bestätigen Sie Ihre Registrierung",
+    "dear": "Guten Tag {volunteerName},",
+    "intro": "Danke, dass Sie {coopName} helfen möchten. Bestätigen Sie Ihre E-Mail-Adresse, damit die Genossenschaft Sie zu Freiwilligenaufgaben kontaktieren darf.",
+    "confirm": "Registrierung bestätigen",
+    "ignore": "Wenn Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren.",
+    "expires": "Dieser Link läuft nach 14 Tagen ab."
+  },
+  "volunteer-welcome": {
+    "subject": "Sie sind als Freiwillige/r bei {coopName} registriert",
+    "title": "Sie sind registriert",
+    "dear": "Guten Tag {volunteerName},",
+    "thanks": "Danke. {coopName} darf Sie zu den Freiwilligenaufgaben kontaktieren, für die Sie sich gemeldet haben.",
+    "withdrawHint": "Sie können diese Einwilligung jederzeit widerrufen.",
+    "withdraw": "Registrierung zurückziehen"
+  },
+  "volunteer-message": {
+    "title": "Nachricht von {coopName}",
+    "dear": "Guten Tag {volunteerName},",
+    "subject": "Betreff",
+    "withdrawHint": "Sie können Ihre Freiwilligenregistrierung jederzeit zurückziehen.",
+    "withdraw": "Registrierung zurückziehen"
   }
 }

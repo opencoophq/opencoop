@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test remote deploy script
+        run: bash deploy/remote-deploy.test.sh
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -33,12 +35,18 @@ jobs:
         run: pnpm db:generate
       - name: Build workspace dependencies (shared, pdf-templates)
         run: pnpm --filter "@opencoop/api^..." build
+      - name: Typecheck (api + web)
+        run: |
+          pnpm --filter @opencoop/api exec tsc --noEmit -p tsconfig.json
+          pnpm --filter @opencoop/web exec tsc --noEmit
       - name: Lint (api + web)
         run: |
           pnpm --filter @opencoop/api lint
           pnpm --filter @opencoop/web exec next lint
       - name: Unit tests (api)
         run: pnpm --filter @opencoop/api test
+      - name: Unit tests (web)
+        run: pnpm --filter @opencoop/web test
       - name: Dependency audit (report only)
         run: pnpm audit --prod || true
 
@@ -46,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16.15-alpine
         env:
           POSTGRES_USER: opencoop
           POSTGRES_PASSWORD: opencoop
@@ -59,7 +67,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
       redis:
-        image: redis:7-alpine
+        image: redis:7.4.11-alpine
         ports:
           - 6380:6379
         options: >-
@@ -185,32 +193,28 @@ jobs:
     runs-on: ubuntu-latest
     environment: acc
     steps:
+      - name: Check out deploy script
+        uses: actions/checkout@v4
+
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
+        uses: tailscale/github-action@v3
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
       - name: Deploy to acc
-        uses: appleboy/ssh-action@v1
+        uses: ./.github/actions/remote-deploy
         with:
           host: fsn1
           username: wouter
-          key: ${{ secrets.FSN1_SSH_KEY }}
-          script: |
-            cd ~/opencoop/acc
-            sed -i 's/^TAG=.*/TAG=${{ github.sha }}/' .env
-            docker compose pull
-            docker compose up -d
-            echo "Waiting for API to report healthy..."
-            ok=false
-            for i in $(seq 1 30); do
-              if curl -fsS https://acc.opencoop.be/api/health >/dev/null 2>&1; then ok=true; break; fi
-              sleep 2
-            done
-            if [ "$ok" != true ]; then echo "::error::acc API did not become healthy after deploy"; exit 1; fi
-            echo "acc API healthy"
+          ssh_key: ${{ secrets.FSN1_SSH_KEY }}
+          deploy_dir: acc
+          env_key: TAG
+          pull_services: migrate api web
+          up_services: migrate api web
+          verify: api:running web:running migrate:exited0
+          health_url: https://acc.opencoop.be/api/health
 
   deploy-prod:
     needs: [build, e2e, test]
@@ -218,29 +222,25 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     steps:
+      - name: Check out deploy script
+        uses: actions/checkout@v4
+
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
+        uses: tailscale/github-action@v3
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
       - name: Deploy to prod
-        uses: appleboy/ssh-action@v1
+        uses: ./.github/actions/remote-deploy
         with:
           host: fsn1
           username: wouter
-          key: ${{ secrets.FSN1_SSH_KEY }}
-          script: |
-            cd ~/opencoop/prod
-            sed -i 's/^TAG=.*/TAG=${{ github.sha }}/' .env
-            docker compose pull
-            docker compose up -d
-            echo "Waiting for API to report healthy..."
-            ok=false
-            for i in $(seq 1 30); do
-              if curl -fsS https://opencoop.be/api/health >/dev/null 2>&1; then ok=true; break; fi
-              sleep 2
-            done
-            if [ "$ok" != true ]; then echo "::error::prod API did not become healthy after deploy"; exit 1; fi
-            echo "prod API healthy"
+          ssh_key: ${{ secrets.FSN1_SSH_KEY }}
+          deploy_dir: prod
+          env_key: TAG
+          pull_services: migrate api web
+          up_services: migrate api web
+          verify: api:running web:running migrate:exited0
+          health_url: https://opencoop.be/api/health

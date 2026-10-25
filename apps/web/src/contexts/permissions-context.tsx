@@ -16,6 +16,7 @@ interface CoopPermissions {
   canViewPII: boolean;
   canViewReports: boolean;
   canViewShareholderRegister: boolean;
+  canViewVolunteers: boolean;
 }
 
 type CoopPermissionKey = keyof CoopPermissions;
@@ -55,6 +56,7 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
           canViewPII: true,
           canViewReports: true,
           canViewShareholderRegister: true,
+          canViewVolunteers: true,
         } as CoopPermissions;
       }
 
@@ -76,6 +78,7 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
           canViewPII: true,
           canViewReports: true,
           canViewShareholderRegister: true,
+          canViewVolunteers: true,
         } as CoopPermissions;
       }
 

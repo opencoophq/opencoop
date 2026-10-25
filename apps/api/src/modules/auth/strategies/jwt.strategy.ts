@@ -13,7 +13,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; email: string; role: string; type?: string; coopIds?: string[]; coopPermissions?: Record<string, any> }) {
+  async validate(payload: {
+    sub: string;
+    email: string;
+    role: string;
+    type?: string;
+    coopIds?: string[];
+    coopPermissions?: Record<string, any>;
+    sid?: string;
+    sst?: number;
+  }) {
     // Reject MFA-pending tokens on normal routes
     if (payload.type === 'mfa-pending') {
       throw new UnauthorizedException('MFA verification required');
@@ -25,6 +34,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: payload.role,
       coopIds: payload.coopIds,
       coopPermissions: payload.coopPermissions,
+      // Present only on access tokens issued with a server-side session.
+      // Older access tokens omit both and keep working until they expire.
+      ...(payload.sid ? { sid: payload.sid } : {}),
+      ...(typeof payload.sst === 'number' ? { sst: payload.sst } : {}),
     };
   }
 }

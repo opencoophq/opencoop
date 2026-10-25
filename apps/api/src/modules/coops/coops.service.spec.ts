@@ -8,9 +8,13 @@ jest.mock('../../common/crypto/field-encryption', () => ({
   encryptField: jest.fn((v: string) => `encrypted:${v}`),
 }));
 
+jest.mock('@sentry/nestjs', () => ({ captureException: jest.fn() }));
+
 process.env.FIELD_ENCRYPTION_KEY = 'a'.repeat(64);
 
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { LAPSED_SIGNUP_GRACE_MS, PublicSignupClosedException } from '../billing/signup-grace';
+import * as Sentry from '@sentry/nestjs';
 import { Test } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
 import { CoopsService } from './coops.service';
@@ -37,6 +41,7 @@ describe('CoopsService.publicRegister — orphan-shareholder preflight', () => {
   beforeEach(async () => {
     prisma = {
       coop: { findUnique: jest.fn().mockResolvedValue(baseCoop) },
+      subscription: { findUnique: jest.fn().mockResolvedValue(null) },
       shareholder: {
         findFirst: jest.fn(),
         update: jest.fn().mockResolvedValue({}),
@@ -125,11 +130,32 @@ describe('CoopsService.publicRegister — orphan-shareholder preflight', () => {
     expect(prisma.shareholder.findFirst).not.toHaveBeenCalled();
     expect(shareholdersService.create).toHaveBeenCalledTimes(1);
   });
+
+  it('refuses public signup once the 14-day lapse grace has ended', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ ...baseCoop, plan: 'ESSENTIALS' });
+    prisma.subscription.findUnique.mockResolvedValue({
+      status: 'CANCELED',
+      lapsedAt: new Date(Date.now() - LAPSED_SIGNUP_GRACE_MS),
+    });
+
+    await expect(service.publicRegister('bronsgroen', dto as any)).rejects.toBeInstanceOf(PublicSignupClosedException);
+    expect(shareholdersService.create).not.toHaveBeenCalled();
+    expect(registrationsService.createBuy).not.toHaveBeenCalled();
+  });
+
+  it('still accepts public signup during the lapse grace window', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ ...baseCoop, plan: 'ESSENTIALS' });
+    prisma.subscription.findUnique.mockResolvedValue({ status: 'PAST_DUE', lapsedAt: new Date() });
+    prisma.shareholder.findFirst.mockResolvedValue(null);
+    shareholdersService.create.mockResolvedValue({ id: 'sh-new' });
+
+    await expect(service.publicRegister('bronsgroen', dto as any)).resolves.toMatchObject({ status: 'registered' });
+  });
 });
 
 describe('CoopsService — Brevo audience-sync config', () => {
   let service: CoopsService;
-  let audienceQueue: { add: jest.Mock };
+  let audienceQueue: { add: jest.Mock; getJob: jest.Mock };
   let prisma: {
     coop: {
       findUnique: jest.Mock;
@@ -149,7 +175,7 @@ describe('CoopsService — Brevo audience-sync config', () => {
         create: jest.fn().mockResolvedValue({}),
       },
     };
-    audienceQueue = { add: jest.fn() };
+    audienceQueue = { add: jest.fn(), getJob: jest.fn().mockResolvedValue(null) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -201,6 +227,7 @@ describe('CoopsService — Brevo audience-sync config', () => {
     expect(select.brevoApiKey).toBeFalsy();
     expect(select.brevoMembersListId).toBe(true);
     expect(select.brevoResignedListId).toBe(true);
+    expect(select.brevoProspectsListId).toBe(true);
     expect(select.emailAudienceProvider).toBe(true);
     expect(select.brevoLastSyncAt).toBe(true);
     expect(select.brevoLastSyncStatus).toBe(true);
@@ -217,6 +244,28 @@ describe('CoopsService — Brevo audience-sync config', () => {
     const r = await service.update('c1', { name: 'Test Coop' } as any);
 
     expect(r).not.toHaveProperty('brevoApiKey');
+    expect(r).toMatchObject({ name: 'Test Coop' });
+  });
+
+  it('encrypts smtp and Graph secrets and does not return them', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ id: 'c1', smtpPass: null, graphClientSecret: null });
+    prisma.coop.update.mockResolvedValue({
+      id: 'c1',
+      smtpPass: 'enc1:encrypted:smtp-secret',
+      graphClientSecret: 'enc1:encrypted:graph-secret',
+      name: 'Test Coop',
+    });
+
+    const r = await service.update('c1', {
+      smtpPass: 'smtp-secret',
+      graphClientSecret: 'graph-secret',
+    } as any);
+
+    const data = prisma.coop.update.mock.calls[0][0].data;
+    expect(data.smtpPass).toBe('enc1:encrypted:smtp-secret');
+    expect(data.graphClientSecret).toBe('enc1:encrypted:graph-secret');
+    expect(r).not.toHaveProperty('smtpPass');
+    expect(r).not.toHaveProperty('graphClientSecret');
     expect(r).toMatchObject({ name: 'Test Coop' });
   });
 
@@ -247,8 +296,24 @@ describe('CoopsService — Brevo audience-sync config', () => {
   });
 
   it('triggerAudienceSync enqueues a manual reconcile-all', async () => {
-    await service.triggerAudienceSync('c1');
-    expect(audienceQueue.add).toHaveBeenCalledWith('reconcile-all', { coopId: 'c1', trigger: 'manual' });
+    await expect(service.triggerAudienceSync('c1')).resolves.toEqual({
+      queued: true,
+      skipped: false,
+    });
+    expect(audienceQueue.add).toHaveBeenCalledWith(
+      'reconcile-all',
+      { coopId: 'c1', trigger: 'manual' },
+      { jobId: 'reconcile-all:c1', removeOnComplete: true, removeOnFail: true },
+    );
+  });
+
+  it('triggerAudienceSync skips when that coop already has an active reconcile-all', async () => {
+    audienceQueue.getJob.mockResolvedValue({ getState: jest.fn().mockResolvedValue('waiting') });
+    await expect(service.triggerAudienceSync('c1')).resolves.toEqual({
+      queued: false,
+      skipped: true,
+    });
+    expect(audienceQueue.add).not.toHaveBeenCalled();
   });
 
   it('testAudienceConnection returns the provider verify result', async () => {
@@ -280,5 +345,106 @@ describe('CoopsService — Brevo audience-sync config', () => {
 
     await expect(service.listAudienceLists('c1')).rejects.toThrow(NotFoundException);
     expect(factory.getAudienceProvider).not.toHaveBeenCalled();
+  });
+});
+
+describe('CoopsService.create', () => {
+  const createdAt = new Date('2026-08-13T12:00:00.000Z');
+
+  function build() {
+    const coop = {
+      id: 'coop-9',
+      name: 'Nieuwe Coop',
+      slug: 'nieuwe-coop',
+      plan: 'FREE',
+      legalForm: 'CV',
+      coopAddress: { country: 'BE' },
+      createdAt,
+    };
+    const tx = {
+      coop: { create: jest.fn().mockResolvedValue(coop) },
+      channel: { create: jest.fn().mockResolvedValue({ id: 'ch-1' }) },
+    };
+    const prisma = {
+      coop: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([{ ogmPrefix: '007' }]),
+      },
+      $transaction: jest.fn(async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)),
+    };
+    const auditService = { log: jest.fn().mockResolvedValue(undefined) };
+    const emailService = { notifyCoopCreated: jest.fn() };
+    const service = new CoopsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      auditService as never,
+      emailService as never,
+      { add: jest.fn() } as never,
+    );
+    return { service, prisma, auditService, emailService, tx };
+  }
+
+  it('audits the superadmin as actor and sends the internal notice', async () => {
+    const { service, auditService, emailService, tx } = build();
+
+    const created = await service.create(
+      { name: 'Nieuwe Coop', slug: 'nieuwe-coop' },
+      { id: 'admin-1', email: 'wouter@armlab.example', ip: '203.0.113.10', userAgent: 'curl' },
+    );
+
+    expect(created.id).toBe('coop-9');
+    expect(tx.channel.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ coopId: 'coop-9', isDefault: true }) }),
+    );
+    expect(auditService.log).toHaveBeenCalledWith({
+      coopId: 'coop-9',
+      entity: 'Coop',
+      entityId: 'coop-9',
+      action: 'CREATE',
+      changes: [
+        { field: 'name', oldValue: null, newValue: 'Nieuwe Coop' },
+        { field: 'slug', oldValue: null, newValue: 'nieuwe-coop' },
+        { field: 'plan', oldValue: null, newValue: 'FREE' },
+        { field: 'source', oldValue: null, newValue: 'superadmin' },
+      ],
+      actorId: 'admin-1',
+      ipAddress: '203.0.113.10',
+      userAgent: 'curl',
+    });
+    expect(emailService.notifyCoopCreated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        coopId: 'coop-9',
+        source: 'superadmin',
+        legalForm: 'CV',
+        country: 'BE',
+        adminEmail: null,
+        createdByEmail: 'wouter@armlab.example',
+        createdAt,
+      }),
+    );
+  });
+
+  it('still returns the coop when the notice throws', async () => {
+    const { service, emailService } = build();
+    emailService.notifyCoopCreated.mockImplementation(() => {
+      throw new Error('notify exploded');
+    });
+
+    await expect(
+      service.create({ name: 'Nieuwe Coop', slug: 'nieuwe-coop' }, { id: 'admin-1' }),
+    ).resolves.toMatchObject({ id: 'coop-9' });
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('does not audit or notify when the slug is taken', async () => {
+    const { service, prisma, auditService, emailService } = build();
+    prisma.coop.findUnique.mockResolvedValue({ id: 'existing' });
+
+    await expect(service.create({ name: 'Nieuwe Coop', slug: 'nieuwe-coop' })).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(auditService.log).not.toHaveBeenCalled();
+    expect(emailService.notifyCoopCreated).not.toHaveBeenCalled();
   });
 });

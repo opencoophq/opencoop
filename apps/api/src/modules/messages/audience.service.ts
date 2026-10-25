@@ -1,11 +1,22 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { volunteerWhere, VolunteerFilter } from '../volunteers/volunteer-record';
+
+export interface VolunteerRecipient {
+  volunteerId: string;
+  name: string;
+  email: string;
+  language: string;
+  shareholderId: string | null;
+  withdrawToken: string | null;
+}
 
 export interface Audience {
-  type: 'ALL' | 'PROJECT' | 'SELECTED' | 'DIRECT';
+  type: 'ALL' | 'PROJECT' | 'SELECTED' | 'DIRECT' | 'VOLUNTEERS';
   projectId?: string | null;
   shareholderIds?: string[];
   shareholderId?: string;
+  volunteerFilter?: VolunteerFilter;
 }
 
 /**
@@ -66,6 +77,10 @@ export class AudienceService {
         });
         return { shareholderIds: row ? [row.id] : [] };
       }
+      case 'VOLUNTEERS': {
+        const delivery = await this.resolveVolunteerDelivery(coopId, audience.volunteerFilter);
+        return { shareholderIds: delivery.shareholderIds };
+      }
       default:
         throw new BadRequestException('Unknown audience type');
     }
@@ -108,8 +123,53 @@ export class AudienceService {
         return this.prisma.shareholder.count({
           where: { id: audience.shareholderId, coopId },
         });
+      case 'VOLUNTEERS':
+        return this.prisma.volunteer.count({
+          where: volunteerWhere(coopId, audience.volunteerFilter ?? {}, 'ACTIVE'),
+        });
       default:
         throw new BadRequestException('Unknown audience type');
     }
+  }
+
+  /**
+   * Active volunteers matching the filter. Inbox participants are only the
+   * ones linked to an ACTIVE shareholder. The select never loads shareholdings.
+   */
+  async resolveVolunteerDelivery(
+    coopId: string,
+    filter: VolunteerFilter = {},
+  ): Promise<{ shareholderIds: string[]; recipients: VolunteerRecipient[] }> {
+    const rows = await this.prisma.volunteer.findMany({
+      where: volunteerWhere(coopId, filter, 'ACTIVE'),
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        locale: true,
+        withdrawToken: true,
+        shareholder: {
+          select: {
+            id: true,
+            status: true,
+            user: { select: { preferredLanguage: true } },
+          },
+        },
+      },
+    });
+    const recipients: VolunteerRecipient[] = rows.map((row) => ({
+      volunteerId: row.id,
+      name: row.name,
+      email: row.email,
+      language: row.shareholder?.user?.preferredLanguage || row.locale || 'nl',
+      shareholderId: row.shareholder?.status === 'ACTIVE' ? row.shareholder.id : null,
+      withdrawToken: row.withdrawToken,
+    }));
+    return {
+      shareholderIds: recipients
+        .map((recipient) => recipient.shareholderId)
+        .filter((id): id is string => Boolean(id)),
+      recipients,
+    };
   }
 }
