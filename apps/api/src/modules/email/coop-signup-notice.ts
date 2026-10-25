@@ -20,7 +20,7 @@ export interface CoopCreatedNotice {
  * Recipient for the internal "a coop was created" mail.
  * Unset or blank keeps the default. `off` disables sending so acceptance can
  * stay quiet without a code change. The subject always carries the environment,
- * so acceptance and production can share one inbox and still be filtered.
+ * so acc and prod can share one inbox and still be filtered.
  */
 export function coopSignupNotifyRecipient(
   raw: string | undefined,
