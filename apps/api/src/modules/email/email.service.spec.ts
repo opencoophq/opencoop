@@ -108,7 +108,7 @@ describe('EmailService', () => {
       expect(send).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'info@opencoop.be',
-          subject: '[acceptance] Nieuwe coöperatie: Zukunftdorf Billberge',
+          subject: '[acc] Nieuwe coöperatie: Zukunftdorf Billberge',
           text: expect.stringContaining('Beheerder: ada@zukunftdorf.example'),
         }),
       );
