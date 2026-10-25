@@ -543,7 +543,8 @@
     "claimDescription": "Enter the code from your gift certificate to claim your shares.",
     "yourDetails": "Your details",
     "acceptPrivacyPrefix": "I accept the",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "Privacy Policy",
+    "signupClosed": "This cooperative is not accepting new registrations right now. Please contact the cooperative if you think this is a mistake."
   },
   "home": {
     "title": "OpenCoop",

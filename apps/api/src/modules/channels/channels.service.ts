@@ -14,6 +14,7 @@ import { PublicRegisterDto } from '../coops/dto/public-register.dto';
 import { ClaimGiftDto } from './dto/claim-gift.dto';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
+import { refusePublicSignupIfLapsed } from '../billing/signup-grace';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -390,6 +391,8 @@ export class ChannelsService {
     if (!coop) {
       throw new NotFoundException('Cooperative not found');
     }
+
+    await refusePublicSignupIfLapsed(this.prisma, coop);
 
     // 2. Find channel by coopId + channelSlug (verify active)
     const channel = await this.prisma.channel.findFirst({

@@ -543,7 +543,8 @@
     "claimDescription": "Voer de code van je cadeaubon in om je aandelen te claimen.",
     "yourDetails": "Jouw gegevens",
     "acceptPrivacyPrefix": "Ik accepteer het",
-    "privacyPolicy": "Privacybeleid"
+    "privacyPolicy": "Privacybeleid",
+    "signupClosed": "Deze coöperatie neemt momenteel geen nieuwe inschrijvingen aan. Neem contact op met de coöperatie als dit niet klopt."
   },
   "home": {
     "title": "OpenCoop",

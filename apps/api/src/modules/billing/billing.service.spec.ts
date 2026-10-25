@@ -53,28 +53,62 @@ describe('BillingService Stripe subscription state', () => {
     });
   });
 
-  it('marks the subscription past due when an invoice payment fails', async () => {
+  it('marks the subscription past due and stamps the lapse once', async () => {
+    prisma.subscription.findUnique.mockResolvedValue({ id: 'row-1', lapsedAt: null });
+
     await service.handleInvoicePaymentFailed({
       parent: { subscription_details: { subscription: 'sub_1' } },
     } as any);
 
-    expect(prisma.subscription.updateMany).toHaveBeenCalledWith({
-      where: { stripeSubscriptionId: 'sub_1' },
-      data: { status: 'PAST_DUE' },
+    expect(prisma.subscription.update).toHaveBeenCalledWith({
+      where: { id: 'row-1' },
+      data: { status: 'PAST_DUE', lapsedAt: expect.any(Date) },
+    });
+  });
+
+  it('does not restart the lapse clock when a later failure arrives', async () => {
+    const lapsedAt = new Date('2026-02-01T00:00:00.000Z');
+    prisma.subscription.findUnique.mockResolvedValue({ id: 'row-1', lapsedAt });
+
+    await service.handleInvoicePaymentFailed({
+      parent: { subscription_details: { subscription: 'sub_1' } },
+    } as any);
+
+    expect(prisma.subscription.update).toHaveBeenCalledWith({
+      where: { id: 'row-1' },
+      data: { status: 'PAST_DUE', lapsedAt },
     });
   });
 
   it('does nothing when a failed invoice has no subscription', async () => {
     await service.handleInvoicePaymentFailed({ parent: null } as any);
-    expect(prisma.subscription.updateMany).not.toHaveBeenCalled();
+    expect(prisma.subscription.update).not.toHaveBeenCalled();
+    expect(prisma.subscription.findUnique).not.toHaveBeenCalled();
   });
 
-  it('marks the subscription canceled when Stripe deletes it', async () => {
+  it('marks the subscription canceled when Stripe deletes it and keeps an existing lapse', async () => {
+    const lapsedAt = new Date('2026-02-01T00:00:00.000Z');
+    prisma.subscription.findUnique.mockResolvedValue({ id: 'row-1', lapsedAt });
+
     await service.handleSubscriptionDeleted({ id: 'sub_1' } as any);
 
-    expect(prisma.subscription.updateMany).toHaveBeenCalledWith({
-      where: { stripeSubscriptionId: 'sub_1' },
-      data: expect.objectContaining({ status: 'CANCELED' }),
+    expect(prisma.subscription.update).toHaveBeenCalledWith({
+      where: { id: 'row-1' },
+      data: expect.objectContaining({ status: 'CANCELED', lapsedAt }),
+    });
+  });
+
+  it('clears the lapse clock when the subscription is active again', async () => {
+    prisma.subscription.findUnique.mockResolvedValue({
+      id: 'row-1',
+      lapsedAt: new Date('2026-02-01T00:00:00.000Z'),
+    });
+
+    await service.handleSubscriptionUpdated(subscriptionEvent('active') as any);
+
+    expect(prisma.subscription.update).toHaveBeenCalledWith({
+      where: { id: 'row-1' },
+      data: expect.objectContaining({ status: 'ACTIVE', lapsedAt: null }),
     });
   });
 
