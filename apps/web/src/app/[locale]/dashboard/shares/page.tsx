@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { api, apiFetch } from '@/lib/api';
+import { downloadGiftCertificate } from '@/lib/gift-certificate';
 import { EpcQrCode } from '@/components/epc-qr-code';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatIban } from '@opencoop/shared';
@@ -589,23 +590,11 @@ export default function SharesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={async () => {
-                            const res = await fetch(
-                              `${process.env.NEXT_PUBLIC_API_URL || ''}/shareholders/${shareholder.id}/gift-certificate/${reg.id}`,
-                              {
-                                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                              },
-                            );
-                            if (res.ok) {
-                              const blob = await res.blob();
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `gift-certificate-${reg.giftCode}.pdf`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                            }
-                          }}
+                          onClick={() =>
+                            downloadGiftCertificate(shareholder.id, reg.id, reg.giftCode!).catch(() => {
+                              // ignore — download may fail if the file is not ready
+                            })
+                          }
                         >
                           <Download className="h-4 w-4 mr-1" />
                           {t('gift.downloadCertificate')}
