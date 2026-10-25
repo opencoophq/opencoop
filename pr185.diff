@@ -1,0 +1,1475 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 60dcf9db..971eed0c 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -15,6 +15,24 @@ calendar day — the week tag is an internal build id.
+ Releases up to and including `v0.9.0` predate this scheme and keep their
+ original SemVer-style tags.
+ 
++## [Unreleased]
++
++### Changed
++- **Shareholder status is now derived from paid shares.** A shareholder is ACTIVE when
++  their paid BUY registrations minus completed SELL registrations leave more than zero
++  shares, INACTIVE when they once held shares and now hold none, and PENDING when they
++  never held paid shares. Admins can no longer set the status by hand: the detail page
++  shows it as a read-only badge, the update endpoint ignores it, and the CSV import no
++  longer accepts a status column. New shareholders start as PENDING until their first
++  payment lands. The status is recomputed after every payment, bank match, completion,
++  and transfer, and a nightly job at 02:30 (Europe/Brussels) reconciles every row as a
++  safety net before the Brevo audience sync runs.
++- **Backfill.** A data migration recomputes the status of every existing shareholder on
++  deploy. On production this moves 28 Bronsgroen records from ACTIVE to PENDING (no paid
++  shares), 6 from ACTIVE to INACTIVE (sold everything in 2026), and 1 from INACTIVE to
++  ACTIVE (a sale still awaiting payout). The dashboard's "active shareholders" tile and
++  the growth chart now agree.
++
+ ## [2026.31.0] - 2026-08-01
+ 
+ ### Fixed
+diff --git a/apps/api/src/app.module.ts b/apps/api/src/app.module.ts
+index 36ec42e7..63e2a374 100644
+--- a/apps/api/src/app.module.ts
++++ b/apps/api/src/app.module.ts
+@@ -33,6 +33,7 @@ import { CoopAdminsModule } from './modules/coop-admins/coop-admins.module';
+ import { AdminNotificationsModule } from './modules/admin-notifications/admin-notifications.module';
+ import { PontoModule } from './modules/ponto/ponto.module';
+ import { AudienceSyncModule } from './modules/audience-sync/audience-sync.module';
++import { ShareholderStatusModule } from './modules/shareholder-status/shareholder-status.module';
+ import { ExternalApiModule } from './modules/external-api/external-api.module';
+ import { ChangelogModule } from './modules/changelog/changelog.module';
+ import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+@@ -76,6 +77,7 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
+     BankImportModule,
+     PontoModule,
+     AudienceSyncModule,
++    ShareholderStatusModule,
+     DividendsModule,
+     MeetingsModule,
+     DocumentsModule,
+diff --git a/apps/api/src/modules/audience-sync/audience-sync.service.spec.ts b/apps/api/src/modules/audience-sync/audience-sync.service.spec.ts
+index 51d73558..87775535 100644
+--- a/apps/api/src/modules/audience-sync/audience-sync.service.spec.ts
++++ b/apps/api/src/modules/audience-sync/audience-sync.service.spec.ts
+@@ -63,6 +63,26 @@ describe('AudienceSyncService', () => {
+     });
+   });
+ 
++  it('reconcileOne moves a PENDING member off the members list, no create', async () => {
++    prisma.coop.findUnique.mockResolvedValue(COOP);
++    prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ status: 'PENDING' }));
++    const s = await service.reconcileOne('c1', 'sh1');
++    expect(s.moved).toBe(1);
++    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
++      addListIds: [], removeListIds: [3], createIfMissing: false,
++    }));
++  });
++
++  it('reconcileOne skips a PENDING shareholder without an email', async () => {
++    prisma.coop.findUnique.mockResolvedValue(COOP);
++    prisma.shareholder.findFirst.mockResolvedValue(
++      makeShareholder({ status: 'PENDING', email: null, user: null }),
++    );
++    const s = await service.reconcileOne('c1', 'sh1');
++    expect(s.skipped).toBe(1);
++    expect(upsert).not.toHaveBeenCalled();
++  });
++
+   it('reconcileOne skips when no email can be resolved', async () => {
+     prisma.coop.findUnique.mockResolvedValue(COOP);
+     prisma.shareholder.findFirst.mockResolvedValue(makeShareholder({ email: null, user: null }));
+@@ -115,6 +135,15 @@ describe('AudienceSyncService', () => {
+     );
+   });
+ 
++  it('reconcileAll includes PENDING shareholders', async () => {
++    prisma.coop.findUnique.mockResolvedValue(COOP);
++    prisma.shareholder.findMany.mockResolvedValue([]);
++    await service.reconcileAll('c1', 'cron');
++    expect(prisma.shareholder.findMany).toHaveBeenCalledWith(
++      expect.objectContaining({ where: { coopId: 'c1' } }),
++    );
++  });
++
+   it('reconcileAll records ERROR and rethrows when provider creation fails', async () => {
+     prisma.coop.findUnique.mockResolvedValue(COOP);
+     jest.spyOn(factory, 'getAudienceProvider').mockImplementation(() => {
+diff --git a/apps/api/src/modules/audience-sync/audience-sync.service.ts b/apps/api/src/modules/audience-sync/audience-sync.service.ts
+index 5a3ab509..2a9ba74a 100644
+--- a/apps/api/src/modules/audience-sync/audience-sync.service.ts
++++ b/apps/api/src/modules/audience-sync/audience-sync.service.ts
+@@ -98,7 +98,7 @@ export class AudienceSyncService {
+       const provider = this.providerFor(coop);
+ 
+       const shareholders = await this.prisma.shareholder.findMany({
+-        where: { coopId, status: { in: ['ACTIVE', 'INACTIVE'] } },
++        where: { coopId },
+         select: SHAREHOLDER_SELECT,
+       });
+       for (const shareholder of shareholders) {
+@@ -166,11 +166,11 @@ export class AudienceSyncService {
+     const membersList = coop.brevoMembersListId ? Number(coop.brevoMembersListId) : null;
+     const resignedList = coop.brevoResignedListId ? Number(coop.brevoResignedListId) : null;
+ 
+-    if (shareholder.status === 'PENDING' || !membersList) {
++    if (!membersList) {
+       summary.skipped++;
+       return;
+     }
+-    if (shareholder.status === 'ACTIVE' && !email) {
++    if ((shareholder.status === 'ACTIVE' || shareholder.status === 'PENDING') && !email) {
+       summary.skipped++;
+       return;
+     }
+@@ -190,7 +190,7 @@ export class AudienceSyncService {
+         removeListIds: resignedList ? [resignedList] : [],
+         createIfMissing: true,
+       };
+-    } else {
++    } else if (shareholder.status === 'INACTIVE') {
+       // INACTIVE: remove from members, move to resigned iff configured; never create.
+       input = {
+         extId: shareholder.id,
+@@ -200,11 +200,21 @@ export class AudienceSyncService {
+         removeListIds: [membersList],
+         createIfMissing: false,
+       };
++    } else {
++      // PENDING: never held paid shares; remove from members, never resigned, never create.
++      input = {
++        extId: shareholder.id,
++        email,
++        attributes,
++        addListIds: [],
++        removeListIds: [membersList],
++        createIfMissing: false,
++      };
+     }
+ 
+     try {
+       const result = await provider.upsertContact(input);
+-      if (shareholder.status === 'INACTIVE') {
++      if (shareholder.status === 'INACTIVE' || shareholder.status === 'PENDING') {
+         summary.moved++;
+       } else if (result === 'created') {
+         summary.added++;
+diff --git a/apps/api/src/modules/bank-import/bank-import.module.ts b/apps/api/src/modules/bank-import/bank-import.module.ts
+index 4b88cf16..cf3cd2f1 100644
+--- a/apps/api/src/modules/bank-import/bank-import.module.ts
++++ b/apps/api/src/modules/bank-import/bank-import.module.ts
+@@ -1,9 +1,10 @@
+ import { Module } from '@nestjs/common';
+ import { RegistrationsModule } from '../registrations/registrations.module';
++import { ShareholderStatusModule } from '../shareholder-status/shareholder-status.module';
+ import { BankImportService } from './bank-import.service';
+ 
+ @Module({
+-  imports: [RegistrationsModule],
++  imports: [RegistrationsModule, ShareholderStatusModule],
+   providers: [BankImportService],
+   exports: [BankImportService],
+ })
+diff --git a/apps/api/src/modules/bank-import/bank-import.service.spec.ts b/apps/api/src/modules/bank-import/bank-import.service.spec.ts
+index 8392a6d3..7878b4a2 100644
+--- a/apps/api/src/modules/bank-import/bank-import.service.spec.ts
++++ b/apps/api/src/modules/bank-import/bank-import.service.spec.ts
+@@ -8,6 +8,7 @@ import { Test } from '@nestjs/testing';
+ import { BankImportService } from './bank-import.service';
+ import { PrismaService } from '../../prisma/prisma.service';
+ import { RegistrationsService } from '../registrations/registrations.service';
++import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+ import { generateOgmCode, validateOgmCode } from '@opencoop/shared';
+ 
+ /**
+@@ -26,6 +27,7 @@ describe('BankImportService — importCsv OGM matching', () => {
+   let service: BankImportService;
+   let prisma: any;
+   let registrationsService: any;
++  let shareholderStatus: any;
+ 
+   // A real, checksum-valid OGM produced the same way the app generates them.
+   const OGM = generateOgmCode('001', 42);
+@@ -40,6 +42,7 @@ describe('BankImportService — importCsv OGM matching', () => {
+       },
+       bankTransaction: {
+         create: jest.fn().mockResolvedValue({ id: 'btx-1' }),
++        update: jest.fn().mockResolvedValue({}),
+       },
+       payment: {
+         create: jest.fn().mockResolvedValue({ id: 'pay-1' }),
+@@ -56,12 +59,17 @@ describe('BankImportService — importCsv OGM matching', () => {
+     registrationsService = {
+       onRegistrationCompleted: jest.fn().mockResolvedValue(null),
+     };
++    shareholderStatus = {
++      recompute: jest.fn().mockResolvedValue(null),
++      recomputeMany: jest.fn().mockResolvedValue(undefined),
++    };
+ 
+     const moduleRef = await Test.createTestingModule({
+       providers: [
+         BankImportService,
+         { provide: PrismaService, useValue: prisma },
+         { provide: RegistrationsService, useValue: registrationsService },
++        { provide: ShareholderStatusService, useValue: shareholderStatus },
+       ],
+     }).compile();
+     service = moduleRef.get(BankImportService);
+@@ -90,6 +98,7 @@ describe('BankImportService — importCsv OGM matching', () => {
+       {
+         id: 'reg-1',
+         coopId: COOP_ID,
++        shareholderId: 'sh-1',
+         status: 'PENDING_PAYMENT',
+         totalAmount: 100,
+         isGift: false,
+@@ -145,6 +154,7 @@ describe('BankImportService — importCsv OGM matching', () => {
+       {
+         id: 'reg-1',
+         coopId: COOP_ID,
++        shareholderId: 'sh-1',
+         status: 'PENDING_PAYMENT',
+         totalAmount: 100,
+         isGift: false,
+@@ -162,6 +172,7 @@ describe('BankImportService — importCsv OGM matching', () => {
+     expect(prisma.registration.update).toHaveBeenCalledWith(
+       expect.objectContaining({ data: { status: 'ACTIVE' } }),
+     );
++    expect(shareholderStatus.recomputeMany).toHaveBeenCalledWith(['sh-1']);
+   });
+ 
+   it('leaves a row with no OGM in the reference UNMATCHED', async () => {
+@@ -238,6 +249,7 @@ describe('BankImportService — importCsv OGM matching', () => {
+       {
+         id: 'reg-1',
+         coopId: COOP_ID,
++        shareholderId: 'sh-1',
+         status: 'PENDING_PAYMENT',
+         totalAmount: 100,
+         isGift: false,
+@@ -318,4 +330,25 @@ describe('BankImportService — importCsv OGM matching', () => {
+     // Deduped: two unique OGMs, not three.
+     expect(arg.where.ogmCode.in).toHaveLength(2);
+   });
++
++  it('recomputes status after a manual partial-payment match commits', async () => {
++    prisma.bankTransaction.findUnique = jest.fn().mockResolvedValue({
++      id: 'btx-1',
++      matchStatus: 'UNMATCHED',
++      amount: 60,
++      date: new Date('2026-01-15'),
++    });
++    prisma.registration.findUnique = jest.fn().mockResolvedValue({
++      id: 'reg-1',
++      coopId: COOP_ID,
++      shareholderId: 'sh-1',
++      status: 'PENDING_PAYMENT',
++      totalAmount: 100,
++    });
++    prisma.payment.findMany.mockResolvedValue([{ amount: 60 }]);
++
++    await service.manualMatch('btx-1', 'reg-1', IMPORTER_ID);
++
++    expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh-1');
++  });
+ });
+diff --git a/apps/api/src/modules/bank-import/bank-import.service.ts b/apps/api/src/modules/bank-import/bank-import.service.ts
+index 1f7b4edc..3c100cdc 100644
+--- a/apps/api/src/modules/bank-import/bank-import.service.ts
++++ b/apps/api/src/modules/bank-import/bank-import.service.ts
+@@ -1,6 +1,7 @@
+ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+ import { PrismaService } from '../../prisma/prisma.service';
+ import { RegistrationsService } from '../registrations/registrations.service';
++import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+ import { computeTotalPaid } from '@opencoop/shared';
+ import { BankPreset, BANK_PRESETS } from './bank-presets';
+ 
+@@ -9,6 +10,7 @@ export class BankImportService {
+   constructor(
+     private prisma: PrismaService,
+     private registrationsService: RegistrationsService,
++    private shareholderStatus: ShareholderStatusService,
+   ) {}
+ 
+   async getImports(coopId: string) {
+@@ -73,6 +75,7 @@ export class BankImportService {
+     let matchedCount = 0;
+     let unmatchedCount = 0;
+     const completedGiftRegistrationIds: string[] = [];
++    const shareholderIdsToRecompute: string[] = [];
+ 
+     // Batch the OGM lookups: extract every OGM from the rows (same regex the loop
+     // uses), dedupe, and fetch all matching registrations in ONE query instead of
+@@ -87,7 +90,17 @@ export class BankImportService {
+       ),
+     );
+ 
+-    const registrationMap = new Map<string, { id: string; coopId: string; status: string; totalAmount: unknown; isGift: boolean }>();
++    const registrationMap = new Map<
++      string,
++      {
++        id: string;
++        coopId: string;
++        shareholderId: string;
++        status: string;
++        totalAmount: unknown;
++        isGift: boolean;
++      }
++    >();
+     if (uniqueOgms.length > 0) {
+       const registrations = await this.prisma.registration.findMany({
+         where: { ogmCode: { in: uniqueOgms } },
+@@ -176,6 +189,7 @@ export class BankImportService {
+               // Keep the cached entry in sync: a later same-OGM row must see
+               // COMPLETED (which the gate excludes), as a fresh DB read would.
+               registration.status = 'COMPLETED';
++              shareholderIdsToRecompute.push(registration.shareholderId);
+ 
+               if (registration.isGift) {
+                 completedGiftRegistrationIds.push(registration.id);
+@@ -188,6 +202,7 @@ export class BankImportService {
+               // Keep the cached entry in sync: a partial payment flips
+               // PENDING_PAYMENT -> ACTIVE, which a later same-OGM row must see.
+               registration.status = 'ACTIVE';
++              shareholderIdsToRecompute.push(registration.shareholderId);
+             }
+           });
+ 
+@@ -213,6 +228,8 @@ export class BankImportService {
+       });
+     }
+ 
++    await this.shareholderStatus.recomputeMany(shareholderIdsToRecompute);
++
+     for (const regId of completedGiftRegistrationIds) {
+       await this.registrationsService.onRegistrationCompleted(regId);
+     }
+@@ -395,6 +412,7 @@ export class BankImportService {
+       });
+ 
+       let isCompleted = false;
++      let isActive = false;
+       if (
+         registration.status === 'PENDING_PAYMENT' ||
+         registration.status === 'ACTIVE'
+@@ -419,14 +437,17 @@ export class BankImportService {
+             where: { id: registrationId },
+             data: { status: 'ACTIVE' },
+           });
++          isActive = true;
+         }
+       }
+ 
+-      return { success: true, isCompleted };
++      return { success: true, isCompleted, isActive, shareholderId: registration.shareholderId };
+     });
+ 
+     if (result.isCompleted) {
+       await this.registrationsService.onRegistrationCompleted(registrationId);
++    } else if (result.isActive) {
++      await this.shareholderStatus.recompute(result.shareholderId);
+     }
+ 
+     return { success: true };
+diff --git a/apps/api/src/modules/payments/payments.module.ts b/apps/api/src/modules/payments/payments.module.ts
+index 1afb8bcf..bce2de93 100644
+--- a/apps/api/src/modules/payments/payments.module.ts
++++ b/apps/api/src/modules/payments/payments.module.ts
+@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
+ import { PaymentsService } from './payments.service';
+ import { RegistrationsModule } from '../registrations/registrations.module';
+ import { AdminNotificationsModule } from '../admin-notifications/admin-notifications.module';
++import { ShareholderStatusModule } from '../shareholder-status/shareholder-status.module';
+ 
+ @Module({
+-  imports: [RegistrationsModule, AdminNotificationsModule],
++  imports: [RegistrationsModule, AdminNotificationsModule, ShareholderStatusModule],
+   providers: [PaymentsService],
+   exports: [PaymentsService],
+ })
+diff --git a/apps/api/src/modules/payments/payments.service.spec.ts b/apps/api/src/modules/payments/payments.service.spec.ts
+index 47231b1b..a496e4c2 100644
+--- a/apps/api/src/modules/payments/payments.service.spec.ts
++++ b/apps/api/src/modules/payments/payments.service.spec.ts
+@@ -10,22 +10,28 @@ import { PaymentsService } from './payments.service';
+ import { PrismaService } from '../../prisma/prisma.service';
+ import { RegistrationsService } from '../registrations/registrations.service';
+ import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
++import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+ 
+ describe('PaymentsService.addPayment tenant isolation', () => {
+   let service: PaymentsService;
+   let prisma: any;
++  let registrationsService: { onRegistrationCompleted: jest.Mock };
++  let shareholderStatus: { recompute: jest.Mock };
+ 
+   beforeEach(async () => {
+     prisma = {
+       registration: { findUnique: jest.fn(), update: jest.fn() },
+       payment: { create: jest.fn() },
+     };
++    registrationsService = { onRegistrationCompleted: jest.fn().mockResolvedValue(null) };
++    shareholderStatus = { recompute: jest.fn().mockResolvedValue(null) };
+     const mod = await Test.createTestingModule({
+       providers: [
+         PaymentsService,
+         { provide: PrismaService, useValue: prisma },
+-        { provide: RegistrationsService, useValue: { onRegistrationCompleted: jest.fn() } },
++        { provide: RegistrationsService, useValue: registrationsService },
+         { provide: AdminNotificationsService, useValue: { notifyAdminsOnEvent: jest.fn().mockResolvedValue(undefined) } },
++        { provide: ShareholderStatusService, useValue: shareholderStatus },
+       ],
+     }).compile();
+     service = mod.get(PaymentsService);
+@@ -43,12 +49,42 @@ describe('PaymentsService.addPayment tenant isolation', () => {
+ 
+   it('accepts a payment for a registration in the caller coop', async () => {
+     prisma.registration.findUnique
+-      .mockResolvedValueOnce({ id: 'reg-A', coopId: 'coop-A', status: 'PENDING_PAYMENT', totalAmount: 100, payments: [] })
++      .mockResolvedValueOnce({ id: 'reg-A', coopId: 'coop-A', shareholderId: 'sh-A', status: 'PENDING_PAYMENT', totalAmount: 100, payments: [] })
+       .mockResolvedValueOnce({ id: 'reg-A', coopId: 'coop-A', shareholder: { firstName: 'Jan', lastName: 'Peeters', companyName: null } });
+     prisma.payment.create.mockResolvedValue({ id: 'pay-1', amount: 50 });
+     prisma.registration.update.mockResolvedValue({});
+     const result = await service.addPayment({ registrationId: 'reg-A', coopId: 'coop-A', amount: 50, bankDate: new Date() });
+     expect(result).toEqual({ id: 'pay-1', amount: 50 });
+     expect(prisma.payment.create).toHaveBeenCalled();
++    expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh-A');
++  });
++
++  it('calls onRegistrationCompleted for a fully paid registration', async () => {
++    prisma.registration.findUnique
++      .mockResolvedValueOnce({
++        id: 'reg-A',
++        coopId: 'coop-A',
++        shareholderId: 'sh-A',
++        status: 'PENDING_PAYMENT',
++        totalAmount: 100,
++        payments: [],
++      })
++      .mockResolvedValueOnce({
++        id: 'reg-A',
++        coopId: 'coop-A',
++        shareholder: { firstName: 'Jan', lastName: 'Peeters', companyName: null },
++      });
++    prisma.payment.create.mockResolvedValue({ id: 'pay-1', amount: 100 });
++    prisma.registration.update.mockResolvedValue({});
++
++    await service.addPayment({
++      registrationId: 'reg-A',
++      coopId: 'coop-A',
++      amount: 100,
++      bankDate: new Date(),
++    });
++
++    expect(registrationsService.onRegistrationCompleted).toHaveBeenCalledWith('reg-A');
++    expect(shareholderStatus.recompute).not.toHaveBeenCalled();
+   });
+ });
+diff --git a/apps/api/src/modules/payments/payments.service.ts b/apps/api/src/modules/payments/payments.service.ts
+index f6734b43..4eee6144 100644
+--- a/apps/api/src/modules/payments/payments.service.ts
++++ b/apps/api/src/modules/payments/payments.service.ts
+@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
+ import { PrismaService } from '../../prisma/prisma.service';
+ import { RegistrationsService } from '../registrations/registrations.service';
+ import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
++import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+ import { computeTotalPaid } from '@opencoop/shared';
+ 
+ @Injectable()
+@@ -10,6 +11,7 @@ export class PaymentsService {
+     private prisma: PrismaService,
+     private registrationsService: RegistrationsService,
+     private adminNotificationsService: AdminNotificationsService,
++    private shareholderStatus: ShareholderStatusService,
+   ) {}
+ 
+   async findByRegistration(registrationId: string) {
+@@ -105,6 +107,7 @@ export class PaymentsService {
+         where: { id: data.registrationId },
+         data: { status: 'ACTIVE' },
+       });
++      await this.shareholderStatus.recompute(registration.shareholderId);
+     }
+ 
+     return payment;
+diff --git a/apps/api/src/modules/registrations/registrations.lifecycle.spec.ts b/apps/api/src/modules/registrations/registrations.lifecycle.spec.ts
+index fb9c81a6..6e3af266 100644
+--- a/apps/api/src/modules/registrations/registrations.lifecycle.spec.ts
++++ b/apps/api/src/modules/registrations/registrations.lifecycle.spec.ts
+@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
+ import { EmailService } from '../email/email.service';
+ import { DocumentsService } from '../documents/documents.service';
+ import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
++import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+ 
+ /**
+  * Behavioural specs for the registration state machine:
+@@ -24,14 +25,24 @@ import { AdminNotificationsService } from '../admin-notifications/admin-notifica
+ describe('RegistrationsService — lifecycle', () => {
+   let service: RegistrationsService;
+   let prisma: any;
++  let shareholderStatus: { recompute: jest.Mock; recomputeMany: jest.Mock };
+ 
+   beforeEach(async () => {
+     prisma = {
+-      registration: { update: jest.fn().mockResolvedValue({}) },
++      registration: {
++        create: jest.fn().mockResolvedValue({ id: 'registration-created' }),
++        findFirst: jest.fn(),
++        findUnique: jest.fn(),
++        update: jest.fn().mockResolvedValue({}),
++      },
+       payment: { create: jest.fn().mockResolvedValue({}) },
+       // Run the transaction callback synchronously against the same mock prisma
+       $transaction: jest.fn((cb: any) => cb(prisma)),
+     };
++    shareholderStatus = {
++      recompute: jest.fn().mockResolvedValue(null),
++      recomputeMany: jest.fn().mockResolvedValue(undefined),
++    };
+ 
+     const moduleRef = await Test.createTestingModule({
+       providers: [
+@@ -40,6 +51,7 @@ describe('RegistrationsService — lifecycle', () => {
+         { provide: EmailService, useValue: {} },
+         { provide: DocumentsService, useValue: {} },
+         { provide: AdminNotificationsService, useValue: {} },
++        { provide: ShareholderStatusService, useValue: shareholderStatus },
+       ],
+     }).compile();
+     service = moduleRef.get(RegistrationsService);
+@@ -215,4 +227,49 @@ describe('RegistrationsService — lifecycle', () => {
+       expect(prisma.registration.update).not.toHaveBeenCalled();
+     });
+   });
++
++  describe('shareholder status hooks', () => {
++    it('recomputes status when a registration is completed', async () => {
++      jest.restoreAllMocks();
++      prisma.registration.findUnique.mockResolvedValue({
++        id: 'r1',
++        shareholderId: 'sh1',
++        isGift: false,
++        type: 'SELL',
++        giftCode: null,
++        shareholder: { email: null, user: null },
++      });
++
++      await service.onRegistrationCompleted('r1');
++
++      expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh1');
++    });
++
++    it('recomputes both shareholders after a transfer transaction commits', async () => {
++      prisma.registration.findFirst.mockResolvedValue({
++        id: 'buy-1',
++        shareClassId: 'class-1',
++        projectId: null,
++        quantity: 10,
++        pricePerShare: 10,
++        payments: [],
++        shareClass: { id: 'class-1' },
++      });
++      prisma.registration.create
++        .mockResolvedValueOnce({ id: 'sell-1' })
++        .mockResolvedValueOnce({ id: 'buy-2' });
++      jest.spyOn(service as any, 'getAvailableShares').mockResolvedValue(10);
++      jest.spyOn(service as any, 'checkEcoPowerThreshold').mockResolvedValue(undefined);
++
++      await service.createTransfer({
++        coopId: 'coop-1',
++        fromShareholderId: 'from-sh',
++        toShareholderId: 'to-sh',
++        registrationId: 'buy-1',
++        quantity: 3,
++      });
++
++      expect(shareholderStatus.recomputeMany).toHaveBeenCalledWith(['from-sh', 'to-sh']);
++    });
++  });
+ });
+diff --git a/apps/api/src/modules/registrations/registrations.module.ts b/apps/api/src/modules/registrations/registrations.module.ts
+index ac3bb317..cefcab02 100644
+--- a/apps/api/src/modules/registrations/registrations.module.ts
++++ b/apps/api/src/modules/registrations/registrations.module.ts
+@@ -3,9 +3,15 @@ import { RegistrationsService } from './registrations.service';
+ import { DocumentsModule } from '../documents/documents.module';
+ import { EmailModule } from '../email/email.module';
+ import { AdminNotificationsModule } from '../admin-notifications/admin-notifications.module';
++import { ShareholderStatusModule } from '../shareholder-status/shareholder-status.module';
+ 
+ @Module({
+-  imports: [forwardRef(() => DocumentsModule), EmailModule, AdminNotificationsModule],
++  imports: [
++    forwardRef(() => DocumentsModule),
++    EmailModule,
++    AdminNotificationsModule,
++    ShareholderStatusModule,
++  ],
+   providers: [RegistrationsService],
+   exports: [RegistrationsService],
+ })
+diff --git a/apps/api/src/modules/registrations/registrations.service.spec.ts b/apps/api/src/modules/registrations/registrations.service.spec.ts
+index 5881fe7d..e1d37dbc 100644
+--- a/apps/api/src/modules/registrations/registrations.service.spec.ts
++++ b/apps/api/src/modules/registrations/registrations.service.spec.ts
+@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
+ import { EmailService } from '../email/email.service';
+ import { DocumentsService } from '../documents/documents.service';
+ import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
++import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+ 
+ describe('RegistrationsService', () => {
+   let service: RegistrationsService;
+@@ -40,6 +41,10 @@ describe('RegistrationsService', () => {
+         { provide: EmailService, useValue: emailService },
+         { provide: DocumentsService, useValue: {} },
+         { provide: AdminNotificationsService, useValue: {} },
++        {
++          provide: ShareholderStatusService,
++          useValue: { recompute: jest.fn().mockResolvedValue(null), recomputeMany: jest.fn() },
++        },
+       ],
+     }).compile();
+     service = moduleRef.get(RegistrationsService);
+diff --git a/apps/api/src/modules/registrations/registrations.service.ts b/apps/api/src/modules/registrations/registrations.service.ts
+index 2186a75c..f571822a 100644
+--- a/apps/api/src/modules/registrations/registrations.service.ts
++++ b/apps/api/src/modules/registrations/registrations.service.ts
+@@ -5,6 +5,7 @@ import { DocumentsService } from '../documents/documents.service';
+ import { EmailService } from '../email/email.service';
+ import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
+ import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
++import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
+ 
+ @Injectable()
+ export class RegistrationsService {
+@@ -14,6 +15,7 @@ export class RegistrationsService {
+     private documentsService: DocumentsService,
+     private emailService: EmailService,
+     private adminNotificationsService: AdminNotificationsService,
++    private shareholderStatus: ShareholderStatusService,
+   ) {}
+ 
+   private readonly defaultInclude = {
+@@ -776,7 +778,7 @@ export class RegistrationsService {
+     const totalAmount = data.quantity * pricePerShare;
+     const now = new Date();
+ 
+-    return this.prisma.$transaction(async (tx) => {
++    const transferIn = await this.prisma.$transaction(async (tx) => {
+       // SELL registration for the from-shareholder
+       const sellReg = await tx.registration.create({
+         data: {
+@@ -842,6 +844,10 @@ export class RegistrationsService {
+ 
+       return transferIn;
+     });
++
++    await this.shareholderStatus.recomputeMany([data.fromShareholderId, data.toShareholderId]);
++
++    return transferIn;
+   }
+ 
+   /**
+@@ -892,6 +898,8 @@ export class RegistrationsService {
+       return null;
+     }
+ 
++    await this.shareholderStatus.recompute(registration.shareholderId);
++
+     const shareholder = registration.shareholder;
+ 
+     // Send payment confirmation (with certificate) for non-gift BUY registrations
+diff --git a/apps/api/src/modules/shareholder-status/shareholder-status.module.ts b/apps/api/src/modules/shareholder-status/shareholder-status.module.ts
+new file mode 100644
+index 00000000..fabd9fbc
+--- /dev/null
++++ b/apps/api/src/modules/shareholder-status/shareholder-status.module.ts
+@@ -0,0 +1,11 @@
++import { BullModule } from '@nestjs/bull';
++import { Module } from '@nestjs/common';
++import { ShareholderStatusScheduler } from './shareholder-status.scheduler';
++import { ShareholderStatusService } from './shareholder-status.service';
++
++@Module({
++  imports: [BullModule.registerQueue({ name: 'audience-sync' })],
++  providers: [ShareholderStatusService, ShareholderStatusScheduler],
++  exports: [ShareholderStatusService],
++})
++export class ShareholderStatusModule {}
+diff --git a/apps/api/src/modules/shareholder-status/shareholder-status.scheduler.ts b/apps/api/src/modules/shareholder-status/shareholder-status.scheduler.ts
+new file mode 100644
+index 00000000..c112cb41
+--- /dev/null
++++ b/apps/api/src/modules/shareholder-status/shareholder-status.scheduler.ts
+@@ -0,0 +1,21 @@
++import { Injectable, Logger } from '@nestjs/common';
++import { Cron } from '@nestjs/schedule';
++import * as Sentry from '@sentry/nestjs';
++import { ShareholderStatusService } from './shareholder-status.service';
++
++@Injectable()
++export class ShareholderStatusScheduler {
++  private readonly logger = new Logger(ShareholderStatusScheduler.name);
++
++  constructor(private readonly shareholderStatusService: ShareholderStatusService) {}
++
++  @Cron('30 2 * * *', { timeZone: 'Europe/Brussels' })
++  async nightlyTick(): Promise<void> {
++    try {
++      await this.shareholderStatusService.reconcileAll();
++    } catch (error) {
++      Sentry.captureException(error);
++      this.logger.error(`Failed to reconcile shareholder statuses: ${(error as Error).message}`);
++    }
++  }
++}
+diff --git a/apps/api/src/modules/shareholder-status/shareholder-status.service.spec.ts b/apps/api/src/modules/shareholder-status/shareholder-status.service.spec.ts
+new file mode 100644
+index 00000000..a712280e
+--- /dev/null
++++ b/apps/api/src/modules/shareholder-status/shareholder-status.service.spec.ts
+@@ -0,0 +1,100 @@
++import { Test } from '@nestjs/testing';
++import { ShareholderStatus } from '@opencoop/database';
++import { PrismaService } from '../../prisma/prisma.service';
++import { ShareholderStatusService } from './shareholder-status.service';
++
++describe('ShareholderStatusService', () => {
++  let service: ShareholderStatusService;
++  let prisma: any;
++  let audienceQueue: any;
++
++  beforeEach(async () => {
++    prisma = {
++      shareholder: {
++        findUnique: jest.fn(),
++        update: jest.fn().mockResolvedValue({}),
++      },
++      $executeRaw: jest.fn(),
++    };
++    audienceQueue = { add: jest.fn().mockResolvedValue({}) };
++
++    const moduleRef = await Test.createTestingModule({
++      providers: [
++        ShareholderStatusService,
++        { provide: PrismaService, useValue: prisma },
++        { provide: 'BullQueue_audience-sync', useValue: audienceQueue },
++      ],
++    }).compile();
++    service = moduleRef.get(ShareholderStatusService);
++  });
++
++  it('recomputes, writes, and enqueues when the status changes', async () => {
++    prisma.shareholder.findUnique.mockResolvedValue({
++      id: 'sh1',
++      coopId: 'coop1',
++      status: ShareholderStatus.PENDING,
++      registrations: [{ type: 'BUY', status: 'COMPLETED', quantity: 10 }],
++    });
++
++    await expect(service.recompute('sh1')).resolves.toBe(ShareholderStatus.ACTIVE);
++    expect(prisma.shareholder.update).toHaveBeenCalledWith({
++      where: { id: 'sh1' },
++      data: { status: ShareholderStatus.ACTIVE },
++    });
++    expect(audienceQueue.add).toHaveBeenCalledWith('reconcile-one', {
++      coopId: 'coop1',
++      shareholderId: 'sh1',
++    });
++  });
++
++  it('does not write or enqueue when the status is unchanged', async () => {
++    prisma.shareholder.findUnique.mockResolvedValue({
++      id: 'sh1',
++      coopId: 'coop1',
++      status: ShareholderStatus.ACTIVE,
++      registrations: [{ type: 'BUY', status: 'COMPLETED', quantity: 10 }],
++    });
++
++    await expect(service.recompute('sh1')).resolves.toBe(ShareholderStatus.ACTIVE);
++    expect(prisma.shareholder.update).not.toHaveBeenCalled();
++    expect(audienceQueue.add).not.toHaveBeenCalled();
++  });
++
++  it('returns null for an unknown shareholder', async () => {
++    prisma.shareholder.findUnique.mockResolvedValue(null);
++
++    await expect(service.recompute('missing')).resolves.toBeNull();
++    expect(prisma.shareholder.update).not.toHaveBeenCalled();
++    expect(audienceQueue.add).not.toHaveBeenCalled();
++  });
++
++  it('deduplicates shareholder ids in recomputeMany', async () => {
++    const recompute = jest.spyOn(service, 'recompute').mockResolvedValue(ShareholderStatus.PENDING);
++
++    await service.recomputeMany(['sh1', 'sh1', 'sh2', 'sh1', 'sh2']);
++
++    expect(recompute).toHaveBeenCalledTimes(2);
++    expect(recompute).toHaveBeenNthCalledWith(1, 'sh1');
++    expect(recompute).toHaveBeenNthCalledWith(2, 'sh2');
++  });
++
++  it('returns the affected-row count from reconcileAll', async () => {
++    prisma.$executeRaw.mockResolvedValue(4);
++
++    await expect(service.reconcileAll()).resolves.toBe(4);
++    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
++  });
++
++  it('swallows audience queue failures during recompute', async () => {
++    prisma.shareholder.findUnique.mockResolvedValue({
++      id: 'sh1',
++      coopId: 'coop1',
++      status: ShareholderStatus.PENDING,
++      registrations: [{ type: 'BUY', status: 'COMPLETED', quantity: 10 }],
++    });
++    audienceQueue.add.mockRejectedValue(new Error('queue unavailable'));
++
++    await expect(service.recompute('sh1')).resolves.toBe(ShareholderStatus.ACTIVE);
++    expect(prisma.shareholder.update).toHaveBeenCalled();
++  });
++});
+diff --git a/apps/api/src/modules/shareholder-status/shareholder-status.service.ts b/apps/api/src/modules/shareholder-status/shareholder-status.service.ts
+new file mode 100644
+index 00000000..a42688fe
+--- /dev/null
++++ b/apps/api/src/modules/shareholder-status/shareholder-status.service.ts
+@@ -0,0 +1,87 @@
++import { InjectQueue } from '@nestjs/bull';
++import { Injectable, Logger } from '@nestjs/common';
++import { Prisma, ShareholderStatus } from '@opencoop/database';
++import { Queue } from 'bull';
++import { PrismaService } from '../../prisma/prisma.service';
++import { deriveShareholderStatus } from './shareholder-status';
++
++@Injectable()
++export class ShareholderStatusService {
++  private readonly logger = new Logger(ShareholderStatusService.name);
++
++  constructor(
++    private readonly prisma: PrismaService,
++    @InjectQueue('audience-sync') private readonly audienceQueue: Queue,
++  ) {}
++
++  async recompute(shareholderId: string): Promise<ShareholderStatus | null> {
++    const shareholder = await this.prisma.shareholder.findUnique({
++      where: { id: shareholderId },
++      select: {
++        id: true,
++        coopId: true,
++        status: true,
++        registrations: {
++          select: { type: true, status: true, quantity: true },
++        },
++      },
++    });
++
++    if (!shareholder) {
++      return null;
++    }
++
++    const status = deriveShareholderStatus(shareholder.registrations);
++    if (status === shareholder.status) {
++      return status;
++    }
++
++    await this.prisma.shareholder.update({
++      where: { id: shareholder.id },
++      data: { status },
++    });
++    this.logger.log(`Updated shareholder ${shareholder.id} status to ${status}`);
++
++    try {
++      await this.audienceQueue.add('reconcile-one', {
++        coopId: shareholder.coopId,
++        shareholderId: shareholder.id,
++      });
++    } catch (err) {
++      this.logger.warn(
++        `audience-sync enqueue failed for ${shareholder.id}: ${(err as Error).message}`,
++      );
++    }
++
++    return status;
++  }
++
++  async recomputeMany(shareholderIds: string[]): Promise<void> {
++    for (const shareholderId of new Set(shareholderIds)) {
++      await this.recompute(shareholderId);
++    }
++  }
++
++  async reconcileAll(): Promise<number> {
++    const count = await this.prisma.$executeRaw(
++      Prisma.sql`
++        UPDATE shareholders sh SET status = d.status
++        FROM (
++          SELECT s.id,
++            (CASE
++              WHEN COALESCE(SUM(CASE WHEN r.type = 'BUY'  AND r.status IN ('ACTIVE','COMPLETED') THEN r.quantity END), 0)
++                 - COALESCE(SUM(CASE WHEN r.type = 'SELL' AND r.status = 'COMPLETED' THEN r.quantity END), 0) > 0 THEN 'ACTIVE'
++              WHEN COUNT(r.id) FILTER (WHERE r.type = 'BUY' AND r.status IN ('ACTIVE','COMPLETED')) > 0 THEN 'INACTIVE'
++              ELSE 'PENDING'
++            END)::"ShareholderStatus" AS status
++          FROM shareholders s
++          LEFT JOIN registrations r ON r."shareholderId" = s.id
++          GROUP BY s.id
++        ) d
++        WHERE d.id = sh.id AND sh.status <> d.status;
++      `,
++    );
++    this.logger.log(`Reconciled ${count} shareholder status(es)`);
++    return count;
++  }
++}
+diff --git a/apps/api/src/modules/shareholder-status/shareholder-status.spec.ts b/apps/api/src/modules/shareholder-status/shareholder-status.spec.ts
+new file mode 100644
+index 00000000..d0b1d522
+--- /dev/null
++++ b/apps/api/src/modules/shareholder-status/shareholder-status.spec.ts
+@@ -0,0 +1,70 @@
++import { ShareholderStatus } from '@opencoop/database';
++import { deriveShareholderStatus } from './shareholder-status';
++
++describe('deriveShareholderStatus', () => {
++  it('returns PENDING for no registrations', () => {
++    expect(deriveShareholderStatus([])).toBe(ShareholderStatus.PENDING);
++  });
++
++  it('returns PENDING for only pending or cancelled BUY registrations', () => {
++    expect(
++      deriveShareholderStatus([
++        { type: 'BUY', status: 'PENDING_PAYMENT', quantity: 10 },
++        { type: 'BUY', status: 'PENDING', quantity: 5 },
++        { type: 'BUY', status: 'CANCELLED', quantity: 3 },
++      ]),
++    ).toBe(ShareholderStatus.PENDING);
++  });
++
++  it('returns ACTIVE for a COMPLETED BUY', () => {
++    expect(deriveShareholderStatus([{ type: 'BUY', status: 'COMPLETED', quantity: 10 }])).toBe(
++      ShareholderStatus.ACTIVE,
++    );
++  });
++
++  it('returns ACTIVE for an ACTIVE BUY', () => {
++    expect(deriveShareholderStatus([{ type: 'BUY', status: 'ACTIVE', quantity: 10 }])).toBe(
++      ShareholderStatus.ACTIVE,
++    );
++  });
++
++  it('returns INACTIVE when completed sells equal completed buys', () => {
++    expect(
++      deriveShareholderStatus([
++        { type: 'BUY', status: 'COMPLETED', quantity: 10 },
++        { type: 'SELL', status: 'COMPLETED', quantity: 10 },
++      ]),
++    ).toBe(ShareholderStatus.INACTIVE);
++  });
++
++  it('ignores a SELL that is not completed', () => {
++    expect(
++      deriveShareholderStatus([
++        { type: 'BUY', status: 'COMPLETED', quantity: 10 },
++        { type: 'SELL', status: 'PENDING_PAYMENT', quantity: 10 },
++      ]),
++    ).toBe(ShareholderStatus.ACTIVE);
++  });
++
++  it('returns INACTIVE when sells exceed buys', () => {
++    expect(
++      deriveShareholderStatus([
++        { type: 'BUY', status: 'COMPLETED', quantity: 10 },
++        { type: 'SELL', status: 'COMPLETED', quantity: 12 },
++      ]),
++    ).toBe(ShareholderStatus.INACTIVE);
++  });
++
++  it('derives the status from mixed registrations', () => {
++    expect(
++      deriveShareholderStatus([
++        { type: 'BUY', status: 'PENDING', quantity: 100 },
++        { type: 'BUY', status: 'ACTIVE', quantity: 8 },
++        { type: 'BUY', status: 'COMPLETED', quantity: 7 },
++        { type: 'SELL', status: 'PENDING_PAYMENT', quantity: 5 },
++        { type: 'SELL', status: 'COMPLETED', quantity: 10 },
++        { type: 'BUY', status: 'CANCELLED', quantity: 50 },
++      ]),
++    ).toBe(ShareholderStatus.ACTIVE);
++  });
++});
+diff --git a/apps/api/src/modules/shareholder-status/shareholder-status.ts b/apps/api/src/modules/shareholder-status/shareholder-status.ts
+new file mode 100644
+index 00000000..98367aeb
+--- /dev/null
++++ b/apps/api/src/modules/shareholder-status/shareholder-status.ts
+@@ -0,0 +1,31 @@
++import { ShareholderStatus } from '@opencoop/database';
++
++export function deriveShareholderStatus(
++  registrations: Array<{ type: 'BUY' | 'SELL' | string; status: string; quantity: number }>,
++): ShareholderStatus {
++  const buyQuantity = registrations
++    .filter(
++      (registration) =>
++        registration.type === 'BUY' &&
++        (registration.status === 'ACTIVE' || registration.status === 'COMPLETED'),
++    )
++    .reduce((total, registration) => total + registration.quantity, 0);
++  const sellQuantity = registrations
++    .filter((registration) => registration.type === 'SELL' && registration.status === 'COMPLETED')
++    .reduce((total, registration) => total + registration.quantity, 0);
++  const hasActiveBuy = registrations.some(
++    (registration) =>
++      registration.type === 'BUY' &&
++      (registration.status === 'ACTIVE' || registration.status === 'COMPLETED'),
++  );
++
++  if (buyQuantity - sellQuantity > 0) {
++    return ShareholderStatus.ACTIVE;
++  }
++
++  if (hasActiveBuy) {
++    return ShareholderStatus.INACTIVE;
++  }
++
++  return ShareholderStatus.PENDING;
++}
+diff --git a/apps/api/src/modules/shareholders/dto/update-shareholder.dto.ts b/apps/api/src/modules/shareholders/dto/update-shareholder.dto.ts
+index 86db9a11..39125e39 100644
+--- a/apps/api/src/modules/shareholders/dto/update-shareholder.dto.ts
++++ b/apps/api/src/modules/shareholders/dto/update-shareholder.dto.ts
+@@ -1,14 +1,9 @@
+ import { PartialType } from '@nestjs/swagger';
+-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
++import { IsBoolean, IsOptional, IsString } from 'class-validator';
+ import { ApiProperty } from '@nestjs/swagger';
+ import { CreateShareholderDto } from './create-shareholder.dto';
+-import { ShareholderStatus } from '@opencoop/database';
+ 
+ export class UpdateShareholderDto extends PartialType(CreateShareholderDto) {
+-  @IsOptional()
+-  @IsEnum(ShareholderStatus)
+-  status?: ShareholderStatus;
+-
+   @ApiProperty({ required: false, description: 'Parent/guardian user ID (required when type is MINOR)' })
+   @IsOptional()
+   @IsString()
+diff --git a/apps/api/src/modules/shareholders/shareholder-import.service.spec.ts b/apps/api/src/modules/shareholders/shareholder-import.service.spec.ts
+index 13290f0d..bf3fd742 100644
+--- a/apps/api/src/modules/shareholders/shareholder-import.service.spec.ts
++++ b/apps/api/src/modules/shareholders/shareholder-import.service.spec.ts
+@@ -169,13 +169,12 @@ describe('ShareholderImportService', () => {
+       expect(results[0].errors[0]).toContain('Invalid birthDate');
+     });
+ 
+-    it('should reject invalid status', () => {
++    it('should ignore an unknown status column', () => {
+       const rows = [
+         { type: 'INDIVIDUAL', firstName: 'Jan', lastName: 'Peeters', email: 'jan@test.be', status: 'DELETED' },
+       ];
+       const results = service.validateRows(rows, new Set());
+-      expect(results[0].valid).toBe(false);
+-      expect(results[0].errors[0]).toContain('Invalid status');
++      expect(results[0].valid).toBe(true);
+     });
+ 
+     it('should normalize type to uppercase', () => {
+@@ -230,6 +229,18 @@ describe('ShareholderImportService', () => {
+       );
+     });
+ 
++    it('should not write status from an uploaded status column', async () => {
++      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
++      (prismaService.shareholder.createMany as jest.Mock).mockResolvedValue({ count: 1 });
++
++      const csv =
++        'type,firstName,lastName,email,status\nINDIVIDUAL,Jan,Peeters,jan@test.be,ACTIVE\n';
++      await service.importShareholders('coop-1', makeFile(csv), false, 'user-1');
++
++      const data = (prismaService.shareholder.createMany as jest.Mock).mock.calls[0][0].data[0];
++      expect(data).not.toHaveProperty('status');
++    });
++
+     it('should skip invalid rows and create valid ones', async () => {
+       (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
+       (prismaService.shareholder.createMany as jest.Mock).mockResolvedValue({ count: 1 });
+diff --git a/apps/api/src/modules/shareholders/shareholder-import.service.ts b/apps/api/src/modules/shareholders/shareholder-import.service.ts
+index 57d8e829..4efabe71 100644
+--- a/apps/api/src/modules/shareholders/shareholder-import.service.ts
++++ b/apps/api/src/modules/shareholders/shareholder-import.service.ts
+@@ -23,7 +23,6 @@ interface ImportRow {
+   country?: string;
+   bankIban?: string;
+   bankBic?: string;
+-  status?: string;
+   /** Optional: email of the primary (household head) shareholder to link this row to. */
+   linkedTo?: string;
+ }
+@@ -64,7 +63,6 @@ const EXPECTED_COLUMNS = [
+   'country',
+   'bankIban',
+   'bankBic',
+-  'status',
+   'linkedTo',
+ ];
+ 
+@@ -232,14 +230,6 @@ export class ShareholderImportService {
+         }
+       }
+ 
+-      // Validate status if provided
+-      if (row.status?.trim()) {
+-        const status = row.status.toUpperCase();
+-        if (!['PENDING', 'ACTIVE', 'INACTIVE'].includes(status)) {
+-          errors.push(`Invalid status "${row.status}". Must be PENDING, ACTIVE, or INACTIVE.`);
+-        }
+-      }
+-
+       return {
+         row: index + 2, // +2 because row 1 is header, index is 0-based
+         data: { ...row, type },
+@@ -365,7 +355,6 @@ export class ShareholderImportService {
+     const buildBaseData = (row: ImportRow, coopId: string) => ({
+       coopId,
+       type: row.type as 'INDIVIDUAL' | 'COMPANY' | 'MINOR',
+-      status: (row.status?.toUpperCase() as 'PENDING' | 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
+       firstName: row.firstName?.trim() || null,
+       lastName: row.lastName?.trim() || null,
+       phone: row.phone?.trim() || null,
+diff --git a/apps/api/src/modules/shareholders/shareholders.service.spec.ts b/apps/api/src/modules/shareholders/shareholders.service.spec.ts
+index 62eadea3..42a8db3f 100644
+--- a/apps/api/src/modules/shareholders/shareholders.service.spec.ts
++++ b/apps/api/src/modules/shareholders/shareholders.service.spec.ts
+@@ -254,13 +254,15 @@ describe('ShareholdersService', () => {
+       (auditService.log as jest.Mock).mockResolvedValueOnce(undefined);
+ 
+       await service.create('c1', validCreateDto);
++      const createData = (prismaService.shareholder.create as jest.Mock).mock.calls[0][0].data;
++      expect(createData).not.toHaveProperty('status');
+       expect(audienceQueue.add).toHaveBeenCalledWith('reconcile-one', {
+         coopId: 'c1',
+         shareholderId: 'sh9',
+       });
+     });
+ 
+-    it('enqueues reconcile-one when email/status/name changes on update', async () => {
++    it('enqueues reconcile-one when email/name changes on update', async () => {
+       const existing = makeShareholder({ id: 'sh1', coopId: 'c1', email: 'old@x.be' });
+       (prismaService.shareholder.findFirst as jest.Mock)
+         // findById (load existing)
+diff --git a/apps/api/src/modules/shareholders/shareholders.service.ts b/apps/api/src/modules/shareholders/shareholders.service.ts
+index c0ecbc30..fc21a3bc 100644
+--- a/apps/api/src/modules/shareholders/shareholders.service.ts
++++ b/apps/api/src/modules/shareholders/shareholders.service.ts
+@@ -282,7 +282,6 @@ export class ShareholdersService {
+             coopId,
+             email: rest.email?.toLowerCase(),
+             birthDate: birthDate ? new Date(birthDate) : null,
+-            status: 'ACTIVE',
+             referralCode,
+             address: address ? JSON.parse(JSON.stringify(address)) : undefined,
+             beneficialOwners: encryptedBeneficialOwners?.length
+@@ -445,7 +444,6 @@ export class ShareholdersService {
+     });
+ 
+     if (
+-      dto.status !== undefined ||
+       dto.email !== undefined ||
+       dto.firstName !== undefined ||
+       dto.lastName !== undefined ||
+diff --git a/apps/web/messages/de.json b/apps/web/messages/de.json
+index db5430b8..eee98a75 100644
+--- a/apps/web/messages/de.json
++++ b/apps/web/messages/de.json
+@@ -200,7 +200,8 @@
+     "statuses": {
+       "PENDING": "Ausstehend",
+       "ACTIVE": "Aktiv",
+-      "INACTIVE": "Inaktiv"
++      "INACTIVE": "Inaktiv",
++      "derivedFromPaidShares": "Abgeleitet aus bezahlten Anteilen"
+     },
+     "memberSince": "Mitglied seit"
+   },
+diff --git a/apps/web/messages/en.json b/apps/web/messages/en.json
+index 14c453a6..9f14035b 100644
+--- a/apps/web/messages/en.json
++++ b/apps/web/messages/en.json
+@@ -200,7 +200,8 @@
+     "statuses": {
+       "PENDING": "Pending",
+       "ACTIVE": "Active",
+-      "INACTIVE": "Inactive"
++      "INACTIVE": "Inactive",
++      "derivedFromPaidShares": "Derived from paid shares"
+     },
+     "memberSince": "Member since"
+   },
+diff --git a/apps/web/messages/fr.json b/apps/web/messages/fr.json
+index 6f64ca3a..69103e1b 100644
+--- a/apps/web/messages/fr.json
++++ b/apps/web/messages/fr.json
+@@ -200,7 +200,8 @@
+     "statuses": {
+       "PENDING": "En attente",
+       "ACTIVE": "Actif",
+-      "INACTIVE": "Inactif"
++      "INACTIVE": "Inactif",
++      "derivedFromPaidShares": "Dérivé des parts payées"
+     },
+     "memberSince": "Membre depuis"
+   },
+diff --git a/apps/web/messages/nl.json b/apps/web/messages/nl.json
+index 6089154d..c7bc1961 100644
+--- a/apps/web/messages/nl.json
++++ b/apps/web/messages/nl.json
+@@ -200,7 +200,8 @@
+     "statuses": {
+       "PENDING": "In behandeling",
+       "ACTIVE": "Actief",
+-      "INACTIVE": "Inactief"
++      "INACTIVE": "Inactief",
++      "derivedFromPaidShares": "Afgeleid van betaalde aandelen"
+     },
+     "memberSince": "Lid sinds"
+   },
+diff --git a/apps/web/src/app/[locale]/dashboard/admin/shareholders/[id]/page.tsx b/apps/web/src/app/[locale]/dashboard/admin/shareholders/[id]/page.tsx
+index 400257b0..6b60ebdc 100644
+--- a/apps/web/src/app/[locale]/dashboard/admin/shareholders/[id]/page.tsx
++++ b/apps/web/src/app/[locale]/dashboard/admin/shareholders/[id]/page.tsx
+@@ -46,6 +46,7 @@ import { Checkbox } from '@/components/ui/checkbox';
+ import { ChevronLeft, Save, Check, X, ShoppingCart, TrendingDown, FileDown, QrCode, CreditCard, ExternalLink, MessageSquare, Loader2, Users, Unlink } from 'lucide-react';
+ import { api, apiFetch } from '@/lib/api';
+ import { LinkShareholderDialog } from '@/components/admin/link-shareholder-dialog';
++import { ShareholderStatusBadge } from '@/components/shareholder-status-badge';
+ 
+ interface ShareClass {
+   id: string;
+@@ -160,7 +161,6 @@ const shareholderSchema = z.object({
+   postalCode: z.string().optional(),
+   city: z.string().optional(),
+   country: z.string().optional(),
+-  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE']),
+ });
+ 
+ type ShareholderForm = z.infer<typeof shareholderSchema>;
+@@ -238,9 +238,7 @@ export default function ShareholderDetailPage() {
+ 
+   const form = useForm<ShareholderForm>({
+     resolver: zodResolver(shareholderSchema),
+-    defaultValues: {
+-      status: 'ACTIVE',
+-    },
++    defaultValues: {},
+   });
+ 
+   const fetchShareholder = useCallback(async () => {
+@@ -275,7 +273,6 @@ export default function ShareholderDetailPage() {
+         postalCode: addr.postalCode || '',
+         city: addr.city || '',
+         country: addr.country || '',
+-        status: data.status,
+       });
+     } catch {
+       setError(t('common.error'));
+@@ -874,21 +871,10 @@ export default function ShareholderDetailPage() {
+ 
+               <div className="space-y-2">
+                 <Label>{t('common.status')}</Label>
+-                <Select
+-                  value={form.watch('status')}
+-                  onValueChange={(value) =>
+-                    form.setValue('status', value as 'PENDING' | 'ACTIVE' | 'INACTIVE')
+-                  }
+-                >
+-                  <SelectTrigger>
+-                    <SelectValue />
+-                  </SelectTrigger>
+-                  <SelectContent>
+-                    <SelectItem value="ACTIVE">{t('shareholder.status.active')}</SelectItem>
+-                    <SelectItem value="PENDING">{t('shareholder.status.pending')}</SelectItem>
+-                    <SelectItem value="INACTIVE">{t('shareholder.status.inactive')}</SelectItem>
+-                  </SelectContent>
+-                </Select>
++                {shareholder && <ShareholderStatusBadge status={shareholder.status} />}
++                <p className="text-muted-foreground text-xs">
++                  {t('shareholder.statuses.derivedFromPaidShares')}
++                </p>
+               </div>
+             </CardContent>
+           </Card>
+diff --git a/apps/web/src/app/[locale]/dashboard/admin/shareholders/page.tsx b/apps/web/src/app/[locale]/dashboard/admin/shareholders/page.tsx
+index 2c2c307c..dab7a3d4 100644
+--- a/apps/web/src/app/[locale]/dashboard/admin/shareholders/page.tsx
++++ b/apps/web/src/app/[locale]/dashboard/admin/shareholders/page.tsx
+@@ -18,6 +18,10 @@ import {
+   TableRow,
+ } from '@/components/ui/table';
+ import { Badge } from '@/components/ui/badge';
++import {
++  ShareholderStatusBadge,
++  type ShareholderStatus,
++} from '@/components/shareholder-status-badge';
+ import { Button } from '@/components/ui/button';
+ import { Input } from '@/components/ui/input';
+ import { Label } from '@/components/ui/label';
+@@ -63,7 +67,7 @@ import {
+ interface ShareholderRow {
+   id: string;
+   type: string;
+-  status: string;
++  status: ShareholderStatus;
+   firstName?: string;
+   lastName?: string;
+   companyName?: string;
+@@ -697,17 +701,7 @@ export default function ShareholdersPage() {
+                       <TableCell className="text-muted-foreground">{sh.email || '-'}</TableCell>
+                       <TableCell className="text-right">{activeShares(sh)}</TableCell>
+                       <TableCell>
+-                        <Badge
+-                          variant={
+-                            sh.status === 'ACTIVE'
+-                              ? 'default'
+-                              : sh.status === 'PENDING'
+-                                ? 'secondary'
+-                                : 'destructive'
+-                          }
+-                        >
+-                          {t(`shareholder.statuses.${sh.status}`)}
+-                        </Badge>
++                        <ShareholderStatusBadge status={sh.status} />
+                       </TableCell>
+                       {ecoPowerEnabled && (
+                         <TableCell>
+diff --git a/apps/web/src/components/shareholder-status-badge.tsx b/apps/web/src/components/shareholder-status-badge.tsx
+new file mode 100644
+index 00000000..f39f6689
+--- /dev/null
++++ b/apps/web/src/components/shareholder-status-badge.tsx
+@@ -0,0 +1,22 @@
++'use client';
++
++import { useTranslations } from 'next-intl';
++import { Badge } from '@/components/ui/badge';
++
++export type ShareholderStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE';
++
++interface ShareholderStatusBadgeProps {
++  status: ShareholderStatus;
++}
++
++export function ShareholderStatusBadge({ status }: ShareholderStatusBadgeProps) {
++  const t = useTranslations();
++
++  return (
++    <Badge
++      variant={status === 'ACTIVE' ? 'default' : status === 'PENDING' ? 'secondary' : 'destructive'}
++    >
++      {t(`shareholder.statuses.${status}`)}
++    </Badge>
++  );
++}
+diff --git a/e2e/tests/admin/shareholder-status-change.spec.ts b/e2e/tests/admin/shareholder-status-change.spec.ts
+deleted file mode 100644
+index 0c2f5427..00000000
+--- a/e2e/tests/admin/shareholder-status-change.spec.ts
++++ /dev/null
+@@ -1,41 +0,0 @@
+-import { test, expect } from '@playwright/test';
+-
+-test.describe('Shareholder status change', () => {
+-  test('can change shareholder status and save', async ({ page }) => {
+-    await page.goto('/nl/dashboard/admin/shareholders');
+-    // Use the search box to find Jan Peeters by email (name may have changed from prior test runs)
+-    await page.getByPlaceholder('Zoeken').fill('jan.peeters@email.be');
+-    await expect(page.getByRole('cell', { name: 'jan.peeters@email.be' })).toBeVisible({ timeout: 10_000 });
+-    const row = page.getByRole('row').filter({ hasText: 'jan.peeters@email.be' });
+-    await row.getByRole('link').click();
+-    await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
+-
+-    // Find the status select — it's the combobox inside the personal info card
+-    // The status select shows the translated status value
+-    const statusTrigger = page.locator('button[role="combobox"]').filter({ hasText: /Actief|In behandeling|Inactief/ });
+-    await expect(statusTrigger).toBeVisible();
+-
+-    // Note the original value
+-    const originalStatus = await statusTrigger.textContent();
+-
+-    // Open the status dropdown and change to PENDING
+-    await statusTrigger.click();
+-    await page.getByRole('option', { name: 'In behandeling' }).click();
+-
+-    // Save
+-    await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
+-    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
+-
+-    // Reload the page and verify persistence
+-    await page.reload();
+-    const statusTriggerAfter = page.locator('button[role="combobox"]').filter({ hasText: /Actief|In behandeling|Inactief/ });
+-    await expect(statusTriggerAfter).toBeVisible({ timeout: 5_000 });
+-    await expect(statusTriggerAfter).toHaveText('In behandeling');
+-
+-    // REVERT: change back to original status
+-    await statusTriggerAfter.click();
+-    await page.getByRole('option', { name: originalStatus!.trim(), exact: true }).click();
+-    await page.getByRole('button', { name: 'Wijzigingen opslaan' }).click();
+-    await expect(page.getByText('Succesvol opgeslagen')).toBeVisible({ timeout: 5_000 });
+-  });
+-});
+diff --git a/e2e/tests/admin/shareholder-status-readonly.spec.ts b/e2e/tests/admin/shareholder-status-readonly.spec.ts
+new file mode 100644
+index 00000000..030c7af3
+--- /dev/null
++++ b/e2e/tests/admin/shareholder-status-readonly.spec.ts
+@@ -0,0 +1,23 @@
++import { test, expect } from '@playwright/test';
++
++test.describe('Shareholder status read-only', () => {
++  test('shows shareholder status as a read-only badge', async ({ page }) => {
++    await page.goto('/nl/dashboard/admin/shareholders');
++    await page.getByPlaceholder('Zoeken').fill('jan.peeters@email.be');
++    await expect(page.getByRole('cell', { name: 'jan.peeters@email.be' })).toBeVisible({
++      timeout: 10_000,
++    });
++    const row = page.getByRole('row').filter({ hasText: 'jan.peeters@email.be' });
++    await row.getByRole('link').click();
++    await expect(page).toHaveURL(/\/dashboard\/admin\/shareholders\/.+/);
++
++    const statusBadge = page
++      .locator('div.inline-flex')
++      .filter({ hasText: /^Actief$|^In behandeling$|^Inactief$/ })
++      .last();
++    await expect(statusBadge).toBeVisible();
++    await expect(
++      page.locator('button[role="combobox"]').filter({ hasText: /Actief|In behandeling|Inactief/ }),
++    ).toHaveCount(0);
++  });
++});
+diff --git a/packages/database/prisma/migrations/20260910120000_derive_shareholder_status/migration.sql b/packages/database/prisma/migrations/20260910120000_derive_shareholder_status/migration.sql
+new file mode 100644
+index 00000000..e3338dd4
+--- /dev/null
++++ b/packages/database/prisma/migrations/20260910120000_derive_shareholder_status/migration.sql
+@@ -0,0 +1,17 @@
++-- ACTIVE when qualifying BUY shares exceed completed SELL shares.
++-- INACTIVE when qualifying BUY shares exist but net shares are zero or negative.
++-- PENDING when no qualifying BUY exists.
++UPDATE shareholders sh SET status = d.status
++FROM (
++  SELECT s.id,
++    (CASE
++      WHEN COALESCE(SUM(CASE WHEN r.type = 'BUY'  AND r.status IN ('ACTIVE','COMPLETED') THEN r.quantity END), 0)
++         - COALESCE(SUM(CASE WHEN r.type = 'SELL' AND r.status = 'COMPLETED' THEN r.quantity END), 0) > 0 THEN 'ACTIVE'
++      WHEN COUNT(r.id) FILTER (WHERE r.type = 'BUY' AND r.status IN ('ACTIVE','COMPLETED')) > 0 THEN 'INACTIVE'
++      ELSE 'PENDING'
++    END)::"ShareholderStatus" AS status
++  FROM shareholders s
++  LEFT JOIN registrations r ON r."shareholderId" = s.id
++  GROUP BY s.id
++) d
++WHERE d.id = sh.id AND sh.status <> d.status;
