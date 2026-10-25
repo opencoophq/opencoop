@@ -32,7 +32,7 @@ describe('coop signup notification', () => {
     expect(mail).toEqual(
       expect.objectContaining({
         to: 'info@opencoop.be',
-        subject: '[acceptance] Nieuwe coöperatie: Zukunftdorf Billberge',
+        subject: '[acc] Nieuwe coöperatie: Zukunftdorf Billberge',
       }),
     );
     expect(mail?.text).toContain('Naam: Zukunftdorf Billberge');
@@ -43,7 +43,7 @@ describe('coop signup notification', () => {
     expect(mail?.text).toContain('Beheerder: ada@zukunftdorf.example');
     expect(mail?.text).toContain('Taal: de');
     expect(mail?.text).toContain('2026-08-13T12:00:00.000Z');
-    expect(mail?.text).toContain('Omgeving: acceptance');
+    expect(mail?.text).toContain('Omgeving: acc');
     expect(mail?.text).toContain('Bron: zelfregistratie');
     expect(mail?.text).toContain(
       'Platform: https://acc.opencoop.be/nl/dashboard/system/coops/coop-1/admins',
@@ -63,13 +63,13 @@ describe('coop signup notification', () => {
       { FRONTEND_URL: 'https://opencoop.be', NODE_ENV: 'production' },
     );
 
-    expect(mail?.subject).toBe('[production] Nieuwe coöperatie: Zukunftdorf Billberge');
+    expect(mail?.subject).toBe('[prod] Nieuwe coöperatie: Zukunftdorf Billberge');
     expect(mail?.text).toContain('Rechtsvorm: onbekend');
     expect(mail?.text).toContain('Land: onbekend');
     expect(mail?.text).toContain('Beheerder: nog niet ingesteld');
     expect(mail?.text).toContain('Bron: superadmin');
     expect(mail?.text).toContain('Aangemaakt door: wouter@armlab.example');
-    expect(mail?.text).toContain('Omgeving: production');
+    expect(mail?.text).toContain('Omgeving: prod');
   });
 
   it('does not build a message when notifications are off, and strips header injection', () => {

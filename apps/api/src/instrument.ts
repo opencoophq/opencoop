@@ -1,10 +1,11 @@
 import * as Sentry from '@sentry/nestjs';
-import { sentryEnvironment } from './sentry-environment';
+import { sentryDsn, sentryEnvironment } from './sentry-environment';
 
-// Only initialize Sentry if DSN is configured (skip in dev environments)
-if (process.env.SENTRY_DSN) {
+// Only initialize when a GlitchTip DSN is configured. A sentry.io DSN is ignored.
+const dsn = sentryDsn(process.env.SENTRY_DSN);
+if (dsn) {
   Sentry.init({
-    dsn: process.env.SENTRY_DSN,
+    dsn,
     environment: sentryEnvironment(process.env.FRONTEND_URL, process.env.SENTRY_ENVIRONMENT, process.env.NODE_ENV),
     tracesSampleRate: 0.2,
   });
