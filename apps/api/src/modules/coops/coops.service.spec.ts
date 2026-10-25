@@ -224,6 +224,28 @@ describe('CoopsService — Brevo audience-sync config', () => {
     expect(r).toMatchObject({ name: 'Test Coop' });
   });
 
+  it('encrypts smtp and Graph secrets and does not return them', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ id: 'c1', smtpPass: null, graphClientSecret: null });
+    prisma.coop.update.mockResolvedValue({
+      id: 'c1',
+      smtpPass: 'enc1:encrypted:smtp-secret',
+      graphClientSecret: 'enc1:encrypted:graph-secret',
+      name: 'Test Coop',
+    });
+
+    const r = await service.update('c1', {
+      smtpPass: 'smtp-secret',
+      graphClientSecret: 'graph-secret',
+    } as any);
+
+    const data = prisma.coop.update.mock.calls[0][0].data;
+    expect(data.smtpPass).toBe('enc1:encrypted:smtp-secret');
+    expect(data.graphClientSecret).toBe('enc1:encrypted:graph-secret');
+    expect(r).not.toHaveProperty('smtpPass');
+    expect(r).not.toHaveProperty('graphClientSecret');
+    expect(r).toMatchObject({ name: 'Test Coop' });
+  });
+
   it('masks brevoApiKey changes in audit log', async () => {
     // Real AuditService — no existing audit.service.spec.ts; exercise masking directly.
     const realAudit = new AuditService(prisma as unknown as PrismaService);

@@ -172,7 +172,9 @@ model Coop {
   volunteersEnabled  Boolean  @default(false)
   volunteerInterests String[] @default([])
 
-  // Email configuration (encrypted in production)
+  // Email configuration. smtpPass and graphClientSecret are encrypted on write
+  // (enc1: prefix). Rows saved before that change may still be plaintext until
+  // the next settings save; the mailer accepts both.
   emailEnabled      Boolean @default(true)
   emailProvider     String? // "smtp" | "graph"
   smtpHost          String?
