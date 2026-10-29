@@ -1,0 +1,110 @@
+[
+  {
+    "label": "after",
+    "page": "admin",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "admin-shareholders",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "admin-transactions",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "admin-changelog",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "admin-volunteers",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "admin",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "admin-shareholders",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "admin-transactions",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "admin-changelog",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "admin-volunteers",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "member",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "after",
+    "page": "member",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  }
+]

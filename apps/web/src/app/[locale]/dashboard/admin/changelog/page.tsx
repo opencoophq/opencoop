@@ -87,7 +87,7 @@ export default function ChangelogPage() {
                 <div className="w-2 h-2 rounded-full bg-primary" />
               </div>
 
-              <div className="flex-1 pb-2">
+              <div className="min-w-0 flex-1 pb-2">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="font-semibold text-lg">v{entry.version}</span>
                   <span className="text-sm text-muted-foreground">{entry.date}</span>
@@ -106,7 +106,7 @@ export default function ChangelogPage() {
                         {section.items.map((item, j) => (
                           <li key={j} className="text-sm text-foreground/80 flex gap-2">
                             <span className="text-muted-foreground mt-0.5">•</span>
-                            <span>{formatItem(item)}</span>
+                            <span className="min-w-0 break-words">{formatItem(item)}</span>
                           </li>
                         ))}
                       </ul>

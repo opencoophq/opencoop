@@ -91,3 +91,4 @@ packages/database/prisma/*.d.ts
 
 # Claude Code per-machine settings (permission allowlists, may hold local tokens)
 .claude/settings.local.json
+*.profraw

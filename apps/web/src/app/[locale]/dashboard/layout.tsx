@@ -321,13 +321,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-muted/50">
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-between">
+      {/* Fixed height so <main>'s pt-14 always clears it, even for a long coop name. */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-card border-b px-4 flex items-center justify-between gap-2">
         {coopLogoUrl ? (
-          <img src={coopLogoUrl} alt={coopName || ''} className="h-8 max-w-[140px] object-contain" />
+          <img src={coopLogoUrl} alt={coopName || ''} className="h-8 min-w-0 max-w-[140px] object-contain" />
         ) : (
-          <span className="font-semibold text-lg">{coopName || 'OpenCoop'}</span>
+          <span className="min-w-0 truncate font-semibold text-lg">{coopName || 'OpenCoop'}</span>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-shrink-0 items-center gap-2">
           <LanguageSwitcher />
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -467,9 +468,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main content */}
-      <main className="lg:pl-64 pt-14 lg:pt-0">
+      <main className="min-w-0 overflow-x-clip lg:pl-64 pt-14 lg:pt-0">
         {selectedCoop && selectedCoop.active === false && (
-          <div className="px-6 pt-6">
+          <div className="px-4 pt-4 sm:px-6 sm:pt-6">
             <Alert className="border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-200">
               <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
               <AlertDescription>{t('onboarding.pendingActivation')}</AlertDescription>
@@ -477,7 +478,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
         )}
         {selectedCoop && selectedCoop.active !== false && selectedCoop.isReadOnly && (
-          <div className="px-6 pt-6">
+          <div className="px-4 pt-4 sm:px-6 sm:pt-6">
             <Alert className="border-red-300 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
               <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
               <AlertDescription className="flex items-center justify-between">
@@ -495,7 +496,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           const daysLeft = Math.ceil((new Date(selectedCoop.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
           return daysLeft > 0 && daysLeft <= 30;
         })() && (
-          <div className="px-6 pt-6">
+          <div className="px-4 pt-4 sm:px-6 sm:pt-6">
             <Alert className="border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-200">
               <AlertTriangle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <AlertDescription className="flex items-center justify-between">
@@ -509,7 +510,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </Alert>
           </div>
         )}
-        <div className="p-6">{children}</div>
+        {/* Bottom padding keeps the last content clear of the feedback button on phones. */}
+        <div className="p-4 pb-24 sm:p-6 sm:pb-24 lg:pb-6">{children}</div>
       </main>
 
       {user && <FeedbackButton user={user} />}
