@@ -1,0 +1,182 @@
+[
+  {
+    "label": "before-prod",
+    "page": "admin",
+    "viewport": "375x812",
+    "innerWidth": 443,
+    "scrollWidth": 443,
+    "offenders": [
+      {
+        "tag": "div",
+        "cls": "lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-betwe",
+        "left": 0,
+        "right": 443
+      },
+      {
+        "tag": "div",
+        "cls": "",
+        "left": 109,
+        "right": 443
+      },
+      {
+        "tag": "button",
+        "cls": "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-back",
+        "left": 371,
+        "right": 419
+      }
+    ],
+    "overflow": 68
+  },
+  {
+    "label": "before-prod",
+    "page": "admin-shareholders",
+    "viewport": "375x812",
+    "innerWidth": 607,
+    "scrollWidth": 607,
+    "offenders": [
+      {
+        "tag": "div",
+        "cls": "lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-betwe",
+        "left": 0,
+        "right": 607
+      },
+      {
+        "tag": "div",
+        "cls": "flex gap-2",
+        "left": 218,
+        "right": 607
+      },
+      {
+        "tag": "button",
+        "cls": "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-back",
+        "left": 535,
+        "right": 583
+      }
+    ],
+    "overflow": 232
+  },
+  {
+    "label": "before-prod",
+    "page": "admin-transactions",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "before-prod",
+    "page": "admin",
+    "viewport": "390x844",
+    "innerWidth": 443,
+    "scrollWidth": 443,
+    "offenders": [
+      {
+        "tag": "div",
+        "cls": "lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-betwe",
+        "left": 0,
+        "right": 443
+      },
+      {
+        "tag": "div",
+        "cls": "",
+        "left": 109,
+        "right": 443
+      },
+      {
+        "tag": "button",
+        "cls": "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-back",
+        "left": 371,
+        "right": 419
+      }
+    ],
+    "overflow": 53
+  },
+  {
+    "label": "before-prod",
+    "page": "admin-shareholders",
+    "viewport": "390x844",
+    "innerWidth": 607,
+    "scrollWidth": 607,
+    "offenders": [
+      {
+        "tag": "div",
+        "cls": "lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-betwe",
+        "left": 0,
+        "right": 607
+      },
+      {
+        "tag": "div",
+        "cls": "flex gap-2",
+        "left": 218,
+        "right": 607
+      },
+      {
+        "tag": "button",
+        "cls": "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-back",
+        "left": 535,
+        "right": 583
+      }
+    ],
+    "overflow": 217
+  },
+  {
+    "label": "before-prod",
+    "page": "admin-transactions",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "before-prod",
+    "page": "member",
+    "viewport": "375x812",
+    "innerWidth": 412,
+    "scrollWidth": 412,
+    "offenders": [
+      {
+        "tag": "div",
+        "cls": "lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-betwe",
+        "left": 0,
+        "right": 412
+      },
+      {
+        "tag": "button",
+        "cls": "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-back",
+        "left": 248,
+        "right": 412
+      },
+      {
+        "tag": "button",
+        "cls": "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-back",
+        "left": 340,
+        "right": 388
+      }
+    ],
+    "overflow": 37
+  },
+  {
+    "label": "before-prod",
+    "page": "member",
+    "viewport": "390x844",
+    "innerWidth": 413,
+    "scrollWidth": 413,
+    "offenders": [
+      {
+        "tag": "div",
+        "cls": "lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-betwe",
+        "left": 0,
+        "right": 413
+      },
+      {
+        "tag": "button",
+        "cls": "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-back",
+        "left": 248,
+        "right": 412
+      }
+    ],
+    "overflow": 23
+  }
+]

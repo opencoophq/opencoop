@@ -1,0 +1,74 @@
+[
+  {
+    "label": "main-mobile",
+    "page": "admin",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "main-mobile",
+    "page": "admin-shareholders",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "main-mobile",
+    "page": "admin-transactions",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "main-mobile",
+    "page": "admin",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "main-mobile",
+    "page": "admin-shareholders",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "main-mobile",
+    "page": "admin-transactions",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "main-mobile",
+    "page": "member",
+    "viewport": "375x812",
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "offenders": [],
+    "overflow": 0
+  },
+  {
+    "label": "main-mobile",
+    "page": "member",
+    "viewport": "390x844",
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "offenders": [],
+    "overflow": 0
+  }
+]
