@@ -101,7 +101,7 @@ export default function ProjectsPage() {
     direction: 'asc',
   });
 
-  const form = useForm<ProjectForm>({
+  const form = useForm<z.input<typeof projectSchema>, unknown, ProjectForm>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
       name: '',

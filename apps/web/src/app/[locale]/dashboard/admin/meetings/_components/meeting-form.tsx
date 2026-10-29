@@ -129,7 +129,7 @@ export function MeetingForm({
 
   const { dateStr, timeStr } = formatDateParts(initialValues?.scheduledAt);
 
-  const form = useForm<MeetingFormValues>({
+  const form = useForm<z.input<typeof meetingFormSchema>, unknown, MeetingFormValues>({
     resolver: zodResolver(meetingFormSchema),
     defaultValues: {
       type: initialValues?.type ?? 'ANNUAL',

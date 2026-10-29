@@ -97,7 +97,7 @@ export default function DividendsListPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const form = useForm<DividendPeriodForm>({
+  const form = useForm<z.input<typeof dividendPeriodSchema>, unknown, DividendPeriodForm>({
     resolver: zodResolver(dividendPeriodSchema),
     defaultValues: {
       name: '',
@@ -129,6 +129,8 @@ export default function DividendsListPage() {
   }, [fetchPeriods]);
 
   const yearValue = form.watch('year');
+  // The year input holds a string once edited; coerce it before doing date math.
+  const formYear = Number(yearValue) || new Date().getFullYear();
 
   // Default exDividendDate to Dec 31 of selected year
   useEffect(() => {
@@ -510,7 +512,7 @@ export default function DividendsListPage() {
                       value={field.value}
                       onChange={field.onChange}
                       placeholder={t('common.selectDate')}
-                      defaultMonth={new Date(form.watch('year'), 11)}
+                      defaultMonth={new Date(formYear, 11)}
                     />
                   )}
                 />
@@ -530,7 +532,7 @@ export default function DividendsListPage() {
                       value={field.value}
                       onChange={field.onChange}
                       placeholder={t('common.selectDate')}
-                      defaultMonth={new Date(form.watch('year') + 1, 0)}
+                      defaultMonth={new Date(formYear + 1, 0)}
                     />
                   )}
                 />
