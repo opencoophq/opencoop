@@ -2641,5 +2641,47 @@
       "interests": "Interessen-Tags",
       "interestsHelp": "Kommagetrennt. Leer lassen für Flyer, Veranstaltungen und Stände, Workshops, Technik und Verwaltung. Eigene Tags ersetzen diese Liste."
     }
+  },
+  "validation": {
+    "required": "Bitte füllen Sie dieses Feld aus",
+    "requiredField": {
+      "email": "Geben Sie Ihre E-Mail-Adresse ein",
+      "password": "Geben Sie Ihr Passwort ein",
+      "confirmPassword": "Geben Sie Ihr Passwort noch einmal ein",
+      "firstName": "Geben Sie den Vornamen ein",
+      "lastName": "Geben Sie den Nachnamen ein",
+      "companyName": "Geben Sie den Firmennamen ein",
+      "birthDate": "Geben Sie das Geburtsdatum ein",
+      "name": "Geben Sie einen Namen ein",
+      "title": "Geben Sie einen Titel ein",
+      "giftCode": "Geben Sie Ihren Geschenkcode ein",
+      "exDividendDate": "Geben Sie das Ex-Dividenden-Datum ein",
+      "dateStr": "Geben Sie ein Datum ein",
+      "timeStr": "Geben Sie eine Uhrzeit ein",
+      "street": "Geben Sie die Straße ein",
+      "number": "Geben Sie die Hausnummer ein",
+      "houseNumber": "Geben Sie die Hausnummer ein",
+      "postalCode": "Geben Sie die Postleitzahl ein",
+      "city": "Geben Sie den Ort ein",
+      "shareClassId": "Wählen Sie eine Anteilsklasse"
+    },
+    "email": "Geben Sie eine gültige E-Mail-Adresse ein",
+    "tooShort": "Verwenden Sie mindestens {min} Zeichen",
+    "tooLong": "Verwenden Sie höchstens {max} Zeichen",
+    "passwordTooShort": "Ihr Passwort muss mindestens {min} Zeichen haben",
+    "passwordComplexity": "Ihr Passwort braucht einen Kleinbuchstaben, einen Großbuchstaben und eine Zahl",
+    "passwordMismatch": "Die Passwörter stimmen nicht überein",
+    "number": "Geben Sie eine Zahl ein",
+    "wholeNumber": "Geben Sie eine ganze Zahl ein",
+    "numberTooSmall": "Geben Sie eine Zahl von mindestens {min} ein",
+    "numberTooBig": "Geben Sie eine Zahl von höchstens {max} ein",
+    "numberAbove": "Geben Sie eine Zahl größer als {min} ein",
+    "numberBelow": "Geben Sie eine Zahl kleiner als {max} ein",
+    "select": "Wählen Sie eine der Optionen",
+    "mustAccept": "Setzen Sie hier ein Häkchen, um fortzufahren",
+    "dateFormat": "Geben Sie das Datum als TT/MM/JJJJ ein",
+    "timeFormat": "Geben Sie die Uhrzeit als HH:MM ein",
+    "slugFormat": "Verwenden Sie nur Kleinbuchstaben, Zahlen und Bindestriche",
+    "invalid": "Dieses Feld ist ungültig"
   }
 }

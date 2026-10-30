@@ -69,9 +69,9 @@ function parseReminderDays(input: string): number[] {
 
 const meetingFormSchema = z.object({
   type: z.enum(['ANNUAL', 'EXTRAORDINARY', 'WRITTEN']),
-  title: z.string().min(1, 'Title is required'),
-  dateStr: z.string().regex(DATE_RE, 'Datum moet DD/MM/JJJJ zijn'),
-  timeStr: z.string().regex(TIME_RE, 'Tijd moet HH:MM zijn'),
+  title: z.string().min(1),
+  dateStr: z.string().regex(DATE_RE),
+  timeStr: z.string().regex(TIME_RE),
   durationMinutes: z.coerce.number().int().min(1).max(24 * 60),
   location: z.string().optional(),
   format: z.enum(['PHYSICAL', 'HYBRID', 'DIGITAL']),

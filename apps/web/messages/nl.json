@@ -2644,5 +2644,47 @@
       "interests": "Interesse-labels",
       "interestsHelp": "Komma's gescheiden. Laat leeg voor flyers, evenementen/standen, workshops, technisch en administratie. Eigen labels vervangen die lijst."
     }
+  },
+  "validation": {
+    "required": "Vul dit veld in",
+    "requiredField": {
+      "email": "Vul je e-mailadres in",
+      "password": "Vul je wachtwoord in",
+      "confirmPassword": "Vul je wachtwoord nog een keer in",
+      "firstName": "Vul de voornaam in",
+      "lastName": "Vul de achternaam in",
+      "companyName": "Vul de bedrijfsnaam in",
+      "birthDate": "Vul de geboortedatum in",
+      "name": "Vul een naam in",
+      "title": "Vul een titel in",
+      "giftCode": "Vul je cadeaucode in",
+      "exDividendDate": "Vul de ex-dividenddatum in",
+      "dateStr": "Vul een datum in",
+      "timeStr": "Vul een uur in",
+      "street": "Vul de straat in",
+      "number": "Vul het huisnummer in",
+      "houseNumber": "Vul het huisnummer in",
+      "postalCode": "Vul de postcode in",
+      "city": "Vul de gemeente in",
+      "shareClassId": "Kies een aandelenklasse"
+    },
+    "email": "Vul een geldig e-mailadres in",
+    "tooShort": "Vul minstens {min} tekens in",
+    "tooLong": "Gebruik maximaal {max} tekens",
+    "passwordTooShort": "Je wachtwoord moet minstens {min} tekens hebben",
+    "passwordComplexity": "Je wachtwoord moet een kleine letter, een hoofdletter en een cijfer bevatten",
+    "passwordMismatch": "De wachtwoorden zijn niet hetzelfde",
+    "number": "Vul een getal in",
+    "wholeNumber": "Vul een geheel getal in",
+    "numberTooSmall": "Vul een getal van minstens {min} in",
+    "numberTooBig": "Vul een getal van hoogstens {max} in",
+    "numberAbove": "Vul een getal groter dan {min} in",
+    "numberBelow": "Vul een getal kleiner dan {max} in",
+    "select": "Kies een van de opties",
+    "mustAccept": "Vink dit aan om verder te gaan",
+    "dateFormat": "Vul de datum in als DD/MM/JJJJ",
+    "timeFormat": "Vul het uur in als UU:MM",
+    "slugFormat": "Gebruik alleen kleine letters, cijfers en streepjes",
+    "invalid": "Dit veld is ongeldig"
   }
 }

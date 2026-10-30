@@ -71,9 +71,9 @@ const parseLocaleNumber = (val: unknown): number => {
 };
 
 const dividendPeriodSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1),
   year: z.coerce.number().min(2000).max(2100),
-  exDividendDate: z.string().min(1, 'Ex-dividend date is required'),
+  exDividendDate: z.string().min(1),
   paymentDate: z.string().optional(),
   dividendRate: z.preprocess(parseLocaleNumber, z.number().min(0).max(100)),
 });

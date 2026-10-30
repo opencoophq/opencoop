@@ -2641,5 +2641,47 @@
       "interests": "Étiquettes d'intérêt",
       "interestsHelp": "Séparées par des virgules. Laissez vide pour flyers, événements et stands, ateliers, technique et administration. Vos propres étiquettes remplacent cette liste."
     }
+  },
+  "validation": {
+    "required": "Veuillez remplir ce champ",
+    "requiredField": {
+      "email": "Saisissez votre adresse e-mail",
+      "password": "Saisissez votre mot de passe",
+      "confirmPassword": "Saisissez à nouveau votre mot de passe",
+      "firstName": "Saisissez le prénom",
+      "lastName": "Saisissez le nom de famille",
+      "companyName": "Saisissez le nom de l'entreprise",
+      "birthDate": "Saisissez la date de naissance",
+      "name": "Saisissez un nom",
+      "title": "Saisissez un titre",
+      "giftCode": "Saisissez votre code cadeau",
+      "exDividendDate": "Saisissez la date de détachement du dividende",
+      "dateStr": "Saisissez une date",
+      "timeStr": "Saisissez une heure",
+      "street": "Saisissez la rue",
+      "number": "Saisissez le numéro",
+      "houseNumber": "Saisissez le numéro",
+      "postalCode": "Saisissez le code postal",
+      "city": "Saisissez la commune",
+      "shareClassId": "Choisissez une classe d'actions"
+    },
+    "email": "Saisissez une adresse e-mail valide",
+    "tooShort": "Utilisez au moins {min} caractères",
+    "tooLong": "Utilisez au maximum {max} caractères",
+    "passwordTooShort": "Votre mot de passe doit contenir au moins {min} caractères",
+    "passwordComplexity": "Votre mot de passe doit contenir une minuscule, une majuscule et un chiffre",
+    "passwordMismatch": "Les mots de passe ne sont pas identiques",
+    "number": "Saisissez un nombre",
+    "wholeNumber": "Saisissez un nombre entier",
+    "numberTooSmall": "Saisissez un nombre d'au moins {min}",
+    "numberTooBig": "Saisissez un nombre de {max} au maximum",
+    "numberAbove": "Saisissez un nombre supérieur à {min}",
+    "numberBelow": "Saisissez un nombre inférieur à {max}",
+    "select": "Choisissez une des options",
+    "mustAccept": "Cochez cette case pour continuer",
+    "dateFormat": "Saisissez la date au format JJ/MM/AAAA",
+    "timeFormat": "Saisissez l'heure au format HH:MM",
+    "slugFormat": "Utilisez uniquement des minuscules, des chiffres et des tirets",
+    "invalid": "Ce champ n'est pas valide"
   }
 }

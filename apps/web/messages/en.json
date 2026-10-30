@@ -2644,5 +2644,47 @@
       "interests": "Interest tags",
       "interestsHelp": "Comma-separated. Leave empty for flyers, events and stands, workshops, technical and administration. Your own tags replace that list."
     }
+  },
+  "validation": {
+    "required": "Please fill in this field",
+    "requiredField": {
+      "email": "Enter your email address",
+      "password": "Enter your password",
+      "confirmPassword": "Enter your password again",
+      "firstName": "Enter a first name",
+      "lastName": "Enter a last name",
+      "companyName": "Enter the company name",
+      "birthDate": "Enter the date of birth",
+      "name": "Enter a name",
+      "title": "Enter a title",
+      "giftCode": "Enter your gift code",
+      "exDividendDate": "Enter the ex-dividend date",
+      "dateStr": "Enter a date",
+      "timeStr": "Enter a time",
+      "street": "Enter the street",
+      "number": "Enter the house number",
+      "houseNumber": "Enter the house number",
+      "postalCode": "Enter the postal code",
+      "city": "Enter the city",
+      "shareClassId": "Choose a share class"
+    },
+    "email": "Enter a valid email address",
+    "tooShort": "Use at least {min} characters",
+    "tooLong": "Use at most {max} characters",
+    "passwordTooShort": "Your password needs at least {min} characters",
+    "passwordComplexity": "Your password needs a lowercase letter, an uppercase letter and a number",
+    "passwordMismatch": "The passwords don't match",
+    "number": "Enter a number",
+    "wholeNumber": "Enter a whole number",
+    "numberTooSmall": "Enter {min} or more",
+    "numberTooBig": "Enter {max} or less",
+    "numberAbove": "Enter a number greater than {min}",
+    "numberBelow": "Enter a number less than {max}",
+    "select": "Choose one of the options",
+    "mustAccept": "Tick this box to continue",
+    "dateFormat": "Enter the date as DD/MM/YYYY",
+    "timeFormat": "Enter the time as HH:MM",
+    "slugFormat": "Use only lowercase letters, numbers and hyphens",
+    "invalid": "This field is not valid"
   }
 }

@@ -36,4 +36,19 @@ test.describe('Login', () => {
     // Should show error alert
     await expect(page.getByRole('alert')).toBeVisible({ timeout: 5_000 });
   });
+
+  test('empty fields show friendly Dutch validation messages', async ({ page }) => {
+    await page.goto('/nl/login');
+
+    await page.getByRole('button', { name: 'Doorgaan' }).click();
+    await expect(page.getByText('Vul je e-mailadres in')).toBeVisible();
+
+    await page.locator('input[name="email"]').fill('admin@zonnecooperatie.be');
+    await page.getByRole('button', { name: 'Doorgaan' }).click();
+    await page.getByRole('button', { name: 'Gebruik wachtwoord' }).click();
+    await page.getByRole('button', { name: 'Inloggen' }).click();
+
+    await expect(page.getByText('Vul je wachtwoord in')).toBeVisible();
+    await expect(page.getByText(/Too small|expected string/)).toHaveCount(0);
+  });
 });
