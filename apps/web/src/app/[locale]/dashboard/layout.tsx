@@ -135,8 +135,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               });
           }
         })
-        .catch(() => {
-          /* fire-and-forget: profile hydration is non-blocking; layout renders from cached user */
+        .catch((err: unknown) => {
+          // A 401 already cleared auth and redirected inside `api()`; keep the spinner.
+          if (err instanceof Error && err.message === 'Unauthorized') return;
+          // Other failures (timeout, 429, 5xx): fall back to the cached user so the
+          // layout does not stay on the full-page spinner forever.
+          setEmailVerified(parsed.emailVerified ?? true);
         });
     } catch {
       router.push('/login');
