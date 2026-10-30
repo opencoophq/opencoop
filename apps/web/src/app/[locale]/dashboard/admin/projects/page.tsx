@@ -69,7 +69,7 @@ interface Project {
 }
 
 const projectSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1),
   description: z.string().optional(),
   type: z.enum(['SOLAR', 'WIND']),
   capacityKw: z.coerce.number().min(0).optional().or(z.literal('')),

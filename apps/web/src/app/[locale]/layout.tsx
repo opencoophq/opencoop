@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { LocaleProvider } from '@/contexts/locale-context';
 import { CookieNotice } from '@/components/cookie-notice';
+import { ZodErrorMessages } from '@/components/zod-error-messages';
 
 const BASE_URL = 'https://opencoop.be';
 
@@ -54,6 +55,7 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
+      <ZodErrorMessages />
       <LocaleProvider>
         {children}
         <CookieNotice />

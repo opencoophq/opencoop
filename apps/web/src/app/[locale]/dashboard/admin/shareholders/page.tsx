@@ -132,30 +132,30 @@ const createShareholderSchema = z
   .superRefine((data, ctx) => {
     if (data.type === 'INDIVIDUAL') {
       if (!data.firstName?.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['firstName'], message: 'Required' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['firstName'], params: { required: true } });
       }
       if (!data.lastName?.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lastName'], message: 'Required' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lastName'], params: { required: true } });
       }
       if (!data.email?.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['email'], message: 'Required' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['email'], params: { required: true } });
       }
     } else if (data.type === 'COMPANY') {
       if (!data.companyName?.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['companyName'], message: 'Required' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['companyName'], params: { required: true } });
       }
       if (!data.email?.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['email'], message: 'Required' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['email'], params: { required: true } });
       }
     } else if (data.type === 'MINOR') {
       if (!data.firstName?.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['firstName'], message: 'Required' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['firstName'], params: { required: true } });
       }
       if (!data.lastName?.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lastName'], message: 'Required' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lastName'], params: { required: true } });
       }
       if (!data.birthDate?.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['birthDate'], message: 'Required' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['birthDate'], params: { required: true } });
       }
     }
   });

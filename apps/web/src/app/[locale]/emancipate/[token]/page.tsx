@@ -21,7 +21,7 @@ const emancipateSchema = z
     password: z
       .string()
       .min(8)
-      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, 'password_complexity'),
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/),
     confirmPassword: z.string().min(8),
   })
   .refine((data) => data.password === data.confirmPassword, {
