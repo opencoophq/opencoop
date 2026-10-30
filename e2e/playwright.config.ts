@@ -9,7 +9,9 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
   workers: 1,
-  reporter: isCI ? 'github' : 'html',
+  // CI: annotate the run and also write an HTML report so the failure
+  // artifact upload in build-deploy.yml has something to show.
+  reporter: isCI ? [['github'], ['html', { open: 'never' }]] : 'html',
   timeout: 30_000,
 
   use: {
@@ -58,6 +60,17 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/shareholder.json',
+      },
+      dependencies: ['setup'],
+    },
+    {
+      // Login flow itself; the specs reset storageState. Its two password
+      // logins plus global-setup's two stay under the API's 5-per-minute
+      // POST /auth/login throttle.
+      name: 'auth',
+      testMatch: /tests\/auth\/.*/,
+      use: {
+        ...devices['Desktop Chrome'],
       },
       dependencies: ['setup'],
     },

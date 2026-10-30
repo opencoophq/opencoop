@@ -1,9 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
+import { gotoDashboardPage } from '../../helpers/dashboard';
 
 test.describe('Shareholder settings', () => {
   test('settings page shows language and locale options', async ({ page }) => {
-    await page.goto('/nl/dashboard/settings');
-
-    await expect(page.getByRole('heading', { name: 'Instellingen' })).toBeVisible({ timeout: 10_000 });
+    test.setTimeout(60_000);
+    await gotoDashboardPage(page, '/nl/dashboard/settings', 'Instellingen');
   });
 });

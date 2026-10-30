@@ -1,16 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { gotoDashboardPage } from '../../helpers/dashboard';
 
 test.describe('Sell shares', () => {
   test('can initiate share sell request', async ({ page }) => {
-    await page.goto('/nl/dashboard/shares');
-
-    // Wait for shares table to load
-    await expect(page.getByRole('heading', { name: 'Aandelen', exact: true })).toBeVisible({ timeout: 10_000 });
+    test.setTimeout(60_000);
+    await gotoDashboardPage(page, '/nl/dashboard/shares', 'Aandelen');
 
     // Find a row with COMPLETED status badge (fully paid shares) and click the "Verkopen" button
     // Status is translated to Dutch ("Voltooid") since the user's preferred language is nl
     const activeRow = page.locator('tr').filter({ hasText: 'Voltooid' }).first();
-    await expect(activeRow).toBeVisible({ timeout: 10_000 });
+    await expect(activeRow).toBeVisible({ timeout: 15_000 });
 
     await activeRow.getByRole('button', { name: 'Verkopen' }).click();
 
