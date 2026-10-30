@@ -204,7 +204,7 @@ export default function ShareholdersPage() {
   const [importStep, setImportStep] = useState<'upload' | 'preview' | 'done'>('upload');
   const pageSize = 25;
 
-  const form = useForm<CreateShareholderForm>({
+  const form = useForm<z.input<typeof createShareholderSchema>, unknown, CreateShareholderForm>({
     resolver: zodResolver(createShareholderSchema),
     defaultValues: {
       type: 'INDIVIDUAL',
