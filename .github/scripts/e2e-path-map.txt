@@ -61,7 +61,7 @@ apps/api/src/modules/payments/*         e2e/tests/admin/transactions.spec.ts e2e
 apps/api/src/modules/ogm/*              e2e/tests/admin/transactions.spec.ts e2e/tests/shareholder/transactions.spec.ts e2e/tests/shareholder/purchase-shares.spec.ts e2e/tests/*/charge-card*.spec.ts e2e/tests/public/registration-*.spec.ts
 apps/api/src/modules/bank-import/*      e2e/tests/admin/transactions.spec.ts e2e/tests/admin/charge-cards.spec.ts
 apps/api/src/modules/charge-cards/*     e2e/tests/*/charge-card*.spec.ts
-apps/api/src/modules/channels/*         e2e/tests/public/registration-*.spec.ts
+apps/api/src/modules/channels/*         e2e/tests/public/registration-*.spec.ts e2e/tests/public/charge-card*.spec.ts
 apps/api/src/modules/email/*            e2e/tests/public/registration-*.spec.ts
 apps/api/src/modules/documents/*        e2e/tests/shareholder/purchase-shares.spec.ts e2e/tests/shareholder/mobile-layout.spec.ts
 # The billing gate decides whether admin write actions are allowed.
@@ -93,7 +93,7 @@ apps/web/src/app/?locale?/?coopSlug?/login/*      e2e/tests/auth/*.spec.ts e2e/t
 apps/web/src/app/?locale?/?coopSlug?/magic-link/* e2e/tests/auth/*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts
 apps/web/src/app/?locale?/?coopSlug?/register/*   e2e/tests/public/registration-*.spec.ts e2e/tests/public/charge-card-entry.spec.ts
 apps/web/src/app/?locale?/?coopSlug?/page.tsx     e2e/tests/public/registration-*.spec.ts
-apps/web/src/app/?locale?/?coopSlug?/?channelSlug?/* e2e/tests/public/registration-*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts
+apps/web/src/app/?locale?/?coopSlug?/?channelSlug?/* e2e/tests/public/registration-*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts e2e/tests/*/charge-card-entry.spec.ts
 apps/web/src/app/?locale?/?coopSlug?/laadpas/*    e2e/tests/*/charge-card-entry.spec.ts
 apps/web/src/app/?locale?/?coopSlug?/claim/*      -
 apps/web/src/app/?locale?/?coopSlug?/vrijwilligers/* -
