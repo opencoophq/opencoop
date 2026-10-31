@@ -76,7 +76,7 @@ jobs:
             "typecheck-web=pnpm --filter @opencoop/web exec tsc --noEmit" \
             "lint-api=pnpm --filter @opencoop/api lint" \
             "lint-web=pnpm --filter @opencoop/web lint" \
-            "unit-api=pnpm --filter @opencoop/api test --maxWorkers=2" \
+            "unit-api=pnpm --filter @opencoop/api exec jest --maxWorkers=2" \
             "unit-web=pnpm --filter @opencoop/web test"
       # Only main writes the pnpm store cache. PRs restore it from here.
       - name: Prune pnpm store
