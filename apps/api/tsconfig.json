@@ -11,6 +11,10 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
+    // Lets ts-jest transpile each spec file on its own instead of type
+    // checking it (about 2x faster unit tests). `tsc --noEmit` in CI still
+    // checks the types.
+    "isolatedModules": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
     "noImplicitAny": false,
