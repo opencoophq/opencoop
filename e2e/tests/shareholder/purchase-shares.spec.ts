@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Purchase shares', () => {
-  test('can open buy dialog and see share classes', async ({ page }) => {
+  test('can open buy dialog and see share classes', { tag: '@smoke' }, async ({ page }) => {
     await page.goto('/nl/dashboard/shares');
 
     // Wait for shares page to load
-    await expect(page.getByRole('heading', { name: 'Aandelen', exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Aandelen', exact: true })).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Click "Aandelen kopen" button (first one = parent's, minors may have their own)
     await page.getByRole('button', { name: 'Aandelen kopen' }).first().click();

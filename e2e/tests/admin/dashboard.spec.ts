@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Admin dashboard', () => {
-  test('displays overview stats and navigation', async ({ page }) => {
+  test('displays overview stats and navigation', { tag: '@smoke' }, async ({ page }) => {
     await page.goto('/nl/dashboard/admin');
 
     // Main heading includes coop name
-    await expect(page.getByRole('heading', { name: /Overzicht/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: /Overzicht/i })).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Verify stats cards are shown
     await expect(page.getByRole('heading', { name: 'Totaal aandeelhouders' })).toBeVisible();

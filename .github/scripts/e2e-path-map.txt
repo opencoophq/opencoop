@@ -1,0 +1,156 @@
+# Maps changed paths to the Playwright specs a PR runs (see e2e-select.sh).
+#
+# One rule per line: <path-pattern> <spec-pattern>...
+#   - Both sides are bash patterns matched against repo-relative paths.
+#     `*` also matches `/`, so `apps/api/src/modules/auth/*` covers the
+#     whole directory tree.
+#   - Write a literal `[` `]` `(` `)` in a route folder as `?`:
+#     `[coopSlug]` becomes `?coopSlug?`, `(auth)` becomes `?auth?`.
+#   - A `-` instead of spec patterns means "no specs beyond @smoke". Use it
+#     for code no spec exercises.
+#   - Every rule that matches a path adds its specs. A spec pattern that
+#     matches no spec file makes the script run the full suite, so a
+#     renamed spec cannot drop out silently.
+#
+# A path no rule matches runs the full suite. To extend: add a rule for the
+# new area, then run `bash .github/scripts/e2e-select.test.sh`.
+# Shared code (packages/, lockfile, e2e config and helpers, this file) always
+# runs the full suite; that list lives in e2e-select.sh, not here.
+
+# --- Not part of the running app: smoke only --------------------------------
+docs/*                                  -
+apps/docs/*                             -
+tasks/*                                 -
+agents/*                                -
+.claude/*                               -
+README.md                               -
+LICENSE                                 -
+NOTICE                                  -
+CHANGELOG.md                            -
+lefthook.yml                            -
+.prettierrc                             -
+deploy/*                                -
+docker-compose*.yml                     -
+nginx.conf                              -
+apps/api/Dockerfile                     -
+apps/web/Dockerfile                     -
+.github/actions/remote-deploy/*         -
+.github/workflows/auto-merge.yml        -
+.github/workflows/docs-deploy.yml       -
+.github/dependabot.yml                  -
+.github/ISSUE_TEMPLATE/*                -
+.github/pull_request_template.md        -
+# Jest unit tests and their helpers. Playwright specs live under e2e/.
+apps/*.spec.ts                          -
+apps/*.spec.tsx                         -
+apps/api/src/test-utils/*               -
+apps/*/jest.config.js                   -
+
+# --- API modules -------------------------------------------------------------
+# admin.controller.ts serves most admin routes.
+apps/api/src/modules/admin/*            e2e/tests/admin/*.spec.ts
+apps/api/src/modules/auth/*             e2e/tests/auth/*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts e2e/tests/public/registration-existing-user.spec.ts
+apps/api/src/modules/users/*            e2e/tests/auth/*.spec.ts e2e/tests/shareholder/settings.spec.ts e2e/tests/shareholder/personal-data.spec.ts
+apps/api/src/modules/shareholders/*     e2e/tests/admin/shareholder-*.spec.ts e2e/tests/shareholder/personal-data.spec.ts e2e/tests/shareholder/bank-details.spec.ts e2e/tests/public/registration-*.spec.ts
+apps/api/src/modules/shareholder-status/* e2e/tests/admin/shareholder-status-readonly.spec.ts e2e/tests/admin/shareholder-list.spec.ts
+apps/api/src/modules/audit/*            e2e/tests/admin/shareholder-audit-history.spec.ts
+# registrations = share buy/sell transactions, not member sign-up.
+apps/api/src/modules/registrations/*    e2e/tests/public/registration-*.spec.ts e2e/tests/shareholder/purchase-shares.spec.ts e2e/tests/shareholder/sell-shares.spec.ts e2e/tests/shareholder/transactions.spec.ts e2e/tests/admin/shareholder-buy-shares.spec.ts e2e/tests/admin/shareholder-sell-shares.spec.ts e2e/tests/admin/transactions.spec.ts
+apps/api/src/modules/shares/*           e2e/tests/admin/share-classes.spec.ts e2e/tests/admin/shareholder-buy-shares.spec.ts e2e/tests/admin/shareholder-sell-shares.spec.ts e2e/tests/shareholder/purchase-shares.spec.ts e2e/tests/shareholder/sell-shares.spec.ts e2e/tests/public/registration-*.spec.ts
+apps/api/src/modules/payments/*         e2e/tests/admin/transactions.spec.ts e2e/tests/shareholder/transactions.spec.ts e2e/tests/shareholder/purchase-shares.spec.ts e2e/tests/*/charge-card*.spec.ts
+apps/api/src/modules/ogm/*              e2e/tests/admin/transactions.spec.ts e2e/tests/shareholder/transactions.spec.ts e2e/tests/shareholder/purchase-shares.spec.ts e2e/tests/*/charge-card*.spec.ts e2e/tests/public/registration-*.spec.ts
+apps/api/src/modules/bank-import/*      e2e/tests/admin/transactions.spec.ts e2e/tests/admin/charge-cards.spec.ts
+apps/api/src/modules/charge-cards/*     e2e/tests/*/charge-card*.spec.ts
+apps/api/src/modules/channels/*         e2e/tests/public/registration-*.spec.ts
+apps/api/src/modules/email/*            e2e/tests/public/registration-*.spec.ts
+apps/api/src/modules/documents/*        e2e/tests/shareholder/purchase-shares.spec.ts e2e/tests/shareholder/mobile-layout.spec.ts
+# The billing gate decides whether admin write actions are allowed.
+apps/api/src/modules/billing/*          e2e/tests/admin/*.spec.ts
+# No spec exercises these. A module that breaks API startup still fails smoke.
+apps/api/src/modules/admin-notifications/* -
+apps/api/src/modules/api-keys/*         -
+apps/api/src/modules/audience-sync/*    -
+apps/api/src/modules/changelog/*        -
+apps/api/src/modules/coop-admins/*      -
+apps/api/src/modules/dividends/*        -
+apps/api/src/modules/external-api/*     -
+apps/api/src/modules/feature-requests/* -
+apps/api/src/modules/mcp/*              -
+apps/api/src/modules/meetings/*         -
+apps/api/src/modules/messages/*         -
+apps/api/src/modules/migration-requests/* -
+apps/api/src/modules/ponto/*            -
+apps/api/src/modules/projects/*         -
+apps/api/src/modules/system/*           -
+apps/api/src/modules/volunteers/*       -
+
+# --- Web: public and auth routes ---------------------------------------------
+apps/web/src/app/?locale?/?auth?/*      e2e/tests/auth/*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts
+apps/web/src/components/auth/*          e2e/tests/auth/*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts
+apps/web/src/lib/post-login-redirect.ts e2e/tests/auth/*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts
+apps/web/src/lib/sessions.ts            e2e/tests/auth/*.spec.ts
+apps/web/src/app/?locale?/?coopSlug?/login/*      e2e/tests/auth/*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts
+apps/web/src/app/?locale?/?coopSlug?/magic-link/* e2e/tests/auth/*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts
+apps/web/src/app/?locale?/?coopSlug?/register/*   e2e/tests/public/registration-*.spec.ts e2e/tests/public/charge-card-entry.spec.ts
+apps/web/src/app/?locale?/?coopSlug?/page.tsx     e2e/tests/public/registration-*.spec.ts
+apps/web/src/app/?locale?/?coopSlug?/?channelSlug?/* e2e/tests/public/registration-*.spec.ts e2e/tests/public/charge-cards-login-redirect.spec.ts
+apps/web/src/app/?locale?/?coopSlug?/laadpas/*    e2e/tests/*/charge-card-entry.spec.ts
+apps/web/src/app/?locale?/?coopSlug?/claim/*      -
+apps/web/src/app/?locale?/?coopSlug?/vrijwilligers/* -
+# The static demo route shadows [coopSlug] for /nl/demo/...
+apps/web/src/app/?locale?/demo/*        e2e/tests/public/*.spec.ts e2e/tests/auth/*.spec.ts
+apps/web/src/components/coop-register-content.tsx e2e/tests/public/registration-*.spec.ts e2e/tests/public/charge-card-entry.spec.ts
+apps/web/src/lib/registration-error.ts  e2e/tests/public/registration-*.spec.ts
+apps/web/src/lib/charge-card-entry.ts   e2e/tests/*/charge-card*.spec.ts
+apps/web/src/lib/charge-cards-validation.ts e2e/tests/*/charge-card*.spec.ts
+# Marketing and other pages no spec visits.
+apps/web/src/app/?locale?/page.tsx      -
+apps/web/src/app/?locale?/home-page.tsx -
+apps/web/src/app/?locale?/dpa/*         -
+apps/web/src/app/?locale?/emancipate/*  -
+apps/web/src/app/?locale?/feature-request/* -
+apps/web/src/app/?locale?/invite/*      -
+apps/web/src/app/?locale?/meetings/*    -
+apps/web/src/app/?locale?/migration/*   -
+apps/web/src/app/?locale?/onboarding/*  -
+apps/web/src/app/?locale?/pricing/*     -
+apps/web/src/app/?locale?/privacy/*     -
+apps/web/src/app/?locale?/r/*           -
+apps/web/src/app/?locale?/terms/*       -
+apps/web/src/app/?locale?/vrijwilligers/* -
+apps/web/src/components/marketing/*     -
+apps/web/src/app/robots.ts              -
+apps/web/src/app/sitemap.ts             -
+apps/web/public/*                       -
+
+# --- Web: admin dashboard ----------------------------------------------------
+# mobile-layout.spec.ts visits every admin page, so each admin rule runs it.
+apps/web/src/app/?locale?/dashboard/admin/layout.tsx e2e/tests/admin/*.spec.ts
+apps/web/src/app/?locale?/dashboard/admin/page.tsx   e2e/tests/admin/dashboard.spec.ts e2e/tests/admin/mobile-layout.spec.ts
+apps/web/src/app/?locale?/dashboard/admin/*          e2e/tests/admin/mobile-layout.spec.ts
+apps/web/src/app/?locale?/dashboard/admin/shareholders/* e2e/tests/admin/shareholder-*.spec.ts
+apps/web/src/app/?locale?/dashboard/admin/share-classes/* e2e/tests/admin/share-classes.spec.ts e2e/tests/admin/shareholder-buy-shares.spec.ts e2e/tests/shareholder/purchase-shares.spec.ts
+apps/web/src/app/?locale?/dashboard/admin/transactions/* e2e/tests/admin/transactions.spec.ts
+apps/web/src/app/?locale?/dashboard/admin/bank-import/*  e2e/tests/admin/transactions.spec.ts e2e/tests/admin/charge-cards.spec.ts
+apps/web/src/app/?locale?/dashboard/admin/charge-cards/* e2e/tests/admin/charge-cards.spec.ts
+apps/web/src/app/?locale?/dashboard/admin/settings/*     e2e/tests/admin/settings.spec.ts
+apps/web/src/components/admin/*         e2e/tests/admin/*.spec.ts
+apps/web/src/components/charts/*        e2e/tests/admin/dashboard.spec.ts e2e/tests/admin/mobile-layout.spec.ts
+apps/web/src/components/reports/*       e2e/tests/admin/mobile-layout.spec.ts
+apps/web/src/components/settings/*      e2e/tests/admin/settings.spec.ts e2e/tests/shareholder/settings.spec.ts
+apps/web/src/components/billing-gate.tsx e2e/tests/admin/*.spec.ts
+apps/web/src/app/?locale?/dashboard/system/* -
+
+# --- Web: shareholder dashboard ----------------------------------------------
+# mobile-layout.spec.ts visits every shareholder page, so each rule runs it.
+apps/web/src/app/?locale?/dashboard/page.tsx         e2e/tests/shareholder/dashboard.spec.ts e2e/tests/shareholder/charge-cards.spec.ts e2e/tests/shareholder/mobile-layout.spec.ts
+apps/web/src/components/volunteer-opt-in.tsx         e2e/tests/shareholder/dashboard.spec.ts
+apps/web/src/app/?locale?/dashboard/shares/*         e2e/tests/shareholder/purchase-shares.spec.ts e2e/tests/shareholder/sell-shares.spec.ts e2e/tests/shareholder/mobile-layout.spec.ts
+apps/web/src/app/?locale?/dashboard/transactions/*   e2e/tests/shareholder/transactions.spec.ts e2e/tests/shareholder/mobile-layout.spec.ts
+apps/web/src/app/?locale?/dashboard/personal-data/*  e2e/tests/shareholder/personal-data.spec.ts e2e/tests/shareholder/bank-details.spec.ts e2e/tests/shareholder/mobile-layout.spec.ts
+apps/web/src/app/?locale?/dashboard/settings/*       e2e/tests/shareholder/settings.spec.ts e2e/tests/shareholder/mobile-layout.spec.ts
+apps/web/src/app/?locale?/dashboard/charge-cards/*   e2e/tests/*/charge-card*.spec.ts
+apps/web/src/app/?locale?/dashboard/dividends/*      e2e/tests/shareholder/mobile-layout.spec.ts
+apps/web/src/app/?locale?/dashboard/documents/*      e2e/tests/shareholder/mobile-layout.spec.ts
+apps/web/src/app/?locale?/dashboard/inbox/*          e2e/tests/shareholder/mobile-layout.spec.ts
+apps/web/src/app/?locale?/dashboard/meetings/*       e2e/tests/shareholder/mobile-layout.spec.ts
