@@ -5,52 +5,108 @@ on:
     branches: [main]
     paths-ignore: ["apps/docs/**"]
     tags: ["v*"]
+  # No paths-ignore here: the `changes` job skips e2e for docs-only PRs, and
+  # the required checks `test` and `e2e` must report or the PR stays blocked.
   pull_request:
     branches: [main]
-    paths-ignore: ["apps/docs/**"]
+  # Nightly full run on main: e2e regardless of path filters, plus the
+  # dependency audit. Deploy jobs only run on push, so this never deploys.
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # event_name keeps a nightly or manual run from cancelling a main deploy.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   REGISTRY: ghcr.io
   OWNER: opencoophq
+  # actions/cache waits 10 minutes on a stalled download by default. A main
+  # run on 2026-10-30 lost exactly that on the pnpm store. Give up sooner and
+  # install from the registry instead.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 jobs:
+  # Decides whether a PR needs e2e and the Docker builds. Every other event
+  # (push to main, tags, nightly, manual) always runs everything.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      app: ${{ steps.decide.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'pull_request'
+        with:
+          sparse-checkout: .github/scripts
+      - id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -o pipefail
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+            echo "app=true" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate --jq '.[].filename' > changed.txt
+          echo "Changed files: $(wc -l < changed.txt)"
+          bash .github/scripts/ci-changes.sh < changed.txt | tee -a "$GITHUB_OUTPUT"
+
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Test remote deploy script
-        run: bash deploy/remote-deploy.test.sh
+      - name: Test CI and deploy scripts
+        run: |
+          bash deploy/remote-deploy.test.sh
+          bash .github/scripts/ci-changes.test.sh
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+      - name: Build workspace dependencies (shared, pdf-templates)
+        run: pnpm --filter "@opencoop/api^..." build
+      # Independent checks on a 4-vCPU runner: run them side by side.
+      - name: Typecheck, lint, unit tests (parallel)
+        run: |
+          bash .github/scripts/run-parallel.sh \
+            "typecheck-api=pnpm --filter @opencoop/api exec tsc --noEmit -p tsconfig.json" \
+            "typecheck-web=pnpm --filter @opencoop/web exec tsc --noEmit" \
+            "lint-api=pnpm --filter @opencoop/api lint" \
+            "lint-web=pnpm --filter @opencoop/web lint" \
+            "unit-api=pnpm --filter @opencoop/api exec jest --maxWorkers=2" \
+            "unit-web=pnpm --filter @opencoop/web test"
+      # Only main writes the pnpm store cache. PRs restore it from here.
+      - name: Prune pnpm store
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.setup.outputs.cache-hit != 'true'
+        run: pnpm store prune
+      - name: Save pnpm store cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.setup.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ steps.setup.outputs.store-path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+  # Report-only, so it no longer runs on every PR (it cost 70-90s per run).
+  audit:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Generate Prisma client
-        run: pnpm db:generate
-      - name: Build workspace dependencies (shared, pdf-templates)
-        run: pnpm --filter "@opencoop/api^..." build
-      - name: Typecheck (api + web)
-        run: |
-          pnpm --filter @opencoop/api exec tsc --noEmit -p tsconfig.json
-          pnpm --filter @opencoop/web exec tsc --noEmit
-      - name: Lint (api + web)
-        run: |
-          pnpm --filter @opencoop/api lint
-          pnpm --filter @opencoop/web exec next lint
-      - name: Unit tests (api)
-        run: pnpm --filter @opencoop/api test
-      - name: Unit tests (web)
-        run: pnpm --filter @opencoop/web test
       - name: Dependency audit (report only)
         run: pnpm audit --prod || true
 
   e2e:
+    needs: changes
+    # Fail open: if `changes` broke, its output is empty and e2e still runs.
+    if: ${{ !cancelled() && needs.changes.outputs.app != 'false' }}
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -75,29 +131,38 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+    env:
+      ON_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup-workspace
 
-      - uses: actions/setup-node@v4
+      # Next.js reuses its build cache across runs. Keyed on web sources,
+      # with fallbacks so a partial match still speeds up the build.
+      - name: Restore Next.js build cache
+        id: next-cache
+        uses: actions/cache/restore@v4
         with:
-          node-version: 20
-          cache: pnpm
+          path: apps/web/.next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/web/src/**', 'apps/web/messages/**', 'packages/shared/src/**') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            next-${{ runner.os }}-
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm db:generate
-
-      - name: Lint
-        run: pnpm --filter @opencoop/web exec next lint
-
+      # Only the two apps e2e serves (and what they depend on). `pnpm build`
+      # also built the docs site, which e2e never uses.
       - name: Build API & Web
-        run: pnpm build
+        run: pnpm exec turbo build --filter=@opencoop/api --filter=@opencoop/web
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
+
+      - name: Save Next.js build cache
+        if: env.ON_MAIN == 'true' && steps.next-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: apps/web/.next/cache
+          key: ${{ steps.next-cache.outputs.cache-primary-key }}
 
       - name: Push schema to test DB
         run: pnpm db:push
@@ -114,8 +179,31 @@ jobs:
         env:
           DATABASE_URL: postgresql://opencoop:opencoop@localhost:5433/opencoop_test
 
+      - name: Install e2e dependencies
+        run: cd e2e && npm ci
+
+      - name: Restore Playwright browsers
+        id: pw-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
+
       - name: Install Playwright (Chromium only)
-        run: cd e2e && npm install && npx playwright install chromium --with-deps
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: cd e2e && npx playwright install chromium --with-deps
+
+      # Cached browsers still need their system libraries on a fresh runner.
+      - name: Install Playwright system dependencies
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: cd e2e && npx playwright install-deps chromium
+
+      - name: Save Playwright browsers
+        if: env.ON_MAIN == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.pw-cache.outputs.cache-primary-key }}
 
       - name: Run E2E tests
         run: cd e2e && npx playwright test
@@ -140,11 +228,25 @@ jobs:
             e2e/test-results/
           retention-days: 7
 
+  # One job per image, so the API and Migrate builds no longer wait behind
+  # the Web build. `needs: build` in the deploy jobs waits for all three.
   build:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.app != 'false' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            file: apps/api/Dockerfile
+          - image: web
+            file: apps/web/Dockerfile
+          - image: migrate
+            file: deploy/migrate.Dockerfile
     steps:
       - uses: actions/checkout@v4
 
@@ -156,38 +258,21 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build & push API
+      # Every run reads main's layer cache; only main writes it. PR and tag
+      # runs used to write their own copies (mode=max), which kept the repo
+      # cache over its 10 GB limit and evicted main's layers.
+      - name: Build & push ${{ matrix.image }}
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/api/Dockerfile
+          file: ${{ matrix.file }}
           push: ${{ github.event_name == 'push' }}
-          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-api:${{ github.sha }}
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
-
-      - name: Build & push Web
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/web/Dockerfile
-          push: ${{ github.event_name == 'push' }}
-          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-web:${{ github.sha }}
+          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-${{ matrix.image }}:${{ github.sha }}
           build-args: |
-            NEXT_PUBLIC_API_URL=/api
-            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
-
-      - name: Build & push Migrate
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: deploy/migrate.Dockerfile
-          push: ${{ github.event_name == 'push' }}
-          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/opencoop-migrate:${{ github.sha }}
-          cache-from: type=gha,scope=migrate
-          cache-to: type=gha,mode=max,scope=migrate
+            ${{ matrix.image == 'web' && 'NEXT_PUBLIC_API_URL=/api' || '' }}
+            ${{ matrix.image == 'web' && format('NEXT_PUBLIC_SENTRY_DSN={0}', secrets.NEXT_PUBLIC_SENTRY_DSN) || '' }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && format('type=gha,mode=max,scope={0}', matrix.image) || '' }}
 
   deploy-acc:
     needs: [build, e2e, test]

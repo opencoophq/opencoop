@@ -16,6 +16,7 @@
     "test:e2e:setup": "docker compose -f docker-compose.test.yml up -d && sleep 2 && DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm db:push && DATABASE_URL=postgresql://opencoop:opencoop@localhost:5433/opencoop_test pnpm db:seed"
   },
   "devDependencies": {
+    "lefthook": "^2.2.2",
     "prettier": "^3.2.5",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0"

@@ -8,7 +8,7 @@
     "start": "node dist/main",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "lint": "oxlint -c .oxlintrc.json src",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage"
@@ -79,11 +79,9 @@
     "@types/passport-local": "^1.0.38",
     "@types/qrcode": "^1.5.6",
     "@types/sanitize-html": "^2.16.1",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
-    "eslint": "^8.57.0",
     "jest": "^29.7.0",
     "node-ical": "^0.26.0",
+    "oxlint": "^1.90.0",
     "ts-jest": "^29.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.0"

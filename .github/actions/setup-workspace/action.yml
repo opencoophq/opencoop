@@ -1,0 +1,44 @@
+name: Set up workspace
+description: >-
+  Install Node, pnpm and workspace dependencies, then generate the Prisma
+  client. The pnpm store is restored from main's cache; this action never
+  saves it (the test job does that on main only), so PR runs cannot evict
+  main's entries from the 10 GB repo cache.
+
+outputs:
+  store-path:
+    description: pnpm store directory
+    value: ${{ steps.store.outputs.path }}
+  cache-hit:
+    description: '"true" when the exact lockfile key was restored'
+    value: ${{ steps.restore.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - id: store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - id: restore
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        # The node-cache-* prefix is the key actions/setup-node used before
+        # this action existed; it lets the first runs reuse that store.
+        restore-keys: |
+          pnpm-store-${{ runner.os }}-
+          node-cache-${{ runner.os }}-x64-pnpm-
+
+    - shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - shell: bash
+      run: pnpm db:generate
