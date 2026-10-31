@@ -1,0 +1,39 @@
+# Git hooks. Local `pnpm install` installs them through the lefthook postinstall
+# script; run `pnpm exec lefthook install` by hand if the hooks are missing.
+# Skip once with `LEFTHOOK=0 git push`.
+#
+# Every job checks the files that changed against origin/main (added, copied, modified,
+# renamed; not deleted). With `root:`, lefthook keeps only the files under that directory
+# and makes their paths relative to it. A job with no matching files is skipped.
+
+pre-push:
+  parallel: true
+  commands:
+    prettier:
+      glob: '*.{ts,tsx,js,json,md}'
+      files: git diff --name-only --diff-filter=ACMR origin/main...HEAD
+      run: pnpm exec prettier --check --ignore-unknown {files}
+
+    oxlint-api:
+      root: 'apps/api/'
+      glob: '*.{ts,tsx,js}'
+      files: git diff --name-only --diff-filter=ACMR origin/main...HEAD
+      run: pnpm exec oxlint -c .oxlintrc.json {files}
+
+    oxlint-web:
+      root: 'apps/web/'
+      glob: '*.{ts,tsx,js,jsx}'
+      files: git diff --name-only --diff-filter=ACMR origin/main...HEAD
+      run: pnpm exec oxlint -c .oxlintrc.json {files}
+
+    tsc-api:
+      root: 'apps/api/'
+      glob: '*.{ts,tsx,json}'
+      files: git diff --name-only --diff-filter=ACMR origin/main...HEAD
+      run: pnpm exec tsc --noEmit -p tsconfig.json
+
+    tsc-web:
+      root: 'apps/web/'
+      glob: '*.{ts,tsx,json}'
+      files: git diff --name-only --diff-filter=ACMR origin/main...HEAD
+      run: pnpm exec tsc --noEmit -p tsconfig.json
