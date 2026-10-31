@@ -5,9 +5,10 @@ on:
     branches: [main]
     paths-ignore: ["apps/docs/**"]
     tags: ["v*"]
+  # No paths-ignore here: the `changes` job skips e2e for docs-only PRs, and
+  # the required checks `test` and `e2e` must report or the PR stays blocked.
   pull_request:
     branches: [main]
-    paths-ignore: ["apps/docs/**"]
   # Nightly full run on main: e2e regardless of path filters, plus the
   # dependency audit. Deploy jobs only run on push, so this never deploys.
   schedule:
