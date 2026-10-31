@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe('Public registration - Individual', () => {
-  test('can register as a new individual shareholder', async ({ page }) => {
+  test('can register as a new individual shareholder', { tag: '@smoke' }, async ({ page }) => {
     const uniqueEmail = `e2e-ind-${Date.now()}@test.be`;
 
     // Navigate to registration page
@@ -30,7 +30,9 @@ test.describe('Public registration - Individual', () => {
     await page.getByRole('button', { name: 'Volgende' }).click();
 
     // Step 3: Order — select share class
-    await expect(page.getByRole('heading', { name: 'Selecteer aandelenklasse' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Selecteer aandelenklasse' })).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Open share class dropdown (Radix UI Select) and pick first option
     const shareClassCombobox = page.locator('[role="combobox"]').first();
@@ -74,7 +76,9 @@ test.describe('Public registration - Individual', () => {
     await page.goto('/nl/demo/default');
 
     // Verify share classes heading loads
-    await expect(page.getByRole('heading', { name: 'Aandelenklassen' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: 'Aandelenklassen' })).toBeVisible({
+      timeout: 15_000,
+    });
 
     // Verify share classes from seed data
     await expect(page.getByText('Aandeel A')).toBeVisible();
