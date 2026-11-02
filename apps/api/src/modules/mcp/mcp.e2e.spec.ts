@@ -53,6 +53,7 @@ import { ShareholdersService } from '../shareholders/shareholders.service';
 import { McpAuthMiddleware } from './mcp-auth.middleware';
 import { McpAuthStore } from './mcp-auth.store';
 import { McpToolkit } from './mcp-toolkit';
+import { McpServerCardController, mcpPublicUrl } from './mcp-server-card.controller';
 import { McpAnalyticsTools } from './tools/mcp-analytics.tools';
 import { McpCoopTools } from './tools/mcp-coop.tools';
 import { McpMessageTools } from './tools/mcp-message.tools';
@@ -371,12 +372,20 @@ class TestMcpToolsModule {}
     }),
     TestMcpToolsModule,
   ],
+  controllers: [McpServerCardController],
   providers: [McpAuthMiddleware, { provide: ApiKeysService, useValue: apiKeysService }],
 })
 class TestMcpModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(McpAuthMiddleware).forRoutes('mcp');
   }
+}
+
+interface ServerCard {
+  serverInfo: { name: string; title: string; version: string };
+  transport: { type: string; endpoint: string };
+  authentication: { required: boolean };
+  tools: Array<{ name: string; description: string; inputSchema?: { type: string } }>;
 }
 
 interface JsonRpcResponse {
@@ -513,5 +522,47 @@ describe('MCP HTTP transport', () => {
       value: 'saved',
       scope: 'READ_WRITE',
     });
+  });
+
+  it('serves a public server card that lists the registered tools', async () => {
+    const cardResponse = await fetch(`${baseUrl}/.well-known/mcp/server-card.json`);
+    const card = (await cardResponse.json()) as ServerCard;
+    const listed = await postMcp(
+      { jsonrpc: '2.0', id: 7, method: 'tools/list', params: {} },
+      'oc_read_only',
+    );
+    const listedNames = listed.body.result?.tools?.map((tool) => tool.name) ?? [];
+
+    expect(cardResponse.status).toBe(200);
+    expect(cardResponse.headers.get('content-type')).toContain('application/json');
+    expect(cardResponse.headers.get('access-control-allow-origin')).toBe('*');
+    expect(card.serverInfo).toEqual({ name: 'opencoop', title: 'OpenCoop MCP', version: '1.0.0' });
+    expect(card.transport.type).toBe('streamable-http');
+    expect(card.authentication.required).toBe(true);
+    expect(card.tools.length).toBeGreaterThan(0);
+    expect(card.tools.map((tool) => tool.name)).toEqual(listedNames);
+    expect(card.tools.map((tool) => tool.name)).toContain('get_coop_info');
+    for (const tool of card.tools) {
+      expect(tool.description).toEqual(expect.any(String));
+      expect(tool.inputSchema?.type).toBe('object');
+    }
+  });
+});
+
+describe('mcpPublicUrl', () => {
+  it('uses MCP_PUBLIC_URL when set', () => {
+    expect(
+      mcpPublicUrl({ MCP_PUBLIC_URL: 'https://mcp.example.test/mcp', FRONTEND_URL: 'https://x' }),
+    ).toBe('https://mcp.example.test/mcp');
+  });
+
+  it('falls back to FRONTEND_URL + /api/mcp', () => {
+    expect(mcpPublicUrl({ FRONTEND_URL: 'https://opencoop.be/' })).toBe(
+      'https://opencoop.be/api/mcp',
+    );
+  });
+
+  it('falls back to the local web dev server', () => {
+    expect(mcpPublicUrl({})).toBe('http://localhost:3002/api/mcp');
   });
 });
