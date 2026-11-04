@@ -394,13 +394,20 @@ model ApiKey {
 }
 
 model MagicLinkToken {
-  id        String    @id @default(cuid())
-  token     String    @unique
-  userId    String
-  email     String
-  createdAt DateTime  @default(now())
-  expiresAt DateTime
-  usedAt    DateTime?
+  id             String    @id @default(cuid())
+  token          String    @unique
+  userId         String
+  email          String
+  // SHA-256 of salt + code, hex. Null on rows from before one-time codes.
+  // The 6-digit code itself is never stored.
+  codeHash       String?
+  codeSalt       String?
+  // Wrong code guesses. At 5 the code locks and must be requested again.
+  // The link on the same row still works until it is used or expires.
+  failedAttempts Int       @default(0)
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+  usedAt         DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

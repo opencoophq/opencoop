@@ -48,10 +48,11 @@
     "expires": "Dieser Link läuft in 1 Stunde ab."
   },
   "magic-link": {
-    "title": "Anmeldung bei OpenCoop",
-    "click": "Klicken Sie auf die Schaltfläche unten, um sich anzumelden:",
+    "title": "Bei {coopName} anmelden",
+    "codeLabel": "Ihr Code",
+    "click": "Geben Sie diesen Code auf der Anmeldeseite ein, oder nutzen Sie die Schaltfläche auf dem Gerät, auf dem Sie angemeldet bleiben möchten.",
     "button": "Anmelden",
-    "expires": "Dieser Link läuft in 15 Minuten ab. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren."
+    "expires": "Dieser Code und dieser Link sind 10 Minuten gültig. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren."
   },
   "gift-certificate": {
     "title": "Ihr Geschenkgutschein",

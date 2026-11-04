@@ -11,7 +11,7 @@ import { resolveLogoUrl } from '@/lib/api';
 import { saveSession } from '@/lib/sessions';
 import { MfaVerifyStep } from '@/components/auth/mfa-verify-step';
 
-type VerifyState = 'loading' | 'success' | 'error' | 'mfa';
+type VerifyState = 'confirm' | 'loading' | 'success' | 'error' | 'mfa';
 
 interface CoopPublicInfo {
   id: string;
@@ -34,7 +34,7 @@ export function CoopMagicLinkContent({
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
-  const [state, setState] = useState<VerifyState>('loading');
+  const [state, setState] = useState<VerifyState>('confirm');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [coop, setCoop] = useState<CoopPublicInfo | null>(null);
   const [coopLoading, setCoopLoading] = useState(true);
@@ -70,62 +70,58 @@ export function CoopMagicLinkContent({
     fetchCoop();
   }, [coopSlug, channelSlug]);
 
-  // Verify token
-  useEffect(() => {
-    if (coopLoading) return;
+  const view: VerifyState = token ? state : 'error';
+  const viewError = token ? errorMessage : t('auth.magicLinkInvalid');
 
+  // Mail scanners prefetch the link with GET or HEAD, and some render the
+  // page. Nothing here may call verify until the member presses Sign in.
+  const confirmSignIn = async () => {
     if (!token) {
       setState('error');
       setErrorMessage(t('auth.magicLinkInvalid'));
       return;
     }
 
-    const verifyToken = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/magic-link/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        });
+    setState('loading');
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/magic-link/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
 
-        const result = await response.json();
+      const result = await response.json();
 
-        if (!response.ok) {
-          setState('error');
-          if (result.message?.includes('expired')) {
-            setErrorMessage(t('auth.magicLinkExpired'));
-          } else if (result.message?.includes('already been used')) {
-            setErrorMessage(t('auth.magicLinkUsed'));
-          } else {
-            setErrorMessage(t('auth.magicLinkInvalid'));
-          }
-          return;
-        }
-
-        // Check if MFA is required
-        if (result.requiresMfa) {
-          setMfaToken(result.mfaToken);
-          setState('mfa');
-          return;
-        }
-
-        // Store token and user data
-        saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
-
-        setState('success');
-
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 2000);
-      } catch {
+      if (!response.ok) {
         setState('error');
-        setErrorMessage(t('auth.loginError'));
+        if (result.message?.includes('expired')) {
+          setErrorMessage(t('auth.magicLinkExpired'));
+        } else if (result.message?.includes('already been used')) {
+          setErrorMessage(t('auth.magicLinkUsed'));
+        } else {
+          setErrorMessage(t('auth.magicLinkInvalid'));
+        }
+        return;
       }
-    };
 
-    verifyToken();
-  }, [token, router, t, coopLoading]);
+      if (result.requiresMfa) {
+        setMfaToken(result.mfaToken);
+        setState('mfa');
+        return;
+      }
+
+      saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
+
+      setState('success');
+
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
+    } catch {
+      setState('error');
+      setErrorMessage(t('auth.loginError'));
+    }
+  };
 
   if (notFoundError) {
     notFound();
@@ -163,15 +159,30 @@ export function CoopMagicLinkContent({
             </div>
           )}
           <CardTitle className="text-2xl">
-            {state === 'loading' && t('auth.magicLinkVerifying')}
-            {state === 'success' && t('auth.loginSuccess')}
-            {state === 'mfa' && t('mfa.verifyTitle')}
-            {state === 'error' && t('auth.loginError')}
+            {view === 'confirm' && t('auth.magicLinkConfirmTitle')}
+            {view === 'loading' && t('auth.magicLinkVerifying')}
+            {view === 'success' && t('auth.loginSuccess')}
+            {view === 'mfa' && t('mfa.verifyTitle')}
+            {view === 'error' && t('auth.loginError')}
           </CardTitle>
           <CardDescription>{coop?.name || 'OpenCoop'}</CardDescription>
         </CardHeader>
         <CardContent>
-          {state === 'loading' && (
+          {view === 'confirm' && (
+            <div className="space-y-4 text-center">
+              <p className="text-muted-foreground">{t('auth.magicLinkConfirmBody')}</p>
+              <Button
+                type="button"
+                className="w-full"
+                onClick={confirmSignIn}
+                style={coop ? { backgroundColor: coop.primaryColor } : undefined}
+              >
+                {t('auth.magicLinkConfirmButton')}
+              </Button>
+            </div>
+          )}
+
+          {view === 'loading' && (
             <div className="text-center space-y-4">
               <div
                 className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto"
@@ -181,7 +192,7 @@ export function CoopMagicLinkContent({
             </div>
           )}
 
-          {state === 'mfa' && mfaToken && (
+          {view === 'mfa' && mfaToken && (
             <MfaVerifyStep
               mfaToken={mfaToken}
               brandColor={coop?.primaryColor}
@@ -195,7 +206,7 @@ export function CoopMagicLinkContent({
             />
           )}
 
-          {state === 'success' && (
+          {view === 'success' && (
             <div className="text-center space-y-4">
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
@@ -220,10 +231,10 @@ export function CoopMagicLinkContent({
             </div>
           )}
 
-          {state === 'error' && (
+          {view === 'error' && (
             <div className="space-y-4">
               <Alert variant="destructive">
-                <AlertDescription>{errorMessage}</AlertDescription>
+                <AlertDescription>{viewError}</AlertDescription>
               </Alert>
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">{t('auth.magicLinkTryAgain')}</p>

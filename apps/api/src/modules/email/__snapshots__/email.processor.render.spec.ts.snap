@@ -1773,8 +1773,12 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       </head>
       <body>
         
-    <h1>Anmeldung bei OpenCoop</h1>
-    <p>Klicken Sie auf die Schaltfläche unten, um sich anzumelden:</p>
+    <h1>Bei Coöp &amp; Co anmelden</h1>
+    <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">Ihr Code</p>
+    <p style="text-align: center; margin: 8px 0 24px;">
+      <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">482913</span>
+    </p>
+    <p>Geben Sie diesen Code auf der Anmeldeseite ein, oder nutzen Sie die Schaltfläche auf dem Gerät, auf dem Sie angemeldet bleiben möchten.</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="https://opencoop.test/magic?token=abc123"
          style="background-color: #1e40af; color: white; padding: 12px 24px;
@@ -1783,7 +1787,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       </a>
     </p>
     <p style="color: #666; font-size: 12px;">
-      Dieser Link läuft in 15 Minuten ab. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.
+      Dieser Code und dieser Link sind 10 Minuten gültig. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.
     </p>
   
         <hr>
@@ -1808,17 +1812,21 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       </head>
       <body>
         
-    <h1>Login to OpenCoop</h1>
-    <p>Click the button below to log in:</p>
+    <h1>Log in to Coöp &amp; Co</h1>
+    <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">Your code</p>
+    <p style="text-align: center; margin: 8px 0 24px;">
+      <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">482913</span>
+    </p>
+    <p>Enter this code on the sign-in page, or press the button on the device where you want to stay signed in.</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="https://opencoop.test/magic?token=abc123"
          style="background-color: #1e40af; color: white; padding: 12px 24px;
                 text-decoration: none; border-radius: 6px; display: inline-block;">
-        Log In
+        Sign in
       </a>
     </p>
     <p style="color: #666; font-size: 12px;">
-      This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.
+      This code and link are valid for 10 minutes. If you did not request this, you can ignore this email.
     </p>
   
         <hr>
@@ -1843,8 +1851,12 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       </head>
       <body>
         
-    <h1>Connexion à OpenCoop</h1>
-    <p>Cliquez sur le bouton ci-dessous pour vous connecter :</p>
+    <h1>Connexion à Coöp &amp; Co</h1>
+    <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">Votre code</p>
+    <p style="text-align: center; margin: 8px 0 24px;">
+      <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">482913</span>
+    </p>
+    <p>Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l'appareil où vous voulez rester connecté.</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="https://opencoop.test/magic?token=abc123"
          style="background-color: #1e40af; color: white; padding: 12px 24px;
@@ -1853,7 +1865,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       </a>
     </p>
     <p style="color: #666; font-size: 12px;">
-      Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.
+      Ce code et ce lien sont valables 10 minutes. Si vous n'avez pas demandé ceci, vous pouvez ignorer cet e-mail.
     </p>
   
         <hr>
@@ -1878,8 +1890,12 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       </head>
       <body>
         
-    <h1>Inloggen bij OpenCoop</h1>
-    <p>Klik op de knop hieronder om in te loggen:</p>
+    <h1>Inloggen bij Coöp &amp; Co</h1>
+    <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">Je code</p>
+    <p style="text-align: center; margin: 8px 0 24px;">
+      <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">482913</span>
+    </p>
+    <p>Vul deze code in op de inlogpagina, of gebruik de knop op het apparaat waarop je wil blijven.</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="https://opencoop.test/magic?token=abc123"
          style="background-color: #1e40af; color: white; padding: 12px 24px;
@@ -1888,7 +1904,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       </a>
     </p>
     <p style="color: #666; font-size: 12px;">
-      Deze link vervalt binnen 15 minuten. Als je dit niet hebt aangevraagd, kan je deze e-mail veilig negeren.
+      Deze code en link zijn 10 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.
     </p>
   
         <hr>

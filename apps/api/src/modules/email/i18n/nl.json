@@ -48,10 +48,11 @@
     "expires": "Deze link vervalt binnen 1 uur."
   },
   "magic-link": {
-    "title": "Inloggen bij OpenCoop",
-    "click": "Klik op de knop hieronder om in te loggen:",
+    "title": "Inloggen bij {coopName}",
+    "codeLabel": "Je code",
+    "click": "Vul deze code in op de inlogpagina, of gebruik de knop op het apparaat waarop je wil blijven.",
     "button": "Inloggen",
-    "expires": "Deze link vervalt binnen 15 minuten. Als je dit niet hebt aangevraagd, kan je deze e-mail veilig negeren."
+    "expires": "Deze code en link zijn 10 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren."
   },
   "gift-certificate": {
     "title": "Je cadeaubon",
