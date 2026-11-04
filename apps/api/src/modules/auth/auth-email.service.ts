@@ -178,38 +178,42 @@ export class AuthEmailService {
     switch (lang) {
       case 'fr':
         return {
-          subject: 'Votre lien de connexion',
+          subject: 'Votre code de connexion',
           heading: `Connexion à ${coopName}`,
-          body: 'Cliquez sur le bouton ci-dessous pour vous connecter :',
+          codeLabel: 'Votre code',
+          body: 'Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l\'appareil où vous voulez rester connecté.',
           button: 'Se connecter',
-          expiry: 'Ce lien expire dans 15 minutes. Si vous n\'avez pas demandé ce lien, vous pouvez ignorer cet e-mail.',
+          expiry: 'Ce code et ce lien sont valables 10 minutes. Si vous n\'avez pas demandé ceci, vous pouvez ignorer cet e-mail.',
           footer: `Cet e-mail a été envoyé par ${coopName}.`,
         };
       case 'de':
         return {
-          subject: 'Ihr Login-Link',
+          subject: 'Ihr Anmeldecode',
           heading: `Bei ${coopName} anmelden`,
-          body: 'Klicken Sie auf die Schaltfläche unten, um sich anzumelden:',
+          codeLabel: 'Ihr Code',
+          body: 'Geben Sie diesen Code auf der Anmeldeseite ein, oder nutzen Sie die Schaltfläche auf dem Gerät, auf dem Sie angemeldet bleiben möchten.',
           button: 'Anmelden',
-          expiry: 'Dieser Link ist 15 Minuten gültig. Wenn Sie diesen Link nicht angefordert haben, können Sie diese E-Mail ignorieren.',
+          expiry: 'Dieser Code und dieser Link sind 10 Minuten gültig. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.',
           footer: `Diese E-Mail wurde von ${coopName} gesendet.`,
         };
       case 'en':
         return {
-          subject: 'Your Login Link',
-          heading: `Login to ${coopName}`,
-          body: 'Click the button below to log in:',
-          button: 'Log In',
-          expiry: 'This link expires in 15 minutes. If you didn\'t request this, you can safely ignore this email.',
+          subject: 'Your login code',
+          heading: `Log in to ${coopName}`,
+          codeLabel: 'Your code',
+          body: 'Enter this code on the sign-in page, or press the button on the device where you want to stay signed in.',
+          button: 'Sign in',
+          expiry: 'This code and link are valid for 10 minutes. If you did not request this, you can ignore this email.',
           footer: `This email was sent by ${coopName}.`,
         };
       default: // nl
         return {
-          subject: 'Je inloglink',
+          subject: 'Je inlogcode',
           heading: `Inloggen bij ${coopName}`,
-          body: 'Klik op de knop hieronder om in te loggen:',
+          codeLabel: 'Je code',
+          body: 'Vul deze code in op de inlogpagina, of gebruik de knop op het apparaat waarop je wil blijven.',
           button: 'Inloggen',
-          expiry: 'Deze link is 15 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.',
+          expiry: 'Deze code en link zijn 10 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.',
           footer: `Deze e-mail is verzonden door ${coopName}.`,
         };
     }

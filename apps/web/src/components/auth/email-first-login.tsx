@@ -52,6 +52,7 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
 
   const {
     register: registerEmail,
@@ -89,13 +90,69 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
         }),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
+
+      if (response.status === 429) {
+        throw new Error(t('auth.magicLinkRateLimited'));
+      }
 
       if (!response.ok) {
         throw new Error(result.message || t('auth.loginError'));
       }
 
+      setCode('');
       setStep('magic-link-sent');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('auth.loginError'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onCodeSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/magic-link/code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (response.status === 429) {
+        throw new Error(t('auth.magicLinkRateLimited'));
+      }
+
+      if (!response.ok) {
+        const message = String(result.message ?? '');
+        if (message.includes('Too many')) {
+          throw new Error(t('auth.magicLinkCodeLocked'));
+        }
+        if (message.includes('expired')) {
+          throw new Error(t('auth.magicLinkCodeExpired'));
+        }
+        if (message.includes('already been used')) {
+          throw new Error(t('auth.magicLinkUsed'));
+        }
+        throw new Error(t('auth.magicLinkCodeInvalid'));
+      }
+
+      if (result.requiresMfa) {
+        setMfaToken(result.mfaToken);
+        setStep('mfa');
+        return;
+      }
+
+      saveSession({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth.loginError'));
     } finally {
@@ -325,7 +382,7 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
 
           {/* Step 3a: Magic Link Sent */}
           {step === 'magic-link-sent' && (
-            <div className="text-center space-y-4">
+            <div className="space-y-4">
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center mx-auto bg-green-100 dark:bg-green-900/30"
                 style={coop ? { backgroundColor: `${coop.primaryColor}20` } : undefined}
@@ -345,13 +402,46 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
                   />
                 </svg>
               </div>
-              <p className="text-muted-foreground">{t('auth.magicLinkSent', { email })}</p>
+              <p className="text-center text-muted-foreground">{t('auth.magicLinkSent', { email })}</p>
+              <form onSubmit={onCodeSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="magic-link-code">{t('auth.magicLinkCodeLabel')}</Label>
+                  <Input
+                    id="magic-link-code"
+                    name="one-time-code"
+                    value={code}
+                    onChange={(event) => {
+                      const digits = event.target.value
+                        .replace(/[\s\u00a0\u2007\u202f]+/g, '')
+                        .replace(/\D/g, '')
+                        .slice(0, 6);
+                      setCode(digits);
+                    }}
+                    placeholder="000000"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    autoFocus
+                    maxLength={32}
+                    className="text-center text-2xl tracking-[0.5em] font-mono"
+                  />
+                  <p className="text-sm text-muted-foreground">{t('auth.magicLinkCodeHint')}</p>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading || code.length !== 6}
+                  style={coop ? { backgroundColor: coop.primaryColor } : undefined}
+                >
+                  {loading ? t('common.loading') : t('auth.magicLinkCodeSubmit')}
+                </Button>
+              </form>
               <Button
                 type="button"
                 variant="outline"
                 className="w-full"
                 onClick={() => {
                   setStep('method');
+                  setCode('');
                   setError(null);
                 }}
               >

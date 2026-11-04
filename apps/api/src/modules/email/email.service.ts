@@ -247,20 +247,20 @@ export class EmailService {
     });
   }
 
-  async sendMagicLink(coopId: string, to: string, magicLinkUrl: string) {
+  async sendMagicLink(coopId: string, to: string, magicLinkUrl: string, code: string) {
     const language = await this.resolveRecipientLanguage(to);
     const subjects: Record<string, string> = {
-      nl: 'Je inloglink',
-      en: 'Your Login Link',
-      fr: 'Votre lien de connexion',
-      de: 'Ihr Anmeldelink',
+      nl: 'Je inlogcode',
+      en: 'Your login code',
+      fr: 'Votre code de connexion',
+      de: 'Ihr Anmeldecode',
     };
     return this.send({
       coopId,
       to,
       subject: subjects[language] || subjects['nl'],
       templateKey: 'magic-link',
-      templateData: { magicLinkUrl, language },
+      templateData: { magicLinkUrl, code, language },
     });
   }
 

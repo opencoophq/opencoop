@@ -48,10 +48,11 @@
     "expires": "Ce lien expirera dans 1 heure."
   },
   "magic-link": {
-    "title": "Connexion à OpenCoop",
-    "click": "Cliquez sur le bouton ci-dessous pour vous connecter :",
+    "title": "Connexion à {coopName}",
+    "codeLabel": "Votre code",
+    "click": "Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l'appareil où vous voulez rester connecté.",
     "button": "Se connecter",
-    "expires": "Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité."
+    "expires": "Ce code et ce lien sont valables 10 minutes. Si vous n'avez pas demandé ceci, vous pouvez ignorer cet e-mail."
   },
   "gift-certificate": {
     "title": "Votre bon cadeau",

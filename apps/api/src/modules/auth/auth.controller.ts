@@ -18,6 +18,8 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ValidateUpgradeTokenDto, UpgradeToAdultDto } from './dto/upgrade-to-adult.dto';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
+import { VerifyMagicLinkCodeDto } from './dto/verify-magic-link-code.dto';
+import { MAGIC_LINK_IP_LIMIT, MAGIC_LINK_IP_TTL_MS } from './magic-link.constants';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { WaitlistDto } from './dto/waitlist.dto';
@@ -228,8 +230,8 @@ export class AuthController {
 
   @Public()
   @Post('magic-link/request')
-  @Throttle({ default: { ttl: 60000, limit: 3 } })
-  @ApiOperation({ summary: 'Request a magic link login email' })
+  @Throttle({ default: { ttl: MAGIC_LINK_IP_TTL_MS, limit: MAGIC_LINK_IP_LIMIT } })
+  @ApiOperation({ summary: 'Request a magic link login email with a one-time code' })
   @ApiResponse({ status: 200, description: 'If an account exists, a login link has been sent' })
   async requestMagicLink(@Body() requestMagicLinkDto: RequestMagicLinkDto) {
     return this.magicLinkService.requestMagicLink(requestMagicLinkDto);
@@ -237,11 +239,25 @@ export class AuthController {
 
   @Public()
   @Post('magic-link/verify')
-  @ApiOperation({ summary: 'Verify magic link token and login' })
+  @ApiOperation({ summary: 'Verify magic link token and login (confirm button only)' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 400, description: 'Invalid, expired, or already used token' })
   async verifyMagicLink(@Body() verifyMagicLinkDto: VerifyMagicLinkDto, @Req() req: Request) {
-    return this.magicLinkService.verifyMagicLink(verifyMagicLinkDto, req.ip, req.headers['user-agent']);
+    return this.magicLinkService.verifyMagicLink(
+      verifyMagicLinkDto,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  @Public()
+  @Post('magic-link/code')
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @ApiOperation({ summary: 'Sign in with the one-time code from the magic-link email' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 400, description: 'Invalid, expired, used, or locked code' })
+  async verifyMagicLinkCode(@Body() dto: VerifyMagicLinkCodeDto, @Req() req: Request) {
+    return this.magicLinkService.verifyMagicLinkCode(dto, req.ip, req.headers['user-agent']);
   }
 
   // ============================================================================

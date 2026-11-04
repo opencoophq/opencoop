@@ -73,6 +73,7 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
     },
     'magic-link': {
       magicLinkUrl: 'https://opencoop.test/magic?token=abc123',
+      code: '482913',
     },
     'minor-turned-adult': {
       firstName: 'Lotte',
