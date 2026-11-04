@@ -49,7 +49,7 @@
   },
   "magic-link": {
     "title": "Bei {coopName} anmelden",
-    "codeLabel": "Ihr Code",
+    "codeLine": "Ihr Anmeldecode: {code}",
     "click": "Geben Sie diesen Code auf der Anmeldeseite ein, oder nutzen Sie die Schaltfläche auf dem Gerät, auf dem Sie angemeldet bleiben möchten.",
     "button": "Anmelden",
     "expires": "Dieser Code und dieser Link sind 10 Minuten gültig. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren."

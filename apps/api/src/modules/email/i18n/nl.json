@@ -49,7 +49,7 @@
   },
   "magic-link": {
     "title": "Inloggen bij {coopName}",
-    "codeLabel": "Je code",
+    "codeLine": "Je inlogcode: {code}",
     "click": "Vul deze code in op de inlogpagina, of gebruik de knop op het apparaat waarop je wil blijven.",
     "button": "Inloggen",
     "expires": "Deze code en link zijn 10 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren."

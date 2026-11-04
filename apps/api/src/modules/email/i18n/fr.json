@@ -49,7 +49,7 @@
   },
   "magic-link": {
     "title": "Connexion à {coopName}",
-    "codeLabel": "Votre code",
+    "codeLine": "Votre code de connexion : {code}",
     "click": "Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l'appareil où vous voulez rester connecté.",
     "button": "Se connecter",
     "expires": "Ce code et ce lien sont valables 10 minutes. Si vous n'avez pas demandé ceci, vous pouvez ignorer cet e-mail."

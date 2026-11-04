@@ -178,9 +178,9 @@ export class AuthEmailService {
     switch (lang) {
       case 'fr':
         return {
-          subject: 'Votre code de connexion',
+          subject: `Votre code de connexion ${coopName}`,
           heading: `Connexion à ${coopName}`,
-          codeLabel: 'Votre code',
+          codeLine: 'Votre code de connexion : {code}',
           body: 'Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l\'appareil où vous voulez rester connecté.',
           button: 'Se connecter',
           expiry: 'Ce code et ce lien sont valables 10 minutes. Si vous n\'avez pas demandé ceci, vous pouvez ignorer cet e-mail.',
@@ -188,9 +188,9 @@ export class AuthEmailService {
         };
       case 'de':
         return {
-          subject: 'Ihr Anmeldecode',
+          subject: `Ihr Anmeldecode für ${coopName}`,
           heading: `Bei ${coopName} anmelden`,
-          codeLabel: 'Ihr Code',
+          codeLine: 'Ihr Anmeldecode: {code}',
           body: 'Geben Sie diesen Code auf der Anmeldeseite ein, oder nutzen Sie die Schaltfläche auf dem Gerät, auf dem Sie angemeldet bleiben möchten.',
           button: 'Anmelden',
           expiry: 'Dieser Code und dieser Link sind 10 Minuten gültig. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.',
@@ -198,9 +198,9 @@ export class AuthEmailService {
         };
       case 'en':
         return {
-          subject: 'Your login code',
+          subject: `Your ${coopName} sign-in code`,
           heading: `Log in to ${coopName}`,
-          codeLabel: 'Your code',
+          codeLine: 'Your sign-in code: {code}',
           body: 'Enter this code on the sign-in page, or press the button on the device where you want to stay signed in.',
           button: 'Sign in',
           expiry: 'This code and link are valid for 10 minutes. If you did not request this, you can ignore this email.',
@@ -208,9 +208,9 @@ export class AuthEmailService {
         };
       default: // nl
         return {
-          subject: 'Je inlogcode',
+          subject: `Je inlogcode voor ${coopName}`,
           heading: `Inloggen bij ${coopName}`,
-          codeLabel: 'Je code',
+          codeLine: 'Je inlogcode: {code}',
           body: 'Vul deze code in op de inlogpagina, of gebruik de knop op het apparaat waarop je wil blijven.',
           button: 'Inloggen',
           expiry: 'Deze code en link zijn 10 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.',

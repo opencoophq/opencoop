@@ -185,10 +185,13 @@ describe('MagicLinkService one-time code', () => {
     jest.restoreAllMocks();
   });
 
+  function sentMail(): { html: string; text: string; subject: string } {
+    return emailService.sendPlatformEmail.mock.calls.at(-1)[0];
+  }
+
   function sentCode(): string {
-    const html = emailService.sendPlatformEmail.mock.calls.at(-1)[0].html as string;
-    const match = html.match(/>(\d{6})</);
-    if (!match) throw new Error(`code missing from email: ${html}`);
+    const match = sentMail().text.match(/:\s*(\d{6})/);
+    if (!match) throw new Error(`code missing from email: ${sentMail().text}`);
     return match[1];
   }
 
@@ -207,10 +210,15 @@ describe('MagicLinkService one-time code', () => {
     expect(row.expiresAt.getTime()).toBeLessThanOrEqual(Date.now() + MAGIC_LINK_TTL_MS + 1000);
     expect(row.expiresAt.getTime()).toBeGreaterThan(Date.now() + MAGIC_LINK_TTL_MS - 5000);
 
-    const html = emailService.sendPlatformEmail.mock.calls[0][0].html as string;
+    const { html, text, subject } = sentMail();
+    expect(subject).toBe('Je inlogcode voor OpenCoop');
     expect(html).toContain(row.token);
-    expect(html).toContain('Je code');
+    expect(html).toContain('Je inlogcode: 482913');
+    expect(html).not.toContain('letter-spacing');
+    expect(text).toContain('Je inlogcode: 482913');
+    expect(text).toContain(row.token);
     expect(html).not.toMatch(/[—–]/);
+    expect(text).not.toMatch(/[—–]/);
 
     const session = await service.verifyMagicLinkCode({
       email: 'jan@x.com',
@@ -322,14 +330,26 @@ describe('MagicLinkService one-time code', () => {
       const text = Object.values(copy).join('\n');
       expect(text).not.toMatch(/[—–]/);
       expect(copy.expiry).toContain('10');
-      expect(copy.codeLabel.length).toBeGreaterThan(0);
+      expect(copy.codeLine).toContain('{code}');
+      expect(copy.subject.toLowerCase()).toMatch(/code|inlogcode|anmeldecode/);
     }
+    const lines: Record<string, string> = {
+      en: 'Your sign-in code: 123456',
+      nl: 'Je inlogcode: 123456',
+      fr: 'Votre code de connexion : 123456',
+      de: 'Ihr Anmeldecode: 123456',
+    };
+    expect(authEmail.getMagicLinkContent('en', 'OpenCoop').subject).toBe('Your OpenCoop sign-in code');
+    expect(authEmail.getMagicLinkContent('en', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.en);
+    expect(authEmail.getMagicLinkContent('nl', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.nl);
+    expect(authEmail.getMagicLinkContent('fr', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.fr);
+    expect(authEmail.getMagicLinkContent('de', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.de);
     for (const lang of ['nl', 'en', 'fr', 'de']) {
       const copy = buildCopy('magic-link', lang, { coopName: 'Zonnecoop' });
       const text = Object.values(copy).join('\n');
       expect(text).not.toMatch(/[—–]/);
       expect(copy.expires).toContain('10');
-      expect(copy.codeLabel.length).toBeGreaterThan(0);
+      expect(copy.codeLine.replace('{code}', '123456')).toBe(lines[lang]);
     }
   });
 });

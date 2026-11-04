@@ -8,7 +8,7 @@ import { TokenService } from './token.service';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { VerifyMagicLinkCodeDto } from './dto/verify-magic-link-code.dto';
-import { renderMagicLinkEmail } from './magic-link-email';
+import { renderMagicLinkEmail, renderMagicLinkEmailText } from './magic-link-email';
 import {
   codesMatch,
   generateCodeSalt,
@@ -165,11 +165,13 @@ export class MagicLinkService {
 
     const copy = this.authEmail.getMagicLinkContent(user.preferredLanguage, coopName);
 
+    const rendered = { code, magicLinkUrl, brandColor, copy };
     await this.emailService.sendPlatformEmail({
       to: email,
       subject: copy.subject,
       senderName: coopName !== 'OpenCoop' ? coopName : undefined,
-      html: renderMagicLinkEmail({ code, magicLinkUrl, brandColor, copy }),
+      html: renderMagicLinkEmail(rendered),
+      text: renderMagicLinkEmailText(rendered),
     });
 
     return successMessage;
