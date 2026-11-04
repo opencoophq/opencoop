@@ -1,0 +1,71 @@
+- generic [active] [ref=f15e1]:
+  - generic [ref=f15e2]:
+    - generic [ref=f15e3]:
+      - generic [ref=f15e15]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f15e16]:
+        - button "🇳🇱" [ref=f15e17] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f15e18] [cursor=pointer]
+        - button [ref=f15e27] [cursor=pointer]
+    - complementary [ref=f15e28]:
+      - generic [ref=f15e29]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f15e31]
+        - button "Zonnecoöperatie Vlaanderen" [ref=f15e33] [cursor=pointer]
+        - generic [ref=f15e35]:
+          - heading "Coöperatiebeheer" [level=3] [ref=f15e36]
+          - navigation [ref=f15e37]:
+            - link "Overzicht" [ref=f15e38] [cursor=pointer]:
+              - /url: /nl/dashboard/admin
+            - link "Aandeelhouders 2" [ref=f15e45] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/shareholders
+              - generic [ref=f15e51]: Aandeelhouders
+              - generic [ref=f15e52]: "2"
+            - link "Aandelenklassen" [ref=f15e53] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/share-classes
+            - link "Transacties 1" [ref=f15e58] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/transactions
+              - generic [ref=f15e62]: Transacties
+              - generic [ref=f15e63]: "1"
+            - link "Projecten" [ref=f15e64] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/projects
+            - link "Dividenden" [ref=f15e70] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/dividends
+            - link "Vergaderingen" [ref=f15e77] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/meetings
+            - link "Postvak" [ref=f15e82] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/messages
+            - link "Bank import" [ref=f15e87] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/bank-import
+            - link "Rapporten" [ref=f15e92] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/reports
+            - link "Instellingen" [ref=f15e96] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings
+            - link "Kanalen" [ref=f15e101] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings/channels
+            - link "Facturatie" [ref=f15e107] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/billing
+            - link "Team" [ref=f15e111] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/team
+            - link "Wat is nieuw" [ref=f15e125] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/changelog
+        - link "Documentatie" [ref=f15e131] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f15e136] [cursor=pointer]:
+          - generic [ref=f15e137]:
+            - paragraph [ref=f15e138]: Demo Admin
+            - paragraph [ref=f15e139]: admin@zonnecooperatie.be
+    - main [ref=f15e142]:
+      - generic [ref=f15e144]:
+        - generic [ref=f15e145]:
+          - heading "Vergaderingen" [level=1] [ref=f15e146]
+          - link "Nieuwe vergadering" [ref=f15e147] [cursor=pointer]:
+            - /url: /nl/dashboard/admin/meetings/new
+        - generic [ref=f15e148]: Geen vergaderingen gevonden
+    - button "Feedback geven" [ref=f15e151] [cursor=pointer]
+  - alert [ref=f15e4]
+  - generic [ref=f15e5]:
+    - paragraph [ref=f15e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f15e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f15e10] [cursor=pointer]
+    - button "Close" [ref=f15e11] [cursor=pointer]

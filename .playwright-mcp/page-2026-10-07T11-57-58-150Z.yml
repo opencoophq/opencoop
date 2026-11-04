@@ -1,0 +1,88 @@
+- generic [ref=f5e2]:
+  - navigation [ref=f5e3]:
+    - generic [ref=f5e4]:
+      - link "OpenCoop" [ref=f5e5] [cursor=pointer]:
+        - /url: /nl
+      - button "Toggle menu" [ref=f5e12] [cursor=pointer]
+  - generic [ref=f5e15]:
+    - generic [ref=f5e16]: Interactieve demo
+    - heading "Neem een proefrit" [level=1] [ref=f5e21]
+    - paragraph [ref=f5e23]: Ontdek een volledig ingerichte democoöperatie met aandeelhouders, aandelen, transacties en dividenden. Geen registratie nodig.
+    - link [ref=f5e26] [cursor=pointer]:
+      - /url: /demo/login
+      - button "Open de demo" [ref=f5e27]
+  - generic [ref=f5e29]:
+    - generic [ref=f5e30]:
+      - heading "Kies uw rol" [level=2] [ref=f5e31]
+      - paragraph [ref=f5e32]: Log in als coöperatiebeheerder om alles te beheren, of als aandeelhouder om de ledenervaring te bekijken.
+    - generic [ref=f5e33]:
+      - generic [ref=f5e35]:
+        - generic [ref=f5e36]: Volledige toegang
+        - heading "Coöperatiebeheerder" [level=3] [ref=f5e41]
+        - paragraph [ref=f5e42]: Beheer aandeelhouders, verwerk transacties, keer dividenden uit en genereer documenten.
+        - generic [ref=f5e43]:
+          - generic [ref=f5e44]:
+            - generic [ref=f5e45]: E-mail
+            - button "admin@zonnecooperatie.be" [ref=f5e46] [cursor=pointer]
+          - generic [ref=f5e51]:
+            - generic [ref=f5e52]: Wachtwoord
+            - button "demo1234" [ref=f5e53] [cursor=pointer]
+        - link [ref=f5e58] [cursor=pointer]:
+          - /url: /demo/login
+          - button "Inloggen als beheerder" [ref=f5e59]
+      - generic [ref=f5e61]:
+        - heading "Aandeelhouder" [level=3] [ref=f5e68]
+        - paragraph [ref=f5e69]: Bekijk uw aandelen, download certificaten en raadpleeg uw dividenduitkeringen.
+        - generic [ref=f5e70]:
+          - generic [ref=f5e71]:
+            - generic [ref=f5e72]: E-mail
+            - button "jan.peeters@email.be" [ref=f5e73] [cursor=pointer]
+          - generic [ref=f5e78]:
+            - generic [ref=f5e79]: Wachtwoord
+            - button "demo1234" [ref=f5e80] [cursor=pointer]
+        - link [ref=f5e85] [cursor=pointer]:
+          - /url: /demo/login
+          - button "Inloggen als aandeelhouder" [ref=f5e86]
+  - generic [ref=f5e88]:
+    - generic [ref=f5e89]:
+      - heading "Wat zit er in de demo?" [level=2] [ref=f5e90]
+      - paragraph [ref=f5e91]: De democoöperatie is voorgeladen met realistische voorbeelddata.
+    - generic [ref=f5e92]:
+      - generic [ref=f5e94]:
+        - heading "6 aandeelhouders" [level=3] [ref=f5e101]
+        - paragraph [ref=f5e102]: Particulieren, een bedrijf, een minderjarige en een lopende registratie — alle types vertegenwoordigd.
+      - generic [ref=f5e104]:
+        - heading "2 aandelenklassen" [level=3] [ref=f5e110]
+        - paragraph [ref=f5e111]: Klasse A (€250) en Klasse B (€500) met verschillende dividendpercentages en stemrechten.
+      - generic [ref=f5e113]:
+        - heading "Dividendperiode" [level=3] [ref=f5e120]
+        - paragraph [ref=f5e121]: Een voltooide dividendperiode 2025 met berekende uitkeringen en roerende voorheffing.
+  - generic [ref=f5e123]:
+    - heading "Klaar om het zelf te proberen?" [level=2] [ref=f5e124]
+    - paragraph [ref=f5e125]: Spring erin en ontdek — geen registratie, geen creditcard, geen verplichtingen.
+    - link [ref=f5e127] [cursor=pointer]:
+      - /url: /demo/login
+      - button "Open de demo" [ref=f5e128]
+  - contentinfo [ref=f5e129]:
+    - generic [ref=f5e130]:
+      - generic [ref=f5e131]:
+        - generic [ref=f5e132]: OpenCoop
+        - generic [ref=f5e138]: Gelicentieerd onder AGPL-3.0
+        - link "Algemene Voorwaarden" [ref=f5e139] [cursor=pointer]:
+          - /url: /nl/terms
+        - link "Privacybeleid" [ref=f5e140] [cursor=pointer]:
+          - /url: /nl/privacy
+        - link "Verwerkersovereenkomst" [ref=f5e141] [cursor=pointer]:
+          - /url: /nl/dpa
+      - generic [ref=f5e142]:
+        - generic [ref=f5e146]: "Taal:"
+        - button "NL" [ref=f5e148] [cursor=pointer]
+        - generic [ref=f5e149]:
+          - generic [ref=f5e150]: /
+          - button "EN" [ref=f5e151] [cursor=pointer]
+        - generic [ref=f5e152]:
+          - generic [ref=f5e153]: /
+          - button "FR" [ref=f5e154] [cursor=pointer]
+        - generic [ref=f5e155]:
+          - generic [ref=f5e156]: /
+          - button "DE" [ref=f5e157] [cursor=pointer]

@@ -1,0 +1,31 @@
+- generic [ref=f4e1]:
+  - generic [ref=f4e4]:
+    - generic [ref=f4e5]:
+      - heading "Welkom terug" [level=3] [ref=f4e11]
+      - paragraph [ref=f4e12]: OpenCoop
+    - generic [ref=f4e13]:
+      - generic [ref=f4e67]:
+        - paragraph [ref=f4e69]:
+          - text: jan.peeters@email.be
+          - button "[wijzigen]" [ref=f4e70] [cursor=pointer]
+        - generic [ref=f4e71]:
+          - generic [ref=f4e72]:
+            - generic [ref=f4e73]: Uw wachtwoord
+            - link "Wachtwoord vergeten?" [ref=f4e74] [cursor=pointer]:
+              - /url: /nl/forgot-password
+          - textbox "Uw wachtwoord" [active] [ref=f4e75]:
+            - /placeholder: ••••••••
+        - button "Inloggen" [ref=f4e76] [cursor=pointer]
+        - button "Terug" [ref=f4e77] [cursor=pointer]
+      - generic [ref=f4e32]:
+        - generic [ref=f4e33]: Account aanmaken
+        - link "Registreren" [ref=f4e34] [cursor=pointer]:
+          - /url: /nl/register
+  - alert [ref=f4e35]
+  - generic [ref=f4e36]:
+    - paragraph [ref=f4e39]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f4e40] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f4e41] [cursor=pointer]
+    - button "Close" [ref=f4e42] [cursor=pointer]

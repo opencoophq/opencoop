@@ -1,0 +1,80 @@
+- generic [active] [ref=f10e1]:
+  - alert [ref=f10e35]
+  - generic [ref=f10e78]:
+    - generic [ref=f10e79]:
+      - generic [ref=f10e80]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f10e81]:
+        - button "🇳🇱" [ref=f10e82] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f10e83] [cursor=pointer]
+        - button [ref=f10e92] [cursor=pointer]
+    - complementary [ref=f10e93]:
+      - generic [ref=f10e94]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f10e96]
+        - button "Zonnecoöperatie Vlaanderen" [ref=f10e98] [cursor=pointer]
+        - generic [ref=f10e100]:
+          - heading "Coöperatiebeheer" [level=3] [ref=f10e101]
+          - navigation [ref=f10e102]:
+            - link "Overzicht" [ref=f10e103] [cursor=pointer]:
+              - /url: /nl/dashboard/admin
+            - link "Aandeelhouders 2" [ref=f10e110] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/shareholders
+              - generic [ref=f10e116]: Aandeelhouders
+              - generic [ref=f10e117]: "2"
+            - link "Aandelenklassen" [ref=f10e118] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/share-classes
+            - link "Transacties 1" [ref=f10e123] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/transactions
+              - generic [ref=f10e127]: Transacties
+              - generic [ref=f10e128]: "1"
+            - link "Projecten" [ref=f10e129] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/projects
+            - link "Dividenden" [ref=f10e135] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/dividends
+            - link "Vergaderingen" [ref=f10e142] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/meetings
+            - link "Postvak" [ref=f10e147] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/messages
+            - link "Bank import" [ref=f10e152] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/bank-import
+            - link "Rapporten" [ref=f10e157] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/reports
+            - link "Instellingen" [ref=f10e161] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings
+            - link "Kanalen" [ref=f10e166] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings/channels
+            - link "Facturatie" [ref=f10e172] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/billing
+            - link "Team" [ref=f10e176] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/team
+            - link "Wat is nieuw" [ref=f10e190] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/changelog
+        - link "Documentatie" [ref=f10e196] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f10e201] [cursor=pointer]:
+          - generic [ref=f10e202]:
+            - paragraph [ref=f10e203]: Demo Admin
+            - paragraph [ref=f10e204]: admin@zonnecooperatie.be
+    - main [ref=f10e207]:
+      - generic [ref=f10e209]:
+        - heading "Overzicht" [level=1] [ref=f10e210]
+        - generic [ref=f10e211]:
+          - generic [ref=f10e212]:
+            - heading "Aandelen" [level=3] [ref=f10e214]
+            - generic [ref=f10e218]: "0"
+          - generic [ref=f10e220]:
+            - heading "Totale waarde" [level=3] [ref=f10e222]
+            - generic [ref=f10e226]: € 0,00
+          - generic [ref=f10e228]:
+            - heading "In behandeling" [level=3] [ref=f10e230]
+            - generic [ref=f10e234]: "0"
+          - generic [ref=f10e236]:
+            - heading "Dividenden" [level=3] [ref=f10e238]
+            - generic [ref=f10e244]: € 0,00
+    - button "Feedback geven" [ref=f10e246] [cursor=pointer]
+  - generic [ref=f10e36]:
+    - paragraph [ref=f10e39]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f10e40] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f10e41] [cursor=pointer]
+    - button "Close" [ref=f10e42] [cursor=pointer]

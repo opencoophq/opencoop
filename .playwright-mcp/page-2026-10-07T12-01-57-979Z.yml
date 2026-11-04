@@ -1,0 +1,74 @@
+- generic [active] [ref=f9e1]:
+  - button "Open Next.js Dev Tools" [ref=f9e40] [cursor=pointer]
+  - alert [ref=f9e44]
+  - generic [ref=f9e87]:
+    - generic [ref=f9e88]:
+      - generic [ref=f9e89]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f9e90]:
+        - button "🇳🇱" [ref=f9e91] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f9e92] [cursor=pointer]
+        - button [ref=f9e101] [cursor=pointer]
+    - complementary [ref=f9e102]:
+      - generic [ref=f9e103]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f9e105]
+        - button "Zonnecoöperatie Vlaanderen" [ref=f9e107] [cursor=pointer]
+        - generic [ref=f9e109]:
+          - heading "Coöperatiebeheer" [level=3] [ref=f9e110]
+          - navigation [ref=f9e111]:
+            - link "Overzicht" [ref=f9e112] [cursor=pointer]:
+              - /url: /nl/dashboard/admin
+            - link "Aandeelhouders 1" [ref=f9e119] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/shareholders
+              - generic [ref=f9e125]: Aandeelhouders
+              - generic [ref=f9e126]: "1"
+            - link "Laadpassen" [ref=f9e127] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/charge-cards
+            - link "Aandelenklassen" [ref=f9e131] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/share-classes
+            - link "Transacties 1" [ref=f9e136] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/transactions
+              - generic [ref=f9e140]: Transacties
+              - generic [ref=f9e141]: "1"
+            - link "Projecten" [ref=f9e142] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/projects
+            - link "Dividenden" [ref=f9e148] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/dividends
+            - link "Postvak" [ref=f9e155] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/messages
+            - link "Bank import" [ref=f9e160] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/bank-import
+            - link "Rapporten" [ref=f9e165] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/reports
+            - link "Instellingen" [ref=f9e169] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings
+            - link "Kanalen" [ref=f9e174] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings/channels
+            - link "Facturatie" [ref=f9e180] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/billing
+            - link "Team" [ref=f9e184] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/team
+            - link "Wat is nieuw" [ref=f9e198] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/changelog
+        - link "Documentatie" [ref=f9e204] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f9e209] [cursor=pointer]:
+          - generic [ref=f9e210]:
+            - paragraph [ref=f9e211]: Demo Admin
+            - paragraph [ref=f9e212]: admin@zonnecooperatie.be
+    - main [ref=f9e215]:
+      - generic [ref=f9e217]:
+        - heading "Overzicht" [level=1] [ref=f9e218]
+        - generic [ref=f9e219]:
+          - generic [ref=f9e220]:
+            - heading "Aandelen" [level=3] [ref=f9e222]
+            - generic [ref=f9e226]: "0"
+          - generic [ref=f9e228]:
+            - heading "Totale waarde" [level=3] [ref=f9e230]
+            - generic [ref=f9e234]: € 0,00
+          - generic [ref=f9e236]:
+            - heading "In behandeling" [level=3] [ref=f9e238]
+            - generic [ref=f9e242]: "0"
+          - generic [ref=f9e244]:
+            - heading "Dividenden" [level=3] [ref=f9e246]
+            - generic [ref=f9e252]: € 0,00
+    - button "Feedback geven" [ref=f9e254] [cursor=pointer]

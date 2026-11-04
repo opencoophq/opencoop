@@ -1,0 +1,205 @@
+- generic [active] [ref=f17e1]:
+  - generic [ref=f17e2]:
+    - generic [ref=f17e3]:
+      - generic [ref=f17e15]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f17e16]:
+        - button "🇳🇱" [ref=f17e17] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f17e18] [cursor=pointer]
+        - button [ref=f17e27] [cursor=pointer]
+    - complementary [ref=f17e28]:
+      - generic [ref=f17e29]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f17e31]
+        - button "Zonnecoöperatie Vlaanderen" [ref=f17e33] [cursor=pointer]
+        - generic [ref=f17e35]:
+          - heading "Coöperatiebeheer" [level=3] [ref=f17e36]
+          - navigation [ref=f17e37]:
+            - link "Overzicht" [ref=f17e38] [cursor=pointer]:
+              - /url: /nl/dashboard/admin
+            - link "Aandeelhouders 2" [ref=f17e45] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/shareholders
+              - generic [ref=f17e51]: Aandeelhouders
+              - generic [ref=f17e52]: "2"
+            - link "Aandelenklassen" [ref=f17e53] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/share-classes
+            - link "Transacties 1" [ref=f17e58] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/transactions
+              - generic [ref=f17e62]: Transacties
+              - generic [ref=f17e63]: "1"
+            - link "Projecten" [ref=f17e64] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/projects
+            - link "Dividenden" [ref=f17e70] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/dividends
+            - link "Vergaderingen" [ref=f17e77] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/meetings
+            - link "Postvak" [ref=f17e82] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/messages
+            - link "Bank import" [ref=f17e87] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/bank-import
+            - link "Rapporten" [ref=f17e92] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/reports
+            - link "Instellingen" [ref=f17e96] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings
+            - link "Kanalen" [ref=f17e101] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings/channels
+            - link "Facturatie" [ref=f17e107] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/billing
+            - link "Team" [ref=f17e111] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/team
+            - link "Wat is nieuw" [ref=f17e125] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/changelog
+        - link "Documentatie" [ref=f17e131] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f17e136] [cursor=pointer]:
+          - generic [ref=f17e137]:
+            - paragraph [ref=f17e138]: Demo Admin
+            - paragraph [ref=f17e139]: admin@zonnecooperatie.be
+    - main [ref=f17e142]:
+      - generic [ref=f17e144]:
+        - heading "Instellingen" [level=1] [ref=f17e145]
+        - generic [ref=f17e146]:
+          - generic [ref=f17e147]:
+            - heading "Aandeelhouderslinks" [level=3] [ref=f17e152]
+            - generic [ref=f17e153]:
+              - generic [ref=f17e154]:
+                - generic [ref=f17e155]:
+                  - paragraph [ref=f17e156]: Publieke pagina
+                  - paragraph [ref=f17e157]: https://opencoop.be/nl/demo
+                - button "Copy" [ref=f17e158] [cursor=pointer]
+              - generic [ref=f17e162]:
+                - generic [ref=f17e163]:
+                  - paragraph [ref=f17e164]: Registratie
+                  - paragraph [ref=f17e165]: https://opencoop.be/nl/demo/default/register
+                - button "Copy" [ref=f17e166] [cursor=pointer]
+              - generic [ref=f17e170]:
+                - generic [ref=f17e171]:
+                  - paragraph [ref=f17e172]: Inloggen
+                  - paragraph [ref=f17e173]: https://opencoop.be/nl/demo/login
+                - button "Copy" [ref=f17e174] [cursor=pointer]
+          - link [ref=f17e178] [cursor=pointer]:
+            - /url: /nl/dashboard/admin/settings/channels
+            - generic [ref=f17e186]:
+              - paragraph [ref=f17e187]: Kanalen
+              - paragraph [ref=f17e188]: Beheer merkgebonden ingangspunten voor aandelenregistratie
+          - generic [ref=f17e191]:
+            - heading "Algemene instellingen" [level=3] [ref=f17e193]
+            - generic [ref=f17e194]:
+              - generic [ref=f17e195]:
+                - text: Naam
+                - textbox [ref=f17e196]: Zonnecoöperatie Vlaanderen
+              - generic [ref=f17e197]:
+                - checkbox [ref=f17e198] [cursor=pointer]
+                - generic [ref=f17e199]: Goedkeuring vereist
+              - generic [ref=f17e200]:
+                - text: URL algemene voorwaarden
+                - textbox "https://..." [ref=f17e201]
+              - generic [ref=f17e202]:
+                - text: Minimale bezitsperiode (maanden)
+                - spinbutton [ref=f17e203]: "0"
+          - generic [ref=f17e204]:
+            - heading "Coöperatie-informatie" [level=3] [ref=f17e210]
+            - generic [ref=f17e211]:
+              - generic [ref=f17e212]:
+                - text: Rechtsvorm
+                - textbox [ref=f17e213]
+              - generic [ref=f17e214]:
+                - text: Oprichtingsdatum
+                - textbox [ref=f17e215]
+              - generic [ref=f17e216]:
+                - text: Ondertekenaar certificaten
+                - textbox [ref=f17e217]
+              - generic [ref=f17e218]:
+                - text: Handtekeningafbeelding certificaat
+                - generic [ref=f17e219]: Handtekening uploaden (PNG/JPG)
+              - generic [ref=f17e222]:
+                - text: BTW-nummer
+                - textbox "BE0123.456.789" [ref=f17e223]
+              - generic [ref=f17e224]:
+                - text: Telefoon
+                - textbox [ref=f17e225]
+              - generic [ref=f17e226]:
+                - text: E-mail
+                - textbox [ref=f17e227]
+              - generic [ref=f17e228]:
+                - text: Website
+                - textbox "https://..." [ref=f17e229]
+              - generic [ref=f17e230]: Adres
+              - generic [ref=f17e231]:
+                - generic [ref=f17e232]:
+                  - text: Straat
+                  - textbox [ref=f17e233]
+                - generic [ref=f17e234]:
+                  - text: Nummer
+                  - textbox [ref=f17e235]
+              - generic [ref=f17e236]:
+                - generic [ref=f17e237]:
+                  - text: Postcode
+                  - textbox [ref=f17e238]
+                - generic [ref=f17e239]:
+                  - text: Stad
+                  - textbox [ref=f17e240]
+              - generic [ref=f17e241]:
+                - text: Land
+                - textbox [ref=f17e242]
+          - generic [ref=f17e243]:
+            - heading "Bankgegevens" [level=3] [ref=f17e245]
+            - generic [ref=f17e246]:
+              - generic [ref=f17e247]:
+                - text: Banknaam
+                - textbox [ref=f17e248]: Belfius
+              - generic [ref=f17e249]:
+                - text: IBAN
+                - textbox [ref=f17e250]: BE68539007547034
+              - generic [ref=f17e251]:
+                - text: BIC
+                - textbox [ref=f17e252]: BMPBBEBB
+          - generic [ref=f17e253]:
+            - heading "Laadpassen" [level=3] [ref=f17e255]
+            - generic [ref=f17e256]:
+              - paragraph [ref=f17e257]: Laat aandeelhouders een laadpas aanvragen en eenmalig betalen per overschrijving.
+              - generic [ref=f17e258]:
+                - checkbox "Laadpassen inschakelen" [ref=f17e259] [cursor=pointer]
+                - generic [ref=f17e260]: Laadpassen inschakelen
+          - generic [ref=f17e261]:
+            - heading "Ecopower-integratie" [level=3] [ref=f17e263]
+            - generic [ref=f17e264]:
+              - paragraph [ref=f17e265]: Volg aandeelhouders met een Ecopower-energiecontract op en handhaaf de minimale aandeelhoudervereisten.
+              - generic [ref=f17e266]:
+                - checkbox [ref=f17e267] [cursor=pointer]
+                - generic [ref=f17e268]: Ecopower-integratie inschakelen
+          - generic [ref=f17e269]:
+            - heading "Brevo nieuwsbrief-synchronisatie" [level=3] [ref=f17e271]
+            - generic [ref=f17e272]:
+              - paragraph [ref=f17e273]: Houd je Brevo-lijst automatisch gelijk met je actieve coöperanten. Alleen marketing — statutaire communicatie (AV) verloopt via OpenCoop.
+              - generic [ref=f17e274]:
+                - checkbox [ref=f17e275] [cursor=pointer]
+                - generic [ref=f17e276]: Synchronisatie inschakelen
+          - generic [ref=f17e277]:
+            - heading "E-mailinstellingen" [level=3] [ref=f17e279]
+            - generic [ref=f17e280]:
+              - alert [ref=f17e281]:
+                - generic [ref=f17e284]: E-mail is uitgeschakeld voor deze coöperatie. Er worden geen e-mails verstuurd. Neem contact op met een systeembeheerder om e-mail in te schakelen.
+              - generic:
+                - generic:
+                  - generic:
+                    - text: E-mailprovider
+                    - combobox:
+                      - generic: Platform (OpenCoop)
+                  - alert:
+                    - generic: E-mails worden verstuurd via de gedeelde OpenCoop-relay. Geen configuratie nodig.
+          - generic [ref=f17e285]:
+            - generic [ref=f17e286]:
+              - generic [ref=f17e291]:
+                - heading "AI API-sleutels" [level=3] [ref=f17e292]
+                - paragraph [ref=f17e293]: Maak API-sleutels aan om Claude of andere AI-assistenten te verbinden met de gegevens van uw coöperatie via MCP.
+              - button "API-sleutel aanmaken" [ref=f17e294] [cursor=pointer]
+            - paragraph [ref=f17e296]: Nog geen API-sleutels. Maak er een aan om AI-assistenten te verbinden met de gegevens van uw coöperatie.
+          - button "Opslaan" [ref=f17e297] [cursor=pointer]
+    - button "Feedback geven" [ref=f17e298] [cursor=pointer]
+  - alert [ref=f17e4]
+  - generic [ref=f17e5]:
+    - paragraph [ref=f17e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f17e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f17e10] [cursor=pointer]
+    - button "Close" [ref=f17e11] [cursor=pointer]
