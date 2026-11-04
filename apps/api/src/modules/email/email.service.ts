@@ -252,7 +252,7 @@ export class EmailService {
     const subjects: Record<string, string> = {
       nl: 'Je inlogcode voor OpenCoop',
       en: 'Your OpenCoop sign-in code',
-      fr: 'Votre code de connexion OpenCoop',
+      fr: 'Votre code de connexion pour OpenCoop',
       de: 'Ihr Anmeldecode für OpenCoop',
     };
     return this.send({
