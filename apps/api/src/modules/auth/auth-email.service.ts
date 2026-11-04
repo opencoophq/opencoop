@@ -178,7 +178,7 @@ export class AuthEmailService {
     switch (lang) {
       case 'fr':
         return {
-          subject: `Votre code de connexion ${coopName}`,
+          subject: `Votre code de connexion pour ${coopName}`,
           heading: `Connexion à ${coopName}`,
           codeLine: 'Votre code de connexion : {code}',
           body: 'Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l\'appareil où vous voulez rester connecté.',
