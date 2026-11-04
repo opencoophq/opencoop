@@ -1774,10 +1774,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       <body>
         
     <h1>Bei Coöp &amp; Co anmelden</h1>
-    <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">Ihr Code</p>
-    <p style="text-align: center; margin: 8px 0 24px;">
-      <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">482913</span>
-    </p>
+    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">Ihr Anmeldecode: 482913</p>
     <p>Geben Sie diesen Code auf der Anmeldeseite ein, oder nutzen Sie die Schaltfläche auf dem Gerät, auf dem Sie angemeldet bleiben möchten.</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="https://opencoop.test/magic?token=abc123"
@@ -1813,10 +1810,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       <body>
         
     <h1>Log in to Coöp &amp; Co</h1>
-    <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">Your code</p>
-    <p style="text-align: center; margin: 8px 0 24px;">
-      <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">482913</span>
-    </p>
+    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">Your sign-in code: 482913</p>
     <p>Enter this code on the sign-in page, or press the button on the device where you want to stay signed in.</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="https://opencoop.test/magic?token=abc123"
@@ -1852,10 +1846,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       <body>
         
     <h1>Connexion à Coöp &amp; Co</h1>
-    <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">Votre code</p>
-    <p style="text-align: center; margin: 8px 0 24px;">
-      <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">482913</span>
-    </p>
+    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">Votre code de connexion : 482913</p>
     <p>Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l'appareil où vous voulez rester connecté.</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="https://opencoop.test/magic?token=abc123"
@@ -1891,10 +1882,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-l
       <body>
         
     <h1>Inloggen bij Coöp &amp; Co</h1>
-    <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">Je code</p>
-    <p style="text-align: center; margin: 8px 0 24px;">
-      <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">482913</span>
-    </p>
+    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">Je inlogcode: 482913</p>
     <p>Vul deze code in op de inlogpagina, of gebruik de knop op het apparaat waarop je wil blijven.</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="https://opencoop.test/magic?token=abc123"

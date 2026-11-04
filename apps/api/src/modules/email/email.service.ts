@@ -250,10 +250,10 @@ export class EmailService {
   async sendMagicLink(coopId: string, to: string, magicLinkUrl: string, code: string) {
     const language = await this.resolveRecipientLanguage(to);
     const subjects: Record<string, string> = {
-      nl: 'Je inlogcode',
-      en: 'Your login code',
-      fr: 'Votre code de connexion',
-      de: 'Ihr Anmeldecode',
+      nl: 'Je inlogcode voor OpenCoop',
+      en: 'Your OpenCoop sign-in code',
+      fr: 'Votre code de connexion OpenCoop',
+      de: 'Ihr Anmeldecode für OpenCoop',
     };
     return this.send({
       coopId,

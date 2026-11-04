@@ -454,12 +454,10 @@ export class EmailProcessor {
         const lang = (d.language as string) || 'nl';
         const s = buildCopy('magic-link', lang, { coopName: escapeHtml(cn) });
         const code = String(d.code ?? '').replace(/\D/g, '').slice(0, 6);
+        const codeLine = (s.codeLine || '').replace('{code}', code);
         return `
     <h1>${s.title}</h1>
-    <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">${s.codeLabel}</p>
-    <p style="text-align: center; margin: 8px 0 24px;">
-      <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">${code}</span>
-    </p>
+    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">${codeLine}</p>
     <p>${s.click}</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="${d.magicLinkUrl}"

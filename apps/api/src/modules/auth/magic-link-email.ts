@@ -1,16 +1,27 @@
 export interface MagicLinkEmailCopy {
   heading: string;
-  codeLabel: string;
+  /** Full line with a `{code}` placeholder, e.g. "Your sign-in code: {code}". */
+  codeLine: string;
   body: string;
   button: string;
   expiry: string;
   footer: string;
 }
 
+export function magicLinkDigits(code: string): string {
+  return code.replace(/\D/g, '').slice(0, 6);
+}
+
+/** Label and code on one line, the shape Apple Mail / Safari AutoFill looks for. */
+export function magicLinkCodeLine(template: string, code: string): string {
+  return template.replace('{code}', magicLinkDigits(code));
+}
+
 /**
  * Same shell as the other auth emails (Arial, branded h1, centered button,
- * grey expiry and footer). The code sits above the button in a large
- * monospace line so it is the first thing a member sees.
+ * grey expiry and footer). The code line is one text node, large and bold,
+ * with no letter-spacing, so a mail client reads "Your sign-in code: 123456"
+ * as a single line.
  */
 export function renderMagicLinkEmail(options: {
   code: string;
@@ -19,17 +30,14 @@ export function renderMagicLinkEmail(options: {
   copy: MagicLinkEmailCopy;
 }): string {
   const { magicLinkUrl, brandColor, copy } = options;
-  const code = options.code.replace(/\D/g, '').slice(0, 6);
+  const codeLine = magicLinkCodeLine(copy.codeLine, options.code);
   return `
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; } h1 { color: ${brandColor}; }</style></head>
         <body>
           <h1>${copy.heading}</h1>
-          <p style="text-align: center; margin: 24px 0 0; color: #666; font-size: 14px;">${copy.codeLabel}</p>
-          <p style="text-align: center; margin: 8px 0 24px;">
-            <span style="display: inline-block; font-family: Consolas, Monaco, monospace; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: ${brandColor};">${code}</span>
-          </p>
+          <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: ${brandColor};">${codeLine}</p>
           <p>${copy.body}</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="${magicLinkUrl}"
@@ -43,4 +51,26 @@ export function renderMagicLinkEmail(options: {
         </body>
         </html>
       `;
+}
+
+/** Plain-text twin of the HTML. The code line is on its own line, digits unspaced. */
+export function renderMagicLinkEmailText(options: {
+  code: string;
+  magicLinkUrl: string;
+  copy: MagicLinkEmailCopy;
+}): string {
+  const codeLine = magicLinkCodeLine(options.copy.codeLine, options.code);
+  return [
+    options.copy.heading,
+    '',
+    codeLine,
+    '',
+    options.copy.body,
+    '',
+    options.magicLinkUrl,
+    '',
+    options.copy.expiry,
+    '',
+    options.copy.footer,
+  ].join('\n');
 }
