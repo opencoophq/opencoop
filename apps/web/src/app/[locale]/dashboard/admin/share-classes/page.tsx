@@ -173,9 +173,15 @@ export default function ShareClassesPage() {
       ? `/admin/coops/${selectedCoop.id}/share-classes/${editing.id}`
       : `/admin/coops/${selectedCoop.id}/share-classes`;
 
-    await api(url, { method: editing ? 'PUT' : 'POST', body });
-    setDialogOpen(false);
-    loadData();
+    setError(null);
+    try {
+      await api(url, { method: editing ? 'PUT' : 'POST', body });
+      setDialogOpen(false);
+      loadData();
+    } catch {
+      setDialogOpen(false);
+      setError(t('common.error'));
+    }
   };
 
   const visibleClasses = useMemo(
