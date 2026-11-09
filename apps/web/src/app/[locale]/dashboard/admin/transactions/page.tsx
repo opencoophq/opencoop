@@ -320,10 +320,10 @@ export default function AdminTransactionsPage() {
       // Load registrations that can be matched (PENDING_PAYMENT or ACTIVE)
       const [pending, active] = await Promise.all([
         api<{ items: TransactionRow[] }>(
-          `/admin/coops/${selectedCoop.id}/registrations?status=PENDING_PAYMENT&type=BUY`,
+          `/admin/coops/${selectedCoop.id}/registrations?status=PENDING_PAYMENT&type=BUY&pageSize=10000`,
         ),
         api<{ items: TransactionRow[] }>(
-          `/admin/coops/${selectedCoop.id}/registrations?status=ACTIVE&type=BUY`,
+          `/admin/coops/${selectedCoop.id}/registrations?status=ACTIVE&type=BUY&pageSize=10000`,
         ),
       ]);
       setMatchRegistrations([...(pending.items || []), ...(active.items || [])]);
