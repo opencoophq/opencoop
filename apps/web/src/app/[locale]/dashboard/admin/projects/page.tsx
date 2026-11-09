@@ -270,19 +270,19 @@ export default function ProjectsPage() {
     );
   };
 
+  if (!selectedCoop) {
+    return (
+      <div className="p-6">
+        <p className="text-muted-foreground">{t('admin.selectCoop')}</p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse h-8 w-48 bg-muted rounded" />
         <div className="animate-pulse h-64 bg-muted rounded-lg" />
-      </div>
-    );
-  }
-
-  if (!selectedCoop) {
-    return (
-      <div className="p-6">
-        <p className="text-muted-foreground">{t('admin.selectCoop')}</p>
       </div>
     );
   }
