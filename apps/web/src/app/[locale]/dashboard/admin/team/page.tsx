@@ -163,6 +163,7 @@ export default function TeamPage() {
   const [editUserName, setEditUserName] = useState('');
   const [editUserEmail, setEditUserEmail] = useState('');
   const [editUserLanguage, setEditUserLanguage] = useState('nl');
+  const [editUserLanguageTouched, setEditUserLanguageTouched] = useState(false);
   const [editUserSaving, setEditUserSaving] = useState(false);
   const [editUserError, setEditUserError] = useState('');
 
@@ -384,6 +385,7 @@ export default function TeamPage() {
     // response — default to 'nl' for the form. The backend only updates
     // fields that were sent, so leaving it untouched is safe.
     setEditUserLanguage('nl');
+    setEditUserLanguageTouched(false);
     setEditUserError('');
     setEditUserOpen(true);
   };
@@ -398,9 +400,9 @@ export default function TeamPage() {
       if (editUserEmail.toLowerCase() !== editUserAdmin.user.email.toLowerCase()) {
         body.email = editUserEmail;
       }
-      // Always send preferredLanguage (form default may differ from
-      // current value; backend only writes when supplied).
-      body.preferredLanguage = editUserLanguage;
+      // The current language is unknown here, so send it only when the admin
+      // picked one; otherwise a name edit would reset it to the 'nl' default.
+      if (editUserLanguageTouched) body.preferredLanguage = editUserLanguage;
       await api(`/admin/coops/${coopId}/team/${editUserAdmin.id}/user`, {
         method: 'PATCH',
         body,
@@ -881,7 +883,13 @@ export default function TeamPage() {
             </div>
             <div className="space-y-2">
               <Label>{t('team.preferredLanguage')}</Label>
-              <Select value={editUserLanguage} onValueChange={setEditUserLanguage}>
+              <Select
+                value={editUserLanguage}
+                onValueChange={(value) => {
+                  setEditUserLanguage(value);
+                  setEditUserLanguageTouched(true);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
