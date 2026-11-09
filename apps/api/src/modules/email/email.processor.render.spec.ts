@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from 'fs';
+import { join, resolve } from 'path';
 import { EmailProcessor } from './email.processor';
 
 /**
@@ -330,5 +332,69 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
     );
     expect(html).toContain('Auto &lt;Anna&gt;');
     expect(html).toContain('€6.00 (vervanging van een verloren pas)');
+  });
+});
+
+/**
+ * Every templateKey that can reach the email queue must have a template.
+ * Keys are collected by scanning apps/api/src (non-spec files) for
+ * `templateKey: '<key>'` literals, including union types. Keys that only go
+ * through `EmailService.sendPlatformEmail` (sent directly, never rendered by
+ * `renderTemplate`) are listed in PLATFORM_ONLY_KEYS. A new key must either get
+ * a template or be added to that list.
+ */
+describe('EmailProcessor template coverage', () => {
+  const PLATFORM_ONLY_KEYS = new Set([
+    'admin-invitation',
+    'coop-created',
+    'email-verification',
+    'feature-request-notification',
+    'feature-request-thanks',
+    'magic-link',
+    'migration-request',
+    'password-reset',
+    'waitlist-confirmation',
+    'waitlist-notification',
+  ]);
+
+  function listSourceFiles(dir: string): string[] {
+    return readdirSync(dir).flatMap((name) => {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) return listSourceFiles(full);
+      return full.endsWith('.ts') && !full.endsWith('.spec.ts') ? [full] : [];
+    });
+  }
+
+  function collectTemplateKeys(): string[] {
+    const srcDir = resolve(__dirname, '../..');
+    const keys = new Set<string>();
+    for (const file of listSourceFiles(srcDir)) {
+      const text = readFileSync(file, 'utf8');
+      for (const match of text.matchAll(/templateKey\??:\s*([^,;\n]+)/g)) {
+        for (const literal of match[1].matchAll(/'([a-z][a-z0-9-]*)'/g)) keys.add(literal[1]);
+      }
+    }
+    return [...keys].filter((key) => !PLATFORM_ONLY_KEYS.has(key)).sort();
+  }
+
+  const keys = collectTemplateKeys();
+
+  it('finds the queued template keys', () => {
+    expect(keys).toEqual(
+      expect.arrayContaining(['share-purchase', 'emancipation-household', 'ponto-expiry-warning']),
+    );
+  });
+
+  it.each(keys)('renders "%s" without a missing-template placeholder', (key) => {
+    const processor = new EmailProcessor({} as any);
+    let html: string;
+    try {
+      html = processor.renderTemplate(key, { language: 'nl' }, 'Coöp & Co');
+    } catch (error) {
+      // Sparse sample data may make a real template throw; only a missing template matters here.
+      expect((error as Error).message).not.toMatch(/template not found/i);
+      return;
+    }
+    expect(html).not.toMatch(/template not found/i);
   });
 });
