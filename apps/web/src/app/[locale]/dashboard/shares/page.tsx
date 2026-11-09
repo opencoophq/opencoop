@@ -482,7 +482,10 @@ export default function SharesPage() {
     }
   };
 
-  const selectedSellReg = registrations.find((r) => r.id === sellRegistrationId);
+  const sellSourceRegistrations = activeMinorId
+    ? (minorShareholders.find((m) => m.id === activeMinorId)?.registrations ?? [])
+    : registrations;
+  const selectedSellReg = sellSourceRegistrations.find((r) => r.id === sellRegistrationId);
 
   if (loading) {
     return (
