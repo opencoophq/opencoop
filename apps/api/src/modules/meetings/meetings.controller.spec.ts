@@ -54,6 +54,15 @@ describe('MeetingsController.uploadSignedMinutes', () => {
     expect(fs.writeFileSync).not.toHaveBeenCalled();
   });
 
+  it('rejects a meeting without minutes and writes nothing', async () => {
+    minutes.get.mockResolvedValue(null);
+    await expect(controller.uploadSignedMinutes('coop-1', 'm-1', pdf, 'Jan')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+    expect(minutes.uploadSigned).not.toHaveBeenCalled();
+  });
+
   it('writes the file under the verified meeting id', async () => {
     minutes.get.mockResolvedValue({});
     (fs.existsSync as jest.Mock).mockReturnValue(false);
