@@ -40,7 +40,7 @@ describe('McpMessageTools', () => {
   };
   const perms = { permissions: jest.fn(), permissionsWithRole: jest.fn() };
   const billing = { isReadOnly: jest.fn() };
-  const prisma = { project: { findFirst: jest.fn() } };
+  const prisma = { project: { findFirst: jest.fn() }, conversation: { findFirst: jest.fn() } };
   const audienceService = { resolve: jest.fn() };
 
   beforeEach(async () => {
@@ -78,6 +78,7 @@ describe('McpMessageTools', () => {
     messages.cancelSchedule.mockResolvedValue({ id: 'conv1', status: 'DRAFT' });
     messages.addAdminReply.mockResolvedValue({ id: 'message1' });
     audienceService.resolve.mockResolvedValue({ shareholderIds: ['s1', 's2'] });
+    prisma.conversation.findFirst.mockResolvedValue({ audienceType: 'PROJECT' });
     messages.findByIdForAdmin.mockResolvedValue({
       id: 'conv1',
       subject: 'S',
@@ -113,8 +114,8 @@ describe('McpMessageTools', () => {
         audience: { type: 'PROJECT', projectId: 'p1' },
       }),
       'u1',
-      undefined,
       'mcp',
+      'mcp-api-key:k1',
       { apiKeyId: 'k1' },
     );
     expect(out).toEqual(
@@ -150,8 +151,8 @@ describe('McpMessageTools', () => {
         existingDocumentIds: ['document1'],
       },
       'u1',
-      undefined,
       'mcp',
+      'mcp-api-key:k1',
       { apiKeyId: 'k1' },
     );
   });
@@ -173,8 +174,8 @@ describe('McpMessageTools', () => {
         shareholderId: 'shareholder1',
       },
       'u1',
-      undefined,
       'mcp',
+      'mcp-api-key:k1',
       { apiKeyId: 'k1' },
     );
   });
@@ -475,6 +476,91 @@ describe('McpMessageTools', () => {
 
     await expect(tools.getMessageDraft({ conversationId: 'conv1' })).rejects.toBeInstanceOf(
       McpError,
+    );
+  });
+
+  describe('volunteer conversations', () => {
+    const volunteerConv = () =>
+      prisma.conversation.findFirst.mockResolvedValue({ audienceType: 'VOLUNTEERS' });
+
+    const calls: Array<[string, () => Promise<unknown>, jest.Mock]> = [
+      [
+        'update_message_draft',
+        () => tools.updateMessageDraft({ conversationId: 'conv1', subject: 'New' }),
+        messages.updateDraft,
+      ],
+      [
+        'send_message_draft',
+        () => tools.sendMessageDraft({ conversationId: 'conv1' }),
+        messages.send,
+      ],
+      [
+        'schedule_message_draft',
+        () =>
+          tools.scheduleMessageDraft({
+            conversationId: 'conv1',
+            scheduledAt: '2026-09-25T12:00:00.000Z',
+          }),
+        messages.schedule,
+      ],
+      [
+        'unschedule_message_draft',
+        () => tools.unscheduleMessageDraft({ conversationId: 'conv1' }),
+        messages.cancelSchedule,
+      ],
+      [
+        'reply_to_conversation',
+        () => tools.replyToConversation({ conversationId: 'conv1', body: 'Hallo' }),
+        messages.addAdminReply,
+      ],
+    ];
+
+    it.each(calls)(
+      '%s hides a VOLUNTEERS conversation without canViewVolunteers',
+      async (_n, call, service) => {
+        volunteerConv();
+        await expect(call()).rejects.toMatchObject({ message: 'Conversation not found' });
+        expect(prisma.conversation.findFirst).toHaveBeenCalledWith({
+          where: { id: 'conv1', coopId: 'c1' },
+          select: { audienceType: true },
+        });
+        expect(service).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(calls)(
+      '%s acts on a VOLUNTEERS conversation with canViewVolunteers',
+      async (_n, call, service) => {
+        volunteerConv();
+        perms.permissions.mockResolvedValue({
+          canManageMessages: true,
+          canViewVolunteers: true,
+          canViewPII: true,
+        });
+        await call();
+        expect(service).toHaveBeenCalled();
+      },
+    );
+
+    it.each(calls)(
+      '%s lets a SYSTEM_ADMIN act on a VOLUNTEERS conversation',
+      async (_n, call, service) => {
+        volunteerConv();
+        perms.permissionsWithRole.mockResolvedValue({
+          permissions: { canViewPII: true },
+          role: 'SYSTEM_ADMIN',
+        });
+        await call();
+        expect(service).toHaveBeenCalled();
+      },
+    );
+
+    it.each(calls)(
+      '%s acts on a non-volunteer conversation without canViewVolunteers',
+      async (_n, call, service) => {
+        await call();
+        expect(service).toHaveBeenCalled();
+      },
     );
   });
 });
