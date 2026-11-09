@@ -5,6 +5,9 @@ export function decodeJwtPayload<T = Record<string, unknown>>(token: string): T 
   const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
   const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
   const binary = atob(padded);
-  const utf8 = binary.replace(/[\s\S]/g, (c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'));
+  const utf8 = binary.replace(
+    /[\s\S]/g,
+    (c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'),
+  );
   return JSON.parse(decodeURIComponent(utf8)) as T;
 }

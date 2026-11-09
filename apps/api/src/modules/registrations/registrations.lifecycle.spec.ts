@@ -249,9 +249,9 @@ describe('RegistrationsService — lifecycle', () => {
       ]);
 
       // 10 owned - 4 committed - 2 new = 4 < 5
-      await expect(
-        (service as any).checkEcoPowerThreshold('c1', 'sh1', 2, 10),
-      ).rejects.toThrow(BadRequestException);
+      await expect((service as any).checkEcoPowerThreshold('c1', 'sh1', 2, 10)).rejects.toThrow(
+        BadRequestException,
+      );
 
       const where = prisma.registration.findMany.mock.calls[0][0].where;
       expect(where.OR).toContainEqual({

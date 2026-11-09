@@ -56,7 +56,9 @@ export class ProxiesService {
       where: { meetingId_grantorShareholderId: { meetingId, grantorShareholderId } },
     });
     if (existing && existing.revokedAt === null) {
-      throw new BadRequestException('This shareholder already has an active proxy for this meeting');
+      throw new BadRequestException(
+        'This shareholder already has an active proxy for this meeting',
+      );
     }
 
     return this.prisma.proxy.upsert({
