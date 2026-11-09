@@ -37,7 +37,11 @@ describe('RegistrationsService — lifecycle', () => {
         update: jest.fn().mockResolvedValue({}),
       },
       payment: { create: jest.fn().mockResolvedValue({}) },
-      shareholder: { findFirst: jest.fn().mockResolvedValue({ id: 'to-sh' }) },
+      shareholder: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'to-sh' }),
+        findUnique: jest.fn(),
+      },
+      coop: { findUnique: jest.fn() },
       // Run the transaction callback synchronously against the same mock prisma
       $transaction: jest.fn((cb: any) => cb(prisma)),
     };
@@ -228,6 +232,32 @@ describe('RegistrationsService — lifecycle', () => {
 
       await expect(service.cancel('r1', 'c1', 'user-1')).rejects.toThrow(BadRequestException);
       expect(prisma.registration.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('checkEcoPowerThreshold', () => {
+    it('counts approved sells awaiting payout (PENDING_PAYMENT) as committed shares', async () => {
+      prisma.shareholder.findUnique.mockResolvedValue({ isEcoPowerClient: true });
+      prisma.coop.findUnique.mockResolvedValue({
+        ecoPowerEnabled: true,
+        ecoPowerMinThresholdType: 'SHARES',
+        ecoPowerMinThreshold: 5,
+      });
+      prisma.registration.findMany = jest.fn().mockResolvedValue([
+        { type: 'BUY', quantity: 10, pricePerShare: 10, payments: [{ amount: 100 }] },
+        { type: 'SELL', quantity: 4, pricePerShare: 10, payments: [] },
+      ]);
+
+      // 10 owned - 4 committed - 2 new = 4 < 5
+      await expect(
+        (service as any).checkEcoPowerThreshold('c1', 'sh1', 2, 10),
+      ).rejects.toThrow(BadRequestException);
+
+      const where = prisma.registration.findMany.mock.calls[0][0].where;
+      expect(where.OR).toContainEqual({
+        type: 'SELL',
+        status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
+      });
     });
   });
 

@@ -255,14 +255,15 @@ export class RegistrationsService {
 
     // Calculate current portfolio
     // BUY registrations: ACTIVE, COMPLETED, PENDING_PAYMENT (shares the shareholder owns)
-    // SELL registrations: PENDING, ACTIVE, COMPLETED (shares already committed to selling)
+    // SELL registrations: PENDING, PENDING_PAYMENT, ACTIVE, COMPLETED (shares already committed
+    // to selling; same set as getAvailableShares)
     const registrations = await this.prisma.registration.findMany({
       where: {
         coopId,
         shareholderId,
         OR: [
           { type: 'BUY', status: { in: ['ACTIVE', 'COMPLETED', 'PENDING_PAYMENT'] } },
-          { type: 'SELL', status: { in: ['PENDING', 'ACTIVE', 'COMPLETED'] } },
+          { type: 'SELL', status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
         ],
       },
       select: {
