@@ -493,6 +493,31 @@ describe('MeetingDocumentsService', () => {
         'TestCoop',
       );
     });
+
+    it('uses the user account email when the shareholder has none', async () => {
+      prisma.meeting.findUnique.mockResolvedValue({
+        id: 'm1',
+        coopId: 'c1',
+        title: 'AV',
+        documentsSubject: null,
+        documentsIntro: null,
+        scheduledAt: new Date('2026-05-09T10:00:00Z'),
+        coop: { name: 'TestCoop' },
+      });
+      prisma.shareholder.findUnique = jest.fn().mockResolvedValue({
+        id: 's1',
+        email: null,
+        user: { email: 'acct@b.be' },
+        firstName: 'Jan',
+        lastName: 'P',
+        coopId: 'c1',
+      });
+      prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1', fileName: 'A.pdf' }]);
+
+      const result = await service.previewEmail('c1', 'm1', 's1');
+
+      expect(result.recipientEmail).toBe('acct@b.be');
+    });
   });
 
   describe('send', () => {
@@ -557,6 +582,28 @@ describe('MeetingDocumentsService', () => {
         where: { id: 'm1' },
         data: { documentsEmailSentAt: expect.any(Date) },
       });
+    });
+
+    it('sends to the user account email when the shareholder has no email of their own', async () => {
+      prisma.meeting.findUnique.mockResolvedValue({ ...baseMeeting, title: 'AV', documentsSubject: null, documentsIntro: null });
+      prisma.meetingDocument.findMany.mockResolvedValue([{ id: 'd1', fileName: 'A.pdf' }]);
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        { id: 'a1', shareholderId: 's1', rsvpToken: 't1' },
+      ]);
+      prisma.shareholder.findUnique.mockResolvedValue({
+        email: null,
+        user: { email: 'acct@y.be' },
+        firstName: 'Jan',
+      });
+
+      await service.sendEmail('c1', 'm1', 'admin1');
+
+      expect(emailService.queueDocumentsEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ to: 'acct@y.be' }),
+      );
+      expect(prisma.meetingAttendance.update).not.toHaveBeenCalledWith(
+        expect.objectContaining({ data: { documentsEmailError: 'no email address' } }),
+      );
     });
 
     it('retry: enqueues only failed attendances and clears their error', async () => {

@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { EmailProcessor } from '../email/email.processor';
+import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -311,7 +312,14 @@ export class MeetingDocumentsService {
 
     const sh = await this.prisma.shareholder.findUnique({
       where: { id: shareholderId },
-      select: { id: true, email: true, firstName: true, lastName: true, coopId: true },
+      select: {
+        id: true,
+        email: true,
+        user: { select: { email: true } },
+        firstName: true,
+        lastName: true,
+        coopId: true,
+      },
     });
     if (!sh || sh.coopId !== coopId) throw new NotFoundException('Shareholder not found');
 
@@ -348,7 +356,7 @@ export class MeetingDocumentsService {
       pixelUrl: `${apiBase}/public/meetings/rsvp/${sampleToken}/pixel.gif`,
     }, meeting.coop.name);
 
-    const recipientEmail = sh.email;
+    const recipientEmail = resolveShareholderEmail(sh);
     const shareholderName = `${sh.firstName ?? ''} ${sh.lastName ?? ''}`.trim();
 
     return { subject, html, recipientEmail, shareholderName };
@@ -368,10 +376,11 @@ export class MeetingDocumentsService {
   ): Promise<void> {
     const shareholder = await this.prisma.shareholder.findUnique({
       where: { id: recipient.shareholderId },
-      select: { email: true },
+      select: { email: true, user: { select: { email: true } } },
     });
+    const recipientEmail = shareholder ? resolveShareholderEmail(shareholder) : null;
 
-    if (!shareholder?.email) {
+    if (!recipientEmail) {
       await this.prisma.meetingAttendance.update({
         where: { id: recipient.id },
         data: { documentsEmailError: 'no email address' },
@@ -395,7 +404,7 @@ export class MeetingDocumentsService {
 
     await this.emails.queueDocumentsEmail({
       coopId: meeting.coopId,
-      to: shareholder.email,
+      to: recipientEmail,
       subject,
       templateData: {
         introHtml,
