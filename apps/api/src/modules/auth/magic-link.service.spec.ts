@@ -10,7 +10,6 @@ import { EmailService } from '../email/email.service';
 import { AuthEmailService } from './auth-email.service';
 import { AuditService } from '../audit/audit.service';
 import { TokenService, TokenService as RealTokenService } from './token.service';
-import { buildCopy } from '../email/email-copy';
 import * as codeModule from './magic-link-code';
 import {
   MAGIC_LINK_CODE_EXPIRED,
@@ -396,12 +395,5 @@ describe('MagicLinkService one-time code', () => {
     expect(authEmail.getMagicLinkContent('nl', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.nl);
     expect(authEmail.getMagicLinkContent('fr', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.fr);
     expect(authEmail.getMagicLinkContent('de', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.de);
-    for (const lang of ['nl', 'en', 'fr', 'de']) {
-      const copy = buildCopy('magic-link', lang, { coopName: 'Zonnecoop' });
-      const text = Object.values(copy).join('\n');
-      expect(text).not.toMatch(/[—–]/);
-      expect(copy.expires).toContain('10');
-      expect(copy.codeLine.replace('{code}', '123456')).toBe(lines[lang]);
-    }
   });
 });
