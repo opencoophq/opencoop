@@ -453,7 +453,7 @@ export default function ShareClassesPage() {
                   type="number"
                   value={form.maxShares}
                   onChange={(e) => setForm({ ...form, maxShares: e.target.value })}
-                  placeholder="\u221e"
+                  placeholder={'\u221e'}
                 />
               </div>
             </div>
