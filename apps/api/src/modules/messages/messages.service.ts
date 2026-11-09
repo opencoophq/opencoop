@@ -856,7 +856,7 @@ export class MessagesService {
     });
     if (!coop?.emailEnabled) return;
 
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be').replace(/\/$/, '');
+    const appUrl = (process.env.FRONTEND_URL || 'http://localhost:3002').replace(/\/$/, '');
     const last = conversation.messages[0];
     const messageBody = !last
       ? ''
@@ -918,7 +918,7 @@ export class MessagesService {
     });
     if (!coop?.emailEnabled) return;
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+    const appUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
     const last = conversation.messages[0];
     const messageBody = !last
       ? ''

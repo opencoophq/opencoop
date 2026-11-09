@@ -45,7 +45,7 @@ describe('MeetingDocumentsService', () => {
 
     const configService = {
       get: jest.fn().mockImplementation((k: string) => {
-        if (k === 'PUBLIC_URL') return 'https://opencoop.be';
+        if (k === 'FRONTEND_URL') return 'https://opencoop.be';
         if (k === 'API_PUBLIC_URL') return 'https://opencoop.be/api';
         return null;
       }),

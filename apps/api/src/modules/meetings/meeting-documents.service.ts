@@ -329,7 +329,7 @@ export class MeetingDocumentsService {
       select: { id: true, fileName: true },
     });
 
-    const baseUrl = this.config.get<string>('PUBLIC_URL') || 'https://opencoop.be';
+    const baseUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:3002';
     const apiBase = this.config.get<string>('API_PUBLIC_URL') || `${baseUrl}/api`;
     const sampleToken = 'preview-token-not-real';
 
@@ -388,7 +388,7 @@ export class MeetingDocumentsService {
       return;
     }
 
-    const baseUrl = this.config.get<string>('PUBLIC_URL') || 'https://opencoop.be';
+    const baseUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:3002';
     const apiBase = this.config.get<string>('API_PUBLIC_URL') || `${baseUrl}/api`;
 
     const downloadBase = `${apiBase}/public/meetings/rsvp/${recipient.rsvpToken}/documents`;

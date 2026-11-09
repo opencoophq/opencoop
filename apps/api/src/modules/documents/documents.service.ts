@@ -326,7 +326,7 @@ export class DocumentsService {
     }
 
     const channelSlug = registration.channel?.slug || 'default';
-    const domain = process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+    const domain = process.env.FRONTEND_URL || 'http://localhost:3002';
     const claimUrl = `${domain}/${registration.coop.slug}/${channelSlug}/claim?code=${registration.giftCode}`;
 
     // Generate QR code as data URL

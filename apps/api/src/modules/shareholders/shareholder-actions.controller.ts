@@ -629,7 +629,7 @@ export class ShareholderActionsController {
       select: { slug: true, coopWebsite: true },
     });
 
-    const appUrl = coop?.coopWebsite || process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+    const appUrl = coop?.coopWebsite || process.env.FRONTEND_URL || 'http://localhost:3002';
 
     return {
       referralCode: shareholder.referralCode,

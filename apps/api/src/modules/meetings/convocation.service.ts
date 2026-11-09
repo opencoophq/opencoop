@@ -112,13 +112,13 @@ export class ConvocationService {
   /**
    * Resolve a possibly-relative URL (e.g. `/uploads/logos/x.png`) to absolute.
    * Email clients render messages standalone — `<img src="/path">` won't load
-   * because there's no base URL. Always prepend `NEXT_PUBLIC_WEB_URL` when
+   * because there's no base URL. Always prepend `FRONTEND_URL` when
    * the input lacks a scheme.
    */
   private toAbsoluteUrl(maybeRelative: string | null | undefined): string {
     if (!maybeRelative) return '';
     if (/^https?:\/\//i.test(maybeRelative)) return maybeRelative;
-    const base = process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be';
+    const base = process.env.FRONTEND_URL || 'http://localhost:3002';
     return `${base.replace(/\/$/, '')}${maybeRelative.startsWith('/') ? '' : '/'}${maybeRelative}`;
   }
 
@@ -144,7 +144,7 @@ export class ConvocationService {
         title: a.title,
         description: a.description,
       })),
-      rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${rsvpToken}`,
+      rsvpUrl: `${process.env.FRONTEND_URL || 'http://localhost:3002'}/meetings/rsvp/${rsvpToken}`,
       customBody: meeting.customBody?.trim() || undefined,
       coopName: coop.name,
       coopLogoUrl: coop.logoUrl,
@@ -580,7 +580,7 @@ export class ConvocationService {
               0,
               Math.ceil((meeting.scheduledAt.getTime() - Date.now()) / 86_400_000),
             ),
-            rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${primaryAtt.rsvpToken}`,
+            rsvpUrl: `${process.env.FRONTEND_URL || 'http://localhost:3002'}/meetings/rsvp/${primaryAtt.rsvpToken}`,
           },
         });
         sent++;

@@ -901,7 +901,7 @@ export class RegistrationsService {
         console.error('Failed to generate share certificate for payment confirmation:', err);
       }
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+      const appUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
       const dashboardUrl = `${appUrl}/${language}/dashboard`;
 
       try {

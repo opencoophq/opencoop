@@ -305,7 +305,7 @@ export class CoopAdminsService {
     roleNames: string[];
   }): Promise<void> {
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://opencoop.be';
+      process.env.FRONTEND_URL || 'http://localhost:3002';
     const inviteUrl = `${appUrl}/invite/${args.token}`;
     const rolesLabel = args.roleNames.join(', ') || '—';
 

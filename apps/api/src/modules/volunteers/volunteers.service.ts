@@ -713,7 +713,7 @@ export class VolunteersService {
   }
 
   private pageUrl(locale: string, action: 'bevestig' | 'afmelden', token: string) {
-    const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be').replace(/\/$/, '');
+    const base = (process.env.FRONTEND_URL || 'http://localhost:3002').replace(/\/$/, '');
     const safeLocale = LOCALES.has(locale) ? locale : 'nl';
     return `${base}/${safeLocale}/vrijwilligers/${action}/${token}`;
   }

@@ -80,7 +80,7 @@ export class ReminderProcessor {
                   meetingTitle: meeting.title,
                   meetingDate: meeting.scheduledAt.toISOString(),
                   daysUntil,
-                  rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${primaryA.rsvpToken}`,
+                  rsvpUrl: `${process.env.FRONTEND_URL || 'http://localhost:3002'}/meetings/rsvp/${primaryA.rsvpToken}`,
                 },
               });
               sent++;
