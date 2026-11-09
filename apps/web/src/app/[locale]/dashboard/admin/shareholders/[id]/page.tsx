@@ -244,10 +244,11 @@ export default function ShareholderDetailPage() {
     if (!selectedCoop || !shareholderId) return;
     try {
       // Fetch coop settings for Ecopower integration status
+      // Optional: the settings call needs canManageSettings, so a failure must not block the page.
       const settings = await api<{ ecoPowerEnabled: boolean }>(
         `/admin/coops/${selectedCoop.id}/settings`,
-      );
-      setEcoPowerEnabled(settings.ecoPowerEnabled || false);
+      ).catch(() => null);
+      setEcoPowerEnabled(settings?.ecoPowerEnabled || false);
       const data = await api<ShareholderDetail>(
         `/admin/coops/${selectedCoop.id}/shareholders/${shareholderId}`,
       );
