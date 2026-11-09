@@ -15,12 +15,8 @@ export class RedisService implements OnModuleDestroy {
   }
 
   async getChallenge(key: string): Promise<string | null> {
-    // Get and delete atomically to prevent replay
-    const value = await this.client.get(key);
-    if (value) {
-      await this.client.del(key);
-    }
-    return value;
+    // GETDEL reads and deletes in one step, so a challenge cannot be replayed.
+    return this.client.getdel(key);
   }
 
   async onModuleDestroy() {
