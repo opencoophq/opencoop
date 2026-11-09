@@ -307,7 +307,7 @@ export class AuthService {
     }
 
     // New coop creator gets full Admin permissions
-    const adminPermissions = { canManageShareholders: true, canManageTransactions: true, canManageShareClasses: true, canManageProjects: true, canManageDividends: true, canManageSettings: true, canManageAdmins: true, canViewPII: true, canViewReports: true, canViewShareholderRegister: true, canViewVolunteers: false };
+    const adminPermissions = DEFAULT_ROLES.Admin;
 
     const tokenResult = await this.tokenService.issueJwtForUser({
       id: result.user.id,
