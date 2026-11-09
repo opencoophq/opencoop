@@ -43,7 +43,11 @@ export class AuthService {
       where: { email: email.toLowerCase() },
       include: {
         coopAdminOf: {
-          select: { coopId: true, roles: { select: { role: { select: { permissions: true } } } } },
+          select: {
+            coopId: true,
+            permissionOverrides: true,
+            roles: { select: { role: { select: { permissions: true } } } },
+          },
         },
       },
     });

@@ -34,7 +34,11 @@ const USER_INCLUDE = {
   user: {
     include: {
       coopAdminOf: {
-        select: { coopId: true, roles: { select: { role: { select: { permissions: true } } } } },
+        select: {
+          coopId: true,
+          permissionOverrides: true,
+          roles: { select: { role: { select: { permissions: true } } } },
+        },
       },
     },
   },
