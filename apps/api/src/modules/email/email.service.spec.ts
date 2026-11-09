@@ -1,9 +1,13 @@
 jest.mock('@sentry/nestjs', () => ({ captureException: jest.fn() }));
+jest.mock('nodemailer', () => ({
+  createTransport: jest.fn(() => ({ sendMail: jest.fn() })),
+}));
 
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
 import * as Sentry from '@sentry/nestjs';
+import * as nodemailer from 'nodemailer';
 import { EmailService } from './email.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -80,7 +84,12 @@ describe('EmailService', () => {
       createdAt: new Date('2026-08-13T12:00:00.000Z'),
       source: 'self-signup' as const,
     };
-    const envKeys = ['COOP_SIGNUP_NOTIFY_EMAIL', 'FRONTEND_URL', 'SENTRY_ENVIRONMENT', 'NODE_ENV'] as const;
+    const envKeys = [
+      'COOP_SIGNUP_NOTIFY_EMAIL',
+      'FRONTEND_URL',
+      'SENTRY_ENVIRONMENT',
+      'NODE_ENV',
+    ] as const;
     const previous: Partial<Record<(typeof envKeys)[number], string | undefined>> = {};
 
     beforeEach(() => {
@@ -136,6 +145,226 @@ describe('EmailService', () => {
 
       expect(capture).toHaveBeenCalledWith(failure);
       expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('smtp down'));
+    });
+  });
+
+  describe('sendPlatformEmail', () => {
+    const envKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM'] as const;
+    const previous: Partial<Record<(typeof envKeys)[number], string | undefined>> = {};
+    const loginCode = '482913';
+    const magicToken = 'ab'.repeat(32);
+    const resetToken = 'cd'.repeat(32);
+    const smtpPass = 'super-secret-smtp-pass';
+    const html = [
+      `<p>Je inlogcode: ${loginCode}</p>`,
+      `<a href="https://opencoop.be/zonne/magic-link?token=${magicToken}">Inloggen</a>`,
+      `<a href="https://opencoop.be/reset-password?token=${resetToken}">Reset</a>`,
+    ].join('');
+    const text = `Je inlogcode: ${loginCode}\nhttps://opencoop.be/magic-link?token=${magicToken}`;
+
+    let sendMail: jest.Mock;
+
+    beforeEach(() => {
+      for (const key of envKeys) previous[key] = process.env[key];
+      process.env.SMTP_HOST = 'smtp-relay.brevo.com';
+      process.env.SMTP_PORT = '587';
+      process.env.SMTP_USER = 'relay@smtp-brevo.com';
+      process.env.SMTP_PASS = smtpPass;
+      process.env.SMTP_FROM = 'OpenCoop <noreply@opencoop.be>';
+
+      sendMail = jest.fn().mockResolvedValue({
+        accepted: ['member@example.com'],
+        rejected: [],
+        response: '250 2.0.0 Ok: queued as <20261109.abc@smtp-relay.mailin.fr>',
+        messageId: '<client-generated@opencoop.be>',
+      });
+      (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+      mockPrisma.emailLog.create.mockResolvedValue({ id: 'log-1' });
+      (Sentry.captureException as jest.Mock).mockClear();
+    });
+
+    afterEach(() => {
+      for (const key of envKeys) {
+        if (previous[key] === undefined) delete process.env[key];
+        else process.env[key] = previous[key];
+      }
+    });
+
+    function loggedRow() {
+      expect(mockPrisma.emailLog.create).toHaveBeenCalledTimes(1);
+      return mockPrisma.emailLog.create.mock.calls[0][0].data;
+    }
+
+    function expectNoSecrets(value: unknown) {
+      const serialized = JSON.stringify(value);
+      expect(serialized).not.toContain(loginCode);
+      expect(serialized).not.toContain(magicToken);
+      expect(serialized).not.toContain(resetToken);
+      expect(serialized).not.toContain(smtpPass);
+      expect(serialized).not.toContain('Je inlogcode: 482913');
+    }
+
+    const mail = {
+      to: 'member@example.com',
+      subject: 'Je inlogcode voor OpenCoop',
+      templateKey: 'magic-link',
+      coopId: 'coop-1',
+      html,
+      text,
+    };
+
+    it('records an accepted send with the Brevo message id and no mail body', async () => {
+      await service.sendPlatformEmail(mail);
+
+      const row = loggedRow();
+      expect(row).toEqual({
+        coopId: 'coop-1',
+        recipientEmail: 'member@example.com',
+        subject: 'Je inlogcode voor OpenCoop',
+        templateKey: 'magic-link',
+        status: 'ACCEPTED',
+        sentAt: expect.any(Date),
+        errorMessage: null,
+        providerMessageId: '20261109.abc@smtp-relay.mailin.fr',
+        smtpResponse: '250 2.0.0 Ok: queued as <20261109.abc@smtp-relay.mailin.fr>',
+      });
+      expect(row).not.toHaveProperty('html');
+      expect(row).not.toHaveProperty('text');
+      expectNoSecrets(row);
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+      expect(sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ html, text, to: 'member@example.com' }),
+      );
+    });
+
+    it('falls back to the submitted Message-ID when the SMTP reply has no id', async () => {
+      sendMail.mockResolvedValue({
+        accepted: ['member@example.com'],
+        rejected: [],
+        response: '250 2.0.0 Ok',
+        messageId: '<fallback-id@opencoop.be>',
+      });
+
+      await service.sendPlatformEmail({
+        ...mail,
+        templateKey: 'password-reset',
+        coopId: undefined,
+      });
+
+      expect(loggedRow()).toEqual(
+        expect.objectContaining({
+          coopId: null,
+          templateKey: 'password-reset',
+          status: 'ACCEPTED',
+          providerMessageId: 'fallback-id@opencoop.be',
+          smtpResponse: '250 2.0.0 Ok',
+        }),
+      );
+    });
+
+    it('records an SMTP rejection and still throws the provider error', async () => {
+      const failure = Object.assign(new Error('Message failed: 550 5.7.1 Recipient rejected'), {
+        responseCode: 550,
+        response: '550 5.7.1 Recipient rejected',
+        code: 'EENVELOPE',
+      });
+      sendMail.mockRejectedValue(failure);
+
+      await expect(service.sendPlatformEmail(mail)).rejects.toBe(failure);
+
+      expect(loggedRow()).toEqual(
+        expect.objectContaining({
+          status: 'REJECTED',
+          sentAt: null,
+          errorMessage: 'Message failed: 550 5.7.1 Recipient rejected',
+          smtpResponse: '550 5.7.1 Recipient rejected',
+          providerMessageId: null,
+          templateKey: 'magic-link',
+        }),
+      );
+      expectNoSecrets(loggedRow());
+    });
+
+    it('records a transport failure as error', async () => {
+      const failure = Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:587'), {
+        code: 'ECONNECTION',
+      });
+      sendMail.mockRejectedValue(failure);
+
+      await expect(service.sendPlatformEmail(mail)).rejects.toBe(failure);
+
+      expect(loggedRow()).toEqual(
+        expect.objectContaining({
+          status: 'ERROR',
+          sentAt: null,
+          errorMessage: 'connect ECONNREFUSED 127.0.0.1:587',
+          smtpResponse: null,
+          providerMessageId: null,
+        }),
+      );
+    });
+
+    it('does not store login codes, magic-link tokens, reset tokens, or the SMTP password', async () => {
+      const echoed = `550 refused token=${magicToken} code ${loginCode} pass ${smtpPass} reset ${resetToken}`;
+      const failure = Object.assign(new Error(echoed), {
+        responseCode: 550,
+        response: echoed,
+        code: 'EENVELOPE',
+      });
+      sendMail.mockRejectedValue(failure);
+
+      await expect(
+        service.sendPlatformEmail({
+          ...mail,
+          subject: `Code ${loginCode}`,
+          templateKey: magicToken,
+        }),
+      ).rejects.toBe(failure);
+
+      const row = loggedRow();
+      expectNoSecrets(row);
+      expect(row.subject).toBe('Code [redacted]');
+      expect(row.templateKey).toBe('platform');
+      expect(row.smtpResponse).not.toContain(magicToken);
+      expect(row.errorMessage).toContain('[redacted]');
+      expect(row.status).toBe('REJECTED');
+    });
+
+    it('still returns after a successful send when writing the log fails', async () => {
+      const dbError = new Error('db down');
+      mockPrisma.emailLog.create.mockRejectedValue(dbError);
+      const errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+      await expect(service.sendPlatformEmail(mail)).resolves.toBeUndefined();
+
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(Sentry.captureException).toHaveBeenCalledWith(dbError);
+      expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('db down'));
+      expect(errorLog.mock.calls.flat().join(' ')).not.toContain(loginCode);
+      expect(errorLog.mock.calls.flat().join(' ')).not.toContain(magicToken);
+    });
+
+    it('reports a logging failure and still throws the SMTP rejection', async () => {
+      const failure = Object.assign(new Error('Message failed: 550 mailbox unavailable'), {
+        responseCode: 550,
+        response: '550 mailbox unavailable',
+        code: 'EENVELOPE',
+      });
+      sendMail.mockRejectedValue(failure);
+      const dbError = new Error('db down');
+      mockPrisma.emailLog.create.mockRejectedValue(dbError);
+
+      await expect(service.sendPlatformEmail(mail)).rejects.toBe(failure);
+      expect(Sentry.captureException).toHaveBeenCalledWith(dbError);
+    });
+
+    it('does not write a log when platform SMTP is not configured', async () => {
+      delete process.env.SMTP_HOST;
+
+      await expect(service.sendPlatformEmail(mail)).resolves.toBeUndefined();
+
+      expect(sendMail).not.toHaveBeenCalled();
+      expect(mockPrisma.emailLog.create).not.toHaveBeenCalled();
     });
   });
 });

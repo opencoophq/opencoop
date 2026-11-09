@@ -20,6 +20,7 @@ export class AuthEmailService {
     await this.emailService.sendPlatformEmail({
       to: email,
       subject: t.subject,
+      templateKey: 'email-verification',
       html: `
         <!DOCTYPE html>
         <html>
@@ -226,6 +227,7 @@ export class AuthEmailService {
     await this.emailService.sendPlatformEmail({
       to: email,
       subject: content.subject,
+      templateKey: 'waitlist-confirmation',
       html: `
         <!DOCTYPE html>
         <html>
