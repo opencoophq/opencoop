@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { api } from '@/lib/api';
+import { useLocale } from '@/contexts/locale-context';
 import {
   applyColumnFiltersAndSort,
   toggleColumnSort,
@@ -121,6 +122,7 @@ type InvitationColumn = 'email' | 'role' | 'expiresAt';
 
 export default function TeamPage() {
   const t = useTranslations('admin');
+  const { locale } = useLocale();
   const tc = useTranslations('common');
   const { selectedCoop } = useAdmin();
 
@@ -585,7 +587,7 @@ export default function TeamPage() {
                         </DropdownMenu>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {new Date(admin.createdAt).toLocaleDateString()}
+                        {new Date(admin.createdAt).toLocaleDateString(locale)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -735,7 +737,7 @@ export default function TeamPage() {
                         </DropdownMenu>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {new Date(inv.expiresAt).toLocaleDateString()}
+                        {new Date(inv.expiresAt).toLocaleDateString(locale)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
