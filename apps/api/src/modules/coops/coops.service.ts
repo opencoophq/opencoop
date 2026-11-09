@@ -575,12 +575,14 @@ export class CoopsService {
       });
     }
 
-    // Never return mail or audience credentials (plaintext or ciphertext).
+    // Never return mail or audience credentials (plaintext or ciphertext) or
+    // the hash of the external API key.
     if (updated && typeof updated === 'object') {
       const row = updated as Record<string, unknown>;
       delete row.brevoApiKey;
       delete row.smtpPass;
       delete row.graphClientSecret;
+      delete row.apiKeyHash;
     }
 
     return updated;

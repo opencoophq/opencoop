@@ -247,6 +247,21 @@ describe('CoopsService — Brevo audience-sync config', () => {
     expect(r).toMatchObject({ name: 'Test Coop' });
   });
 
+  it('update() never returns the external API key hash', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ id: 'c1' });
+    prisma.coop.update.mockResolvedValue({
+      id: 'c1',
+      apiKeyHash: '$2b$10$hash',
+      apiKeyPrefix: 'oc_abcd',
+      name: 'Test Coop',
+    });
+
+    const r = await service.update('c1', { name: 'Test Coop' } as any);
+
+    expect(r).not.toHaveProperty('apiKeyHash');
+    expect(r).toMatchObject({ name: 'Test Coop' });
+  });
+
   it('encrypts smtp and Graph secrets and does not return them', async () => {
     prisma.coop.findUnique.mockResolvedValue({ id: 'c1', smtpPass: null, graphClientSecret: null });
     prisma.coop.update.mockResolvedValue({
