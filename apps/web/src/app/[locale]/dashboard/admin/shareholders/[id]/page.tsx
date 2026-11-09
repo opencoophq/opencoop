@@ -438,8 +438,13 @@ export default function ShareholderDetailPage() {
 
   const handleApprove = async (txId: string) => {
     if (!selectedCoop) return;
-    await api(`/admin/coops/${selectedCoop.id}/registrations/${txId}/approve`, { method: 'PUT' });
-    reloadShareholder();
+    setError(null);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${txId}/approve`, { method: 'PUT' });
+      reloadShareholder();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    }
   };
 
   const showPaymentDetails = async (txId: string, txStatus: string) => {
@@ -483,12 +488,18 @@ export default function ShareholderDetailPage() {
 
   const handleReject = async () => {
     if (!selectedCoop || !rejectTxId || !rejectReason.trim()) return;
-    await api(`/admin/coops/${selectedCoop.id}/registrations/${rejectTxId}/reject`, {
-      method: 'PUT',
-      body: { reason: rejectReason.trim() },
-    });
-    setRejectOpen(false);
-    reloadShareholder();
+    setError(null);
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/registrations/${rejectTxId}/reject`, {
+        method: 'PUT',
+        body: { reason: rejectReason.trim() },
+      });
+      setRejectOpen(false);
+      reloadShareholder();
+    } catch (err) {
+      setRejectOpen(false);
+      setError(err instanceof Error ? err.message : t('common.error'));
+    }
   };
 
   const handleGenerateCertificate = async (regId: string) => {
