@@ -26,3 +26,25 @@ describe('AdminController bank transaction stats', () => {
     });
   });
 });
+
+describe('AdminController CSV imports without a file', () => {
+  const controller = Object.create(AdminController.prototype) as any;
+
+  it('rejects importProjects with a 400', async () => {
+    await expect(controller.importProjects('coop-1', undefined)).rejects.toThrow(
+      'File is required',
+    );
+  });
+
+  it('rejects importShareClasses with a 400', async () => {
+    await expect(controller.importShareClasses('coop-1', undefined)).rejects.toThrow(
+      'File is required',
+    );
+  });
+
+  it('rejects importBankTransactions with a 400', async () => {
+    await expect(
+      controller.importBankTransactions('coop-1', { id: 'user-1' }, undefined),
+    ).rejects.toThrow('File is required');
+  });
+});

@@ -670,6 +670,7 @@ export class AdminController {
   })
   @UseInterceptors(FileInterceptor('file'))
   async importProjects(@Param('coopId') coopId: string, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('File is required');
     const csvContent = file.buffer.toString('utf-8');
     return this.projectsService.importCsv(coopId, csvContent);
   }
@@ -691,6 +692,7 @@ export class AdminController {
     @Param('coopId') coopId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    if (!file) throw new BadRequestException('File is required');
     const csvContent = file.buffer.toString('utf-8');
     return this.shareClassesService.importCsv(coopId, csvContent);
   }
@@ -887,6 +889,7 @@ export class AdminController {
     @UploadedFile() file: Express.Multer.File,
     @Query('preset') preset?: string,
   ) {
+    if (!file) throw new BadRequestException('File is required');
     return this.bankImportService.importCsv(
       coopId,
       user.id,
