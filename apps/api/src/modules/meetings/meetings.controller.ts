@@ -293,7 +293,7 @@ export class MeetingsController {
 
   @Post(':id/minutes/finalize')
   finalizeMinutes(@Param('coopId') coopId: string, @Param('id') id: string) {
-    // PDF generation wired in Phase 11 — for now mark finalized with placeholder URL
+    // Only marks the minutes finalized (empty PDF url); no PDF is generated and they stay editable.
     return this.minutes.finalize(coopId, id, '');
   }
 
