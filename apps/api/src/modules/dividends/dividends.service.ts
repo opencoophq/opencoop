@@ -219,7 +219,6 @@ export class DividendsService {
         },
       },
       include: {
-        shareholder: true,
         shareClass: true,
         payments: {
           where: { bankDate: { lt: period.exDividendDate } },
