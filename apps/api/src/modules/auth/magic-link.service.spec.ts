@@ -269,6 +269,15 @@ describe('MagicLinkService one-time code', () => {
     );
   });
 
+  it('url-encodes the coop slug in the sign-in link', async () => {
+    await service.requestMagicLink({ email: 'jan@x.com', coopSlug: 'x"><a href=evil>' } as any);
+
+    const { html, text } = sentMail();
+    expect(html).not.toContain('"><a href=evil>');
+    expect(html).toContain(`/${encodeURIComponent('x"><a href=evil>')}/magic-link?token=`);
+    expect(text).toContain(`/${encodeURIComponent('x"><a href=evil>')}/magic-link?token=`);
+  });
+
   it('locks the code after 5 wrong attempts and leaves the link usable', async () => {
     await service.requestMagicLink({ email: 'jan@x.com' });
     const row = rows[0];
