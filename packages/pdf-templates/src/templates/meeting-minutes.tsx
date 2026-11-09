@@ -1,5 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { MEETING_TIME_ZONE } from '../meeting-time-zone';
 
 const BLUE = '#1e40af';
 const BORDER_COLOR = '#d1d5db';
@@ -82,6 +83,7 @@ function formatDateTime(date: Date): string {
   return new Intl.DateTimeFormat('nl-BE', {
     dateStyle: 'long',
     timeStyle: 'short',
+    timeZone: MEETING_TIME_ZONE,
   }).format(date);
 }
 
