@@ -5,6 +5,7 @@ import { ShareCertificate, DividendStatement, GiftCertificate } from '@opencoop/
 import React from 'react';
 import * as fs from 'fs';
 import * as path from 'path';
+import { computeTotalPaid, computeVestedShares } from '@opencoop/shared';
 import { decryptField, isEncrypted } from '../../common/crypto';
 
 @Injectable()
@@ -102,7 +103,7 @@ export class DocumentsService {
 
     // Use first completed buy registration for certificate
     const reg = shareholder.registrations[0];
-    const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
+    const totalPaid = computeTotalPaid(reg.payments);
     const pricePerShare = Number(reg.pricePerShare);
     let vestedQuantity: number;
 
@@ -110,8 +111,7 @@ export class DocumentsService {
     if (reg.payments.length === 0) {
       vestedQuantity = reg.quantity;
     } else {
-      vestedQuantity =
-        pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity) : 0;
+      vestedQuantity = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
     }
 
     // S5: Don't generate certificate for 0 vested shares
@@ -220,9 +220,8 @@ export class DocumentsService {
     if (reg.payments.length === 0) {
       vestedQuantity = reg.quantity;
     } else {
-      const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
-      vestedQuantity =
-        pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity) : 0;
+      const totalPaid = computeTotalPaid(reg.payments);
+      vestedQuantity = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
     }
 
     if (vestedQuantity <= 0) {

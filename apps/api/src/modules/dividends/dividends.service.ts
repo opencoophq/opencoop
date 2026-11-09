@@ -7,7 +7,12 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateDividendPeriodDto } from './dto/create-dividend-period.dto';
-import { calculateDividend, apportionWithholdingTax } from '@opencoop/shared';
+import {
+  calculateDividend,
+  apportionWithholdingTax,
+  computeTotalPaid,
+  computeVestedShares,
+} from '@opencoop/shared';
 import {
   EmailSource,
   resolveShareholderEmailWithSource,
@@ -271,10 +276,9 @@ export class DividendsService {
           : Number(period.dividendRate);
 
         // Compute vested shares from payments made before ex-dividend date
-        const totalPaid = reg.payments.reduce((s, p) => s + Number(p.amount), 0);
+        const totalPaid = computeTotalPaid(reg.payments);
         const pricePerShare = Number(reg.pricePerShare);
-        const vestedQuantity =
-          pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), reg.quantity) : 0;
+        const vestedQuantity = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
 
         if (vestedQuantity <= 0) continue;
 

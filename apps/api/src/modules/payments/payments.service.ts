@@ -73,7 +73,7 @@ export class PaymentsService {
     }
 
     // Update registration status based on cumulative payments
-    const totalPaid = computeTotalPaid(registration.payments) + data.amount;
+    const totalPaid = computeTotalPaid([...registration.payments, { amount: data.amount }]);
     const totalAmount = Number(registration.totalAmount);
 
     if (totalPaid >= totalAmount) {

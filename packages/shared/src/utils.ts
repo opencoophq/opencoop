@@ -33,9 +33,10 @@ export function formatDateTime(
 
 /**
  * Compute total paid from a list of payments.
+ * Sums in integer cents so instalments like 11 x 2.08 + 2.12 add up to exactly 25.
  */
 export function computeTotalPaid(payments: { amount: number | string | { toString(): string } }[]): number {
-  return payments.reduce((sum, p) => sum + Number(p.amount), 0);
+  return payments.reduce((sum, p) => sum + Math.round(Number(p.amount) * 100), 0) / 100;
 }
 
 /**
