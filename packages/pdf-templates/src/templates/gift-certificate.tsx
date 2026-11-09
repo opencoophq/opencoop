@@ -161,6 +161,12 @@ export const GiftCertificate: React.FC<GiftCertificateProps> = ({
   locale,
 }) => {
   const t = translations[locale as keyof typeof translations] || translations.en;
+  const fmtLocale =
+    locale === 'nl' ? 'nl-BE' : locale === 'fr' ? 'fr-BE' : locale === 'de' ? 'de-DE' : 'en-US';
+  const formattedValue = new Intl.NumberFormat(fmtLocale, {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(totalValue);
 
   return (
     <Document>
@@ -184,7 +190,7 @@ export const GiftCertificate: React.FC<GiftCertificateProps> = ({
           </View>
           <View style={[styles.detailRow, { marginBottom: 0 }]}>
             <Text style={styles.detailLabel}>{t.value}</Text>
-            <Text style={styles.detailValue}>{`\u20AC ${totalValue.toFixed(2)}`}</Text>
+            <Text style={styles.detailValue}>{formattedValue}</Text>
           </View>
         </View>
 
