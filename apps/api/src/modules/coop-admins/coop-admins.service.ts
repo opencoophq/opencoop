@@ -206,10 +206,11 @@ export class CoopAdminsService {
     const remainingAdminEntries = await this.prisma.coopAdmin.count({
       where: { userId: admin.userId },
     });
-    // If no more coop admin entries, downgrade user role to SHAREHOLDER
+    // If no more coop admin entries, downgrade a COOP_ADMIN to SHAREHOLDER.
+    // The role guard keeps a SYSTEM_ADMIN untouched.
     if (remainingAdminEntries === 0) {
-      await this.prisma.user.update({
-        where: { id: admin.userId },
+      await this.prisma.user.updateMany({
+        where: { id: admin.userId, role: 'COOP_ADMIN' },
         data: { role: 'SHAREHOLDER' },
       });
     }
