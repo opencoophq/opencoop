@@ -964,7 +964,8 @@ export class EmailProcessor {
 
     const template = templates[templateKey];
     if (!template) {
-      return `<p>Email template not found: ${escapeHtml(templateKey)}</p>`;
+      // Fail the job (logged FAILED) rather than send a mail with a placeholder body.
+      throw new Error(`Email template not found: ${templateKey}`);
     }
 
     const content = template(data, coopName);

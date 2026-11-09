@@ -158,4 +158,52 @@ describe('EmailProcessor', () => {
       expect(html).toContain('href="https://opencoop.test/inbox/1"');
     });
   });
+
+  describe('unknown template key', () => {
+    it('throws instead of returning placeholder HTML', () => {
+      expect(() => createProcessor().renderTemplate('no-such-template', {}, 'Coop')).toThrow(
+        'Email template not found: no-such-template',
+      );
+    });
+
+    it('marks the email log FAILED, rethrows and sends nothing', async () => {
+      const prisma = {
+        coop: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'coop-1',
+            name: 'Coop',
+            emailEnabled: true,
+            emailProvider: null,
+          }),
+        },
+        emailLog: { update: jest.fn().mockResolvedValue({}) },
+      };
+      const processor = new EmailProcessor(prisma as any);
+      const sendViaPlatformSmtp = jest
+        .spyOn(processor as any, 'sendViaPlatformSmtp')
+        .mockResolvedValue(undefined);
+
+      await expect(
+        processor.handleSend({
+          data: {
+            emailLogId: 'log-1',
+            coopId: 'coop-1',
+            to: 'a@example.com',
+            subject: 'Hi',
+            templateKey: 'no-such-template',
+            templateData: {},
+          },
+        } as any),
+      ).rejects.toThrow('Email template not found: no-such-template');
+
+      expect(sendViaPlatformSmtp).not.toHaveBeenCalled();
+      expect(prisma.emailLog.update).toHaveBeenCalledWith({
+        where: { id: 'log-1' },
+        data: {
+          status: 'FAILED',
+          errorMessage: 'Email template not found: no-such-template',
+        },
+      });
+    });
+  });
 });
