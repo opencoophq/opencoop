@@ -59,3 +59,24 @@ describe('CoopAdminsService.removeAdmin', () => {
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 });
+
+describe('CoopAdminsService.inviteAdmin', () => {
+  it('replaces an old invitation that was already accepted', async () => {
+    const { service, prisma } = build();
+    prisma.adminInvitation.findUnique.mockResolvedValue({ id: 'inv-old', accepted: true });
+
+    await service.inviteAdmin('coop-1', { email: 'Ex@Admin.com', roleIds: ['role-1'] } as any);
+
+    expect(prisma.adminInvitation.delete).toHaveBeenCalledWith({ where: { id: 'inv-old' } });
+    expect(prisma.adminInvitation.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('replaces an old pending invitation', async () => {
+    const { service, prisma } = build();
+    prisma.adminInvitation.findUnique.mockResolvedValue({ id: 'inv-old', accepted: false });
+
+    await service.inviteAdmin('coop-1', { email: 'ex@admin.com', roleIds: ['role-1'] } as any);
+
+    expect(prisma.adminInvitation.delete).toHaveBeenCalledWith({ where: { id: 'inv-old' } });
+  });
+});
