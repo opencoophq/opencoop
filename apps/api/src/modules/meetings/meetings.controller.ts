@@ -317,6 +317,9 @@ export class MeetingsController {
   ) {
     if (!file || !file.buffer) throw new BadRequestException('No file');
     if (file.mimetype !== 'application/pdf') throw new BadRequestException('PDF required');
+    // Verify the meeting exists in this coop BEFORE touching the filesystem: `id` comes from the
+    // URL (Express decodes %2F), so an unverified id could escape uploads/minutes.
+    await this.minutes.get(coopId, id);
     const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
     const dir = path.join(UPLOAD_DIR, 'minutes', id);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
