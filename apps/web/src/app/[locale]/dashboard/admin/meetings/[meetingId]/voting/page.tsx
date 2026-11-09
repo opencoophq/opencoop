@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { api } from '@/lib/api';
+import { api, apiFetch } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -77,12 +77,9 @@ export default function VotingPage() {
     if (!selectedCoop || !meetingId) return;
     setDownloadingBallots(true);
     try {
-      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/coops/${selectedCoop.id}/meetings/${meetingId}/ballots${ballotQuantity ? `?quantity=${ballotQuantity}` : ''}`;
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      const response = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const response = await apiFetch(
+        `/admin/coops/${selectedCoop.id}/meetings/${meetingId}/ballots${ballotQuantity ? `?quantity=${ballotQuantity}` : ''}`,
+      );
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
