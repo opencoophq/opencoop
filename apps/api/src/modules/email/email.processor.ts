@@ -11,22 +11,8 @@ import {
   TokenCredentialAuthenticationProvider,
 } from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
 import { buildCopy, getCopy } from './email-copy';
+import { escapeHtml } from './escape-html';
 import { decryptStoredSecret } from '../../common/crypto/stored-secret';
-
-/**
- * Escape HTML-significant characters so user/coop-controlled free text can be
- * safely interpolated into email HTML without allowing markup/script injection
- * (audit Q5). Only use for plain-text values — never for trusted URLs, numbers,
- * system-generated codes, or intentionally pre-rendered HTML.
- */
-function escapeHtml(value: unknown): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 interface EmailJob {
   emailLogId: string;
