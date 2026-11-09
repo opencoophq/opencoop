@@ -576,6 +576,10 @@ export class ConvocationService {
             shareholderName: `${primaryAtt.shareholder.firstName ?? ''} ${primaryAtt.shareholder.lastName ?? ''}`.trim(),
             meetingTitle: meeting.title,
             meetingDate: meeting.scheduledAt.toISOString(),
+            daysUntil: Math.max(
+              0,
+              Math.ceil((meeting.scheduledAt.getTime() - Date.now()) / 86_400_000),
+            ),
             rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${primaryAtt.rsvpToken}`,
           },
         });
