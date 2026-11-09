@@ -90,12 +90,18 @@ describe('EmailProcessor', () => {
   describe('HTML escaping of user-controlled interpolations', () => {
     const xss = '<script>alert(1)</script>';
 
-    it('escapes shareholder name and coop name in the welcome template', () => {
+    it('escapes shareholder name and coop name in the share-purchase template', () => {
       const processor = createProcessor();
 
       const html = processor.renderTemplate(
-        'welcome',
-        { language: 'en', shareholderName: xss },
+        'share-purchase',
+        {
+          language: 'en',
+          shareholderName: xss,
+          shareClassName: 'Class A',
+          quantity: 1,
+          totalAmount: 25,
+        },
         'Coop & Co',
       );
 

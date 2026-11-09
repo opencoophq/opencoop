@@ -35,9 +35,6 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
   // injected per-case below). Construct data that exercises each field the
   // template reads, including the conditional branches.
   const sampleData: Record<string, Record<string, unknown>> = {
-    welcome: {
-      shareholderName: 'Jan Peeters',
-    },
     'share-purchase': {
       shareholderName: 'Jan Peeters',
       shareClassName: 'Aandeel A',
@@ -64,18 +61,6 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
       label: 'Auto <Anna>',
       cardNumber: 'NL-ABC-123',
       dashboardUrl: 'https://opencoop.test/dashboard/charge-cards',
-    },
-    'dividend-statement': {
-      shareholderName: 'Jan Peeters',
-      year: 2025,
-      netAmount: 42.5,
-    },
-    'password-reset': {
-      resetUrl: 'https://opencoop.test/reset?token=abc123',
-    },
-    'magic-link': {
-      magicLinkUrl: 'https://opencoop.test/magic?token=abc123',
-      code: '482913',
     },
     'minor-turned-adult': {
       firstName: 'Lotte',

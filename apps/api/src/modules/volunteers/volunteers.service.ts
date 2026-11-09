@@ -557,30 +557,25 @@ export class VolunteersService {
     actor: { userId: string; ip?: string; userAgent?: string },
   ) {
     await this.coopOrThrow(coopId);
-    try {
-      return await this.messages.createConversation(
-        coopId,
-        {
-          type: 'BROADCAST',
-          subject: dto.subject.trim(),
-          body: dto.body,
-          audience: {
-            type: 'VOLUNTEERS',
-            volunteerFilter: {
-              municipality: dto.municipality,
-              postalCode: dto.postalCode,
-              interest: dto.interest,
-            },
+    return this.messages.createConversation(
+      coopId,
+      {
+        type: 'BROADCAST',
+        subject: dto.subject.trim(),
+        body: dto.body,
+        audience: {
+          type: 'VOLUNTEERS',
+          volunteerFilter: {
+            municipality: dto.municipality,
+            postalCode: dto.postalCode,
+            interest: dto.interest,
           },
         },
-        actor.userId,
-        actor.ip,
-        actor.userAgent,
-      );
-    } catch (error) {
-      if (error instanceof BadRequestException) throw error;
-      throw error;
-    }
+      },
+      actor.userId,
+      actor.ip,
+      actor.userAgent,
+    );
   }
 
   async purgeUnconfirmed(now = new Date()) {

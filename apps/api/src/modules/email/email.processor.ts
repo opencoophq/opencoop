@@ -302,18 +302,6 @@ export class EmailProcessor {
   ): string {
     // Simple template rendering - in production, use a proper template engine
     const templates: Record<string, (data: Record<string, unknown>, coopName: string) => string> = {
-      welcome: (d, cn) => {
-        const lang = (d.language as string) || 'nl';
-        const sn = escapeHtml(d.shareholderName);
-        const ecn = escapeHtml(cn);
-        const s = buildCopy('welcome', lang, { coopName: ecn, shareholderName: sn });
-        return `
-    <h1>${s.title}</h1>
-    <p>${s.dear}</p>
-    <p>${s.thanks}</p>
-    <p>${s.login}</p>
-  `;
-      },
       'share-purchase': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const sn = escapeHtml(d.shareholderName);
@@ -419,56 +407,6 @@ export class EmailProcessor {
     </p>
     ` : ''}
     <p>${s.thanks}</p>
-  `;
-      },
-      'dividend-statement': (d, cn) => {
-        const lang = (d.language as string) || 'nl';
-        const sn = escapeHtml(d.shareholderName);
-        const ecn = escapeHtml(cn);
-        const s = buildCopy('dividend-statement', lang, {
-          coopName: ecn,
-          shareholderName: sn,
-          year: String(d.year),
-        });
-        return `
-    <h1>${s.title}</h1>
-    <p>${s.dear}</p>
-    <p>${s.attached}</p>
-    <p>${s.net}: €${(d.netAmount as number).toFixed(2)}</p>
-    <p>${s.thanks}</p>
-  `;
-      },
-      'password-reset': (d, _cn) => {
-        const lang = (d.language as string) || 'nl';
-        const s = buildCopy('password-reset', lang);
-        return `
-    <h1>${s.title}</h1>
-    <p>${s.requested}</p>
-    <p>${s.click}</p>
-    <p><a href="${d.resetUrl}">${d.resetUrl}</a></p>
-    <p>${s.ignore}</p>
-    <p>${s.expires}</p>
-  `;
-      },
-      'magic-link': (d, cn) => {
-        const lang = (d.language as string) || 'nl';
-        const s = buildCopy('magic-link', lang, { coopName: escapeHtml(cn) });
-        const code = String(d.code ?? '').replace(/\D/g, '').slice(0, 6);
-        const codeLine = (s.codeLine || '').replace('{code}', code);
-        return `
-    <h1>${s.title}</h1>
-    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">${codeLine}</p>
-    <p>${s.click}</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${d.magicLinkUrl}"
-         style="background-color: #1e40af; color: white; padding: 12px 24px;
-                text-decoration: none; border-radius: 6px; display: inline-block;">
-        ${s.button}
-      </a>
-    </p>
-    <p style="color: #666; font-size: 12px;">
-      ${s.expires}
-    </p>
   `;
       },
       'minor-turned-adult': (d, cn) => `
