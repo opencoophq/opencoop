@@ -757,6 +757,15 @@ export class RegistrationsService {
       throw new NotFoundException('Active buy registration not found');
     }
 
+    // The recipient must belong to the same coop as the source registration.
+    const recipient = await this.prisma.shareholder.findFirst({
+      where: { id: data.toShareholderId, coopId: data.coopId },
+      select: { id: true },
+    });
+    if (!recipient) {
+      throw new NotFoundException('Recipient shareholder not found');
+    }
+
     const pricePerShare = Number(buyRegistration.pricePerShare);
 
     // I7: Check available shares (vested minus pending/completed sells)
