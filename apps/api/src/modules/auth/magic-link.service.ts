@@ -152,13 +152,15 @@ export class MagicLinkService {
     // Fetch coop branding for the email
     let coopName = 'OpenCoop';
     let brandColor = '#1e40af';
+    let coopId: string | undefined;
     if (coopSlug) {
       const channel = await this.prisma.channel.findFirst({
         where: { coop: { slug: coopSlug }, isDefault: true },
-        include: { coop: { select: { name: true } } },
+        include: { coop: { select: { id: true, name: true } } },
       });
       if (channel) {
         coopName = channel.coop.name;
+        coopId = channel.coop.id;
         brandColor = channel.primaryColor;
       }
     }
@@ -166,10 +168,14 @@ export class MagicLinkService {
     const copy = this.authEmail.getMagicLinkContent(user.preferredLanguage, coopName);
 
     const rendered = { code, magicLinkUrl, brandColor, copy };
+    // One mail carries both the login code and the magic link. The log stores
+    // the type only; the code and token stay in the message.
     await this.emailService.sendPlatformEmail({
       to: email,
       subject: copy.subject,
       senderName: coopName !== 'OpenCoop' ? coopName : undefined,
+      templateKey: 'magic-link',
+      coopId,
       html: renderMagicLinkEmail(rendered),
       text: renderMagicLinkEmailText(rendered),
     });

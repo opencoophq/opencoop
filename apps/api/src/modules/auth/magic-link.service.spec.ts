@@ -319,7 +319,7 @@ describe('MagicLinkService one-time code', () => {
     expect(known).not.toHaveProperty('token');
     expect(emailService.sendPlatformEmail).toHaveBeenCalledTimes(1);
     expect(emailService.sendPlatformEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ to: 'jan@x.com' }),
+      expect.objectContaining({ to: 'jan@x.com', templateKey: 'magic-link' }),
     );
   });
 

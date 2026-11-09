@@ -357,6 +357,7 @@ export class AuthService {
     await this.emailService.sendPlatformEmail({
       to: user.email,
       subject: t.subject,
+      templateKey: 'password-reset',
       html: `
         <!DOCTYPE html>
         <html>
@@ -1020,6 +1021,7 @@ export class AuthService {
     this.emailService.sendPlatformEmail({
       to: 'hello@opencoop.be',
       subject: `Waitlist signup: ${waitlistDto.email}`,
+      templateKey: 'waitlist-notification',
       text: `New waitlist signup:\n\nEmail: ${waitlistDto.email}\nPlan: ${waitlistDto.plan || 'Not specified'}`,
     }).catch((err) => {
       console.error('Failed to send waitlist notification:', err.message);

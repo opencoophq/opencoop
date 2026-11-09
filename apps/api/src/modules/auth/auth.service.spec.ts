@@ -150,7 +150,7 @@ describe('MagicLinkService — requestMagicLink with household shareholders', ()
     // Exactly one magic link email sent
     expect(emailService.sendPlatformEmail).toHaveBeenCalledTimes(1);
     expect(emailService.sendPlatformEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ to: 'jan@x.com' }),
+      expect.objectContaining({ to: 'jan@x.com', templateKey: 'magic-link' }),
     );
 
     // No user was auto-created (user was found directly)
@@ -239,7 +239,7 @@ describe('MagicLinkService — requestMagicLink with household shareholders', ()
     // Email was sent
     expect(emailService.sendPlatformEmail).toHaveBeenCalledTimes(1);
     expect(emailService.sendPlatformEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ to: 'orphan@x.com' }),
+      expect.objectContaining({ to: 'orphan@x.com', templateKey: 'magic-link' }),
     );
 
     // The orphan shareholder was linked (updateMany called)
@@ -275,6 +275,31 @@ describe('MagicLinkService — requestMagicLink with household shareholders', ()
 
     // No spurious user creation
     expect(userCreateMock).not.toHaveBeenCalled();
+  });
+
+  it('labels the sign-in mail and records the coop when the slug resolves', async () => {
+    prisma.user.findUnique.mockResolvedValue(janUser);
+    prisma.channel.findFirst.mockResolvedValue({
+      primaryColor: '#112233',
+      coop: { id: 'coop-9', name: 'Zonnecoop' },
+    });
+
+    await service.requestMagicLink({ email: 'jan@x.com', coopSlug: 'zonnecoop' });
+
+    expect(emailService.sendPlatformEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'jan@x.com',
+        templateKey: 'magic-link',
+        coopId: 'coop-9',
+        senderName: 'Zonnecoop',
+      }),
+    );
+    const sent = emailService.sendPlatformEmail.mock.calls[0][0];
+    const token = prisma.magicLinkToken.create.mock.calls[0][0].data.token;
+    expect(sent).not.toHaveProperty('code');
+    expect(sent.html).toContain(token);
+    expect(sent.subject).not.toContain(token);
+    expect(sent.templateKey).not.toContain(token);
   });
 });
 

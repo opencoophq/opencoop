@@ -42,6 +42,7 @@ export class FeatureRequestsService {
     this.emailService.sendPlatformEmail({
       to: 'hello@opencoop.be',
       subject: `${subjectPrefix}: ${dto.title}`,
+      templateKey: 'feature-request-notification',
       text: [
         `New ${subjectPrefix.toLowerCase()} from ${dto.name} (${dto.email})`,
         ``,
@@ -99,6 +100,7 @@ export class FeatureRequestsService {
     await this.emailService.sendPlatformEmail({
       to: dto.email,
       subject: content.subject,
+      templateKey: 'feature-request-thanks',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 20px;">
           <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">${content.heading}</h2>

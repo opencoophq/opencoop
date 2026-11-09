@@ -4,8 +4,17 @@ import { Queue } from 'bull';
 import * as nodemailer from 'nodemailer';
 import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { AdminNotificationEvent, AdminNotificationData } from '../admin-notifications/admin-notifications.service';
+import type {
+  AdminNotificationEvent,
+  AdminNotificationData,
+} from '../admin-notifications/admin-notifications.service';
 import { CoopCreatedNotice, buildCoopCreatedMail } from './coop-signup-notice';
+import {
+  buildPlatformEmailLog,
+  collectMailSecrets,
+  outcomeFromSmtpError,
+  outcomeFromSmtpResult,
+} from './platform-email-log';
 
 export interface EmailOptions {
   coopId: string;
@@ -29,9 +38,11 @@ export class EmailService {
   ) {}
 
   /**
-   * Send a platform-level email (not tied to a coop).
-   * Sends directly via platform SMTP — no queue, no EmailLog.
-   * Use for internal notifications, thank-you emails, etc.
+   * Send a platform-level email (login codes, magic links, password resets,
+   * and other mail that does not go through a coop queue).
+   * Sends directly via platform SMTP and writes one sanitized EmailLog row.
+   * The row never includes the mail body, login code, or link token.
+   * A logging failure is reported and does not fail the send.
    */
   async sendPlatformEmail(options: {
     to: string;
@@ -39,7 +50,11 @@ export class EmailService {
     html?: string;
     text?: string;
     senderName?: string;
-  }) {
+    /** EmailLog template key, for example `magic-link` or `password-reset`. */
+    templateKey?: string;
+    /** Set when the caller already knows which cooperative this mail is for. */
+    coopId?: string | null;
+  }): Promise<void> {
     const host = process.env.SMTP_HOST;
     if (!host) {
       this.logger.warn('Platform SMTP not configured, skipping email');
@@ -51,9 +66,7 @@ export class EmailService {
     const pass = process.env.SMTP_PASS;
     const defaultFrom = process.env.SMTP_FROM || 'OpenCoop <noreply@opencoop.be>';
     const fromAddress = defaultFrom.match(/<(.+)>/)?.[1] || defaultFrom;
-    const from = options.senderName
-      ? `${options.senderName} <${fromAddress}>`
-      : defaultFrom;
+    const from = options.senderName ? `${options.senderName} <${fromAddress}>` : defaultFrom;
 
     const transporter = nodemailer.createTransport({
       host,
@@ -62,13 +75,57 @@ export class EmailService {
       auth: user && pass ? { user, pass } : undefined,
     });
 
-    await transporter.sendMail({
-      from,
+    const secrets = collectMailSecrets(options.html, options.text, options.subject);
+    if (pass && pass.length >= 6) secrets.push(pass);
+
+    const logged = {
       to: options.to,
       subject: options.subject,
-      html: options.html,
-      text: options.text,
-    });
+      templateKey: options.templateKey,
+      coopId: options.coopId,
+      secrets,
+    };
+
+    try {
+      const info = await transporter.sendMail({
+        from,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      });
+      const outcome = outcomeFromSmtpResult(info);
+      await this.recordPlatformEmailLog({
+        ...logged,
+        ...outcome,
+        sentAt: outcome.status === 'ACCEPTED' ? new Date() : null,
+      });
+    } catch (error) {
+      const outcome = outcomeFromSmtpError(error);
+      await this.recordPlatformEmailLog({
+        ...logged,
+        ...outcome,
+        sentAt: null,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Persist the outcome of a platform send. Never throws: a failed insert
+   * must not turn a delivered login mail into an error for the member.
+   */
+  private async recordPlatformEmailLog(
+    input: Parameters<typeof buildPlatformEmailLog>[0],
+  ): Promise<void> {
+    try {
+      const data = buildPlatformEmailLog(input);
+      await this.prisma.emailLog.create({ data });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to write platform email log: ${message}`);
+      Sentry.captureException(error);
+    }
   }
 
   /**
@@ -86,7 +143,11 @@ export class EmailService {
     }
     if (!mail) return;
 
-    void this.sendPlatformEmail(mail).catch((error) => this.reportCoopCreatedFailure(error));
+    void this.sendPlatformEmail({
+      ...mail,
+      templateKey: 'coop-created',
+      coopId: notice.coopId,
+    }).catch((error) => this.reportCoopCreatedFailure(error));
   }
 
   private reportCoopCreatedFailure(error: unknown): void {
@@ -517,7 +578,12 @@ export class EmailService {
   async sendChargeCardIssued(
     coopId: string,
     to: string,
-    data: { shareholderName: string; label: string | null; cardNumber: string; dashboardUrl: string },
+    data: {
+      shareholderName: string;
+      label: string | null;
+      cardNumber: string;
+      dashboardUrl: string;
+    },
   ) {
     const language = await this.resolveRecipientLanguage(to);
     const subjects: Record<string, string> = {

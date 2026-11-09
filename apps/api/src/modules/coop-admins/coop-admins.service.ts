@@ -281,6 +281,7 @@ export class CoopAdminsService {
     await this.sendInvitationEmail({
       email: dto.email,
       token,
+      coopId,
       coopName: coop.name,
       roleNames: roles.map((r) => r.name),
     });
@@ -298,6 +299,7 @@ export class CoopAdminsService {
   private async sendInvitationEmail(args: {
     email: string;
     token: string;
+    coopId: string;
     coopName: string;
     roleNames: string[];
   }): Promise<void> {
@@ -310,6 +312,8 @@ export class CoopAdminsService {
       .sendPlatformEmail({
         to: args.email,
         subject: `You've been invited to manage ${args.coopName} on OpenCoop`,
+        templateKey: 'admin-invitation',
+        coopId: args.coopId,
         html: `
         <h2>You've been invited to ${args.coopName}</h2>
         <p>You've been invited as <strong>${rolesLabel}</strong> for the cooperative <strong>${args.coopName}</strong> on OpenCoop.</p>
@@ -351,6 +355,7 @@ export class CoopAdminsService {
     await this.sendInvitationEmail({
       email: invitation.email,
       token: newToken,
+      coopId,
       coopName: invitation.coop.name,
       roleNames: invitation.roles.map((r) => r.role.name),
     });

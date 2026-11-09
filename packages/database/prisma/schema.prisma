@@ -64,6 +64,10 @@ enum EmailStatus {
   QUEUED
   SENT
   FAILED
+  // Platform SMTP (sendPlatformEmail). Queued coop mail stays QUEUED/SENT/FAILED.
+  ACCEPTED
+  REJECTED
+  ERROR
 }
 
 enum DocumentType {
@@ -950,19 +954,25 @@ model DividendPayout {
 // ============================================================================
 
 model EmailLog {
-  id             String      @id @default(cuid())
-  coopId         String
-  recipientEmail String
-  subject        String
-  templateKey    String
-  status         EmailStatus @default(QUEUED)
-  createdAt      DateTime    @default(now())
-  sentAt         DateTime?
-  errorMessage   String?
+  id                String      @id @default(cuid())
+  // Null for platform mail that is not tied to a cooperative.
+  coopId            String?
+  recipientEmail    String
+  subject           String
+  templateKey       String
+  status            EmailStatus @default(QUEUED)
+  createdAt         DateTime    @default(now())
+  sentAt            DateTime?
+  errorMessage      String?
+  // Brevo id from the SMTP reply ("queued as <id>"), else the Message-ID we submitted.
+  providerMessageId String?
+  // SMTP reply line, truncated and scrubbed. Never the mail body or a secret.
+  smtpResponse      String?
 
-  coop Coop @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  coop Coop? @relation(fields: [coopId], references: [id], onDelete: Cascade)
 
   @@index([coopId])
+  @@index([recipientEmail])
   @@map("email_logs")
 }
 

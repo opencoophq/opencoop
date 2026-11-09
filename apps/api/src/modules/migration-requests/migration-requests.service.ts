@@ -36,6 +36,7 @@ export class MigrationRequestsService {
     await this.emailService.sendPlatformEmail({
       to: 'hello@opencoop.be',
       subject: `Migration request: ${dto.coopName}`,
+      templateKey: 'migration-request',
       text: [
         `New migration request from ${dto.name} (${dto.email})`,
         ``,
