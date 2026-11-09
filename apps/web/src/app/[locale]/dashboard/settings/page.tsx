@@ -28,6 +28,8 @@ const LOCALE_OPTIONS: { value: LocaleCode; label: string }[] = [
 const LANGUAGE_OPTIONS = [
   { value: 'nl', label: 'Nederlands' },
   { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
+  { value: 'de', label: 'Deutsch' },
 ];
 
 interface NotificationSettings {
@@ -140,7 +142,7 @@ export default function SettingsPage() {
         user.preferredLanguage = language;
         localStorage.setItem('user', JSON.stringify(user));
       }
-      router.replace('/dashboard/settings', { locale: language as 'nl' | 'en' });
+      router.replace('/dashboard/settings', { locale: language as 'nl' | 'en' | 'fr' | 'de' });
     } catch {
       // ignore - preference still saved locally
     }
