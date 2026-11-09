@@ -420,30 +420,6 @@ export class DividendsService {
     return this.findById(periodId, coopId);
   }
 
-  async getPayoutsByShareholder(shareholderId: string) {
-    return this.prisma.dividendPayout.findMany({
-      where: { shareholderId },
-      include: {
-        dividendPeriod: {
-          include: {
-            coop: {
-              select: {
-                id: true,
-                slug: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        dividendPeriod: {
-          year: 'desc',
-        },
-      },
-    });
-  }
-
   async getExportRows(periodId: string, coopId: string): Promise<DividendExportRow[]> {
     const period = await this.prisma.dividendPeriod.findFirst({
       where: { id: periodId, coopId },

@@ -173,38 +173,6 @@ export class RegistrationsService {
     });
   }
 
-  async getSharesForShareholder(coopId: string, shareholderId: string) {
-    const registrations = await this.prisma.registration.findMany({
-      where: {
-        coopId,
-        shareholderId,
-        type: 'BUY',
-        status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
-      },
-      include: {
-        shareClass: true,
-        project: true,
-        payments: { orderBy: { bankDate: 'asc' } },
-      },
-      orderBy: { registerDate: 'desc' },
-    });
-
-    return registrations.map((reg) => {
-      const totalPaid = computeTotalPaid(reg.payments);
-      const pricePerShare = Number(reg.pricePerShare);
-      const vestedShares = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
-
-      // C3: Subtract completed sells linked to this BUY
-      return {
-        ...reg,
-        totalPaid,
-        sharesOwned: vestedShares,
-        sharesRemaining: reg.quantity - vestedShares,
-        fullyPaid: totalPaid >= Number(reg.totalAmount),
-      };
-    });
-  }
-
   /**
    * Compute available shares for a BUY registration, accounting for
    * both pending and completed sells/transfers.
