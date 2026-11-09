@@ -368,9 +368,10 @@ export function CoopRegisterContent({
   const selectedShareClass = coop?.shareClasses.find(
     (sc) => sc.id === watchShareClassId
   );
-  const totalAmount = selectedShareClass
-    ? selectedShareClass.pricePerShare * watchQuantity
-    : 0;
+  const totalAmount =
+    selectedShareClass && Number.isFinite(watchQuantity)
+      ? selectedShareClass.pricePerShare * watchQuantity
+      : 0;
 
   useEffect(() => {
     // A magic link opens in a new tab, so the request-form path has to live in
@@ -1265,7 +1266,7 @@ export function CoopRegisterContent({
             </div>
             <div className="flex justify-between">
               <span>{t('shares.quantity')}</span>
-              <span>{watchQuantity}</span>
+              <span>{Number.isFinite(watchQuantity) ? watchQuantity : 0}</span>
             </div>
             <div className="flex justify-between">
               <span>{t('shares.pricePerShare')}</span>
