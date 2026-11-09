@@ -1063,14 +1063,14 @@ export default function SharesPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t('profile.firstName')}</Label>
+                <Label>{t('shareholder.fields.firstName')}</Label>
                 <Input
                   value={editChildForm.firstName}
                   onChange={(e) => setEditChildForm((f) => ({ ...f, firstName: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t('profile.lastName')}</Label>
+                <Label>{t('shareholder.fields.lastName')}</Label>
                 <Input
                   value={editChildForm.lastName}
                   onChange={(e) => setEditChildForm((f) => ({ ...f, lastName: e.target.value }))}
@@ -1087,7 +1087,7 @@ export default function SharesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>{t('profile.phone')}</Label>
+              <Label>{t('common.phone')}</Label>
               <Input
                 value={editChildForm.phone}
                 onChange={(e) => setEditChildForm((f) => ({ ...f, phone: e.target.value }))}
