@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -14,6 +13,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { ArrowLeft, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Link } from '@/i18n/routing';
 import { useLocale } from '@/contexts/locale-context';
 import { useAdmin } from '@/contexts/admin-context';
 import { Button } from '@/components/ui/button';
