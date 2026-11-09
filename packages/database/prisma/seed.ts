@@ -226,6 +226,42 @@ async function main() {
   console.log(`  Share class: ${shareClassB.name} (€500, 4% dividend)`);
 
   // ---------------------------------------------------------------------------
+  // 4b. DEFAULT CHANNEL — link share classes & projects
+  // ---------------------------------------------------------------------------
+
+  const defaultChannel = await prisma.channel.upsert({
+    where: { coopId_slug: { coopId: coop.id, slug: 'default' } },
+    update: {},
+    create: {
+      coopId: coop.id,
+      slug: 'default',
+      name: coop.name,
+      primaryColor: '#f59e0b',
+      secondaryColor: '#d97706',
+      isDefault: true,
+      active: true,
+    },
+  });
+  console.log(`\n  Channel: ${defaultChannel.name} (slug: ${defaultChannel.slug})`);
+
+  for (const sc of [shareClassA, shareClassB]) {
+    await prisma.channelShareClass.upsert({
+      where: { channelId_shareClassId: { channelId: defaultChannel.id, shareClassId: sc.id } },
+      update: {},
+      create: { channelId: defaultChannel.id, shareClassId: sc.id },
+    });
+  }
+
+  for (const proj of [solarProject, windProject]) {
+    await prisma.channelProject.upsert({
+      where: { channelId_projectId: { channelId: defaultChannel.id, projectId: proj.id } },
+      update: {},
+      create: { channelId: defaultChannel.id, projectId: proj.id },
+    });
+  }
+  console.log('  Share classes & projects linked to default channel');
+
+  // ---------------------------------------------------------------------------
   // 5. SHAREHOLDERS
   // ---------------------------------------------------------------------------
 
