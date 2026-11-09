@@ -4,6 +4,7 @@ jest.mock('../documents/documents.service', () => ({
   DocumentsService: class DocumentsServiceMock {},
 }));
 
+import { BadRequestException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { LAPSED_SIGNUP_GRACE_MS, PublicSignupClosedException } from '../billing/signup-grace';
 import { ChannelsService } from './channels.service';
@@ -149,6 +150,145 @@ describe('ChannelsService.publicRegister — orphan-shareholder preflight', () =
 
     await expect(service.publicRegister('bronsgroen', 'default', dto as any)).resolves.toMatchObject({
       status: 'registered',
+    });
+  });
+});
+
+describe('ChannelsService admin share class and project ownership', () => {
+  let service: ChannelsService;
+  let prisma: any;
+  let tx: any;
+
+  beforeEach(async () => {
+    tx = {
+      channelShareClass: {
+        deleteMany: jest.fn().mockResolvedValue({}),
+        createMany: jest.fn().mockResolvedValue({}),
+      },
+      channelProject: {
+        deleteMany: jest.fn().mockResolvedValue({}),
+        createMany: jest.fn().mockResolvedValue({}),
+      },
+      channel: { update: jest.fn().mockResolvedValue({ id: 'ch-1' }) },
+    };
+    prisma = {
+      channel: {
+        findFirst: jest.fn(),
+        create: jest.fn().mockResolvedValue({ id: 'ch-1' }),
+      },
+      shareClass: { findMany: jest.fn().mockResolvedValue([]) },
+      project: { findMany: jest.fn().mockResolvedValue([]) },
+      $transaction: jest.fn(async (fn: any) => fn(tx)),
+    };
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ChannelsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AuditService, useValue: { log: jest.fn(), diff: jest.fn().mockReturnValue([]) } },
+        { provide: ShareholdersService, useValue: {} },
+        { provide: RegistrationsService, useValue: {} },
+      ],
+    }).compile();
+    service = moduleRef.get(ChannelsService);
+  });
+
+  const createDto = { name: 'Web', slug: 'web' } as any;
+
+  describe('create', () => {
+    beforeEach(() => prisma.channel.findFirst.mockResolvedValue(null));
+
+    it('rejects a share class from another coop before writing', async () => {
+      prisma.shareClass.findMany.mockResolvedValue([{ id: 'sc-1' }]);
+
+      await expect(
+        service.create('coop-1', { ...createDto, shareClassIds: ['sc-1', 'sc-other'] }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.shareClass.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ['sc-1', 'sc-other'] }, coopId: 'coop-1' },
+        select: { id: true },
+      });
+      expect(prisma.channel.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a project from another coop before writing', async () => {
+      prisma.project.findMany.mockResolvedValue([]);
+
+      await expect(
+        service.create('coop-1', { ...createDto, projectIds: ['p-other'] }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.project.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ['p-other'] }, coopId: 'coop-1' },
+        select: { id: true },
+      });
+      expect(prisma.channel.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts own ids and ignores duplicates in the input', async () => {
+      prisma.shareClass.findMany.mockResolvedValue([{ id: 'sc-1' }]);
+      prisma.project.findMany.mockResolvedValue([{ id: 'p-1' }, { id: 'p-2' }]);
+
+      await service.create('coop-1', {
+        ...createDto,
+        shareClassIds: ['sc-1', 'sc-1'],
+        projectIds: ['p-1', 'p-2'],
+      });
+
+      expect(prisma.channel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            shareClasses: { create: [{ shareClassId: 'sc-1' }] },
+            projects: { create: [{ projectId: 'p-1' }, { projectId: 'p-2' }] },
+          }),
+        }),
+      );
+    });
+
+    it('does not query when no ids are given', async () => {
+      await service.create('coop-1', createDto);
+
+      expect(prisma.shareClass.findMany).not.toHaveBeenCalled();
+      expect(prisma.project.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update', () => {
+    beforeEach(() => prisma.channel.findFirst.mockResolvedValue({ id: 'ch-1', coopId: 'coop-1' }));
+
+    it('rejects a foreign share class and leaves the links untouched', async () => {
+      prisma.shareClass.findMany.mockResolvedValue([]);
+
+      await expect(
+        service.update('ch-1', 'coop-1', { shareClassIds: ['sc-other'] } as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(tx.channelShareClass.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects a foreign project and leaves the links untouched', async () => {
+      prisma.project.findMany.mockResolvedValue([]);
+
+      await expect(
+        service.update('ch-1', 'coop-1', { projectIds: ['p-other'] } as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('replaces links with own ids, deduplicated', async () => {
+      prisma.shareClass.findMany.mockResolvedValue([{ id: 'sc-1' }]);
+
+      await service.update('ch-1', 'coop-1', { shareClassIds: ['sc-1', 'sc-1'] } as any);
+
+      expect(tx.channelShareClass.createMany).toHaveBeenCalledWith({
+        data: [{ channelId: 'ch-1', shareClassId: 'sc-1' }],
+      });
+    });
+
+    it('clears links with an empty list without querying', async () => {
+      await service.update('ch-1', 'coop-1', { shareClassIds: [], projectIds: [] } as any);
+
+      expect(prisma.shareClass.findMany).not.toHaveBeenCalled();
+      expect(tx.channelShareClass.deleteMany).toHaveBeenCalled();
+      expect(tx.channelShareClass.createMany).not.toHaveBeenCalled();
     });
   });
 });

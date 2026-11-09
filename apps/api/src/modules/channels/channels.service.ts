@@ -171,6 +171,39 @@ export class ChannelsService {
     };
   }
 
+  /**
+   * Admin-supplied share class and project ids must belong to the coop, or the
+   * channel's public page would show another coop's records. Returns the
+   * deduplicated lists; throws BadRequestException on any foreign or unknown id.
+   */
+  private async resolveOwnedLinks(
+    coopId: string,
+    input: { shareClassIds?: string[]; projectIds?: string[] },
+  ) {
+    const shareClassIds = input.shareClassIds ? [...new Set(input.shareClassIds)] : undefined;
+    const projectIds = input.projectIds ? [...new Set(input.projectIds)] : undefined;
+
+    if (shareClassIds?.length) {
+      const found = await this.prisma.shareClass.findMany({
+        where: { id: { in: shareClassIds }, coopId },
+        select: { id: true },
+      });
+      if (found.length !== shareClassIds.length) {
+        throw new BadRequestException('One or more share classes do not belong to this cooperative');
+      }
+    }
+    if (projectIds?.length) {
+      const found = await this.prisma.project.findMany({
+        where: { id: { in: projectIds }, coopId },
+        select: { id: true },
+      });
+      if (found.length !== projectIds.length) {
+        throw new BadRequestException('One or more projects do not belong to this cooperative');
+      }
+    }
+    return { shareClassIds, projectIds };
+  }
+
   async create(coopId: string, dto: CreateChannelDto, actorId?: string, ip?: string, userAgent?: string) {
     // Validate slug uniqueness within coop
     const existing = await this.prisma.channel.findFirst({
@@ -181,7 +214,12 @@ export class ChannelsService {
       throw new ConflictException('A channel with this slug already exists in this cooperative');
     }
 
-    const { shareClassIds, projectIds, ...channelData } = dto;
+    const { shareClassIds: requestedShareClassIds, projectIds: requestedProjectIds, ...channelData } =
+      dto;
+    const { shareClassIds, projectIds } = await this.resolveOwnedLinks(coopId, {
+      shareClassIds: requestedShareClassIds,
+      projectIds: requestedProjectIds,
+    });
 
     const channel = await this.prisma.channel.create({
       data: {
@@ -227,7 +265,12 @@ export class ChannelsService {
       throw new NotFoundException('Channel not found');
     }
 
-    const { shareClassIds, projectIds, ...channelData } = dto;
+    const { shareClassIds: requestedShareClassIds, projectIds: requestedProjectIds, ...channelData } =
+      dto;
+    const { shareClassIds, projectIds } = await this.resolveOwnedLinks(coopId, {
+      shareClassIds: requestedShareClassIds,
+      projectIds: requestedProjectIds,
+    });
 
     // Build diff for audit (excluding relation arrays)
     const changes = this.auditService.diff(
