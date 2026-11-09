@@ -506,6 +506,32 @@ export class EmailProcessor {
           Deze link is 90 dagen geldig.
         </p>
       `,
+      'emancipation-household': (d, cn) => `
+        <h1>${escapeHtml(d.shareholderFirstName)} kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>${escapeHtml(d.shareholderFirstName)} ${escapeHtml(d.shareholderLastName)} kan nu een eigen account aanmaken bij ${escapeHtml(cn)}.</p>
+        <p>Geef onderstaande link door aan ${escapeHtml(d.shareholderFirstName)}:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${d.claimUrl}"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      `,
+      'ponto-expiry-warning': (d, _cn) => `
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>${escapeHtml(d.coopName)}</strong> expires in ${escapeHtml(d.daysRemaining)} days.</p>
+        <ul>
+          <li><strong>Bank:</strong> ${escapeHtml(d.bankName)}</li>
+          <li><strong>IBAN:</strong> ${escapeHtml(d.iban)}</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
+      `,
       'minor-upgrade-reminder': (d, cn) => `
         <h1>Herinnering: account aanmaken voor ${escapeHtml(d.minorFirstName)}</h1>
         <p>Beste ouder/voogd,</p>

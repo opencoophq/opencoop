@@ -90,6 +90,17 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
       minorLastName: 'Janssens',
       upgradeUrl: 'https://opencoop.test/upgrade?token=abc123',
     },
+    'emancipation-household': {
+      shareholderFirstName: 'Lotte',
+      shareholderLastName: 'Janssens',
+      claimUrl: 'https://opencoop.test/emancipate/abc123',
+    },
+    'ponto-expiry-warning': {
+      coopName: 'Coöp & Co',
+      daysRemaining: 5,
+      bankName: 'Belfius',
+      iban: 'BE68 5390 0754 7034',
+    },
     'minor-upgrade-reminder': {
       minorFirstName: 'Lotte',
       minorLastName: 'Janssens',
@@ -322,6 +333,33 @@ describe('EmailProcessor render snapshots (byte-exact baseline)', () => {
     expect(html).toContain('Beste Christiane,');
     expect(html).toContain('Dit bericht bevat bijlagen.');
     expect(html).not.toContain('&lt;h2&gt;');
+  });
+
+  it('renders the emancipation claim link and escapes the names', () => {
+    const html = createProcessor().renderTemplate(
+      'emancipation-household',
+      {
+        shareholderFirstName: '<b>Lotte</b>',
+        shareholderLastName: 'Janssens',
+        claimUrl: 'https://opencoop.test/emancipate/abc123',
+      },
+      coopName,
+    );
+    expect(html).toContain('href="https://opencoop.test/emancipate/abc123"');
+    expect(html).toContain('&lt;b&gt;Lotte&lt;/b&gt;');
+    expect(html).not.toContain('<b>Lotte</b>');
+  });
+
+  it('renders the ponto expiry warning with escaped values and missing bank data', () => {
+    const html = createProcessor().renderTemplate(
+      'ponto-expiry-warning',
+      { coopName: 'Coöp <&> Co', daysRemaining: 3, bankName: null, iban: undefined },
+      coopName,
+    );
+    expect(html).toContain('Coöp &lt;&amp;&gt; Co');
+    expect(html).toContain('expires in 3 days');
+    expect(html).not.toContain('null');
+    expect(html).not.toContain('undefined');
   });
 
   it('escapes the card label in the charge-card coop notice', () => {

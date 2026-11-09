@@ -1620,6 +1620,154 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividen
     "
 `;
 
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "emancipation-household" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>Lotte Janssens kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Geef onderstaande link door aan Lotte:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/emancipate/abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "emancipation-household" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>Lotte Janssens kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Geef onderstaande link door aan Lotte:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/emancipate/abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "emancipation-household" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>Lotte Janssens kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Geef onderstaande link door aan Lotte:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/emancipate/abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "emancipation-household" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Lotte kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>Lotte Janssens kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Geef onderstaande link door aan Lotte:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/emancipate/abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
 exports[`EmailProcessor render snapshots (byte-exact baseline) template "gift-certificate" renders in de 1`] = `
 "
       <!DOCTYPE html>
@@ -3327,6 +3475,130 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "payment
           
           <p>Bedankt om aandeelhouder te zijn van Coöp &amp; Co!</p>
         
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "ponto-expiry-warning" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>Coöp &amp; Co</strong> expires in 5 days.</p>
+        <ul>
+          <li><strong>Bank:</strong> Belfius</li>
+          <li><strong>IBAN:</strong> BE68 5390 0754 7034</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "ponto-expiry-warning" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>Coöp &amp; Co</strong> expires in 5 days.</p>
+        <ul>
+          <li><strong>Bank:</strong> Belfius</li>
+          <li><strong>IBAN:</strong> BE68 5390 0754 7034</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "ponto-expiry-warning" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>Coöp &amp; Co</strong> expires in 5 days.</p>
+        <ul>
+          <li><strong>Bank:</strong> Belfius</li>
+          <li><strong>IBAN:</strong> BE68 5390 0754 7034</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "ponto-expiry-warning" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>Coöp &amp; Co</strong> expires in 5 days.</p>
+        <ul>
+          <li><strong>Bank:</strong> Belfius</li>
+          <li><strong>IBAN:</strong> BE68 5390 0754 7034</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
+      
         <hr>
         <p style="color: #666; font-size: 12px;">
           This email was sent by Coöp &amp; Co via OpenCoop.
