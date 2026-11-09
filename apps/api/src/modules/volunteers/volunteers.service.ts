@@ -580,7 +580,8 @@ export class VolunteersService {
 
   async purgeUnconfirmed(now = new Date()) {
     const cutoff = new Date(now.getTime() - UNCONFIRMED_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-    const where = { status: 'PENDING_CONFIRMATION' as const, createdAt: { lt: cutoff } };
+    // updatedAt, not createdAt: a withdrawn volunteer who signs up again reuses the row.
+    const where = { status: 'PENDING_CONFIRMATION' as const, updatedAt: { lt: cutoff } };
     const grouped = await this.prisma.volunteer.groupBy({
       by: ['coopId'],
       where,
