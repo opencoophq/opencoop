@@ -999,10 +999,6 @@ export class AuthService {
   }
 
   // ============================================================================
-  // MAGIC LINK AUTHENTICATION
-  // ============================================================================
-
-  // ============================================================================
   // WAITLIST
   // ============================================================================
 
@@ -1060,10 +1056,6 @@ export class AuthService {
   }
 
 
-  /**
-   * Central JWT issuance. All auth flows (password, magic link, passkey, OAuth)
-   * converge here. When MFA is enabled, returns an MFA-pending response instead.
-   */
   private async linkOrphanShareholders(userId: string, email: string): Promise<void> {
     await this.prisma.shareholder.updateMany({
       where: { email: { equals: email, mode: 'insensitive' }, userId: null },
