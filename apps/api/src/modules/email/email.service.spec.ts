@@ -21,6 +21,9 @@ describe('EmailService', () => {
     emailLog: {
       create: jest.fn(),
     },
+    coop: {
+      findUnique: jest.fn(),
+    },
   };
 
   const mockQueue = {
@@ -180,6 +183,7 @@ describe('EmailService', () => {
       });
       (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
       mockPrisma.emailLog.create.mockResolvedValue({ id: 'log-1' });
+      mockPrisma.coop.findUnique.mockResolvedValue(null);
       (Sentry.captureException as jest.Mock).mockClear();
     });
 
@@ -227,6 +231,7 @@ describe('EmailService', () => {
         errorMessage: null,
         providerMessageId: '20261109.abc@smtp-relay.mailin.fr',
         smtpResponse: '250 2.0.0 Ok: queued as <20261109.abc@smtp-relay.mailin.fr>',
+        fromAddress: 'noreply@opencoop.be',
       });
       expect(row).not.toHaveProperty('html');
       expect(row).not.toHaveProperty('text');
@@ -356,6 +361,138 @@ describe('EmailService', () => {
 
       await expect(service.sendPlatformEmail(mail)).rejects.toBe(failure);
       expect(Sentry.captureException).toHaveBeenCalledWith(dbError);
+    });
+
+    const verifiedCoop = {
+      name: 'Bronsgroen CV',
+      coopEmail: 'info@bronsgroen.be',
+      senderDomain: 'bronsgroen.be',
+      senderFromAddress: 'noreply@bronsgroen.be',
+      senderFromName: 'Bronsgroen',
+      senderDomainStatus: 'verified',
+    };
+
+    it('keeps the platform address and the coop display name when the domain is not verified', async () => {
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        ...verifiedCoop,
+        senderDomainStatus: 'pending',
+      });
+
+      await service.sendPlatformEmail(mail);
+
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: 'Bronsgroen <noreply@opencoop.be>',
+          replyTo: 'info@bronsgroen.be',
+        }),
+      );
+      expect(loggedRow()).toEqual(
+        expect.objectContaining({
+          status: 'ACCEPTED',
+          fromAddress: 'noreply@opencoop.be',
+          templateKey: 'magic-link',
+        }),
+      );
+    });
+
+    it('sends from the coop domain when it is verified and records that address', async () => {
+      mockPrisma.coop.findUnique.mockResolvedValue(verifiedCoop);
+
+      await service.sendPlatformEmail(mail);
+
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: 'Bronsgroen <noreply@bronsgroen.be>',
+          replyTo: 'info@bronsgroen.be',
+        }),
+      );
+      const row = loggedRow();
+      expect(row).toEqual(
+        expect.objectContaining({
+          status: 'ACCEPTED',
+          fromAddress: 'noreply@bronsgroen.be',
+          coopId: 'coop-1',
+          templateKey: 'magic-link',
+        }),
+      );
+      expectNoSecrets(row);
+    });
+
+    it('retries auth-critical mail from the platform sender when the coop domain is refused', async () => {
+      mockPrisma.coop.findUnique.mockResolvedValue(verifiedCoop);
+      const failure = Object.assign(new Error('Message failed: 550 5.7.1 Sender rejected'), {
+        responseCode: 550,
+        response: '550 5.7.1 Sender rejected',
+        code: 'EENVELOPE',
+      });
+      sendMail.mockRejectedValueOnce(failure);
+
+      await expect(service.sendPlatformEmail(mail)).resolves.toBeUndefined();
+
+      expect(sendMail).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ from: 'Bronsgroen <noreply@bronsgroen.be>' }),
+      );
+      expect(sendMail).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ from: 'Bronsgroen <noreply@opencoop.be>' }),
+      );
+      expect(mockPrisma.emailLog.create).toHaveBeenCalledTimes(2);
+      const failed = mockPrisma.emailLog.create.mock.calls[0][0].data;
+      const sent = mockPrisma.emailLog.create.mock.calls[1][0].data;
+      expect(failed).toEqual(
+        expect.objectContaining({
+          status: 'REJECTED',
+          fromAddress: 'noreply@bronsgroen.be',
+          sentAt: null,
+        }),
+      );
+      expect(sent).toEqual(
+        expect.objectContaining({
+          status: 'ACCEPTED',
+          fromAddress: 'noreply@opencoop.be',
+        }),
+      );
+      expectNoSecrets(failed);
+      expectNoSecrets(sent);
+    });
+
+    it('does not retry a non-auth mail when the coop domain is refused', async () => {
+      mockPrisma.coop.findUnique.mockResolvedValue(verifiedCoop);
+      const failure = Object.assign(new Error('Message failed: 550 5.7.1 Sender rejected'), {
+        responseCode: 550,
+        response: '550 5.7.1 Sender rejected',
+        code: 'EENVELOPE',
+      });
+      sendMail.mockRejectedValue(failure);
+
+      await expect(
+        service.sendPlatformEmail({ ...mail, templateKey: 'admin-invitation' }),
+      ).rejects.toBe(failure);
+
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(loggedRow()).toEqual(
+        expect.objectContaining({
+          status: 'REJECTED',
+          fromAddress: 'noreply@bronsgroen.be',
+          templateKey: 'admin-invitation',
+        }),
+      );
+    });
+
+    it('still sends from the platform address when the sender lookup fails', async () => {
+      mockPrisma.coop.findUnique.mockRejectedValue(new Error('db down'));
+      const errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+      await expect(service.sendPlatformEmail(mail)).resolves.toBeUndefined();
+
+      expect(sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ from: 'OpenCoop <noreply@opencoop.be>' }),
+      );
+      expect(loggedRow().fromAddress).toBe('noreply@opencoop.be');
+      expect(errorLog.mock.calls.flat().join(' ')).not.toContain(loginCode);
     });
 
     it('does not write a log when platform SMTP is not configured', async () => {

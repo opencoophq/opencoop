@@ -15,6 +15,7 @@ import { ChannelsModule } from '../channels/channels.module';
 import { BillingModule } from '../billing/billing.module';
 import { MessagesModule } from '../messages/messages.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { PaymentsModule } from '../payments/payments.module';
     DividendsModule,
     DocumentsModule,
     MessagesModule,
+    EmailModule,
   ],
   controllers: [AdminController],
   providers: [AnalyticsService, ReportsService],

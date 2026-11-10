@@ -15,6 +15,12 @@ import {
   outcomeFromSmtpError,
   outcomeFromSmtpResult,
 } from './platform-email-log';
+import {
+  isAuthCriticalTemplate,
+  resolvePlatformEnvelopes,
+  type CoopSenderFields,
+  type MailEnvelope,
+} from './sender-domain';
 
 export interface EmailOptions {
   coopId: string;
@@ -40,7 +46,12 @@ export class EmailService {
   /**
    * Send a platform-level email (login codes, magic links, password resets,
    * and other mail that does not go through a coop queue).
-   * Sends directly via platform SMTP and writes one sanitized EmailLog row.
+   * Sends directly via platform SMTP. The From address is the cooperative's
+   * own mailbox only when that domain is verified; otherwise it is the
+   * platform address with the cooperative's display name. Auth-critical mail
+   * (login code, magic link, password reset, email verification) retries the
+   * platform sender if the custom From is refused. Each attempt writes one
+   * sanitized EmailLog row, including the mailbox that was used.
    * The row never includes the mail body, login code, or link token.
    * A logging failure is reported and does not fail the send.
    */
@@ -64,9 +75,11 @@ export class EmailService {
     const port = parseInt(process.env.SMTP_PORT || '587', 10);
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
-    const defaultFrom = process.env.SMTP_FROM || 'OpenCoop <noreply@opencoop.be>';
-    const fromAddress = defaultFrom.match(/<(.+)>/)?.[1] || defaultFrom;
-    const from = options.senderName ? `${options.senderName} <${fromAddress}>` : defaultFrom;
+    const envelopes = resolvePlatformEnvelopes({
+      platformFrom: process.env.SMTP_FROM || 'OpenCoop <noreply@opencoop.be>',
+      senderName: options.senderName,
+      coop: await this.loadSenderCoop(options.coopId),
+    });
 
     const transporter = nodemailer.createTransport({
       host,
@@ -86,28 +99,79 @@ export class EmailService {
       secrets,
     };
 
-    try {
-      const info = await transporter.sendMail({
-        from,
+    const deliver = (envelope: MailEnvelope) =>
+      transporter.sendMail({
+        from: envelope.from,
         to: options.to,
         subject: options.subject,
         html: options.html,
         text: options.text,
+        replyTo: envelope.replyTo,
       });
-      const outcome = outcomeFromSmtpResult(info);
+
+    const logSend = async (
+      envelope: MailEnvelope,
+      outcome: ReturnType<typeof outcomeFromSmtpResult> | ReturnType<typeof outcomeFromSmtpError>,
+    ) => {
       await this.recordPlatformEmailLog({
         ...logged,
         ...outcome,
+        fromAddress: envelope.fromAddress,
         sentAt: outcome.status === 'ACCEPTED' ? new Date() : null,
       });
+    };
+
+    try {
+      const info = await deliver(envelopes.selected);
+      await logSend(envelopes.selected, outcomeFromSmtpResult(info));
     } catch (error) {
-      const outcome = outcomeFromSmtpError(error);
-      await this.recordPlatformEmailLog({
-        ...logged,
-        ...outcome,
-        sentAt: null,
+      const canFallback =
+        envelopes.custom &&
+        isAuthCriticalTemplate(options.templateKey) &&
+        envelopes.platform.fromAddress !== envelopes.selected.fromAddress;
+      await logSend(envelopes.selected, outcomeFromSmtpError(error));
+      if (!canFallback) throw error;
+
+      // Login codes and password resets must still arrive if the coop domain is refused.
+      this.logger.warn(
+        `Platform mail from ${envelopes.selected.fromAddress} failed (${options.templateKey ?? 'platform'}); retrying ${envelopes.platform.fromAddress}`,
+      );
+      try {
+        const info = await deliver(envelopes.platform);
+        await logSend(envelopes.platform, outcomeFromSmtpResult(info));
+      } catch (fallbackError) {
+        await logSend(envelopes.platform, outcomeFromSmtpError(fallbackError));
+        throw fallbackError;
+      }
+    }
+  }
+
+  /**
+   * Loads the coop fields that decide the From address. A lookup failure
+   * falls back to the platform sender so a database blip cannot block a
+   * login code.
+   */
+  private async loadSenderCoop(
+    coopId: string | null | undefined,
+  ): Promise<CoopSenderFields | null> {
+    if (!coopId) return null;
+    try {
+      const coop = await this.prisma.coop.findUnique({
+        where: { id: coopId },
+        select: {
+          name: true,
+          coopEmail: true,
+          senderDomain: true,
+          senderFromAddress: true,
+          senderFromName: true,
+          senderDomainStatus: true,
+        },
       });
-      throw error;
+      return coop ?? null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Sender domain lookup failed; using platform from: ${message}`);
+      return null;
     }
   }
 

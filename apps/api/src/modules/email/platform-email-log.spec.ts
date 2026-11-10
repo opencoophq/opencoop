@@ -102,6 +102,7 @@ describe('platform email log', () => {
         errorMessage: `failed ${resetToken}`,
         sentAt: null,
         secrets,
+        fromAddress: 'noreply@bronsgroen.be',
       });
 
       const serialized = JSON.stringify(row);
@@ -114,6 +115,7 @@ describe('platform email log', () => {
       expect(row.providerMessageId).toBe('[redacted]');
       expect(row.status).toBe('REJECTED');
       expect(row.sentAt).toBeNull();
+      expect(row.fromAddress).toBe('noreply@bronsgroen.be');
     });
   });
 });
