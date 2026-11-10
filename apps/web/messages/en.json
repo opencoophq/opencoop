@@ -892,7 +892,7 @@
       "platformDescription": "Emails are sent via OpenCoop's shared relay. After the sender domain below is verified, they are sent from that domain.",
       "senderDomain": {
         "title": "Sender domain",
-        "intro": "Login codes, magic links, password resets and other platform mail can be sent as your cooperative, for example Bronsgroen <noreply@bronsgroen.be>. Until the domain is verified, OpenCoop keeps sending from noreply@opencoop.be and still shows your cooperative's name.",
+        "intro": "Login codes, magic links, password resets and other platform mail can be sent as your cooperative, for example {example}. Until the domain is verified, OpenCoop keeps sending from noreply@opencoop.be and still shows your cooperative's name.",
         "sameAccount": "The domain is registered in the OpenCoop mail account that already sends this mail. You do not paste an API key here.",
         "domain": "Domain",
         "domainHint": "The domain you control, without https://. Example: bronsgroen.be",
@@ -951,6 +951,8 @@
           "SENDER_DOMAIN_UNAVAILABLE": "Sender domains are not available yet. Contact OpenCoop.",
           "SENDER_DOMAIN_PROVIDER": "The mail provider could not register the domain just now. Try again later.",
           "SENDER_DOMAIN_PLATFORM": "opencoop.be is reserved for the platform.",
+          "SENDER_DOMAIN_CLAIMED": "This domain is already used by another cooperative. Contact OpenCoop if it is yours.",
+          "SENDER_DOMAIN_CHANGED": "The sender domain changed while this request ran. Reload the page and try again.",
           "DNS_NOT_READY": "The DNS records are not valid yet. Check the hosts below and try again after they have been published.",
           "PROVIDER_ERROR": "The mail provider could not be reached. The previous status is unchanged.",
           "DOMAIN_MISSING": "This domain is no longer registered with the mail provider. Save it again."

@@ -890,7 +890,7 @@
       "platformDescription": "Les e-mails sont envoyés via le relais partagé d'OpenCoop. Une fois le domaine d'expéditeur ci-dessous vérifié, ils partent de ce domaine.",
       "senderDomain": {
         "title": "Domaine d'expéditeur",
-        "intro": "Les codes de connexion, les liens magiques, les réinitialisations de mot de passe et les autres e-mails de la plateforme peuvent partir au nom de votre coopérative, par exemple Bronsgroen <noreply@bronsgroen.be>. Tant que le domaine n'est pas vérifié, OpenCoop envoie depuis noreply@opencoop.be en affichant le nom de votre coopérative.",
+        "intro": "Les codes de connexion, les liens magiques, les réinitialisations de mot de passe et les autres e-mails de la plateforme peuvent partir au nom de votre coopérative, par exemple {example}. Tant que le domaine n'est pas vérifié, OpenCoop envoie depuis noreply@opencoop.be en affichant le nom de votre coopérative.",
         "sameAccount": "Le domaine est enregistré dans le compte de messagerie OpenCoop qui envoie déjà ce courrier. Vous ne collez pas de clé API ici.",
         "domain": "Domaine",
         "domainHint": "Le domaine que vous contrôlez, sans https://. Exemple : bronsgroen.be",
@@ -949,6 +949,8 @@
           "SENDER_DOMAIN_UNAVAILABLE": "Les domaines d'expéditeur ne sont pas encore disponibles. Contactez OpenCoop.",
           "SENDER_DOMAIN_PROVIDER": "Le fournisseur de messagerie n'a pas pu enregistrer le domaine pour le moment. Réessayez plus tard.",
           "SENDER_DOMAIN_PLATFORM": "opencoop.be est réservé à la plateforme.",
+          "SENDER_DOMAIN_CLAIMED": "Ce domaine est déjà utilisé par une autre coopérative. Contactez OpenCoop s'il vous appartient.",
+          "SENDER_DOMAIN_CHANGED": "Le domaine d'expéditeur a changé pendant cette demande. Rechargez la page et réessayez.",
           "DNS_NOT_READY": "Les enregistrements DNS ne sont pas encore valides. Vérifiez les hôtes ci-dessous et réessayez après leur publication.",
           "PROVIDER_ERROR": "Le fournisseur de messagerie n'a pas répondu. Le statut précédent est inchangé.",
           "DOMAIN_MISSING": "Ce domaine n'est plus enregistré chez le fournisseur de messagerie. Enregistrez-le à nouveau."

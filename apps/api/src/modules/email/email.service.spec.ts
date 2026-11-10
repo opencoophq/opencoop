@@ -459,6 +459,42 @@ describe('EmailService', () => {
       expectNoSecrets(sent);
     });
 
+    it('retries the platform sender when the relay rejects the coop address without throwing', async () => {
+      mockPrisma.coop.findUnique.mockResolvedValue(verifiedCoop);
+      sendMail.mockResolvedValueOnce({
+        accepted: [],
+        rejected: ['member@example.com'],
+        response: '550 5.7.1 Sender not allowed',
+        messageId: '<m1@opencoop.be>',
+      });
+
+      await expect(service.sendPlatformEmail(mail)).resolves.toBeUndefined();
+
+      expect(sendMail).toHaveBeenCalledTimes(2);
+      expect(sendMail).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ from: 'Bronsgroen <noreply@opencoop.be>' }),
+      );
+      const rows = mockPrisma.emailLog.create.mock.calls.map((call) => call[0].data);
+      expect(rows.map((row) => [row.status, row.fromAddress])).toEqual([
+        ['REJECTED', 'noreply@bronsgroen.be'],
+        ['ACCEPTED', 'noreply@opencoop.be'],
+      ]);
+    });
+
+    it('quotes a display name that contains a comma so it is not read as two addresses', async () => {
+      mockPrisma.coop.findUnique.mockResolvedValue({
+        ...verifiedCoop,
+        senderFromName: 'Zon, Wind & Co',
+      });
+
+      await service.sendPlatformEmail(mail);
+
+      expect(sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ from: '"Zon, Wind & Co" <noreply@bronsgroen.be>' }),
+      );
+    });
+
     it('does not retry a non-auth mail when the coop domain is refused', async () => {
       mockPrisma.coop.findUnique.mockResolvedValue(verifiedCoop);
       const failure = Object.assign(new Error('Message failed: 550 5.7.1 Sender rejected'), {

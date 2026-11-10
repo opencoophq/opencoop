@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -75,6 +76,10 @@ export class SenderDomainService {
     const fromAddress = this.parseFromAddress(input.fromAddress, domain);
     const fromName = sanitizeDisplayName(input.fromName) ?? sanitizeDisplayName(coop.name);
     const apiKey = this.requireApiKey();
+    // Brevo verification belongs to the shared platform account, not to a
+    // coop. Without this check, a second coop could register a domain that
+    // another coop already authenticated and be shown as verified.
+    await this.assertDomainFree(coopId, domain);
 
     let snapshot: BrevoDomainSnapshot | null = null;
     try {
@@ -90,19 +95,19 @@ export class SenderDomainService {
     const records = snapshot?.records ?? [];
     const ready = snapshot?.verified === true && snapshot?.authenticated === true;
     const status = ready ? 'verified' : 'pending';
-    const updated = await this.prisma.coop.update({
-      where: { id: coopId },
-      data: {
-        senderDomain: domain,
-        senderFromAddress: fromAddress,
-        senderFromName: fromName,
-        senderDomainStatus: status,
-        senderDomainCheckedAt: new Date(),
-        senderDomainRecords: records as unknown as Prisma.InputJsonValue,
-        senderDomainError: null,
-      },
-      select: SELECT,
+    // The write applies only if the coop's domain is still what this request
+    // started from. A clear or a different register that landed during the
+    // Brevo calls wins, and this stale save is refused.
+    const updated = await this.guardedUpdate(coop, {
+      senderDomain: domain,
+      senderFromAddress: fromAddress,
+      senderFromName: fromName,
+      senderDomainStatus: status,
+      senderDomainCheckedAt: new Date(),
+      senderDomainRecords: records as unknown as Prisma.InputJsonValue,
+      senderDomainError: null,
     });
+    if (!updated) throw new ConflictException('SENDER_DOMAIN_CHANGED');
     await this.auditChange(coop, updated, actor);
     return toView(updated);
   }
@@ -150,6 +155,8 @@ export class SenderDomainService {
 
   async clear(coopId: string, actor?: SenderDomainActor): Promise<SenderDomainView> {
     const coop = await this.requireCoop(coopId);
+    // Clear always wins: it is unguarded so it also removes a domain that a
+    // concurrent register just replaced.
     const updated = await this.prisma.coop.update({
       where: { id: coopId },
       data: {
@@ -238,23 +245,57 @@ export class SenderDomainService {
     }
   }
 
+  /**
+   * Stores the result of a Brevo read. The write applies only while the coop
+   * still holds the domain this result was read for, so a slow check cannot
+   * verify a replacement domain or revive a cleared one. When it does not
+   * apply, the current row is returned unchanged.
+   */
   private async saveOutcome(
     coop: SenderRow,
     actor: SenderDomainActor | undefined,
     outcome: { status: string | null; error: string | null; records: SenderDnsRecord[] },
   ): Promise<SenderDomainView> {
-    const updated = await this.prisma.coop.update({
-      where: { id: coop.id },
-      data: {
-        senderDomainStatus: outcome.status,
-        senderDomainError: outcome.error,
-        senderDomainCheckedAt: new Date(),
-        senderDomainRecords: outcome.records as unknown as Prisma.InputJsonValue,
-      },
-      select: SELECT,
+    const updated = await this.guardedUpdate(coop, {
+      senderDomainStatus: outcome.status,
+      senderDomainError: outcome.error,
+      senderDomainCheckedAt: new Date(),
+      senderDomainRecords: outcome.records as unknown as Prisma.InputJsonValue,
     });
+    if (!updated) {
+      this.logger.warn(`Ignored stale sender domain result for coop ${coop.id}`);
+      return toView(await this.requireCoop(coop.id));
+    }
     await this.auditChange(coop, updated, actor);
     return toView(updated);
+  }
+
+  /** Update the coop only if senderDomain still equals the value in `before`. */
+  private async guardedUpdate(
+    before: SenderRow,
+    data: Prisma.CoopUpdateManyMutationInput,
+  ): Promise<SenderRow | null> {
+    try {
+      const result = await this.prisma.coop.updateMany({
+        where: { id: before.id, senderDomain: before.senderDomain },
+        data,
+      });
+      if (result.count === 0) return null;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('SENDER_DOMAIN_CLAIMED');
+      }
+      throw error;
+    }
+    return this.prisma.coop.findUnique({ where: { id: before.id }, select: SELECT });
+  }
+
+  private async assertDomainFree(coopId: string, domain: string): Promise<void> {
+    const holder = await this.prisma.coop.findFirst({
+      where: { senderDomain: domain, id: { not: coopId } },
+      select: { id: true },
+    });
+    if (holder) throw new ConflictException('SENDER_DOMAIN_CLAIMED');
   }
 
   private async requireCoop(coopId: string): Promise<SenderRow> {

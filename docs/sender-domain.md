@@ -51,6 +51,22 @@ a verified domain is no longer authenticated, status becomes `failed` and mail
 falls back to the platform address. A Brevo outage does not demote a verified
 domain.
 
+## Ownership and races
+
+- **One coop per domain.** Brevo verification belongs to the shared platform account. A domain
+  that one coop holds cannot be registered by another coop (`SENDER_DOMAIN_CLAIMED`, enforced by a
+  unique index on `coops.senderDomain` and a check before any Brevo call). Without this, a second
+  coop would see "verified" for a domain it does not control.
+- **Known gap.** A domain that already exists in the platform Brevo account and is held by no coop
+  (added by hand, or released by a coop that cleared it) is shown as verified to the next coop that
+  registers it. Brevo offers no per-coop proof of DNS control. Before a coop adds a domain, make
+  sure it is not one the platform uses itself.
+- **Stale results are dropped.** Register, check, clear and the nightly recheck write only while the
+  coop still holds the domain they read. A slow check cannot verify a replacement domain or revive
+  a cleared one. A register that was overtaken returns `SENDER_DOMAIN_CHANGED`.
+- **Fallback.** Auth-critical mail retries the platform address when the relay throws or rejects
+  the recipient without throwing.
+
 ## How-to for a coop admin
 
 Settings → Email settings → Sender domain.

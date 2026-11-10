@@ -145,4 +145,25 @@ describe('Brevo domain requests', () => {
       missing: false,
     });
   });
+
+  it('never follows a redirect, so the api-key header cannot reach another host', async () => {
+    fetchImpl.mockResolvedValue(jsonResponse(200, { domain: 'bronsgroen.be' }));
+
+    await getBrevoDomain(API_KEY, 'bronsgroen.be', fetchImpl);
+    await createBrevoDomain(API_KEY, 'bronsgroen.be', fetchImpl);
+    await authenticateBrevoDomain(API_KEY, 'bronsgroen.be', fetchImpl);
+
+    for (const [url, init] of fetchImpl.mock.calls) {
+      expect(String(url).startsWith('https://api.brevo.com/v3/')).toBe(true);
+      expect(init.redirect).toBe('error');
+    }
+  });
+
+  it('keeps a hostile domain string inside one URL path segment', async () => {
+    fetchImpl.mockResolvedValue(jsonResponse(200, {}));
+    await getBrevoDomain(API_KEY, 'x.be/../../account?a=b#c', fetchImpl).catch(() => undefined);
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url.startsWith('https://api.brevo.com/v3/senders/domains/x.be%2F')).toBe(true);
+    expect(new URL(url).host).toBe('api.brevo.com');
+  });
 });

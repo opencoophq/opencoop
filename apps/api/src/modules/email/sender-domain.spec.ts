@@ -82,7 +82,7 @@ describe('sender domain envelopes', () => {
       coop: coop({ senderFromName: 'Bronsgroen\r\nBcc: evil@example.com' }),
     });
     expect(envelopes.selected.from).toBe(
-      'Bronsgroen Bcc: evil@example.com <noreply@bronsgroen.be>',
+      '"Bronsgroen Bcc: evil@example.com" <noreply@bronsgroen.be>',
     );
     expect(envelopes.selected.from).not.toMatch(/[\r\n]/);
   });

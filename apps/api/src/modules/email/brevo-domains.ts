@@ -203,6 +203,9 @@ async function request(
       'content-type': 'application/json',
     },
     body: init.body,
+    // The api-key header would follow a redirect to another host. Brevo does
+    // not redirect this API, so any 3xx is an error, never a hop.
+    redirect: 'error',
     signal: AbortSignal.timeout(15_000),
   });
 }

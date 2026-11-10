@@ -121,28 +121,32 @@ export class EmailService {
       });
     };
 
+    const canFallback =
+      envelopes.custom &&
+      isAuthCriticalTemplate(options.templateKey) &&
+      envelopes.platform.fromAddress !== envelopes.selected.fromAddress;
+
     try {
       const info = await deliver(envelopes.selected);
-      await logSend(envelopes.selected, outcomeFromSmtpResult(info));
+      const outcome = outcomeFromSmtpResult(info);
+      await logSend(envelopes.selected, outcome);
+      // A relay can refuse the recipient without throwing; that is a failure too.
+      if (outcome.status === 'ACCEPTED' || !canFallback) return;
     } catch (error) {
-      const canFallback =
-        envelopes.custom &&
-        isAuthCriticalTemplate(options.templateKey) &&
-        envelopes.platform.fromAddress !== envelopes.selected.fromAddress;
       await logSend(envelopes.selected, outcomeFromSmtpError(error));
       if (!canFallback) throw error;
+    }
 
-      // Login codes and password resets must still arrive if the coop domain is refused.
-      this.logger.warn(
-        `Platform mail from ${envelopes.selected.fromAddress} failed (${options.templateKey ?? 'platform'}); retrying ${envelopes.platform.fromAddress}`,
-      );
-      try {
-        const info = await deliver(envelopes.platform);
-        await logSend(envelopes.platform, outcomeFromSmtpResult(info));
-      } catch (fallbackError) {
-        await logSend(envelopes.platform, outcomeFromSmtpError(fallbackError));
-        throw fallbackError;
-      }
+    // Login codes and password resets must still arrive if the coop domain is refused.
+    this.logger.warn(
+      `Platform mail from ${envelopes.selected.fromAddress} failed (${options.templateKey ?? 'platform'}); retrying ${envelopes.platform.fromAddress}`,
+    );
+    try {
+      const info = await deliver(envelopes.platform);
+      await logSend(envelopes.platform, outcomeFromSmtpResult(info));
+    } catch (fallbackError) {
+      await logSend(envelopes.platform, outcomeFromSmtpError(fallbackError));
+      throw fallbackError;
     }
   }
 

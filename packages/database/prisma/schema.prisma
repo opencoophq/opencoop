@@ -196,7 +196,7 @@ model Coop {
   // Platform sender domain for sendPlatformEmail (Brevo). The API key is
   // BREVO_API_KEY on the server, never stored on the coop. Mail uses the
   // custom From only when senderDomainStatus is "verified".
-  senderDomain          String?
+  senderDomain          String?   @unique // one coop per domain: Brevo verification is account-wide
   senderFromAddress     String?
   senderFromName        String?
   senderDomainStatus    String? // "pending" | "verified" | "failed"

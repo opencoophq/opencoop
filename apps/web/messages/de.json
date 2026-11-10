@@ -890,7 +890,7 @@
       "platformDescription": "E-Mails werden über das gemeinsame OpenCoop-Relay versendet. Nach der Verifizierung der Absenderdomain unten werden sie von dieser Domain gesendet.",
       "senderDomain": {
         "title": "Absenderdomain",
-        "intro": "Anmeldecodes, Magic Links, Passwort-Resets und andere Plattform-Mails können im Namen Ihrer Genossenschaft versendet werden, zum Beispiel Bronsgroen <noreply@bronsgroen.be>. Bis die Domain verifiziert ist, sendet OpenCoop von noreply@opencoop.be und zeigt dabei den Namen Ihrer Genossenschaft.",
+        "intro": "Anmeldecodes, Magic Links, Passwort-Resets und andere Plattform-Mails können im Namen Ihrer Genossenschaft versendet werden, zum Beispiel {example}. Bis die Domain verifiziert ist, sendet OpenCoop von noreply@opencoop.be und zeigt dabei den Namen Ihrer Genossenschaft.",
         "sameAccount": "Die Domain wird im OpenCoop-Mailkonto registriert, das diese Mail bereits sendet. Sie fügen hier keinen API-Schlüssel ein.",
         "domain": "Domain",
         "domainHint": "Die Domain, die Sie verwalten, ohne https://. Beispiel: bronsgroen.be",
@@ -949,6 +949,8 @@
           "SENDER_DOMAIN_UNAVAILABLE": "Absenderdomains sind noch nicht verfügbar. Wenden Sie sich an OpenCoop.",
           "SENDER_DOMAIN_PROVIDER": "Der Mailanbieter konnte die Domain gerade nicht registrieren. Versuchen Sie es später erneut.",
           "SENDER_DOMAIN_PLATFORM": "opencoop.be ist für die Plattform reserviert.",
+          "SENDER_DOMAIN_CLAIMED": "Diese Domain wird bereits von einer anderen Genossenschaft verwendet. Kontaktieren Sie OpenCoop, wenn sie Ihnen gehört.",
+          "SENDER_DOMAIN_CHANGED": "Die Absender-Domain hat sich während dieser Anfrage geändert. Laden Sie die Seite neu und versuchen Sie es erneut.",
           "DNS_NOT_READY": "Die DNS-Einträge sind noch nicht gültig. Prüfen Sie die Hosts unten und versuchen Sie es erneut, nachdem sie veröffentlicht wurden.",
           "PROVIDER_ERROR": "Der Mailanbieter war nicht erreichbar. Der bisherige Status bleibt unverändert.",
           "DOMAIN_MISSING": "Diese Domain ist beim Mailanbieter nicht mehr registriert. Speichern Sie sie erneut."

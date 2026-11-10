@@ -6,6 +6,12 @@
 --     Existing coops and email_logs rows are left unchanged. ADD COLUMN of a
 --     nullable column without a default is a catalog change; it does not
 --     rewrite the table.
+--   * One unique index on "coops"."senderDomain". Every existing row is NULL,
+--     and PostgreSQL treats NULLs as distinct, so the build cannot fail on
+--     current data. CREATE UNIQUE INDEX (not CONCURRENTLY) takes a SHARE lock
+--     on "coops": reads continue, writes wait while the index builds. With a
+--     small coops table that is milliseconds. It is one statement so Prisma
+--     can apply it.
 --   * No enum values, no drops, no rewrites of SMTP credentials or mail bodies.
 --   * senderDomainRecords holds the DNS instructions Brevo returned (and the
 --     static SPF/DMARC guidance). It is not a secret. The Brevo API key stays
@@ -20,3 +26,5 @@ ALTER TABLE "coops" ADD COLUMN "senderDomainRecords" JSONB;
 ALTER TABLE "coops" ADD COLUMN "senderDomainError" TEXT;
 
 ALTER TABLE "email_logs" ADD COLUMN "fromAddress" TEXT;
+
+CREATE UNIQUE INDEX "coops_senderDomain_key" ON "coops"("senderDomain");

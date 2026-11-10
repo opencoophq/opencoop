@@ -152,10 +152,20 @@ function envelope(
 ): MailEnvelope {
   const reply = normalizeEmail(coopEmail);
   return {
-    from: name ? `${name} <${address}>` : address,
+    from: name ? `${formatDisplayName(name)} <${address}>` : address,
     fromAddress: address,
     replyTo: reply && reply !== address ? reply : undefined,
   };
+}
+
+/**
+ * A display name with a comma, semicolon, colon, at-sign, bracket or dot is
+ * not a valid bare phrase. Unquoted, "Coop, Inc <a@b.be>" is parsed as two
+ * addresses. Quote it; quotes and CR/LF are already stripped.
+ */
+function formatDisplayName(name: string): string {
+  if (!/[,;:@()[\]\\.]/.test(name)) return name;
+  return `"${name.replace(/\\/g, '')}"`;
 }
 
 function isBlockedDomain(domain: string): boolean {

@@ -49,6 +49,8 @@ const ERROR_CODES = [
   'SENDER_DOMAIN_UNAVAILABLE',
   'SENDER_DOMAIN_PROVIDER',
   'SENDER_DOMAIN_PLATFORM',
+  'SENDER_DOMAIN_CLAIMED',
+  'SENDER_DOMAIN_CHANGED',
 ] as const;
 
 export function SenderDomainCard({
@@ -133,7 +135,9 @@ export function SenderDomainCard({
         <h3 className="font-medium">{t('admin.settings.senderDomain.title')}</h3>
         <StatusBadge status={status} label={statusLabel(status, t)} />
       </div>
-      <p className="text-sm text-muted-foreground">{t('admin.settings.senderDomain.intro')}</p>
+      <p className="text-sm text-muted-foreground">{t('admin.settings.senderDomain.intro', {
+          example: 'Bronsgroen <noreply@bronsgroen.be>',
+        })}</p>
       <p className="text-sm text-muted-foreground">
         {t('admin.settings.senderDomain.sameAccount')}
       </p>

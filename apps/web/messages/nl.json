@@ -892,7 +892,7 @@
       "platformDescription": "E-mails worden verstuurd via de gedeelde OpenCoop-relay. Nadat het afzenderdomein hieronder geverifieerd is, worden ze vanaf dat domein verstuurd.",
       "senderDomain": {
         "title": "Afzenderdomein",
-        "intro": "Inlogcodes, magische links, wachtwoordresets en andere platformmail kunnen worden verstuurd namens uw coöperatie, bijvoorbeeld Bronsgroen <noreply@bronsgroen.be>. Tot het domein geverifieerd is, verstuurt OpenCoop vanaf noreply@opencoop.be en toont daarbij de naam van uw coöperatie.",
+        "intro": "Inlogcodes, magische links, wachtwoordresets en andere platformmail kunnen worden verstuurd namens uw coöperatie, bijvoorbeeld {example}. Tot het domein geverifieerd is, verstuurt OpenCoop vanaf noreply@opencoop.be en toont daarbij de naam van uw coöperatie.",
         "sameAccount": "Het domein wordt geregistreerd in het OpenCoop-mailaccount dat deze mail al verstuurt. U plakt hier geen API-sleutel.",
         "domain": "Domein",
         "domainHint": "Het domein dat u beheert, zonder https://. Voorbeeld: bronsgroen.be",
@@ -951,6 +951,8 @@
           "SENDER_DOMAIN_UNAVAILABLE": "Afzenderdomeinen zijn nog niet beschikbaar. Neem contact op met OpenCoop.",
           "SENDER_DOMAIN_PROVIDER": "De mailprovider kon het domein nu niet registreren. Probeer het later opnieuw.",
           "SENDER_DOMAIN_PLATFORM": "opencoop.be is voorbehouden aan het platform.",
+          "SENDER_DOMAIN_CLAIMED": "Dit domein wordt al door een andere coöperatie gebruikt. Neem contact op met OpenCoop als het van jou is.",
+          "SENDER_DOMAIN_CHANGED": "Het afzenderdomein is gewijzigd terwijl deze aanvraag liep. Laad de pagina opnieuw en probeer het nog eens.",
           "DNS_NOT_READY": "De DNS-records zijn nog niet geldig. Controleer de hosts hieronder en probeer opnieuw nadat ze gepubliceerd zijn.",
           "PROVIDER_ERROR": "De mailprovider was niet bereikbaar. De vorige status blijft staan.",
           "DOMAIN_MISSING": "Dit domein is niet meer geregistreerd bij de mailprovider. Sla het opnieuw op."
