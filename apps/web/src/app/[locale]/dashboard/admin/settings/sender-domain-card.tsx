@@ -135,9 +135,11 @@ export function SenderDomainCard({
         <h3 className="font-medium">{t('admin.settings.senderDomain.title')}</h3>
         <StatusBadge status={status} label={statusLabel(status, t)} />
       </div>
-      <p className="text-sm text-muted-foreground">{t('admin.settings.senderDomain.intro', {
+      <p className="text-sm text-muted-foreground">
+        {t('admin.settings.senderDomain.intro', {
           example: 'Bronsgroen <noreply@bronsgroen.be>',
-        })}</p>
+        })}
+      </p>
       <p className="text-sm text-muted-foreground">
         {t('admin.settings.senderDomain.sameAccount')}
       </p>
