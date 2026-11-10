@@ -18,7 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type DnsKey = 'brevo-code' | 'dkim' | 'spf' | 'dmarc';
+type DnsKey = 'proof' | 'brevo-code' | 'dkim' | 'spf' | 'dmarc';
 
 interface DnsRecord {
   key: DnsKey;
@@ -73,6 +73,7 @@ export function SenderDomainCard({
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   const records = readRecords(view.senderDomainRecords);
+  const proof = records.find((record) => record.key === 'proof');
   const code = records.find((record) => record.key === 'brevo-code');
   const dkim = records.filter((record) => record.key === 'dkim');
   const cnameDkim = dkim.filter((record) => record.type === 'CNAME');
@@ -269,6 +270,15 @@ export function SenderDomainCard({
             </p>
           </div>
 
+          {proof && (
+            <Step
+              title={t('admin.settings.senderDomain.stepProofTitle')}
+              body={t('admin.settings.senderDomain.stepProofBody')}
+            >
+              <RecordRow record={proof} />
+            </Step>
+          )}
+
           <Step
             title={t('admin.settings.senderDomain.stepCodeTitle')}
             body={t('admin.settings.senderDomain.stepCodeBody')}
@@ -443,6 +453,8 @@ function storedError(code: string, t: ReturnType<typeof useTranslations>): strin
   if (code === 'DNS_NOT_READY') return t('admin.settings.senderDomain.errors.DNS_NOT_READY');
   if (code === 'PROVIDER_ERROR') return t('admin.settings.senderDomain.errors.PROVIDER_ERROR');
   if (code === 'DOMAIN_MISSING') return t('admin.settings.senderDomain.errors.DOMAIN_MISSING');
+  if (code === 'PROOF_MISSING') return t('admin.settings.senderDomain.errors.PROOF_MISSING');
+  if (code === 'PROOF_DNS_ERROR') return t('admin.settings.senderDomain.errors.PROOF_DNS_ERROR');
   return t('admin.settings.senderDomain.error');
 }
 
@@ -463,7 +475,8 @@ function isDnsRecord(value: unknown): value is DnsRecord {
   if (!value || typeof value !== 'object') return false;
   const record = value as Record<string, unknown>;
   return (
-    (record.key === 'brevo-code' ||
+    (record.key === 'proof' ||
+      record.key === 'brevo-code' ||
       record.key === 'dkim' ||
       record.key === 'spf' ||
       record.key === 'dmarc') &&

@@ -19,6 +19,13 @@ import {
   SenderDnsRecord,
 } from './brevo-domains';
 import { normalizeDomain, normalizeEmail, emailDomain, sanitizeDisplayName } from './sender-domain';
+import {
+  newProofToken,
+  proofValue,
+  PROOF_HOST_LABEL,
+  ProofResult,
+  SenderDomainProofChecker,
+} from './sender-domain-proof';
 
 const SELECT = {
   id: true,
@@ -31,6 +38,9 @@ const SELECT = {
   senderDomainCheckedAt: true,
   senderDomainRecords: true,
   senderDomainError: true,
+  senderDomainProofToken: true,
+  senderDomainProofAt: true,
+  senderDomainRevision: true,
 } as const;
 
 type SenderRow = Prisma.CoopGetPayload<{ select: typeof SELECT }>;
@@ -64,6 +74,7 @@ export class SenderDomainService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly proofs: SenderDomainProofChecker,
   ) {}
 
   async register(
@@ -76,9 +87,7 @@ export class SenderDomainService {
     const fromAddress = this.parseFromAddress(input.fromAddress, domain);
     const fromName = sanitizeDisplayName(input.fromName) ?? sanitizeDisplayName(coop.name);
     const apiKey = this.requireApiKey();
-    // Brevo verification belongs to the shared platform account, not to a
-    // coop. Without this check, a second coop could register a domain that
-    // another coop already authenticated and be shown as verified.
+    // A domain another coop holds stays with that coop until it clears it.
     await this.assertDomainFree(coopId, domain);
 
     let snapshot: BrevoDomainSnapshot | null = null;
@@ -92,20 +101,38 @@ export class SenderDomainService {
       if (!snapshot) throw new BadRequestException('SENDER_DOMAIN_PROVIDER');
     }
 
-    const records = snapshot?.records ?? [];
-    const ready = snapshot?.verified === true && snapshot?.authenticated === true;
-    const status = ready ? 'verified' : 'pending';
-    // The write applies only if the coop's domain is still what this request
-    // started from. A clear or a different register that landed during the
-    // Brevo calls wins, and this stale save is refused.
+    // Proof is bound to this coop and this domain. Only the coop that already
+    // holds the same domain keeps its token and proof. Every other path starts
+    // fresh: a pre-existing Brevo domain, or one another coop cleared, is
+    // never inherited, whatever Brevo reports.
+    const sameDomain = coop.senderDomain === domain;
+    const token =
+      sameDomain && coop.senderDomainProofToken ? coop.senderDomainProofToken : newProofToken();
+    const proofAt = sameDomain && coop.senderDomainProofToken ? coop.senderDomainProofAt : null;
+    const decision = evaluate({
+      proofAt,
+      proof: 'keep',
+      snapshot,
+      previousStatus: sameDomain ? coop.senderDomainStatus : null,
+      manual: false,
+    });
+    // The write applies only if the coop row is the revision this request
+    // started from. Any clear, register or check that landed during the
+    // provider calls wins, and this stale save is refused.
     const updated = await this.guardedUpdate(coop, {
       senderDomain: domain,
       senderFromAddress: fromAddress,
       senderFromName: fromName,
-      senderDomainStatus: status,
+      senderDomainStatus: decision.status === 'verified' ? 'verified' : 'pending',
       senderDomainCheckedAt: new Date(),
-      senderDomainRecords: records as unknown as Prisma.InputJsonValue,
+      senderDomainRecords: buildRecords(
+        snapshot?.records ?? [],
+        token,
+        proofAt,
+      ) as unknown as Prisma.InputJsonValue,
       senderDomainError: null,
+      senderDomainProofToken: token,
+      senderDomainProofAt: proofAt,
     });
     if (!updated) throw new ConflictException('SENDER_DOMAIN_CHANGED');
     await this.auditChange(coop, updated, actor);
@@ -118,45 +145,15 @@ export class SenderDomainService {
     const domain = normalizeDomain(coop.senderDomain);
     if (!domain) throw new BadRequestException('SENDER_DOMAIN_INVALID');
     const apiKey = this.requireApiKey();
-
-    try {
-      const auth = await authenticateBrevoDomain(apiKey, domain);
-      if (auth.missing) {
-        return this.saveOutcome(coop, actor, {
-          status: 'failed',
-          error: 'DOMAIN_MISSING',
-          records: readRecords(coop.senderDomainRecords),
-        });
-      }
-      const snapshot = await getBrevoDomain(apiKey, domain);
-      const ready = snapshot.verified && snapshot.authenticated;
-      return this.saveOutcome(coop, actor, {
-        status: ready ? 'verified' : 'failed',
-        error: ready ? null : 'DNS_NOT_READY',
-        records: snapshot.records,
-      });
-    } catch (error) {
-      this.reportProviderError(domain, error);
-      if (error instanceof BrevoDomainRequestError && error.status === 404) {
-        return this.saveOutcome(coop, actor, {
-          status: 'failed',
-          error: 'DOMAIN_MISSING',
-          records: readRecords(coop.senderDomainRecords),
-        });
-      }
-      // A transport or 5xx failure must not take a working domain offline.
-      return this.saveOutcome(coop, actor, {
-        status: coop.senderDomainStatus,
-        error: 'PROVIDER_ERROR',
-        records: readRecords(coop.senderDomainRecords),
-      });
-    }
+    return this.refresh(coop, domain, apiKey, true, actor);
   }
 
   async clear(coopId: string, actor?: SenderDomainActor): Promise<SenderDomainView> {
     const coop = await this.requireCoop(coopId);
-    // Clear always wins: it is unguarded so it also removes a domain that a
-    // concurrent register just replaced.
+    // Clear always wins and always bumps the revision, even on an empty
+    // config, so a slower register or check that started earlier cannot
+    // write back. It drops the token and the proof: the next claimant of this
+    // domain, including this coop, must publish a fresh token.
     const updated = await this.prisma.coop.update({
       where: { id: coopId },
       data: {
@@ -167,6 +164,9 @@ export class SenderDomainService {
         senderDomainCheckedAt: null,
         senderDomainRecords: Prisma.DbNull,
         senderDomainError: null,
+        senderDomainProofToken: null,
+        senderDomainProofAt: null,
+        senderDomainRevision: { increment: 1 },
       },
       select: SELECT,
     });
@@ -176,8 +176,9 @@ export class SenderDomainService {
 
   /**
    * Daily read of domains already stored. Does not call authenticate.
-   * A verified domain is demoted only when Brevo answers that it is no
-   * longer verified or authenticated. Transport errors leave the status.
+   * A verified domain is demoted when Brevo says it is no longer verified or
+   * authenticated, or when the DNS proof is gone. Transport errors leave the
+   * status.
    */
   async recheckAll(): Promise<void> {
     const coops = await this.prisma.coop.findMany({
@@ -185,10 +186,6 @@ export class SenderDomainService {
       select: { id: true },
     });
     if (coops.length === 0) return;
-    if (!readApiKey()) {
-      this.logger.warn('BREVO_API_KEY is not set; skipping sender-domain recheck');
-      return;
-    }
     for (const coop of coops) {
       try {
         await this.recheckOne(coop.id);
@@ -207,60 +204,88 @@ export class SenderDomainService {
     if (!coop?.senderDomain) return;
     const domain = normalizeDomain(coop.senderDomain);
     if (!domain) return;
-    const apiKey = readApiKey();
-    if (!apiKey) return;
-
-    try {
-      const snapshot = await getBrevoDomain(apiKey, domain);
-      const ready = snapshot.verified && snapshot.authenticated;
-      let status = coop.senderDomainStatus;
-      let error: string | null = coop.senderDomainError;
-      if (ready) {
-        status = 'verified';
-        error = null;
-      } else if (coop.senderDomainStatus === 'verified') {
-        status = 'failed';
-        error = 'DNS_NOT_READY';
-      }
-      await this.saveOutcome(coop, undefined, {
-        status,
-        error,
-        records: snapshot.records,
-      });
-    } catch (error) {
-      this.reportProviderError(domain, error);
-      if (error instanceof BrevoDomainRequestError && error.status === 404) {
-        await this.saveOutcome(coop, undefined, {
-          status: 'failed',
-          error: 'DOMAIN_MISSING',
-          records: readRecords(coop.senderDomainRecords),
-        });
-        return;
-      }
-      await this.saveOutcome(coop, undefined, {
-        status: coop.senderDomainStatus,
-        error: 'PROVIDER_ERROR',
-        records: readRecords(coop.senderDomainRecords),
-      });
-    }
+    // The DNS proof does not need the Brevo key, so it is checked either way.
+    await this.refresh(coop, domain, readApiKey(), false, undefined);
   }
 
   /**
-   * Stores the result of a Brevo read. The write applies only while the coop
-   * still holds the domain this result was read for, so a slow check cannot
-   * verify a replacement domain or revive a cleared one. When it does not
-   * apply, the current row is returned unchanged.
+   * One read of the provider and of the DNS proof, saved against the revision
+   * that was observed. Used by the manual check and the nightly recheck.
+   */
+  private async refresh(
+    coop: SenderRow,
+    domain: string,
+    apiKey: string | null,
+    manual: boolean,
+    actor: SenderDomainActor | undefined,
+  ): Promise<SenderDomainView> {
+    const proof = await this.proofs.check(domain, coop.senderDomainProofToken);
+    let snapshot: BrevoDomainSnapshot | null = null;
+    let missing = false;
+    let providerError = false;
+
+    if (!apiKey) {
+      providerError = true;
+      if (!manual) this.logger.warn('BREVO_API_KEY is not set; sender-domain recheck is DNS-only');
+    } else {
+      try {
+        if (manual) {
+          const auth = await authenticateBrevoDomain(apiKey, domain);
+          missing = auth.missing;
+        }
+        if (!missing) snapshot = await getBrevoDomain(apiKey, domain);
+      } catch (error) {
+        this.reportProviderError(domain, error);
+        if (error instanceof BrevoDomainRequestError && error.status === 404) missing = true;
+        else providerError = true;
+      }
+    }
+
+    const token = coop.senderDomainProofToken ?? newProofToken();
+    const decision = evaluate({
+      proofAt: coop.senderDomainProofAt,
+      proof,
+      snapshot,
+      previousStatus: coop.senderDomainStatus,
+      manual,
+      missing,
+      providerError,
+    });
+    const brevoRecords = snapshot ? snapshot.records : readRecords(coop.senderDomainRecords);
+    return this.saveOutcome(coop, actor, {
+      status: decision.status,
+      error: decision.error,
+      proofAt: decision.proofAt,
+      token,
+      records: buildRecords(brevoRecords, token, decision.proofAt),
+    });
+  }
+
+  /**
+   * Stores the result of a provider read. The write applies only while the
+   * coop row is still at the revision this result was read from, so a slow
+   * check cannot verify a replacement domain, revive a cleared one, or land
+   * after an old.be -> new.be -> old.be round trip. When it does not apply,
+   * the current row is returned unchanged.
    */
   private async saveOutcome(
     coop: SenderRow,
     actor: SenderDomainActor | undefined,
-    outcome: { status: string | null; error: string | null; records: SenderDnsRecord[] },
+    outcome: {
+      status: string | null;
+      error: string | null;
+      proofAt: Date | null;
+      token: string;
+      records: SenderDnsRecord[];
+    },
   ): Promise<SenderDomainView> {
     const updated = await this.guardedUpdate(coop, {
       senderDomainStatus: outcome.status,
       senderDomainError: outcome.error,
       senderDomainCheckedAt: new Date(),
       senderDomainRecords: outcome.records as unknown as Prisma.InputJsonValue,
+      senderDomainProofToken: outcome.token,
+      senderDomainProofAt: outcome.proofAt,
     });
     if (!updated) {
       this.logger.warn(`Ignored stale sender domain result for coop ${coop.id}`);
@@ -270,15 +295,20 @@ export class SenderDomainService {
     return toView(updated);
   }
 
-  /** Update the coop only if senderDomain still equals the value in `before`. */
+  /**
+   * Update the coop only if its revision still equals the one in `before`,
+   * and bump the revision. Domain equality is not enough: a domain can go
+   * old -> new -> old, or null -> cleared null, with the same value.
+   * No transaction wraps the provider calls; this single statement is the guard.
+   */
   private async guardedUpdate(
     before: SenderRow,
     data: Prisma.CoopUpdateManyMutationInput,
   ): Promise<SenderRow | null> {
     try {
       const result = await this.prisma.coop.updateMany({
-        where: { id: before.id, senderDomain: before.senderDomain },
-        data,
+        where: { id: before.id, senderDomainRevision: before.senderDomainRevision ?? 0 },
+        data: { ...data, senderDomainRevision: { increment: 1 } },
       });
       if (result.count === 0) return null;
     } catch (error) {
@@ -371,6 +401,67 @@ function redactApiKey(message: string): string {
   return message.split(apiKey).join('[redacted]');
 }
 
+interface EvaluateInput {
+  proofAt: Date | string | null | undefined;
+  /** ok / absent come from a fresh DNS read; error and keep leave the proof as stored. */
+  proof: ProofResult | 'keep';
+  snapshot: BrevoDomainSnapshot | null;
+  previousStatus: string | null;
+  /** Manual check: not-ready becomes failed. Otherwise only a verified row is demoted. */
+  manual: boolean;
+  missing?: boolean;
+  providerError?: boolean;
+}
+
+/**
+ * Decides status from BOTH sources: the shared Brevo flags and this coop's own
+ * DNS proof. "verified" needs both. A DNS outage keeps the stored proof; a DNS
+ * answer without the token removes it.
+ */
+export function evaluate(input: EvaluateInput): {
+  status: string | null;
+  error: string | null;
+  proofAt: Date | null;
+} {
+  const stored = input.proofAt ? new Date(input.proofAt) : null;
+  const proofAt = input.proof === 'ok' ? new Date() : input.proof === 'absent' ? null : stored;
+  const proven = proofAt !== null;
+  const proofError = input.proof === 'error' ? 'PROOF_DNS_ERROR' : 'PROOF_MISSING';
+  const demoted = input.previousStatus === 'verified' ? 'failed' : input.previousStatus;
+
+  if (input.missing) return { status: 'failed', error: 'DOMAIN_MISSING', proofAt };
+
+  if (input.snapshot) {
+    if (input.snapshot.verified && input.snapshot.authenticated && proven) {
+      return { status: 'verified', error: null, proofAt };
+    }
+    const error = proven ? 'DNS_NOT_READY' : proofError;
+    const status = input.manual ? 'failed' : (demoted ?? 'pending');
+    return { status, error, proofAt };
+  }
+
+  // Provider unknown (outage or no API key). Never promote; demote only on lost proof.
+  if (!proven) return { status: demoted, error: proofError, proofAt };
+  return { status: input.previousStatus, error: 'PROVIDER_ERROR', proofAt };
+}
+
+function buildRecords(
+  brevo: SenderDnsRecord[],
+  token: string,
+  proofAt: Date | string | null | undefined,
+): SenderDnsRecord[] {
+  return [
+    {
+      key: 'proof',
+      type: 'TXT',
+      host: PROOF_HOST_LABEL,
+      value: proofValue(token),
+      status: proofAt ? true : null,
+    },
+    ...brevo.filter((record) => record.key !== 'proof'),
+  ];
+}
+
 function diffSender(
   before: SenderRow,
   after: SenderRow,
@@ -400,7 +491,8 @@ function isSenderDnsRecord(value: unknown): value is SenderDnsRecord {
   if (!value || typeof value !== 'object') return false;
   const record = value as Record<string, unknown>;
   return (
-    (record.key === 'brevo-code' ||
+    (record.key === 'proof' ||
+      record.key === 'brevo-code' ||
       record.key === 'dkim' ||
       record.key === 'spf' ||
       record.key === 'dmarc') &&

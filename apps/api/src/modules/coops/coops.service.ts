@@ -579,6 +579,9 @@ export class CoopsService {
       'senderDomainCheckedAt',
       'senderDomainRecords',
       'senderDomainError',
+      'senderDomainProofToken',
+      'senderDomainProofAt',
+      'senderDomainRevision',
     ]) {
       delete data[field];
     }

@@ -203,6 +203,13 @@ model Coop {
   senderDomainCheckedAt DateTime?
   senderDomainRecords   Json?
   senderDomainError     String?
+  // Tenant-bound proof of DNS control. The token is published by the coop as a
+  // TXT record (not a secret). ProofAt is set only while the proof is current;
+  // clearing the domain drops both. Revision is bumped by every write to the
+  // sender-domain fields and is the compare-and-swap guard for slow provider calls.
+  senderDomainProofToken String?
+  senderDomainProofAt    DateTime?
+  senderDomainRevision   Int?      @default(0)
 
   // --- Email audience sync (Brevo) ---
   emailAudienceProvider String?   // "brevo" | null (off). Drives cron + provider factory.

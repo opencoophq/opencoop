@@ -169,6 +169,7 @@ export class EmailService {
           senderFromAddress: true,
           senderFromName: true,
           senderDomainStatus: true,
+          senderDomainProofAt: true,
         },
       });
       return coop ?? null;

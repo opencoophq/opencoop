@@ -370,6 +370,7 @@ describe('EmailService', () => {
       senderFromAddress: 'noreply@bronsgroen.be',
       senderFromName: 'Bronsgroen',
       senderDomainStatus: 'verified',
+      senderDomainProofAt: new Date('2026-11-10T10:00:00Z'),
     };
 
     it('keeps the platform address and the coop display name when the domain is not verified', async () => {
@@ -480,6 +481,44 @@ describe('EmailService', () => {
         ['REJECTED', 'noreply@bronsgroen.be'],
         ['ACCEPTED', 'noreply@opencoop.be'],
       ]);
+    });
+
+    it('sends from the platform address when the row says verified but has no DNS proof', async () => {
+      mockPrisma.coop.findUnique.mockResolvedValue({ ...verifiedCoop, senderDomainProofAt: null });
+
+      await service.sendPlatformEmail(mail);
+
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ from: 'Bronsgroen <noreply@opencoop.be>' }),
+      );
+      expect(loggedRow()).toEqual(expect.objectContaining({ fromAddress: 'noreply@opencoop.be' }));
+    });
+
+    it('does not need BREVO_API_KEY or the Brevo API to send login mail', async () => {
+      const previousKey = process.env.BREVO_API_KEY;
+      delete process.env.BREVO_API_KEY;
+      const fetchSpy = jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Brevo is down'));
+      try {
+        mockPrisma.coop.findUnique.mockResolvedValue(verifiedCoop);
+        await expect(service.sendPlatformEmail(mail)).resolves.toBeUndefined();
+        expect(sendMail).toHaveBeenCalledTimes(1);
+        expect(fetchSpy).not.toHaveBeenCalled();
+
+        // An unproven row still delivers, from the platform address.
+        sendMail.mockClear();
+        mockPrisma.coop.findUnique.mockResolvedValue({
+          ...verifiedCoop,
+          senderDomainProofAt: null,
+        });
+        await expect(service.sendPlatformEmail(mail)).resolves.toBeUndefined();
+        expect(sendMail).toHaveBeenCalledWith(
+          expect.objectContaining({ from: 'Bronsgroen <noreply@opencoop.be>' }),
+        );
+      } finally {
+        fetchSpy.mockRestore();
+        if (previousKey !== undefined) process.env.BREVO_API_KEY = previousKey;
+      }
     });
 
     it('quotes a display name that contains a comma so it is not read as two addresses', async () => {

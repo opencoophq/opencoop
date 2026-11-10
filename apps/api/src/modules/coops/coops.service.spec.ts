@@ -239,6 +239,8 @@ describe('CoopsService — Brevo audience-sync config', () => {
     expect(select.senderFromAddress).toBe(true);
     expect(select.senderDomainStatus).toBe(true);
     expect(select.senderDomainRecords).toBe(true);
+    expect(select.senderDomainProofToken).toBeUndefined();
+    expect(select.senderDomainRevision).toBeUndefined();
     expect(select.brevoApiKey).toBeFalsy();
   });
 
@@ -251,6 +253,9 @@ describe('CoopsService — Brevo audience-sync config', () => {
       senderDomain: 'evil.test',
       senderDomainStatus: 'verified',
       senderFromAddress: 'noreply@evil.test',
+      senderDomainProofToken: 'known-token',
+      senderDomainProofAt: new Date(),
+      senderDomainRevision: 99,
     } as any);
 
     const data = prisma.coop.update.mock.calls[0][0].data;
@@ -258,6 +263,9 @@ describe('CoopsService — Brevo audience-sync config', () => {
     expect(data.senderDomain).toBeUndefined();
     expect(data.senderDomainStatus).toBeUndefined();
     expect(data.senderFromAddress).toBeUndefined();
+    expect(data.senderDomainProofToken).toBeUndefined();
+    expect(data.senderDomainProofAt).toBeUndefined();
+    expect(data.senderDomainRevision).toBeUndefined();
   });
 
   it('update() never returns brevoApiKey even if Prisma returns it', async () => {

@@ -13,6 +13,7 @@ const coop = (overrides: Partial<CoopSenderFields> = {}): CoopSenderFields => ({
   senderFromAddress: 'noreply@bronsgroen.be',
   senderFromName: 'Bronsgroen',
   senderDomainStatus: 'verified',
+  senderDomainProofAt: new Date('2026-11-10T10:00:00Z'),
   ...overrides,
 });
 
@@ -56,6 +57,17 @@ describe('sender domain envelopes', () => {
       coop: coop({ senderDomainStatus: 'Verified' }),
     });
     expect(envelopes.custom).toBe(true);
+  });
+
+  it('does not use a verified row that has no DNS proof of control', () => {
+    for (const senderDomainProofAt of [null, undefined]) {
+      const envelopes = resolvePlatformEnvelopes({
+        platformFrom,
+        coop: coop({ senderDomainProofAt }),
+      });
+      expect(envelopes.custom).toBe(false);
+      expect(envelopes.selected.fromAddress).toBe('noreply@opencoop.be');
+    }
   });
 
   it('does not use a verified from-address on a different domain', () => {

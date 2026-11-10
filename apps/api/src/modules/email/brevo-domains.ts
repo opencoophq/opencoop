@@ -9,7 +9,7 @@ import { BREVO_DMARC_VALUE, BREVO_SPF_INCLUDE, BREVO_SPF_NEW_RECORD } from './se
 
 const BASE = 'https://api.brevo.com/v3';
 
-export type SenderDnsKey = 'brevo-code' | 'dkim' | 'spf' | 'dmarc';
+export type SenderDnsKey = 'proof' | 'brevo-code' | 'dkim' | 'spf' | 'dmarc';
 
 export interface SenderDnsRecord {
   key: SenderDnsKey;

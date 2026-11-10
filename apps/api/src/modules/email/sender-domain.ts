@@ -1,8 +1,9 @@
 /**
  * Pure decisions for platform mail From / Reply-To.
  *
- * A cooperative's own address is used only when Brevo has both verified and
- * authenticated the domain and the stored status is "verified". Anything else
+ * A cooperative's own address is used only when Brevo has verified and
+ * authenticated the domain, this coop proved DNS control, and the stored
+ * status is "verified". Anything else
  * keeps the platform mailbox and the cooperative's display name.
  */
 
@@ -28,6 +29,8 @@ export interface CoopSenderFields {
   senderFromAddress: string | null;
   senderFromName: string | null;
   senderDomainStatus: string | null;
+  /** Set only while this coop's DNS proof of control is current. */
+  senderDomainProofAt?: Date | string | null;
 }
 
 export interface MailEnvelope {
@@ -138,6 +141,8 @@ function chooseDisplayName(
 function eligibleCustomAddress(coop: CoopSenderFields | null): string | null {
   if (!coop) return null;
   if ((coop.senderDomainStatus ?? '').trim().toLowerCase() !== 'verified') return null;
+  // Provider flags alone are shared-account state. Local proof is required too.
+  if (!coop.senderDomainProofAt) return null;
   const domain = normalizeDomain(coop.senderDomain);
   const address = normalizeEmail(coop.senderFromAddress);
   if (!domain || !address) return null;

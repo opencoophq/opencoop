@@ -4,6 +4,7 @@ import { EmailService } from './email.service';
 import { EmailProcessor } from './email.processor';
 import { SenderDomainService } from './sender-domain.service';
 import { SenderDomainScheduler } from './sender-domain.scheduler';
+import { SenderDomainProofChecker } from './sender-domain-proof';
 
 @Module({
   imports: [
@@ -11,7 +12,13 @@ import { SenderDomainScheduler } from './sender-domain.scheduler';
       name: 'email',
     }),
   ],
-  providers: [EmailService, EmailProcessor, SenderDomainService, SenderDomainScheduler],
+  providers: [
+    EmailService,
+    EmailProcessor,
+    SenderDomainService,
+    SenderDomainScheduler,
+    SenderDomainProofChecker,
+  ],
   exports: [EmailService, EmailProcessor, SenderDomainService],
 })
 export class EmailModule {}
