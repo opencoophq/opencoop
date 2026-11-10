@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -242,7 +248,11 @@ export class CoopsService {
     const shareholderCounts = await Promise.all(
       projectIds.map(async (projectId) => {
         const count = await this.prisma.registration.findMany({
-          where: { projectId, type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+          where: {
+            projectId,
+            type: 'BUY',
+            status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
+          },
           select: { shareholderId: true },
           distinct: ['shareholderId'],
         });
@@ -254,7 +264,11 @@ export class CoopsService {
     const capitalByProject = await Promise.all(
       projectIds.map(async (projectId) => {
         const registrations = await this.prisma.registration.findMany({
-          where: { projectId, type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
+          where: {
+            projectId,
+            type: 'BUY',
+            status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
+          },
           include: { payments: { select: { amount: true } } },
         });
         const capital = registrations.reduce(
@@ -312,9 +326,7 @@ export class CoopsService {
     const buyRegistrations = registrations.filter((r) => r.type === 'BUY');
     const sellRegistrations = registrations.filter((r) => r.type === 'SELL');
 
-    const uniqueShareholders = new Set(
-      buyRegistrations.map((r) => r.shareholderId),
-    ).size;
+    const uniqueShareholders = new Set(buyRegistrations.map((r) => r.shareholderId)).size;
 
     const totalBuyCapital = buyRegistrations.reduce(
       (sum, r) => sum + r.payments.reduce((s, p) => s + Number(p.amount), 0),
@@ -329,7 +341,9 @@ export class CoopsService {
     const boughtShares = buyRegistrations.reduce((sum, r) => {
       const totalPaid = r.payments.reduce((s, p) => s + Number(p.amount), 0);
       const pricePerShare = Number(r.pricePerShare);
-      return sum + (pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), r.quantity) : 0);
+      return (
+        sum + (pricePerShare > 0 ? Math.min(Math.floor(totalPaid / pricePerShare), r.quantity) : 0)
+      );
     }, 0);
     const soldShares = sellRegistrations.reduce((sum, r) => sum + r.quantity, 0);
     const totalShares = boughtShares - soldShares;
@@ -395,6 +409,13 @@ export class CoopsService {
         graphClientId: true,
         graphTenantId: true,
         graphFromEmail: true,
+        senderDomain: true,
+        senderFromAddress: true,
+        senderFromName: true,
+        senderDomainStatus: true,
+        senderDomainCheckedAt: true,
+        senderDomainRecords: true,
+        senderDomainError: true,
         // Secrets (smtpPass, graphClientSecret, brevoApiKey) intentionally excluded
         emailAudienceProvider: true,
         brevoMembersListId: true,
@@ -522,7 +543,13 @@ export class CoopsService {
     return nextPrefix.toString().padStart(3, '0');
   }
 
-  async update(id: string, updateCoopDto: UpdateCoopDto, actorId?: string, ip?: string, userAgent?: string) {
+  async update(
+    id: string,
+    updateCoopDto: UpdateCoopDto,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     const coop = await this.prisma.coop.findUnique({ where: { id } });
     if (!coop) {
       throw new NotFoundException('Cooperative not found');
@@ -541,6 +568,23 @@ export class CoopsService {
     else data.graphClientSecret = encryptStoredSecret(data.graphClientSecret as string);
     if (!data.brevoApiKey) delete data.brevoApiKey;
     else data.brevoApiKey = encryptField(data.brevoApiKey as string);
+
+    // Sender-domain status is written only by SenderDomainService after Brevo
+    // answers. A settings save must not be able to mark a domain verified.
+    for (const field of [
+      'senderDomain',
+      'senderFromAddress',
+      'senderFromName',
+      'senderDomainStatus',
+      'senderDomainCheckedAt',
+      'senderDomainRecords',
+      'senderDomainError',
+      'senderDomainProofToken',
+      'senderDomainProofAt',
+      'senderDomainRevision',
+    ]) {
+      delete data[field];
+    }
 
     // When switching to platform (null), clear all custom email fields
     if (data.emailProvider === null) {
@@ -586,7 +630,13 @@ export class CoopsService {
     return updated;
   }
 
-  async updateBranding(id: string, updateBrandingDto: UpdateBrandingDto, actorId?: string, ip?: string, userAgent?: string) {
+  async updateBranding(
+    id: string,
+    updateBrandingDto: UpdateBrandingDto,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     const channel = await this.prisma.channel.findFirst({
       where: { coopId: id, isDefault: true },
     });
@@ -618,7 +668,13 @@ export class CoopsService {
     return updated;
   }
 
-  async uploadLogo(coopId: string, file: Express.Multer.File, actorId?: string, ip?: string, userAgent?: string): Promise<{ logoUrl: string }> {
+  async uploadLogo(
+    coopId: string,
+    file: Express.Multer.File,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<{ logoUrl: string }> {
     const channel = await this.prisma.channel.findFirst({
       where: { coopId, isDefault: true },
     });
@@ -628,7 +684,13 @@ export class CoopsService {
       throw new BadRequestException('No file provided');
     }
 
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/svg+xml',
+    ];
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException('Invalid file type. Allowed: JPEG, PNG, WebP, GIF, SVG');
     }
@@ -668,7 +730,12 @@ export class CoopsService {
     return { logoUrl };
   }
 
-  async removeLogo(coopId: string, actorId?: string, ip?: string, userAgent?: string): Promise<void> {
+  async removeLogo(
+    coopId: string,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<void> {
     const channel = await this.prisma.channel.findFirst({
       where: { coopId, isDefault: true },
     });
@@ -701,7 +768,13 @@ export class CoopsService {
     }
   }
 
-  async uploadSignature(coopId: string, file: Express.Multer.File, actorId?: string, ip?: string, userAgent?: string): Promise<{ certificateSignatureUrl: string }> {
+  async uploadSignature(
+    coopId: string,
+    file: Express.Multer.File,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<{ certificateSignatureUrl: string }> {
     if (!file || !file.buffer) {
       throw new BadRequestException('No file provided');
     }
@@ -726,7 +799,10 @@ export class CoopsService {
       .toFile(filePath);
 
     const certificateSignatureUrl = `/uploads/signatures/${filename}`;
-    const coop = await this.prisma.coop.findUnique({ where: { id: coopId }, select: { certificateSignatureUrl: true } });
+    const coop = await this.prisma.coop.findUnique({
+      where: { id: coopId },
+      select: { certificateSignatureUrl: true },
+    });
     const oldUrl = coop?.certificateSignatureUrl;
 
     await this.prisma.coop.update({
@@ -739,7 +815,9 @@ export class CoopsService {
       entity: 'Coop',
       entityId: coopId,
       action: 'UPDATE',
-      changes: [{ field: 'certificateSignatureUrl', oldValue: oldUrl, newValue: certificateSignatureUrl }],
+      changes: [
+        { field: 'certificateSignatureUrl', oldValue: oldUrl, newValue: certificateSignatureUrl },
+      ],
       actorId,
       ipAddress: ip,
       userAgent,
@@ -748,13 +826,21 @@ export class CoopsService {
     return { certificateSignatureUrl };
   }
 
-  async removeSignature(coopId: string, actorId?: string, ip?: string, userAgent?: string): Promise<void> {
+  async removeSignature(
+    coopId: string,
+    actorId?: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<void> {
     const filePath = path.join(UPLOAD_DIR, 'signatures', `${coopId}.png`);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
 
-    const coop = await this.prisma.coop.findUnique({ where: { id: coopId }, select: { certificateSignatureUrl: true } });
+    const coop = await this.prisma.coop.findUnique({
+      where: { id: coopId },
+      select: { certificateSignatureUrl: true },
+    });
     const oldUrl = coop?.certificateSignatureUrl;
 
     await this.prisma.coop.update({
@@ -840,14 +926,21 @@ export class CoopsService {
   async lookupReferrer(slug: string, code: string) {
     const coop = await this.findBySlug(slug);
     const referrer = await this.prisma.shareholder.findFirst({
-      where: { referralCode: { equals: code, mode: 'insensitive' }, coopId: coop.id, status: 'ACTIVE' },
+      where: {
+        referralCode: { equals: code, mode: 'insensitive' },
+        coopId: coop.id,
+        status: 'ACTIVE',
+      },
       select: { firstName: true, lastName: true, companyName: true },
     });
     if (!referrer) {
       throw new NotFoundException('Referral code not found');
     }
-    const displayName = referrer.companyName
-      || [referrer.firstName, referrer.lastName ? `${referrer.lastName.charAt(0)}.` : ''].filter(Boolean).join(' ');
+    const displayName =
+      referrer.companyName ||
+      [referrer.firstName, referrer.lastName ? `${referrer.lastName.charAt(0)}.` : '']
+        .filter(Boolean)
+        .join(' ');
     return { name: displayName };
   }
 
@@ -887,7 +980,11 @@ export class CoopsService {
     let referrer: { id: string; email: string | null; firstName: string | null } | null = null;
     if (dto.referralCode) {
       referrer = await this.prisma.shareholder.findFirst({
-        where: { referralCode: { equals: dto.referralCode, mode: 'insensitive' }, coopId: coop.id, status: 'ACTIVE' },
+        where: {
+          referralCode: { equals: dto.referralCode, mode: 'insensitive' },
+          coopId: coop.id,
+          status: 'ACTIVE',
+        },
         select: { id: true, email: true, firstName: true },
       });
       if (referrer) {
@@ -966,13 +1063,17 @@ export class CoopsService {
       // Notify referrer via email
       if (referrer?.email) {
         const lastInitial = dto.lastName?.charAt(0);
-        const referredName = lastInitial ? `${dto.firstName} ${lastInitial}.` : (dto.firstName || 'coöperant');
+        const referredName = lastInitial
+          ? `${dto.firstName} ${lastInitial}.`
+          : dto.firstName || 'coöperant';
         this.emailService
           .sendReferralSuccessNotification(coop.id, referrer.email, {
             referrerName: referrer.firstName || 'coöperant',
             referredName,
           })
-          .catch((err) => this.logger.error(`Failed to send referral notification: ${err.message}`));
+          .catch((err) =>
+            this.logger.error(`Failed to send referral notification: ${err.message}`),
+          );
       }
     }
 
@@ -1013,7 +1114,13 @@ export class CoopsService {
       entity: 'Coop',
       entityId: coopId,
       action: 'UPDATE',
-      changes: [{ field: 'apiKey', oldValue: coop.apiKeyHash ? '(regenerated)' : '(none)', newValue: '(new key)' }],
+      changes: [
+        {
+          field: 'apiKey',
+          oldValue: coop.apiKeyHash ? '(regenerated)' : '(none)',
+          newValue: '(new key)',
+        },
+      ],
       actorId,
       ipAddress: ip,
       userAgent,
@@ -1027,11 +1134,17 @@ export class CoopsService {
     const prefix = rawKey.substring(0, 8);
     const candidates = await this.prisma.coop.findMany({
       where: { apiKeyPrefix: prefix },
-      select: { id: true, apiKeyHash: true, ecoPowerEnabled: true, ecoPowerMinThresholdType: true, ecoPowerMinThreshold: true },
+      select: {
+        id: true,
+        apiKeyHash: true,
+        ecoPowerEnabled: true,
+        ecoPowerMinThresholdType: true,
+        ecoPowerMinThreshold: true,
+      },
     });
 
     for (const coop of candidates) {
-      if (coop.apiKeyHash && await bcrypt.compare(rawKey, coop.apiKeyHash)) {
+      if (coop.apiKeyHash && (await bcrypt.compare(rawKey, coop.apiKeyHash))) {
         return coop;
       }
     }

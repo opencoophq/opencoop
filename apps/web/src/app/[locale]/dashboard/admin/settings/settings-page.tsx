@@ -41,6 +41,7 @@ import {
   Key,
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
+import { SenderDomainCard, type SenderDomainState } from './sender-domain-card';
 
 type EmailProvider = 'platform' | 'smtp' | 'graph';
 
@@ -141,6 +142,13 @@ interface SettingsResponse {
   brevoProspectsListId: string | null;
   brevoLastSyncAt: string | null;
   brevoLastSyncStatus: string | null;
+  senderDomain: string | null;
+  senderFromAddress: string | null;
+  senderFromName: string | null;
+  senderDomainStatus: string | null;
+  senderDomainCheckedAt: string | null;
+  senderDomainRecords: unknown;
+  senderDomainError: string | null;
 }
 
 interface PontoConnection {
@@ -278,6 +286,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
   const [audienceLists, setAudienceLists] = useState<{ id: string; name: string }[]>([]);
   const [audienceMsg, setAudienceMsg] = useState<{ text: string; error: boolean } | null>(null);
   const [audienceLoading, setAudienceLoading] = useState(false);
+  const [senderDomain, setSenderDomain] = useState<SenderDomainState | null>(null);
 
   // Ecopower API key state
   const [apiKeyPrefix, setApiKeyPrefix] = useState<string | null>(null);
@@ -287,14 +296,16 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
 
   // MCP API keys
-  const [mcpApiKeys, setMcpApiKeys] = useState<Array<{
-    id: string;
-    prefix: string;
-    name: string;
-    scope: 'READ_ONLY' | 'READ_WRITE';
-    createdAt: string;
-    lastUsedAt: string | null;
-  }>>([]);
+  const [mcpApiKeys, setMcpApiKeys] = useState<
+    Array<{
+      id: string;
+      prefix: string;
+      name: string;
+      scope: 'READ_ONLY' | 'READ_WRITE';
+      createdAt: string;
+      lastUsedAt: string | null;
+    }>
+  >([]);
   const [showCreateMcpKeyDialog, setShowCreateMcpKeyDialog] = useState(false);
   const [mcpKeyName, setMcpKeyName] = useState('');
   const [mcpKeyScope, setMcpKeyScope] = useState<'READ_ONLY' | 'READ_WRITE'>('READ_ONLY');
@@ -344,8 +355,8 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     try {
       setAudienceLists(
         await api<{ id: string; name: string }[]>(
-          `/admin/coops/${selectedCoop.id}/audience-sync/lists`
-        )
+          `/admin/coops/${selectedCoop.id}/audience-sync/lists`,
+        ),
       );
     } catch {
       setAudienceMsg({ text: t('brevo.loadListsFail'), error: true });
@@ -357,6 +368,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
   useEffect(() => {
     if (!selectedCoop) return;
     setLoading(true);
+    setSenderDomain(null);
 
     Promise.all([
       api<SettingsResponse>(`/admin/coops/${selectedCoop.id}/settings`),
@@ -388,10 +400,14 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
           chargeCardsEnabled: settings.chargeCardsEnabled || false,
           volunteersEnabled: settings.volunteersEnabled || false,
           volunteerInterests: (settings.volunteerInterests || []).join(', '),
-          chargeCardFee: settings.chargeCardFee != null ? Number(settings.chargeCardFee).toFixed(2) : '6.00',
+          chargeCardFee:
+            settings.chargeCardFee != null ? Number(settings.chargeCardFee).toFixed(2) : '6.00',
           chargeCardReplacementFee:
-            settings.chargeCardReplacementFee != null ? Number(settings.chargeCardReplacementFee).toFixed(2) : '12.00',
-          chargeCardVatRate: settings.chargeCardVatRate != null ? String(Number(settings.chargeCardVatRate)) : '21',
+            settings.chargeCardReplacementFee != null
+              ? Number(settings.chargeCardReplacementFee).toFixed(2)
+              : '12.00',
+          chargeCardVatRate:
+            settings.chargeCardVatRate != null ? String(Number(settings.chargeCardVatRate)) : '21',
           legalForm: settings.legalForm || '',
           foundedDate: settings.foundedDate || '',
           certificateSignatory: settings.certificateSignatory || '',
@@ -416,6 +432,15 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
           at: settings.brevoLastSyncAt,
           status: settings.brevoLastSyncStatus,
         });
+        setSenderDomain({
+          senderDomain: settings.senderDomain ?? null,
+          senderFromAddress: settings.senderFromAddress ?? null,
+          senderFromName: settings.senderFromName ?? null,
+          senderDomainStatus: settings.senderDomainStatus ?? null,
+          senderDomainCheckedAt: settings.senderDomainCheckedAt ?? null,
+          senderDomainRecords: settings.senderDomainRecords ?? null,
+          senderDomainError: settings.senderDomainError ?? null,
+        });
         if (ponto) {
           setPontoStatus(ponto);
         }
@@ -429,9 +454,16 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
       .finally(() => setLoading(false));
 
     // Load MCP API keys
-    api<Array<{ id: string; prefix: string; name: string; scope: 'READ_ONLY' | 'READ_WRITE'; createdAt: string; lastUsedAt: string | null }>>(
-      `/admin/coops/${selectedCoop.id}/api-keys`
-    )
+    api<
+      Array<{
+        id: string;
+        prefix: string;
+        name: string;
+        scope: 'READ_ONLY' | 'READ_WRITE';
+        createdAt: string;
+        lastUsedAt: string | null;
+      }>
+    >(`/admin/coops/${selectedCoop.id}/api-keys`)
       .then(setMcpApiKeys)
       .catch(() => setError(t('admin.settings.error')));
   }, [selectedCoop, t, handleLoadLists]);
@@ -461,7 +493,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
         emailProvider: form.emailProvider === 'platform' ? null : form.emailProvider,
         ecoPowerEnabled: form.ecoPowerEnabled,
         ecoPowerMinThresholdType: form.ecoPowerEnabled ? form.ecoPowerMinThresholdType : null,
-        ecoPowerMinThreshold: form.ecoPowerEnabled ? (parseFloat(form.ecoPowerMinThreshold) || null) : null,
+        ecoPowerMinThreshold: form.ecoPowerEnabled
+          ? parseFloat(form.ecoPowerMinThreshold) || null
+          : null,
         chargeCardsEnabled: form.chargeCardsEnabled,
         volunteersEnabled: form.volunteersEnabled,
         volunteerInterests: form.volunteerInterests
@@ -478,15 +512,20 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
         coopEmail: form.coopEmail || null,
         coopWebsite: form.coopWebsite || null,
         vatNumber: form.vatNumber || null,
-        coopAddress: (form.coopAddressStreet || form.coopAddressNumber || form.coopAddressPostalCode || form.coopAddressCity || form.coopAddressCountry)
-          ? {
-              street: form.coopAddressStreet || '',
-              number: form.coopAddressNumber || '',
-              postalCode: form.coopAddressPostalCode || '',
-              city: form.coopAddressCity || '',
-              country: form.coopAddressCountry || '',
-            }
-          : null,
+        coopAddress:
+          form.coopAddressStreet ||
+          form.coopAddressNumber ||
+          form.coopAddressPostalCode ||
+          form.coopAddressCity ||
+          form.coopAddressCountry
+            ? {
+                street: form.coopAddressStreet || '',
+                number: form.coopAddressNumber || '',
+                postalCode: form.coopAddressPostalCode || '',
+                city: form.coopAddressCity || '',
+                country: form.coopAddressCountry || '',
+              }
+            : null,
       };
 
       if (isSystemAdmin) {
@@ -577,9 +616,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     setShowDisconnectDialog(false);
     try {
       await api(`/admin/coops/${selectedCoop.id}/ponto/disconnect`, { method: 'POST' });
-      setPontoStatus((prev) =>
-        prev ? { ...prev, connection: null } : prev,
-      );
+      setPontoStatus((prev) => (prev ? { ...prev, connection: null } : prev));
       showMessage(t('admin.settings.disconnected'));
     } catch {
       setError(t('admin.settings.pontoError'));
@@ -609,7 +646,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     try {
       const r = await api<{ ok: boolean; detail?: string; warning?: string }>(
         `/admin/coops/${selectedCoop.id}/audience-sync/test`,
-        { method: 'POST' }
+        { method: 'POST' },
       );
       const warningText = r.warning?.startsWith('MISSING_ATTRIBUTES')
         ? t('brevo.missingAttributes')
@@ -620,7 +657,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
               text: warningText ? `${t('brevo.testOk')} ${warningText}` : t('brevo.testOk'),
               error: false,
             }
-          : { text: `${t('brevo.testFail')}: ${r.detail ?? ''}`, error: true }
+          : { text: `${t('brevo.testFail')}: ${r.detail ?? ''}`, error: true },
       );
     } catch {
       setAudienceMsg({ text: t('brevo.testFail'), error: true });
@@ -651,9 +688,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
         method: 'PUT',
         body: { autoMatchPayments: checked },
       });
-      setPontoStatus((prev) =>
-        prev ? { ...prev, autoMatchPayments: checked } : prev,
-      );
+      setPontoStatus((prev) => (prev ? { ...prev, autoMatchPayments: checked } : prev));
     } catch {
       setError(t('admin.settings.error'));
     }
@@ -678,12 +713,29 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
   const handleCreateMcpKey = async () => {
     if (!selectedCoop || !mcpKeyName.trim()) return;
     try {
-      const result = await api<{ rawKey: string; id: string; prefix: string; name: string; scope: 'READ_ONLY' | 'READ_WRITE'; createdAt: string }>(
-        `/admin/coops/${selectedCoop.id}/api-keys`,
-        { method: 'POST', body: { name: mcpKeyName.trim(), scope: mcpKeyScope } },
-      );
+      const result = await api<{
+        rawKey: string;
+        id: string;
+        prefix: string;
+        name: string;
+        scope: 'READ_ONLY' | 'READ_WRITE';
+        createdAt: string;
+      }>(`/admin/coops/${selectedCoop.id}/api-keys`, {
+        method: 'POST',
+        body: { name: mcpKeyName.trim(), scope: mcpKeyScope },
+      });
       setNewMcpKey(result.rawKey);
-      setMcpApiKeys(prev => [{ id: result.id, prefix: result.prefix, name: result.name, scope: result.scope, createdAt: result.createdAt, lastUsedAt: null }, ...prev]);
+      setMcpApiKeys((prev) => [
+        {
+          id: result.id,
+          prefix: result.prefix,
+          name: result.name,
+          scope: result.scope,
+          createdAt: result.createdAt,
+          lastUsedAt: null,
+        },
+        ...prev,
+      ]);
       setMcpKeyName('');
       setMcpKeyScope('READ_ONLY');
       setShowCreateMcpKeyDialog(false);
@@ -697,21 +749,26 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
     setMcpKeyToRevoke(null);
     try {
       await api(`/admin/coops/${selectedCoop.id}/api-keys/${keyId}`, { method: 'DELETE' });
-      setMcpApiKeys(prev => prev.filter(k => k.id !== keyId));
+      setMcpApiKeys((prev) => prev.filter((k) => k.id !== keyId));
     } catch {
       setError(t('admin.settings.error'));
     }
   };
 
-  const getMcpConfigSnippet = (key: string) => JSON.stringify({
-    mcpServers: {
-      opencoop: {
-        type: 'http',
-        url: mcpUrl ?? `${window.location.origin}/api/mcp`,
-        headers: { Authorization: `Bearer ${key}` },
+  const getMcpConfigSnippet = (key: string) =>
+    JSON.stringify(
+      {
+        mcpServers: {
+          opencoop: {
+            type: 'http',
+            url: mcpUrl ?? `${window.location.origin}/api/mcp`,
+            headers: { Authorization: `Bearer ${key}` },
+          },
+        },
       },
-    },
-  }, null, 2);
+      null,
+      2,
+    );
 
   if (!selectedCoop) return <p className="text-muted-foreground">{t('admin.selectCoop')}</p>;
 
@@ -743,9 +800,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
   const connection = pontoStatus?.connection;
   const isExpired = connection?.status === 'EXPIRED';
   const daysUntilExpiry =
-    connection?.authExpiresAt && !isExpired
-      ? getDaysUntilExpiry(connection.authExpiresAt)
-      : null;
+    connection?.authExpiresAt && !isExpired ? getDaysUntilExpiry(connection.authExpiresAt) : null;
   const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 7 && daysUntilExpiry > 0;
 
   return (
@@ -907,12 +962,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                       alt="Signature"
                       className="h-10 object-contain"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleSignatureRemove}
-                    >
+                    <Button type="button" variant="ghost" size="sm" onClick={handleSignatureRemove}>
                       {t('admin.settings.removeSignature')}
                     </Button>
                   </div>
@@ -925,8 +975,18 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                     onChange={handleSignatureUpload}
                     disabled={signatureUploading}
                   />
-                  <Button type="button" variant="outline" size="sm" asChild disabled={signatureUploading}>
-                    <span>{signatureUploading ? t('common.uploading') : t('admin.settings.uploadSignature')}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    disabled={signatureUploading}
+                  >
+                    <span>
+                      {signatureUploading
+                        ? t('common.uploading')
+                        : t('admin.settings.uploadSignature')}
+                    </span>
                   </Button>
                 </label>
               </div>
@@ -1046,7 +1106,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
               <CardTitle>{t('admin.settings.bankConnection')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {(!connection || connection.status === 'REVOKED' || connection.status === 'PENDING') && (
+              {(!connection ||
+                connection.status === 'REVOKED' ||
+                connection.status === 'PENDING') && (
                 <>
                   <p className="text-sm text-muted-foreground">
                     {t('admin.settings.bankConnectionDescription')}
@@ -1064,9 +1126,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       {connection.iban && (
-                        <p className="text-sm font-medium font-mono">
-                          {maskIban(connection.iban)}
-                        </p>
+                        <p className="text-sm font-medium font-mono">{maskIban(connection.iban)}</p>
                       )}
                       {connection.bankName && (
                         <p className="text-sm text-muted-foreground">{connection.bankName}</p>
@@ -1117,9 +1177,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       {connection.iban && (
-                        <p className="text-sm font-medium font-mono">
-                          {maskIban(connection.iban)}
-                        </p>
+                        <p className="text-sm font-medium font-mono">{maskIban(connection.iban)}</p>
                       )}
                       {connection.bankName && (
                         <p className="text-sm text-muted-foreground">{connection.bankName}</p>
@@ -1150,7 +1208,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">{t('volunteers.settings.description')}</p>
-            <p className="text-sm text-muted-foreground">{t('volunteers.settings.permissionHint')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t('volunteers.settings.permissionHint')}
+            </p>
             <div className="flex items-center gap-2">
               <Checkbox
                 id="volunteers-enabled"
@@ -1168,7 +1228,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                   onChange={(e) => setForm({ ...form, volunteerInterests: e.target.value })}
                   placeholder="flyers, stands, workshops, technical, admin"
                 />
-                <p className="text-xs text-muted-foreground">{t('volunteers.settings.interestsHelp')}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('volunteers.settings.interestsHelp')}
+                </p>
               </div>
             )}
           </CardContent>
@@ -1203,7 +1265,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="charge-card-replacement-fee">{t('chargeCards.settings.replacementFee')}</Label>
+                  <Label htmlFor="charge-card-replacement-fee">
+                    {t('chargeCards.settings.replacementFee')}
+                  </Label>
                   <Input
                     id="charge-card-replacement-fee"
                     type="number"
@@ -1280,16 +1344,23 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                 {/* API Key Section */}
                 <div className="pt-4 border-t">
                   <Label className="text-base font-semibold">{t('ecopower.apiKey')}</Label>
-                  <p className="text-sm text-muted-foreground mt-1">{t('ecopower.apiKeyDescription')}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {t('ecopower.apiKeyDescription')}
+                  </p>
                   {apiKeyPrefix ? (
-                    <p className="text-sm font-mono mt-2">{apiKeyPrefix}{'••••••••••••••••'}</p>
+                    <p className="text-sm font-mono mt-2">
+                      {apiKeyPrefix}
+                      {'••••••••••••••••'}
+                    </p>
                   ) : (
                     <p className="text-sm text-muted-foreground mt-2">{t('ecopower.noApiKey')}</p>
                   )}
                   <Button
                     variant="outline"
                     className="mt-2"
-                    onClick={() => apiKeyPrefix ? setShowRegenerateConfirm(true) : handleRegenerateApiKey()}
+                    onClick={() =>
+                      apiKeyPrefix ? setShowRegenerateConfirm(true) : handleRegenerateApiKey()
+                    }
                   >
                     {t('ecopower.regenerateApiKey')}
                   </Button>
@@ -1383,7 +1454,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                     placeholder={t('brevo.optional')}
                     onChange={(e) => setForm({ ...form, brevoProspectsListId: e.target.value })}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">{t('brevo.prospectsListHint')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('brevo.prospectsListHint')}
+                  </p>
                 </div>
 
                 <div className="flex gap-2 pt-2">
@@ -1449,9 +1522,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                       <SelectItem value="platform">
                         {t('admin.settings.emailProviderPlatform')}
                       </SelectItem>
-                      <SelectItem value="smtp">
-                        {t('admin.settings.emailProviderSmtp')}
-                      </SelectItem>
+                      <SelectItem value="smtp">{t('admin.settings.emailProviderSmtp')}</SelectItem>
                       <SelectItem value="graph">
                         {t('admin.settings.emailProviderGraph')}
                       </SelectItem>
@@ -1561,6 +1632,15 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                 )}
               </div>
             </div>
+
+            {senderDomain && (
+              <SenderDomainCard
+                key={selectedCoop.id}
+                coopId={selectedCoop.id}
+                coopEmail={form.coopEmail}
+                initial={senderDomain}
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -1570,7 +1650,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
             <Key className="h-5 w-5 text-muted-foreground mr-2" />
             <div className="flex-1">
               <CardTitle>{t('admin.settings.apiKeys.title')}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">{t('admin.settings.apiKeys.description')}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('admin.settings.apiKeys.description')}
+              </p>
             </div>
             <Button size="sm" onClick={() => setShowCreateMcpKeyDialog(true)}>
               {t('admin.settings.apiKeys.create')}
@@ -1582,18 +1664,34 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
             ) : (
               <div className="space-y-3">
                 {mcpApiKeys.map((key) => (
-                  <div key={key.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                  <div
+                    key={key.id}
+                    className="flex items-center justify-between p-3 bg-muted rounded-md"
+                  >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{key.name}</span>
                         <Badge variant={key.scope === 'READ_WRITE' ? 'destructive' : 'secondary'}>
-                          {t(`admin.settings.apiKeys.${key.scope === 'READ_WRITE' ? 'readWrite' : 'readOnly'}`)}
+                          {t(
+                            `admin.settings.apiKeys.${key.scope === 'READ_WRITE' ? 'readWrite' : 'readOnly'}`,
+                          )}
                         </Badge>
-                        <code className="text-xs text-muted-foreground">{key.prefix}{'••••••••'}</code>
+                        <code className="text-xs text-muted-foreground">
+                          {key.prefix}
+                          {'••••••••'}
+                        </code>
                       </div>
                       <div className="flex gap-3 text-xs text-muted-foreground">
-                        <span>{t('admin.settings.apiKeys.createdAt')}: {new Date(key.createdAt).toLocaleDateString(intlLocale)}</span>
-                        <span>{t('admin.settings.apiKeys.lastUsed')}: {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString(intlLocale) : t('admin.settings.apiKeys.never')}</span>
+                        <span>
+                          {t('admin.settings.apiKeys.createdAt')}:{' '}
+                          {new Date(key.createdAt).toLocaleDateString(intlLocale)}
+                        </span>
+                        <span>
+                          {t('admin.settings.apiKeys.lastUsed')}:{' '}
+                          {key.lastUsedAt
+                            ? new Date(key.lastUsedAt).toLocaleDateString(intlLocale)
+                            : t('admin.settings.apiKeys.never')}
+                        </span>
                       </div>
                     </div>
                     <Button
@@ -1723,16 +1821,23 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
             </div>
             <div>
               <Label>{t('admin.settings.apiKeys.scope')}</Label>
-              <Select value={mcpKeyScope} onValueChange={(value: 'READ_ONLY' | 'READ_WRITE') => setMcpKeyScope(value)}>
+              <Select
+                value={mcpKeyScope}
+                onValueChange={(value: 'READ_ONLY' | 'READ_WRITE') => setMcpKeyScope(value)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="READ_ONLY">{t('admin.settings.apiKeys.readOnly')}</SelectItem>
-                  <SelectItem value="READ_WRITE">{t('admin.settings.apiKeys.readWrite')}</SelectItem>
+                  <SelectItem value="READ_WRITE">
+                    {t('admin.settings.apiKeys.readWrite')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">{t('admin.settings.apiKeys.scopeHint')}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('admin.settings.apiKeys.scopeHint')}
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -1747,7 +1852,14 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
       </Dialog>
 
       {/* Show new MCP key dialog */}
-      <Dialog open={!!newMcpKey} onOpenChange={() => { setNewMcpKey(''); setMcpKeyCopied(false); setMcpConfigCopied(false); }}>
+      <Dialog
+        open={!!newMcpKey}
+        onOpenChange={() => {
+          setNewMcpKey('');
+          setMcpKeyCopied(false);
+          setMcpConfigCopied(false);
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t('admin.settings.apiKeys.created')}</DialogTitle>
@@ -1776,7 +1888,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
               </button>
             </div>
             <div>
-              <Label className="text-sm font-medium">{t('admin.settings.apiKeys.claudeConfig')}</Label>
+              <Label className="text-sm font-medium">
+                {t('admin.settings.apiKeys.claudeConfig')}
+              </Label>
               <div className="relative mt-1">
                 {/* Block-level pre with overflow-x-auto means the muted bg always
                     spans the full dialog width even when content is short, and
@@ -1784,7 +1898,9 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                     (e.g. a really long bearer token). The previous
                     `inline-block min-w-full` trick let the bg extend past the
                     dialog when scrolling, which looked broken. */}
-                <pre className="text-xs p-3 pr-12 bg-muted rounded-md overflow-x-auto whitespace-pre">{getMcpConfigSnippet(newMcpKey)}</pre>
+                <pre className="text-xs p-3 pr-12 bg-muted rounded-md overflow-x-auto whitespace-pre">
+                  {getMcpConfigSnippet(newMcpKey)}
+                </pre>
                 <button
                   onClick={async () => {
                     await navigator.clipboard.writeText(getMcpConfigSnippet(newMcpKey));
@@ -1802,7 +1918,13 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => { setNewMcpKey(''); setMcpKeyCopied(false); setMcpConfigCopied(false); }}>
+            <Button
+              onClick={() => {
+                setNewMcpKey('');
+                setMcpKeyCopied(false);
+                setMcpConfigCopied(false);
+              }}
+            >
               OK
             </Button>
           </DialogFooter>
@@ -1820,7 +1942,10 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
             <Button variant="outline" onClick={() => setMcpKeyToRevoke(null)}>
               {t('common.cancel')}
             </Button>
-            <Button variant="destructive" onClick={() => mcpKeyToRevoke && handleRevokeMcpKey(mcpKeyToRevoke)}>
+            <Button
+              variant="destructive"
+              onClick={() => mcpKeyToRevoke && handleRevokeMcpKey(mcpKeyToRevoke)}
+            >
               {t('admin.settings.apiKeys.revoke')}
             </Button>
           </DialogFooter>

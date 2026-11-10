@@ -193,6 +193,24 @@ model Coop {
   graphTenantId     String?
   graphFromEmail    String?
 
+  // Platform sender domain for sendPlatformEmail (Brevo). The API key is
+  // BREVO_API_KEY on the server, never stored on the coop. Mail uses the
+  // custom From only when senderDomainStatus is "verified".
+  senderDomain          String?   @unique // one coop per domain: Brevo verification is account-wide
+  senderFromAddress     String?
+  senderFromName        String?
+  senderDomainStatus    String? // "pending" | "verified" | "failed"
+  senderDomainCheckedAt DateTime?
+  senderDomainRecords   Json?
+  senderDomainError     String?
+  // Tenant-bound proof of DNS control. The token is published by the coop as a
+  // TXT record (not a secret). ProofAt is set only while the proof is current;
+  // clearing the domain drops both. Revision is bumped by every write to the
+  // sender-domain fields and is the compare-and-swap guard for slow provider calls.
+  senderDomainProofToken String?
+  senderDomainProofAt    DateTime?
+  senderDomainRevision   Int?      @default(0)
+
   // --- Email audience sync (Brevo) ---
   emailAudienceProvider String?   // "brevo" | null (off). Drives cron + provider factory.
   brevoApiKey           String?   // AES-256-GCM encrypted at rest; never returned to client
@@ -968,6 +986,8 @@ model EmailLog {
   providerMessageId String?
   // SMTP reply line, truncated and scrubbed. Never the mail body or a secret.
   smtpResponse      String?
+  // Mailbox actually submitted to the relay (noreply@coop.be or the platform address).
+  fromAddress       String?
 
   coop Coop? @relation(fields: [coopId], references: [id], onDelete: Cascade)
 
