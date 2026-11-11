@@ -133,7 +133,9 @@ export default function TeamPage() {
     column: null,
     direction: 'asc',
   });
-  const [invitationFilters, setInvitationFilters] = useState<Partial<Record<InvitationColumn, string>>>({});
+  const [invitationFilters, setInvitationFilters] = useState<
+    Partial<Record<InvitationColumn, string>>
+  >({});
   const [invitationSort, setInvitationSort] = useState<ColumnSortState<InvitationColumn>>({
     column: null,
     direction: 'asc',
@@ -473,25 +475,41 @@ export default function TeamPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'name'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'name'))}
+                    >
                       {tc('name')}
                       {sortIcon(adminSort.column === 'name', adminSort.direction)}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'email'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'email'))}
+                    >
                       {tc('email')}
                       {sortIcon(adminSort.column === 'email', adminSort.direction)}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'role'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'role'))}
+                    >
                       {t('team.role')}
                       {sortIcon(adminSort.column === 'role', adminSort.direction)}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'date'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAdminSort((prev) => toggleColumnSort(prev, 'date'))}
+                    >
                       {tc('date')}
                       {sortIcon(adminSort.column === 'date', adminSort.direction)}
                     </Button>
@@ -502,7 +520,9 @@ export default function TeamPage() {
                   <TableHead>
                     <Input
                       value={adminFilters.name || ''}
-                      onChange={(e) => setAdminFilters((prev) => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) =>
+                        setAdminFilters((prev) => ({ ...prev, name: e.target.value }))
+                      }
                       placeholder={tc('filter')}
                       className="h-8"
                     />
@@ -510,7 +530,9 @@ export default function TeamPage() {
                   <TableHead>
                     <Input
                       value={adminFilters.email || ''}
-                      onChange={(e) => setAdminFilters((prev) => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) =>
+                        setAdminFilters((prev) => ({ ...prev, email: e.target.value }))
+                      }
                       placeholder={tc('filter')}
                       className="h-8"
                     />
@@ -518,7 +540,9 @@ export default function TeamPage() {
                   <TableHead>
                     <Input
                       value={adminFilters.role || ''}
-                      onChange={(e) => setAdminFilters((prev) => ({ ...prev, role: e.target.value }))}
+                      onChange={(e) =>
+                        setAdminFilters((prev) => ({ ...prev, role: e.target.value }))
+                      }
                       placeholder={tc('filter')}
                       className="h-8"
                     />
@@ -526,7 +550,9 @@ export default function TeamPage() {
                   <TableHead>
                     <Input
                       value={adminFilters.date || ''}
-                      onChange={(e) => setAdminFilters((prev) => ({ ...prev, date: e.target.value }))}
+                      onChange={(e) =>
+                        setAdminFilters((prev) => ({ ...prev, date: e.target.value }))
+                      }
                       placeholder={tc('filter')}
                       className="h-8"
                     />
@@ -544,14 +570,16 @@ export default function TeamPage() {
                 ) : (
                   visibleAdmins.map((admin) => (
                     <TableRow key={admin.id}>
-                      <TableCell className="font-medium">
-                        {admin.user.name || '-'}
-                      </TableCell>
+                      <TableCell className="font-medium">{admin.user.name || '-'}</TableCell>
                       <TableCell>{admin.user.email}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="w-[200px] h-8 justify-between font-normal">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-[200px] h-8 justify-between font-normal"
+                            >
                               <span className="truncate">
                                 {admin.roles.length > 0
                                   ? admin.roles.map((r) => r.role.name).join(', ')
@@ -602,7 +630,9 @@ export default function TeamPage() {
                             title={t('team.customPermissions')}
                             onClick={() => openPermsDialog(admin)}
                           >
-                            <Shield className={`h-4 w-4 ${admin.permissionOverrides ? 'text-primary' : ''}`} />
+                            <Shield
+                              className={`h-4 w-4 ${admin.permissionOverrides ? 'text-primary' : ''}`}
+                            />
                           </Button>
                           <Button
                             variant="ghost"
@@ -638,19 +668,33 @@ export default function TeamPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setInvitationSort((prev) => toggleColumnSort(prev, 'email'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setInvitationSort((prev) => toggleColumnSort(prev, 'email'))}
+                    >
                       {tc('email')}
                       {sortIcon(invitationSort.column === 'email', invitationSort.direction)}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setInvitationSort((prev) => toggleColumnSort(prev, 'role'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setInvitationSort((prev) => toggleColumnSort(prev, 'role'))}
+                    >
                       {t('team.role')}
                       {sortIcon(invitationSort.column === 'role', invitationSort.direction)}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button variant="ghost" size="sm" onClick={() => setInvitationSort((prev) => toggleColumnSort(prev, 'expiresAt'))}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setInvitationSort((prev) => toggleColumnSort(prev, 'expiresAt'))
+                      }
+                    >
                       {t('team.expiresAt')}
                       {sortIcon(invitationSort.column === 'expiresAt', invitationSort.direction)}
                     </Button>
@@ -661,7 +705,9 @@ export default function TeamPage() {
                   <TableHead>
                     <Input
                       value={invitationFilters.email || ''}
-                      onChange={(e) => setInvitationFilters((prev) => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) =>
+                        setInvitationFilters((prev) => ({ ...prev, email: e.target.value }))
+                      }
                       placeholder={tc('filter')}
                       className="h-8"
                     />
@@ -669,7 +715,9 @@ export default function TeamPage() {
                   <TableHead>
                     <Input
                       value={invitationFilters.role || ''}
-                      onChange={(e) => setInvitationFilters((prev) => ({ ...prev, role: e.target.value }))}
+                      onChange={(e) =>
+                        setInvitationFilters((prev) => ({ ...prev, role: e.target.value }))
+                      }
                       placeholder={tc('filter')}
                       className="h-8"
                     />
@@ -677,7 +725,9 @@ export default function TeamPage() {
                   <TableHead>
                     <Input
                       value={invitationFilters.expiresAt || ''}
-                      onChange={(e) => setInvitationFilters((prev) => ({ ...prev, expiresAt: e.target.value }))}
+                      onChange={(e) =>
+                        setInvitationFilters((prev) => ({ ...prev, expiresAt: e.target.value }))
+                      }
                       placeholder={tc('filter')}
                       className="h-8"
                     />
@@ -704,7 +754,11 @@ export default function TeamPage() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="w-[200px] h-8 justify-between font-normal">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-[200px] h-8 justify-between font-normal"
+                            >
                               <span className="truncate">
                                 {inv.roles.length > 0
                                   ? inv.roles.map((r) => r.role.name).join(', ')
@@ -803,7 +857,10 @@ export default function TeamPage() {
                     <ChevronDown className="h-4 w-4 ml-1 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                <DropdownMenuContent
+                  align="start"
+                  className="w-[var(--radix-dropdown-menu-trigger-width)]"
+                >
                   {roles.map((role) => (
                     <DropdownMenuCheckboxItem
                       key={role.id}
@@ -816,9 +873,7 @@ export default function TeamPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {inviteError && (
-              <p className="text-sm text-destructive">{inviteError}</p>
-            )}
+            {inviteError && <p className="text-sm text-destructive">{inviteError}</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setInviteOpen(false)}>
@@ -841,9 +896,7 @@ export default function TeamPage() {
             <DialogTitle>{t('team.removeAdmin')}</DialogTitle>
             <DialogDescription>{t('team.removeConfirm')}</DialogDescription>
           </DialogHeader>
-          {removeError && (
-            <p className="text-sm text-destructive py-2">{removeError}</p>
-          )}
+          {removeError && <p className="text-sm text-destructive py-2">{removeError}</p>}
           <DialogFooter>
             <Button variant="outline" onClick={() => setRemoveOpen(false)}>
               {tc('cancel')}
@@ -870,9 +923,7 @@ export default function TeamPage() {
             <div className="space-y-2">
               <Label>{t('team.email')}</Label>
               <Input type="email" value={editUserEmail} readOnly disabled />
-              <p className="text-xs text-muted-foreground">
-                {t('team.emailChangeWarning')}
-              </p>
+              <p className="text-xs text-muted-foreground">{t('team.emailChangeWarning')}</p>
             </div>
             <div className="space-y-2">
               <Label>{t('team.preferredLanguage')}</Label>
@@ -907,7 +958,9 @@ export default function TeamPage() {
           <DialogHeader>
             <DialogTitle>{t('team.customPermissions')}</DialogTitle>
             <DialogDescription>
-              {t('team.customPermissionsDescription', { name: permsAdmin?.user.name || permsAdmin?.user.email || '' })}
+              {t('team.customPermissionsDescription', {
+                name: permsAdmin?.user.name || permsAdmin?.user.email || '',
+              })}
             </DialogDescription>
           </DialogHeader>
           {permsAdmin && (
@@ -918,10 +971,7 @@ export default function TeamPage() {
                 const effectiveValue = hasOverride ? permsOverrides[key] : roleValue;
 
                 return (
-                  <label
-                    key={key}
-                    className="flex items-center gap-3 py-1 cursor-pointer"
-                  >
+                  <label key={key} className="flex items-center gap-3 py-1 cursor-pointer">
                     <Checkbox
                       checked={effectiveValue}
                       onCheckedChange={() => togglePermOverride(key)}
@@ -939,9 +989,7 @@ export default function TeamPage() {
               })}
             </div>
           )}
-          <p className="text-xs text-muted-foreground">
-            {t('team.overrideHint')}
-          </p>
+          <p className="text-xs text-muted-foreground">{t('team.overrideHint')}</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPermsOpen(false)}>
               {tc('cancel')}

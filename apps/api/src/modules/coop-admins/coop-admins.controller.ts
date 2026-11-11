@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-  Patch,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Patch } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -81,7 +71,7 @@ export class CoopAdminsController {
 
   @Put(':adminId/roles')
   @RequirePermission('canManageAdmins')
-  @ApiOperation({ summary: "Replace the full set of roles assigned to an admin" })
+  @ApiOperation({ summary: 'Replace the full set of roles assigned to an admin' })
   updateAdminRoles(
     @Param('coopId') coopId: string,
     @Param('adminId') adminId: string,
@@ -126,10 +116,7 @@ export class CoopAdminsController {
 
   @Get('me/notifications')
   @ApiOperation({ summary: 'Get my notification settings for this coop' })
-  getMyNotificationSettings(
-    @Param('coopId') coopId: string,
-    @CurrentUser() user: CurrentUserData,
-  ) {
+  getMyNotificationSettings(@Param('coopId') coopId: string, @CurrentUser() user: CurrentUserData) {
     return this.coopAdminsService.getNotificationSettings(coopId, user.id);
   }
 
@@ -138,7 +125,8 @@ export class CoopAdminsController {
   updateMyNotificationSettings(
     @Param('coopId') coopId: string,
     @CurrentUser() user: CurrentUserData,
-    @Body() dto: {
+    @Body()
+    dto: {
       frequency?: 'IMMEDIATE' | 'DAILY' | 'WEEKLY';
       digestHour?: number;
       notifyOnNewShareholder?: boolean;
@@ -161,11 +149,10 @@ export class CoopAdminsController {
 
   @Post('invitations/:invitationId/resend')
   @RequirePermission('canManageAdmins')
-  @ApiOperation({ summary: 'Resend a pending invitation email (rotates the token, extends expiry by 7 days)' })
-  resendInvitation(
-    @Param('coopId') coopId: string,
-    @Param('invitationId') invitationId: string,
-  ) {
+  @ApiOperation({
+    summary: 'Resend a pending invitation email (rotates the token, extends expiry by 7 days)',
+  })
+  resendInvitation(@Param('coopId') coopId: string, @Param('invitationId') invitationId: string) {
     return this.coopAdminsService.resendInvitation(coopId, invitationId);
   }
 
@@ -183,10 +170,7 @@ export class CoopAdminsController {
   @Delete('invitations/:invitationId')
   @RequirePermission('canManageAdmins')
   @ApiOperation({ summary: 'Revoke a pending invitation' })
-  revokeInvitation(
-    @Param('coopId') coopId: string,
-    @Param('invitationId') invitationId: string,
-  ) {
+  revokeInvitation(@Param('coopId') coopId: string, @Param('invitationId') invitationId: string) {
     return this.coopAdminsService.revokeInvitation(coopId, invitationId);
   }
 }

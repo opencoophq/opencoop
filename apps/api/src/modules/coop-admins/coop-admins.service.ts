@@ -33,9 +33,9 @@ export class CoopAdminsService {
 
     // Default roles in logical order, then custom roles alphabetically
     const defaultOrder: Record<string, number> = {
-      'Admin': 1,
-      'Manager': 2,
-      'Viewer': 3,
+      Admin: 1,
+      Manager: 2,
+      Viewer: 3,
       'GDPR Viewer': 4,
     };
 
@@ -87,7 +87,9 @@ export class CoopAdminsService {
       throw new BadRequestException('Cannot delete a default role');
     }
     if (role._count.coopAdminRoles > 0) {
-      throw new BadRequestException('Reassign all administrators using this role before deleting it');
+      throw new BadRequestException(
+        'Reassign all administrators using this role before deleting it',
+      );
     }
 
     return this.prisma.coopRole.delete({ where: { id: roleId } });
@@ -115,7 +117,11 @@ export class CoopAdminsService {
     });
   }
 
-  async updateAdminPermissionOverrides(coopId: string, adminId: string, overrides: Record<string, boolean> | null) {
+  async updateAdminPermissionOverrides(
+    coopId: string,
+    adminId: string,
+    overrides: Record<string, boolean> | null,
+  ) {
     const admin = await this.prisma.coopAdmin.findFirst({
       where: { id: adminId, coopId },
     });
@@ -202,7 +208,9 @@ export class CoopAdminsService {
       (r) => (r.role.permissions as any)?.canManageAdmins === true,
     );
     if (canManageAdminsCount <= 1 && targetCanManageAdmins) {
-      throw new BadRequestException('Cannot remove the last administrator with management permissions');
+      throw new BadRequestException(
+        'Cannot remove the last administrator with management permissions',
+      );
     }
 
     // Delete CoopAdmin entry (cascades to coop_admin_roles)
@@ -311,8 +319,7 @@ export class CoopAdminsService {
     coopName: string;
     roleNames: string[];
   }): Promise<void> {
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://opencoop.be';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://opencoop.be';
     const inviteUrl = `${appUrl}/invite/${args.token}`;
     const rolesLabel = args.roleNames.join(', ') || '—';
 
@@ -467,14 +474,16 @@ export class CoopAdminsService {
       throw new NotFoundException('Admin not found');
     }
 
-    return admin.notificationSettings ?? {
-      frequency: 'IMMEDIATE',
-      digestHour: 9,
-      notifyOnNewShareholder: false,
-      notifyOnSharePurchase: false,
-      notifyOnShareSell: false,
-      notifyOnPaymentReceived: false,
-    };
+    return (
+      admin.notificationSettings ?? {
+        frequency: 'IMMEDIATE',
+        digestHour: 9,
+        notifyOnNewShareholder: false,
+        notifyOnSharePurchase: false,
+        notifyOnShareSell: false,
+        notifyOnPaymentReceived: false,
+      }
+    );
   }
 
   async updateNotificationSettings(
@@ -510,10 +519,16 @@ export class CoopAdminsService {
       update: {
         ...(dto.frequency !== undefined && { frequency: dto.frequency }),
         ...(dto.digestHour !== undefined && { digestHour: dto.digestHour }),
-        ...(dto.notifyOnNewShareholder !== undefined && { notifyOnNewShareholder: dto.notifyOnNewShareholder }),
-        ...(dto.notifyOnSharePurchase !== undefined && { notifyOnSharePurchase: dto.notifyOnSharePurchase }),
+        ...(dto.notifyOnNewShareholder !== undefined && {
+          notifyOnNewShareholder: dto.notifyOnNewShareholder,
+        }),
+        ...(dto.notifyOnSharePurchase !== undefined && {
+          notifyOnSharePurchase: dto.notifyOnSharePurchase,
+        }),
         ...(dto.notifyOnShareSell !== undefined && { notifyOnShareSell: dto.notifyOnShareSell }),
-        ...(dto.notifyOnPaymentReceived !== undefined && { notifyOnPaymentReceived: dto.notifyOnPaymentReceived }),
+        ...(dto.notifyOnPaymentReceived !== undefined && {
+          notifyOnPaymentReceived: dto.notifyOnPaymentReceived,
+        }),
       },
     });
   }
