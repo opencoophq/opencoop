@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
@@ -12,6 +13,7 @@ import { EmailService } from '../email/email.service';
 import { AuditService } from '../audit/audit.service';
 import { AuthEmailService } from '../auth/auth-email.service';
 import { hashToken } from '../../common/crypto';
+import { activePendingEmail, CLEAR_PENDING_EMAIL } from '../auth/pending-email';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { InviteAdminDto } from './dto/invite-admin.dto';
@@ -615,7 +617,15 @@ export class CoopAdminsService {
       where: { id: adminId, coopId },
       include: {
         user: {
-          select: { id: true, email: true, role: true, name: true, preferredLanguage: true },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            name: true,
+            preferredLanguage: true,
+            pendingEmail: true,
+            emailVerifyExpires: true,
+          },
         },
       },
     });
@@ -647,9 +657,19 @@ export class CoopAdminsService {
     }
 
     let pending: { email: string; token: string } | undefined;
+    const currentPending = activePendingEmail(admin.user);
     if (dto.email !== undefined) {
       const newEmail = dto.email.toLowerCase().trim();
-      if (newEmail !== admin.user.email.toLowerCase()) {
+      if (newEmail === admin.user.email.toLowerCase()) {
+        // A system admin cancels a pending change by submitting the current
+        // address. For anyone else this stays a no-op.
+        if (actorIsSystemAdmin && admin.user.pendingEmail) {
+          Object.assign(data, CLEAR_PENDING_EMAIL);
+          if (currentPending) {
+            changes.push({ field: 'pendingEmail', oldValue: currentPending, newValue: null });
+          }
+        }
+      } else {
         if (!actorIsSystemAdmin) {
           throw new ForbiddenException("A coop admin cannot change a team member's login email");
         }
@@ -662,7 +682,7 @@ export class CoopAdminsService {
         data.pendingEmail = newEmail;
         data.emailVerifyToken = hashToken(token);
         data.emailVerifyExpires = new Date(Date.now() + EMAIL_CHANGE_TTL_MS);
-        changes.push({ field: 'pendingEmail', oldValue: null, newValue: newEmail });
+        changes.push({ field: 'pendingEmail', oldValue: currentPending, newValue: newEmail });
       }
     }
 
@@ -695,9 +715,18 @@ export class CoopAdminsService {
     });
 
     if (pending) {
+      // Try both mails, so a failed verify mail still warns the old address.
+      // The pending change stays; the system admin can submit it again.
       const lang = updated.preferredLanguage;
-      await this.authEmail.sendVerificationEmail(pending.email, pending.token, lang);
-      await this.authEmail.sendLoginEmailChangeNotice(admin.user.email, pending.email, lang);
+      const [notice, verify] = await Promise.allSettled([
+        this.authEmail.sendLoginEmailChangeNotice(admin.user.email, pending.email, lang),
+        this.authEmail.sendVerificationEmail(pending.email, pending.token, lang),
+      ]);
+      if (notice.status === 'rejected' || verify.status === 'rejected') {
+        throw new InternalServerErrorException(
+          'The login email change is pending, but a mail could not be sent. Submit it again.',
+        );
+      }
     }
 
     return updated;

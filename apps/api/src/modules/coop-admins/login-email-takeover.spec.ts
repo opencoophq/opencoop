@@ -13,6 +13,7 @@ jest.mock('../coops/coops.service', () => ({
 
 import 'reflect-metadata';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -203,9 +204,13 @@ const withUser = (row: TokenRow) => ({
 const prisma = {
   $transaction: jest.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   user: {
-    findUnique: jest.fn(async ({ where, select }: any) => {
+    findUnique: jest.fn(async ({ where, select, include }: any) => {
       const user = where.id ? state.users.get(where.id) : userByEmail(where.email);
-      return user ? pick(user, select) : null;
+      if (!user) return null;
+      // getProfile's include: these users hold no shares and no coop rows.
+      if (include)
+        return { ...user, shareholders: [], coopAdminOf: [], registeredShareholders: [] };
+      return pick(user, select);
     }),
     findFirst: jest.fn(
       async ({ where }: any) => [...state.users.values()].find((u) => matches(u, where)) ?? null,
@@ -214,7 +219,10 @@ const prisma = {
       const user = state.users.get(where.id);
       if (!user) throw new Error('user not found');
       if (data.email && userByEmail(data.email) && userByEmail(data.email)!.id !== user.id) {
-        throw new Error('unique constraint on email');
+        throw new Prisma.PrismaClientKnownRequestError('Unique constraint failed on email', {
+          code: 'P2002',
+          clientVersion: 'test',
+        });
       }
       apply(user, data);
       return pick(user, select);
@@ -383,6 +391,7 @@ describe('Team member login email over HTTP', () => {
   beforeEach(() => {
     resetState();
     jest.clearAllMocks();
+    mailer.sendPlatformEmail.mockImplementation(async () => undefined);
     jest.spyOn(codeModule, 'generateLoginCode').mockReturnValue(CODE);
   });
 
@@ -676,6 +685,116 @@ describe('Team member login email over HTTP', () => {
         email: 'plain@example.test',
         pendingEmail: null,
         emailVerifyToken: null,
+      });
+    });
+
+    it('drops the pending change on a unique-constraint race at confirm time', async () => {
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      state.users.set('late', person('late', NEW_ADDRESS, 'SHAREHOLDER', 'Late Signup'));
+      // The pre-check misses the other account; the write then hits the unique index.
+      prisma.user.findUnique.mockResolvedValueOnce(null);
+
+      const res = await call(
+        'GET',
+        `/auth/verify-email?token=${verifyTokenIn(mailsTo(NEW_ADDRESS)[0])}`,
+      );
+
+      expect(res.status).toBe(409);
+      expect(state.users.get('plain')).toMatchObject({
+        email: 'plain@example.test',
+        pendingEmail: null,
+        emailVerifyToken: null,
+      });
+    });
+
+    it('lets a system admin cancel a pending change by submitting the current address', async () => {
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      const token = verifyTokenIn(mailsTo(NEW_ADDRESS)[0]);
+      audit.log.mockClear();
+
+      // A coop admin resending the current address does not cancel it.
+      expect(
+        (await editUser('adm-plain', coopAdmin(), { email: 'plain@example.test' })).status,
+      ).toBe(200);
+      expect(state.users.get('plain')!.pendingEmail).toBe(NEW_ADDRESS);
+
+      const res = await editUser('adm-plain', systemAdmin(), { email: 'plain@example.test' });
+
+      expect(res.status).toBe(200);
+      expect(state.users.get('plain')).toMatchObject({
+        pendingEmail: null,
+        emailVerifyToken: null,
+      });
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actorId: 'sysadmin',
+          changes: [{ field: 'pendingEmail', oldValue: NEW_ADDRESS, newValue: null }],
+        }),
+      );
+      expect((await call('GET', `/auth/verify-email?token=${token}`)).status).toBe(400);
+      expect(state.users.get('plain')!.email).toBe('plain@example.test');
+    });
+
+    it('logs the replaced pending address when a system admin changes it again', async () => {
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      audit.log.mockClear();
+
+      await editUser('adm-plain', systemAdmin(), { email: 'plain.other@example.test' });
+
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changes: [
+            { field: 'pendingEmail', oldValue: NEW_ADDRESS, newValue: 'plain.other@example.test' },
+          ],
+        }),
+      );
+    });
+
+    it('treats an expired change as gone and lets resend serve the current address again', async () => {
+      state.users.get('plain')!.emailVerified = null;
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      const oldToken = verifyTokenIn(mailsTo(NEW_ADDRESS)[0]);
+      state.users.get('plain')!.emailVerifyExpires = new Date(Date.now() - 1000);
+      mailer.sendPlatformEmail.mockClear();
+
+      const me = await call('GET', '/auth/me', bearer('plain', 'COOP_ADMIN'));
+      expect(me.body).toMatchObject({ email: 'plain@example.test', pendingEmail: null });
+
+      const resend = await call('POST', '/auth/resend-verification', bearer('plain', 'COOP_ADMIN'));
+      expect(resend.status).toBe(201);
+      expect(state.users.get('plain')!.pendingEmail).toBeNull();
+      expect(mailsTo('plain@example.test')).toHaveLength(1);
+      expect(mailsTo(NEW_ADDRESS)).toHaveLength(0);
+      expect((await call('GET', `/auth/verify-email?token=${oldToken}`)).status).toBe(400);
+    });
+
+    it('keeps a legacy user out of the verify wall while a change is pending', async () => {
+      // Legacy: no verified date and no token, which the dashboard treats as verified.
+      Object.assign(state.users.get('plain')!, { emailVerified: null, emailVerifyToken: null });
+      expect((await call('GET', '/auth/me', bearer('plain', 'COOP_ADMIN'))).body).toMatchObject({
+        emailVerified: true,
+      });
+
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+
+      expect((await call('GET', '/auth/me', bearer('plain', 'COOP_ADMIN'))).body).toMatchObject({
+        emailVerified: true,
+        pendingEmail: NEW_ADDRESS,
+      });
+    });
+
+    it('still warns the old address when the verify mail fails, and keeps the change pending', async () => {
+      mailer.sendPlatformEmail.mockImplementation(async (m: { to: string }) => {
+        if (m.to === NEW_ADDRESS) throw new Error('smtp down');
+      });
+
+      const res = await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+
+      expect(res.status).toBe(500);
+      expect(mailsTo('plain@example.test')).toHaveLength(1);
+      expect(state.users.get('plain')).toMatchObject({
+        email: 'plain@example.test',
+        pendingEmail: NEW_ADDRESS,
       });
     });
 

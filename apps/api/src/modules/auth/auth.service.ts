@@ -32,6 +32,7 @@ import { decryptMfaSecret, hashRecoveryCode } from '../../common/crypto';
 import * as OTPAuth from 'otpauth';
 import { AuditService } from '../audit/audit.service';
 import { TokenService } from './token.service';
+import { activePendingEmail, CLEAR_PENDING_EMAIL } from './pending-email';
 import { computeIsReadOnly } from './compute-readonly';
 import { countryFromAddress } from '../email/coop-signup-notice';
 import * as Sentry from '@sentry/nestjs';
@@ -490,38 +491,47 @@ export class AuthService {
    * they expire.
    */
   private async applyPendingLoginEmail(userId: string, oldEmail: string, newEmail: string) {
+    const dropAsTaken = async (): Promise<never> => {
+      await this.prisma.user.update({ where: { id: userId }, data: CLEAR_PENDING_EMAIL });
+      throw new ConflictException('This email is already in use');
+    };
+
     const taken = await this.prisma.user.findUnique({ where: { email: newEmail } });
     if (taken && taken.id !== userId) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { pendingEmail: null, emailVerifyToken: null, emailVerifyExpires: null },
-      });
-      throw new ConflictException('This email is already in use');
+      return dropAsTaken();
     }
 
     const now = new Date();
-    await this.prisma.$transaction([
-      this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          email: newEmail,
-          pendingEmail: null,
-          emailVerified: now,
-          emailVerifyToken: null,
-          emailVerifyExpires: null,
-          passwordResetToken: null,
-          passwordResetExpires: null,
-        },
-      }),
-      this.prisma.magicLinkToken.updateMany({
-        where: { userId, usedAt: null },
-        data: { usedAt: now },
-      }),
-      this.prisma.refreshToken.updateMany({
-        where: { userId, revokedAt: null },
-        data: { revokedAt: now },
-      }),
-    ]);
+    try {
+      await this.prisma.$transaction([
+        this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            email: newEmail,
+            pendingEmail: null,
+            emailVerified: now,
+            emailVerifyToken: null,
+            emailVerifyExpires: null,
+            passwordResetToken: null,
+            passwordResetExpires: null,
+          },
+        }),
+        this.prisma.magicLinkToken.updateMany({
+          where: { userId, usedAt: null },
+          data: { usedAt: now },
+        }),
+        this.prisma.refreshToken.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: now },
+        }),
+      ]);
+    } catch (err) {
+      // Another account took the address between the check and the write.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        return dropAsTaken();
+      }
+      throw err;
+    }
 
     await this.auditService.log({
       entity: 'User',
@@ -721,8 +731,10 @@ export class AuthService {
       }),
     );
 
-    // Legacy users (no token AND no verified date) are treated as verified
-    const isLegacyUser = !user.emailVerified && !user.emailVerifyToken;
+    // Legacy users (no token AND no verified date) are treated as verified.
+    // A token that belongs to a pending login email change does not count:
+    // it proves nothing about the current address being unverified.
+    const isLegacyUser = !user.emailVerified && (!user.emailVerifyToken || !!user.pendingEmail);
     const emailVerified = !!user.emailVerified || isLegacyUser;
 
     // C5: Compute sharesOwned for each BUY registration so frontend doesn't fall back to quantity
@@ -775,6 +787,8 @@ export class AuthService {
 
     return {
       ...safeUser,
+      // An expired change is shown as none.
+      pendingEmail: activePendingEmail(user),
       shareholders: shareholdersWithComputed,
       minorShareholders: minorShareholdersWithComputed,
       emailVerified,
@@ -1188,8 +1202,12 @@ export class AuthService {
     // The outstanding token belongs to a pending login email change and was
     // mailed to the new address. A fresh token for the current address would
     // overwrite it and let this address confirm the new one without proof.
-    if (user.pendingEmail) {
+    if (activePendingEmail(user)) {
       return { message: 'A login email change is pending' };
+    }
+    if (user.pendingEmail) {
+      // Expired change: drop it before a token for this address replaces it.
+      await this.prisma.user.update({ where: { id: userId }, data: CLEAR_PENDING_EMAIL });
     }
 
     const emailVerifyToken = randomBytes(32).toString('hex');
