@@ -37,6 +37,8 @@ import { computeIsReadOnly } from './compute-readonly';
 import { countryFromAddress } from '../email/coop-signup-notice';
 import * as Sentry from '@sentry/nestjs';
 
+const VERIFY_TOKEN_INVALID = 'Invalid or expired verification token';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -449,19 +451,20 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
+    const tokenHash = hashToken(token);
     const user = await this.prisma.user.findFirst({
       where: {
-        emailVerifyToken: hashToken(token),
+        emailVerifyToken: tokenHash,
         emailVerifyExpires: { gt: new Date() },
       },
     });
 
     if (!user) {
-      throw new BadRequestException('Invalid or expired verification token');
+      throw new BadRequestException(VERIFY_TOKEN_INVALID);
     }
 
     if (user.pendingEmail) {
-      return this.applyPendingLoginEmail(user.id, user.email, user.pendingEmail);
+      return this.applyPendingLoginEmail(user.id, user.email, user.pendingEmail, tokenHash);
     }
 
     await this.prisma.user.update({
@@ -481,10 +484,23 @@ export class AuthService {
    * Everything issued for the old address dies with it: unused magic links,
    * reset links and refresh tokens. Access tokens already issued live until
    * they expire.
+   *
+   * The switch claims exactly the change this token was issued for, inside
+   * one transaction with the revocations and the audit entry. A cancel, a
+   * newer request or a second click in between leaves nothing to claim, so
+   * that request fails with 400 and no stale address is applied.
    */
-  private async applyPendingLoginEmail(userId: string, oldEmail: string, newEmail: string) {
+  private async applyPendingLoginEmail(
+    userId: string,
+    oldEmail: string,
+    newEmail: string,
+    tokenHash: string,
+  ) {
+    const thisChange = { id: userId, emailVerifyToken: tokenHash, pendingEmail: newEmail };
+
+    // Drops only this change: a newer request or a cancel keeps its own state.
     const dropAsTaken = async (): Promise<never> => {
-      await this.prisma.user.update({ where: { id: userId }, data: CLEAR_PENDING_EMAIL });
+      await this.prisma.user.updateMany({ where: thisChange, data: CLEAR_PENDING_EMAIL });
       throw new ConflictException('This email is already in use');
     };
 
@@ -495,9 +511,9 @@ export class AuthService {
 
     const now = new Date();
     try {
-      await this.prisma.$transaction([
-        this.prisma.user.update({
-          where: { id: userId },
+      await this.prisma.$transaction(async (tx) => {
+        const claimed = await tx.user.updateMany({
+          where: { ...thisChange, emailVerifyExpires: { gt: now } },
           data: {
             email: newEmail,
             pendingEmail: null,
@@ -507,16 +523,29 @@ export class AuthService {
             passwordResetToken: null,
             passwordResetExpires: null,
           },
-        }),
-        this.prisma.magicLinkToken.updateMany({
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException(VERIFY_TOKEN_INVALID);
+        }
+        await tx.magicLinkToken.updateMany({
           where: { userId, usedAt: null },
           data: { usedAt: now },
-        }),
-        this.prisma.refreshToken.updateMany({
+        });
+        await tx.refreshToken.updateMany({
           where: { userId, revokedAt: null },
           data: { revokedAt: now },
-        }),
-      ]);
+        });
+        await this.auditService.log(
+          {
+            entity: 'User',
+            entityId: userId,
+            action: 'UPDATE',
+            changes: [{ field: 'email', oldValue: oldEmail, newValue: newEmail }],
+            actorId: userId,
+          },
+          tx,
+        );
+      });
     } catch (err) {
       // Another account took the address between the check and the write.
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
@@ -524,14 +553,6 @@ export class AuthService {
       }
       throw err;
     }
-
-    await this.auditService.log({
-      entity: 'User',
-      entityId: userId,
-      action: 'UPDATE',
-      changes: [{ field: 'email', oldValue: oldEmail, newValue: newEmail }],
-      actorId: userId,
-    });
 
     return { message: 'Email verified successfully' };
   }

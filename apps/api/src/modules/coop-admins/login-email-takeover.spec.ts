@@ -201,6 +201,8 @@ const withUser = (row: TokenRow) => ({
   user: { ...state.users.get(row.userId)!, coopAdminOf: [] },
 });
 
+let txQueue: Promise<void> = Promise.resolve();
+
 /** Runs only when awaited, like a PrismaPromise, so $transaction can roll back. */
 function lazy<T>(run: () => Promise<T>): any {
   let started: Promise<T> | undefined;
@@ -211,24 +213,35 @@ function lazy<T>(run: () => Promise<T>): any {
 }
 
 const prisma = {
-  // All-or-nothing over the in-memory store: snapshot, run in order, restore
-  // on the first failure. It proves which writes share one transaction; it
-  // does not prove PostgreSQL isolation.
-  $transaction: jest.fn(async (ops: PromiseLike<unknown>[]) => {
-    const snapshot = structuredClone({
-      users: state.users,
-      tokens: state.tokens,
-      refreshTokens: state.refreshTokens,
-    });
-    try {
-      const results: unknown[] = [];
-      for (const op of ops) results.push(await op);
-      return results;
-    } catch (err) {
-      Object.assign(state, snapshot);
-      throw err;
-    }
-  }),
+  // All-or-nothing over the in-memory store: transactions run one at a time
+  // (as PostgreSQL serialises writes to the same row), snapshot first, and
+  // restore on the first failure. Takes an array or a callback, like Prisma.
+  // It proves which writes share one transaction and that a conditional
+  // claim decides races; it does not prove PostgreSQL isolation levels.
+  $transaction: jest.fn(
+    async (work: PromiseLike<unknown>[] | ((tx: unknown) => Promise<unknown>)) => {
+      const previous = txQueue;
+      let done!: () => void;
+      txQueue = new Promise<void>((resolve) => (done = resolve));
+      await previous;
+      const snapshot = structuredClone({
+        users: state.users,
+        tokens: state.tokens,
+        refreshTokens: state.refreshTokens,
+      });
+      try {
+        if (typeof work === 'function') return await work(prisma);
+        const results: unknown[] = [];
+        for (const op of work) results.push(await op);
+        return results;
+      } catch (err) {
+        Object.assign(state, snapshot);
+        throw err;
+      } finally {
+        done();
+      }
+    },
+  ),
   user: {
     findUnique: jest.fn(async ({ where, select, include }: any) => {
       const user = where.id ? state.users.get(where.id) : userByEmail(where.email);
@@ -238,9 +251,11 @@ const prisma = {
         return { ...user, shareholders: [], coopAdminOf: [], registeredShareholders: [] };
       return pick(user, select);
     }),
-    findFirst: jest.fn(
-      async ({ where }: any) => [...state.users.values()].find((u) => matches(u, where)) ?? null,
-    ),
+    // A copy, like a row read from the database: later writes do not show through.
+    findFirst: jest.fn(async ({ where }: any) => {
+      const found = [...state.users.values()].find((u) => matches(u, where));
+      return found ? { ...found } : null;
+    }),
     update: jest.fn(async ({ where, data, select }: any) => {
       const user = state.users.get(where.id);
       if (!user) throw new Error('user not found');
@@ -255,6 +270,13 @@ const prisma = {
     }),
     updateMany: jest.fn(async ({ where, data }: any) => {
       const hits = [...state.users.values()].filter((u) => matches(u, where));
+      const clash = data.email && userByEmail(data.email);
+      if (clash && hits.some((u) => u.id !== clash.id)) {
+        throw new Prisma.PrismaClientKnownRequestError('Unique constraint failed on email', {
+          code: 'P2002',
+          clientVersion: 'test',
+        });
+      }
       hits.forEach((u) => apply(u, data));
       return { count: hits.length };
     }),
@@ -698,6 +720,7 @@ describe('Team member login email over HTTP', () => {
           entityId: 'plain',
           changes: [{ field: 'email', oldValue: 'plain@example.test', newValue: NEW_ADDRESS }],
         }),
+        expect.anything(),
       );
 
       // The verify link is single use.
@@ -766,6 +789,92 @@ describe('Team member login email over HTTP', () => {
       // Nothing was half-applied, so the same link works once the database is back.
       expect((await call('GET', `/auth/verify-email?token=${token}`)).status).toBe(200);
       expect(state.users.get('plain')!.email).toBe(NEW_ADDRESS);
+    });
+
+    /** Holds verify-email right after its token lookup until `release()`. */
+    function holdVerifyLookups(count: number) {
+      const lookup = prisma.user.findFirst.getMockImplementation()!;
+      let arrived = 0;
+      let allArrived!: () => void;
+      const reached = new Promise<void>((resolve) => (allArrived = resolve));
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      for (let i = 0; i < count; i++) {
+        prisma.user.findFirst.mockImplementationOnce(async (args: unknown) => {
+          const found = await lookup(args);
+          if (++arrived === count) allArrived();
+          await gate;
+          return found;
+        });
+      }
+      return { reached, release };
+    }
+
+    it('lets only one of two simultaneous confirms win; the other gets 400', async () => {
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      const link = `/auth/verify-email?token=${verifyTokenIn(mailsTo(NEW_ADDRESS)[0])}`;
+      const hold = holdVerifyLookups(2);
+
+      const both = Promise.all([call('GET', link), call('GET', link)]);
+      await hold.reached;
+      hold.release();
+      const statuses = (await both).map((r) => r.status).sort();
+
+      expect(statuses).toEqual([200, 400]);
+      expect(state.users.get('plain')).toMatchObject({ email: NEW_ADDRESS, pendingEmail: null });
+      expect(
+        audit.log.mock.calls.filter(([entry]) => entry.changes?.[0]?.field === 'email'),
+      ).toHaveLength(1);
+    });
+
+    it('does not apply a change that was cancelled while its confirm was in flight', async () => {
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      const link = `/auth/verify-email?token=${verifyTokenIn(mailsTo(NEW_ADDRESS)[0])}`;
+      const hold = holdVerifyLookups(1);
+
+      const confirm = call('GET', link);
+      await hold.reached;
+      expect(
+        (await editUser('adm-plain', systemAdmin(), { email: 'plain@example.test' })).status,
+      ).toBe(200);
+      hold.release();
+
+      expect((await confirm).status).toBe(400);
+      expect(state.users.get('plain')).toMatchObject({
+        email: 'plain@example.test',
+        pendingEmail: null,
+      });
+    });
+
+    it('does not apply a change that was replaced while its confirm was in flight', async () => {
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      const link = `/auth/verify-email?token=${verifyTokenIn(mailsTo(NEW_ADDRESS)[0])}`;
+      const hold = holdVerifyLookups(1);
+
+      const confirm = call('GET', link);
+      await hold.reached;
+      await editUser('adm-plain', systemAdmin(), { email: 'plain.other@example.test' });
+      hold.release();
+
+      expect((await confirm).status).toBe(400);
+      expect(state.users.get('plain')).toMatchObject({
+        email: 'plain@example.test',
+        pendingEmail: 'plain.other@example.test',
+      });
+    });
+
+    it('writes the switch audit entry inside the confirm transaction', async () => {
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      audit.log.mockClear();
+
+      await call('GET', `/auth/verify-email?token=${verifyTokenIn(mailsTo(NEW_ADDRESS)[0])}`);
+
+      const [entry, client] = audit.log.mock.calls[0];
+      expect(entry.changes).toEqual([
+        { field: 'email', oldValue: 'plain@example.test', newValue: NEW_ADDRESS },
+      ]);
+      // The transaction client, not the default one.
+      expect(client).toBeDefined();
     });
 
     it('lets a system admin cancel a pending change by submitting the current address', async () => {
@@ -844,7 +953,31 @@ describe('Team member login email over HTTP', () => {
       });
     });
 
-    it('still warns the old address when the verify mail fails, and keeps the change pending', async () => {
+    it('drops the change and fails when the old-address notice fails, even if the link went out', async () => {
+      mailer.sendPlatformEmail.mockImplementation(async (m: { to: string }) => {
+        if (m.to === 'plain@example.test') throw new Error('smtp down');
+      });
+
+      const res = await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+
+      expect(res.status).toBe(500);
+      expect(state.users.get('plain')).toMatchObject({
+        email: 'plain@example.test',
+        pendingEmail: null,
+        emailVerifyToken: null,
+      });
+      expect(audit.log).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          changes: [{ field: 'pendingEmail', oldValue: NEW_ADDRESS, newValue: null }],
+        }),
+      );
+      // The link did reach the new address, but it no longer confirms anything.
+      const link = verifyTokenIn(mailsTo(NEW_ADDRESS)[0]);
+      expect((await call('GET', `/auth/verify-email?token=${link}`)).status).toBe(400);
+      expect(state.users.get('plain')!.email).toBe('plain@example.test');
+    });
+
+    it('also drops the change when the verify mail fails, after warning the old address', async () => {
       mailer.sendPlatformEmail.mockImplementation(async (m: { to: string }) => {
         if (m.to === NEW_ADDRESS) throw new Error('smtp down');
       });
@@ -854,8 +987,28 @@ describe('Team member login email over HTTP', () => {
       expect(res.status).toBe(500);
       expect(mailsTo('plain@example.test')).toHaveLength(1);
       expect(state.users.get('plain')).toMatchObject({
-        email: 'plain@example.test',
-        pendingEmail: NEW_ADDRESS,
+        pendingEmail: null,
+        emailVerifyToken: null,
+      });
+    });
+
+    it('leaves a newer request alone when an older one fails its notice', async () => {
+      // While the first request's notice is in flight, a newer request lands.
+      mailer.sendPlatformEmail.mockImplementation(async (m: { to: string }) => {
+        if (m.to === 'plain@example.test') {
+          Object.assign(state.users.get('plain')!, {
+            pendingEmail: 'plain.newer@example.test',
+            emailVerifyToken: 'hash-of-newer-request',
+            emailVerifyExpires: new Date(Date.now() + 60_000),
+          });
+          throw new Error('smtp down');
+        }
+      });
+
+      expect((await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS })).status).toBe(500);
+      expect(state.users.get('plain')).toMatchObject({
+        pendingEmail: 'plain.newer@example.test',
+        emailVerifyToken: 'hash-of-newer-request',
       });
     });
 

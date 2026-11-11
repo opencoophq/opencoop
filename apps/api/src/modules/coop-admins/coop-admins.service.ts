@@ -716,15 +716,35 @@ export class CoopAdminsService {
 
     if (pending) {
       // Try both mails, so a failed verify mail still warns the old address.
-      // The pending change stays; the system admin can submit it again.
       const lang = updated.preferredLanguage;
       const [notice, verify] = await Promise.allSettled([
         this.authEmail.sendLoginEmailChangeNotice(admin.user.email, pending.email, lang),
         this.authEmail.sendVerificationEmail(pending.email, pending.token, lang),
       ]);
       if (notice.status === 'rejected' || verify.status === 'rejected') {
+        // Fail closed: a change must not be confirmable unless the old address
+        // was told about it. Drop exactly this request; a newer request or a
+        // cancel that landed meanwhile keeps its own state.
+        const dropped = await this.prisma.user.updateMany({
+          where: {
+            id: admin.user.id,
+            pendingEmail: pending.email,
+            emailVerifyToken: hashToken(pending.token),
+          },
+          data: CLEAR_PENDING_EMAIL,
+        });
+        if (dropped.count > 0) {
+          await this.auditService.log({
+            coopId,
+            entity: 'User',
+            entityId: admin.user.id,
+            action: 'UPDATE',
+            changes: [{ field: 'pendingEmail', oldValue: pending.email, newValue: null }],
+            actorId: actor.id,
+          });
+        }
         throw new InternalServerErrorException(
-          'The login email change is pending, but a mail could not be sent. Submit it again.',
+          'The login email change was not started because a mail could not be sent. Try again.',
         );
       }
     }
