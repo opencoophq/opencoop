@@ -32,6 +32,7 @@ export default function OAuthCallbackPage() {
           router.push('/dashboard');
           return;
         }
+        setError(t('auth.loginError'));
       } catch {
         setError(t('auth.loginError'));
       }

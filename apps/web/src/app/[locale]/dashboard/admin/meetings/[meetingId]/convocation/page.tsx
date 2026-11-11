@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { api } from '@/lib/api';
+import { api, apiFetch } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -140,7 +140,6 @@ function buildStarterEmailBody(uiLocale: string, coopName: string): string {
 
 const REMINDER_DAY_OPTIONS = [14, 7, 3, 1];
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function ConvocationPage() {
   const t = useTranslations();
@@ -386,17 +385,10 @@ export default function ConvocationPage() {
     try {
       // The PDF endpoint requires JWT (JwtAuthGuard). A bare <a href> opens a new
       // tab without the Authorization header, so we fetch the PDF with auth here
-      // and open it as a blob URL. The api() helper assumes JSON, so we hit fetch
-      // directly and attach the bearer token ourselves.
-      const token =
-        typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      const url = `${API_URL}/admin/coops/${selectedCoop.id}/meetings/${meeting.id}/convocation/preview?shareholderId=${firstShareholder.id}`;
-      const res = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) {
-        throw new Error(`Preview failed (${res.status})`);
-      }
+      // and open it as a blob URL. apiFetch attaches and refreshes the token.
+      const res = await apiFetch(
+        `/admin/coops/${selectedCoop.id}/meetings/${meeting.id}/convocation/preview?shareholderId=${firstShareholder.id}`,
+      );
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       window.open(objectUrl, '_blank', 'noopener,noreferrer');
@@ -437,13 +429,21 @@ export default function ConvocationPage() {
     );
   }
 
-  if (loading || !meeting) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse h-8 w-64 bg-muted rounded" />
         <div className="animate-pulse h-40 bg-muted rounded-lg" />
         <div className="animate-pulse h-40 bg-muted rounded-lg" />
       </div>
+    );
+  }
+
+  if (!meeting) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>{error || t('meetings.detail.notFound')}</AlertDescription>
+      </Alert>
     );
   }
 

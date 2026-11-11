@@ -1,10 +1,4 @@
 {
-  "welcome": {
-    "title": "Welkom bij {coopName}!",
-    "dear": "Beste {shareholderName},",
-    "thanks": "Bedankt om aandeelhouder te worden van {coopName}.",
-    "login": "Je kan inloggen in je dashboard om je aandelen en documenten te bekijken."
-  },
   "share-purchase": {
     "title": "Je bestelling is bevestigd",
     "dear": "Beste {shareholderName},",
@@ -32,27 +26,6 @@
     "active": "Uw aandelen zijn nu actief. Uw aandeelhoudersattest vindt u als bijlage.",
     "dashboard": "Bekijk mijn dashboard",
     "thanks": "Bedankt om aandeelhouder te zijn van {coopName}!"
-  },
-  "dividend-statement": {
-    "title": "Dividendafrekening {year}",
-    "dear": "Beste {shareholderName},",
-    "attached": "In bijlage vind je je dividendafrekening voor {year}.",
-    "net": "Netto dividendbedrag",
-    "thanks": "Bedankt om aandeelhouder te zijn van {coopName}!"
-  },
-  "password-reset": {
-    "title": "Wachtwoord resetten",
-    "requested": "Je hebt een wachtwoord reset aangevraagd.",
-    "click": "Klik op onderstaande link om je wachtwoord te resetten:",
-    "ignore": "Als je dit niet hebt aangevraagd, kan je deze e-mail negeren.",
-    "expires": "Deze link vervalt binnen 1 uur."
-  },
-  "magic-link": {
-    "title": "Inloggen bij {coopName}",
-    "codeLine": "Je inlogcode: {code}",
-    "click": "Vul deze code in op de inlogpagina, of gebruik de knop op het apparaat waarop je wil blijven.",
-    "button": "Inloggen",
-    "expires": "Deze code en link zijn 10 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren."
   },
   "gift-certificate": {
     "title": "Je cadeaubon",

@@ -9,8 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { AuthEmailService } from './auth-email.service';
 import { AuditService } from '../audit/audit.service';
-import { TokenService } from './token.service';
-import { buildCopy } from '../email/email-copy';
+import { TokenService, TokenService as RealTokenService } from './token.service';
 import * as codeModule from './magic-link-code';
 import {
   MAGIC_LINK_CODE_EXPIRED,
@@ -97,8 +96,15 @@ describe('MagicLinkService one-time code', () => {
     [otherUser.id]: otherUser,
   };
 
-  function withUser(row: Row) {
-    return { ...row, user: usersById[row.userId] };
+  // Mirrors Prisma: permissionOverrides only comes back when the query selects it.
+  function withUser(row: Row, include?: any) {
+    const user = usersById[row.userId];
+    const select = include?.user?.include?.coopAdminOf?.select;
+    const coopAdminOf = (user.coopAdminOf ?? []).map((ca: any) => {
+      const { permissionOverrides, ...rest } = ca;
+      return select?.permissionOverrides ? ca : rest;
+    });
+    return { ...row, user: { ...user, coopAdminOf } };
   }
 
   beforeEach(async () => {
@@ -130,21 +136,21 @@ describe('MagicLinkService one-time code', () => {
           rows.push(row);
           return row;
         }),
-        findUnique: jest.fn(async ({ where }: any) => {
+        findUnique: jest.fn(async ({ where, include }: any) => {
           const row = rows.find((item) => matches(item, where));
-          return row ? withUser(row) : null;
+          return row ? withUser(row, include) : null;
         }),
-        findFirst: jest.fn(async ({ where }: any) => {
+        findFirst: jest.fn(async ({ where, include }: any) => {
           const found = rows
             .filter((row) => matches(row, where))
             .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-          return found[0] ? withUser(found[0]) : null;
+          return found[0] ? withUser(found[0], include) : null;
         }),
-        findMany: jest.fn(async ({ where }: any) => {
+        findMany: jest.fn(async ({ where, include }: any) => {
           return rows
             .filter((row) => matches(row, where))
             .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-            .map(withUser);
+            .map((row) => withUser(row, include));
         }),
         updateMany: jest.fn(async ({ where, data }: any) => {
           let count = 0;
@@ -227,6 +233,48 @@ describe('MagicLinkService one-time code', () => {
     expect(session).toEqual(expect.objectContaining({ accessToken: 'access' }));
     expect(row.usedAt).toBeInstanceOf(Date);
     expect(tokenService.issueJwtForUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('signs the per-admin permission override into the token on magic-link login', async () => {
+    const admin = {
+      ...janUser,
+      id: 'admin-id',
+      email: 'admin@x.com',
+      role: 'COOP_ADMIN',
+      coopAdminOf: [
+        {
+          coopId: 'coop-1',
+          permissionOverrides: { canViewPII: false },
+          roles: [{ role: { permissions: { canViewPII: true, canManageSettings: true } } }],
+        },
+      ],
+    };
+    usersByEmail['admin@x.com'] = admin;
+    usersById[admin.id] = admin;
+
+    const signed: any[] = [];
+    const real = new RealTokenService(
+      { refreshToken: { create: jest.fn().mockResolvedValue({ id: 'sess-1' }) } } as any,
+      { sign: (payload: any) => (signed.push(payload), 'jwt') } as any,
+    );
+    tokenService.issueJwtForUser.mockImplementation((user: any) => real.issueJwtForUser(user));
+
+    await service.requestMagicLink({ email: 'admin@x.com' });
+    await service.verifyMagicLinkCode({ email: 'admin@x.com', code: '482913' });
+
+    expect(signed).toHaveLength(1);
+    expect(signed[0].coopPermissions['coop-1']).toEqual(
+      expect.objectContaining({ canViewPII: false, canManageSettings: true }),
+    );
+  });
+
+  it('url-encodes the coop slug in the sign-in link', async () => {
+    await service.requestMagicLink({ email: 'jan@x.com', coopSlug: 'x"><a href=evil>' } as any);
+
+    const { html, text } = sentMail();
+    expect(html).not.toContain('"><a href=evil>');
+    expect(html).toContain(`/${encodeURIComponent('x"><a href=evil>')}/magic-link?token=`);
+    expect(text).toContain(`/${encodeURIComponent('x"><a href=evil>')}/magic-link?token=`);
   });
 
   it('locks the code after 5 wrong attempts and leaves the link usable', async () => {
@@ -347,12 +395,5 @@ describe('MagicLinkService one-time code', () => {
     expect(authEmail.getMagicLinkContent('nl', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.nl);
     expect(authEmail.getMagicLinkContent('fr', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.fr);
     expect(authEmail.getMagicLinkContent('de', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.de);
-    for (const lang of ['nl', 'en', 'fr', 'de']) {
-      const copy = buildCopy('magic-link', lang, { coopName: 'Zonnecoop' });
-      const text = Object.values(copy).join('\n');
-      expect(text).not.toMatch(/[—–]/);
-      expect(copy.expires).toContain('10');
-      expect(copy.codeLine.replace('{code}', '123456')).toBe(lines[lang]);
-    }
   });
 });

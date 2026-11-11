@@ -2,11 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { EmailService } from '../email/email.service';
 
 /**
- * Transactional auth emails (verification, password reset, magic link, waitlist)
- * and their localized content. Extracted from AuthService to keep that file
- * focused on auth flow logic. AuthService delegates here; the content builders
- * for password-reset and magic-link are public because AuthService sends those
- * two emails inline (it composes the HTML itself), reusing the localized copy.
+ * Sends the email-verification and waitlist emails and holds the localized copy
+ * for them. AuthService sends the password-reset email itself and reuses
+ * `getPasswordResetContent`; MagicLinkService sends the magic-link email and
+ * reuses `getMagicLinkContent`.
  */
 @Injectable()
 export class AuthEmailService {

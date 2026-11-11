@@ -9,7 +9,7 @@ import { CreateMessageDto } from '../../messages/dto/create-message.dto';
 import { ScheduleConversationDto } from '../../messages/dto/schedule-conversation.dto';
 import { MessagesService } from '../../messages/messages.service';
 import { markdownToMessageHtml } from '../../messages/message-body';
-import { McpToolkit } from '../mcp-toolkit';
+import { McpToolContext, McpToolkit } from '../mcp-toolkit';
 
 export const audienceSchema = z
   .object({
@@ -174,6 +174,22 @@ export class McpMessageTools {
     return { type: 'PROJECT' as const, projectId: project.id };
   }
 
+  /**
+   * Mirrors AdminController.assertVolunteerConversation: a VOLUNTEERS conversation
+   * is hidden from callers without canViewVolunteers (SYSTEM_ADMIN is already
+   * folded into ctx.canViewVolunteers). Run before any write.
+   */
+  private async assertConversationVisible(ctx: McpToolContext, conversationId: string) {
+    if (ctx.canViewVolunteers) return;
+    const conv = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, coopId: ctx.coopId },
+      select: { audienceType: true },
+    });
+    if (conv?.audienceType === 'VOLUNTEERS') {
+      throw new NotFoundException('Conversation not found');
+    }
+  }
+
   private adminUrl(conversationId: string) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
     return `${frontendUrl}/en/dashboard/admin/messages/${conversationId}`;
@@ -212,9 +228,14 @@ export class McpMessageTools {
       { permission: 'canManageMessages', write: true, dto: CreateConversationDto },
       params,
       async (ctx, dto) =>
-        this.messages.createConversation(ctx.coopId, dto, ctx.userId, undefined, 'mcp', {
-          apiKeyId: ctx.apiKeyId,
-        }),
+        this.messages.createConversation(
+          ctx.coopId,
+          dto,
+          ctx.userId,
+          ctx.audit.ip,
+          ctx.audit.userAgent,
+          { apiKeyId: ctx.apiKeyId },
+        ),
     );
   }
 
@@ -242,8 +263,8 @@ export class McpMessageTools {
             audience,
           },
           ctx.userId,
-          undefined,
-          'mcp',
+          ctx.audit.ip,
+          ctx.audit.userAgent,
           { apiKeyId: ctx.apiKeyId },
         );
         return this.describe(conv.id, ctx.coopId, ctx.canViewVolunteers);
@@ -263,6 +284,7 @@ export class McpMessageTools {
       { permission: 'canManageMessages', write: true },
       params,
       async (ctx) => {
+        await this.assertConversationVisible(ctx, params.conversationId);
         const dto: Record<string, unknown> = {};
         if (params.subject !== undefined) dto.subject = params.subject;
         if (params.bodyMarkdown !== undefined) {
@@ -341,12 +363,17 @@ export class McpMessageTools {
     parameters: sendMessageDraftParameters,
   })
   async sendMessageDraft(params: SendMessageDraftParams) {
-    return this.toolkit.run({ permission: 'canManageMessages', write: true }, params, async (ctx) =>
-      this.messages.send(params.conversationId, ctx.coopId, {
-        userId: ctx.audit.userId,
-        ip: ctx.audit.ip,
-        userAgent: ctx.audit.userAgent,
-      }),
+    return this.toolkit.run(
+      { permission: 'canManageMessages', write: true },
+      params,
+      async (ctx) => {
+        await this.assertConversationVisible(ctx, params.conversationId);
+        return this.messages.send(params.conversationId, ctx.coopId, {
+          userId: ctx.audit.userId,
+          ip: ctx.audit.ip,
+          userAgent: ctx.audit.userAgent,
+        });
+      },
     );
   }
 
@@ -360,13 +387,15 @@ export class McpMessageTools {
     return this.toolkit.run(
       { permission: 'canManageMessages', write: true, dto: ScheduleMessageDraftToolDto },
       params,
-      async (ctx, dto) =>
-        this.messages.schedule(
+      async (ctx, dto) => {
+        await this.assertConversationVisible(ctx, dto.conversationId);
+        return this.messages.schedule(
           dto.conversationId,
           ctx.coopId,
           new Date(dto.scheduledAt),
           ctx.userId,
-        ),
+        );
+      },
     );
   }
 
@@ -377,8 +406,13 @@ export class McpMessageTools {
     parameters: unscheduleMessageDraftParameters,
   })
   async unscheduleMessageDraft(params: UnscheduleMessageDraftParams) {
-    return this.toolkit.run({ permission: 'canManageMessages', write: true }, params, async (ctx) =>
-      this.messages.cancelSchedule(params.conversationId, ctx.coopId, ctx.userId),
+    return this.toolkit.run(
+      { permission: 'canManageMessages', write: true },
+      params,
+      async (ctx) => {
+        await this.assertConversationVisible(ctx, params.conversationId);
+        return this.messages.cancelSchedule(params.conversationId, ctx.coopId, ctx.userId);
+      },
     );
   }
 
@@ -392,13 +426,15 @@ export class McpMessageTools {
     return this.toolkit.run(
       { permission: 'canManageMessages', write: true, dto: ReplyToConversationToolDto },
       params,
-      async (ctx, dto) =>
-        this.messages.addAdminReply(
+      async (ctx, dto) => {
+        await this.assertConversationVisible(ctx, dto.conversationId);
+        return this.messages.addAdminReply(
           dto.conversationId,
           ctx.coopId,
           { body: dto.body, existingDocumentIds: dto.existingDocumentIds },
           ctx.userId,
-        ),
+        );
+      },
     );
   }
 }

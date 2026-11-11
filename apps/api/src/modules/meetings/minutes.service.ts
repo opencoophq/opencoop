@@ -14,6 +14,14 @@ export class MinutesService {
     if (meeting.coopId !== coopId) throw new ForbiddenException();
   }
 
+  private async assertMinutesExist(meetingId: string) {
+    const minutes = await this.prisma.meetingMinutes.findUnique({
+      where: { meetingId },
+      select: { meetingId: true },
+    });
+    if (!minutes) throw new NotFoundException('Minutes not found');
+  }
+
   async generateDraft(coopId: string, meetingId: string) {
     await this.assertInCoop(meetingId, coopId);
     const meeting = await this.prisma.meeting.findUniqueOrThrow({
@@ -58,6 +66,7 @@ export class MinutesService {
 
   async update(coopId: string, meetingId: string, content: string) {
     await this.assertInCoop(meetingId, coopId);
+    await this.assertMinutesExist(meetingId);
     return this.prisma.meetingMinutes.update({
       where: { meetingId },
       data: { content },
@@ -66,6 +75,7 @@ export class MinutesService {
 
   async finalize(coopId: string, meetingId: string, pdfUrl: string) {
     await this.assertInCoop(meetingId, coopId);
+    await this.assertMinutesExist(meetingId);
     return this.prisma.meetingMinutes.update({
       where: { meetingId },
       data: { generatedPdfUrl: pdfUrl },
@@ -79,6 +89,7 @@ export class MinutesService {
     signedByName: string,
   ) {
     await this.assertInCoop(meetingId, coopId);
+    await this.assertMinutesExist(meetingId);
     return this.prisma.meetingMinutes.update({
       where: { meetingId },
       data: { signedPdfUrl: pdfUrl, signedByName, signedAt: new Date() },

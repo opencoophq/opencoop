@@ -173,38 +173,6 @@ export class RegistrationsService {
     });
   }
 
-  async getSharesForShareholder(coopId: string, shareholderId: string) {
-    const registrations = await this.prisma.registration.findMany({
-      where: {
-        coopId,
-        shareholderId,
-        type: 'BUY',
-        status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
-      },
-      include: {
-        shareClass: true,
-        project: true,
-        payments: { orderBy: { bankDate: 'asc' } },
-      },
-      orderBy: { registerDate: 'desc' },
-    });
-
-    return registrations.map((reg) => {
-      const totalPaid = computeTotalPaid(reg.payments);
-      const pricePerShare = Number(reg.pricePerShare);
-      const vestedShares = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
-
-      // C3: Subtract completed sells linked to this BUY
-      return {
-        ...reg,
-        totalPaid,
-        sharesOwned: vestedShares,
-        sharesRemaining: reg.quantity - vestedShares,
-        fullyPaid: totalPaid >= Number(reg.totalAmount),
-      };
-    });
-  }
-
   /**
    * Compute available shares for a BUY registration, accounting for
    * both pending and completed sells/transfers.
@@ -255,14 +223,15 @@ export class RegistrationsService {
 
     // Calculate current portfolio
     // BUY registrations: ACTIVE, COMPLETED, PENDING_PAYMENT (shares the shareholder owns)
-    // SELL registrations: PENDING, ACTIVE, COMPLETED (shares already committed to selling)
+    // SELL registrations: PENDING, PENDING_PAYMENT, ACTIVE, COMPLETED (shares already committed
+    // to selling; same set as getAvailableShares)
     const registrations = await this.prisma.registration.findMany({
       where: {
         coopId,
         shareholderId,
         OR: [
           { type: 'BUY', status: { in: ['ACTIVE', 'COMPLETED', 'PENDING_PAYMENT'] } },
-          { type: 'SELL', status: { in: ['PENDING', 'ACTIVE', 'COMPLETED'] } },
+          { type: 'SELL', status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
         ],
       },
       select: {
@@ -757,6 +726,15 @@ export class RegistrationsService {
       throw new NotFoundException('Active buy registration not found');
     }
 
+    // The recipient must belong to the same coop as the source registration.
+    const recipient = await this.prisma.shareholder.findFirst({
+      where: { id: data.toShareholderId, coopId: data.coopId },
+      select: { id: true },
+    });
+    if (!recipient) {
+      throw new NotFoundException('Recipient shareholder not found');
+    }
+
     const pricePerShare = Number(buyRegistration.pricePerShare);
 
     // I7: Check available shares (vested minus pending/completed sells)
@@ -923,7 +901,7 @@ export class RegistrationsService {
         console.error('Failed to generate share certificate for payment confirmation:', err);
       }
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be';
+      const appUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
       const dashboardUrl = `${appUrl}/${language}/dashboard`;
 
       try {

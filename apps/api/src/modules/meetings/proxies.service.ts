@@ -50,8 +50,26 @@ export class ProxiesService {
       );
     }
 
-    return this.prisma.proxy.create({
-      data: { meetingId, grantorShareholderId, delegateShareholderId },
+    // (meetingId, grantorShareholderId) is unique and revoking only sets revokedAt, so a
+    // re-grant after a revoke must reactivate the old row instead of inserting a new one.
+    const existing = await this.prisma.proxy.findUnique({
+      where: { meetingId_grantorShareholderId: { meetingId, grantorShareholderId } },
+    });
+    if (existing && existing.revokedAt === null) {
+      throw new BadRequestException(
+        'This shareholder already has an active proxy for this meeting',
+      );
+    }
+
+    return this.prisma.proxy.upsert({
+      where: { meetingId_grantorShareholderId: { meetingId, grantorShareholderId } },
+      create: { meetingId, grantorShareholderId, delegateShareholderId },
+      update: {
+        delegateShareholderId,
+        revokedAt: null,
+        grantedAt: new Date(),
+        signedFormUrl: null,
+      },
     });
   }
 

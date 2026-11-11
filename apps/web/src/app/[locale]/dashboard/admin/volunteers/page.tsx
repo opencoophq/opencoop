@@ -112,14 +112,21 @@ export default function AdminVolunteersPage() {
 
   const exportCsv = async () => {
     if (!selectedCoop) return;
-    const response = await apiFetch(`/admin/coops/${selectedCoop.id}/volunteers/export?${query()}`);
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'volunteers.csv';
-    link.click();
-    URL.revokeObjectURL(url);
+    setError('');
+    try {
+      const response = await apiFetch(
+        `/admin/coops/${selectedCoop.id}/volunteers/export?${query()}`,
+      );
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'volunteers.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError(t('error'));
+    }
   };
 
   const sendMessage = async () => {
@@ -150,14 +157,24 @@ export default function AdminVolunteersPage() {
 
   const withdraw = async (id: string) => {
     if (!selectedCoop || !window.confirm(t('admin.withdrawConfirm'))) return;
-    await api(`/admin/coops/${selectedCoop.id}/volunteers/${id}/withdraw`, { method: 'POST' });
-    load();
+    setError('');
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/volunteers/${id}/withdraw`, { method: 'POST' });
+      load();
+    } catch {
+      setError(t('error'));
+    }
   };
 
   const remove = async (id: string) => {
     if (!selectedCoop || !window.confirm(t('admin.deleteConfirm'))) return;
-    await api(`/admin/coops/${selectedCoop.id}/volunteers/${id}`, { method: 'DELETE' });
-    load();
+    setError('');
+    try {
+      await api(`/admin/coops/${selectedCoop.id}/volunteers/${id}`, { method: 'DELETE' });
+      load();
+    } catch {
+      setError(t('error'));
+    }
   };
 
   if (!selectedCoop) {

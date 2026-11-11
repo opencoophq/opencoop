@@ -46,7 +46,7 @@ export class PontoController {
 
     if (error) {
       this.logger.warn(`Ponto OAuth error: ${error}`);
-      return res.redirect(`${frontendUrl}/dashboard/admin/settings?ponto=error&reason=${error}`);
+      return res.redirect(`${frontendUrl}/dashboard/admin/settings?ponto=error&reason=${encodeURIComponent(error)}`);
     }
 
     if (!code || !state) {

@@ -62,3 +62,20 @@ describe('UpdateCoopDto charge-card fields', () => {
     expect(errors.some((e) => e.property === 'chargeCardVatRate')).toBe(true);
   });
 });
+
+describe('UpdateCoopDto smtpPort', () => {
+  async function portErrors(smtpPort: unknown) {
+    const errors = await validate(plainToInstance(UpdateCoopDto, { smtpPort }));
+    return errors.filter((e) => e.property === 'smtpPort');
+  }
+
+  it('accepts a whole number and an omitted port', async () => {
+    expect(await portErrors(587)).toHaveLength(0);
+    expect(await portErrors(undefined)).toHaveLength(0);
+  });
+
+  it('rejects a fractional or non-numeric port', async () => {
+    expect(await portErrors(587.5)).toHaveLength(1);
+    expect(await portErrors('abc')).toHaveLength(1);
+  });
+});

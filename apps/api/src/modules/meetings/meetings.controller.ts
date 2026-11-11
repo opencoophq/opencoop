@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -293,7 +294,7 @@ export class MeetingsController {
 
   @Post(':id/minutes/finalize')
   finalizeMinutes(@Param('coopId') coopId: string, @Param('id') id: string) {
-    // PDF generation wired in Phase 11 — for now mark finalized with placeholder URL
+    // Only marks the minutes finalized (empty PDF url); no PDF is generated and they stay editable.
     return this.minutes.finalize(coopId, id, '');
   }
 
@@ -317,6 +318,10 @@ export class MeetingsController {
   ) {
     if (!file || !file.buffer) throw new BadRequestException('No file');
     if (file.mimetype !== 'application/pdf') throw new BadRequestException('PDF required');
+    // Verify the meeting exists in this coop BEFORE touching the filesystem: `id` comes from the
+    // URL (Express decodes %2F), so an unverified id could escape uploads/minutes.
+    // get() returns null when no minutes were generated yet; stop before writing an orphan file.
+    if (!(await this.minutes.get(coopId, id))) throw new NotFoundException('Minutes not found');
     const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
     const dir = path.join(UPLOAD_DIR, 'minutes', id);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });

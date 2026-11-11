@@ -1,10 +1,4 @@
 {
-  "welcome": {
-    "title": "Willkommen bei {coopName}!",
-    "dear": "Liebe/r {shareholderName},",
-    "thanks": "Vielen Dank, dass Sie Anteilseigner von {coopName} werden.",
-    "login": "Sie können sich in Ihrem Dashboard anmelden, um Ihre Anteile und Dokumente einzusehen."
-  },
   "share-purchase": {
     "title": "Ihre Bestellung ist bestätigt",
     "dear": "Liebe/r {shareholderName},",
@@ -32,27 +26,6 @@
     "active": "Ihre Anteile sind jetzt aktiv. Bitte finden Sie Ihr Anteilszertifikat im Anhang.",
     "dashboard": "Mein Dashboard anzeigen",
     "thanks": "Vielen Dank, dass Sie Anteilseigner von {coopName} sind!"
-  },
-  "dividend-statement": {
-    "title": "Dividendenabrechnung {year}",
-    "dear": "Liebe/r {shareholderName},",
-    "attached": "Bitte finden Sie im Anhang Ihre Dividendenabrechnung für {year}.",
-    "net": "Netto-Dividendenbetrag",
-    "thanks": "Vielen Dank, dass Sie Anteilseigner von {coopName} sind!"
-  },
-  "password-reset": {
-    "title": "Passwort zurücksetzen",
-    "requested": "Sie haben eine Passwort-Zurücksetzung angefordert.",
-    "click": "Klicken Sie auf den folgenden Link, um Ihr Passwort zurückzusetzen:",
-    "ignore": "Wenn Sie dies nicht angefordert haben, ignorieren Sie diese E-Mail.",
-    "expires": "Dieser Link läuft in 1 Stunde ab."
-  },
-  "magic-link": {
-    "title": "Bei {coopName} anmelden",
-    "codeLine": "Ihr Anmeldecode: {code}",
-    "click": "Geben Sie diesen Code auf der Anmeldeseite ein, oder nutzen Sie die Schaltfläche auf dem Gerät, auf dem Sie angemeldet bleiben möchten.",
-    "button": "Anmelden",
-    "expires": "Dieser Code und dieser Link sind 10 Minuten gültig. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren."
   },
   "gift-certificate": {
     "title": "Ihr Geschenkgutschein",

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -206,10 +206,11 @@ export class CoopAdminsService {
     const remainingAdminEntries = await this.prisma.coopAdmin.count({
       where: { userId: admin.userId },
     });
-    // If no more coop admin entries, downgrade user role to SHAREHOLDER
+    // If no more coop admin entries, downgrade a COOP_ADMIN to SHAREHOLDER.
+    // The role guard keeps a SYSTEM_ADMIN untouched.
     if (remainingAdminEntries === 0) {
-      await this.prisma.user.update({
-        where: { id: admin.userId },
+      await this.prisma.user.updateMany({
+        where: { id: admin.userId, role: 'COOP_ADMIN' },
         data: { role: 'SHAREHOLDER' },
       });
     }
@@ -250,13 +251,13 @@ export class CoopAdminsService {
       }
     }
 
-    // Check for existing pending invitation
+    // The admin check above passed, so any invitation for this coop and email
+    // is stale, accepted or not. Delete it first or the unique key fails.
+    // Deleting cascades to the join rows.
     const existingInvitation = await this.prisma.adminInvitation.findUnique({
       where: { coopId_email: { coopId, email: dto.email.toLowerCase() } },
     });
-    if (existingInvitation && !existingInvitation.accepted) {
-      // Delete old invitation and create a new one (cascades delete the
-      // join rows too)
+    if (existingInvitation) {
       await this.prisma.adminInvitation.delete({ where: { id: existingInvitation.id } });
     }
 
@@ -304,7 +305,7 @@ export class CoopAdminsService {
     roleNames: string[];
   }): Promise<void> {
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://opencoop.be';
+      process.env.FRONTEND_URL || 'http://localhost:3002';
     const inviteUrl = `${appUrl}/invite/${args.token}`;
     const rolesLabel = args.roleNames.join(', ') || '—';
 
@@ -571,10 +572,11 @@ export class CoopAdminsService {
     coopId: string,
     adminId: string,
     dto: { name?: string | null; preferredLanguage?: string; email?: string },
+    actor: { role: string },
   ) {
     const admin = await this.prisma.coopAdmin.findFirst({
       where: { id: adminId, coopId },
-      include: { user: { select: { id: true, email: true } } },
+      include: { user: { select: { id: true, email: true, role: true } } },
     });
     if (!admin) {
       throw new NotFoundException('Admin not found');
@@ -587,6 +589,11 @@ export class CoopAdminsService {
     if (dto.email !== undefined) {
       const newEmail = dto.email.toLowerCase().trim();
       if (newEmail !== admin.user.email) {
+        // A coop admin who can edit team emails could point a system admin
+        // account at their own inbox and sign in with a magic link.
+        if (admin.user.role === 'SYSTEM_ADMIN' && actor.role !== 'SYSTEM_ADMIN') {
+          throw new ForbiddenException('Only a system admin can change a system admin login email');
+        }
         const inUse = await this.prisma.user.findUnique({ where: { email: newEmail } });
         if (inUse) {
           throw new ConflictException('Another user already uses this email');

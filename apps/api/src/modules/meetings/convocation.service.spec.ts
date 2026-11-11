@@ -320,6 +320,24 @@ describe('ConvocationService', () => {
       expect(pietCall[0].templateData.language).toBe('nl');
     });
 
+    it('passes the whole days until the meeting to the template', async () => {
+      const in3Days = new Date(Date.now() + 2.5 * 86_400_000);
+      prisma.meeting.findUnique.mockResolvedValue(
+        makeMeetingForReminder({ scheduledAt: in3Days }),
+      );
+      prisma.meetingAttendance.findMany.mockResolvedValue([
+        {
+          rsvpToken: 't1',
+          shareholderId: 's1',
+          shareholder: { email: 'a@x.com', user: null, firstName: 'A', lastName: 'B' },
+        },
+      ]);
+
+      await service.sendReminderNow('c1', 'm1');
+
+      expect(emailService.send.mock.calls[0][0].templateData.daysUntil).toBe(3);
+    });
+
     it('skips postal-only shareholders in reminders', async () => {
       prisma.meeting.findUnique.mockResolvedValue(makeMeetingForReminder());
       prisma.meetingAttendance.findMany.mockResolvedValue([

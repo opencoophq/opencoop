@@ -311,7 +311,7 @@ describe('VolunteersService', () => {
 
     const cutoff = new Date('2026-09-19T00:00:00.000Z');
     expect(prisma.volunteer.deleteMany).toHaveBeenCalledWith({
-      where: { status: 'PENDING_CONFIRMATION', createdAt: { lt: cutoff } },
+      where: { status: 'PENDING_CONFIRMATION', updatedAt: { lt: cutoff } },
     });
     expect(audit.log).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -319,6 +319,16 @@ describe('VolunteersService', () => {
         changes: [expect.objectContaining({ field: 'purgedUnconfirmed', newValue: 2 })],
       }),
     );
+  });
+
+  it('purges on updatedAt so a re-signup of a withdrawn volunteer survives the night', async () => {
+    prisma.volunteer.groupBy.mockResolvedValue([]);
+
+    await service.purgeUnconfirmed(new Date('2026-10-19T00:00:00.000Z'));
+
+    const where = prisma.volunteer.groupBy.mock.calls[0][0].where;
+    expect(where).toHaveProperty('updatedAt');
+    expect(where).not.toHaveProperty('createdAt');
   });
 
   it('does not take over a volunteer linked to another member', async () => {

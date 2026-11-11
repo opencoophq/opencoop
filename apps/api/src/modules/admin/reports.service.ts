@@ -149,6 +149,15 @@ export class ReportsService {
   // PRIVATE HELPERS
   // --------------------------------------------------------------------------
 
+  /** Capital statement range; a missing bound falls back to Jan 1 and today. */
+  private capitalStatementRange(params: Record<string, string>): { from: string; to: string } {
+    const now = new Date();
+    return {
+      from: params.from || `${now.getFullYear()}-01-01`,
+      to: params.to || now.toISOString().split('T')[0],
+    };
+  }
+
   private getShareholderName(shareholder: {
     type: string;
     firstName: string | null;
@@ -816,7 +825,7 @@ export class ReportsService {
       }
 
       case 'capital-statement': {
-        const { from, to } = params;
+        const { from, to } = this.capitalStatementRange(params);
         const data = await this.getCapitalStatement(coopId, from, to);
         const headers = ['Date', 'Type', 'Shareholder', 'Share Class', 'Quantity', 'Amount'];
         const rows = data.movements.map((m) => [
@@ -962,9 +971,7 @@ export class ReportsService {
       }
 
       case 'capital-statement': {
-        const now = new Date();
-        const from = params.from || `${now.getFullYear()}-01-01`;
-        const to = params.to || now.toISOString().split('T')[0];
+        const { from, to } = this.capitalStatementRange(params);
         const data = await this.getCapitalStatement(coopId, from, to);
         element = React.createElement(CapitalStatementReport, {
           coopName: coop.name,

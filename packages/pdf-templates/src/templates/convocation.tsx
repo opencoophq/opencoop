@@ -1,5 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
+import { MEETING_TIME_ZONE } from '../meeting-time-zone';
 
 const BLUE = '#1e40af';
 const BORDER_COLOR = '#d1d5db';
@@ -217,6 +218,7 @@ function formatDateTime(date: Date, language: ConvocationProps['language']): str
   return new Intl.DateTimeFormat(locale, {
     dateStyle: 'full',
     timeStyle: 'short',
+    timeZone: MEETING_TIME_ZONE,
   }).format(date);
 }
 

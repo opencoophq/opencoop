@@ -107,8 +107,9 @@ export class CoopAdminsController {
     @Param('coopId') coopId: string,
     @Param('adminId') adminId: string,
     @Body() dto: { name?: string | null; preferredLanguage?: string; email?: string },
+    @CurrentUser() user: CurrentUserData,
   ) {
-    return this.coopAdminsService.updateAdminUser(coopId, adminId, dto);
+    return this.coopAdminsService.updateAdminUser(coopId, adminId, dto, { role: user.role });
   }
 
   @Delete(':adminId')

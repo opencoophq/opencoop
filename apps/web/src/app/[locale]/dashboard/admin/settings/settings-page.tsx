@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { api } from '@/lib/api';
+import { useLocale } from '@/contexts/locale-context';
 import { isValidAmount } from '@/lib/charge-cards-validation';
 import {
   Info,
@@ -214,6 +215,7 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
   const t = useTranslations();
   const { selectedCoop } = useAdmin();
   const intlLocale = useIntlLocale();
+  const { locale: formatLocale } = useLocale();
   const searchParams = useSearchParams();
 
   // Settings form state
@@ -1684,12 +1686,12 @@ export default function AdminSettingsPage({ mcpUrl }: AdminSettingsPageProps) {
                       <div className="flex gap-3 text-xs text-muted-foreground">
                         <span>
                           {t('admin.settings.apiKeys.createdAt')}:{' '}
-                          {new Date(key.createdAt).toLocaleDateString(intlLocale)}
+                          {new Date(key.createdAt).toLocaleDateString(formatLocale)}
                         </span>
                         <span>
                           {t('admin.settings.apiKeys.lastUsed')}:{' '}
                           {key.lastUsedAt
-                            ? new Date(key.lastUsedAt).toLocaleDateString(intlLocale)
+                            ? new Date(key.lastUsedAt).toLocaleDateString(formatLocale)
                             : t('admin.settings.apiKeys.never')}
                         </span>
                       </div>

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAdmin } from '@/contexts/admin-context';
 import { api } from '@/lib/api';
+import { useLocale } from '@/contexts/locale-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ interface BillingInfo {
 
 export default function BillingPage() {
   const t = useTranslations('admin.billing');
+  const { locale } = useLocale();
   const { selectedCoop } = useAdmin();
   const searchParams = useSearchParams();
   const [billing, setBilling] = useState<BillingInfo | null>(null);
@@ -162,7 +164,7 @@ export default function BillingPage() {
           {billing.trialEndsAt && trialDaysLeft > 0 && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
-              {t('trialEnds', { date: new Date(billing.trialEndsAt).toLocaleDateString() })}
+              {t('trialEnds', { date: new Date(billing.trialEndsAt).toLocaleDateString(locale) })}
             </div>
           )}
 
@@ -175,7 +177,7 @@ export default function BillingPage() {
 
           {billing.subscription?.currentPeriodEnd && billing.subscription.status === 'ACTIVE' && (
             <p className="text-sm text-muted-foreground">
-              {t('nextBilling', { date: new Date(billing.subscription.currentPeriodEnd).toLocaleDateString() })}
+              {t('nextBilling', { date: new Date(billing.subscription.currentPeriodEnd).toLocaleDateString(locale) })}
             </p>
           )}
         </CardContent>

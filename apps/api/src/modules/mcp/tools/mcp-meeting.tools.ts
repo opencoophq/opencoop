@@ -624,7 +624,8 @@ export class McpMeetingTools {
   // Mirrors POST admin/coops/:coopId/meetings/:id/minutes/finalize
   @Tool({
     name: 'finalize_minutes',
-    description: 'Finalize and lock the minutes. This cannot be undone.',
+    description:
+      'Mark the minutes as finalized. No PDF is generated and the minutes stay editable with update_minutes.',
     parameters: finalizeMinutesParameters,
   })
   async finalizeMinutes(params: GetMeetingParams) {

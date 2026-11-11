@@ -223,7 +223,10 @@ describe('DividendsService.calculate — period-level tax rounding reconciliatio
         createMany: jest.fn().mockResolvedValue({ count: 3 }),
       },
       registration: {
-        findMany: jest.fn().mockResolvedValue([makeReg('sh-1'), makeReg('sh-2'), makeReg('sh-3')]),
+        findMany: jest.fn().mockImplementation((args?: { where?: { type?: string } }) => {
+          if (args?.where?.type === 'SELL') return [];
+          return [makeReg('sh-1'), makeReg('sh-2'), makeReg('sh-3')];
+        }),
       },
     };
     const mod = await Test.createTestingModule({
@@ -260,5 +263,47 @@ describe('DividendsService.calculate — period-level tax rounding reconciliatio
       // gross - tax - net reconciles to 0 cents (net is whole cents too)
       expect(Math.round((p.grossAmount - p.withholdingTax - p.netAmount) * 100)).toBe(0);
     });
+  });
+
+  it('does not pay a dividend on shares already sold before the ex-dividend date', async () => {
+    prisma.registration.findMany.mockImplementation((args?: { where?: { type?: string } }) => {
+      if (args?.where?.type === 'SELL') {
+        return [{ sellsRegistrationId: 'buy-1', quantity: 4 }];
+      }
+      return [
+        {
+          id: 'buy-1',
+          shareholderId: 'sh-1',
+          shareClassId: 'sc-1',
+          pricePerShare: 100,
+          quantity: 10,
+          shareClass: { id: 'sc-1', name: 'A', dividendRateOverride: null },
+          payments: [{ amount: 1000, bankDate: new Date('2025-01-01') }],
+        },
+      ];
+    });
+
+    await service.calculate('period-1', 'coop-1');
+
+    const sellQuery = prisma.registration.findMany.mock.calls
+      .map((call: [{ where?: { type?: string } }]) => call[0])
+      .find((args: { where?: { type?: string } }) => args?.where?.type === 'SELL');
+    expect(sellQuery.where).toEqual(
+      expect.objectContaining({
+        type: 'SELL',
+        status: 'COMPLETED',
+        coopId: 'coop-1',
+      }),
+    );
+    expect(sellQuery.where.OR).toEqual([
+      { processedAt: { lt: period.exDividendDate } },
+      { processedAt: null, registerDate: { lt: period.exDividendDate } },
+    ]);
+
+    const created = prisma.dividendPayout.createMany.mock.calls[0][0].data;
+    expect(created).toHaveLength(1);
+    // 10 vested shares minus 4 sold = 6. 6 * 100 * 1% = 6.
+    expect(created[0].grossAmount).toBe(6);
+    expect(created[0].calculationDetails[0].quantity).toBe(6);
   });
 });

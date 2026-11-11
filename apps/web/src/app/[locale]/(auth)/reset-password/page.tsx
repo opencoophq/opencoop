@@ -44,7 +44,7 @@ export default function ResetPasswordPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert variant="destructive">
-            <AlertDescription>{t('waitlist.invalidToken')}</AlertDescription>
+            <AlertDescription>{t('upgrade.invalidToken')}</AlertDescription>
           </Alert>
           <Link href="/login">
             <Button variant="outline" className="w-full">
@@ -70,7 +70,7 @@ export default function ResetPasswordPage() {
       if (!response.ok) {
         const result = await response.json();
         if (result.message?.includes('expired') || result.message?.includes('Invalid')) {
-          setError(t('waitlist.invalidToken'));
+          setError(t('upgrade.invalidToken'));
         } else {
           setError(t('common.error'));
         }

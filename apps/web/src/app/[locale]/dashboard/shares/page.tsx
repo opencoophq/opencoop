@@ -107,6 +107,7 @@ export default function SharesPage() {
   const [registrations, setRegistrations] = useState<RegistrationData[]>([]);
   const [shareholder, setShareholder] = useState<ShareholderData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   // Sell dialog state
   const [sellOpen, setSellOpen] = useState(false);
@@ -155,6 +156,7 @@ export default function SharesPage() {
   useEffect(() => {
     async function loadShares() {
       setLoading(true);
+      setLoadError(false);
       try {
         if (isPreviewMode && previewShareholderId && selectedCoop) {
           const [preview, settings] = await Promise.all([
@@ -236,7 +238,7 @@ export default function SharesPage() {
           }
         }
       } catch {
-        // ignore
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -482,7 +484,10 @@ export default function SharesPage() {
     }
   };
 
-  const selectedSellReg = registrations.find((r) => r.id === sellRegistrationId);
+  const sellSourceRegistrations = activeMinorId
+    ? (minorShareholders.find((m) => m.id === activeMinorId)?.registrations ?? [])
+    : registrations;
+  const selectedSellReg = sellSourceRegistrations.find((r) => r.id === sellRegistrationId);
 
   if (loading) {
     return (
@@ -495,6 +500,11 @@ export default function SharesPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">{t('shares.title')}</h1>
+      {loadError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{t('common.loadError')}</AlertDescription>
+        </Alert>
+      )}
       {isPreviewMode && (
         <Alert className="mb-6">
           <AlertDescription className="flex items-center justify-between">
@@ -1063,14 +1073,14 @@ export default function SharesPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t('profile.firstName')}</Label>
+                <Label>{t('shareholder.fields.firstName')}</Label>
                 <Input
                   value={editChildForm.firstName}
                   onChange={(e) => setEditChildForm((f) => ({ ...f, firstName: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t('profile.lastName')}</Label>
+                <Label>{t('shareholder.fields.lastName')}</Label>
                 <Input
                   value={editChildForm.lastName}
                   onChange={(e) => setEditChildForm((f) => ({ ...f, lastName: e.target.value }))}
@@ -1087,7 +1097,7 @@ export default function SharesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>{t('profile.phone')}</Label>
+              <Label>{t('common.phone')}</Label>
               <Input
                 value={editChildForm.phone}
                 onChange={(e) => setEditChildForm((f) => ({ ...f, phone: e.target.value }))}

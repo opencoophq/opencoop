@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@opencoop/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DataPoint {
   projectId: string | null;

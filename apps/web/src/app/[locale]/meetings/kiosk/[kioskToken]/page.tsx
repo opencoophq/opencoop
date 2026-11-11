@@ -77,6 +77,7 @@ export default function KioskPage() {
     const q = query.trim();
     if (q.length < 2) {
       setResults([]);
+      setSearching(false);
       return;
     }
     setSearching(true);

@@ -557,35 +557,31 @@ export class VolunteersService {
     actor: { userId: string; ip?: string; userAgent?: string },
   ) {
     await this.coopOrThrow(coopId);
-    try {
-      return await this.messages.createConversation(
-        coopId,
-        {
-          type: 'BROADCAST',
-          subject: dto.subject.trim(),
-          body: dto.body,
-          audience: {
-            type: 'VOLUNTEERS',
-            volunteerFilter: {
-              municipality: dto.municipality,
-              postalCode: dto.postalCode,
-              interest: dto.interest,
-            },
+    return this.messages.createConversation(
+      coopId,
+      {
+        type: 'BROADCAST',
+        subject: dto.subject.trim(),
+        body: dto.body,
+        audience: {
+          type: 'VOLUNTEERS',
+          volunteerFilter: {
+            municipality: dto.municipality,
+            postalCode: dto.postalCode,
+            interest: dto.interest,
           },
         },
-        actor.userId,
-        actor.ip,
-        actor.userAgent,
-      );
-    } catch (error) {
-      if (error instanceof BadRequestException) throw error;
-      throw error;
-    }
+      },
+      actor.userId,
+      actor.ip,
+      actor.userAgent,
+    );
   }
 
   async purgeUnconfirmed(now = new Date()) {
     const cutoff = new Date(now.getTime() - UNCONFIRMED_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-    const where = { status: 'PENDING_CONFIRMATION' as const, createdAt: { lt: cutoff } };
+    // updatedAt, not createdAt: a withdrawn volunteer who signs up again reuses the row.
+    const where = { status: 'PENDING_CONFIRMATION' as const, updatedAt: { lt: cutoff } };
     const grouped = await this.prisma.volunteer.groupBy({
       by: ['coopId'],
       where,
@@ -717,7 +713,7 @@ export class VolunteersService {
   }
 
   private pageUrl(locale: string, action: 'bevestig' | 'afmelden', token: string) {
-    const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://opencoop.be').replace(/\/$/, '');
+    const base = (process.env.FRONTEND_URL || 'http://localhost:3002').replace(/\/$/, '');
     const safeLocale = LOCALES.has(locale) ? locale : 'nl';
     return `${base}/${safeLocale}/vrijwilligers/${action}/${token}`;
   }

@@ -189,12 +189,20 @@ export default function ProxiesPage() {
     );
   }
 
-  if (loading || !meeting) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse h-8 w-64 bg-muted rounded" />
         <div className="animate-pulse h-40 bg-muted rounded-lg" />
       </div>
+    );
+  }
+
+  if (!meeting) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>{error || t('meetings.detail.notFound')}</AlertDescription>
+      </Alert>
     );
   }
 

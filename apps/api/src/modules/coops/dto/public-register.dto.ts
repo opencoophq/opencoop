@@ -3,7 +3,7 @@ import {
   IsEmail,
   IsEnum,
   IsOptional,
-  IsNumber,
+  IsInt,
   IsDateString,
   ValidateNested,
   IsObject,
@@ -81,7 +81,7 @@ export class PublicRegisterDto {
   shareClassId: string;
 
   @ApiProperty({ description: 'Number of shares to purchase' })
-  @IsNumber()
+  @IsInt()
   @Min(1)
   quantity: number;
 

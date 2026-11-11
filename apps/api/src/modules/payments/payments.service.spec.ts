@@ -59,6 +59,34 @@ describe('PaymentsService.addPayment tenant isolation', () => {
     expect(shareholderStatus.recompute).toHaveBeenCalledWith('sh-A');
   });
 
+  it('completes a registration paid in 12 instalments despite float drift', async () => {
+    prisma.registration.findUnique
+      .mockResolvedValueOnce({
+        id: 'reg-A',
+        coopId: 'coop-A',
+        shareholderId: 'sh-A',
+        status: 'ACTIVE',
+        totalAmount: 25,
+        payments: Array(11).fill({ amount: 2.08 }),
+      })
+      .mockResolvedValueOnce({
+        id: 'reg-A',
+        coopId: 'coop-A',
+        shareholder: { firstName: 'Jan', lastName: 'Peeters', companyName: null },
+      });
+    prisma.payment.create.mockResolvedValue({ id: 'pay-12', amount: 2.12 });
+    prisma.registration.update.mockResolvedValue({});
+
+    await service.addPayment({
+      registrationId: 'reg-A',
+      coopId: 'coop-A',
+      amount: 2.12,
+      bankDate: new Date(),
+    });
+
+    expect(registrationsService.onRegistrationCompleted).toHaveBeenCalledWith('reg-A');
+  });
+
   it('calls onRegistrationCompleted for a fully paid registration', async () => {
     prisma.registration.findUnique
       .mockResolvedValueOnce({

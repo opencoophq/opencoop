@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
+import { capitalByProjectQuery } from './capital-by-project.query';
 
 // ---------------------------------------------------------------------------
 // Return types
@@ -271,87 +272,9 @@ export class AnalyticsService {
     const since = from ? new Date(from) : null;
     const until = to ? new Date(to) : null;
 
-    const rows =
-      since && until
-        ? await this.prisma.$queryRaw<CapitalByProjectRow[]>(Prisma.sql`
-            SELECT
-              r."projectId"                  AS project_id,
-              proj.name                      AS project_name,
-              COALESCE(SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END), 0)::text AS total_capital,
-              SUM(CASE WHEN r.type = 'BUY' THEN r.quantity
-                       WHEN r.type = 'SELL' THEN -r.quantity
-                       ELSE 0 END)::text     AS share_count
-            FROM registrations r
-            LEFT JOIN payments p ON p."registrationId" = r.id
-            LEFT JOIN projects proj
-              ON proj.id = r."projectId"
-              AND proj."coopId" = ${coopId}
-            WHERE r."coopId" = ${coopId}
-              AND r.status IN ('ACTIVE', 'COMPLETED')
-              AND p."bankDate" >= ${since}
-              AND p."bankDate" <= ${until}
-            GROUP BY r."projectId", proj.name
-            ORDER BY total_capital DESC
-          `)
-        : since
-          ? await this.prisma.$queryRaw<CapitalByProjectRow[]>(Prisma.sql`
-              SELECT
-                r."projectId"                  AS project_id,
-                proj.name                      AS project_name,
-                COALESCE(SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END), 0)::text AS total_capital,
-                SUM(CASE WHEN r.type = 'BUY' THEN r.quantity
-                         WHEN r.type = 'SELL' THEN -r.quantity
-                         ELSE 0 END)::text     AS share_count
-              FROM registrations r
-              LEFT JOIN payments p ON p."registrationId" = r.id
-              LEFT JOIN projects proj
-                ON proj.id = r."projectId"
-                AND proj."coopId" = ${coopId}
-              WHERE r."coopId" = ${coopId}
-                AND r.status IN ('ACTIVE', 'COMPLETED')
-                AND p."bankDate" >= ${since}
-              GROUP BY r."projectId", proj.name
-              ORDER BY total_capital DESC
-            `)
-          : until
-            ? await this.prisma.$queryRaw<CapitalByProjectRow[]>(Prisma.sql`
-                SELECT
-                  r."projectId"                  AS project_id,
-                  proj.name                      AS project_name,
-                  COALESCE(SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END), 0)::text AS total_capital,
-                  SUM(CASE WHEN r.type = 'BUY' THEN r.quantity
-                           WHEN r.type = 'SELL' THEN -r.quantity
-                           ELSE 0 END)::text     AS share_count
-                FROM registrations r
-                LEFT JOIN payments p ON p."registrationId" = r.id
-                LEFT JOIN projects proj
-                  ON proj.id = r."projectId"
-                  AND proj."coopId" = ${coopId}
-                WHERE r."coopId" = ${coopId}
-                  AND r.status IN ('ACTIVE', 'COMPLETED')
-                  AND p."bankDate" <= ${until}
-                GROUP BY r."projectId", proj.name
-                ORDER BY total_capital DESC
-              `)
-            : await this.prisma.$queryRaw<CapitalByProjectRow[]>(Prisma.sql`
-                SELECT
-                  r."projectId"                  AS project_id,
-                  proj.name                      AS project_name,
-                  COALESCE(SUM(CASE WHEN r.type = 'BUY' THEN p.amount ELSE -p.amount END), 0)::text AS total_capital,
-                  SUM(CASE WHEN r.type = 'BUY' THEN r.quantity
-                           WHEN r.type = 'SELL' THEN -r.quantity
-                           ELSE 0 END)::text     AS share_count
-                FROM registrations r
-                LEFT JOIN payments p ON p."registrationId" = r.id
-                LEFT JOIN projects proj
-                  ON proj.id = r."projectId"
-                  AND proj."coopId" = ${coopId}
-                WHERE r."coopId" = ${coopId}
-                  AND r.status IN ('ACTIVE', 'COMPLETED')
-                GROUP BY r."projectId", proj.name
-                ORDER BY total_capital DESC
-              `);
-
+    const rows = await this.prisma.$queryRaw<CapitalByProjectRow[]>(
+      capitalByProjectQuery(coopId, since, until),
+    );
     const grandTotal = rows.reduce((sum, r) => sum + (Number(r.total_capital) || 0), 0);
 
     return rows.map((row) => {

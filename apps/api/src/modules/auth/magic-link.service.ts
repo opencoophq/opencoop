@@ -34,7 +34,11 @@ const USER_INCLUDE = {
   user: {
     include: {
       coopAdminOf: {
-        select: { coopId: true, roles: { select: { role: { select: { permissions: true } } } } },
+        select: {
+          coopId: true,
+          permissionOverrides: true,
+          roles: { select: { role: { select: { permissions: true } } } },
+        },
       },
     },
   },
@@ -146,7 +150,7 @@ export class MagicLinkService {
     // Build magic link URL with coop branding if coopSlug is provided
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
     const magicLinkUrl = coopSlug
-      ? `${baseUrl}/${coopSlug}/magic-link?token=${token}`
+      ? `${baseUrl}/${encodeURIComponent(coopSlug)}/magic-link?token=${token}`
       : `${baseUrl}/magic-link?token=${token}`;
 
     // Fetch coop branding for the email

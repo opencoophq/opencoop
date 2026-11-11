@@ -171,7 +171,7 @@ export function EmailFirstLogin({ coop, onLoginSuccess }: EmailFirstLoginProps) 
         body: JSON.stringify({ email, password: data.password }),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         if (response.status === 401) {

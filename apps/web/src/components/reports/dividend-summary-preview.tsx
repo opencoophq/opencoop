@@ -51,7 +51,7 @@ export function DividendSummaryPreview() {
     setNoData(false);
     api<DividendSummary | null>(`/admin/coops/${selectedCoop.id}/reports/dividend-summary?year=${year}`)
       .then((result) => {
-        if (result === null) {
+        if (result == null) {
           setNoData(true);
           setData(null);
         } else {

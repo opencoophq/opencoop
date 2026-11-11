@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Octokit } from '@octokit/rest';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { escapeHtml } from '../email/escape-html';
 import { CreateFeatureRequestDto } from './dto/create-feature-request.dto';
 
 @Injectable()
@@ -105,7 +106,7 @@ export class FeatureRequestsService {
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 20px;">
           <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">${content.heading}</h2>
           <p style="color: #374151; line-height: 1.6; margin-bottom: 12px;">${content.body}</p>
-          <p style="color: #374151; line-height: 1.6; margin-bottom: 24px;"><strong>${dto.title}</strong></p>
+          <p style="color: #374151; line-height: 1.6; margin-bottom: 24px;"><strong>${escapeHtml(dto.title)}</strong></p>
           <p style="color: #6b7280; font-size: 14px;">${content.closing}</p>
         </div>
       `,

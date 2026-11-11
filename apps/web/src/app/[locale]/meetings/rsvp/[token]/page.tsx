@@ -208,6 +208,21 @@ export default function PublicRsvpPage() {
     );
   }
 
+  if (loadError === 'generic') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center space-y-4">
+            <XCircle className="h-12 w-12 text-destructive mx-auto" />
+            <p className="text-sm text-muted-foreground">
+              {t('meetings.publicRsvp.loadError')}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loadError === 'expired' || !details) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -219,21 +234,6 @@ export default function PublicRsvpPage() {
             </h2>
             <p className="text-sm text-muted-foreground">
               {t('meetings.publicRsvp.expiredBody')}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (loadError === 'generic') {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center space-y-4">
-            <XCircle className="h-12 w-12 text-destructive mx-auto" />
-            <p className="text-sm text-muted-foreground">
-              {t('meetings.publicRsvp.loadError')}
             </p>
           </CardContent>
         </Card>

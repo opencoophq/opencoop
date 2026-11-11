@@ -57,6 +57,7 @@ export class UpdateCoopDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @IsInt()
   smtpPort?: number;
 
   @ApiProperty({ required: false })
