@@ -108,7 +108,10 @@ function createStore() {
   const viewerRole = { role: { permissions: { canManageAdmins: false } } };
   const withRoles = (a: AdminRow) => ({ ...a, roles: [a.manager ? managerRole : viewerRole] });
   const userByEmail = (email: string) => [...users.values()].find((u) => u.email === email) ?? null;
-  const withUser = (row: TokenRow) => ({ ...row, user: { ...users.get(row.userId)!, coopAdminOf: [] } });
+  const withUser = (row: TokenRow) => ({
+    ...row,
+    user: { ...users.get(row.userId)!, coopAdminOf: [] },
+  });
 
   const prisma = {
     $transaction: jest.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
@@ -169,10 +172,14 @@ function createStore() {
         const index = admins.findIndex((a) => a.id === where.id);
         return admins.splice(index, 1)[0];
       }),
-      count: jest.fn(async ({ where }: any) => admins.filter((a) => a.userId === where.userId).length),
+      count: jest.fn(
+        async ({ where }: any) => admins.filter((a) => a.userId === where.userId).length,
+      ),
     },
     shareholder: {
-      findFirst: jest.fn(async ({ where }: any) => shareholders.find((s) => shareholderMatches(s, where)) ?? null),
+      findFirst: jest.fn(
+        async ({ where }: any) => shareholders.find((s) => shareholderMatches(s, where)) ?? null,
+      ),
       updateMany: jest.fn(async ({ where, data }: any) => {
         const hits = shareholders.filter((s) => shareholderMatches(s, where));
         hits.forEach((s) => Object.assign(s, data));
@@ -245,10 +252,42 @@ describe('Team member login email cannot be hijacked by a coop admin', () => {
     // Fictional people only. Acting coop admin, a fellow team member who is
     // also an admin in another coop, a system admin on the team, a plain admin.
     const people: UserRow[] = [
-      { id: 'actor', email: 'actor@example.test', name: 'Acting Admin', role: 'COOP_ADMIN', preferredLanguage: 'nl', emailVerified: VERIFIED_AT, mfaEnabled: false },
-      { id: 'victim', email: 'member@example.test', name: 'Team Member', role: 'COOP_ADMIN', preferredLanguage: 'en', emailVerified: VERIFIED_AT, mfaEnabled: false },
-      { id: 'sysadmin', email: 'platform@example.test', name: 'Platform Admin', role: 'SYSTEM_ADMIN', preferredLanguage: 'nl', emailVerified: VERIFIED_AT, mfaEnabled: false },
-      { id: 'plain', email: 'plain@example.test', name: 'Plain Admin', role: 'COOP_ADMIN', preferredLanguage: 'nl', emailVerified: VERIFIED_AT, mfaEnabled: false },
+      {
+        id: 'actor',
+        email: 'actor@example.test',
+        name: 'Acting Admin',
+        role: 'COOP_ADMIN',
+        preferredLanguage: 'nl',
+        emailVerified: VERIFIED_AT,
+        mfaEnabled: false,
+      },
+      {
+        id: 'victim',
+        email: 'member@example.test',
+        name: 'Team Member',
+        role: 'COOP_ADMIN',
+        preferredLanguage: 'en',
+        emailVerified: VERIFIED_AT,
+        mfaEnabled: false,
+      },
+      {
+        id: 'sysadmin',
+        email: 'platform@example.test',
+        name: 'Platform Admin',
+        role: 'SYSTEM_ADMIN',
+        preferredLanguage: 'nl',
+        emailVerified: VERIFIED_AT,
+        mfaEnabled: false,
+      },
+      {
+        id: 'plain',
+        email: 'plain@example.test',
+        name: 'Plain Admin',
+        role: 'COOP_ADMIN',
+        preferredLanguage: 'nl',
+        emailVerified: VERIFIED_AT,
+        mfaEnabled: false,
+      },
     ];
     people.forEach((p) => store.users.set(p.id, p));
     store.admins.push(
@@ -269,7 +308,9 @@ describe('Team member login email cannot be hijacked by a coop admin', () => {
 
     mailer = { sendPlatformEmail: jest.fn().mockResolvedValue(undefined) };
     tokenService = {
-      issueJwtForUser: jest.fn(async (user: { id: string }) => ({ accessToken: `jwt-for-${user.id}` })),
+      issueJwtForUser: jest.fn(async (user: { id: string }) => ({
+        accessToken: `jwt-for-${user.id}`,
+      })),
     };
     coopAdmins = new CoopAdminsService(store.prisma as any, mailer as any);
     magicLinks = new MagicLinkService(
@@ -299,7 +340,12 @@ describe('Team member login email cannot be hijacked by a coop admin', () => {
 
     it('rejects a coop admin changing their own login email through the team page', async () => {
       await expect(
-        coopAdmins.updateAdminUser(COOP, 'adm-actor', { email: 'actor.new@example.test' }, 'COOP_ADMIN'),
+        coopAdmins.updateAdminUser(
+          COOP,
+          'adm-actor',
+          { email: 'actor.new@example.test' },
+          'COOP_ADMIN',
+        ),
       ).rejects.toBeInstanceOf(ForbiddenException);
       expect(store.users.get('actor')!.email).toBe('actor@example.test');
     });
@@ -314,7 +360,10 @@ describe('Team member login email cannot be hijacked by a coop admin', () => {
         ),
       ).rejects.toBeInstanceOf(ForbiddenException);
 
-      expect(store.users.get('victim')).toMatchObject({ name: 'Team Member', email: 'member@example.test' });
+      expect(store.users.get('victim')).toMatchObject({
+        name: 'Team Member',
+        email: 'member@example.test',
+      });
     });
 
     it('gives the attacker no way to sign in as the member with a magic link', async () => {
@@ -381,7 +430,11 @@ describe('Team member login email cannot be hijacked by a coop admin', () => {
         'COOP_ADMIN',
       );
 
-      expect(result).toMatchObject({ name: 'Renamed Member', preferredLanguage: 'fr', email: 'member@example.test' });
+      expect(result).toMatchObject({
+        name: 'Renamed Member',
+        preferredLanguage: 'fr',
+        email: 'member@example.test',
+      });
       expect(store.users.get('victim')!.emailVerified).toEqual(VERIFIED_AT);
     });
 
@@ -416,7 +469,12 @@ describe('Team member login email cannot be hijacked by a coop admin', () => {
 
     it('rejects a system admin moving a login onto an address another account uses', async () => {
       await expect(
-        coopAdmins.updateAdminUser(COOP, 'adm-plain', { email: 'member@example.test' }, 'SYSTEM_ADMIN'),
+        coopAdmins.updateAdminUser(
+          COOP,
+          'adm-plain',
+          { email: 'member@example.test' },
+          'SYSTEM_ADMIN',
+        ),
       ).rejects.toBeInstanceOf(ConflictException);
       expect(store.users.get('plain')!.email).toBe('plain@example.test');
     });
@@ -426,7 +484,12 @@ describe('Team member login email cannot be hijacked by a coop admin', () => {
       store.users.get('plain')!.passwordResetToken = 'hashed-reset-token';
       store.refreshTokens.push({ id: 'rt-1', userId: 'plain', revokedAt: null });
 
-      await coopAdmins.updateAdminUser(COOP, 'adm-plain', { email: 'plain.new@example.test' }, 'SYSTEM_ADMIN');
+      await coopAdmins.updateAdminUser(
+        COOP,
+        'adm-plain',
+        { email: 'plain.new@example.test' },
+        'SYSTEM_ADMIN',
+      );
 
       await expect(
         magicLinks.verifyMagicLinkCode({ email: 'plain@example.test', code: '482913' }),
@@ -477,11 +540,15 @@ describe('UpdateAdminUserDto', () => {
   });
 
   it('rejects extra fields under the global validation pipe settings', async () => {
-    const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true });
+    const pipe = new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    });
     const metadata = { type: 'body' as const, metatype: UpdateAdminUserDto };
-    await expect(pipe.transform({ name: 'Ok', role: 'SYSTEM_ADMIN' }, metadata)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      pipe.transform({ name: 'Ok', role: 'SYSTEM_ADMIN' }, metadata),
+    ).rejects.toBeInstanceOf(BadRequestException);
     await expect(pipe.transform({ emailVerified: null }, metadata)).rejects.toBeInstanceOf(
       BadRequestException,
     );
