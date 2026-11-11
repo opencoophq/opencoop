@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
+import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { CoopsService } from './coops.service';
 import { PublicRegisterDto } from './dto/public-register.dto';
 
@@ -60,6 +62,7 @@ export class CoopsController {
   }
 
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Post(':slug/register')
   @ApiOperation({ summary: 'Public share registration (new or existing shareholder)' })
   @ApiResponse({ status: 201, description: 'Registration successful, returns transaction details' })
@@ -68,7 +71,8 @@ export class CoopsController {
   async register(
     @Param('slug') slug: string,
     @Body() dto: PublicRegisterDto,
+    @CurrentUser() user?: CurrentUserData | null,
   ) {
-    return this.coopsService.publicRegister(slug, dto);
+    return this.coopsService.publicRegister(slug, dto, user?.id);
   }
 }

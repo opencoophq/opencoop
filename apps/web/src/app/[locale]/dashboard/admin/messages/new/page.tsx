@@ -50,12 +50,9 @@ export default function AdminComposeMessagePage() {
   useEffect(() => {
     if (!selectedCoop || audience !== 'DIRECT') return;
     setLoadingShareholders(true);
-    api<{ data: ShareholderOption[] } | ShareholderOption[]>(
-      `/admin/coops/${selectedCoop.id}/shareholders?limit=500`,
-    )
+    api<{ items: ShareholderOption[] }>(`/admin/coops/${selectedCoop.id}/shareholders?pageSize=500`)
       .then((result) => {
-        const list = Array.isArray(result) ? result : result.data || [];
-        setShareholders(list);
+        setShareholders(result.items || []);
       })
       .catch(() => setError(t('common.error')))
       .finally(() => setLoadingShareholders(false));

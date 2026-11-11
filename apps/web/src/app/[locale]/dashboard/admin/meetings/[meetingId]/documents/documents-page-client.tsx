@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -14,6 +13,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { ArrowLeft, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Link } from '@/i18n/routing';
+import { useLocale } from '@/contexts/locale-context';
 import { useAdmin } from '@/contexts/admin-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -316,6 +317,7 @@ function MailDraftSection({
   hasDocuments: boolean;
 }) {
   const t = useTranslations('meetings.documents');
+  const { locale } = useLocale();
   const [data, setData] = useState<EmailDraft | null>(null);
   const [subject, setSubject] = useState('');
   const [intro, setIntro] = useState('');
@@ -465,7 +467,7 @@ function MailDraftSection({
         </button>
         {savedAt && !saving && (
           <span className="text-xs text-muted-foreground">
-            {t('savedAt', { time: savedAt.toLocaleTimeString() })}
+            {t('savedAt', { time: savedAt.toLocaleTimeString(locale) })}
           </span>
         )}
       </div>
@@ -523,7 +525,7 @@ function MailDraftSection({
       {data.sentAt && (
         <p className="text-sm text-muted-foreground">
           {t('sentSummary', {
-            date: new Date(data.sentAt).toLocaleDateString(),
+            date: new Date(data.sentAt).toLocaleDateString(locale),
             sent: data.sentCount,
             total: data.recipientCount,
           })}

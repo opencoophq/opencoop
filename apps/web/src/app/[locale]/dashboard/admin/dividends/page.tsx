@@ -118,11 +118,11 @@ export default function DividendsListPage() {
       );
       setPeriods(Array.isArray(data) ? data : data.data || []);
     } catch {
-      // Handle error silently
+      setError(t('common.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [selectedCoop]);
+  }, [selectedCoop, t]);
 
   useEffect(() => {
     fetchPeriods();
@@ -285,13 +285,7 @@ export default function DividendsListPage() {
 
       <Card>
         <CardContent className="pt-6">
-          {loading ? (
-            <div className="animate-pulse space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-12 bg-muted rounded" />
-              ))}
-            </div>
-          ) : periods.length === 0 ? (
+          {periods.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {t('common.noResults')}
             </div>

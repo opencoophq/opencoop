@@ -729,6 +729,26 @@ describe('McpToolkit', () => {
     expect(error.message).toBe('Invalid input');
   });
 
+  it.each([
+    [
+      'initialization',
+      () => new Prisma.PrismaClientInitializationError('connection detail', 'test'),
+    ],
+    ['rust panic', () => new Prisma.PrismaClientRustPanicError('panic detail', 'test')],
+  ])('maps a Prisma %s error to an internal error and logs it', async (_name, make) => {
+    const sourceError = make();
+
+    const error = await expectMcpError(
+      toolkit.run({}, undefined, async () => {
+        throw sourceError;
+      }),
+    );
+
+    expect(loggerError).toHaveBeenCalledWith(sourceError);
+    expect(error.code).toBe(ErrorCode.InternalError);
+    expect(error.message).toBe('Internal error');
+  });
+
   it('logs unknown errors and hides their details', async () => {
     const sourceError = new Error('secret internal detail');
 

@@ -1508,7 +1508,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "charge-
     "
 `;
 
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividend-statement" renders in de 1`] = `
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "emancipation-household" renders in de 1`] = `
 "
       <!DOCTYPE html>
       <html>
@@ -1521,12 +1521,21 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividen
       </head>
       <body>
         
-    <h1>Dividendenabrechnung 2025</h1>
-    <p>Liebe/r Jan Peeters,</p>
-    <p>Bitte finden Sie im Anhang Ihre Dividendenabrechnung für 2025.</p>
-    <p>Netto-Dividendenbetrag: €42.50</p>
-    <p>Vielen Dank, dass Sie Anteilseigner von Coöp &amp; Co sind!</p>
-  
+        <h1>Lotte kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>Lotte Janssens kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Geef onderstaande link door aan Lotte:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/emancipate/abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      
         <hr>
         <p style="color: #666; font-size: 12px;">
           This email was sent by Coöp &amp; Co via OpenCoop.
@@ -1536,7 +1545,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividen
     "
 `;
 
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividend-statement" renders in en 1`] = `
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "emancipation-household" renders in en 1`] = `
 "
       <!DOCTYPE html>
       <html>
@@ -1549,12 +1558,21 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividen
       </head>
       <body>
         
-    <h1>Dividend Statement 2025</h1>
-    <p>Dear Jan Peeters,</p>
-    <p>Please find attached your dividend statement for 2025.</p>
-    <p>Net dividend amount: €42.50</p>
-    <p>Thank you for being a shareholder of Coöp &amp; Co!</p>
-  
+        <h1>Lotte kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>Lotte Janssens kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Geef onderstaande link door aan Lotte:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/emancipate/abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      
         <hr>
         <p style="color: #666; font-size: 12px;">
           This email was sent by Coöp &amp; Co via OpenCoop.
@@ -1564,7 +1582,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividen
     "
 `;
 
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividend-statement" renders in fr 1`] = `
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "emancipation-household" renders in fr 1`] = `
 "
       <!DOCTYPE html>
       <html>
@@ -1577,12 +1595,21 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividen
       </head>
       <body>
         
-    <h1>Relevé de dividendes 2025</h1>
-    <p>Cher/Chère Jan Peeters,</p>
-    <p>Veuillez trouver ci-joint votre relevé de dividendes pour 2025.</p>
-    <p>Montant net du dividende: €42.50</p>
-    <p>Merci d'être actionnaire de Coöp &amp; Co !</p>
-  
+        <h1>Lotte kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>Lotte Janssens kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Geef onderstaande link door aan Lotte:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/emancipate/abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      
         <hr>
         <p style="color: #666; font-size: 12px;">
           This email was sent by Coöp &amp; Co via OpenCoop.
@@ -1592,7 +1619,7 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividen
     "
 `;
 
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividend-statement" renders in nl 1`] = `
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "emancipation-household" renders in nl 1`] = `
 "
       <!DOCTYPE html>
       <html>
@@ -1605,12 +1632,21 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "dividen
       </head>
       <body>
         
-    <h1>Dividendafrekening 2025</h1>
-    <p>Beste Jan Peeters,</p>
-    <p>In bijlage vind je je dividendafrekening voor 2025.</p>
-    <p>Netto dividendbedrag: €42.50</p>
-    <p>Bedankt om aandeelhouder te zijn van Coöp &amp; Co!</p>
-  
+        <h1>Lotte kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>Lotte Janssens kan nu een eigen account aanmaken bij Coöp &amp; Co.</p>
+        <p>Geef onderstaande link door aan Lotte:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="https://opencoop.test/emancipate/abc123"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      
         <hr>
         <p style="color: #666; font-size: 12px;">
           This email was sent by Coöp &amp; Co via OpenCoop.
@@ -1750,150 +1786,6 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "gift-ce
     <p>Cadeaucode: <strong>GIFT-1234</strong></p>
     <p>Deel de cadeaubon met de ontvanger. Ze kunnen de code of QR-code gebruiken om hun aandelen op te vragen.</p>
     <p>Bedankt om aandeelhouder te zijn van Coöp &amp; Co!</p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-link" renders in de 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Bei Coöp &amp; Co anmelden</h1>
-    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">Ihr Anmeldecode: 482913</p>
-    <p>Geben Sie diesen Code auf der Anmeldeseite ein, oder nutzen Sie die Schaltfläche auf dem Gerät, auf dem Sie angemeldet bleiben möchten.</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="https://opencoop.test/magic?token=abc123"
-         style="background-color: #1e40af; color: white; padding: 12px 24px;
-                text-decoration: none; border-radius: 6px; display: inline-block;">
-        Anmelden
-      </a>
-    </p>
-    <p style="color: #666; font-size: 12px;">
-      Dieser Code und dieser Link sind 10 Minuten gültig. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.
-    </p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-link" renders in en 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Log in to Coöp &amp; Co</h1>
-    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">Your sign-in code: 482913</p>
-    <p>Enter this code on the sign-in page, or press the button on the device where you want to stay signed in.</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="https://opencoop.test/magic?token=abc123"
-         style="background-color: #1e40af; color: white; padding: 12px 24px;
-                text-decoration: none; border-radius: 6px; display: inline-block;">
-        Sign in
-      </a>
-    </p>
-    <p style="color: #666; font-size: 12px;">
-      This code and link are valid for 10 minutes. If you did not request this, you can ignore this email.
-    </p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-link" renders in fr 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Connexion à Coöp &amp; Co</h1>
-    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">Votre code de connexion : 482913</p>
-    <p>Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l'appareil où vous voulez rester connecté.</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="https://opencoop.test/magic?token=abc123"
-         style="background-color: #1e40af; color: white; padding: 12px 24px;
-                text-decoration: none; border-radius: 6px; display: inline-block;">
-        Se connecter
-      </a>
-    </p>
-    <p style="color: #666; font-size: 12px;">
-      Ce code et ce lien sont valables 10 minutes. Si vous n'avez pas demandé ceci, vous pouvez ignorer cet e-mail.
-    </p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "magic-link" renders in nl 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Inloggen bij Coöp &amp; Co</h1>
-    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">Je inlogcode: 482913</p>
-    <p>Vul deze code in op de inlogpagina, of gebruik de knop op het apparaat waarop je wil blijven.</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="https://opencoop.test/magic?token=abc123"
-         style="background-color: #1e40af; color: white; padding: 12px 24px;
-                text-decoration: none; border-radius: 6px; display: inline-block;">
-        Inloggen
-      </a>
-    </p>
-    <p style="color: #666; font-size: 12px;">
-      Deze code en link zijn 10 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.
-    </p>
   
         <hr>
         <p style="color: #666; font-size: 12px;">
@@ -3072,122 +2964,6 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "parent-
     "
 `;
 
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "password-reset" renders in de 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Passwort zurücksetzen</h1>
-    <p>Sie haben eine Passwort-Zurücksetzung angefordert.</p>
-    <p>Klicken Sie auf den folgenden Link, um Ihr Passwort zurückzusetzen:</p>
-    <p><a href="https://opencoop.test/reset?token=abc123">https://opencoop.test/reset?token=abc123</a></p>
-    <p>Wenn Sie dies nicht angefordert haben, ignorieren Sie diese E-Mail.</p>
-    <p>Dieser Link läuft in 1 Stunde ab.</p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "password-reset" renders in en 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Password Reset Request</h1>
-    <p>You have requested to reset your password.</p>
-    <p>Click the link below to reset your password:</p>
-    <p><a href="https://opencoop.test/reset?token=abc123">https://opencoop.test/reset?token=abc123</a></p>
-    <p>If you did not request this, please ignore this email.</p>
-    <p>This link will expire in 1 hour.</p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "password-reset" renders in fr 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Demande de réinitialisation du mot de passe</h1>
-    <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
-    <p>Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
-    <p><a href="https://opencoop.test/reset?token=abc123">https://opencoop.test/reset?token=abc123</a></p>
-    <p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.</p>
-    <p>Ce lien expirera dans 1 heure.</p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "password-reset" renders in nl 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Wachtwoord resetten</h1>
-    <p>Je hebt een wachtwoord reset aangevraagd.</p>
-    <p>Klik op onderstaande link om je wachtwoord te resetten:</p>
-    <p><a href="https://opencoop.test/reset?token=abc123">https://opencoop.test/reset?token=abc123</a></p>
-    <p>Als je dit niet hebt aangevraagd, kan je deze e-mail negeren.</p>
-    <p>Deze link vervalt binnen 1 uur.</p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
 exports[`EmailProcessor render snapshots (byte-exact baseline) template "payment-confirmed" renders in de 1`] = `
 "
       <!DOCTYPE html>
@@ -3327,6 +3103,130 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "payment
           
           <p>Bedankt om aandeelhouder te zijn van Coöp &amp; Co!</p>
         
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "ponto-expiry-warning" renders in de 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>Coöp &amp; Co</strong> expires in 5 days.</p>
+        <ul>
+          <li><strong>Bank:</strong> Belfius</li>
+          <li><strong>IBAN:</strong> BE68 5390 0754 7034</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "ponto-expiry-warning" renders in en 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>Coöp &amp; Co</strong> expires in 5 days.</p>
+        <ul>
+          <li><strong>Bank:</strong> Belfius</li>
+          <li><strong>IBAN:</strong> BE68 5390 0754 7034</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "ponto-expiry-warning" renders in fr 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>Coöp &amp; Co</strong> expires in 5 days.</p>
+        <ul>
+          <li><strong>Bank:</strong> Belfius</li>
+          <li><strong>IBAN:</strong> BE68 5390 0754 7034</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
+      
+        <hr>
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Coöp &amp; Co via OpenCoop.
+        </p>
+      </body>
+      </html>
+    "
+`;
+
+exports[`EmailProcessor render snapshots (byte-exact baseline) template "ponto-expiry-warning" renders in nl 1`] = `
+"
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #1e40af; }
+        </style>
+      </head>
+      <body>
+        
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>Coöp &amp; Co</strong> expires in 5 days.</p>
+        <ul>
+          <li><strong>Bank:</strong> Belfius</li>
+          <li><strong>IBAN:</strong> BE68 5390 0754 7034</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
+      
         <hr>
         <p style="color: #666; font-size: 12px;">
           This email was sent by Coöp &amp; Co via OpenCoop.
@@ -4239,114 +4139,6 @@ exports[`EmailProcessor render snapshots (byte-exact baseline) template "volunte
             </a>
           </p>
         
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "welcome" renders in de 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Willkommen bei Coöp &amp; Co!</h1>
-    <p>Liebe/r Jan Peeters,</p>
-    <p>Vielen Dank, dass Sie Anteilseigner von Coöp &amp; Co werden.</p>
-    <p>Sie können sich in Ihrem Dashboard anmelden, um Ihre Anteile und Dokumente einzusehen.</p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "welcome" renders in en 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Welcome to Coöp &amp; Co!</h1>
-    <p>Dear Jan Peeters,</p>
-    <p>Thank you for becoming a shareholder of Coöp &amp; Co.</p>
-    <p>You can log in to your dashboard to view your shares and documents.</p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "welcome" renders in fr 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Bienvenue chez Coöp &amp; Co !</h1>
-    <p>Cher/Chère Jan Peeters,</p>
-    <p>Merci de devenir actionnaire de Coöp &amp; Co.</p>
-    <p>Vous pouvez vous connecter à votre tableau de bord pour consulter vos actions et documents.</p>
-  
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          This email was sent by Coöp &amp; Co via OpenCoop.
-        </p>
-      </body>
-      </html>
-    "
-`;
-
-exports[`EmailProcessor render snapshots (byte-exact baseline) template "welcome" renders in nl 1`] = `
-"
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          h1 { color: #1e40af; }
-        </style>
-      </head>
-      <body>
-        
-    <h1>Welkom bij Coöp &amp; Co!</h1>
-    <p>Beste Jan Peeters,</p>
-    <p>Bedankt om aandeelhouder te worden van Coöp &amp; Co.</p>
-    <p>Je kan inloggen in je dashboard om je aandelen en documenten te bekijken.</p>
-  
         <hr>
         <p style="color: #666; font-size: 12px;">
           This email was sent by Coöp &amp; Co via OpenCoop.

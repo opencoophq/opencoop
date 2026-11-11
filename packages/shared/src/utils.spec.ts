@@ -82,6 +82,11 @@ describe('computeTotalPaid', () => {
   it('sums mixed numeric/string amounts', () => {
     expect(computeTotalPaid([{ amount: '10.5' }, { amount: 4.5 }])).toBe(15);
   });
+  it('sums in cents so 12 instalments reach exactly 25', () => {
+    const payments = [...Array(11).fill({ amount: 2.08 }), { amount: 2.12 }];
+    expect(computeTotalPaid(payments)).toBe(25);
+    expect(computeVestedShares(computeTotalPaid(payments), 25, 1)).toBe(1);
+  });
 });
 
 describe('apportionWithholdingTax (period-level rounding)', () => {

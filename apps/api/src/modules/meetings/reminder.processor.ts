@@ -16,8 +16,11 @@ export class ReminderProcessor {
 
   @Process('tick')
   async tick() {
+    // Same cutoff as the `daysUntil < 0` skip below: a meeting 24h or more in the past never
+    // matches a reminder day, so do not load it (meetings never leave CONVOKED).
+    const pastCutoff = new Date(Date.now() - 86_400_000);
     const meetings = await this.prisma.meeting.findMany({
-      where: { status: MeetingStatus.CONVOKED },
+      where: { status: MeetingStatus.CONVOKED, scheduledAt: { gt: pastCutoff } },
       include: {
         coop: true,
         attendances: {
@@ -77,7 +80,7 @@ export class ReminderProcessor {
                   meetingTitle: meeting.title,
                   meetingDate: meeting.scheduledAt.toISOString(),
                   daysUntil,
-                  rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${primaryA.rsvpToken}`,
+                  rsvpUrl: `${process.env.FRONTEND_URL || 'http://localhost:3002'}/meetings/rsvp/${primaryA.rsvpToken}`,
                 },
               });
               sent++;

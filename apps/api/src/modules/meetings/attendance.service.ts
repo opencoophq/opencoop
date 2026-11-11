@@ -42,8 +42,14 @@ export class AttendanceService {
 
   async undo(coopId: string, meetingId: string, shareholderId: string) {
     await this.assertMeetingInCoop(meetingId, coopId);
-    return this.prisma.meetingAttendance.update({
+    const attendance = await this.prisma.meetingAttendance.findUnique({
       where: { meetingId_shareholderId: { meetingId, shareholderId } },
+    });
+    if (!attendance) {
+      throw new NotFoundException('Shareholder is not on the attendance list');
+    }
+    return this.prisma.meetingAttendance.update({
+      where: { id: attendance.id },
       data: {
         checkedInAt: null,
         checkedInBy: null,

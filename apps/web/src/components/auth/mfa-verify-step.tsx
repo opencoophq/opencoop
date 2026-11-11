@@ -41,7 +41,7 @@ export function MfaVerifyStep({ mfaToken, onSuccess, onBack, brandColor }: MfaVe
         body: JSON.stringify(body),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(result.message || t('mfa.verifyError'));

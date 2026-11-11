@@ -26,6 +26,9 @@ export function PasskeyLoginButton({ onSuccess, onMfaRequired, onError, brandCol
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
+      if (!optionsRes.ok) {
+        throw new Error(t('passkeys.loginError'));
+      }
       const options = await optionsRes.json();
 
       // Start browser WebAuthn flow
@@ -38,7 +41,7 @@ export function PasskeyLoginButton({ onSuccess, onMfaRequired, onError, brandCol
         body: JSON.stringify({ response: authResponse }),
       });
 
-      const result = await verifyRes.json();
+      const result = await verifyRes.json().catch(() => ({}));
 
       if (!verifyRes.ok) {
         throw new Error(result.message || t('passkeys.loginError'));

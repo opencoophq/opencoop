@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link } from '@/i18n/routing';
-import { api } from '@/lib/api';
+import { api, apiFetch } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +54,6 @@ import {
   type ColumnSortState,
 } from '@/lib/table-utils';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type CheckInColumn = 'name' | 'memberNumber' | 'rsvpStatus' | 'ballots' | 'checkedInAt';
 
@@ -296,16 +295,12 @@ export default function CheckInPage() {
     setDownloadingSheet(true);
     setError(null);
     try {
-      // The PDF endpoint requires JWT (JwtAuthGuard) — fetch with the bearer
-      // token, then open the blob in a new tab so the operator can hit
-      // print or download.
-      const token =
-        typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      const url = `${API_URL}/admin/coops/${selectedCoop.id}/meetings/${meeting.id}/attendance-sheet`;
-      const res = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      // The PDF endpoint requires JWT (JwtAuthGuard). apiFetch attaches and
+      // refreshes the token; open the blob in a new tab so the operator can
+      // hit print or download.
+      const res = await apiFetch(
+        `/admin/coops/${selectedCoop.id}/meetings/${meeting.id}/attendance-sheet`,
+      );
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       window.open(objectUrl, '_blank', 'noopener,noreferrer');
@@ -374,12 +369,20 @@ export default function CheckInPage() {
     );
   }
 
-  if (loading || !meeting) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse h-8 w-64 bg-muted rounded" />
         <div className="animate-pulse h-40 bg-muted rounded-lg" />
       </div>
+    );
+  }
+
+  if (!meeting) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>{error || t('meetings.detail.notFound')}</AlertDescription>
+      </Alert>
     );
   }
 

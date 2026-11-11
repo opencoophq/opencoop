@@ -11,6 +11,7 @@ describe('ProxiesService', () => {
     proxy: {
       count: jest.Mock;
       create: jest.Mock;
+      upsert: jest.Mock;
       findUnique: jest.Mock;
       update: jest.Mock;
       findMany: jest.Mock;
@@ -28,6 +29,7 @@ describe('ProxiesService', () => {
       proxy: {
         count: jest.fn(),
         create: jest.fn(),
+        upsert: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
         findMany: jest.fn(),
@@ -72,29 +74,59 @@ describe('ProxiesService', () => {
     expect(prisma.proxy.create).not.toHaveBeenCalled();
   });
 
-  it('creates a valid proxy when all checks pass', async () => {
+  const grantedRow = {
+    id: 'p1',
+    meetingId: 'm1',
+    grantorShareholderId: 'sA',
+    delegateShareholderId: 'sB',
+  };
+
+  function allChecksPass() {
     prisma.meeting.findUnique.mockResolvedValue(meeting);
     prisma.shareholder.findUnique
       .mockResolvedValueOnce(grantorSh)
       .mockResolvedValueOnce(delegateSh);
     prisma.proxy.count.mockResolvedValue(0);
-    const created = {
-      id: 'p1',
-      meetingId: 'm1',
-      grantorShareholderId: 'sA',
-      delegateShareholderId: 'sB',
-    };
-    prisma.proxy.create.mockResolvedValue(created);
+  }
+
+  it('creates a valid proxy when all checks pass', async () => {
+    allChecksPass();
+    prisma.proxy.findUnique.mockResolvedValue(null);
+    prisma.proxy.upsert.mockResolvedValue(grantedRow);
 
     const result = await service.create('c1', 'm1', 'sA', 'sB');
 
-    expect(result).toEqual(created);
-    expect(prisma.proxy.create).toHaveBeenCalledWith({
-      data: {
-        meetingId: 'm1',
-        grantorShareholderId: 'sA',
-        delegateShareholderId: 'sB',
-      },
+    expect(result).toEqual(grantedRow);
+    expect(prisma.proxy.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { meetingId_grantorShareholderId: { meetingId: 'm1', grantorShareholderId: 'sA' } },
+        create: { meetingId: 'm1', grantorShareholderId: 'sA', delegateShareholderId: 'sB' },
+      }),
+    );
+  });
+
+  it('reactivates a revoked proxy instead of failing on the unique key', async () => {
+    allChecksPass();
+    prisma.proxy.findUnique.mockResolvedValue({ ...grantedRow, revokedAt: new Date() });
+    prisma.proxy.upsert.mockResolvedValue(grantedRow);
+
+    await service.create('c1', 'm1', 'sA', 'sB');
+
+    const arg = prisma.proxy.upsert.mock.calls[0][0];
+    expect(arg.update).toEqual({
+      delegateShareholderId: 'sB',
+      revokedAt: null,
+      grantedAt: expect.any(Date),
+      signedFormUrl: null,
     });
+    expect(prisma.proxy.create).not.toHaveBeenCalled();
+  });
+
+  it('still rejects a second active proxy from the same grantor', async () => {
+    allChecksPass();
+    prisma.proxy.findUnique.mockResolvedValue({ ...grantedRow, revokedAt: null });
+
+    await expect(service.create('c1', 'm1', 'sA', 'sB')).rejects.toThrow(BadRequestException);
+    expect(prisma.proxy.upsert).not.toHaveBeenCalled();
   });
 });

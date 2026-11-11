@@ -351,31 +351,6 @@ describe('HouseholdService', () => {
     });
   });
 
-  describe('listShareholdersForUser', () => {
-    it('returns all shareholders a user controls in a given coop, ordered by createdAt', async () => {
-      const shareholderA1 = { id: 'sh-a1', userId: jan.id, coopId: coop1.id, createdAt: new Date('2024-01-01') };
-      const shareholderA2 = { id: 'sh-a2', userId: jan.id, coopId: coop1.id, createdAt: new Date('2024-02-01') };
-
-      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([shareholderA1, shareholderA2]);
-
-      const result = await service.listShareholdersForUser(jan.id, coop1.id);
-
-      expect(result).toHaveLength(2);
-      expect(prismaService.shareholder.findMany).toHaveBeenCalledWith({
-        where: { userId: jan.id, coopId: coop1.id },
-        orderBy: { createdAt: 'asc' },
-      });
-    });
-
-    it('returns empty array when user has no shareholders in that coop', async () => {
-      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValue([]);
-
-      const result = await service.listShareholdersForUser(jan.id, 'bogus-coop-id');
-
-      expect(result).toEqual([]);
-    });
-  });
-
   describe('searchHouseholdCandidates', () => {
     const sourceId = 'source-shareholder-id';
 

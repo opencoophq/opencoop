@@ -27,7 +27,12 @@ export const createShareClassParameters = z
     minShares: z.number().min(1).optional(),
     maxShares: z.number().min(1).optional(),
     hasVotingRights: z.boolean().optional(),
-    dividendRateOverride: z.number().optional(),
+    dividendRateOverride: z
+      .number()
+      .min(0)
+      .max(1)
+      .optional()
+      .describe('Fraction of share value, not a percent. 0.035 means 3.5%.'),
   })
   .strict();
 
@@ -40,7 +45,12 @@ export const updateShareClassParameters = z
     minShares: z.number().min(1).optional(),
     maxShares: z.number().min(1).optional(),
     hasVotingRights: z.boolean().optional(),
-    dividendRateOverride: z.number().optional(),
+    dividendRateOverride: z
+      .number()
+      .min(0)
+      .max(1)
+      .optional()
+      .describe('Fraction of share value, not a percent. 0.035 means 3.5%.'),
     isActive: z.boolean().optional(),
   })
   .strict();

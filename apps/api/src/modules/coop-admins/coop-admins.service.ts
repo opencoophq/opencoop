@@ -276,13 +276,13 @@ export class CoopAdminsService {
       }
     }
 
-    // Check for existing pending invitation
+    // The admin check above passed, so any invitation for this coop and email
+    // is stale, accepted or not. Delete it first or the unique key fails.
+    // Deleting cascades to the join rows.
     const existingInvitation = await this.prisma.adminInvitation.findUnique({
       where: { coopId_email: { coopId, email: dto.email.toLowerCase() } },
     });
-    if (existingInvitation && !existingInvitation.accepted) {
-      // Delete old invitation and create a new one (cascades delete the
-      // join rows too)
+    if (existingInvitation) {
       await this.prisma.adminInvitation.delete({ where: { id: existingInvitation.id } });
     }
 
@@ -329,7 +329,7 @@ export class CoopAdminsService {
     coopName: string;
     roleNames: string[];
   }): Promise<void> {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://opencoop.be';
+    const appUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
     const inviteUrl = `${appUrl}/invite/${args.token}`;
     const rolesLabel = args.roleNames.join(', ') || '—';
 

@@ -139,11 +139,11 @@ export default function BankImportPage() {
       const data = await api<BankTx[]>(`/admin/coops/${selectedCoop.id}/bank-transactions`);
       setTransactions(data);
     } catch {
-      // ignore
+      setError(t('common.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [selectedCoop]);
+  }, [selectedCoop, t]);
 
   const loadUnlinkedPayments = useCallback(async () => {
     if (!selectedCoop || !matchDialogOpen || !matchingTx) return;

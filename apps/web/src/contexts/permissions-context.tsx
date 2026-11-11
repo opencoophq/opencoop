@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo, useCallback } from 'react';
 import { useAdmin } from './admin-context';
+import { decodeJwtPayload } from '@/lib/jwt-payload';
 
 interface CoopPermissions {
   canManageShareholders: boolean;
@@ -39,7 +40,10 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) return null;
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = decodeJwtPayload<{
+        role?: string;
+        coopPermissions?: Record<string, CoopPermissions>;
+      }>(token);
 
       // System admins get all permissions
       if (payload.role === 'SYSTEM_ADMIN') {
@@ -82,7 +86,7 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
         } as CoopPermissions;
       }
 
-      return (payload.coopPermissions[coopId] as CoopPermissions) ?? null;
+      return payload.coopPermissions[coopId] ?? null;
     } catch {
       return null;
     }

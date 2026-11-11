@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Link } from '@/i18n/routing';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -326,7 +327,7 @@ export function MeetingForm({
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" asChild>
-              <a href={cancelHref}>{t('meetings.new.cancel')}</a>
+              <Link href={cancelHref}>{t('meetings.new.cancel')}</Link>
             </Button>
             <Button type="submit" disabled={submitting}>
               {submitting ? submittingLabel : submitLabel}

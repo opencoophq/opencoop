@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { api } from '@/lib/api';
+import { useLocale } from '@/contexts/locale-context';
 import {
   applyColumnFiltersAndSort,
   toggleColumnSort,
@@ -121,6 +122,7 @@ type InvitationColumn = 'email' | 'role' | 'expiresAt';
 
 export default function TeamPage() {
   const t = useTranslations('admin');
+  const { locale } = useLocale();
   const tc = useTranslations('common');
   const { selectedCoop } = useAdmin();
 
@@ -165,6 +167,7 @@ export default function TeamPage() {
   const [editUserName, setEditUserName] = useState('');
   const [editUserEmail, setEditUserEmail] = useState('');
   const [editUserLanguage, setEditUserLanguage] = useState('nl');
+  const [editUserLanguageTouched, setEditUserLanguageTouched] = useState(false);
   const [editUserSaving, setEditUserSaving] = useState(false);
   const [editUserError, setEditUserError] = useState('');
 
@@ -386,6 +389,7 @@ export default function TeamPage() {
     // response — default to 'nl' for the form. The backend only updates
     // fields that were sent, so leaving it untouched is safe.
     setEditUserLanguage('nl');
+    setEditUserLanguageTouched(false);
     setEditUserError('');
     setEditUserOpen(true);
   };
@@ -399,9 +403,9 @@ export default function TeamPage() {
       if (editUserName !== (editUserAdmin.user.name ?? '')) body.name = editUserName || null;
       // The login email is read-only here: the API rejects a coop admin
       // changing it, because it would let them sign in as this person.
-      // Always send preferredLanguage (form default may differ from
-      // current value; backend only writes when supplied).
-      body.preferredLanguage = editUserLanguage;
+      // The current language is unknown here, so send it only when the admin
+      // picked one; otherwise a name edit would reset it to the 'nl' default.
+      if (editUserLanguageTouched) body.preferredLanguage = editUserLanguage;
       await api(`/admin/coops/${coopId}/team/${editUserAdmin.id}/user`, {
         method: 'PATCH',
         body,
@@ -610,7 +614,7 @@ export default function TeamPage() {
                         </DropdownMenu>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {new Date(admin.createdAt).toLocaleDateString()}
+                        {new Date(admin.createdAt).toLocaleDateString(locale)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -786,7 +790,7 @@ export default function TeamPage() {
                         </DropdownMenu>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {new Date(inv.expiresAt).toLocaleDateString()}
+                        {new Date(inv.expiresAt).toLocaleDateString(locale)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -927,7 +931,13 @@ export default function TeamPage() {
             </div>
             <div className="space-y-2">
               <Label>{t('team.preferredLanguage')}</Label>
-              <Select value={editUserLanguage} onValueChange={setEditUserLanguage}>
+              <Select
+                value={editUserLanguage}
+                onValueChange={(value) => {
+                  setEditUserLanguage(value);
+                  setEditUserLanguageTouched(true);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

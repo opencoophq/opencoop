@@ -1,4 +1,5 @@
-import { canActForShareholder } from './shareholder-access';
+import { ForbiddenException } from '@nestjs/common';
+import { assertCanBuyForShareholder, canActForShareholder } from './shareholder-access';
 
 describe('canActForShareholder', () => {
   it('allows the linked user', () => {
@@ -15,5 +16,27 @@ describe('canActForShareholder', () => {
 
   it('refuses anyone else', () => {
     expect(canActForShareholder({ userId: 'u1', type: 'INDIVIDUAL', registeredByUserId: null }, 'u3')).toBe(false);
+  });
+});
+
+describe('assertCanBuyForShareholder', () => {
+  const shareholder = { userId: 'u1', type: 'INDIVIDUAL', registeredByUserId: null };
+
+  it('rejects an anonymous caller who names a shareholder id', () => {
+    expect(() => assertCanBuyForShareholder(shareholder, undefined)).toThrow(ForbiddenException);
+  });
+
+  it('rejects a signed-in user who names someone else', () => {
+    expect(() => assertCanBuyForShareholder(shareholder, 'u2')).toThrow(ForbiddenException);
+  });
+
+  it('allows the owner and a parent buying for their minor', () => {
+    expect(() => assertCanBuyForShareholder(shareholder, 'u1')).not.toThrow();
+    expect(() =>
+      assertCanBuyForShareholder(
+        { userId: null, type: 'MINOR', registeredByUserId: 'parent' },
+        'parent',
+      ),
+    ).not.toThrow();
   });
 });

@@ -1,10 +1,4 @@
 {
-  "welcome": {
-    "title": "Bienvenue chez {coopName} !",
-    "dear": "Cher/Chère {shareholderName},",
-    "thanks": "Merci de devenir actionnaire de {coopName}.",
-    "login": "Vous pouvez vous connecter à votre tableau de bord pour consulter vos actions et documents."
-  },
   "share-purchase": {
     "title": "Votre commande est confirmée",
     "dear": "Cher/Chère {shareholderName},",
@@ -32,27 +26,6 @@
     "active": "Vos actions sont maintenant actives. Veuillez trouver votre certificat d'actionnaire en pièce jointe.",
     "dashboard": "Voir mon tableau de bord",
     "thanks": "Merci d'être actionnaire de {coopName}!"
-  },
-  "dividend-statement": {
-    "title": "Relevé de dividendes {year}",
-    "dear": "Cher/Chère {shareholderName},",
-    "attached": "Veuillez trouver ci-joint votre relevé de dividendes pour {year}.",
-    "net": "Montant net du dividende",
-    "thanks": "Merci d'être actionnaire de {coopName} !"
-  },
-  "password-reset": {
-    "title": "Demande de réinitialisation du mot de passe",
-    "requested": "Vous avez demandé la réinitialisation de votre mot de passe.",
-    "click": "Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :",
-    "ignore": "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.",
-    "expires": "Ce lien expirera dans 1 heure."
-  },
-  "magic-link": {
-    "title": "Connexion à {coopName}",
-    "codeLine": "Votre code de connexion : {code}",
-    "click": "Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l'appareil où vous voulez rester connecté.",
-    "button": "Se connecter",
-    "expires": "Ce code et ce lien sont valables 10 minutes. Si vous n'avez pas demandé ceci, vous pouvez ignorer cet e-mail."
   },
   "gift-certificate": {
     "title": "Votre bon cadeau",

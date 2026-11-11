@@ -201,8 +201,34 @@ const withUser = (row: TokenRow) => ({
   user: { ...state.users.get(row.userId)!, coopAdminOf: [] },
 });
 
+/** Runs only when awaited, like a PrismaPromise, so $transaction can roll back. */
+function lazy<T>(run: () => Promise<T>): any {
+  let started: Promise<T> | undefined;
+  return {
+    then: (ok?: (v: T) => unknown, fail?: (e: unknown) => unknown) =>
+      (started ??= run()).then(ok, fail),
+  };
+}
+
 const prisma = {
-  $transaction: jest.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
+  // All-or-nothing over the in-memory store: snapshot, run in order, restore
+  // on the first failure. It proves which writes share one transaction; it
+  // does not prove PostgreSQL isolation.
+  $transaction: jest.fn(async (ops: PromiseLike<unknown>[]) => {
+    const snapshot = structuredClone({
+      users: state.users,
+      tokens: state.tokens,
+      refreshTokens: state.refreshTokens,
+    });
+    try {
+      const results: unknown[] = [];
+      for (const op of ops) results.push(await op);
+      return results;
+    } catch (err) {
+      Object.assign(state, snapshot);
+      throw err;
+    }
+  }),
   user: {
     findUnique: jest.fn(async ({ where, select, include }: any) => {
       const user = where.id ? state.users.get(where.id) : userByEmail(where.email);
@@ -321,6 +347,16 @@ const prisma = {
     }),
   },
 };
+
+for (const op of [
+  prisma.user.update,
+  prisma.user.updateMany,
+  prisma.magicLinkToken.updateMany,
+  prisma.refreshToken.updateMany,
+] as jest.Mock[]) {
+  const eager = op.getMockImplementation()!;
+  op.mockImplementation((args: unknown) => lazy(() => eager(args)));
+}
 
 describe('Team member login email over HTTP', () => {
   let app: INestApplication;
@@ -705,6 +741,31 @@ describe('Team member login email over HTTP', () => {
         pendingEmail: null,
         emailVerifyToken: null,
       });
+    });
+
+    it('rolls the whole switch back when one write in the confirm transaction fails', async () => {
+      await call('POST', '/auth/magic-link/request', {}, { email: 'plain@example.test' });
+      state.refreshTokens.push({ id: 'rt-3', userId: 'plain', revokedAt: null });
+      await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      const token = verifyTokenIn(mailsTo(NEW_ADDRESS)[0]);
+      (prisma.refreshToken.updateMany as jest.Mock).mockImplementationOnce(() =>
+        lazy(async () => {
+          throw new Error('database unavailable');
+        }),
+      );
+
+      expect((await call('GET', `/auth/verify-email?token=${token}`)).status).toBe(500);
+      expect(state.users.get('plain')).toMatchObject({
+        email: 'plain@example.test',
+        pendingEmail: NEW_ADDRESS,
+        emailVerifyToken: expect.any(String),
+      });
+      expect(state.tokens.every((t) => t.usedAt === null)).toBe(true);
+      expect(state.refreshTokens[0].revokedAt).toBeNull();
+
+      // Nothing was half-applied, so the same link works once the database is back.
+      expect((await call('GET', `/auth/verify-email?token=${token}`)).status).toBe(200);
+      expect(state.users.get('plain')!.email).toBe(NEW_ADDRESS);
     });
 
     it('lets a system admin cancel a pending change by submitting the current address', async () => {

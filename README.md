@@ -53,7 +53,7 @@ opencoop/
 │   ├── database/      # Prisma schema & client
 │   ├── shared/        # Shared types & utils
 │   └── pdf-templates/ # React PDF components
-└── docker-compose.yml # Production stack
+└── docker-compose.yml # Local full stack (acc/prod use deploy/docker-compose.yml)
 ```
 
 ## Scripts
@@ -78,5 +78,5 @@ there is no manual migrate step.
 ## Demo Credentials
 
 After running `pnpm db:seed`:
-- **Email**: admin@opencoop.be
-- **Password**: admin123
+- **Coop admin**: admin@zonnecooperatie.be / demo1234
+- **Shareholder**: jan.peeters@email.be / demo1234

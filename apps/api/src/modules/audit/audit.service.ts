@@ -98,31 +98,6 @@ export class AuditService {
     return changes;
   }
 
-  async findByEntity(
-    entity: string,
-    entityId: string,
-    params: { page?: number; limit?: number } = {},
-  ) {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const skip = (page - 1) * limit;
-
-    const [items, total] = await Promise.all([
-      this.prisma.auditLog.findMany({
-        where: { entity, entityId },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-        include: {
-          actor: { select: { id: true, email: true, name: true } },
-        },
-      }),
-      this.prisma.auditLog.count({ where: { entity, entityId } }),
-    ]);
-
-    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
-  }
-
   async findByCoop(
     coopId: string,
     params: { entity?: string; entityId?: string; page?: number; limit?: number } = {},

@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
+import { dividendFractionToPercentInput, dividendPercentToFraction } from '@/lib/dividend-rate';
 import {
   applyColumnFiltersAndSort,
   toggleColumnSort,
@@ -128,7 +129,7 @@ export default function ShareClassesPage() {
       minShares: String(sc.minShares),
       maxShares: sc.maxShares ? String(sc.maxShares) : '',
       hasVotingRights: sc.hasVotingRights,
-      dividendRateOverride: sc.dividendRateOverride ? String(Number(sc.dividendRateOverride)) : '',
+      dividendRateOverride: dividendFractionToPercentInput(Number(sc.dividendRateOverride)),
       isActive: sc.isActive,
     });
     setDialogOpen(true);
@@ -166,16 +167,24 @@ export default function ShareClassesPage() {
       hasVotingRights: form.hasVotingRights,
     };
     if (form.maxShares) body.maxShares = parseInt(form.maxShares);
-    if (form.dividendRateOverride) body.dividendRateOverride = parseFloat(form.dividendRateOverride);
+    if (form.dividendRateOverride) {
+      body.dividendRateOverride = dividendPercentToFraction(parseFloat(form.dividendRateOverride));
+    }
     if (editing) body.isActive = form.isActive;
 
     const url = editing
       ? `/admin/coops/${selectedCoop.id}/share-classes/${editing.id}`
       : `/admin/coops/${selectedCoop.id}/share-classes`;
 
-    await api(url, { method: editing ? 'PUT' : 'POST', body });
-    setDialogOpen(false);
-    loadData();
+    setError(null);
+    try {
+      await api(url, { method: editing ? 'PUT' : 'POST', body });
+      setDialogOpen(false);
+      loadData();
+    } catch {
+      setDialogOpen(false);
+      setError(t('common.error'));
+    }
   };
 
   const visibleClasses = useMemo(
@@ -447,7 +456,7 @@ export default function ShareClassesPage() {
                   type="number"
                   value={form.maxShares}
                   onChange={(e) => setForm({ ...form, maxShares: e.target.value })}
-                  placeholder="\u221e"
+                  placeholder={'\u221e'}
                 />
               </div>
             </div>

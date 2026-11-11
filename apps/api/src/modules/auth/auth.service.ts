@@ -55,7 +55,11 @@ export class AuthService {
       where: { email: email.toLowerCase() },
       include: {
         coopAdminOf: {
-          select: { coopId: true, roles: { select: { role: { select: { permissions: true } } } } },
+          select: {
+            coopId: true,
+            permissionOverrides: true,
+            roles: { select: { role: { select: { permissions: true } } } },
+          },
         },
       },
     });
@@ -328,19 +332,7 @@ export class AuthService {
     }
 
     // New coop creator gets full Admin permissions
-    const adminPermissions = {
-      canManageShareholders: true,
-      canManageTransactions: true,
-      canManageShareClasses: true,
-      canManageProjects: true,
-      canManageDividends: true,
-      canManageSettings: true,
-      canManageAdmins: true,
-      canViewPII: true,
-      canViewReports: true,
-      canViewShareholderRegister: true,
-      canViewVolunteers: false,
-    };
+    const adminPermissions = DEFAULT_ROLES.Admin;
 
     const tokenResult = await this.tokenService.issueJwtForUser({
       id: result.user.id,
@@ -1150,10 +1142,6 @@ export class AuthService {
   }
 
   // ============================================================================
-  // MAGIC LINK AUTHENTICATION
-  // ============================================================================
-
-  // ============================================================================
   // WAITLIST
   // ============================================================================
 
@@ -1229,10 +1217,6 @@ export class AuthService {
     return { message: 'Verification email sent' };
   }
 
-  /**
-   * Central JWT issuance. All auth flows (password, magic link, passkey, OAuth)
-   * converge here. When MFA is enabled, returns an MFA-pending response instead.
-   */
   private async linkOrphanShareholders(userId: string, email: string): Promise<void> {
     await this.prisma.shareholder.updateMany({
       where: { email: { equals: email, mode: 'insensitive' }, userId: null },

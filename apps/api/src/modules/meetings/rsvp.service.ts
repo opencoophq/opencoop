@@ -233,7 +233,7 @@ export class RsvpService {
         meetingLocation: attendance.meeting.location ?? '',
         rsvpStatus: status,
         delegateName,
-        rsvpUrl: `${process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be'}/meetings/rsvp/${attendance.rsvpToken}`,
+        rsvpUrl: `${process.env.FRONTEND_URL || 'http://localhost:3002'}/meetings/rsvp/${attendance.rsvpToken}`,
         coopName: attendance.meeting.coop.name,
         coopLogoUrl: this.toAbsoluteUrl(attendance.meeting.coop.logoUrl),
         coopPrimaryColor: defaultChannel?.primaryColor ?? undefined,
@@ -248,12 +248,12 @@ export class RsvpService {
    * local file uploader) to an absolute URL. Email clients (Gmail, Outlook,
    * Apple Mail) won't render `<img src="/path">` because they have no base
    * URL — the message is rendered standalone in the inbox. Always prepend
-   * NEXT_PUBLIC_WEB_URL when the input doesn't already include a scheme.
+   * FRONTEND_URL when the input doesn't already include a scheme.
    */
   private toAbsoluteUrl(maybeRelative: string | null | undefined): string {
     if (!maybeRelative) return '';
     if (/^https?:\/\//i.test(maybeRelative)) return maybeRelative;
-    const base = process.env.NEXT_PUBLIC_WEB_URL ?? 'https://opencoop.be';
+    const base = process.env.FRONTEND_URL || 'http://localhost:3002';
     return `${base.replace(/\/$/, '')}${maybeRelative.startsWith('/') ? '' : '/'}${maybeRelative}`;
   }
 

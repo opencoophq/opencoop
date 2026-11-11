@@ -254,23 +254,6 @@ export class EmailService {
     return user?.preferredLanguage || 'nl';
   }
 
-  async sendWelcomeEmail(coopId: string, to: string, shareholderName: string) {
-    const language = await this.resolveRecipientLanguage(to);
-    const subjects: Record<string, string> = {
-      nl: 'Welkom bij OpenCoop',
-      en: 'Welcome to OpenCoop',
-      fr: 'Bienvenue sur OpenCoop',
-      de: 'Willkommen bei OpenCoop',
-    };
-    return this.send({
-      coopId,
-      to,
-      subject: subjects[language] || subjects['nl'],
-      templateKey: 'welcome',
-      templateData: { shareholderName, language },
-    });
-  }
-
   async sendSharePurchaseConfirmation(
     coopId: string,
     to: string,
@@ -330,67 +313,6 @@ export class EmailService {
       templateKey: 'payment-confirmed',
       templateData: data,
       attachments,
-    });
-  }
-
-  async sendDividendStatement(
-    coopId: string,
-    to: string,
-    data: {
-      shareholderName: string;
-      year: number;
-      netAmount: number;
-      statementPath: string;
-    },
-  ) {
-    const language = await this.resolveRecipientLanguage(to);
-    const subjects: Record<string, string> = {
-      nl: `Dividendafrekening ${data.year}`,
-      en: `Dividend Statement ${data.year}`,
-      fr: `Relevé de dividendes ${data.year}`,
-      de: `Dividendenabrechnung ${data.year}`,
-    };
-    return this.send({
-      coopId,
-      to,
-      subject: subjects[language] || subjects['nl'],
-      templateKey: 'dividend-statement',
-      templateData: { ...data, language },
-      attachments: [{ filename: `dividend-${data.year}.pdf`, path: data.statementPath }],
-    });
-  }
-
-  async sendPasswordReset(coopId: string, to: string, resetUrl: string) {
-    const language = await this.resolveRecipientLanguage(to);
-    const subjects: Record<string, string> = {
-      nl: 'Wachtwoord resetten',
-      en: 'Password Reset Request',
-      fr: 'Demande de réinitialisation du mot de passe',
-      de: 'Passwort zurücksetzen',
-    };
-    return this.send({
-      coopId,
-      to,
-      subject: subjects[language] || subjects['nl'],
-      templateKey: 'password-reset',
-      templateData: { resetUrl, language },
-    });
-  }
-
-  async sendMagicLink(coopId: string, to: string, magicLinkUrl: string, code: string) {
-    const language = await this.resolveRecipientLanguage(to);
-    const subjects: Record<string, string> = {
-      nl: 'Je inlogcode voor OpenCoop',
-      en: 'Your OpenCoop sign-in code',
-      fr: 'Votre code de connexion pour OpenCoop',
-      de: 'Ihr Anmeldecode für OpenCoop',
-    };
-    return this.send({
-      coopId,
-      to,
-      subject: subjects[language] || subjects['nl'],
-      templateKey: 'magic-link',
-      templateData: { magicLinkUrl, code, language },
     });
   }
 

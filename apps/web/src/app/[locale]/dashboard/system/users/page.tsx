@@ -40,8 +40,12 @@ export default function SystemUsersPage() {
   useEffect(() => { loadUsers(); }, []);
 
   const handleRoleChange = async (userId: string, role: string) => {
-    await api(`/system/users/${userId}/role`, { method: 'PUT', body: { role } });
-    loadUsers();
+    try {
+      await api(`/system/users/${userId}/role`, { method: 'PUT', body: { role } });
+      loadUsers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update role');
+    }
   };
 
   const roleVariant = (role: string) => {

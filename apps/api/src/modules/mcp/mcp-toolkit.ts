@@ -360,13 +360,13 @@ export class McpToolkit {
 
     if (
       error instanceof Prisma.PrismaClientValidationError ||
-      error instanceof Prisma.PrismaClientUnknownRequestError ||
-      error instanceof Prisma.PrismaClientInitializationError ||
-      error instanceof Prisma.PrismaClientRustPanicError
+      error instanceof Prisma.PrismaClientUnknownRequestError
     ) {
       return this.mcpError(ErrorCode.InvalidParams, 'Invalid input');
     }
 
+    // Everything else, including PrismaClientInitializationError and
+    // PrismaClientRustPanicError, is a server failure: log it, hide the details.
     this.logger.error(error);
     return this.mcpError(ErrorCode.InternalError, 'Internal error');
   }

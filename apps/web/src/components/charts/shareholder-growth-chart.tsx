@@ -8,7 +8,6 @@ import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  BarChart,
   Bar,
   XAxis,
   YAxis,

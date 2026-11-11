@@ -126,13 +126,6 @@ export class HouseholdService {
     });
   }
 
-  async listShareholdersForUser(userId: string, coopId: string) {
-    return this.prisma.shareholder.findMany({
-      where: { userId, coopId },
-      orderBy: { createdAt: 'asc' },
-    });
-  }
-
   /**
    * Search for household-link candidates in this coop by email.
    * Returns one candidate per distinct "household anchor":

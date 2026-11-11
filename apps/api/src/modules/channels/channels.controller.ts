@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
+import { CurrentUser, CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { ChannelsService } from './channels.service';
 import { PublicRegisterDto } from '../coops/dto/public-register.dto';
 import { ClaimGiftDto } from './dto/claim-gift.dto';
@@ -24,6 +26,7 @@ export class ChannelsController {
   }
 
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Post(':channelSlug/register')
   @ApiOperation({ summary: 'Public share registration via channel' })
   @ApiResponse({ status: 201, description: 'Registration successful' })
@@ -32,8 +35,9 @@ export class ChannelsController {
     @Param('slug') slug: string,
     @Param('channelSlug') channelSlug: string,
     @Body() dto: PublicRegisterDto,
+    @CurrentUser() user?: CurrentUserData | null,
   ) {
-    return this.channelsService.publicRegister(slug, channelSlug, dto);
+    return this.channelsService.publicRegister(slug, channelSlug, dto, user?.id);
   }
 
   @Public()

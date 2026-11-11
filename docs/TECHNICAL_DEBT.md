@@ -2,6 +2,8 @@
 
 Audit performed 2026-03-02 against [25 common anti-patterns](https://x.com). Results below.
 
+Scorecard dated 2026-03-02; rows 3, 10 and 22 and the unit-test item were corrected on 2026-11-09.
+
 ## Status Legend
 
 - **GREEN** — Not an issue
@@ -14,14 +16,14 @@ Audit performed 2026-03-02 against [25 common anti-patterns](https://x.com). Res
 |---|---|---|---|
 | 1 | API keys hardcoded | GREEN | `.env` gitignored, `.env.example` uses placeholders |
 | 2 | No /health endpoint | GREEN | `GET /health` checks Postgres + Redis via @nestjs/terminus |
-| 3 | Schema changes in your head | GREEN | 13 sequential Prisma migrations |
+| 3 | Schema changes in your head | GREEN | 53 sequential Prisma migrations |
 | 4 | SELECT * and vibes | YELLOW | Most queries use `select`/`include`; a few fetch full rows |
 | 5 | Error handling = console.log | YELLOW | Sentry + NestJS exceptions on critical paths; `auth.service.ts` uses `console.error` |
 | 6 | No rate limit on auth | GREEN | Global 100/min + per-endpoint auth limits (3-5/min) |
 | 7 | Timezone mixing | GREEN | UTC backend, `toLocaleDateString(locale)` frontend |
 | 8 | README empty or wrong | GREEN | Accurate setup, structure, scripts, deploy |
 | 9 | No staging env | GREEN | Three-tier: dev, acc (auto-deploy main), prod (version tag) |
-| 10 | God component | YELLOW | Shareholder detail page is 949 lines with 15+ useState |
+| 10 | God component | YELLOW | Shareholder detail page is 1688 lines with 15+ useState |
 | 11 | No analytics | RED | Zero product analytics integration |
 | 12 | Tech debt culture | — | Subjective |
 | 13 | Env vars undocumented | GREEN | Both `.env.example` files are thorough |
@@ -33,7 +35,7 @@ Audit performed 2026-03-02 against [25 common anti-patterns](https://x.com). Res
 | 19 | Deploys from local machine | GREEN | Fully automated GitHub Actions CI/CD |
 | 20 | No input validation | GREEN | Global ValidationPipe + 307 class-validator decorators |
 | 21 | CORS set to * | GREEN | Restricted to `FRONTEND_URL` env var + Helmet |
-| 22 | CI is just local testing | YELLOW | E2E + Docker builds; no unit tests, no lint step, no PR checks |
+| 22 | CI is just local testing | GREEN | PRs and main run typecheck, oxlint, Jest and Playwright |
 | 23 | Same token across envs | YELLOW | Env-var driven; `NEXTAUTH_SECRET` reuses `JWT_SECRET` |
 | 24 | Only one person can deploy | YELLOW | CI/CD automated; server provisioning undocumented |
 
@@ -75,7 +77,7 @@ Audit performed 2026-03-02 against [25 common anti-patterns](https://x.com). Res
 **Files:** `apps/api/src/common/filters/all-exceptions.filter.ts`, `apps/api/src/app.module.ts`
 
 #### Decompose shareholder detail page
-**Status:** YELLOW — 949 lines, 15+ useState, 3 embedded dialogs
+**Status:** YELLOW — 1688 lines, 15+ useState, 3 embedded dialogs
 **Recommendation:** Extract `BuySharesDialog`, `SellSharesDialog`, `RejectTransactionDialog`, `ShareholdingsTable`, `TransactionHistoryTable` into separate components.
 **Files:** `apps/web/src/app/[locale]/dashboard/admin/shareholders/[id]/page.tsx`
 
@@ -87,7 +89,7 @@ Audit performed 2026-03-02 against [25 common anti-patterns](https://x.com). Res
 ### Low Priority
 
 #### Add unit tests
-**Status:** YELLOW — Zero `*.spec.ts` files in the API
+**Status:** YELLOW — 119 `*.spec.ts` files in the API; CI runs them with Jest. Coverage of the modules below is not confirmed
 **Recommendation:** Start with critical business logic: transaction processing, dividend calculations, OGM code generation/validation.
 **Files:** `apps/api/src/modules/transactions/*.spec.ts`, `apps/api/src/modules/dividends/*.spec.ts`
 

@@ -75,7 +75,7 @@ describe('AuthService.onboard', () => {
       tokenService as never,
     );
 
-    return { service, prisma, auditService, emailService, authEmail, tx };
+    return { service, prisma, auditService, emailService, authEmail, tx, tokenService };
   }
 
   it('writes an audit row for the new admin and notifies Armlab without waiting on SMTP', async () => {
@@ -118,6 +118,17 @@ describe('AuthService.onboard', () => {
       'ada@zukunftdorf.example',
       expect.any(String),
       'de',
+    );
+  });
+
+  it('signs the onboarding token with the full Admin permission set', async () => {
+    const { service, tokenService } = build();
+
+    await service.onboard(dto, '203.0.113.10', 'Mozilla/5.0');
+
+    const user = tokenService.issueJwtForUser.mock.calls[0][0];
+    expect(user.coopAdminOf[0].roles[0].role.permissions).toEqual(
+      expect.objectContaining({ canManageMessages: true, canManageMeetings: true }),
     );
   });
 

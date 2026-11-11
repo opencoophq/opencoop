@@ -27,7 +27,7 @@ network with **no host ports exposed**.
 
 `.github/workflows/build-deploy.yml`:
 
-1. **test** — remote deploy script, lint + api unit tests (+ workspace dep build) + `pnpm audit --prod` report. Gates merge.
+1. **test** — script tests (remote deploy, CI changes, e2e select), typecheck, lint and Jest for api and web, plus the workspace dep build. Gates merge. `pnpm audit --prod` is a separate `audit` job that runs only on schedule or manual dispatch and only reports.
 2. **e2e** — Playwright against a seeded Postgres+Redis. Gates merge + deploy.
 3. **build** — builds & pushes 3 GHCR images (`opencoop-{api,web,migrate}:<sha>`), immutable, SHA-tagged.
    On PRs the images build but are **not** pushed and **no deploy runs** (`github.event_name == 'push'` guard).
@@ -193,8 +193,7 @@ back to the prior image **and** assess whether the partial migration left the DB
 - **External uptime monitor** (e.g. UptimeRobot / Better Stack) should watch
   `https://opencoop.be/api/health` and alert (Telegram/email). *(Set this up — it is the one piece
   not enforceable from the repo; without it, the first signal of a dead box is a user email.)*
-- **Sentry**: API errors are captured (`apps/api/src/instrument.ts`, global filter). Web error
-  tracking is being added separately.
+- **Sentry**: The API reports through `apps/api/src/instrument.ts` (global filter). The web app reports through `apps/web/sentry.client.config.ts`, `sentry.server.config.ts` and `sentry.edge.config.ts`.
 
 ---
 

@@ -46,7 +46,10 @@ describe('ReminderProcessor', () => {
 
     expect(prisma.meeting.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { status: MeetingStatus.CONVOKED },
+        where: {
+          status: MeetingStatus.CONVOKED,
+          scheduledAt: { gt: expect.any(Date) },
+        },
         include: expect.objectContaining({
           attendances: expect.objectContaining({
             where: { rsvpStatus: RSVPStatus.UNKNOWN },
@@ -106,5 +109,17 @@ describe('ReminderProcessor', () => {
     await processor.tick();
 
     expect(email.send.mock.calls[0][0].templateData.language).toBe('nl');
+  });
+
+  it('only loads meetings the loop would not skip as past (less than 24h ago or later)', async () => {
+    prisma.meeting.findMany.mockResolvedValue([]);
+    const before = Date.now();
+
+    await processor.tick();
+
+    const cutoff: Date = prisma.meeting.findMany.mock.calls[0][0].where.scheduledAt.gt;
+    const dayMs = 24 * 3600 * 1000;
+    expect(cutoff.getTime()).toBeGreaterThanOrEqual(before - dayMs);
+    expect(cutoff.getTime()).toBeLessThanOrEqual(Date.now() - dayMs);
   });
 });

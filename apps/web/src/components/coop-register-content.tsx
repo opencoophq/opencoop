@@ -32,6 +32,7 @@ import { resolveLogoUrl } from '@/lib/api';
 import { chargeCardRequestPath, chargeCardReturnHref } from '@/lib/charge-card-entry';
 import { rememberPostLoginRedirect } from '@/lib/post-login-redirect';
 import { registrationErrorMessage } from '@/lib/registration-error';
+import { shouldDropSessionAfterAuthMe } from '@/lib/auth-session';
 
 interface CoopPublicInfo {
   id: string;
@@ -368,9 +369,10 @@ export function CoopRegisterContent({
   const selectedShareClass = coop?.shareClasses.find(
     (sc) => sc.id === watchShareClassId
   );
-  const totalAmount = selectedShareClass
-    ? selectedShareClass.pricePerShare * watchQuantity
-    : 0;
+  const totalAmount =
+    selectedShareClass && Number.isFinite(watchQuantity)
+      ? selectedShareClass.pricePerShare * watchQuantity
+      : 0;
 
   useEffect(() => {
     // A magic link opens in a new tab, so the request-form path has to live in
@@ -457,8 +459,7 @@ export function CoopRegisterContent({
                 // Logged in but no shareholders in this coop — pre-fill email
                 form.setValue('email', meData.email);
               }
-            } else {
-              // Token is invalid/expired — clean up
+            } else if (shouldDropSessionAfterAuthMe(meResponse.status)) {
               localStorage.removeItem('accessToken');
               localStorage.removeItem('user');
             }
@@ -694,11 +695,15 @@ export function CoopRegisterContent({
         };
       }
 
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/coops/${coopSlug}/channels/${channelSlug}/register`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify(payload),
         },
       );
@@ -1265,7 +1270,7 @@ export function CoopRegisterContent({
             </div>
             <div className="flex justify-between">
               <span>{t('shares.quantity')}</span>
-              <span>{watchQuantity}</span>
+              <span>{Number.isFinite(watchQuantity) ? watchQuantity : 0}</span>
             </div>
             <div className="flex justify-between">
               <span>{t('shares.pricePerShare')}</span>

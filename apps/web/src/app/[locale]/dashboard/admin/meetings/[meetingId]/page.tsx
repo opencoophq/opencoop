@@ -55,7 +55,6 @@ export default function MeetingDetailPage() {
   const router = useRouter();
   const params = useParams();
   const meetingId = (params?.meetingId as string) || '';
-  const locale = (params?.locale as string) || 'en';
   const { selectedCoop } = useAdmin();
   const { locale: dateLocale } = useLocale();
 

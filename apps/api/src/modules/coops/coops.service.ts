@@ -23,6 +23,7 @@ import { encryptStoredSecret } from '../../common/crypto/stored-secret';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import { sanitizeInterestTags } from '../volunteers/volunteer-record';
 import { countryFromAddress } from '../email/coop-signup-notice';
+import { assertCanBuyForShareholder } from '../shareholders/shareholder-access';
 import { refusePublicSignupIfLapsed } from '../billing/signup-grace';
 import * as Sentry from '@sentry/nestjs';
 import sharp from 'sharp';
@@ -619,12 +620,14 @@ export class CoopsService {
       });
     }
 
-    // Never return mail or audience credentials (plaintext or ciphertext).
+    // Never return mail or audience credentials (plaintext or ciphertext) or
+    // the hash of the external API key.
     if (updated && typeof updated === 'object') {
       const row = updated as Record<string, unknown>;
       delete row.brevoApiKey;
       delete row.smtpPass;
       delete row.graphClientSecret;
+      delete row.apiKeyHash;
     }
 
     return updated;
@@ -967,7 +970,7 @@ export class CoopsService {
     };
   }
 
-  async publicRegister(slug: string, dto: PublicRegisterDto) {
+  async publicRegister(slug: string, dto: PublicRegisterDto, actorUserId?: string) {
     if (!dto.privacyAccepted) {
       throw new BadRequestException('You must accept the privacy policy');
     }
@@ -996,13 +999,15 @@ export class CoopsService {
     let shareholderId: string;
 
     if (dto.shareholderId) {
-      // Verify shareholder belongs to this coop
+      // An anonymous caller must not attach a purchase to a guessed shareholder id.
       const shareholder = await this.prisma.shareholder.findFirst({
         where: { id: dto.shareholderId, coopId: coop.id },
+        select: { id: true, userId: true, type: true, registeredByUserId: true },
       });
       if (!shareholder) {
         throw new NotFoundException('Shareholder not found in this cooperative');
       }
+      assertCanBuyForShareholder(shareholder, actorUserId);
       shareholderId = shareholder.id;
     } else {
       // Create new shareholder

@@ -14,13 +14,6 @@ export class PaymentsService {
     private shareholderStatus: ShareholderStatusService,
   ) {}
 
-  async findByRegistration(registrationId: string) {
-    return this.prisma.payment.findMany({
-      where: { registrationId },
-      orderBy: { bankDate: 'asc' },
-    });
-  }
-
   async addPayment(data: {
     registrationId: string;
     coopId: string;
@@ -73,7 +66,7 @@ export class PaymentsService {
     }
 
     // Update registration status based on cumulative payments
-    const totalPaid = computeTotalPaid(registration.payments) + data.amount;
+    const totalPaid = computeTotalPaid([...registration.payments, { amount: data.amount }]);
     const totalAmount = Number(registration.totalAmount);
 
     if (totalPaid >= totalAmount) {
@@ -94,29 +87,6 @@ export class PaymentsService {
     }
 
     return payment;
-  }
-
-  async findPendingRegistrationsByCoopId(coopId: string) {
-    return this.prisma.registration.findMany({
-      where: {
-        coopId,
-        status: { in: ['PENDING_PAYMENT', 'ACTIVE'] },
-        type: 'BUY',
-      },
-      include: {
-        shareholder: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            companyName: true,
-          },
-        },
-        shareClass: true,
-        payments: { orderBy: { bankDate: 'asc' } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
   }
 
   async findUnlinkedByCoopId(coopId: string, search?: string, amount?: string) {

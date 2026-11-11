@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
 import { EmancipationService } from '../auth/emancipation.service';
 
@@ -12,7 +11,6 @@ export class BirthdaySchedulerService {
 
   constructor(
     private prisma: PrismaService,
-    private authService: AuthService,
     private emailService: EmailService,
     private emancipationService: EmancipationService,
   ) {}

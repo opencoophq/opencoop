@@ -200,6 +200,24 @@ describe('RsvpService.resolveDelegate', () => {
     expect(proxies.create).toHaveBeenCalledWith('c-1', 'm-1', 'gA', 'sB');
   });
 
+  it('revokes the old proxy and creates the new one when the delegate changes', async () => {
+    prisma.meetingAttendance.findUnique.mockResolvedValue(baseAttendance);
+    prisma.proxy.findFirst.mockResolvedValue({ id: 'p-old', delegateShareholderId: 'sOld' });
+    prisma.meetingAttendance.update.mockResolvedValue({
+      ...baseAttendance,
+      rsvpStatus: RSVPStatus.PROXY,
+      rsvpAt: future,
+    });
+
+    await service.updateRsvpForShareholder('c-1', 'm-1', 'gA', RSVPStatus.PROXY, 'sNew');
+
+    expect(prisma.proxy.update).toHaveBeenCalledWith({
+      where: { id: 'p-old' },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(proxies.create).toHaveBeenCalledWith('c-1', 'm-1', 'gA', 'sNew');
+  });
+
   it('rejects admin RSVP updates for meetings outside the coop', async () => {
     prisma.meetingAttendance.findUnique.mockResolvedValue({
       ...baseAttendance,

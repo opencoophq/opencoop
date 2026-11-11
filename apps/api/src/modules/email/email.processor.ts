@@ -11,22 +11,8 @@ import {
   TokenCredentialAuthenticationProvider,
 } from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
 import { buildCopy, getCopy } from './email-copy';
+import { escapeHtml } from './escape-html';
 import { decryptStoredSecret } from '../../common/crypto/stored-secret';
-
-/**
- * Escape HTML-significant characters so user/coop-controlled free text can be
- * safely interpolated into email HTML without allowing markup/script injection
- * (audit Q5). Only use for plain-text values — never for trusted URLs, numbers,
- * system-generated codes, or intentionally pre-rendered HTML.
- */
-function escapeHtml(value: unknown): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 interface EmailJob {
   emailLogId: string;
@@ -302,18 +288,6 @@ export class EmailProcessor {
   ): string {
     // Simple template rendering - in production, use a proper template engine
     const templates: Record<string, (data: Record<string, unknown>, coopName: string) => string> = {
-      welcome: (d, cn) => {
-        const lang = (d.language as string) || 'nl';
-        const sn = escapeHtml(d.shareholderName);
-        const ecn = escapeHtml(cn);
-        const s = buildCopy('welcome', lang, { coopName: ecn, shareholderName: sn });
-        return `
-    <h1>${s.title}</h1>
-    <p>${s.dear}</p>
-    <p>${s.thanks}</p>
-    <p>${s.login}</p>
-  `;
-      },
       'share-purchase': (d, cn) => {
         const lang = (d.language as string) || 'nl';
         const sn = escapeHtml(d.shareholderName);
@@ -421,56 +395,6 @@ export class EmailProcessor {
     <p>${s.thanks}</p>
   `;
       },
-      'dividend-statement': (d, cn) => {
-        const lang = (d.language as string) || 'nl';
-        const sn = escapeHtml(d.shareholderName);
-        const ecn = escapeHtml(cn);
-        const s = buildCopy('dividend-statement', lang, {
-          coopName: ecn,
-          shareholderName: sn,
-          year: String(d.year),
-        });
-        return `
-    <h1>${s.title}</h1>
-    <p>${s.dear}</p>
-    <p>${s.attached}</p>
-    <p>${s.net}: €${(d.netAmount as number).toFixed(2)}</p>
-    <p>${s.thanks}</p>
-  `;
-      },
-      'password-reset': (d, _cn) => {
-        const lang = (d.language as string) || 'nl';
-        const s = buildCopy('password-reset', lang);
-        return `
-    <h1>${s.title}</h1>
-    <p>${s.requested}</p>
-    <p>${s.click}</p>
-    <p><a href="${d.resetUrl}">${d.resetUrl}</a></p>
-    <p>${s.ignore}</p>
-    <p>${s.expires}</p>
-  `;
-      },
-      'magic-link': (d, cn) => {
-        const lang = (d.language as string) || 'nl';
-        const s = buildCopy('magic-link', lang, { coopName: escapeHtml(cn) });
-        const code = String(d.code ?? '').replace(/\D/g, '').slice(0, 6);
-        const codeLine = (s.codeLine || '').replace('{code}', code);
-        return `
-    <h1>${s.title}</h1>
-    <p style="text-align: center; margin: 24px 0; font-size: 28px; font-weight: bold; font-family: Consolas, Monaco, monospace; color: #1e40af;">${codeLine}</p>
-    <p>${s.click}</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="${d.magicLinkUrl}"
-         style="background-color: #1e40af; color: white; padding: 12px 24px;
-                text-decoration: none; border-radius: 6px; display: inline-block;">
-        ${s.button}
-      </a>
-    </p>
-    <p style="color: #666; font-size: 12px;">
-      ${s.expires}
-    </p>
-  `;
-      },
       'minor-turned-adult': (d, cn) => `
         <h1>Welkom bij ${escapeHtml(cn)}, ${escapeHtml(d.firstName)}!</h1>
         <p>Gefeliciteerd met je 18de verjaardag! 🎉</p>
@@ -505,6 +429,32 @@ export class EmailProcessor {
         <p style="color: #666; font-size: 12px;">
           Deze link is 90 dagen geldig.
         </p>
+      `,
+      'emancipation-household': (d, cn) => `
+        <h1>${escapeHtml(d.shareholderFirstName)} kan een eigen account aanmaken</h1>
+        <p>Beste,</p>
+        <p>${escapeHtml(d.shareholderFirstName)} ${escapeHtml(d.shareholderLastName)} kan nu een eigen account aanmaken bij ${escapeHtml(cn)}.</p>
+        <p>Geef onderstaande link door aan ${escapeHtml(d.shareholderFirstName)}:</p>
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${d.claimUrl}"
+             style="background-color: #1e40af; color: white; padding: 12px 24px;
+                    text-decoration: none; border-radius: 6px; display: inline-block;">
+            Account aanmaken
+          </a>
+        </p>
+        <p style="color: #666; font-size: 12px;">
+          Deze link is 30 dagen geldig.
+        </p>
+      `,
+      'ponto-expiry-warning': (d, _cn) => `
+        <h1>Ponto bank connection expiring</h1>
+        <p>Hello,</p>
+        <p>The Ponto bank connection for <strong>${escapeHtml(d.coopName)}</strong> expires in ${escapeHtml(d.daysRemaining)} days.</p>
+        <ul>
+          <li><strong>Bank:</strong> ${escapeHtml(d.bankName)}</li>
+          <li><strong>IBAN:</strong> ${escapeHtml(d.iban)}</li>
+        </ul>
+        <p>Reauthorize the connection in your cooperative settings to keep bank transactions coming in.</p>
       `,
       'minor-upgrade-reminder': (d, cn) => `
         <h1>Herinnering: account aanmaken voor ${escapeHtml(d.minorFirstName)}</h1>
@@ -938,7 +888,8 @@ export class EmailProcessor {
 
     const template = templates[templateKey];
     if (!template) {
-      return `<p>Email template not found: ${escapeHtml(templateKey)}</p>`;
+      // Fail the job (logged FAILED) rather than send a mail with a placeholder body.
+      throw new Error(`Email template not found: ${templateKey}`);
     }
 
     const content = template(data, coopName);

@@ -12,7 +12,7 @@ The same pattern applies to other enums (shareholder types, transaction statuses
 
 ## Adding Translations
 
-All user-facing strings must have translations in both `en.json` and `nl.json`. When adding a new enum value:
+All user-facing strings must have translations in all four locale files: `en.json`, `nl.json`, `fr.json` and `de.json`. When adding a new enum value:
 
 1. Add the key under the appropriate `roles`/`types`/`statuses` object in both files
 2. Use the enum value as the key (e.g., `"COOP_ADMIN": "Administrator"`)
