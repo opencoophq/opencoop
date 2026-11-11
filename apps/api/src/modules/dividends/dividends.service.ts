@@ -240,6 +240,32 @@ export class DividendsService {
       where: { dividendPeriodId: periodId },
     });
 
+    // A transfer writes a completed SELL on the source and a new BUY for the
+    // recipient. Counting only BUYs pays both. Subtract sells that were
+    // completed before the ex-dividend date. A still-pending sale is not
+    // subtracted: the member still holds the shares on the record date.
+    const completedSells = await this.prisma.registration.findMany({
+      where: {
+        coopId: period.coopId,
+        type: 'SELL',
+        status: 'COMPLETED',
+        sellsRegistrationId: { not: null },
+        OR: [
+          { processedAt: { lt: period.exDividendDate } },
+          { processedAt: null, registerDate: { lt: period.exDividendDate } },
+        ],
+      },
+      select: { sellsRegistrationId: true, quantity: true },
+    });
+    const soldByBuyId = new Map<string, number>();
+    for (const sell of completedSells) {
+      if (!sell.sellsRegistrationId) continue;
+      soldByBuyId.set(
+        sell.sellsRegistrationId,
+        (soldByBuyId.get(sell.sellsRegistrationId) ?? 0) + sell.quantity,
+      );
+    }
+
     // Calculate dividends for each shareholder
     const payouts: Array<{
       dividendPeriodId: string;
@@ -278,10 +304,11 @@ export class DividendsService {
         const totalPaid = computeTotalPaid(reg.payments);
         const pricePerShare = Number(reg.pricePerShare);
         const vestedQuantity = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
+        const heldQuantity = Math.max(0, vestedQuantity - (soldByBuyId.get(reg.id) ?? 0));
 
-        if (vestedQuantity <= 0) continue;
+        if (heldQuantity <= 0) continue;
 
-        const shareValue = vestedQuantity * pricePerShare;
+        const shareValue = heldQuantity * pricePerShare;
         const dividend = calculateDividend(
           shareValue,
           dividendRate,
@@ -293,7 +320,7 @@ export class DividendsService {
         calculationDetails.push({
           shareClassId: reg.shareClassId,
           shareClassName: reg.shareClass.name,
-          quantity: vestedQuantity,
+          quantity: heldQuantity,
           pricePerShare,
           totalValue: shareValue,
           dividendRate,

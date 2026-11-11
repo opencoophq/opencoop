@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { CoopAdminsService } from './coop-admins.service';
 
 function build() {
@@ -78,5 +79,66 @@ describe('CoopAdminsService.inviteAdmin', () => {
     await service.inviteAdmin('coop-1', { email: 'ex@admin.com', roleIds: ['role-1'] } as any);
 
     expect(prisma.adminInvitation.delete).toHaveBeenCalledWith({ where: { id: 'inv-old' } });
+  });
+});
+
+describe('CoopAdminsService.updateAdminUser', () => {
+  it('refuses a coop admin changing a system admin login email', async () => {
+    const { service, prisma } = build();
+    prisma.coopAdmin.findFirst.mockResolvedValue({
+      id: 'ca-1',
+      user: { id: 'u-sys', email: 'root@opencoop.be', role: 'SYSTEM_ADMIN' },
+    });
+
+    await expect(
+      service.updateAdminUser(
+        'coop-1',
+        'ca-1',
+        { email: 'attacker@example.com' },
+        { role: 'COOP_ADMIN' },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('lets a system admin change a system admin login email', async () => {
+    const { service, prisma } = build();
+    prisma.coopAdmin.findFirst.mockResolvedValue({
+      id: 'ca-1',
+      user: { id: 'u-sys', email: 'root@opencoop.be', role: 'SYSTEM_ADMIN' },
+    });
+    prisma.user.update.mockResolvedValue({ id: 'u-sys', email: 'new@example.com' });
+
+    await service.updateAdminUser(
+      'coop-1',
+      'ca-1',
+      { email: 'new@example.com' },
+      { role: 'SYSTEM_ADMIN' },
+    );
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'u-sys' },
+        data: expect.objectContaining({ email: 'new@example.com', emailVerified: null }),
+      }),
+    );
+  });
+
+  it('still lets a coop admin change another coop admin login email', async () => {
+    const { service, prisma } = build();
+    prisma.coopAdmin.findFirst.mockResolvedValue({
+      id: 'ca-2',
+      user: { id: 'u-2', email: 'peer@coop.be', role: 'COOP_ADMIN' },
+    });
+    prisma.user.update.mockResolvedValue({ id: 'u-2', email: 'fixed@coop.be' });
+
+    await service.updateAdminUser(
+      'coop-1',
+      'ca-2',
+      { email: 'fixed@coop.be' },
+      { role: 'COOP_ADMIN' },
+    );
+
+    expect(prisma.user.update).toHaveBeenCalled();
   });
 });

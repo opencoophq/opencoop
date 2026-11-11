@@ -97,6 +97,9 @@ export default defineConfig({
         REDIS_URL: 'redis://localhost:6380',
         JWT_SECRET: 'test-jwt-secret',
         FRONTEND_URL: 'http://localhost:3002',
+        // The suite shares one IP. The production default (100/min) 429s
+        // /auth/me partway through and the shares page renders as empty.
+        API_THROTTLE_LIMIT: '10000',
       },
     },
     {

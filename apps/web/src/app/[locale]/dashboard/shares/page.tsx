@@ -107,6 +107,7 @@ export default function SharesPage() {
   const [registrations, setRegistrations] = useState<RegistrationData[]>([]);
   const [shareholder, setShareholder] = useState<ShareholderData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   // Sell dialog state
   const [sellOpen, setSellOpen] = useState(false);
@@ -155,6 +156,7 @@ export default function SharesPage() {
   useEffect(() => {
     async function loadShares() {
       setLoading(true);
+      setLoadError(false);
       try {
         if (isPreviewMode && previewShareholderId && selectedCoop) {
           const [preview, settings] = await Promise.all([
@@ -236,7 +238,7 @@ export default function SharesPage() {
           }
         }
       } catch {
-        // ignore
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -498,6 +500,11 @@ export default function SharesPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">{t('shares.title')}</h1>
+      {loadError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{t('common.loadError')}</AlertDescription>
+        </Alert>
+      )}
       {isPreviewMode && (
         <Alert className="mb-6">
           <AlertDescription className="flex items-center justify-between">

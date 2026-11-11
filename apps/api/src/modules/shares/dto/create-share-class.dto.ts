@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsBoolean, IsOptional, Min, MaxLength } from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsOptional, Min, Max, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateShareClassDto {
@@ -34,8 +34,15 @@ export class CreateShareClassDto {
   @IsBoolean()
   hasVotingRights?: boolean;
 
-  @ApiProperty({ example: 3.5, description: 'Override dividend rate in percent', required: false })
+  @ApiProperty({
+    example: 0.035,
+    description:
+      'Override dividend rate as a fraction of share value. 0.035 means 3.5%. The admin form converts from percent.',
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
+  @Min(0)
+  @Max(1)
   dividendRateOverride?: number;
 }

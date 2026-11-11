@@ -4,7 +4,7 @@ jest.mock('../documents/documents.service', () => ({
   DocumentsService: class DocumentsServiceMock {},
 }));
 
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { LAPSED_SIGNUP_GRACE_MS, PublicSignupClosedException } from '../billing/signup-grace';
 import { ChannelsService } from './channels.service';
@@ -72,6 +72,20 @@ describe('ChannelsService.publicRegister — orphan-shareholder preflight', () =
     quantity: 1,
     privacyAccepted: true,
   };
+
+  it('refuses an anonymous purchase against someone else shareholder id', async () => {
+    prisma.shareholder.findFirst.mockResolvedValue({
+      id: 'sh-jan',
+      userId: 'user-jan',
+      type: 'INDIVIDUAL',
+      registeredByUserId: null,
+    });
+
+    await expect(
+      service.publicRegister('bronsgroen', 'default', { ...dto, shareholderId: 'sh-jan' } as any),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(registrationsService.createBuy).not.toHaveBeenCalled();
+  });
 
   it('returns existing_shareholder (orphan) when email matches a migrated shareholder with no user account', async () => {
     prisma.shareholder.findFirst.mockResolvedValue({ userId: null });

@@ -12,7 +12,7 @@ jest.mock('@sentry/nestjs', () => ({ captureException: jest.fn() }));
 
 process.env.FIELD_ENCRYPTION_KEY = 'a'.repeat(64);
 
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { LAPSED_SIGNUP_GRACE_MS, PublicSignupClosedException } from '../billing/signup-grace';
 import * as Sentry from '@sentry/nestjs';
 import { Test } from '@nestjs/testing';
@@ -105,6 +105,40 @@ describe('CoopsService.publicRegister — orphan-shareholder preflight', () => {
       hasUserAccount: true,
     });
     expect(shareholdersService.create).not.toHaveBeenCalled();
+  });
+
+  it('refuses an anonymous purchase against someone else shareholder id', async () => {
+    prisma.shareholder.findFirst.mockResolvedValue({
+      id: 'sh-jan',
+      userId: 'user-jan',
+      type: 'INDIVIDUAL',
+      registeredByUserId: null,
+    });
+
+    await expect(
+      service.publicRegister('bronsgroen', { ...dto, shareholderId: 'sh-jan' } as any),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(registrationsService.createBuy).not.toHaveBeenCalled();
+  });
+
+  it('allows the signed-in owner to buy more shares', async () => {
+    prisma.shareholder.findFirst.mockResolvedValue({
+      id: 'sh-jan',
+      userId: 'user-jan',
+      type: 'INDIVIDUAL',
+      registeredByUserId: null,
+    });
+
+    const result = await service.publicRegister(
+      'bronsgroen',
+      { ...dto, shareholderId: 'sh-jan' } as any,
+      'user-jan',
+    );
+
+    expect(registrationsService.createBuy).toHaveBeenCalledWith(
+      expect.objectContaining({ shareholderId: 'sh-jan' }),
+    );
+    expect(result).toMatchObject({ status: 'registered', shareholderId: 'sh-jan' });
   });
 
   it('proceeds with normal registration when email is new', async () => {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -572,10 +572,11 @@ export class CoopAdminsService {
     coopId: string,
     adminId: string,
     dto: { name?: string | null; preferredLanguage?: string; email?: string },
+    actor: { role: string },
   ) {
     const admin = await this.prisma.coopAdmin.findFirst({
       where: { id: adminId, coopId },
-      include: { user: { select: { id: true, email: true } } },
+      include: { user: { select: { id: true, email: true, role: true } } },
     });
     if (!admin) {
       throw new NotFoundException('Admin not found');
@@ -588,6 +589,11 @@ export class CoopAdminsService {
     if (dto.email !== undefined) {
       const newEmail = dto.email.toLowerCase().trim();
       if (newEmail !== admin.user.email) {
+        // A coop admin who can edit team emails could point a system admin
+        // account at their own inbox and sign in with a magic link.
+        if (admin.user.role === 'SYSTEM_ADMIN' && actor.role !== 'SYSTEM_ADMIN') {
+          throw new ForbiddenException('Only a system admin can change a system admin login email');
+        }
         const inUse = await this.prisma.user.findUnique({ where: { email: newEmail } });
         if (inUse) {
           throw new ConflictException('Another user already uses this email');

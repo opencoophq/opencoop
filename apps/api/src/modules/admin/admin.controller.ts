@@ -77,6 +77,7 @@ import { ScheduleConversationDto } from '../messages/dto/schedule-conversation.d
 import { AudienceDto } from '../messages/dto/audience.dto';
 import { AudienceService } from '../messages/audience.service';
 import { isPermitted } from '../../common/utils/coop-permissions';
+import { canExportReport, canReadCoopAudit } from './report-access';
 import { SenderDomainService } from '../email/sender-domain.service';
 import { UpsertSenderDomainDto } from '../coops/dto/upsert-sender-domain.dto';
 
@@ -1189,14 +1190,15 @@ export class AdminController {
   }
 
   @Get('reports/:type/csv')
-  @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Export report as CSV' })
   async exportReportCsv(
     @Param('coopId') coopId: string,
     @Param('type') type: string,
     @Query() params: Record<string, string>,
+    @CurrentUser() user: CurrentUserData,
     @Res() res: Response,
   ) {
+    this.assertCanExportReport(user, coopId, type);
     const { csv } = await this.reportsService.exportReport(coopId, type, params);
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.csv"`);
@@ -1204,14 +1206,15 @@ export class AdminController {
   }
 
   @Get('reports/:type/pdf')
-  @RequirePermission('canViewReports')
   @ApiOperation({ summary: 'Export report as PDF' })
   async exportReportPdf(
     @Param('coopId') coopId: string,
     @Param('type') type: string,
     @Query() params: Record<string, string>,
+    @CurrentUser() user: CurrentUserData,
     @Res() res: Response,
   ) {
+    this.assertCanExportReport(user, coopId, type);
     const buffer = await this.reportsService.generatePdf(coopId, type, params);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.pdf"`);
@@ -1302,11 +1305,13 @@ export class AdminController {
   @ApiOperation({ summary: 'Get audit logs for this coop' })
   async getAuditLogs(
     @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
     @Query('entity') entity?: string,
     @Query('entityId') entityId?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
+    this.assertCanReadAudit(user, coopId);
     return this.auditService.findByCoop(coopId, {
       entity,
       entityId,
@@ -1360,6 +1365,26 @@ export class AdminController {
     if (audience.type === 'VOLUNTEERS') this.assertCanViewVolunteers(user, coopId);
     const count = await this.audienceService.count(coopId, audience);
     return { count };
+  }
+
+  private assertCanExportReport(user: CurrentUserData, coopId: string, type: string) {
+    this.assertCoopSession(user);
+    if (!canExportReport(user.role, user.coopPermissions?.[coopId], type)) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+  }
+
+  private assertCanReadAudit(user: CurrentUserData, coopId: string) {
+    this.assertCoopSession(user);
+    if (!canReadCoopAudit(user.role, user.coopPermissions?.[coopId])) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+  }
+
+  private assertCoopSession(user: CurrentUserData) {
+    if (user.role !== 'SYSTEM_ADMIN' && !user.coopPermissions) {
+      throw new ForbiddenException('Session expired — please log in again');
+    }
   }
 
   private mayViewVolunteers(user: CurrentUserData, coopId: string): boolean {

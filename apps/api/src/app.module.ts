@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { apiThrottleLimit } from './throttle-limit';
 import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { McpModule, McpTransportType } from '@rekog/mcp-nest';
 import { PrismaModule } from './prisma/prisma.module';
@@ -48,7 +49,7 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
       isGlobal: true,
       envFilePath: ['.env', '../../.env'],
     }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: apiThrottleLimit() }]),
     ScheduleModule.forRoot(),
     BullModule.forRoot({
       redis: {

@@ -11,6 +11,7 @@ import { RegistrationsService } from '../registrations/registrations.service';
 import { CreateChannelDto } from './dto/create-channel.dto';
 import { UpdateChannelDto } from './dto/update-channel.dto';
 import { PublicRegisterDto } from '../coops/dto/public-register.dto';
+import { assertCanBuyForShareholder } from '../shareholders/shareholder-access';
 import { ClaimGiftDto } from './dto/claim-gift.dto';
 import { PRIVACY_VERSION } from '@opencoop/shared';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
@@ -415,7 +416,7 @@ export class ChannelsService {
     });
   }
 
-  async publicRegister(coopSlug: string, channelSlug: string, dto: PublicRegisterDto) {
+  async publicRegister(coopSlug: string, channelSlug: string, dto: PublicRegisterDto, actorUserId?: string) {
     // 1. Find coop by slug
     const coop = await this.prisma.coop.findUnique({
       where: { slug: coopSlug },
@@ -493,10 +494,12 @@ export class ChannelsService {
     if (dto.shareholderId) {
       const shareholder = await this.prisma.shareholder.findFirst({
         where: { id: dto.shareholderId, coopId: coop.id },
+        select: { id: true, userId: true, type: true, registeredByUserId: true },
       });
       if (!shareholder) {
         throw new NotFoundException('Shareholder not found in this cooperative');
       }
+      assertCanBuyForShareholder(shareholder, actorUserId);
       shareholderId = shareholder.id;
     } else {
       if (!dto.type) {
