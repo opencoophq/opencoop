@@ -9,16 +9,24 @@ import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
+import { AuthEmailService } from '../auth/auth-email.service';
+import { hashToken } from '../../common/crypto';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { InviteAdminDto } from './dto/invite-admin.dto';
 import { CoopPermissions } from '@opencoop/shared';
+
+/** How long the verify link for a requested login email change stays valid. */
+const EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class CoopAdminsService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private auditService: AuditService,
+    private authEmail: AuthEmailService,
   ) {}
 
   // ==================== ROLES ====================
@@ -585,11 +593,15 @@ export class CoopAdminsService {
    * The login email is not a coop field. It is the global identity of the
    * account: magic link, password reset and login all key on it, and the
    * same account can belong to other coops. A coop admin who could rewrite
-   * it could send themselves a magic link and sign in as that person.
-   * Clearing `emailVerified` does not stop that, because a magic link
-   * proves control of the new address, not ownership of the account. So
-   * only a system admin may change it here. A coop admin may resend the
-   * current value (any case), which is a no-op.
+   * it could send themselves a magic link and sign in as that person. So a
+   * coop admin gets 403 for a different email; resending the current value
+   * (any case) is a no-op.
+   *
+   * A system admin may request a change, but it only becomes the login email
+   * after the new address proves itself through the existing verify-email
+   * link (see AuthService.verifyEmail). Until then `email` stays as it is and
+   * the old address gets a notice. Every change here is written to the audit
+   * log with the acting user.
    *
    * A coop admin may not edit a system admin's account at all.
    */
@@ -597,25 +609,44 @@ export class CoopAdminsService {
     coopId: string,
     adminId: string,
     dto: { name?: string | null; preferredLanguage?: string; email?: string },
-    actorRole: string,
+    actor: { id: string; role: string },
   ) {
     const admin = await this.prisma.coopAdmin.findFirst({
       where: { id: adminId, coopId },
-      include: { user: { select: { id: true, email: true, role: true } } },
+      include: {
+        user: {
+          select: { id: true, email: true, role: true, name: true, preferredLanguage: true },
+        },
+      },
     });
     if (!admin) {
       throw new NotFoundException('Admin not found');
     }
 
-    const actorIsSystemAdmin = actorRole === 'SYSTEM_ADMIN';
+    const actorIsSystemAdmin = actor.role === 'SYSTEM_ADMIN';
     if (admin.user.role === 'SYSTEM_ADMIN' && !actorIsSystemAdmin) {
       throw new ForbiddenException('Only a system admin can change a system admin account');
     }
 
     const data: Prisma.UserUpdateInput = {};
-    if (dto.name !== undefined) data.name = dto.name;
-    if (dto.preferredLanguage !== undefined) data.preferredLanguage = dto.preferredLanguage;
+    const changes: { field: string; oldValue: unknown; newValue: unknown }[] = [];
+    if (dto.name !== undefined && dto.name !== admin.user.name) {
+      data.name = dto.name;
+      changes.push({ field: 'name', oldValue: admin.user.name, newValue: dto.name });
+    }
+    if (
+      dto.preferredLanguage !== undefined &&
+      dto.preferredLanguage !== admin.user.preferredLanguage
+    ) {
+      data.preferredLanguage = dto.preferredLanguage;
+      changes.push({
+        field: 'preferredLanguage',
+        oldValue: admin.user.preferredLanguage,
+        newValue: dto.preferredLanguage,
+      });
+    }
 
+    let pending: { email: string; token: string } | undefined;
     if (dto.email !== undefined) {
       const newEmail = dto.email.toLowerCase().trim();
       if (newEmail !== admin.user.email.toLowerCase()) {
@@ -626,49 +657,49 @@ export class CoopAdminsService {
         if (inUse) {
           throw new ConflictException('Another user already uses this email');
         }
-        data.email = newEmail;
-        data.emailVerified = null;
-        // Links already mailed to the old address must not outlive it.
-        data.passwordResetToken = null;
-        data.passwordResetExpires = null;
-        data.emailVerifyToken = null;
-        data.emailVerifyExpires = null;
+        const token = crypto.randomBytes(32).toString('hex');
+        pending = { email: newEmail, token };
+        data.pendingEmail = newEmail;
+        data.emailVerifyToken = hashToken(token);
+        data.emailVerifyExpires = new Date(Date.now() + EMAIL_CHANGE_TTL_MS);
+        changes.push({ field: 'pendingEmail', oldValue: null, newValue: newEmail });
       }
     }
 
+    const select = {
+      id: true,
+      name: true,
+      email: true,
+      pendingEmail: true,
+      preferredLanguage: true,
+      emailVerified: true,
+    } as const;
+
     if (Object.keys(data).length === 0) {
-      // Nothing to update — short-circuit so we don't generate a no-op
-      // audit entry.
-      return this.prisma.user.findUnique({
-        where: { id: admin.user.id },
-        select: { id: true, name: true, email: true, preferredLanguage: true, emailVerified: true },
-      });
+      return this.prisma.user.findUnique({ where: { id: admin.user.id }, select });
     }
 
-    const update = this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: admin.user.id },
       data,
-      select: { id: true, name: true, email: true, preferredLanguage: true, emailVerified: true },
+      select,
     });
-    if (data.email === undefined) {
-      return update;
+
+    await this.auditService.log({
+      coopId,
+      entity: 'User',
+      entityId: admin.user.id,
+      action: 'UPDATE',
+      changes,
+      actorId: actor.id,
+    });
+
+    if (pending) {
+      const lang = updated.preferredLanguage;
+      await this.authEmail.sendVerificationEmail(pending.email, pending.token, lang);
+      await this.authEmail.sendLoginEmailChangeNotice(admin.user.email, pending.email, lang);
     }
 
-    // Email changed (system admin only): retire unused magic links and sign
-    // the account out everywhere, so nothing issued for the old address stays
-    // valid. Access tokens already issued live until they expire.
-    const now = new Date();
-    const [updated] = await this.prisma.$transaction([
-      update,
-      this.prisma.magicLinkToken.updateMany({
-        where: { userId: admin.user.id, usedAt: null },
-        data: { usedAt: now },
-      }),
-      this.prisma.refreshToken.updateMany({
-        where: { userId: admin.user.id, revokedAt: null },
-        data: { revokedAt: now },
-      }),
-    ]);
     return updated;
   }
 }

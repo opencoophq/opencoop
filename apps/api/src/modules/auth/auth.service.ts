@@ -429,6 +429,10 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired verification token');
     }
 
+    if (user.pendingEmail) {
+      return this.applyPendingLoginEmail(user.id, user.email, user.pendingEmail);
+    }
+
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -436,6 +440,57 @@ export class AuthService {
         emailVerifyToken: null,
         emailVerifyExpires: null,
       },
+    });
+
+    return { message: 'Email verified successfully' };
+  }
+
+  /**
+   * The verify link reached the new address, so it becomes the login email.
+   * Everything issued for the old address dies with it: unused magic links,
+   * reset links and refresh tokens. Access tokens already issued live until
+   * they expire.
+   */
+  private async applyPendingLoginEmail(userId: string, oldEmail: string, newEmail: string) {
+    const taken = await this.prisma.user.findUnique({ where: { email: newEmail } });
+    if (taken && taken.id !== userId) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { pendingEmail: null, emailVerifyToken: null, emailVerifyExpires: null },
+      });
+      throw new ConflictException('This email is already in use');
+    }
+
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: newEmail,
+          pendingEmail: null,
+          emailVerified: now,
+          emailVerifyToken: null,
+          emailVerifyExpires: null,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+        },
+      }),
+      this.prisma.magicLinkToken.updateMany({
+        where: { userId, usedAt: null },
+        data: { usedAt: now },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: now },
+      }),
+    ]);
+
+    await this.auditService.log({
+      entity: 'User',
+      entityId: userId,
+      action: 'UPDATE',
+      changes: [{ field: 'email', oldValue: oldEmail, newValue: newEmail }],
+      actorId: userId,
     });
 
     return { message: 'Email verified successfully' };
@@ -1038,6 +1093,13 @@ export class AuthService {
 
     if (user.emailVerified) {
       return { message: 'Email already verified' };
+    }
+
+    // The outstanding token belongs to a pending login email change and was
+    // mailed to the new address. A fresh token for the current address would
+    // overwrite it and let this address confirm the new one without proof.
+    if (user.pendingEmail) {
+      return { message: 'A login email change is pending' };
     }
 
     const emailVerifyToken = randomBytes(32).toString('hex');

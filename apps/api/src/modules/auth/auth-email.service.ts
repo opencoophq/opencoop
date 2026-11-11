@@ -43,6 +43,68 @@ export class AuthEmailService {
     });
   }
 
+  /**
+   * Tells the current login address that a change to `newEmail` is pending.
+   * Nothing changes until the link mailed to the new address is used.
+   */
+  async sendLoginEmailChangeNotice(oldEmail: string, newEmail: string, lang?: string) {
+    const t = this.getLoginEmailChangeNoticeContent(lang, newEmail);
+    const esc = (value: string) =>
+      value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+    await this.emailService.sendPlatformEmail({
+      to: oldEmail,
+      subject: t.subject,
+      templateKey: 'login-email-change-notice',
+      text: `${t.body}\n\n${t.action}\n\n${t.footer}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; } h1 { color: #1e40af; }</style></head>
+        <body>
+          <h1>${esc(t.subject)}</h1>
+          <p>${esc(t.body)}</p>
+          <p>${esc(t.action)}</p>
+          <hr><p style="color: #666; font-size: 12px;">${esc(t.footer)}</p>
+        </body>
+        </html>
+      `,
+    });
+  }
+
+  private getLoginEmailChangeNoticeContent(lang: string | undefined, newEmail: string) {
+    switch (lang) {
+      case 'fr':
+        return {
+          subject: 'Changement de votre e-mail de connexion demandé',
+          body: `Un administrateur OpenCoop a demandé de remplacer votre e-mail de connexion par ${newEmail}. Le changement n'a lieu que lorsque le lien envoyé à cette nouvelle adresse est utilisé. D'ici là, vous vous connectez avec cette adresse-ci.`,
+          action: "Si vous n'êtes pas à l'origine de cette demande, contactez le support OpenCoop.",
+          footer: 'Cet e-mail a été envoyé par OpenCoop.',
+        };
+      case 'de':
+        return {
+          subject: 'Änderung Ihrer Login-E-Mail angefordert',
+          body: `Ein OpenCoop-Administrator hat angefordert, Ihre Login-E-Mail durch ${newEmail} zu ersetzen. Die Änderung gilt erst, wenn der Link an diese neue Adresse verwendet wird. Bis dahin melden Sie sich mit dieser Adresse an.`,
+          action: 'Wenn Sie diese Änderung nicht angefordert haben, wenden Sie sich an den OpenCoop-Support.',
+          footer: 'Diese E-Mail wurde von OpenCoop gesendet.',
+        };
+      case 'en':
+        return {
+          subject: 'Change of your login email requested',
+          body: `An OpenCoop administrator asked to replace your login email with ${newEmail}. The change happens only when the link sent to that new address is used. Until then, you sign in with this address.`,
+          action: 'If you did not ask for this, contact OpenCoop support.',
+          footer: 'This email was sent by OpenCoop.',
+        };
+      default:
+        return {
+          subject: 'Wijziging van uw login-e-mailadres aangevraagd',
+          body: `Een OpenCoop-beheerder heeft gevraagd om uw login-e-mailadres te vervangen door ${newEmail}. De wijziging gebeurt pas wanneer de link naar dat nieuwe adres gebruikt wordt. Tot dan meldt u zich aan met dit adres.`,
+          action: 'Heeft u dit niet gevraagd? Neem dan contact op met OpenCoop-support.',
+          footer: 'Deze e-mail werd verzonden door OpenCoop.',
+        };
+    }
+  }
+
   private getEmailVerificationContent(lang?: string) {
     switch (lang) {
       case 'fr':

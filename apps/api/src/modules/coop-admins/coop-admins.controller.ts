@@ -102,7 +102,10 @@ export class CoopAdminsController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: UpdateAdminUserDto,
   ) {
-    return this.coopAdminsService.updateAdminUser(coopId, adminId, dto, user.role);
+    return this.coopAdminsService.updateAdminUser(coopId, adminId, dto, {
+      id: user.id,
+      role: user.role,
+    });
   }
 
   @Delete(':adminId')

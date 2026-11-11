@@ -25,7 +25,7 @@ original SemVer-style tags.
 
 ### Security
 
-- **A coop admin can no longer change a team member's login email.** The team page let an admin with `canManageAdmins` rewrite another person's login email, request a magic link to that address and sign in as them. The API now rejects a different email from a coop admin with `403`; only a system admin can change it. A coop admin also cannot edit a system admin's account, and removing a system admin from a team no longer demotes them. When a system admin changes a login email, links mailed to the old address stop working and the account is signed out everywhere. Name and language stay editable; the email field on the team page is read-only.
+- **A coop admin can no longer change a team member's login email.** The team page let an admin with `canManageAdmins` rewrite another person's login email, request a magic link to that address and sign in as them. The API now rejects a different email from a coop admin with `403`. A system admin can request a change, but it stays pending until the new address confirms through the existing verify-email link; the old address gets a notice, and the request and the switch are written to the audit log. On the switch, links mailed to the old address stop working and the account is signed out everywhere. A coop admin also cannot edit a system admin's account, and removing a system admin from a team no longer demotes them. Requires migration `20261111200000_user_pending_email` (one nullable column). Name and language stay editable; the email field on the team page is read-only.
 
 ## [2026.41.1] - 2026-10-06
 
