@@ -30,6 +30,8 @@ export interface PlatformEmailLogData {
   errorMessage: string | null;
   providerMessageId: string | null;
   smtpResponse: string | null;
+  /** Mailbox submitted on this attempt. Not run through secret redaction. */
+  fromAddress: string | null;
 }
 
 export interface SmtpAcceptedInfo {
@@ -164,6 +166,7 @@ export function buildPlatformEmailLog(input: {
   errorMessage: string | null;
   sentAt: Date | null;
   secrets: string[];
+  fromAddress?: string | null;
 }): PlatformEmailLogData {
   const clip = (value: string | null, max: number): string | null => {
     if (!value) return null;
@@ -182,7 +185,15 @@ export function buildPlatformEmailLog(input: {
     errorMessage: input.status === 'ACCEPTED' ? null : clip(input.errorMessage, TEXT_MAX),
     providerMessageId: clip(input.providerMessageId, MESSAGE_ID_MAX),
     smtpResponse: clip(input.smtpResponse, TEXT_MAX),
+    fromAddress: clipAddress(input.fromAddress),
   };
+}
+
+function clipAddress(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const cleaned = value.replace(/[\r\n]/g, '').trim();
+  if (!cleaned) return null;
+  return cleaned.slice(0, RECIPIENT_MAX);
 }
 
 export function normalizeTemplateKey(

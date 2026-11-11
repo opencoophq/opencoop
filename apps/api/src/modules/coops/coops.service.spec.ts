@@ -138,7 +138,9 @@ describe('CoopsService.publicRegister — orphan-shareholder preflight', () => {
       lapsedAt: new Date(Date.now() - LAPSED_SIGNUP_GRACE_MS),
     });
 
-    await expect(service.publicRegister('bronsgroen', dto as any)).rejects.toBeInstanceOf(PublicSignupClosedException);
+    await expect(service.publicRegister('bronsgroen', dto as any)).rejects.toBeInstanceOf(
+      PublicSignupClosedException,
+    );
     expect(shareholdersService.create).not.toHaveBeenCalled();
     expect(registrationsService.createBuy).not.toHaveBeenCalled();
   });
@@ -149,7 +151,9 @@ describe('CoopsService.publicRegister — orphan-shareholder preflight', () => {
     prisma.shareholder.findFirst.mockResolvedValue(null);
     shareholdersService.create.mockResolvedValue({ id: 'sh-new' });
 
-    await expect(service.publicRegister('bronsgroen', dto as any)).resolves.toMatchObject({ status: 'registered' });
+    await expect(service.publicRegister('bronsgroen', dto as any)).resolves.toMatchObject({
+      status: 'registered',
+    });
   });
 });
 
@@ -231,6 +235,37 @@ describe('CoopsService — Brevo audience-sync config', () => {
     expect(select.emailAudienceProvider).toBe(true);
     expect(select.brevoLastSyncAt).toBe(true);
     expect(select.brevoLastSyncStatus).toBe(true);
+    expect(select.senderDomain).toBe(true);
+    expect(select.senderFromAddress).toBe(true);
+    expect(select.senderDomainStatus).toBe(true);
+    expect(select.senderDomainRecords).toBe(true);
+    expect(select.senderDomainProofToken).toBeUndefined();
+    expect(select.senderDomainRevision).toBeUndefined();
+    expect(select.brevoApiKey).toBeFalsy();
+  });
+
+  it('update() ignores sender-domain fields so a settings save cannot mark a domain verified', async () => {
+    prisma.coop.findUnique.mockResolvedValue({ id: 'c1', senderDomainStatus: null });
+    prisma.coop.update.mockResolvedValue({ id: 'c1', name: 'Test' });
+
+    await service.update('c1', {
+      name: 'Test',
+      senderDomain: 'evil.test',
+      senderDomainStatus: 'verified',
+      senderFromAddress: 'noreply@evil.test',
+      senderDomainProofToken: 'known-token',
+      senderDomainProofAt: new Date(),
+      senderDomainRevision: 99,
+    } as any);
+
+    const data = prisma.coop.update.mock.calls[0][0].data;
+    expect(data.name).toBe('Test');
+    expect(data.senderDomain).toBeUndefined();
+    expect(data.senderDomainStatus).toBeUndefined();
+    expect(data.senderFromAddress).toBeUndefined();
+    expect(data.senderDomainProofToken).toBeUndefined();
+    expect(data.senderDomainProofAt).toBeUndefined();
+    expect(data.senderDomainRevision).toBeUndefined();
   });
 
   it('update() never returns brevoApiKey even if Prisma returns it', async () => {
@@ -332,9 +367,15 @@ describe('CoopsService — Brevo audience-sync config', () => {
   });
 
   it('testAudienceConnection returns the provider verify result', async () => {
-    prisma.coop.findUnique.mockResolvedValue({ id: 'c1', emailAudienceProvider: 'brevo', brevoApiKey: 'enc' });
+    prisma.coop.findUnique.mockResolvedValue({
+      id: 'c1',
+      emailAudienceProvider: 'brevo',
+      brevoApiKey: 'enc',
+    });
     jest.spyOn(factory, 'getAudienceProvider').mockReturnValue({
-      verifyConnection: jest.fn().mockResolvedValue({ ok: true }), listLists: jest.fn(), upsertContact: jest.fn(),
+      verifyConnection: jest.fn().mockResolvedValue({ ok: true }),
+      listLists: jest.fn(),
+      upsertContact: jest.fn(),
     } as any);
     expect(await service.testAudienceConnection('c1')).toEqual({ ok: true });
   });
@@ -344,7 +385,9 @@ describe('CoopsService — Brevo audience-sync config', () => {
     prisma.coop.findUnique.mockResolvedValue(coop);
     const listLists = jest.fn().mockResolvedValue([{ id: '3', name: 'Coöperanten' }]);
     jest.spyOn(factory, 'getAudienceProvider').mockReturnValue({
-      verifyConnection: jest.fn(), listLists, upsertContact: jest.fn(),
+      verifyConnection: jest.fn(),
+      listLists,
+      upsertContact: jest.fn(),
     } as any);
 
     expect(await service.listAudienceLists('c1')).toEqual([{ id: '3', name: 'Coöperanten' }]);
@@ -410,7 +453,9 @@ describe('CoopsService.create', () => {
 
     expect(created.id).toBe('coop-9');
     expect(tx.channel.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ coopId: 'coop-9', isDefault: true }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ coopId: 'coop-9', isDefault: true }),
+      }),
     );
     expect(auditService.log).toHaveBeenCalledWith({
       coopId: 'coop-9',
@@ -456,9 +501,9 @@ describe('CoopsService.create', () => {
     const { service, prisma, auditService, emailService } = build();
     prisma.coop.findUnique.mockResolvedValue({ id: 'existing' });
 
-    await expect(service.create({ name: 'Nieuwe Coop', slug: 'nieuwe-coop' })).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(
+      service.create({ name: 'Nieuwe Coop', slug: 'nieuwe-coop' }),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(auditService.log).not.toHaveBeenCalled();
     expect(emailService.notifyCoopCreated).not.toHaveBeenCalled();
   });

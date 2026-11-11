@@ -77,6 +77,8 @@ import { ScheduleConversationDto } from '../messages/dto/schedule-conversation.d
 import { AudienceDto } from '../messages/dto/audience.dto';
 import { AudienceService } from '../messages/audience.service';
 import { isPermitted } from '../../common/utils/coop-permissions';
+import { SenderDomainService } from '../email/sender-domain.service';
+import { UpsertSenderDomainDto } from '../coops/dto/upsert-sender-domain.dto';
 
 @ApiTags('admin')
 @Controller('admin/coops/:coopId')
@@ -102,6 +104,7 @@ export class AdminController {
     private channelsService: ChannelsService,
     private messagesService: MessagesService,
     private readonly audienceService: AudienceService,
+    private readonly senderDomains: SenderDomainService,
   ) {}
 
   // ==================== COOP SETTINGS ====================
@@ -134,6 +137,49 @@ export class AdminController {
       req.ip,
       req.headers['user-agent'],
     );
+  }
+
+  @Post('sender-domain')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Register the coop sender domain with Brevo and return DNS records' })
+  async registerSenderDomain(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+    @Body() dto: UpsertSenderDomainDto,
+  ) {
+    return this.senderDomains.register(coopId, dto, this.senderDomainActor(user, req));
+  }
+
+  @Post('sender-domain/check')
+  @HttpCode(200)
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Ask Brevo to authenticate the coop sender domain' })
+  async checkSenderDomain(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+  ) {
+    return this.senderDomains.check(coopId, this.senderDomainActor(user, req));
+  }
+
+  @Delete('sender-domain')
+  @RequirePermission('canManageSettings')
+  @ApiOperation({ summary: 'Stop using a custom sender domain for platform mail' })
+  async clearSenderDomain(
+    @Param('coopId') coopId: string,
+    @CurrentUser() user: CurrentUserData,
+    @Req() req: Request,
+  ) {
+    return this.senderDomains.clear(coopId, this.senderDomainActor(user, req));
+  }
+
+  private senderDomainActor(user: CurrentUserData, req: Request) {
+    return {
+      id: user.id,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    };
   }
 
   @Post('api-key/regenerate')
@@ -930,20 +976,14 @@ export class AdminController {
   @Post('bank-transactions/ignore')
   @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Ignore unmatched bank transactions' })
-  async ignoreBankTransactions(
-    @Param('coopId') coopId: string,
-    @Body('ids') ids: string[],
-  ) {
+  async ignoreBankTransactions(@Param('coopId') coopId: string, @Body('ids') ids: string[]) {
     return this.bankImportService.ignoreTransactions(coopId, ids || []);
   }
 
   @Post('bank-transactions/unignore')
   @RequirePermission('canManageTransactions')
   @ApiOperation({ summary: 'Restore ignored bank transactions' })
-  async unignoreBankTransactions(
-    @Param('coopId') coopId: string,
-    @Body('ids') ids: string[],
-  ) {
+  async unignoreBankTransactions(@Param('coopId') coopId: string, @Body('ids') ids: string[]) {
     return this.bankImportService.unignoreTransactions(coopId, ids || []);
   }
 
@@ -959,7 +999,11 @@ export class AdminController {
     return this.bankImportService.manualMatch(
       coopId,
       id,
-      { registrationId: dto.registrationId, paymentId: dto.paymentId, chargeCardId: dto.chargeCardId },
+      {
+        registrationId: dto.registrationId,
+        paymentId: dto.paymentId,
+        chargeCardId: dto.chargeCardId,
+      },
       user.id,
     );
   }
