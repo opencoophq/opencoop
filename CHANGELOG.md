@@ -23,6 +23,10 @@ original SemVer-style tags.
 - **Charge-card entry from a coop website.** `/{locale}/{coopSlug}/laadpas` asks whether the visitor is already a member. Members log in and land on the request form. Others buy a share first; until the membership is active, the page explains what happens next. For Bronsgroen the Dutch button should point at `https://opencoop.be/nl/bronsgroen/laadpas`.
 - **Volunteer registration.** A cooperative turns this on in Settings (off by default). Members opt in from the dashboard. Anyone else uses `/{locale}/{coopSlug}/vrijwilligers`, confirms by email, and can withdraw from the link in that email. A public sign-up is linked to a shareholder only when the visitor is logged in and the email matches that user. The board sees only people who opted in, filtered by municipality, postcode and interest, and never the share register. `canViewVolunteers` gates the list, the CSV export and messages to volunteers. It is not granted to existing roles or to the Admin role of a new cooperative; assign it under Team → Roles. An admin with that permission can withdraw a registration or delete it. Every CSV export is written to the audit log. Unconfirmed sign-ups are removed after 30 days. Dutch volunteer text uses the formal “u”.
 
+### Security
+
+- **A coop admin can no longer change a team member's login email.** The team page let an admin with `canManageAdmins` rewrite another person's login email, request a magic link to that address and sign in as them. The API now rejects a different email from a coop admin with `403`; only a system admin can change it. A coop admin also cannot edit a system admin's account, and removing a system admin from a team no longer demotes them. When a system admin changes a login email, links mailed to the old address stop working and the account is signed out everywhere. Name and language stay editable; the email field on the team page is read-only.
+
 ## [2026.41.1] - 2026-10-06
 
 ### Added

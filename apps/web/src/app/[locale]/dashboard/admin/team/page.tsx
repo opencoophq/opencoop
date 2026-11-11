@@ -395,9 +395,8 @@ export default function TeamPage() {
     try {
       const body: Record<string, unknown> = {};
       if (editUserName !== (editUserAdmin.user.name ?? '')) body.name = editUserName || null;
-      if (editUserEmail.toLowerCase() !== editUserAdmin.user.email.toLowerCase()) {
-        body.email = editUserEmail;
-      }
+      // The login email is read-only here: the API rejects a coop admin
+      // changing it, because it would let them sign in as this person.
       // Always send preferredLanguage (form default may differ from
       // current value; backend only writes when supplied).
       body.preferredLanguage = editUserLanguage;
@@ -870,11 +869,7 @@ export default function TeamPage() {
             </div>
             <div className="space-y-2">
               <Label>{t('team.email')}</Label>
-              <Input
-                type="email"
-                value={editUserEmail}
-                onChange={(e) => setEditUserEmail(e.target.value)}
-              />
+              <Input type="email" value={editUserEmail} readOnly disabled />
               <p className="text-xs text-muted-foreground">
                 {t('team.emailChangeWarning')}
               </p>

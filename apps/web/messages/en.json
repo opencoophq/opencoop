@@ -1094,10 +1094,10 @@
       "overridden": "custom",
       "overrideHint": "Click a permission to toggle it on/off independently of the role. Click again to revert to the role default.",
       "editUser": "Edit user",
-      "editUserDescription": "Update name, email, and language preference for this team member.",
+      "editUserDescription": "Update the name and language preference for this team member.",
       "name": "Name",
       "preferredLanguage": "Preferred language",
-      "emailChangeWarning": "Changing the email forces the user to re-verify the new address.",
+      "emailChangeWarning": "The login email cannot be changed here. Contact OpenCoop support if it must change.",
       "roles": {
         "title": "Roles",
         "createRole": "Create role",

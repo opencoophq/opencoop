@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -206,10 +212,12 @@ export class CoopAdminsService {
     const remainingAdminEntries = await this.prisma.coopAdmin.count({
       where: { userId: admin.userId },
     });
-    // If no more coop admin entries, downgrade user role to SHAREHOLDER
+    // If no more coop admin entries, downgrade a COOP_ADMIN to SHAREHOLDER.
+    // The role filter keeps a system admin's global role untouched: a coop
+    // admin may drop them from this team, never demote them.
     if (remainingAdminEntries === 0) {
-      await this.prisma.user.update({
-        where: { id: admin.userId },
+      await this.prisma.user.updateMany({
+        where: { id: admin.userId, role: 'COOP_ADMIN' },
         data: { role: 'SHAREHOLDER' },
       });
     }
@@ -557,27 +565,36 @@ export class CoopAdminsService {
   // ==================== EDIT TEAM MEMBER USER ====================
 
   /**
-   * Update profile fields on the User row of a team member. Scoped to
-   * fields a coop admin should reasonably manage on someone else's
-   * behalf — name (display), preferredLanguage (email rendering),
-   * email (with re-verification side-effect, see below).
+   * Update name and preferredLanguage on the User row of a team member.
    *
-   * Email change clears `emailVerified` so the new owner has to confirm
-   * the address — this is the mitigation for the otherwise-easy account
-   * hijack pattern (admin changes email → triggers password reset →
-   * takeover). Audit-logged.
+   * The login email is not a coop field. It is the global identity of the
+   * account: magic link, password reset and login all key on it, and the
+   * same account can belong to other coops. A coop admin who could rewrite
+   * it could send themselves a magic link and sign in as that person.
+   * Clearing `emailVerified` does not stop that, because a magic link
+   * proves control of the new address, not ownership of the account. So
+   * only a system admin may change it here. A coop admin may resend the
+   * current value (any case), which is a no-op.
+   *
+   * A coop admin may not edit a system admin's account at all.
    */
   async updateAdminUser(
     coopId: string,
     adminId: string,
     dto: { name?: string | null; preferredLanguage?: string; email?: string },
+    actorRole: string,
   ) {
     const admin = await this.prisma.coopAdmin.findFirst({
       where: { id: adminId, coopId },
-      include: { user: { select: { id: true, email: true } } },
+      include: { user: { select: { id: true, email: true, role: true } } },
     });
     if (!admin) {
       throw new NotFoundException('Admin not found');
+    }
+
+    const actorIsSystemAdmin = actorRole === 'SYSTEM_ADMIN';
+    if (admin.user.role === 'SYSTEM_ADMIN' && !actorIsSystemAdmin) {
+      throw new ForbiddenException('Only a system admin can change a system admin account');
     }
 
     const data: Prisma.UserUpdateInput = {};
@@ -586,15 +603,21 @@ export class CoopAdminsService {
 
     if (dto.email !== undefined) {
       const newEmail = dto.email.toLowerCase().trim();
-      if (newEmail !== admin.user.email) {
+      if (newEmail !== admin.user.email.toLowerCase()) {
+        if (!actorIsSystemAdmin) {
+          throw new ForbiddenException("A coop admin cannot change a team member's login email");
+        }
         const inUse = await this.prisma.user.findUnique({ where: { email: newEmail } });
         if (inUse) {
           throw new ConflictException('Another user already uses this email');
         }
         data.email = newEmail;
-        // Force re-verification — without this, an admin could change a
-        // team member's email and immediately take over via password reset.
         data.emailVerified = null;
+        // Links already mailed to the old address must not outlive it.
+        data.passwordResetToken = null;
+        data.passwordResetExpires = null;
+        data.emailVerifyToken = null;
+        data.emailVerifyExpires = null;
       }
     }
 
@@ -607,10 +630,30 @@ export class CoopAdminsService {
       });
     }
 
-    return this.prisma.user.update({
+    const update = this.prisma.user.update({
       where: { id: admin.user.id },
       data,
       select: { id: true, name: true, email: true, preferredLanguage: true, emailVerified: true },
     });
+    if (data.email === undefined) {
+      return update;
+    }
+
+    // Email changed (system admin only): retire unused magic links and sign
+    // the account out everywhere, so nothing issued for the old address stays
+    // valid. Access tokens already issued live until they expire.
+    const now = new Date();
+    const [updated] = await this.prisma.$transaction([
+      update,
+      this.prisma.magicLinkToken.updateMany({
+        where: { userId: admin.user.id, usedAt: null },
+        data: { usedAt: now },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: admin.user.id, revokedAt: null },
+        data: { revokedAt: now },
+      }),
+    ]);
+    return updated;
   }
 }

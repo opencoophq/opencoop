@@ -21,6 +21,7 @@ import { CoopAdminsService } from './coop-admins.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { InviteAdminDto } from './dto/invite-admin.dto';
+import { UpdateAdminUserDto } from './dto/update-admin-user.dto';
 
 @ApiTags('coop-admins')
 @Controller('admin/coops/:coopId/team')
@@ -102,13 +103,16 @@ export class CoopAdminsController {
 
   @Patch(':adminId/user')
   @RequirePermission('canManageAdmins')
-  @ApiOperation({ summary: "Update a team member's user profile (name, language, email)" })
+  @ApiOperation({
+    summary: "Update a team member's name and language (login email: system admin only)",
+  })
   updateAdminUser(
     @Param('coopId') coopId: string,
     @Param('adminId') adminId: string,
-    @Body() dto: { name?: string | null; preferredLanguage?: string; email?: string },
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: UpdateAdminUserDto,
   ) {
-    return this.coopAdminsService.updateAdminUser(coopId, adminId, dto);
+    return this.coopAdminsService.updateAdminUser(coopId, adminId, dto, user.role);
   }
 
   @Delete(':adminId')
