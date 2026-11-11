@@ -1211,23 +1211,38 @@ export class AuthService {
     // The outstanding token belongs to a pending login email change and was
     // mailed to the new address. A fresh token for the current address would
     // overwrite it and let this address confirm the new one without proof.
+    const pendingMessage = { message: 'A login email change is pending' };
     if (activePendingEmail(user)) {
-      return { message: 'A login email change is pending' };
+      return pendingMessage;
     }
+    const now = new Date();
     if (user.pendingEmail) {
-      // Expired change: drop it before a token for this address replaces it.
-      await this.prisma.user.update({ where: { id: userId }, data: CLEAR_PENDING_EMAIL });
+      // Expired change: drop exactly that one. A newer request keeps its state.
+      await this.prisma.user.updateMany({
+        where: {
+          id: userId,
+          pendingEmail: user.pendingEmail,
+          emailVerifyExpires: { lte: now },
+        },
+        data: CLEAR_PENDING_EMAIL,
+      });
     }
 
     const emailVerifyToken = randomBytes(32).toString('hex');
 
-    await this.prisma.user.update({
-      where: { id: userId },
+    // Write the token only while no change is pending and the address is
+    // still unverified. A change requested since the read above wins: no
+    // token for the current address replaces it, and no mail goes out.
+    const claimed = await this.prisma.user.updateMany({
+      where: { id: userId, pendingEmail: null, emailVerified: null },
       data: {
         emailVerifyToken: hashToken(emailVerifyToken),
-        emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        emailVerifyExpires: new Date(now.getTime() + 24 * 60 * 60 * 1000),
       },
     });
+    if (claimed.count !== 1) {
+      return pendingMessage;
+    }
 
     await this.authEmail.sendVerificationEmail(
       user.email,

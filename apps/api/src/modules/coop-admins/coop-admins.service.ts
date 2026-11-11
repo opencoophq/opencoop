@@ -699,6 +699,20 @@ export class CoopAdminsService {
       return this.prisma.user.findUnique({ where: { id: admin.user.id }, select });
     }
 
+    // The old address must accept its notice before any token exists, so
+    // nothing is claimable that the old owner was not told about. A failed
+    // notice writes nothing.
+    const lang = (data.preferredLanguage as string | undefined) ?? admin.user.preferredLanguage;
+    if (pending) {
+      try {
+        await this.authEmail.sendLoginEmailChangeNotice(admin.user.email, pending.email, lang);
+      } catch {
+        throw new InternalServerErrorException(
+          'The login email change was not started because the current address could not be notified. Try again.',
+        );
+      }
+    }
+
     const updated = await this.prisma.user.update({
       where: { id: admin.user.id },
       data,
@@ -715,16 +729,11 @@ export class CoopAdminsService {
     });
 
     if (pending) {
-      // Try both mails, so a failed verify mail still warns the old address.
-      const lang = updated.preferredLanguage;
-      const [notice, verify] = await Promise.allSettled([
-        this.authEmail.sendLoginEmailChangeNotice(admin.user.email, pending.email, lang),
-        this.authEmail.sendVerificationEmail(pending.email, pending.token, lang),
-      ]);
-      if (notice.status === 'rejected' || verify.status === 'rejected') {
-        // Fail closed: a change must not be confirmable unless the old address
-        // was told about it. Drop exactly this request; a newer request or a
-        // cancel that landed meanwhile keeps its own state.
+      try {
+        await this.authEmail.sendVerificationEmail(pending.email, pending.token, lang);
+      } catch {
+        // Drop exactly this request; a newer request or a cancel that landed
+        // meanwhile keeps its own state.
         const dropped = await this.prisma.user.updateMany({
           where: {
             id: admin.user.id,

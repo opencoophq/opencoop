@@ -116,6 +116,7 @@ function matches(row: Record<string, any>, where: Record<string, any> = {}): boo
         continue;
       }
       if (value.gte !== undefined && !(current >= value.gte)) return false;
+      if (value.lte !== undefined && !(current <= value.lte)) return false;
       if (value.gt !== undefined && !(current > value.gt)) return false;
       if (value.lt !== undefined && !(current < value.lt)) return false;
     } else if (current !== value) {
@@ -877,6 +878,38 @@ describe('Team member login email over HTTP', () => {
       expect(client).toBeDefined();
     });
 
+    it('never mails a fresh token to the old address when a change lands during resend', async () => {
+      state.users.get('plain')!.emailVerified = null;
+      // Hold resend right after it reads the user, before it writes a token.
+      const read = prisma.user.findUnique.getMockImplementation()!;
+      let readDone!: () => void;
+      const reached = new Promise<void>((resolve) => (readDone = resolve));
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      prisma.user.findUnique.mockImplementationOnce(async (args: unknown) => {
+        const found = await read(args);
+        readDone();
+        await gate;
+        return found;
+      });
+
+      const resend = call('POST', '/auth/resend-verification', bearer('plain', 'COOP_ADMIN'));
+      await reached;
+      expect((await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS })).status).toBe(200);
+      const link = verifyTokenIn(mailsTo(NEW_ADDRESS)[0]);
+      release();
+
+      expect((await resend).status).toBe(201);
+      // Only the notice reached the old address; no verify link went there.
+      expect(mailsTo('plain@example.test').map((m) => m.templateKey)).toEqual([
+        'login-email-change-notice',
+      ]);
+      expect(state.users.get('plain')!.pendingEmail).toBe(NEW_ADDRESS);
+      // The system admin's token survived, so the new address can still confirm.
+      expect((await call('GET', `/auth/verify-email?token=${link}`)).status).toBe(200);
+      expect(state.users.get('plain')!.email).toBe(NEW_ADDRESS);
+    });
+
     it('lets a system admin cancel a pending change by submitting the current address', async () => {
       await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
       const token = verifyTokenIn(mailsTo(NEW_ADDRESS)[0]);
@@ -953,28 +986,37 @@ describe('Team member login email over HTTP', () => {
       });
     });
 
-    it('drops the change and fails when the old-address notice fails, even if the link went out', async () => {
-      mailer.sendPlatformEmail.mockImplementation(async (m: { to: string }) => {
-        if (m.to === 'plain@example.test') throw new Error('smtp down');
+    it('makes nothing claimable while the old-address notice is in flight, and nothing after it fails', async () => {
+      let rejectNotice!: (err: Error) => void;
+      let noticeStarted!: () => void;
+      const started = new Promise<void>((resolve) => (noticeStarted = resolve));
+      mailer.sendPlatformEmail.mockImplementation((m: { to: string }) => {
+        if (m.to !== 'plain@example.test') return Promise.resolve(undefined);
+        noticeStarted();
+        return new Promise((_, reject) => (rejectNotice = reject));
       });
 
-      const res = await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      const request = editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
+      await started;
 
-      expect(res.status).toBe(500);
+      // While the notice hangs: no token, no pending change, no link sent.
+      expect(state.users.get('plain')).toMatchObject({
+        pendingEmail: null,
+        emailVerifyToken: null,
+      });
+      expect(mailsTo(NEW_ADDRESS)).toHaveLength(0);
+      expect((await call('GET', '/auth/verify-email?token=00')).status).toBe(400);
+
+      rejectNotice(new Error('smtp down'));
+      expect((await request).status).toBe(500);
+
       expect(state.users.get('plain')).toMatchObject({
         email: 'plain@example.test',
         pendingEmail: null,
         emailVerifyToken: null,
       });
-      expect(audit.log).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          changes: [{ field: 'pendingEmail', oldValue: NEW_ADDRESS, newValue: null }],
-        }),
-      );
-      // The link did reach the new address, but it no longer confirms anything.
-      const link = verifyTokenIn(mailsTo(NEW_ADDRESS)[0]);
-      expect((await call('GET', `/auth/verify-email?token=${link}`)).status).toBe(400);
-      expect(state.users.get('plain')!.email).toBe('plain@example.test');
+      expect(mailsTo(NEW_ADDRESS)).toHaveLength(0);
+      expect(audit.log).not.toHaveBeenCalled();
     });
 
     it('also drops the change when the verify mail fails, after warning the old address', async () => {

@@ -115,7 +115,12 @@ describe('CoopAdminsService.updateAdminUser', () => {
     const { service, prisma, authEmail } = build();
     prisma.coopAdmin.findFirst.mockResolvedValue({
       id: 'ca-1',
-      user: { id: 'u-sys', email: 'root@opencoop.be', role: 'SYSTEM_ADMIN' },
+      user: {
+        id: 'u-sys',
+        email: 'root@opencoop.be',
+        role: 'SYSTEM_ADMIN',
+        preferredLanguage: 'nl',
+      },
     });
     prisma.user.update.mockResolvedValue({
       id: 'u-sys',
