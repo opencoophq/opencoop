@@ -49,8 +49,7 @@ export class AuthEmailService {
    */
   async sendLoginEmailChangeNotice(oldEmail: string, newEmail: string, lang?: string) {
     const t = this.getLoginEmailChangeNoticeContent(lang, newEmail);
-    const esc = (value: string) =>
-      value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const esc = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
     await this.emailService.sendPlatformEmail({
       to: oldEmail,
@@ -85,7 +84,8 @@ export class AuthEmailService {
         return {
           subject: 'Änderung Ihrer Login-E-Mail angefordert',
           body: `Ein OpenCoop-Administrator hat angefordert, Ihre Login-E-Mail durch ${newEmail} zu ersetzen. Die Änderung gilt erst, wenn der Link an diese neue Adresse verwendet wird. Bis dahin melden Sie sich mit dieser Adresse an.`,
-          action: 'Wenn Sie diese Änderung nicht angefordert haben, wenden Sie sich an den OpenCoop-Support.',
+          action:
+            'Wenn Sie diese Änderung nicht angefordert haben, wenden Sie sich an den OpenCoop-Support.',
           footer: 'Diese E-Mail wurde von OpenCoop gesendet.',
         };
       case 'en':
@@ -113,7 +113,8 @@ export class AuthEmailService {
           heading: 'Vérifiez votre e-mail',
           body: 'Cliquez sur le bouton ci-dessous pour vérifier votre adresse e-mail :',
           button: 'Vérifier mon e-mail',
-          expiry: 'Ce lien expire dans 24 heures. Si vous n\'avez pas créé de compte, vous pouvez ignorer cet e-mail.',
+          expiry:
+            "Ce lien expire dans 24 heures. Si vous n'avez pas créé de compte, vous pouvez ignorer cet e-mail.",
           footer: 'Cet e-mail a été envoyé par OpenCoop.',
         };
       case 'de':
@@ -122,7 +123,8 @@ export class AuthEmailService {
           heading: 'E-Mail bestätigen',
           body: 'Klicken Sie auf die Schaltfläche unten, um Ihre E-Mail-Adresse zu bestätigen:',
           button: 'E-Mail bestätigen',
-          expiry: 'Dieser Link ist 24 Stunden gültig. Wenn Sie kein Konto erstellt haben, können Sie diese E-Mail ignorieren.',
+          expiry:
+            'Dieser Link ist 24 Stunden gültig. Wenn Sie kein Konto erstellt haben, können Sie diese E-Mail ignorieren.',
           footer: 'Diese E-Mail wurde von OpenCoop gesendet.',
         };
       case 'en':
@@ -131,7 +133,8 @@ export class AuthEmailService {
           heading: 'Verify your email',
           body: 'Click the button below to verify your email address:',
           button: 'Verify email',
-          expiry: 'This link expires in 24 hours. If you didn\'t create an account, you can safely ignore this email.',
+          expiry:
+            "This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.",
           footer: 'This email was sent by OpenCoop.',
         };
       default: // nl
@@ -140,45 +143,60 @@ export class AuthEmailService {
           heading: 'Bevestig je e-mail',
           body: 'Klik op de knop hieronder om je e-mailadres te bevestigen:',
           button: 'E-mail bevestigen',
-          expiry: 'Deze link is 24 uur geldig. Als je geen account hebt aangemaakt, kun je deze e-mail negeren.',
+          expiry:
+            'Deze link is 24 uur geldig. Als je geen account hebt aangemaakt, kun je deze e-mail negeren.',
           footer: 'Deze e-mail is verzonden door OpenCoop.',
         };
     }
   }
 
-  private getWaitlistEmailContent(locale?: string): { subject: string; heading: string; body: string; closing: string; footer: string } {
+  private getWaitlistEmailContent(locale?: string): {
+    subject: string;
+    heading: string;
+    body: string;
+    closing: string;
+    footer: string;
+  } {
     switch (locale) {
       case 'fr':
         return {
           subject: 'Merci pour votre intérêt pour OpenCoop',
           heading: 'Merci pour votre intérêt !',
           body: 'Nous avons bien reçu votre inscription.',
-          closing: 'OpenCoop est actuellement en préparation. Nous vous contacterons dès que la plateforme sera disponible.',
-          footer: 'Vous recevez cet e-mail car vous vous êtes inscrit(e) sur la liste d\'attente de <a href="https://opencoop.be">opencoop.be</a>.',
+          closing:
+            'OpenCoop est actuellement en préparation. Nous vous contacterons dès que la plateforme sera disponible.',
+          footer:
+            'Vous recevez cet e-mail car vous vous êtes inscrit(e) sur la liste d\'attente de <a href="https://opencoop.be">opencoop.be</a>.',
         };
       case 'de':
         return {
           subject: 'Vielen Dank für Ihr Interesse an OpenCoop',
           heading: 'Vielen Dank für Ihr Interesse!',
           body: 'Wir haben Ihre Anmeldung erhalten.',
-          closing: 'OpenCoop befindet sich derzeit in Vorbereitung. Wir werden Sie kontaktieren, sobald die Plattform verfügbar ist.',
-          footer: 'Sie erhalten diese E-Mail, weil Sie sich auf der Warteliste von <a href="https://opencoop.be">opencoop.be</a> eingetragen haben.',
+          closing:
+            'OpenCoop befindet sich derzeit in Vorbereitung. Wir werden Sie kontaktieren, sobald die Plattform verfügbar ist.',
+          footer:
+            'Sie erhalten diese E-Mail, weil Sie sich auf der Warteliste von <a href="https://opencoop.be">opencoop.be</a> eingetragen haben.',
         };
       case 'en':
         return {
           subject: 'Thank you for your interest in OpenCoop',
           heading: 'Thank you for your interest!',
           body: 'We have received your registration.',
-          closing: 'OpenCoop is currently being prepared. We will contact you as soon as the platform is available.',
-          footer: 'You are receiving this email because you signed up for the waitlist at <a href="https://opencoop.be">opencoop.be</a>.',
+          closing:
+            'OpenCoop is currently being prepared. We will contact you as soon as the platform is available.',
+          footer:
+            'You are receiving this email because you signed up for the waitlist at <a href="https://opencoop.be">opencoop.be</a>.',
         };
       default: // nl
         return {
           subject: 'Bedankt voor je interesse in OpenCoop',
           heading: 'Bedankt voor je interesse!',
           body: 'We hebben je registratie goed ontvangen.',
-          closing: 'OpenCoop is momenteel in voorbereiding. We nemen binnenkort contact met je op zodra het platform beschikbaar is.',
-          footer: 'Je ontvangt deze e-mail omdat je je hebt ingeschreven op de wachtlijst van <a href="https://opencoop.be">opencoop.be</a>.',
+          closing:
+            'OpenCoop is momenteel in voorbereiding. We nemen binnenkort contact met je op zodra het platform beschikbaar is.',
+          footer:
+            'Je ontvangt deze e-mail omdat je je hebt ingeschreven op de wachtlijst van <a href="https://opencoop.be">opencoop.be</a>.',
         };
     }
   }
@@ -186,7 +204,7 @@ export class AuthEmailService {
   private getWaitlistClosing(locale?: string): string {
     switch (locale) {
       case 'fr':
-        return 'Cordialement,<br>L\'équipe OpenCoop';
+        return "Cordialement,<br>L'équipe OpenCoop";
       case 'de':
         return 'Mit freundlichen Grüßen,<br>Das OpenCoop-Team';
       case 'en':
@@ -203,7 +221,8 @@ export class AuthEmailService {
           subject: 'Réinitialisation de votre mot de passe',
           heading: 'Réinitialisation du mot de passe',
           body: 'Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :',
-          ignore: 'Si vous n\'avez pas demandé cette réinitialisation, vous pouvez ignorer cet e-mail.',
+          ignore:
+            "Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet e-mail.",
           expiry: 'Ce lien expire dans 1 heure.',
           footer: 'Cet e-mail a été envoyé par OpenCoop.',
         };
@@ -244,9 +263,10 @@ export class AuthEmailService {
           subject: `Votre code de connexion pour ${coopName}`,
           heading: `Connexion à ${coopName}`,
           codeLine: 'Votre code de connexion : {code}',
-          body: 'Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l\'appareil où vous voulez rester connecté.',
+          body: "Saisissez ce code sur la page de connexion, ou utilisez le bouton sur l'appareil où vous voulez rester connecté.",
           button: 'Se connecter',
-          expiry: 'Ce code et ce lien sont valables 10 minutes. Si vous n\'avez pas demandé ceci, vous pouvez ignorer cet e-mail.',
+          expiry:
+            "Ce code et ce lien sont valables 10 minutes. Si vous n'avez pas demandé ceci, vous pouvez ignorer cet e-mail.",
           footer: `Cet e-mail a été envoyé par ${coopName}.`,
         };
       case 'de':
@@ -256,7 +276,8 @@ export class AuthEmailService {
           codeLine: 'Ihr Anmeldecode: {code}',
           body: 'Geben Sie diesen Code auf der Anmeldeseite ein, oder nutzen Sie die Schaltfläche auf dem Gerät, auf dem Sie angemeldet bleiben möchten.',
           button: 'Anmelden',
-          expiry: 'Dieser Code und dieser Link sind 10 Minuten gültig. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.',
+          expiry:
+            'Dieser Code und dieser Link sind 10 Minuten gültig. Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren.',
           footer: `Diese E-Mail wurde von ${coopName} gesendet.`,
         };
       case 'en':
@@ -266,7 +287,8 @@ export class AuthEmailService {
           codeLine: 'Your sign-in code: {code}',
           body: 'Enter this code on the sign-in page, or press the button on the device where you want to stay signed in.',
           button: 'Sign in',
-          expiry: 'This code and link are valid for 10 minutes. If you did not request this, you can ignore this email.',
+          expiry:
+            'This code and link are valid for 10 minutes. If you did not request this, you can ignore this email.',
           footer: `This email was sent by ${coopName}.`,
         };
       default: // nl
@@ -276,7 +298,8 @@ export class AuthEmailService {
           codeLine: 'Je inlogcode: {code}',
           body: 'Vul deze code in op de inlogpagina, of gebruik de knop op het apparaat waarop je wil blijven.',
           button: 'Inloggen',
-          expiry: 'Deze code en link zijn 10 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.',
+          expiry:
+            'Deze code en link zijn 10 minuten geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.',
           footer: `Deze e-mail is verzonden door ${coopName}.`,
         };
     }
