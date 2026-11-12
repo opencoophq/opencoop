@@ -22,25 +22,27 @@ interface Change {
 export class AuditService {
   constructor(private prisma: PrismaService) {}
 
-  async log(params: {
-    coopId?: string;
-    entity: string;
-    entityId: string;
-    action: string;
-    changes: Change[];
-    actorId?: string;
-    ipAddress?: string;
-    userAgent?: string;
-  }) {
+  async log(
+    params: {
+      coopId?: string;
+      entity: string;
+      entityId: string;
+      action: string;
+      changes: Change[];
+      actorId?: string;
+      ipAddress?: string;
+      userAgent?: string;
+    },
+    // Pass a transaction client to write the entry in the same transaction.
+    client: Pick<Prisma.TransactionClient, 'auditLog'> = this.prisma,
+  ) {
     if (params.changes.length === 0 && params.action === 'UPDATE') return;
 
     const maskedChanges = params.changes.map((c) =>
-      SENSITIVE_FIELDS.has(c.field)
-        ? { field: c.field, oldValue: '***', newValue: '***' }
-        : c,
+      SENSITIVE_FIELDS.has(c.field) ? { field: c.field, oldValue: '***', newValue: '***' } : c,
     );
 
-    await this.prisma.auditLog.create({
+    await client.auditLog.create({
       data: {
         coopId: params.coopId ?? null,
         entity: params.entity,

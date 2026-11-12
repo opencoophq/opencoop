@@ -323,6 +323,9 @@ model User {
   emailVerified        DateTime?
   emailVerifyToken     String?
   emailVerifyExpires   DateTime?
+  // New login email waiting for proof. Becomes `email` only when the
+  // emailVerifyToken mailed to this address is used.
+  pendingEmail         String?
   passwordResetToken   String?
   passwordResetExpires DateTime?
   role                 UserRole  @default(SHAREHOLDER)

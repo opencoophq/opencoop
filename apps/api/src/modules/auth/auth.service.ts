@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -7,7 +13,12 @@ import { UsersService } from '../users/users.service';
 import { EmailService } from '../email/email.service';
 import { AuthEmailService } from './auth-email.service';
 import { CoopsService } from '../coops/coops.service';
-import { computeTotalPaid, computeVestedShares, TERMS_VERSION, DEFAULT_ROLES } from '@opencoop/shared';
+import {
+  computeTotalPaid,
+  computeVestedShares,
+  TERMS_VERSION,
+  DEFAULT_ROLES,
+} from '@opencoop/shared';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -21,9 +32,12 @@ import { decryptMfaSecret, hashRecoveryCode } from '../../common/crypto';
 import * as OTPAuth from 'otpauth';
 import { AuditService } from '../audit/audit.service';
 import { TokenService } from './token.service';
+import { activePendingEmail, CLEAR_PENDING_EMAIL } from './pending-email';
 import { computeIsReadOnly } from './compute-readonly';
 import { countryFromAddress } from '../email/coop-signup-notice';
 import * as Sentry from '@sentry/nestjs';
+
+const VERIFY_TOKEN_INVALID = 'Invalid or expired verification token';
 
 @Injectable()
 export class AuthService {
@@ -151,9 +165,11 @@ export class AuthService {
     });
 
     // Send verification email (non-blocking)
-    this.authEmail.sendVerificationEmail(user.email, emailVerifyToken, registerDto.preferredLanguage || 'nl').catch((err) => {
-      console.error('Failed to send verification email:', err.message);
-    });
+    this.authEmail
+      .sendVerificationEmail(user.email, emailVerifyToken, registerDto.preferredLanguage || 'nl')
+      .catch((err) => {
+        console.error('Failed to send verification email:', err.message);
+      });
 
     // Link any orphan shareholders with matching email
     this.linkOrphanShareholders(user.id, user.email).catch((err) =>
@@ -234,7 +250,12 @@ export class AuthService {
       const roles = await Promise.all(
         Object.entries(DEFAULT_ROLES).map(([name, permissions]) =>
           tx.coopRole.create({
-            data: { coopId: coop.id, name, permissions: permissions as unknown as Prisma.InputJsonValue, isDefault: true },
+            data: {
+              coopId: coop.id,
+              name,
+              permissions: permissions as unknown as Prisma.InputJsonValue,
+              isDefault: true,
+            },
           }),
         ),
       );
@@ -282,9 +303,15 @@ export class AuthService {
     });
 
     // Send verification email (non-blocking)
-    this.authEmail.sendVerificationEmail(result.user.email, emailVerifyToken, onboardingDto.preferredLanguage || 'nl').catch((err) => {
-      console.error('Failed to send verification email:', err.message);
-    });
+    this.authEmail
+      .sendVerificationEmail(
+        result.user.email,
+        emailVerifyToken,
+        onboardingDto.preferredLanguage || 'nl',
+      )
+      .catch((err) => {
+        console.error('Failed to send verification email:', err.message);
+      });
 
     // Internal notice. Must not block or fail signup — notifyCoopCreated
     // swallows SMTP errors; the try/catch covers a synchronous throw.
@@ -316,11 +343,13 @@ export class AuthService {
       role: result.user.role,
       preferredLanguage: result.user.preferredLanguage,
       emailVerified: null,
-      coopAdminOf: [{
-        coopId: result.coop.id,
-        permissionOverrides: null,
-        roles: [{ role: { permissions: adminPermissions } }],
-      }],
+      coopAdminOf: [
+        {
+          coopId: result.coop.id,
+          permissionOverrides: null,
+          roles: [{ role: { permissions: adminPermissions } }],
+        },
+      ],
     });
 
     return {
@@ -422,15 +451,20 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
+    const tokenHash = hashToken(token);
     const user = await this.prisma.user.findFirst({
       where: {
-        emailVerifyToken: hashToken(token),
+        emailVerifyToken: tokenHash,
         emailVerifyExpires: { gt: new Date() },
       },
     });
 
     if (!user) {
-      throw new BadRequestException('Invalid or expired verification token');
+      throw new BadRequestException(VERIFY_TOKEN_INVALID);
+    }
+
+    if (user.pendingEmail) {
+      return this.applyPendingLoginEmail(user.id, user.email, user.pendingEmail, tokenHash);
     }
 
     await this.prisma.user.update({
@@ -441,6 +475,84 @@ export class AuthService {
         emailVerifyExpires: null,
       },
     });
+
+    return { message: 'Email verified successfully' };
+  }
+
+  /**
+   * The verify link reached the new address, so it becomes the login email.
+   * Everything issued for the old address dies with it: unused magic links,
+   * reset links and refresh tokens. Access tokens already issued live until
+   * they expire.
+   *
+   * The switch claims exactly the change this token was issued for, inside
+   * one transaction with the revocations and the audit entry. A cancel, a
+   * newer request or a second click in between leaves nothing to claim, so
+   * that request fails with 400 and no stale address is applied.
+   */
+  private async applyPendingLoginEmail(
+    userId: string,
+    oldEmail: string,
+    newEmail: string,
+    tokenHash: string,
+  ) {
+    const thisChange = { id: userId, emailVerifyToken: tokenHash, pendingEmail: newEmail };
+
+    // Drops only this change: a newer request or a cancel keeps its own state.
+    const dropAsTaken = async (): Promise<never> => {
+      await this.prisma.user.updateMany({ where: thisChange, data: CLEAR_PENDING_EMAIL });
+      throw new ConflictException('This email is already in use');
+    };
+
+    const taken = await this.prisma.user.findUnique({ where: { email: newEmail } });
+    if (taken && taken.id !== userId) {
+      return dropAsTaken();
+    }
+
+    const now = new Date();
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const claimed = await tx.user.updateMany({
+          where: { ...thisChange, emailVerifyExpires: { gt: now } },
+          data: {
+            email: newEmail,
+            pendingEmail: null,
+            emailVerified: now,
+            emailVerifyToken: null,
+            emailVerifyExpires: null,
+            passwordResetToken: null,
+            passwordResetExpires: null,
+          },
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException(VERIFY_TOKEN_INVALID);
+        }
+        await tx.magicLinkToken.updateMany({
+          where: { userId, usedAt: null },
+          data: { usedAt: now },
+        });
+        await tx.refreshToken.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: now },
+        });
+        await this.auditService.log(
+          {
+            entity: 'User',
+            entityId: userId,
+            action: 'UPDATE',
+            changes: [{ field: 'email', oldValue: oldEmail, newValue: newEmail }],
+            actorId: userId,
+          },
+          tx,
+        );
+      });
+    } catch (err) {
+      // Another account took the address between the check and the write.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        return dropAsTaken();
+      }
+      throw err;
+    }
 
     return { message: 'Email verified successfully' };
   }
@@ -570,14 +682,30 @@ export class AuthService {
     }
 
     // Exclude sensitive fields
-    const { passwordHash, emailVerifyToken, emailVerifyExpires, passwordResetToken, passwordResetExpires, mfaSecret, mfaRecoveryCodes, ...safeUser } = user;
+    const {
+      passwordHash,
+      emailVerifyToken,
+      emailVerifyExpires,
+      passwordResetToken,
+      passwordResetExpires,
+      mfaSecret,
+      mfaRecoveryCodes,
+      ...safeUser
+    } = user;
 
     // SYSTEM_ADMIN can manage all coops, not just ones they're explicitly assigned to
     let adminCoopsRaw = user.coopAdminOf.map((ca) => ca.coop);
     if (user.role === 'SYSTEM_ADMIN') {
       adminCoopsRaw = await this.prisma.coop.findMany({
-          select: {
-            id: true, name: true, slug: true, active: true, plan: true, trialEndsAt: true, chargeCardsEnabled: true, volunteersEnabled: true,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          active: true,
+          plan: true,
+          trialEndsAt: true,
+          chargeCardsEnabled: true,
+          volunteersEnabled: true,
           channels: { where: { isDefault: true }, select: { logoUrl: true }, take: 1 },
         },
         orderBy: { name: 'asc' },
@@ -599,7 +727,9 @@ export class AuthService {
           },
         });
         const isReadOnly = full ? computeIsReadOnly(full) : false;
-        const { channels, ...rest } = coop as typeof coop & { channels?: { logoUrl: string | null }[] };
+        const { channels, ...rest } = coop as typeof coop & {
+          channels?: { logoUrl: string | null }[];
+        };
         return {
           ...rest,
           logoUrl: channels?.[0]?.logoUrl ?? null,
@@ -614,8 +744,10 @@ export class AuthService {
       }),
     );
 
-    // Legacy users (no token AND no verified date) are treated as verified
-    const isLegacyUser = !user.emailVerified && !user.emailVerifyToken;
+    // Legacy users (no token AND no verified date) are treated as verified.
+    // A token that belongs to a pending login email change does not count:
+    // it proves nothing about the current address being unverified.
+    const isLegacyUser = !user.emailVerified && (!user.emailVerifyToken || !!user.pendingEmail);
     const emailVerified = !!user.emailVerified || isLegacyUser;
 
     // C5: Compute sharesOwned for each BUY registration so frontend doesn't fall back to quantity
@@ -641,30 +773,35 @@ export class AuthService {
     // Sort shareholders: INDIVIDUAL first, then COMPANY, then MINOR
     // This ensures dashboard pages (which use shareholders[0]) show the user's own record
     const typePriority = { INDIVIDUAL: 0, COMPANY: 1, MINOR: 2 };
-    shareholdersWithComputed.sort((a, b) => (typePriority[a.type] ?? 9) - (typePriority[b.type] ?? 9));
+    shareholdersWithComputed.sort(
+      (a, b) => (typePriority[a.type] ?? 9) - (typePriority[b.type] ?? 9),
+    );
 
     // Compute vested shares for minor shareholders too
-    const minorShareholdersWithComputed = (safeUser as any).registeredShareholders?.map((s: any) => ({
-      ...s,
-      registrations: s.registrations.map((reg: any) => {
-        if (reg.payments) {
-          const totalPaid = computeTotalPaid(reg.payments);
-          const pricePerShare = Number(reg.pricePerShare);
-          const sharesOwned = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
-          return {
-            ...reg,
-            totalPaid,
-            sharesOwned,
-            sharesRemaining: reg.quantity - sharesOwned,
-            fullyPaid: totalPaid >= Number(reg.totalAmount),
-          };
-        }
-        return reg;
-      }),
-    })) ?? [];
+    const minorShareholdersWithComputed =
+      (safeUser as any).registeredShareholders?.map((s: any) => ({
+        ...s,
+        registrations: s.registrations.map((reg: any) => {
+          if (reg.payments) {
+            const totalPaid = computeTotalPaid(reg.payments);
+            const pricePerShare = Number(reg.pricePerShare);
+            const sharesOwned = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
+            return {
+              ...reg,
+              totalPaid,
+              sharesOwned,
+              sharesRemaining: reg.quantity - sharesOwned,
+              fullyPaid: totalPaid >= Number(reg.totalAmount),
+            };
+          }
+          return reg;
+        }),
+      })) ?? [];
 
     return {
       ...safeUser,
+      // An expired change is shown as none.
+      pendingEmail: activePendingEmail(user),
       shareholders: shareholdersWithComputed,
       minorShareholders: minorShareholdersWithComputed,
       emailVerified,
@@ -673,11 +810,14 @@ export class AuthService {
       appleLinked: !!user.appleId,
       adminCoops,
       shareholderCoops: user.shareholders.map((s) => {
-        const { channels, ...rest } = s.coop as typeof s.coop & { channels?: { logoUrl: string | null }[] };
+        const { channels, ...rest } = s.coop as typeof s.coop & {
+          channels?: { logoUrl: string | null }[];
+        };
         return {
           ...rest,
           logoUrl: channels?.[0]?.logoUrl ?? null,
-          hasChargeCards: ((s as typeof s & { _count?: { chargeCards: number } })._count?.chargeCards ?? 0) > 0,
+          hasChargeCards:
+            ((s as typeof s & { _count?: { chargeCards: number } })._count?.chargeCards ?? 0) > 0,
         };
       }),
     };
@@ -687,7 +827,13 @@ export class AuthService {
     return this.usersService.updatePreferences(userId, data);
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string, ip?: string, userAgent?: string) {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -729,7 +875,13 @@ export class AuthService {
   // MFA / TOTP
   // ============================================================================
 
-  async mfaVerify(mfaToken: string, code?: string, recoveryCode?: string, ip?: string, userAgent?: string) {
+  async mfaVerify(
+    mfaToken: string,
+    code?: string,
+    recoveryCode?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     let payload: { sub: string; type: string };
     try {
       payload = this.jwtService.verify(mfaToken);
@@ -743,7 +895,15 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { coopAdminOf: { select: { coopId: true, permissionOverrides: true, roles: { select: { role: { select: { permissions: true } } } } } } },
+      include: {
+        coopAdminOf: {
+          select: {
+            coopId: true,
+            permissionOverrides: true,
+            roles: { select: { role: { select: { permissions: true } } } },
+          },
+        },
+      },
     });
     if (!user || !user.mfaEnabled || !user.mfaSecret) {
       throw new UnauthorizedException('MFA not configured');
@@ -804,7 +964,9 @@ export class AuthService {
       entity: 'Auth',
       entityId: user.id,
       action: 'MFA_VERIFY',
-      changes: [{ field: 'method', oldValue: null, newValue: recoveryCode ? 'recovery-code' : 'totp' }],
+      changes: [
+        { field: 'method', oldValue: null, newValue: recoveryCode ? 'recovery-code' : 'totp' },
+      ],
       actorId: user.id,
       ipAddress: ip,
       userAgent,
@@ -913,7 +1075,9 @@ export class AuthService {
     });
 
     if (existingShareholder) {
-      throw new ConflictException('This email is already used by another shareholder in this cooperative');
+      throw new ConflictException(
+        'This email is already used by another shareholder in this cooperative',
+      );
     }
 
     const passwordHash = await bcrypt.hash(upgradeDto.password, 12);
@@ -1013,19 +1177,23 @@ export class AuthService {
     });
 
     // Send confirmation email to user (don't block or fail the signup)
-    this.authEmail.sendWaitlistConfirmationEmail(waitlistDto.email.toLowerCase(), waitlistDto.locale).catch((err) => {
-      console.error('Failed to send waitlist confirmation email:', err.message);
-    });
+    this.authEmail
+      .sendWaitlistConfirmationEmail(waitlistDto.email.toLowerCase(), waitlistDto.locale)
+      .catch((err) => {
+        console.error('Failed to send waitlist confirmation email:', err.message);
+      });
 
     // Notify team
-    this.emailService.sendPlatformEmail({
-      to: 'hello@opencoop.be',
-      subject: `Waitlist signup: ${waitlistDto.email}`,
-      templateKey: 'waitlist-notification',
-      text: `New waitlist signup:\n\nEmail: ${waitlistDto.email}\nPlan: ${waitlistDto.plan || 'Not specified'}`,
-    }).catch((err) => {
-      console.error('Failed to send waitlist notification:', err.message);
-    });
+    this.emailService
+      .sendPlatformEmail({
+        to: 'hello@opencoop.be',
+        subject: `Waitlist signup: ${waitlistDto.email}`,
+        templateKey: 'waitlist-notification',
+        text: `New waitlist signup:\n\nEmail: ${waitlistDto.email}\nPlan: ${waitlistDto.plan || 'Not specified'}`,
+      })
+      .catch((err) => {
+        console.error('Failed to send waitlist notification:', err.message);
+      });
 
     return { message: 'Successfully joined the waitlist' };
   }
@@ -1040,21 +1208,50 @@ export class AuthService {
       return { message: 'Email already verified' };
     }
 
+    // The outstanding token belongs to a pending login email change and was
+    // mailed to the new address. A fresh token for the current address would
+    // overwrite it and let this address confirm the new one without proof.
+    const pendingMessage = { message: 'A login email change is pending' };
+    if (activePendingEmail(user)) {
+      return pendingMessage;
+    }
+    const now = new Date();
+    if (user.pendingEmail) {
+      // Expired change: drop exactly that one. A newer request keeps its state.
+      await this.prisma.user.updateMany({
+        where: {
+          id: userId,
+          pendingEmail: user.pendingEmail,
+          emailVerifyExpires: { lte: now },
+        },
+        data: CLEAR_PENDING_EMAIL,
+      });
+    }
+
     const emailVerifyToken = randomBytes(32).toString('hex');
 
-    await this.prisma.user.update({
-      where: { id: userId },
+    // Write the token only while no change is pending and the address is
+    // still unverified. A change requested since the read above wins: no
+    // token for the current address replaces it, and no mail goes out.
+    const claimed = await this.prisma.user.updateMany({
+      where: { id: userId, pendingEmail: null, emailVerified: null },
       data: {
         emailVerifyToken: hashToken(emailVerifyToken),
-        emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        emailVerifyExpires: new Date(now.getTime() + 24 * 60 * 60 * 1000),
       },
     });
+    if (claimed.count !== 1) {
+      return pendingMessage;
+    }
 
-    await this.authEmail.sendVerificationEmail(user.email, emailVerifyToken, user.preferredLanguage);
+    await this.authEmail.sendVerificationEmail(
+      user.email,
+      emailVerifyToken,
+      user.preferredLanguage,
+    );
 
     return { message: 'Verification email sent' };
   }
-
 
   private async linkOrphanShareholders(userId: string, email: string): Promise<void> {
     await this.prisma.shareholder.updateMany({
@@ -1062,5 +1259,4 @@ export class AuthService {
       data: { userId },
     });
   }
-
 }

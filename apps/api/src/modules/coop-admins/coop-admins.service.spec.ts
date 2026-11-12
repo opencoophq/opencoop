@@ -26,8 +26,18 @@ function build() {
     },
   };
   const emailService = { sendPlatformEmail: jest.fn().mockResolvedValue(undefined) };
-  const service = new CoopAdminsService(prisma as any, emailService as any);
-  return { service, prisma };
+  const audit = { log: jest.fn().mockResolvedValue(undefined) };
+  const authEmail = {
+    sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+    sendLoginEmailChangeNotice: jest.fn().mockResolvedValue(undefined),
+  };
+  const service = new CoopAdminsService(
+    prisma as any,
+    emailService as any,
+    audit as any,
+    authEmail as any,
+  );
+  return { service, prisma, authEmail };
 }
 
 describe('CoopAdminsService.removeAdmin', () => {
@@ -95,50 +105,63 @@ describe('CoopAdminsService.updateAdminUser', () => {
         'coop-1',
         'ca-1',
         { email: 'attacker@example.com' },
-        { role: 'COOP_ADMIN' },
+        { id: 'u-coop', role: 'COOP_ADMIN' },
       ),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it('lets a system admin change a system admin login email', async () => {
-    const { service, prisma } = build();
+  it('lets a system admin request a system admin login email change, pending proof', async () => {
+    const { service, prisma, authEmail } = build();
     prisma.coopAdmin.findFirst.mockResolvedValue({
       id: 'ca-1',
-      user: { id: 'u-sys', email: 'root@opencoop.be', role: 'SYSTEM_ADMIN' },
+      user: {
+        id: 'u-sys',
+        email: 'root@opencoop.be',
+        role: 'SYSTEM_ADMIN',
+        preferredLanguage: 'nl',
+      },
     });
-    prisma.user.update.mockResolvedValue({ id: 'u-sys', email: 'new@example.com' });
+    prisma.user.update.mockResolvedValue({
+      id: 'u-sys',
+      email: 'root@opencoop.be',
+      pendingEmail: 'new@example.com',
+      preferredLanguage: 'nl',
+    });
 
     await service.updateAdminUser(
       'coop-1',
       'ca-1',
       { email: 'new@example.com' },
-      { role: 'SYSTEM_ADMIN' },
+      { id: 'u-root', role: 'SYSTEM_ADMIN' },
     );
 
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'u-sys' },
-        data: expect.objectContaining({ email: 'new@example.com', emailVerified: null }),
-      }),
+    // The login email itself changes only after the new address verifies.
+    const { data } = prisma.user.update.mock.calls[0][0];
+    expect(data).toMatchObject({ pendingEmail: 'new@example.com' });
+    expect(data).not.toHaveProperty('email');
+    expect(authEmail.sendVerificationEmail).toHaveBeenCalledWith(
+      'new@example.com',
+      expect.any(String),
+      'nl',
     );
   });
 
-  it('still lets a coop admin change another coop admin login email', async () => {
+  it('refuses a coop admin changing another coop admin login email', async () => {
     const { service, prisma } = build();
     prisma.coopAdmin.findFirst.mockResolvedValue({
       id: 'ca-2',
       user: { id: 'u-2', email: 'peer@coop.be', role: 'COOP_ADMIN' },
     });
-    prisma.user.update.mockResolvedValue({ id: 'u-2', email: 'fixed@coop.be' });
 
-    await service.updateAdminUser(
-      'coop-1',
-      'ca-2',
-      { email: 'fixed@coop.be' },
-      { role: 'COOP_ADMIN' },
-    );
-
-    expect(prisma.user.update).toHaveBeenCalled();
+    await expect(
+      service.updateAdminUser(
+        'coop-1',
+        'ca-2',
+        { email: 'fixed@coop.be' },
+        { id: 'u-coop', role: 'COOP_ADMIN' },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });

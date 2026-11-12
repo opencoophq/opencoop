@@ -373,6 +373,7 @@ describe('EmailProcessor template coverage', () => {
     'email-verification',
     'feature-request-notification',
     'feature-request-thanks',
+    'login-email-change-notice',
     'magic-link',
     'migration-request',
     'password-reset',

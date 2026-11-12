@@ -1,18 +1,34 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
+import { AuthEmailService } from '../auth/auth-email.service';
+import { hashToken } from '../../common/crypto';
+import { activePendingEmail, CLEAR_PENDING_EMAIL } from '../auth/pending-email';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { InviteAdminDto } from './dto/invite-admin.dto';
 import { CoopPermissions } from '@opencoop/shared';
+
+/** How long the verify link for a requested login email change stays valid. */
+const EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class CoopAdminsService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private auditService: AuditService,
+    private authEmail: AuthEmailService,
   ) {}
 
   // ==================== ROLES ====================
@@ -27,9 +43,9 @@ export class CoopAdminsService {
 
     // Default roles in logical order, then custom roles alphabetically
     const defaultOrder: Record<string, number> = {
-      'Admin': 1,
-      'Manager': 2,
-      'Viewer': 3,
+      Admin: 1,
+      Manager: 2,
+      Viewer: 3,
       'GDPR Viewer': 4,
     };
 
@@ -81,7 +97,9 @@ export class CoopAdminsService {
       throw new BadRequestException('Cannot delete a default role');
     }
     if (role._count.coopAdminRoles > 0) {
-      throw new BadRequestException('Reassign all administrators using this role before deleting it');
+      throw new BadRequestException(
+        'Reassign all administrators using this role before deleting it',
+      );
     }
 
     return this.prisma.coopRole.delete({ where: { id: roleId } });
@@ -109,7 +127,11 @@ export class CoopAdminsService {
     });
   }
 
-  async updateAdminPermissionOverrides(coopId: string, adminId: string, overrides: Record<string, boolean> | null) {
+  async updateAdminPermissionOverrides(
+    coopId: string,
+    adminId: string,
+    overrides: Record<string, boolean> | null,
+  ) {
     const admin = await this.prisma.coopAdmin.findFirst({
       where: { id: adminId, coopId },
     });
@@ -196,7 +218,9 @@ export class CoopAdminsService {
       (r) => (r.role.permissions as any)?.canManageAdmins === true,
     );
     if (canManageAdminsCount <= 1 && targetCanManageAdmins) {
-      throw new BadRequestException('Cannot remove the last administrator with management permissions');
+      throw new BadRequestException(
+        'Cannot remove the last administrator with management permissions',
+      );
     }
 
     // Delete CoopAdmin entry (cascades to coop_admin_roles)
@@ -207,7 +231,8 @@ export class CoopAdminsService {
       where: { userId: admin.userId },
     });
     // If no more coop admin entries, downgrade a COOP_ADMIN to SHAREHOLDER.
-    // The role guard keeps a SYSTEM_ADMIN untouched.
+    // The role filter keeps a system admin's global role untouched: a coop
+    // admin may drop them from this team, never demote them.
     if (remainingAdminEntries === 0) {
       await this.prisma.user.updateMany({
         where: { id: admin.userId, role: 'COOP_ADMIN' },
@@ -304,8 +329,7 @@ export class CoopAdminsService {
     coopName: string;
     roleNames: string[];
   }): Promise<void> {
-    const appUrl =
-      process.env.FRONTEND_URL || 'http://localhost:3002';
+    const appUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
     const inviteUrl = `${appUrl}/invite/${args.token}`;
     const rolesLabel = args.roleNames.join(', ') || '—';
 
@@ -460,14 +484,16 @@ export class CoopAdminsService {
       throw new NotFoundException('Admin not found');
     }
 
-    return admin.notificationSettings ?? {
-      frequency: 'IMMEDIATE',
-      digestHour: 9,
-      notifyOnNewShareholder: false,
-      notifyOnSharePurchase: false,
-      notifyOnShareSell: false,
-      notifyOnPaymentReceived: false,
-    };
+    return (
+      admin.notificationSettings ?? {
+        frequency: 'IMMEDIATE',
+        digestHour: 9,
+        notifyOnNewShareholder: false,
+        notifyOnSharePurchase: false,
+        notifyOnShareSell: false,
+        notifyOnPaymentReceived: false,
+      }
+    );
   }
 
   async updateNotificationSettings(
@@ -503,10 +529,16 @@ export class CoopAdminsService {
       update: {
         ...(dto.frequency !== undefined && { frequency: dto.frequency }),
         ...(dto.digestHour !== undefined && { digestHour: dto.digestHour }),
-        ...(dto.notifyOnNewShareholder !== undefined && { notifyOnNewShareholder: dto.notifyOnNewShareholder }),
-        ...(dto.notifyOnSharePurchase !== undefined && { notifyOnSharePurchase: dto.notifyOnSharePurchase }),
+        ...(dto.notifyOnNewShareholder !== undefined && {
+          notifyOnNewShareholder: dto.notifyOnNewShareholder,
+        }),
+        ...(dto.notifyOnSharePurchase !== undefined && {
+          notifyOnSharePurchase: dto.notifyOnSharePurchase,
+        }),
         ...(dto.notifyOnShareSell !== undefined && { notifyOnShareSell: dto.notifyOnShareSell }),
-        ...(dto.notifyOnPaymentReceived !== undefined && { notifyOnPaymentReceived: dto.notifyOnPaymentReceived }),
+        ...(dto.notifyOnPaymentReceived !== undefined && {
+          notifyOnPaymentReceived: dto.notifyOnPaymentReceived,
+        }),
       },
     });
   }
@@ -558,66 +590,174 @@ export class CoopAdminsService {
   // ==================== EDIT TEAM MEMBER USER ====================
 
   /**
-   * Update profile fields on the User row of a team member. Scoped to
-   * fields a coop admin should reasonably manage on someone else's
-   * behalf — name (display), preferredLanguage (email rendering),
-   * email (with re-verification side-effect, see below).
+   * Update name and preferredLanguage on the User row of a team member.
    *
-   * Email change clears `emailVerified` so the new owner has to confirm
-   * the address — this is the mitigation for the otherwise-easy account
-   * hijack pattern (admin changes email → triggers password reset →
-   * takeover). Audit-logged.
+   * The login email is not a coop field. It is the global identity of the
+   * account: magic link, password reset and login all key on it, and the
+   * same account can belong to other coops. A coop admin who could rewrite
+   * it could send themselves a magic link and sign in as that person. So a
+   * coop admin gets 403 for a different email; resending the current value
+   * (any case) is a no-op.
+   *
+   * A system admin may request a change, but it only becomes the login email
+   * after the new address proves itself through the existing verify-email
+   * link (see AuthService.verifyEmail). Until then `email` stays as it is and
+   * the old address gets a notice. Every change here is written to the audit
+   * log with the acting user.
+   *
+   * A coop admin may not edit a system admin's account at all.
    */
   async updateAdminUser(
     coopId: string,
     adminId: string,
     dto: { name?: string | null; preferredLanguage?: string; email?: string },
-    actor: { role: string },
+    actor: { id: string; role: string },
   ) {
     const admin = await this.prisma.coopAdmin.findFirst({
       where: { id: adminId, coopId },
-      include: { user: { select: { id: true, email: true, role: true } } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            name: true,
+            preferredLanguage: true,
+            pendingEmail: true,
+            emailVerifyExpires: true,
+          },
+        },
+      },
     });
     if (!admin) {
       throw new NotFoundException('Admin not found');
     }
 
-    const data: Prisma.UserUpdateInput = {};
-    if (dto.name !== undefined) data.name = dto.name;
-    if (dto.preferredLanguage !== undefined) data.preferredLanguage = dto.preferredLanguage;
+    const actorIsSystemAdmin = actor.role === 'SYSTEM_ADMIN';
+    if (admin.user.role === 'SYSTEM_ADMIN' && !actorIsSystemAdmin) {
+      throw new ForbiddenException('Only a system admin can change a system admin account');
+    }
 
+    const data: Prisma.UserUpdateInput = {};
+    const changes: { field: string; oldValue: unknown; newValue: unknown }[] = [];
+    if (dto.name !== undefined && dto.name !== admin.user.name) {
+      data.name = dto.name;
+      changes.push({ field: 'name', oldValue: admin.user.name, newValue: dto.name });
+    }
+    if (
+      dto.preferredLanguage !== undefined &&
+      dto.preferredLanguage !== admin.user.preferredLanguage
+    ) {
+      data.preferredLanguage = dto.preferredLanguage;
+      changes.push({
+        field: 'preferredLanguage',
+        oldValue: admin.user.preferredLanguage,
+        newValue: dto.preferredLanguage,
+      });
+    }
+
+    let pending: { email: string; token: string } | undefined;
+    const currentPending = activePendingEmail(admin.user);
     if (dto.email !== undefined) {
       const newEmail = dto.email.toLowerCase().trim();
-      if (newEmail !== admin.user.email) {
-        // A coop admin who can edit team emails could point a system admin
-        // account at their own inbox and sign in with a magic link.
-        if (admin.user.role === 'SYSTEM_ADMIN' && actor.role !== 'SYSTEM_ADMIN') {
-          throw new ForbiddenException('Only a system admin can change a system admin login email');
+      if (newEmail === admin.user.email.toLowerCase()) {
+        // A system admin cancels a pending change by submitting the current
+        // address. For anyone else this stays a no-op.
+        if (actorIsSystemAdmin && admin.user.pendingEmail) {
+          Object.assign(data, CLEAR_PENDING_EMAIL);
+          if (currentPending) {
+            changes.push({ field: 'pendingEmail', oldValue: currentPending, newValue: null });
+          }
+        }
+      } else {
+        if (!actorIsSystemAdmin) {
+          throw new ForbiddenException("A coop admin cannot change a team member's login email");
         }
         const inUse = await this.prisma.user.findUnique({ where: { email: newEmail } });
         if (inUse) {
           throw new ConflictException('Another user already uses this email');
         }
-        data.email = newEmail;
-        // Force re-verification — without this, an admin could change a
-        // team member's email and immediately take over via password reset.
-        data.emailVerified = null;
+        const token = crypto.randomBytes(32).toString('hex');
+        pending = { email: newEmail, token };
+        data.pendingEmail = newEmail;
+        data.emailVerifyToken = hashToken(token);
+        data.emailVerifyExpires = new Date(Date.now() + EMAIL_CHANGE_TTL_MS);
+        changes.push({ field: 'pendingEmail', oldValue: currentPending, newValue: newEmail });
       }
     }
 
+    const select = {
+      id: true,
+      name: true,
+      email: true,
+      pendingEmail: true,
+      preferredLanguage: true,
+      emailVerified: true,
+    } as const;
+
     if (Object.keys(data).length === 0) {
-      // Nothing to update — short-circuit so we don't generate a no-op
-      // audit entry.
-      return this.prisma.user.findUnique({
-        where: { id: admin.user.id },
-        select: { id: true, name: true, email: true, preferredLanguage: true, emailVerified: true },
-      });
+      return this.prisma.user.findUnique({ where: { id: admin.user.id }, select });
     }
 
-    return this.prisma.user.update({
+    // The old address must accept its notice before any token exists, so
+    // nothing is claimable that the old owner was not told about. A failed
+    // notice writes nothing.
+    const lang = (data.preferredLanguage as string | undefined) ?? admin.user.preferredLanguage;
+    if (pending) {
+      try {
+        await this.authEmail.sendLoginEmailChangeNotice(admin.user.email, pending.email, lang);
+      } catch {
+        throw new InternalServerErrorException(
+          'The login email change was not started because the current address could not be notified. Try again.',
+        );
+      }
+    }
+
+    const updated = await this.prisma.user.update({
       where: { id: admin.user.id },
       data,
-      select: { id: true, name: true, email: true, preferredLanguage: true, emailVerified: true },
+      select,
     });
+
+    await this.auditService.log({
+      coopId,
+      entity: 'User',
+      entityId: admin.user.id,
+      action: 'UPDATE',
+      changes,
+      actorId: actor.id,
+    });
+
+    if (pending) {
+      try {
+        await this.authEmail.sendVerificationEmail(pending.email, pending.token, lang);
+      } catch {
+        // Drop exactly this request; a newer request or a cancel that landed
+        // meanwhile keeps its own state.
+        const dropped = await this.prisma.user.updateMany({
+          where: {
+            id: admin.user.id,
+            pendingEmail: pending.email,
+            emailVerifyToken: hashToken(pending.token),
+          },
+          data: CLEAR_PENDING_EMAIL,
+        });
+        if (dropped.count > 0) {
+          await this.auditService.log({
+            coopId,
+            entity: 'User',
+            entityId: admin.user.id,
+            action: 'UPDATE',
+            changes: [{ field: 'pendingEmail', oldValue: pending.email, newValue: null }],
+            actorId: actor.id,
+          });
+        }
+        throw new InternalServerErrorException(
+          'The login email change was not started because a mail could not be sent. Try again.',
+        );
+      }
+    }
+
+    return updated;
   }
 }

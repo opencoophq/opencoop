@@ -1094,10 +1094,10 @@
       "overridden": "aangepast",
       "overrideHint": "Klik op een recht om het onafhankelijk van de rol aan/uit te schakelen. Klik opnieuw om terug te keren naar de standaard van de rol.",
       "editUser": "Gebruiker bewerken",
-      "editUserDescription": "Pas naam, e-mail en taalvoorkeur aan voor dit teamlid.",
+      "editUserDescription": "Pas de naam en taalvoorkeur aan voor dit teamlid.",
       "name": "Naam",
       "preferredLanguage": "Voorkeurstaal",
-      "emailChangeWarning": "Bij wijziging van het e-mailadres moet de gebruiker zijn nieuwe adres opnieuw verifiëren.",
+      "emailChangeWarning": "Het login-e-mailadres kan hier niet gewijzigd worden. Neem contact op met OpenCoop-support als het moet veranderen.",
       "roles": {
         "title": "Rollen",
         "createRole": "Rol aanmaken",
