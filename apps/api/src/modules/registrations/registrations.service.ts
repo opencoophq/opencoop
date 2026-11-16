@@ -1,4 +1,5 @@
 import { Injectable, Inject, forwardRef, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { computeTotalPaid, computeVestedShares } from '@opencoop/shared';
 import { DocumentsService } from '../documents/documents.service';
@@ -176,13 +177,20 @@ export class RegistrationsService {
   /**
    * Compute available shares for a BUY registration, accounting for
    * both pending and completed sells/transfers.
+   * Pass a transaction client to read inside that transaction.
    */
-  private async getAvailableShares(registrationId: string, payments: { amount: number | string | { toString(): string } }[], pricePerShare: number, quantity: number): Promise<number> {
+  async getAvailableShares(
+    registrationId: string,
+    payments: { amount: number | string | { toString(): string } }[],
+    pricePerShare: number,
+    quantity: number,
+    client: Pick<Prisma.TransactionClient, 'registration'> = this.prisma,
+  ): Promise<number> {
     const totalPaid = computeTotalPaid(payments);
     const vestedShares = computeVestedShares(totalPaid, pricePerShare, quantity);
 
     // C3: Include completed sells too, not just pending
-    const existingSells = await this.prisma.registration.aggregate({
+    const existingSells = await client.registration.aggregate({
       where: {
         sellsRegistrationId: registrationId,
         type: 'SELL',
@@ -198,21 +206,23 @@ export class RegistrationsService {
   /**
    * Check if a share sale would drop an Ecopower client below the minimum threshold.
    * Throws BadRequestException if the sale would violate the Ecopower minimum.
+   * Pass a transaction client to read inside that transaction.
    */
-  private async checkEcoPowerThreshold(
+  async checkEcoPowerThreshold(
     coopId: string,
     shareholderId: string,
     saleQuantity: number,
     salePricePerShare: number,
+    client: Pick<Prisma.TransactionClient, 'shareholder' | 'coop' | 'registration'> = this.prisma,
   ) {
-    const shareholder = await this.prisma.shareholder.findUnique({
+    const shareholder = await client.shareholder.findUnique({
       where: { id: shareholderId },
       select: { isEcoPowerClient: true },
     });
 
     if (!shareholder?.isEcoPowerClient) return;
 
-    const coop = await this.prisma.coop.findUnique({
+    const coop = await client.coop.findUnique({
       where: { id: coopId },
       select: { ecoPowerEnabled: true, ecoPowerMinThresholdType: true, ecoPowerMinThreshold: true },
     });
@@ -225,7 +235,7 @@ export class RegistrationsService {
     // BUY registrations: ACTIVE, COMPLETED, PENDING_PAYMENT (shares the shareholder owns)
     // SELL registrations: PENDING, PENDING_PAYMENT, ACTIVE, COMPLETED (shares already committed
     // to selling; same set as getAvailableShares)
-    const registrations = await this.prisma.registration.findMany({
+    const registrations = await client.registration.findMany({
       where: {
         coopId,
         shareholderId,
