@@ -11,6 +11,10 @@ import { isOverdue, workingDaysBetween } from './working-days';
 export interface AdminChargeCardRow extends ChargeCardView {
   shareholderId: string;
   shareholderName: string;
+  /** User login email first, then the shareholder's own email. */
+  shareholderEmail: string | null;
+  /** Shareholder.memberNumber (vennotennummer). */
+  shareholderNumber: number | null;
   shareholderStatus: ShareholderStatus;
   totalPaid: number;
   /** Working days since the request (REQUESTED) or the payment (PAID); null otherwise. */
@@ -39,7 +43,17 @@ export class ChargeCardsAdminService {
         ...(filter.todo ? { providerSyncNeeded: true } : {}),
       },
       include: {
-        shareholder: { select: { firstName: true, lastName: true, companyName: true, status: true } },
+        shareholder: {
+          select: {
+            firstName: true,
+            lastName: true,
+            companyName: true,
+            status: true,
+            memberNumber: true,
+            email: true,
+            user: { select: { email: true } },
+          },
+        },
         payments: { select: { amount: true } },
       },
       orderBy: { requestedAt: 'asc' },
@@ -52,6 +66,8 @@ export class ChargeCardsAdminService {
         ...toChargeCardView(card),
         shareholderId: card.shareholderId,
         shareholderName: shareholderDisplayName(card.shareholder),
+        shareholderEmail: resolveShareholderEmail(card.shareholder),
+        shareholderNumber: card.shareholder.memberNumber ?? null,
         shareholderStatus: card.shareholder.status,
         totalPaid: computeTotalPaid(card.payments),
         waitingWorkingDays: waitingSince ? workingDaysBetween(waitingSince, now) : null,

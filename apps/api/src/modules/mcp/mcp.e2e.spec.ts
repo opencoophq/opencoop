@@ -64,6 +64,8 @@ import { VolunteersService } from '../volunteers/volunteers.service';
 import { McpShareholderTools } from './tools/mcp-shareholder.tools';
 import { McpTransactionTools } from './tools/mcp-transaction.tools';
 import { McpShareTransferTools } from './tools/mcp-share-transfer.tools';
+import { McpChargeCardTools } from './tools/mcp-charge-card.tools';
+import { ChargeCardsAdminService } from '../charge-cards/charge-cards-admin.service';
 import { AgendaService } from '../meetings/agenda.service';
 import { AttendanceService } from '../meetings/attendance.service';
 import { ConvocationService } from '../meetings/convocation.service';
@@ -105,6 +107,9 @@ jest.mock('../shareholders/shareholders.service', () => ({
 }));
 jest.mock('../volunteers/volunteers.service', () => ({
   VolunteersService: class VolunteersService {},
+}));
+jest.mock('../charge-cards/charge-cards-admin.service', () => ({
+  ChargeCardsAdminService: class ChargeCardsAdminService {},
 }));
 
 const EXISTING_TOOL_NAMES = [
@@ -202,6 +207,7 @@ const EXISTING_TOOL_NAMES = [
   'list_volunteer_interests',
   'update_volunteer',
   'update_volunteer_interests',
+  'list_charge_cards',
 ];
 
 const apiKeysService = {
@@ -327,6 +333,7 @@ const toolProviders = [
   McpMeetingTools,
   McpReportTools,
   McpVolunteerTools,
+  McpChargeCardTools,
   TestWriteTools,
 ];
 
@@ -363,6 +370,7 @@ const toolProviders = [
     { provide: MinutesService, useValue: minutesService },
     { provide: MeetingDocumentsService, useValue: meetingDocumentsService },
     { provide: VolunteersService, useValue: {} },
+    { provide: ChargeCardsAdminService, useValue: { list: jest.fn() } },
   ],
   exports: [McpAuthStore],
 })

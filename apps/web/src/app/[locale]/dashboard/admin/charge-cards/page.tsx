@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
+import { usePermissions } from '@/contexts/permissions-context';
+import { Link } from '@/i18n/routing';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +42,10 @@ interface AdminChargeCard {
   feeInclVat: number;
   isReplacement: boolean;
   providerSyncNeeded: boolean;
+  shareholderId: string;
   shareholderName: string;
+  shareholderEmail: string | null;
+  shareholderNumber: number | null;
   totalPaid: number;
   waitingWorkingDays: number | null;
   overdue: boolean;
@@ -56,6 +61,8 @@ export default function AdminChargeCardsPage() {
   const t = useTranslations('chargeCards');
   const { locale } = useLocale();
   const { selectedCoop } = useAdmin();
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission('canManageShareholders');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [cards, setCards] = useState<AdminChargeCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +89,7 @@ export default function AdminChargeCardsPage() {
   }, [load]);
 
   const act = async (card: AdminChargeCard, action: AdminAction) => {
-    if (!selectedCoop) return;
+    if (!selectedCoop || !canManage) return;
     // A cancel on a card that already holds a payment doesn't refund it:
     // the coop must do that by hand outside OpenCoop. Warn before letting
     // the admin cancel that one; every other action keeps the plain confirm.
@@ -100,7 +107,7 @@ export default function AdminChargeCardsPage() {
   };
 
   const submitIssue = async () => {
-    if (!selectedCoop || !issuing) return;
+    if (!selectedCoop || !issuing || !canManage) return;
     setBusy(true);
     try {
       await api(`/admin/coops/${selectedCoop.id}/charge-cards/${issuing.id}/issue`, {
@@ -167,13 +174,31 @@ export default function AdminChargeCardsPage() {
                   <TableHead className="text-right">{t('admin.paid')}</TableHead>
                   <TableHead>{t('admin.cardNumber')}</TableHead>
                   <TableHead>{t('admin.waiting')}</TableHead>
-                  <TableHead>{t('admin.actions')}</TableHead>
+                  {canManage && <TableHead>{t('admin.actions')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {cards.map((card) => (
                   <TableRow key={card.id} className={card.overdue ? 'bg-red-50 dark:bg-red-950/30' : undefined}>
-                    <TableCell className="font-medium">{card.shareholderName}</TableCell>
+                    <TableCell>
+                      {canManage && card.shareholderId ? (
+                        <Link
+                          href={`/dashboard/admin/shareholders/${card.shareholderId}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {card.shareholderName || '—'}
+                        </Link>
+                      ) : (
+                        <span className="font-medium">{card.shareholderName || '—'}</span>
+                      )}
+                      {(card.shareholderNumber != null || card.shareholderEmail) && (
+                        <div className="text-xs text-muted-foreground">
+                          {card.shareholderNumber != null && <span>#{card.shareholderNumber}</span>}
+                          {card.shareholderNumber != null && card.shareholderEmail && ' · '}
+                          {card.shareholderEmail && <span>{card.shareholderEmail}</span>}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {card.label || '—'}
                       {card.isReplacement && (
@@ -207,6 +232,7 @@ export default function AdminChargeCardsPage() {
                         </span>
                       )}
                     </TableCell>
+                    {canManage && (
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {card.status === 'PAID' && (
@@ -248,6 +274,7 @@ export default function AdminChargeCardsPage() {
                         )}
                       </div>
                     </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -256,7 +283,7 @@ export default function AdminChargeCardsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={issuing !== null} onOpenChange={(open) => !open && setIssuing(null)}>
+      <Dialog open={canManage && issuing !== null} onOpenChange={(open) => !open && setIssuing(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('admin.issueTitle')}</DialogTitle>

@@ -1123,7 +1123,8 @@
       "canViewPII": "Persönliche Daten einsehen",
       "canViewReports": "Berichte einsehen",
       "canViewShareholderRegister": "Anteilseignerregister einsehen",
-      "canViewVolunteers": "Freiwillige ansehen und kontaktieren"
+      "canViewVolunteers": "Freiwillige ansehen und kontaktieren",
+      "canViewChargeCards": "Ladekarten ansehen (wer registriert hat)"
     },
     "billing": {
       "title": "Abrechnung",

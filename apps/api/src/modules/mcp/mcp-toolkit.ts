@@ -75,6 +75,8 @@ export interface McpToolContext {
 interface McpToolOptions<D> {
   /** One permission, or several that must all be granted. SYSTEM_ADMIN bypasses, like PermissionGuard. */
   permission?: CoopPermissionKey | CoopPermissionKey[];
+  /** At least one of these must be granted, on top of `permission`. SYSTEM_ADMIN bypasses. */
+  anyPermission?: CoopPermissionKey[];
   write?: boolean;
   dto?: ClassConstructor<D>;
 }
@@ -123,10 +125,11 @@ export class McpToolkit {
       : Array.isArray(opts.permission)
         ? opts.permission
         : [opts.permission];
+    const anyOf = opts.anyPermission ?? [];
     if (
-      required.length > 0 &&
       role !== 'SYSTEM_ADMIN' &&
-      required.some((key) => !isPermitted(permissions, key))
+      (required.some((key) => !isPermitted(permissions, key)) ||
+        (anyOf.length > 0 && !anyOf.some((key) => isPermitted(permissions, key))))
     ) {
       throw new ForbiddenException('Insufficient permissions');
     }
@@ -264,13 +267,13 @@ export class McpToolkit {
 
     for (const key of ['shareholderName', 'fullName'] as const) {
       if (this.hasOwn(result, key)) {
-        result[key] = this.shareholderLabel(result.shareholderId);
+        result[key] = this.shareholderLabel(result.shareholderId, result.shareholderNumber);
       }
     }
 
     if (this.hasOwn(result, 'beneficiaryName')) {
       result.beneficiaryName = this.hasOwn(result, 'shareholderId')
-        ? this.shareholderLabel(result.shareholderId)
+        ? this.shareholderLabel(result.shareholderId, result.shareholderNumber)
         : '***';
     }
 
@@ -288,7 +291,10 @@ export class McpToolkit {
     if (
       this.hasOwn(value, 'firstName') ||
       this.hasOwn(value, 'lastName') ||
-      this.hasOwn(value, 'shareholderNumber') ||
+      // A row that points to a shareholder by id (a charge card) is not the
+      // shareholder itself; its shareholderName and shareholderEmail are masked
+      // as flat keys instead.
+      (this.hasOwn(value, 'shareholderNumber') && !this.hasOwn(value, 'shareholderId')) ||
       this.isReferralShareholderProjection(value)
     ) {
       return true;
@@ -319,7 +325,11 @@ export class McpToolkit {
     );
   }
 
-  private shareholderLabel(shareholderId: unknown): string {
+  /** Same label as maskShareholderRowPII, so masking an already masked row changes nothing. */
+  private shareholderLabel(shareholderId: unknown, shareholderNumber?: unknown): string {
+    if (typeof shareholderNumber === 'number' && shareholderNumber > 0) {
+      return `Aandeelhouder #${shareholderNumber}`;
+    }
     return typeof shareholderId === 'string' && shareholderId.length > 0
       ? `Aandeelhouder #${shareholderId.slice(-4)}`
       : '***';

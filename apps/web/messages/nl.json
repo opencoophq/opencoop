@@ -1125,7 +1125,8 @@
       "canViewPII": "Persoonlijke gegevens inzien",
       "canViewReports": "Rapporten inzien",
       "canViewShareholderRegister": "Aandeelhoudersregister inzien",
-      "canViewVolunteers": "Vrijwilligers bekijken en contacteren"
+      "canViewVolunteers": "Vrijwilligers bekijken en contacteren",
+      "canViewChargeCards": "Laadpassen bekijken (wie registreerde)"
     },
     "billing": {
       "title": "Facturatie",

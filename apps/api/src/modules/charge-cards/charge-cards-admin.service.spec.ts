@@ -83,6 +83,49 @@ describe('ChargeCardsAdminService', () => {
       expect(rows[1]).toMatchObject({ shareholderName: 'Jan Peeters', shareholderStatus: 'ACTIVE', totalPaid: 6, feeInclVat: 6 });
     });
 
+    it('returns who registered the card: email (login first) and member number', async () => {
+      prisma.chargeCard.findMany.mockResolvedValue([
+        card({
+          id: 'with-login',
+          shareholder: {
+            firstName: 'Fien',
+            lastName: 'Vermeulen',
+            companyName: null,
+            status: 'ACTIVE',
+            memberNumber: 42,
+            email: 'fien.oud@example.be',
+            user: { email: 'fien@example.be' },
+          },
+        }),
+        card({
+          id: 'no-email',
+          shareholder: {
+            firstName: 'Wim',
+            lastName: 'Claes',
+            companyName: null,
+            status: 'ACTIVE',
+            memberNumber: null,
+            email: null,
+            user: null,
+          },
+        }),
+      ]);
+
+      const rows = await service.list('coop-1', {}, now);
+
+      expect(rows[0]).toMatchObject({
+        shareholderName: 'Fien Vermeulen',
+        shareholderEmail: 'fien@example.be',
+        shareholderNumber: 42,
+      });
+      expect(rows[1]).toMatchObject({ shareholderEmail: null, shareholderNumber: null });
+      expect(prisma.chargeCard.findMany.mock.calls[0][0].include.shareholder.select).toMatchObject({
+        memberNumber: true,
+        email: true,
+        user: { select: { email: true } },
+      });
+    });
+
     it('filters on status and on the provider to-do flag, within the coop', async () => {
       await service.list('coop-1', { status: 'BLOCKED', todo: true }, now);
 

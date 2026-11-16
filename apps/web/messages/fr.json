@@ -1123,7 +1123,8 @@
       "canViewPII": "Voir les informations personnelles",
       "canViewReports": "Voir les rapports",
       "canViewShareholderRegister": "Voir le registre des coopérateurs",
-      "canViewVolunteers": "Voir et contacter les bénévoles"
+      "canViewVolunteers": "Voir et contacter les bénévoles",
+      "canViewChargeCards": "Voir les cartes de recharge (qui s'est inscrit)"
     },
     "billing": {
       "title": "Facturation",

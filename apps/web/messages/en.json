@@ -1125,7 +1125,8 @@
       "canViewPII": "View personal information",
       "canViewReports": "View reports",
       "canViewShareholderRegister": "View shareholder register",
-      "canViewVolunteers": "View and contact volunteers"
+      "canViewVolunteers": "View and contact volunteers",
+      "canViewChargeCards": "View charge cards (who registered)"
     },
     "billing": {
       "title": "Billing",

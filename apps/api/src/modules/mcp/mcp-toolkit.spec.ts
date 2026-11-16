@@ -610,6 +610,43 @@ describe('McpToolkit', () => {
     ).rejects.toMatchObject({ message: 'Insufficient permissions' });
   });
 
+  it('requires at least one anyPermission and lets SYSTEM_ADMIN through', async () => {
+    const run = () =>
+      toolkit.run(
+        { anyPermission: ['canViewChargeCards', 'canManageShareholders'] },
+        undefined,
+        async () => ({ ok: true }),
+      );
+
+    for (const permissions of [{}, { canViewChargeCards: false, canManageShareholders: false }]) {
+      permissionService.permissionsWithRole.mockResolvedValue({ permissions, role: 'COOP_ADMIN' });
+      await expect(run()).rejects.toMatchObject({ message: 'Insufficient permissions' });
+    }
+    for (const permissions of [{ canViewChargeCards: true }, { canManageShareholders: true }]) {
+      permissionService.permissionsWithRole.mockResolvedValue({ permissions, role: 'COOP_ADMIN' });
+      await expect(run()).resolves.toEqual({ ok: true });
+    }
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: {},
+      role: 'SYSTEM_ADMIN',
+    });
+    await expect(run()).resolves.toEqual({ ok: true });
+  });
+
+  it('combines permission (all) with anyPermission (one)', async () => {
+    permissionService.permissionsWithRole.mockResolvedValue({
+      permissions: { canViewChargeCards: true, canViewReports: false },
+      role: 'COOP_ADMIN',
+    });
+    await expect(
+      toolkit.run(
+        { permission: 'canViewReports', anyPermission: ['canViewChargeCards'] },
+        undefined,
+        async () => ({ ok: true }),
+      ),
+    ).rejects.toMatchObject({ message: 'Insufficient permissions' });
+  });
+
   it('allows SYSTEM_ADMIN write tools during read-only subscriptions', async () => {
     permissionService.permissionsWithRole.mockResolvedValue({
       permissions: {},
