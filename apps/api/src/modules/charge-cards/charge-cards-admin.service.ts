@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ChargeCard, ChargeCardStatus, Prisma, ShareholderStatus } from '@opencoop/database';
 import { computeTotalPaid } from '@opencoop/shared';
 import { brusselsDay, parseDay } from '../../common/utils/brussels-day';
@@ -74,7 +80,11 @@ export class ChargeCardsAdminService {
 
     return cards.map((card) => {
       const waitingSince =
-        card.status === 'REQUESTED' ? card.requestedAt : card.status === 'PAID' ? (card.paidAt ?? card.requestedAt) : null;
+        card.status === 'REQUESTED'
+          ? card.requestedAt
+          : card.status === 'PAID'
+            ? (card.paidAt ?? card.requestedAt)
+            : null;
       return {
         ...toChargeCardView(card),
         shareholderId: card.shareholderId,
@@ -129,7 +139,13 @@ export class ChargeCardsAdminService {
         // pre-check above: a shareholder deactivated between the read and
         // the write must not get an issued card either.
         { status: 'PAID', shareholder: { status: 'ACTIVE' } },
-        { status: 'ACTIVE', cardNumber, issuedAt: now, activatedAt: now, providerSyncNeeded: false },
+        {
+          status: 'ACTIVE',
+          cardNumber,
+          issuedAt: now,
+          activatedAt: now,
+          providerSyncNeeded: false,
+        },
         'Only a paid card can be issued',
       );
     } catch (err) {
@@ -162,7 +178,12 @@ export class ChargeCardsAdminService {
         coopId,
         cardId,
         { status: 'ACTIVE' },
-        { status: 'BLOCKED', blockReason: 'ADMIN', blockedAt: new Date(), providerSyncNeeded: true },
+        {
+          status: 'BLOCKED',
+          blockReason: 'ADMIN',
+          blockedAt: new Date(),
+          providerSyncNeeded: true,
+        },
         'Only an active card can be blocked',
       ),
     );
@@ -175,7 +196,13 @@ export class ChargeCardsAdminService {
         coopId,
         cardId,
         { status: 'BLOCKED', blockReason: 'ADMIN', shareholder: { status: 'ACTIVE' } },
-        { status: 'ACTIVE', blockReason: null, blockedAt: null, activatedAt: new Date(), providerSyncNeeded: true },
+        {
+          status: 'ACTIVE',
+          blockReason: null,
+          blockedAt: null,
+          activatedAt: new Date(),
+          providerSyncNeeded: true,
+        },
         'Only a card blocked by an admin, of an active shareholder, can be unblocked',
       ),
     );
@@ -308,7 +335,12 @@ export class ChargeCardsAdminService {
   async cancel(coopId: string, cardId: string): Promise<ChargeCardView> {
     return toChargeCardView(
       await this.withLockedCard(coopId, cardId, (tx) =>
-        cancelCard(tx, { id: cardId, coopId }, ['REQUESTED', 'PAID'], 'Only a requested or paid card can be cancelled'),
+        cancelCard(
+          tx,
+          { id: cardId, coopId },
+          ['REQUESTED', 'PAID'],
+          'Only a requested or paid card can be cancelled',
+        ),
       ),
     );
   }
@@ -340,6 +372,8 @@ export class ChargeCardsAdminService {
     data: Prisma.ChargeCardUncheckedUpdateManyInput,
     refusal: string,
   ): Promise<ChargeCard> {
-    return this.withLockedCard(coopId, cardId, (tx) => transitionCard(tx, { id: cardId, coopId }, allowed, data, refusal));
+    return this.withLockedCard(coopId, cardId, (tx) =>
+      transitionCard(tx, { id: cardId, coopId }, allowed, data, refusal),
+    );
   }
 }

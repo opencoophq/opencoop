@@ -18,7 +18,11 @@ describe('maskShareholderPII', () => {
   });
 
   it('masks a company name', () => {
-    const masked = maskShareholderPII({ id: 'wxyz9999', companyName: 'Acme NV', email: 'info@acme.be' });
+    const masked = maskShareholderPII({
+      id: 'wxyz9999',
+      companyName: 'Acme NV',
+      email: 'info@acme.be',
+    });
     expect(masked.companyName).toBe('Aandeelhouder #9999');
     expect(masked.email).toBe('***');
   });
@@ -48,7 +52,9 @@ describe('maskShareholderListPII', () => {
   });
 
   it('masks a bare array', () => {
-    const masked = maskShareholderListPII([{ id: 'abcd1234', firstName: 'Jan', email: 'jan@x.be' }]);
+    const masked = maskShareholderListPII([
+      { id: 'abcd1234', firstName: 'Jan', email: 'jan@x.be' },
+    ]);
     expect(masked[0].email).toBe('***');
   });
 });
@@ -72,7 +78,11 @@ describe('maskShareholderRowPII', () => {
   });
 
   it('falls back to the id suffix without a member number and keeps a missing email null', () => {
-    const masked = maskShareholderRowPII({ ...row, shareholderNumber: null, shareholderEmail: null });
+    const masked = maskShareholderRowPII({
+      ...row,
+      shareholderNumber: null,
+      shareholderEmail: null,
+    });
     expect(masked.shareholderName).toBe('Aandeelhouder #1234');
     expect(masked.shareholderEmail).toBeNull();
     expect(masked.shareholderId).toBe('sh-abcd1234');

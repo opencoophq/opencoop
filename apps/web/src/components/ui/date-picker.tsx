@@ -117,7 +117,8 @@ export function DatePicker({
             day: 'h-9 w-9 text-center text-sm p-0 relative',
             day_button:
               'h-9 w-9 p-0 font-normal rounded-md hover:bg-accent hover:text-accent-foreground inline-flex items-center justify-center',
-            selected: 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
+            selected:
+              'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
             today: 'bg-accent text-accent-foreground',
             outside: 'text-muted-foreground opacity-50',
             disabled: 'text-muted-foreground opacity-50',

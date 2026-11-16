@@ -29,13 +29,18 @@ export class ChargeCardsAdminController {
 
   @Get()
   @RequireAnyPermission('canViewChargeCards', 'canManageShareholders')
-  @ApiOperation({ summary: 'List charge cards with waiting time; filter by status or provider to-do' })
+  @ApiOperation({
+    summary: 'List charge cards with waiting time; filter by status or provider to-do',
+  })
   async list(
     @Param('coopId') coopId: string,
     @Query() query: ListChargeCardsQueryDto,
     @CurrentUser() user: CurrentUserData,
   ) {
-    const rows = await this.admin.list(coopId, { status: query.status, todo: query.todo === 'true' });
+    const rows = await this.admin.list(coopId, {
+      status: query.status,
+      todo: query.todo === 'true',
+    });
     const canViewPII =
       user.role === 'SYSTEM_ADMIN' || user.coopPermissions?.[coopId]?.canViewPII !== false;
     return canViewPII ? rows : rows.map(maskShareholderRowPII);
@@ -43,14 +48,18 @@ export class ChargeCardsAdminController {
 
   @RequirePermission('canManageShareholders')
   @Post(':id/issue')
-  @ApiOperation({ summary: 'Issue a paid card: record its number, activate it, email the shareholder' })
+  @ApiOperation({
+    summary: 'Issue a paid card: record its number, activate it, email the shareholder',
+  })
   issue(@Param('coopId') coopId: string, @Param('id') id: string, @Body() dto: IssueChargeCardDto) {
     return this.admin.issue(coopId, id, dto.cardNumber);
   }
 
   @RequirePermission('canManageShareholders')
   @Post(':id/mark-paid')
-  @ApiOperation({ summary: 'Record a payment made outside the bank import and mark a requested card paid' })
+  @ApiOperation({
+    summary: 'Record a payment made outside the bank import and mark a requested card paid',
+  })
   markPaid(
     @Param('coopId') coopId: string,
     @Param('id') id: string,

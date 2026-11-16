@@ -195,7 +195,13 @@ export type UserRole = 'SYSTEM_ADMIN' | 'COOP_ADMIN' | 'SHAREHOLDER';
 
 export type CoopPlan = 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL';
 export type BillingPeriod = 'MONTHLY' | 'YEARLY';
-export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE';
+export type SubscriptionStatus =
+  | 'TRIALING'
+  | 'ACTIVE'
+  | 'PAST_DUE'
+  | 'CANCELED'
+  | 'UNPAID'
+  | 'INCOMPLETE';
 
 // ============================================================================
 // Coop Types
@@ -264,7 +270,12 @@ export interface ProjectDto {
 // ============================================================================
 
 export type RegistrationType = 'BUY' | 'SELL';
-export type RegistrationStatus = 'PENDING' | 'PENDING_PAYMENT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+export type RegistrationStatus =
+  | 'PENDING'
+  | 'PENDING_PAYMENT'
+  | 'ACTIVE'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 // ============================================================================
 // Dividend Types

@@ -34,14 +34,10 @@ describe('PermissionGuard', () => {
       'Insufficient permissions',
     );
     expect(() =>
-      guard.canActivate(
-        context({ coopPermissions: { 'coop-1': { canViewVolunteers: false } } }),
-      ),
+      guard.canActivate(context({ coopPermissions: { 'coop-1': { canViewVolunteers: false } } })),
     ).toThrow('Insufficient permissions');
     expect(
-      guard.canActivate(
-        context({ coopPermissions: { 'coop-1': { canViewVolunteers: true } } }),
-      ),
+      guard.canActivate(context({ coopPermissions: { 'coop-1': { canViewVolunteers: true } } })),
     ).toBe(true);
   });
 

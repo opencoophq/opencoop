@@ -70,7 +70,13 @@ describe('ChargeCardsAdminService', () => {
 
     it('adds waiting working days and flags overdue REQUESTED and PAID cards', async () => {
       prisma.chargeCard.findMany.mockResolvedValue([
-        card({ id: 'r', status: 'REQUESTED', paidAt: null, requestedAt: new Date('2026-10-05T08:00:00Z'), payments: [] }),
+        card({
+          id: 'r',
+          status: 'REQUESTED',
+          paidAt: null,
+          requestedAt: new Date('2026-10-05T08:00:00Z'),
+          payments: [],
+        }),
         card({ id: 'p', status: 'PAID', paidAt: new Date('2026-10-12T08:00:00Z') }),
         card({ id: 'a', status: 'ACTIVE', cardNumber: 'NL-1' }),
       ]);
@@ -82,7 +88,12 @@ describe('ChargeCardsAdminService', () => {
         ['p', 1, false],
         ['a', null, false],
       ]);
-      expect(rows[1]).toMatchObject({ shareholderName: 'Jan Peeters', shareholderStatus: 'ACTIVE', totalPaid: 6, feeInclVat: 6 });
+      expect(rows[1]).toMatchObject({
+        shareholderName: 'Jan Peeters',
+        shareholderStatus: 'ACTIVE',
+        totalPaid: 6,
+        feeInclVat: 6,
+      });
     });
 
     it('returns who registered the card: email (login first) and member number', async () => {
@@ -143,8 +154,12 @@ describe('ChargeCardsAdminService', () => {
     it('trims the card number, activates the card and emails the shareholder', async () => {
       // First call: the service's own PAID/ACTIVE-shareholder validation.
       // Second call: transitionCard's own guard, inside the locked transaction.
-      prisma.chargeCard.findFirst.mockResolvedValueOnce(card()).mockResolvedValueOnce({ id: 'card-1' });
-      prisma.chargeCard.findUniqueOrThrow.mockResolvedValue(card({ status: 'ACTIVE', cardNumber: 'NL-123' }));
+      prisma.chargeCard.findFirst
+        .mockResolvedValueOnce(card())
+        .mockResolvedValueOnce({ id: 'card-1' });
+      prisma.chargeCard.findUniqueOrThrow.mockResolvedValue(
+        card({ status: 'ACTIVE', cardNumber: 'NL-123' }),
+      );
 
       const result = await service.issue('coop-1', 'card-1', '  NL-123 ');
 
@@ -180,7 +195,10 @@ describe('ChargeCardsAdminService', () => {
       prisma.chargeCard.findFirst.mockResolvedValue(null);
 
       await expect(service.issue('coop-1', 'card-9', 'NL-1')).rejects.toThrow(NotFoundException);
-      expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({ id: 'card-9', coopId: 'coop-1' });
+      expect(prisma.chargeCard.findFirst.mock.calls[0][0].where).toEqual({
+        id: 'card-9',
+        coopId: 'coop-1',
+      });
     });
 
     it('refuses a card that is not PAID', async () => {
@@ -200,7 +218,9 @@ describe('ChargeCardsAdminService', () => {
     });
 
     it('answers 409 when the card number is already used in the coop', async () => {
-      prisma.chargeCard.findFirst.mockResolvedValueOnce(card()).mockResolvedValueOnce({ id: 'card-1' });
+      prisma.chargeCard.findFirst
+        .mockResolvedValueOnce(card())
+        .mockResolvedValueOnce({ id: 'card-1' });
       prisma.chargeCard.updateMany.mockRejectedValue(
         new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
           code: 'P2002',
@@ -214,9 +234,13 @@ describe('ChargeCardsAdminService', () => {
 
     it('issues without an email when the shareholder has no address', async () => {
       prisma.chargeCard.findFirst
-        .mockResolvedValueOnce(card({ shareholder: { ...card().shareholder, email: null, user: null } }))
+        .mockResolvedValueOnce(
+          card({ shareholder: { ...card().shareholder, email: null, user: null } }),
+        )
         .mockResolvedValueOnce({ id: 'card-1' });
-      prisma.chargeCard.findUniqueOrThrow.mockResolvedValue(card({ status: 'ACTIVE', cardNumber: 'NL-1' }));
+      prisma.chargeCard.findUniqueOrThrow.mockResolvedValue(
+        card({ status: 'ACTIVE', cardNumber: 'NL-1' }),
+      );
 
       await service.issue('coop-1', 'card-1', 'NL-1');
 
@@ -246,7 +270,12 @@ describe('ChargeCardsAdminService', () => {
       expect(prisma.$transaction).toHaveBeenCalled();
       expect(lastUpdate()).toEqual({
         where: { AND: [{ id: 'card-1' }, { status: 'ACTIVE' }] },
-        data: { status: 'BLOCKED', blockReason: 'ADMIN', blockedAt: expect.any(Date), providerSyncNeeded: true },
+        data: {
+          status: 'BLOCKED',
+          blockReason: 'ADMIN',
+          blockedAt: expect.any(Date),
+          providerSyncNeeded: true,
+        },
       });
     });
 
@@ -255,7 +284,10 @@ describe('ChargeCardsAdminService', () => {
 
       expect(lastUpdate()).toEqual({
         where: {
-          AND: [{ id: 'card-1' }, { status: 'BLOCKED', blockReason: 'ADMIN', shareholder: { status: 'ACTIVE' } }],
+          AND: [
+            { id: 'card-1' },
+            { status: 'BLOCKED', blockReason: 'ADMIN', shareholder: { status: 'ACTIVE' } },
+          ],
         },
         data: {
           status: 'ACTIVE',
@@ -277,9 +309,16 @@ describe('ChargeCardsAdminService', () => {
       await service.markLost('coop-1', 'card-1');
 
       expect(lastUpdate().where).toEqual({
-        AND: [{ id: 'card-1' }, { OR: [{ status: 'ACTIVE' }, { status: 'BLOCKED', blockReason: { not: 'LOST' } }] }],
+        AND: [
+          { id: 'card-1' },
+          { OR: [{ status: 'ACTIVE' }, { status: 'BLOCKED', blockReason: { not: 'LOST' } }] },
+        ],
       });
-      expect(lastUpdate().data).toMatchObject({ status: 'BLOCKED', blockReason: 'LOST', providerSyncNeeded: true });
+      expect(lastUpdate().data).toMatchObject({
+        status: 'BLOCKED',
+        blockReason: 'LOST',
+        providerSyncNeeded: true,
+      });
     });
 
     it('markProviderSyncDone clears the flag', async () => {
@@ -303,7 +342,9 @@ describe('ChargeCardsAdminService', () => {
     it('cancel succeeds on a PAID card that already holds a payment (admin handles the refund)', async () => {
       prisma.chargeCard.findUniqueOrThrow.mockResolvedValue(card({ status: 'CANCELLED' }));
 
-      await expect(service.cancel('coop-1', 'card-1')).resolves.toMatchObject({ status: 'CANCELLED' });
+      await expect(service.cancel('coop-1', 'card-1')).resolves.toMatchObject({
+        status: 'CANCELLED',
+      });
       expect(lastUpdate().data).toEqual({ status: 'CANCELLED', replacesCardId: null });
     });
 
@@ -327,7 +368,12 @@ describe('ChargeCardsAdminService', () => {
   describe('markPaid', () => {
     const now = new Date('2026-11-16T10:00:00Z');
     const requested = () =>
-      card({ status: 'REQUESTED', paidAt: null, feeInclVat: new Prisma.Decimal('6.00'), payments: [] });
+      card({
+        status: 'REQUESTED',
+        paidAt: null,
+        feeInclVat: new Prisma.Decimal('6.00'),
+        payments: [],
+      });
 
     beforeEach(() => {
       prisma.$queryRaw.mockResolvedValue([{ id: 'card-1', status: 'REQUESTED' }]);
@@ -390,11 +436,16 @@ describe('ChargeCardsAdminService', () => {
     });
 
     it('books only the open part of the fee when a partial payment exists', async () => {
-      prisma.chargeCard.findFirstOrThrow.mockResolvedValue({ ...requested(), payments: [{ amount: new Prisma.Decimal('2.40') }] });
+      prisma.chargeCard.findFirstOrThrow.mockResolvedValue({
+        ...requested(),
+        payments: [{ amount: new Prisma.Decimal('2.40') }],
+      });
 
       await service.markPaid('coop-1', 'card-1', { method: 'BANK_TRANSFER' }, 'admin-1', now);
 
-      expect(prisma.payment.create).toHaveBeenCalledWith({ data: expect.objectContaining({ amount: 3.6 }) });
+      expect(prisma.payment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ amount: 3.6 }),
+      });
       const changes = audit.log.mock.calls[0][0].changes;
       expect(changes).toContainEqual({ field: 'amount', oldValue: null, newValue: 3.6 });
       expect(changes.map((c: { field: string }) => c.field)).not.toContain('note');
@@ -402,29 +453,43 @@ describe('ChargeCardsAdminService', () => {
 
     it('defaults to today in Europe/Brussels, not UTC', async () => {
       // 23:30 UTC on the 15th is already the 16th in Brussels.
-      await service.markPaid('coop-1', 'card-1', { method: 'OTHER' }, 'admin-1', new Date('2026-11-15T23:30:00Z'));
+      await service.markPaid(
+        'coop-1',
+        'card-1',
+        { method: 'OTHER' },
+        'admin-1',
+        new Date('2026-11-15T23:30:00Z'),
+      );
 
       expect(prisma.chargeCard.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { status: 'PAID', paidAt: new Date('2026-11-16T00:00:00.000Z') } }),
+        expect.objectContaining({
+          data: { status: 'PAID', paidAt: new Date('2026-11-16T00:00:00.000Z') },
+        }),
       );
     });
 
-    it.each(['2026-11-17', '2026-02-31'])('refuses paidAt %s with 400 before touching the database', async (paidAt) => {
-      await expect(
-        service.markPaid('coop-1', 'card-1', { paidAt, method: 'CASH' }, 'admin-1', now),
-      ).rejects.toThrow(BadRequestException);
-      expect(prisma.$transaction).not.toHaveBeenCalled();
-    });
+    it.each(['2026-11-17', '2026-02-31'])(
+      'refuses paidAt %s with 400 before touching the database',
+      async (paidAt) => {
+        await expect(
+          service.markPaid('coop-1', 'card-1', { paidAt, method: 'CASH' }, 'admin-1', now),
+        ).rejects.toThrow(BadRequestException);
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+      },
+    );
 
-    it.each(['PAID', 'ACTIVE', 'CANCELLED'])('answers 409 for a %s card and writes nothing', async (status) => {
-      prisma.chargeCard.findFirstOrThrow.mockResolvedValue({ ...requested(), status });
+    it.each(['PAID', 'ACTIVE', 'CANCELLED'])(
+      'answers 409 for a %s card and writes nothing',
+      async (status) => {
+        prisma.chargeCard.findFirstOrThrow.mockResolvedValue({ ...requested(), status });
 
-      await expect(
-        service.markPaid('coop-1', 'card-1', { method: 'CASH' }, 'admin-1', now),
-      ).rejects.toThrow(ConflictException);
-      expect(prisma.payment.create).not.toHaveBeenCalled();
-      expect(audit.log).not.toHaveBeenCalled();
-    });
+        await expect(
+          service.markPaid('coop-1', 'card-1', { method: 'CASH' }, 'admin-1', now),
+        ).rejects.toThrow(ConflictException);
+        expect(prisma.payment.create).not.toHaveBeenCalled();
+        expect(audit.log).not.toHaveBeenCalled();
+      },
+    );
 
     it('answers 409 when the payment path finds the card no longer REQUESTED', async () => {
       prisma.$queryRaw

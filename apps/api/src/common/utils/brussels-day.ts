@@ -20,7 +20,9 @@ export function brusselsDay(date: Date): string {
  * always UTC midnight of that day, so it sorts the same way as a date-only
  * ex-dividend date: 2026-03-09T23:30Z (10 March in Brussels) becomes 2026-03-10T00:00Z.
  */
-export function parseDay(value: Date | string | undefined | null): { date: Date; day: string } | null {
+export function parseDay(
+  value: Date | string | undefined | null,
+): { date: Date; day: string } | null {
   if (value === undefined || value === null || value === '') return null;
   let day: string;
   if (value instanceof Date) {

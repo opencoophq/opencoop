@@ -51,7 +51,10 @@ export async function recordChargeCardPayment(
     },
   });
 
-  const payments = await tx.payment.findMany({ where: { chargeCardId: card.id }, select: { amount: true } });
+  const payments = await tx.payment.findMany({
+    where: { chargeCardId: card.id },
+    select: { amount: true },
+  });
   const paidCents = payments.reduce((sum, row) => sum + toCents(Number(row.amount)), 0);
   if (paidCents < toCents(card.feeInclVat)) {
     return { payment, paid: false };

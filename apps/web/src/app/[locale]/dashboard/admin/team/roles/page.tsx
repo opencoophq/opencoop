@@ -185,8 +185,7 @@ export default function RolesPage() {
     setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const countEnabled = (perms: Permissions) =>
-    PERMISSION_KEYS.filter((k) => perms[k]).length;
+  const countEnabled = (perms: Permissions) => PERMISSION_KEYS.filter((k) => perms[k]).length;
 
   if (!selectedCoop) {
     return <p className="text-muted-foreground">{t('selectCoop')}</p>;
@@ -230,7 +229,8 @@ export default function RolesPage() {
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span>
-                      {countEnabled(role.permissions)}/{PERMISSION_KEYS.length} {t('team.roles.permissions').toLowerCase()}
+                      {countEnabled(role.permissions)}/{PERMISSION_KEYS.length}{' '}
+                      {t('team.roles.permissions').toLowerCase()}
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
@@ -284,10 +284,7 @@ export default function RolesPage() {
               <Label>{t('team.roles.permissions')}</Label>
               <div className="space-y-2 border rounded-md p-3">
                 {PERMISSION_KEYS.map((key) => (
-                  <label
-                    key={key}
-                    className="flex items-center gap-3 py-1 cursor-pointer"
-                  >
+                  <label key={key} className="flex items-center gap-3 py-1 cursor-pointer">
                     <Checkbox
                       checked={permissions[key]}
                       onCheckedChange={() => togglePermission(key)}
@@ -317,9 +314,7 @@ export default function RolesPage() {
             <DialogTitle>{t('team.roles.deleteRole')}</DialogTitle>
             <DialogDescription>{t('team.roles.deleteConfirm')}</DialogDescription>
           </DialogHeader>
-          {deleteError && (
-            <p className="text-sm text-destructive py-2">{deleteError}</p>
-          )}
+          {deleteError && <p className="text-sm text-destructive py-2">{deleteError}</p>}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               {tc('cancel')}

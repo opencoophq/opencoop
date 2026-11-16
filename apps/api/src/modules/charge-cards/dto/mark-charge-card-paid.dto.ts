@@ -7,7 +7,8 @@ export type ManualPaymentMethod = (typeof MANUAL_PAYMENT_METHODS)[number];
 
 export class MarkChargeCardPaidDto {
   @ApiPropertyOptional({
-    description: 'Payment date (YYYY-MM-DD). Defaults to today in Europe/Brussels; cannot be in the future.',
+    description:
+      'Payment date (YYYY-MM-DD). Defaults to today in Europe/Brussels; cannot be in the future.',
     example: '2026-11-16',
   })
   @IsOptional()

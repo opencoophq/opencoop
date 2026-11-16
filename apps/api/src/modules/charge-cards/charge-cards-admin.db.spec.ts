@@ -29,7 +29,9 @@ describeDb('ChargeCardsAdminService (database)', () => {
   });
 
   afterAll(async () => {
-    const actors = await prisma.user.findMany({ where: { email: { endsWith: '@dbtest.invalid' } } });
+    const actors = await prisma.user.findMany({
+      where: { email: { endsWith: '@dbtest.invalid' } },
+    });
     await prisma.auditLog.deleteMany({ where: { actorId: { in: actors.map((u) => u.id) } } });
     await cleanupTestCoops(prisma);
     await prisma.user.deleteMany({ where: { email: { endsWith: '@dbtest.invalid' } } });
@@ -38,14 +40,22 @@ describeDb('ChargeCardsAdminService (database)', () => {
 
   beforeEach(() => {
     email = { sendChargeCardIssued: jest.fn().mockResolvedValue(undefined) };
-    service = new ChargeCardsAdminService(prisma as any, email as any, new AuditService(prisma as any));
+    service = new ChargeCardsAdminService(
+      prisma as any,
+      email as any,
+      new AuditService(prisma as any),
+    );
   });
 
   it('answers 409 when a second card is issued with a card number already used in the coop', async () => {
     const coop = await createTestCoop(prisma, { chargeCardsEnabled: true });
     const shareholder = await createTestShareholder(prisma, coop.id);
-    const first = await createTestChargeCard(prisma, coop.id, shareholder.id, { status: 'PAID' } as any);
-    const second = await createTestChargeCard(prisma, coop.id, shareholder.id, { status: 'PAID' } as any);
+    const first = await createTestChargeCard(prisma, coop.id, shareholder.id, {
+      status: 'PAID',
+    } as any);
+    const second = await createTestChargeCard(prisma, coop.id, shareholder.id, {
+      status: 'PAID',
+    } as any);
 
     await service.issue(coop.id, first.id, 'NL-DUP-1');
 
@@ -75,7 +85,9 @@ describeDb('ChargeCardsAdminService (database)', () => {
     const coopA = await createTestCoop(prisma, { chargeCardsEnabled: true });
     const coopB = await createTestCoop(prisma, { chargeCardsEnabled: true });
     const shareholderB = await createTestShareholder(prisma, coopB.id);
-    const cardInB = await createTestChargeCard(prisma, coopB.id, shareholderB.id, { status: 'ACTIVE' } as any);
+    const cardInB = await createTestChargeCard(prisma, coopB.id, shareholderB.id, {
+      status: 'ACTIVE',
+    } as any);
 
     await expect(service.block(coopA.id, cardInB.id)).rejects.toThrow(NotFoundException);
 
@@ -119,7 +131,9 @@ describeDb('ChargeCardsAdminService (database)', () => {
         feeInclVat: 6,
         ogmCode: generateOgmCode(coop.ogmPrefix, 1),
       } as any);
-      const admin = await prisma.user.create({ data: { email: `admin-${card.id}@dbtest.invalid` } });
+      const admin = await prisma.user.create({
+        data: { email: `admin-${card.id}@dbtest.invalid` },
+      });
       return { coop, card, admin };
     };
 
@@ -141,7 +155,9 @@ describeDb('ChargeCardsAdminService (database)', () => {
       expect(Number(payments[0].amount)).toBe(6);
       expect(payments[0].bankTransactionId).toBeNull();
       expect(payments[0].matchedByUserId).toBe(admin.id);
-      const logs = await prisma.auditLog.findMany({ where: { entity: 'ChargeCard', entityId: card.id } });
+      const logs = await prisma.auditLog.findMany({
+        where: { entity: 'ChargeCard', entityId: card.id },
+      });
       expect(logs).toHaveLength(1);
       expect(logs[0]).toMatchObject({ action: 'UPDATE', actorId: admin.id, coopId: coop.id });
       expect(logs[0].changes).toEqual(
@@ -169,9 +185,9 @@ describeDb('ChargeCardsAdminService (database)', () => {
       const { coop, card, admin } = await setup();
       await service.markPaid(coop.id, card.id, { method: 'CASH' }, admin.id);
 
-      await expect(service.markPaid(coop.id, card.id, { method: 'CASH' }, admin.id)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(
+        service.markPaid(coop.id, card.id, { method: 'CASH' }, admin.id),
+      ).rejects.toThrow(ConflictException);
       expect(await prisma.payment.count({ where: { chargeCardId: card.id } })).toBe(1);
     });
 
@@ -179,7 +195,9 @@ describeDb('ChargeCardsAdminService (database)', () => {
       const { coop, card, admin } = await setup();
       await service.markPaid(coop.id, card.id, { method: 'OTHER' }, admin.id);
       const ogm = new OgmService(prisma as any);
-      const payments = { addPayment: jest.fn(() => Promise.reject(new Error('addPayment called for a card'))) };
+      const payments = {
+        addPayment: jest.fn(() => Promise.reject(new Error('addPayment called for a card'))),
+      };
       const matcher = new BankMatchingService(prisma as any, payments as any, ogm);
       const row = await prisma.bankTransaction.create({
         data: { coopId: coop.id, date: new Date(), amount: 6, ogmCode: card.ogmCode },
@@ -197,9 +215,9 @@ describeDb('ChargeCardsAdminService (database)', () => {
       const { card, admin } = await setup();
       const other = await createTestCoop(prisma, { chargeCardsEnabled: true });
 
-      await expect(service.markPaid(other.id, card.id, { method: 'CASH' }, admin.id)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.markPaid(other.id, card.id, { method: 'CASH' }, admin.id),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

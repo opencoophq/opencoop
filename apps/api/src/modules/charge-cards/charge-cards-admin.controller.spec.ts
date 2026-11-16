@@ -45,7 +45,15 @@ describe('ChargeCardsAdminController permissions', () => {
       (name) => Reflect.getMetadata(METHOD_METADATA, proto[name] as object) === RequestMethod.POST,
     );
     expect(posts.sort()).toEqual(
-      ['block', 'cancel', 'issue', 'markLost', 'markPaid', 'markProviderSyncDone', 'unblock'].sort(),
+      [
+        'block',
+        'cancel',
+        'issue',
+        'markLost',
+        'markPaid',
+        'markProviderSyncDone',
+        'unblock',
+      ].sort(),
     );
     for (const name of posts) {
       expect({ name, all: Reflect.getMetadata(PERMISSIONS_KEY, proto[name] as object) }).toEqual({
