@@ -17,6 +17,8 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+## [2026.47.1] - 2026-11-16
+
 ### Added
 
 - **Permission `canViewChargeCards` (Laadpassen bekijken).** A coop admin role with this permission sees the charge card list, including who registered each card: name, email, and member number. The role cannot issue, block, unblock, cancel, or mark cards lost; those actions still need `canManageShareholders`. Without `canViewPII` the name and email are masked, as on the shareholder list. The permission is off on every default role and no existing role gets it, the same as `canViewVolunteers`. Admins with `canManageShareholders` keep their current access, so no migration is needed. New read-only MCP tool `list_charge_cards` with the same gate and masking.
