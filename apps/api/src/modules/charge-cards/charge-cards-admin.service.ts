@@ -1,12 +1,24 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ChargeCard, ChargeCardStatus, Prisma, ShareholderStatus } from '@opencoop/database';
 import { computeTotalPaid } from '@opencoop/shared';
+import { brusselsDay, parseDay } from '../../common/utils/brussels-day';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
+import { toCents } from '../ogm/payment-target';
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
+import { ChargeCardNotPayableError, recordChargeCardPayment } from './charge-card-payments';
 import { CAN_REPORT_LOST, cancelCard, lockCard, transitionCard } from './charge-card-transition';
 import { ChargeCardView, shareholderDisplayName, toChargeCardView } from './charge-card-view';
 import { isOverdue, workingDaysBetween } from './working-days';
+import type { ManualPaymentMethod } from './dto/mark-charge-card-paid.dto';
+
+export interface MarkChargeCardPaidInput {
+  /** YYYY-MM-DD; defaults to today in Europe/Brussels. */
+  paidAt?: string;
+  method: ManualPaymentMethod;
+  note?: string;
+}
 
 export interface AdminChargeCardRow extends ChargeCardView {
   shareholderId: string;
@@ -29,6 +41,7 @@ export class ChargeCardsAdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly email: EmailService,
+    private readonly audit: AuditService,
   ) {}
 
   async list(
@@ -190,6 +203,98 @@ export class ChargeCardsAdminService {
         'This card has no pending provider change',
       ),
     );
+  }
+
+  /**
+   * Books a payment that did not come through the bank import (cash, another
+   * account, a transfer without the OGM) and marks the card PAID. It goes
+   * through recordChargeCardPayment, the bank import's own path, so the lock,
+   * the REQUESTED check and the REQUESTED -> PAID transition are the same.
+   * Only the part of the fee that is still open is booked, so the payments add
+   * up to exactly the fee. Method and note live only in the audit log.
+   */
+  async markPaid(
+    coopId: string,
+    cardId: string,
+    input: MarkChargeCardPaidInput,
+    actorId: string,
+    now: Date = new Date(),
+  ): Promise<ChargeCardView> {
+    const today = brusselsDay(now);
+    const paid = parseDay(input.paidAt ?? today);
+    if (!paid) {
+      throw new BadRequestException('paidAt is not a valid date');
+    }
+    if (paid.day > today) {
+      throw new BadRequestException('paidAt cannot be in the future');
+    }
+    const note = input.note?.trim() || null;
+
+    return this.withLockedCard(coopId, cardId, async (tx) => {
+      // Read under the lock withLockedCard took, so the status and payments are current.
+      const card = await tx.chargeCard.findFirstOrThrow({
+        where: { id: cardId, coopId },
+        include: { payments: { select: { amount: true } } },
+      });
+      if (card.status !== 'REQUESTED') {
+        throw new ConflictException('Only a requested charge card can be marked paid');
+      }
+      const paidCents = card.payments.reduce((sum, row) => sum + toCents(Number(row.amount)), 0);
+      const remainingCents = toCents(Number(card.feeInclVat)) - paidCents;
+      if (remainingCents <= 0) {
+        // Unreachable while recordChargeCardPayment is the only writer: it marks
+        // the card PAID as soon as the payments reach the fee.
+        throw new ConflictException('The payments on this card already cover the fee');
+      }
+      const amount = remainingCents / 100;
+
+      try {
+        await recordChargeCardPayment(
+          tx,
+          {
+            kind: 'chargeCard',
+            id: card.id,
+            coopId: card.coopId,
+            shareholderId: card.shareholderId,
+            status: card.status,
+            feeInclVat: Number(card.feeInclVat),
+            ogmCode: card.ogmCode,
+          },
+          {
+            amount,
+            bankDate: paid.date,
+            bankTransactionId: null,
+            matchedByUserId: actorId,
+            paidAt: paid.date,
+          },
+        );
+      } catch (err) {
+        if (err instanceof ChargeCardNotPayableError) {
+          throw new ConflictException('Only a requested charge card can be marked paid');
+        }
+        throw err;
+      }
+
+      await this.audit.log(
+        {
+          coopId,
+          entity: 'ChargeCard',
+          entityId: card.id,
+          action: 'UPDATE',
+          actorId,
+          changes: [
+            { field: 'status', oldValue: 'REQUESTED', newValue: 'PAID' },
+            { field: 'paidAt', oldValue: null, newValue: paid.day },
+            { field: 'paymentMethod', oldValue: null, newValue: input.method },
+            { field: 'amount', oldValue: null, newValue: amount },
+            ...(note ? [{ field: 'note', oldValue: null, newValue: note }] : []),
+          ],
+        },
+        tx,
+      );
+
+      return toChargeCardView(await tx.chargeCard.findUniqueOrThrow({ where: { id: card.id } }));
+    });
   }
 
   /**

@@ -35,6 +35,8 @@ interface DatePickerProps {
   captionLayout?: 'label' | 'dropdown' | 'dropdown-months' | 'dropdown-years';
   fromYear?: number;
   toYear?: number;
+  /** Last selectable day; later days are disabled. */
+  maxDate?: Date;
 }
 
 export function DatePicker({
@@ -47,6 +49,7 @@ export function DatePicker({
   captionLayout,
   fromYear,
   toYear,
+  maxDate,
 }: DatePickerProps) {
   const { locale } = useLocale();
   const [open, setOpen] = React.useState(false);
@@ -95,6 +98,7 @@ export function DatePicker({
           captionLayout={captionLayout}
           fromYear={fromYear}
           toYear={toYear}
+          disabled={maxDate ? { after: maxDate } : undefined}
           className="p-3"
           classNames={{
             months: 'flex flex-col sm:flex-row gap-2',

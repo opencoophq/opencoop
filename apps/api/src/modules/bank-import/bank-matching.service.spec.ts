@@ -226,6 +226,18 @@ describe('BankMatchingService', () => {
       expect(prisma.payment.create).not.toHaveBeenCalled();
     });
 
+    it('leaves a transfer for a card marked paid by hand UNMATCHED, with no second payment', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue({ ...cardRow, status: 'PAID' });
+
+      await expect(service.matchTransaction('coop-1', cardTx, 'user-1')).resolves.toEqual({
+        status: 'UNMATCHED',
+        linkedExisting: false,
+        createdPayment: false,
+      });
+      expect(prisma.bankTransaction.updateMany).not.toHaveBeenCalled();
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
     it('books nothing when auto-match is off (Ponto with autoMatchPayments = false)', async () => {
       await expect(service.matchTransaction('coop-1', cardTx, undefined, false)).resolves.toMatchObject({
         status: 'UNMATCHED',

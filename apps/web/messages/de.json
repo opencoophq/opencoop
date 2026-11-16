@@ -2629,7 +2629,19 @@
       "syncDone": "Im Portal erledigt",
       "todo": "Im Anbieterportal zu erledigen",
       "confirm": "Sind Sie sicher?",
-      "cancelPaidConfirm": "Diese Karte stornieren? Es ist bereits eine Zahlung registriert; die Genossenschaft muss sie selbst erstatten."
+      "cancelPaidConfirm": "Diese Karte stornieren? Es ist bereits eine Zahlung registriert; die Genossenschaft muss sie selbst erstatten.",
+      "markPaid": "Als bezahlt markieren",
+      "markPaidTitle": "Ladekarte als bezahlt markieren",
+      "markPaidDescription": "Für eine Zahlung, die nicht über den Bankimport eingeht, etwa bar, von einem anderen Konto oder eine Überweisung ohne strukturierte Mitteilung. Der offene Betrag wird gebucht und die Karte gilt als bezahlt.",
+      "paidAt": "Zahlungsdatum",
+      "paymentMethod": "Zahlungsart",
+      "paymentMethods": {
+        "CASH": "Bar",
+        "BANK_TRANSFER": "Überweisung",
+        "OTHER": "Andere"
+      },
+      "paymentNote": "Bemerkung (optional)",
+      "markPaidSubmit": "Als bezahlt markieren"
     },
     "settings": {
       "title": "Ladekarten",

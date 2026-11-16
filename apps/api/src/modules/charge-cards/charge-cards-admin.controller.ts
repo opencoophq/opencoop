@@ -14,6 +14,7 @@ import { CurrentUser, CurrentUserData } from '../../common/decorators/current-us
 import { maskShareholderRowPII } from '../../common/utils/mask-pii';
 import { ChargeCardsAdminService } from './charge-cards-admin.service';
 import { IssueChargeCardDto } from './dto/issue-charge-card.dto';
+import { MarkChargeCardPaidDto } from './dto/mark-charge-card-paid.dto';
 import { ListChargeCardsQueryDto } from './dto/list-charge-cards.query';
 
 @ApiTags('charge-cards-admin')
@@ -45,6 +46,18 @@ export class ChargeCardsAdminController {
   @ApiOperation({ summary: 'Issue a paid card: record its number, activate it, email the shareholder' })
   issue(@Param('coopId') coopId: string, @Param('id') id: string, @Body() dto: IssueChargeCardDto) {
     return this.admin.issue(coopId, id, dto.cardNumber);
+  }
+
+  @RequirePermission('canManageShareholders')
+  @Post(':id/mark-paid')
+  @ApiOperation({ summary: 'Record a payment made outside the bank import and mark a requested card paid' })
+  markPaid(
+    @Param('coopId') coopId: string,
+    @Param('id') id: string,
+    @Body() dto: MarkChargeCardPaidDto,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.admin.markPaid(coopId, id, dto, user.id);
   }
 
   @RequirePermission('canManageShareholders')

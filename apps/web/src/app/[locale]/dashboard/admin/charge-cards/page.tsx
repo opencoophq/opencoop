@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
@@ -29,6 +31,20 @@ import { Loader2 } from 'lucide-react';
 type CardStatus = 'REQUESTED' | 'PAID' | 'ACTIVE' | 'BLOCKED' | 'CANCELLED';
 type Filter = 'ALL' | CardStatus | 'TODO';
 type AdminAction = 'block' | 'unblock' | 'mark-lost' | 'provider-sync-done' | 'cancel';
+
+type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'OTHER';
+
+const PAYMENT_METHODS: PaymentMethod[] = ['CASH', 'BANK_TRANSFER', 'OTHER'];
+
+/** Today in Europe/Brussels (YYYY-MM-DD), the day the API checks paidAt against. */
+function brusselsToday(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Brussels',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
 
 const FILTERS: Filter[] = ['ALL', 'REQUESTED', 'PAID', 'ACTIVE', 'BLOCKED', 'CANCELLED', 'TODO'];
 
@@ -70,6 +86,10 @@ export default function AdminChargeCardsPage() {
   const [issuing, setIssuing] = useState<AdminChargeCard | null>(null);
   const [cardNumber, setCardNumber] = useState('');
   const [busy, setBusy] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState<AdminChargeCard | null>(null);
+  const [paidAt, setPaidAt] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [paymentNote, setPaymentNote] = useState('');
 
   const load = useCallback(async () => {
     if (!selectedCoop) return;
@@ -116,6 +136,31 @@ export default function AdminChargeCardsPage() {
       });
       setIssuing(null);
       setCardNumber('');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('actionError'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openMarkPaid = (card: AdminChargeCard) => {
+    setMarkingPaid(card);
+    setPaidAt(brusselsToday());
+    setPaymentMethod('CASH');
+    setPaymentNote('');
+  };
+
+  const submitMarkPaid = async () => {
+    if (!selectedCoop || !markingPaid || !canManage || !paidAt) return;
+    setBusy(true);
+    try {
+      const note = paymentNote.trim();
+      await api(`/admin/coops/${selectedCoop.id}/charge-cards/${markingPaid.id}/mark-paid`, {
+        method: 'POST',
+        body: { paidAt, method: paymentMethod, ...(note ? { note } : {}) },
+      });
+      setMarkingPaid(null);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('actionError'));
@@ -235,6 +280,11 @@ export default function AdminChargeCardsPage() {
                     {canManage && (
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
+                        {card.status === 'REQUESTED' && (
+                          <Button size="sm" disabled={busy} onClick={() => openMarkPaid(card)}>
+                            {t('admin.markPaid')}
+                          </Button>
+                        )}
                         {card.status === 'PAID' && (
                           <Button
                             size="sm"
@@ -302,6 +352,55 @@ export default function AdminChargeCardsPage() {
             <Button onClick={submitIssue} disabled={busy || cardNumber.trim() === ''}>
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t('admin.issueSubmit')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={canManage && markingPaid !== null} onOpenChange={(open) => !open && setMarkingPaid(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.markPaidTitle')}</DialogTitle>
+            <DialogDescription>{t('admin.markPaidDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('admin.paidAt')}</Label>
+              <DatePicker
+                value={paidAt}
+                onChange={(value) => setPaidAt(value ?? '')}
+                maxDate={new Date(`${brusselsToday()}T00:00:00`)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('admin.paymentMethod')}</Label>
+              <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_METHODS.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {t(`admin.paymentMethods.${m}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="charge-card-payment-note">{t('admin.paymentNote')}</Label>
+              <Textarea
+                id="charge-card-payment-note"
+                maxLength={500}
+                value={paymentNote}
+                onChange={(e) => setPaymentNote(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={submitMarkPaid} disabled={busy || !paidAt || paidAt > brusselsToday()}>
+              {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t('admin.markPaidSubmit')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,10 +1,12 @@
 import 'reflect-metadata';
-import { RequestMethod } from '@nestjs/common';
+import { ExecutionContext, ForbiddenException, RequestMethod } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import {
   ANY_PERMISSIONS_KEY,
   PERMISSIONS_KEY,
 } from '../../common/decorators/permissions.decorator';
+import { PermissionGuard } from '../../common/guards/permission.guard';
 import { ChargeCardsAdminController } from './charge-cards-admin.controller';
 import { ChargeCardsAdminService } from './charge-cards-admin.service';
 
@@ -43,7 +45,7 @@ describe('ChargeCardsAdminController permissions', () => {
       (name) => Reflect.getMetadata(METHOD_METADATA, proto[name] as object) === RequestMethod.POST,
     );
     expect(posts.sort()).toEqual(
-      ['block', 'cancel', 'issue', 'markLost', 'markProviderSyncDone', 'unblock'].sort(),
+      ['block', 'cancel', 'issue', 'markLost', 'markPaid', 'markProviderSyncDone', 'unblock'].sort(),
     );
     for (const name of posts) {
       expect({ name, all: Reflect.getMetadata(PERMISSIONS_KEY, proto[name] as object) }).toEqual({
@@ -62,6 +64,33 @@ describe('ChargeCardsAdminController permissions', () => {
       'canViewChargeCards',
       'canManageShareholders',
     ]);
+  });
+});
+
+describe('ChargeCardsAdminController.markPaid through PermissionGuard', () => {
+  const guard = new PermissionGuard(new Reflector());
+
+  function context(perms: Record<string, boolean>): ExecutionContext {
+    return {
+      getHandler: () => ChargeCardsAdminController.prototype.markPaid,
+      getClass: () => ChargeCardsAdminController,
+      switchToHttp: () => ({
+        getRequest: () => ({
+          user: { id: 'u1', role: 'COOP_ADMIN', coopPermissions: { 'coop-1': perms } },
+          params: { coopId: 'coop-1', id: 'card-1' },
+        }),
+      }),
+    } as unknown as ExecutionContext;
+  }
+
+  it('answers 403 to a view-only admin (canViewChargeCards only)', () => {
+    expect(() =>
+      guard.canActivate(context({ canViewChargeCards: true, canManageShareholders: false })),
+    ).toThrow(ForbiddenException);
+  });
+
+  it('lets an admin with canManageShareholders through', () => {
+    expect(guard.canActivate(context({ canManageShareholders: true }))).toBe(true);
   });
 });
 

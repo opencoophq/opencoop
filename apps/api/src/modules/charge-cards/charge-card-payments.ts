@@ -7,6 +7,8 @@ export interface ChargeCardPaymentInput {
   bankDate: Date;
   bankTransactionId?: string | null;
   matchedByUserId?: string | null;
+  /** The card's paidAt once the fee is reached. Defaults to now (bank import). */
+  paidAt?: Date;
 }
 
 /** The card was no longer REQUESTED once its row was locked. Nothing was written. */
@@ -59,7 +61,7 @@ export async function recordChargeCardPayment(
     tx,
     { id: card.id, coopId: card.coopId },
     { status: 'REQUESTED' },
-    { status: 'PAID', paidAt: new Date() },
+    { status: 'PAID', paidAt: input.paidAt ?? new Date() },
     'Only a requested charge card can be marked paid',
   );
   return { payment, paid: true };
