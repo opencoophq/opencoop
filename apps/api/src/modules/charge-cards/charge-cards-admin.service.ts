@@ -266,6 +266,9 @@ export class ChargeCardsAdminService {
       if (card.status !== 'REQUESTED') {
         throw new ConflictException('Only a requested charge card can be marked paid');
       }
+      if (paid.day < brusselsDay(card.requestedAt)) {
+        throw new BadRequestException('paidAt cannot be before the card was requested');
+      }
       const paidCents = card.payments.reduce((sum, row) => sum + toCents(Number(row.amount)), 0);
       const remainingCents = toCents(Number(card.feeInclVat)) - paidCents;
       if (remainingCents <= 0) {

@@ -53,6 +53,8 @@ const AUDIT_PII_FIELDS = new Set([
   'lastName',
   'companyName',
   'companyId',
+  // Free text an admin types (e.g. charge card mark-paid) can name a person.
+  'note',
 ]);
 
 const SUBSCRIPTION_REQUIRED_MESSAGE =

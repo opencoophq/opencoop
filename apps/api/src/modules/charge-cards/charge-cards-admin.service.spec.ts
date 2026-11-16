@@ -478,6 +478,32 @@ describe('ChargeCardsAdminService', () => {
       },
     );
 
+    it('refuses a paidAt before the Brussels day of the request with 400 and writes nothing', async () => {
+      // requestedAt 2026-10-01T08:00Z is 1 October in Brussels.
+      await expect(
+        service.markPaid(
+          'coop-1',
+          'card-1',
+          { paidAt: '2026-09-30', method: 'CASH' },
+          'admin-1',
+          now,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+      expect(audit.log).not.toHaveBeenCalled();
+    });
+
+    it('accepts a paidAt on the day of the request', async () => {
+      await service.markPaid(
+        'coop-1',
+        'card-1',
+        { paidAt: '2026-10-01', method: 'CASH' },
+        'admin-1',
+        now,
+      );
+      expect(prisma.payment.create).toHaveBeenCalled();
+    });
+
     it.each(['PAID', 'ACTIVE', 'CANCELLED'])(
       'answers 409 for a %s card and writes nothing',
       async (status) => {

@@ -320,6 +320,7 @@ describe('McpToolkit', () => {
                 newValue: { primary: 'ada@example.com' },
               },
               { field: 'status', oldValue: 'PENDING', newValue: 'ACTIVE' },
+              { field: 'note', oldValue: null, newValue: 'Paid in cash by Fien Vermeulen' },
             ],
           },
         ]),
@@ -338,6 +339,7 @@ describe('McpToolkit', () => {
           changes: [
             { field: 'email', oldValue: '***', newValue: '***' },
             { field: 'status', oldValue: 'PENDING', newValue: 'ACTIVE' },
+            { field: 'note', oldValue: '***', newValue: '***' },
           ],
         },
       ],
