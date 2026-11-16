@@ -48,6 +48,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { MessagesService } from '../messages/messages.service';
 import { PaymentsService } from '../payments/payments.service';
 import { RegistrationsService } from '../registrations/registrations.service';
+import { ShareTransferService } from '../registrations/share-transfer.service';
 import { HouseholdService } from '../shareholders/household.service';
 import { ShareholdersService } from '../shareholders/shareholders.service';
 import { McpAuthMiddleware } from './mcp-auth.middleware';
@@ -62,6 +63,7 @@ import { McpVolunteerTools } from './tools/mcp-volunteer.tools';
 import { VolunteersService } from '../volunteers/volunteers.service';
 import { McpShareholderTools } from './tools/mcp-shareholder.tools';
 import { McpTransactionTools } from './tools/mcp-transaction.tools';
+import { McpShareTransferTools } from './tools/mcp-share-transfer.tools';
 import { AgendaService } from '../meetings/agenda.service';
 import { AttendanceService } from '../meetings/attendance.service';
 import { ConvocationService } from '../meetings/convocation.service';
@@ -94,6 +96,9 @@ jest.mock('../coops/coops.service', () => ({
 }));
 jest.mock('../registrations/registrations.service', () => ({
   RegistrationsService: class RegistrationsService {},
+}));
+jest.mock('../registrations/share-transfer.service', () => ({
+  ShareTransferService: class ShareTransferService {},
 }));
 jest.mock('../shareholders/shareholders.service', () => ({
   ShareholdersService: class ShareholdersService {},
@@ -130,6 +135,8 @@ const EXISTING_TOOL_NAMES = [
   'set_payment_date',
   'add_payment',
   'resend_payment_email',
+  'preview_share_transfer',
+  'transfer_shares',
   'get_capital_timeline',
   'get_capital_by_project',
   'get_shareholder_growth',
@@ -314,6 +321,7 @@ const toolProviders = [
   McpCoopTools,
   McpShareholderTools,
   McpTransactionTools,
+  McpShareTransferTools,
   McpAnalyticsTools,
   McpMessageTools,
   McpMeetingTools,
@@ -334,6 +342,10 @@ const toolProviders = [
     { provide: ShareholdersService, useValue: shareholdersService },
     { provide: HouseholdService, useValue: householdService },
     { provide: RegistrationsService, useValue: registrationsService },
+    {
+      provide: ShareTransferService,
+      useValue: { previewTransfer: jest.fn(), transferShares: jest.fn() },
+    },
     { provide: PaymentsService, useValue: paymentsService },
     { provide: AnalyticsService, useValue: analyticsService },
     { provide: ReportsService, useValue: reportsService },

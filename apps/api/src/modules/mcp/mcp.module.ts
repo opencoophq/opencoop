@@ -12,6 +12,7 @@ import { McpCatalogTools } from './tools/mcp-catalog.tools';
 import { McpMeetingTools } from './tools/mcp-meeting.tools';
 import { McpReportTools } from './tools/mcp-report.tools';
 import { McpVolunteerTools } from './tools/mcp-volunteer.tools';
+import { McpShareTransferTools } from './tools/mcp-share-transfer.tools';
 import { ShareholdersModule } from '../shareholders/shareholders.module';
 import { RegistrationsModule } from '../registrations/registrations.module';
 import { AdminModule } from '../admin/admin.module';
@@ -46,6 +47,7 @@ import { McpToolkit } from './mcp-toolkit';
         McpMeetingTools,
         McpReportTools,
         McpVolunteerTools,
+        McpShareTransferTools,
       ],
       'opencoop',
     ),
@@ -79,6 +81,7 @@ import { McpToolkit } from './mcp-toolkit';
     McpMeetingTools,
     McpReportTools,
     McpVolunteerTools,
+    McpShareTransferTools,
     CoopPermissionsService,
     McpToolkit,
   ],

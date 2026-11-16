@@ -17,6 +17,16 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+## [2026.47.0] - 2026-11-16
+
+### Added
+
+- **Share transfers between existing shareholders, starting with inheritance (erfopvolging).** Two new MCP tools move shares of one class from one shareholder to another shareholder of the same coop. `preview_share_transfer` writes nothing: it lists every validation error and shows the value, the FIFO allocation over the source's buys, and both holdings and statuses before and after. `transfer_shares` needs a `READ_WRITE` key and `canManageTransactions`. It writes one COMPLETED SELL and one COMPLETED BUY with synthetic payments per consumed buy, dated on the transfer date, so total capital does not change. All rows link to a new `ShareTransfer` record with the reason (`INHERITANCE`, `SALE`, `GIFT`, `OTHER`) and an optional note, and the transfer is written to the audit log. For an inheritance, the source is recorded as deceased (`Shareholder.deceasedAt`) when asked or when no shares remain; the status stays derived and becomes INACTIVE at 0 shares. A repeated request with the same parameters, or the same `idempotencyKey`, returns the first transfer and writes nothing. Only shares paid on or before the transfer day can move, and the transfer date is stored as its Brussels calendar day, so a backdated transfer pays a dividend to exactly one party. The EcoPower minimum applies to sales, gifts and other transfers, not to an inheritance. Requires migration `20261116120000_share_transfers` (new table and enum, two nullable columns).
+
+## Shipped in 2026.42.0 – 2026.46.3
+
+These entries were released in weeks 42 to 46 but were not split by release.
+
 ### Added
 
 - **Per-coop sender domain for platform mail.** A cooperative can register its own domain (for example `noreply@bronsgroen.be`) for login codes, magic links, password resets and other `sendPlatformEmail` mail. The address is used only after Brevo reports the domain verified and authenticated AND the cooperative proves DNS control with its own TXT token; otherwise mail stays on `noreply@opencoop.be` with the cooperative's name. Auth-critical mail retries the platform sender if the custom From is refused. Requires `BREVO_API_KEY` on the API, for the same Brevo account as the SMTP relay. See `docs/sender-domain.md`.

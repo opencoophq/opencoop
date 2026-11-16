@@ -15,13 +15,23 @@ export function createTestPrisma(): PrismaClient {
   return new PrismaClient({ datasourceUrl: url });
 }
 
-export async function createTestCoop(prisma: PrismaClient, data: { chargeCardsEnabled?: boolean } = {}) {
+export async function createTestCoop(
+  prisma: PrismaClient,
+  data: { chargeCardsEnabled?: boolean } = {},
+) {
   counter += 1;
-  const taken = new Set((await prisma.coop.findMany({ select: { ogmPrefix: true } })).map((c) => c.ogmPrefix));
+  const taken = new Set(
+    (await prisma.coop.findMany({ select: { ogmPrefix: true } })).map((c) => c.ogmPrefix),
+  );
   let prefix = 900;
   while (taken.has(String(prefix))) prefix += 1;
   return prisma.coop.create({
-    data: { slug: `${SLUG_PREFIX}${Date.now()}-${counter}`, name: 'DB test coop', ogmPrefix: String(prefix), ...data },
+    data: {
+      slug: `${SLUG_PREFIX}${Date.now()}-${counter}`,
+      name: 'DB test coop',
+      ogmPrefix: String(prefix),
+      ...data,
+    },
   });
 }
 
@@ -64,6 +74,7 @@ export async function createTestShareClass(prisma: PrismaClient, coopId: string)
 
 export async function cleanupTestCoops(prisma: PrismaClient) {
   const inTestCoop = { coop: { slug: { startsWith: SLUG_PREFIX } } };
+  await prisma.shareTransfer.deleteMany({ where: inTestCoop });
   await prisma.payment.deleteMany({ where: inTestCoop });
   await prisma.registration.deleteMany({ where: inTestCoop });
   await prisma.coop.deleteMany({ where: { slug: { startsWith: SLUG_PREFIX } } });

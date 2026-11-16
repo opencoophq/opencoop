@@ -14,7 +14,7 @@ import { UpdatePaymentDateDto } from '../../registrations/dto/update-payment-dat
 import { RegistrationsService } from '../../registrations/registrations.service';
 import { McpToolkit } from '../mcp-toolkit';
 
-const isoDate = z.string().datetime({ offset: true }).or(z.string().date());
+export const isoDate = z.string().datetime({ offset: true }).or(z.string().date());
 
 export const listRegistrationsParameters = z
   .object({

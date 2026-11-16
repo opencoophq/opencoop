@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { RegistrationsService } from './registrations.service';
+import { ShareTransferService } from './share-transfer.service';
 import { DocumentsModule } from '../documents/documents.module';
 import { EmailModule } from '../email/email.module';
 import { AdminNotificationsModule } from '../admin-notifications/admin-notifications.module';
@@ -14,7 +15,7 @@ import { OgmModule } from '../ogm/ogm.module';
     ShareholderStatusModule,
     OgmModule,
   ],
-  providers: [RegistrationsService],
-  exports: [RegistrationsService],
+  providers: [RegistrationsService, ShareTransferService],
+  exports: [RegistrationsService, ShareTransferService],
 })
 export class RegistrationsModule {}

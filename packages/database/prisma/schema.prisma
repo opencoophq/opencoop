@@ -248,6 +248,7 @@ model Coop {
   projects         Project[]
   registrations    Registration[]
   payments         Payment[]
+  shareTransfers   ShareTransfer[]
   bankImports      BankImport[]
   bankTransactions BankTransaction[]
   dividendPeriods  DividendPeriod[]
@@ -352,6 +353,7 @@ model User {
   registeredShareholders     Shareholder[]                  @relation("RegisteredBy")
   processedRegistrations     Registration[]
   matchedPayments            Payment[]                      @relation("PaymentMatcher")
+  processedShareTransfers    ShareTransfer[]                @relation("ShareTransferProcessedBy")
   importedBankFiles          BankImport[]
   magicLinkTokens            MagicLinkToken[]
   webAuthnCredentials        WebAuthnCredential[]
@@ -599,6 +601,9 @@ model Shareholder {
   isEcoPowerClient Boolean @default(false)
   ecoPowerId       String?
 
+  // Recorded date of death. A fact, not a status: status stays derived from registrations.
+  deceasedAt DateTime?
+
   // Referral system
   referralCode            String?       @unique // 8-char alphanumeric (e.g., BRG-A7K2M), generated when status becomes ACTIVE
   referredByShareholderId String? // Who referred this shareholder (first referrer, lifetime attribution)
@@ -626,6 +631,8 @@ model Shareholder {
   votes                    Vote[]
   chargeCards              ChargeCard[]
   volunteers               Volunteer[]
+  shareTransfersOut        ShareTransfer[]               @relation("ShareTransferFrom")
+  shareTransfersIn         ShareTransfer[]               @relation("ShareTransferTo")
 
   // Unique email per coop (null emails allowed for minors - PostgreSQL allows multiple nulls)
   @@unique([coopId, email])
@@ -700,8 +707,9 @@ model ShareClass {
   isActive             Boolean  @default(true)
 
   coop          Coop                @relation(fields: [coopId], references: [id], onDelete: Cascade)
-  registrations Registration[]
-  channels      ChannelShareClass[]
+  registrations  Registration[]
+  channels       ChannelShareClass[]
+  shareTransfers ShareTransfer[]
 
   @@unique([coopId, code])
   @@map("share_classes")
@@ -771,6 +779,7 @@ model Registration {
   // Transfer tracking
   fromShareholderId String? // for transfers: original owner
   toShareholderId   String? // for transfers: new owner
+  shareTransferId   String? // set on the SELL/BUY rows written by one ShareTransfer
 
   // Channel / processing
   channelId         String?
@@ -810,11 +819,52 @@ model Registration {
   soldBy            Registration[] @relation("SellsBuy")
   fromShareholder   Shareholder?   @relation("TransferOut", fields: [fromShareholderId], references: [id], onDelete: SetNull)
   toShareholder     Shareholder?   @relation("TransferIn", fields: [toShareholderId], references: [id], onDelete: SetNull)
+  shareTransfer     ShareTransfer? @relation(fields: [shareTransferId], references: [id], onDelete: SetNull)
 
   @@index([coopId])
   @@index([shareholderId])
   @@index([registerDate])
+  @@index([shareTransferId])
   @@map("registrations")
+}
+
+enum TransferReason {
+  INHERITANCE
+  SALE
+  GIFT
+  OTHER
+}
+
+// One admin-recorded transfer of shares of one class between two shareholders.
+// The register rows (SELL for `from`, BUY for `to`) point back here via shareTransferId.
+model ShareTransfer {
+  id                   String         @id @default(cuid())
+  coopId               String
+  fromShareholderId    String
+  toShareholderId      String
+  shareClassId         String
+  quantity             Int
+  totalAmount          Decimal        @db.Decimal(12, 2)
+  transferDate         DateTime
+  reason               TransferReason
+  note                 String?
+  idempotencyKey       String
+  markedFromAsDeceased Boolean        @default(false)
+  processedByUserId    String?
+  createdAt            DateTime       @default(now())
+
+  coop            Coop           @relation(fields: [coopId], references: [id], onDelete: Cascade)
+  fromShareholder Shareholder    @relation("ShareTransferFrom", fields: [fromShareholderId], references: [id], onDelete: Restrict)
+  toShareholder   Shareholder    @relation("ShareTransferTo", fields: [toShareholderId], references: [id], onDelete: Restrict)
+  shareClass      ShareClass     @relation(fields: [shareClassId], references: [id], onDelete: Restrict)
+  processedBy     User?          @relation("ShareTransferProcessedBy", fields: [processedByUserId], references: [id], onDelete: SetNull)
+  registrations   Registration[]
+
+  @@unique([coopId, idempotencyKey])
+  @@index([coopId])
+  @@index([fromShareholderId])
+  @@index([toShareholderId])
+  @@map("share_transfers")
 }
 
 model Payment {
