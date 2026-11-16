@@ -1,0 +1,26 @@
+- generic [active] [ref=f9e1]:
+  - generic [ref=f9e4]:
+    - generic [ref=f9e5]:
+      - heading "Welkom terug" [level=3] [ref=f9e11]
+      - paragraph [ref=f9e12]: OpenCoop
+    - generic [ref=f9e13]:
+      - generic [ref=f9e55]:
+        - generic [ref=f9e56]:
+          - paragraph [ref=f9e57]: Hoe wil je inloggen?
+          - paragraph [ref=f9e58]:
+            - text: admin@zonnecooperatie.be
+            - button "[wijzigen]" [ref=f9e59] [cursor=pointer]
+        - button [ref=f9e60] [cursor=pointer]:
+          - generic [ref=f9e65]:
+            - paragraph [ref=f9e66]: Stuur mij een login link
+            - paragraph [ref=f9e67]: Snel en veilig - geen wachtwoord nodig
+        - button [ref=f9e68] [cursor=pointer]:
+          - generic [ref=f9e73]:
+            - paragraph [ref=f9e74]: Gebruik wachtwoord
+            - paragraph [ref=f9e75]: Log in met je accountwachtwoord
+      - generic [ref=f9e32]:
+        - generic [ref=f9e33]: Account aanmaken
+        - link "Registreren" [ref=f9e34] [cursor=pointer]:
+          - /url: /nl/register
+  - button "Open Next.js Dev Tools" [ref=f9e40] [cursor=pointer]
+  - alert [ref=f9e44]

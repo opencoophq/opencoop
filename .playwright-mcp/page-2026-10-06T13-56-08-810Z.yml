@@ -1,0 +1,46 @@
+- generic [active] [ref=f6e1]:
+  - generic [ref=f6e2]:
+    - generic [ref=f6e3]:
+      - generic [ref=f6e4]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f6e5]:
+        - button "🇳🇱" [ref=f6e6] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f6e7] [cursor=pointer]
+        - button [ref=f6e16] [cursor=pointer]
+    - complementary [ref=f6e17]:
+      - generic [ref=f6e18]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f6e20]
+        - generic [ref=f6e22]:
+          - heading "Mijn account" [level=3] [ref=f6e23]
+          - navigation [ref=f6e24]:
+            - link "Overzicht" [ref=f6e25] [cursor=pointer]:
+              - /url: /nl/dashboard
+            - link "Aandelen" [ref=f6e32] [cursor=pointer]:
+              - /url: /nl/dashboard/shares
+            - link "Transacties" [ref=f6e37] [cursor=pointer]:
+              - /url: /nl/dashboard/transactions
+            - link "Dividenden" [ref=f6e42] [cursor=pointer]:
+              - /url: /nl/dashboard/dividends
+            - link "Vergaderingen" [ref=f6e49] [cursor=pointer]:
+              - /url: /nl/dashboard/meetings
+            - link "Documenten" [ref=f6e54] [cursor=pointer]:
+              - /url: /nl/dashboard/documents
+            - link "Postvak" [ref=f6e60] [cursor=pointer]:
+              - /url: /nl/dashboard/inbox
+            - link "Persoonlijke gegevens" [ref=f6e65] [cursor=pointer]:
+              - /url: /nl/dashboard/personal-data
+        - link "Documentatie" [ref=f6e80] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f6e85] [cursor=pointer]:
+          - generic [ref=f6e86]:
+            - paragraph [ref=f6e87]: Jan Peeters
+            - paragraph [ref=f6e88]: jan.peeters@email.be
+    - main [ref=f6e91]
+    - button "Feedback geven" [ref=f6e95] [cursor=pointer]
+  - alert [ref=f6e96]
+  - generic [ref=f6e97]:
+    - paragraph [ref=f6e100]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f6e101] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f6e102] [cursor=pointer]
+    - button "Close" [ref=f6e103] [cursor=pointer]

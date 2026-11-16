@@ -1,0 +1,114 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - generic [ref=f5e3]:
+      - generic [ref=f5e15]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f5e16]:
+        - button "🇳🇱" [ref=f5e17] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f5e18] [cursor=pointer]
+        - button [ref=f5e27] [cursor=pointer]
+    - complementary [ref=f5e28]:
+      - generic [ref=f5e29]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f5e31]
+        - generic [ref=f5e33]:
+          - heading "Mijn account" [level=3] [ref=f5e34]
+          - navigation [ref=f5e35]:
+            - link "Overzicht" [ref=f5e36] [cursor=pointer]:
+              - /url: /nl/dashboard
+            - link "Aandelen" [ref=f5e43] [cursor=pointer]:
+              - /url: /nl/dashboard/shares
+            - link "Transacties" [ref=f5e48] [cursor=pointer]:
+              - /url: /nl/dashboard/transactions
+            - link "Dividenden" [ref=f5e53] [cursor=pointer]:
+              - /url: /nl/dashboard/dividends
+            - link "Vergaderingen" [ref=f5e60] [cursor=pointer]:
+              - /url: /nl/dashboard/meetings
+            - link "Documenten" [ref=f5e65] [cursor=pointer]:
+              - /url: /nl/dashboard/documents
+            - link "Postvak" [ref=f5e71] [cursor=pointer]:
+              - /url: /nl/dashboard/inbox
+            - link "Persoonlijke gegevens" [ref=f5e76] [cursor=pointer]:
+              - /url: /nl/dashboard/personal-data
+        - link "Documentatie" [ref=f5e91] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f5e96] [cursor=pointer]:
+          - generic [ref=f5e97]:
+            - paragraph [ref=f5e98]: Jan Peeters
+            - paragraph [ref=f5e99]: jan.peeters@email.be
+    - main [ref=f5e102]:
+      - generic [ref=f5e104]:
+        - heading "Aandelen" [level=1] [ref=f5e105]
+        - generic [ref=f5e106]:
+          - generic [ref=f5e107]:
+            - heading "Mijn aandelen" [level=3] [ref=f5e108]
+            - button "Aandelen kopen" [ref=f5e109] [cursor=pointer]
+          - table [ref=f5e112]:
+            - rowgroup [ref=f5e113]:
+              - row [ref=f5e114]:
+                - columnheader "Aandelenklasse" [ref=f5e115]
+                - columnheader "Project" [ref=f5e116]
+                - columnheader "Aantal" [ref=f5e117]
+                - columnheader "Prijs per aandeel" [ref=f5e118]
+                - columnheader "Totale waarde" [ref=f5e119]
+                - columnheader "Aankoopdatum" [ref=f5e120]
+                - columnheader "Status" [ref=f5e121]
+                - columnheader "Acties" [ref=f5e122]
+            - rowgroup [ref=f5e123]:
+              - row [ref=f5e124]:
+                - cell "Aandeel A (A)" [ref=f5e125]
+                - cell "Zonnepark Gent-Zuid" [ref=f5e126]
+                - cell "4" [ref=f5e127]
+                - cell "€ 250,00" [ref=f5e128]
+                - cell "€ 1.000,00" [ref=f5e129]
+                - cell "1/4/2024" [ref=f5e130]
+                - cell "Voltooid" [ref=f5e131]
+                - cell [ref=f5e134]:
+                  - button "Certificaat" [ref=f5e135] [cursor=pointer]
+                  - button "Verkopen" [ref=f5e136] [cursor=pointer]
+              - row [ref=f5e137]:
+                - cell "Aandeel B (B)" [ref=f5e138]
+                - cell "Windturbine Oostende" [ref=f5e139]
+                - cell "2" [ref=f5e140]
+                - cell "€ 500,00" [ref=f5e141]
+                - cell "€ 1.000,00" [ref=f5e142]
+                - cell "15/7/2024" [ref=f5e143]
+                - cell "Voltooid" [ref=f5e144]
+                - cell [ref=f5e147]:
+                  - button "Certificaat" [ref=f5e148] [cursor=pointer]
+                  - button "Verkopen" [ref=f5e149] [cursor=pointer]
+        - generic [ref=f5e150]:
+          - generic [ref=f5e151]:
+            - heading [level=3] [ref=f5e152]:
+              - text: Aandelen van Lucas Peeters
+              - button [ref=f5e153] [cursor=pointer]
+            - button "Aandelen kopen" [ref=f5e154] [cursor=pointer]
+          - table [ref=f5e157]:
+            - rowgroup [ref=f5e158]:
+              - row [ref=f5e159]:
+                - columnheader "Aandelenklasse" [ref=f5e160]
+                - columnheader "Project" [ref=f5e161]
+                - columnheader "Aantal" [ref=f5e162]
+                - columnheader "Prijs per aandeel" [ref=f5e163]
+                - columnheader "Totale waarde" [ref=f5e164]
+                - columnheader "Aankoopdatum" [ref=f5e165]
+                - columnheader "Status" [ref=f5e166]
+                - columnheader "Acties" [ref=f5e167]
+            - rowgroup [ref=f5e168]:
+              - row [ref=f5e169]:
+                - cell "Aandeel A (A)" [ref=f5e170]
+                - cell "Zonnepark Gent-Zuid" [ref=f5e171]
+                - cell "1" [ref=f5e172]
+                - cell "€ 250,00" [ref=f5e173]
+                - cell "€ 250,00" [ref=f5e174]
+                - cell "10/9/2024" [ref=f5e175]
+                - cell "Voltooid" [ref=f5e176]
+                - cell [ref=f5e178]:
+                  - button "Verkopen" [ref=f5e179] [cursor=pointer]
+    - button "Feedback geven" [ref=f5e180] [cursor=pointer]
+  - alert [ref=f5e4]
+  - generic [ref=f5e5]:
+    - paragraph [ref=f5e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f5e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f5e10] [cursor=pointer]
+    - button "Close" [ref=f5e11] [cursor=pointer]

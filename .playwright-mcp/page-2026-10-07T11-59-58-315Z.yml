@@ -1,0 +1,26 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e4]:
+    - generic [ref=f7e5]:
+      - heading "Welkom terug" [level=3] [ref=f7e11]
+      - paragraph [ref=f7e12]: OpenCoop
+    - generic [ref=f7e13]:
+      - generic [ref=f7e55]:
+        - generic [ref=f7e56]:
+          - paragraph [ref=f7e57]: Hoe wil je inloggen?
+          - paragraph [ref=f7e58]:
+            - text: jan.peeters@email.be
+            - button "[wijzigen]" [ref=f7e59] [cursor=pointer]
+        - button [ref=f7e60] [cursor=pointer]:
+          - generic [ref=f7e65]:
+            - paragraph [ref=f7e66]: Stuur mij een login link
+            - paragraph [ref=f7e67]: Snel en veilig - geen wachtwoord nodig
+        - button [ref=f7e68] [cursor=pointer]:
+          - generic [ref=f7e73]:
+            - paragraph [ref=f7e74]: Gebruik wachtwoord
+            - paragraph [ref=f7e75]: Log in met je accountwachtwoord
+      - generic [ref=f7e32]:
+        - generic [ref=f7e33]: Account aanmaken
+        - link "Registreren" [ref=f7e34] [cursor=pointer]:
+          - /url: /nl/register
+  - button "Open Next.js Dev Tools" [ref=f7e40] [cursor=pointer]
+  - alert [ref=f7e44]

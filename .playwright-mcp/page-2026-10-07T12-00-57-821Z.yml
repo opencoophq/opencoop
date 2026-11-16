@@ -1,0 +1,74 @@
+- generic:
+  - generic [aria-hidden]:
+    - generic:
+      - generic: Zonnecoöperatie Vlaanderen
+      - generic:
+        - button: 🇳🇱
+        - switch
+        - button
+    - complementary:
+      - generic:
+        - generic:
+          - heading [level=1]: Zonnecoöperatie Vlaanderen
+        - generic:
+          - generic:
+            - heading [level=3]: Mijn account
+            - navigation:
+              - link:
+                - /url: /nl/dashboard
+                - generic: Overzicht
+              - link:
+                - /url: /nl/dashboard/shares
+                - generic: Aandelen
+              - link:
+                - /url: /nl/dashboard/transactions
+                - generic: Transacties
+              - link:
+                - /url: /nl/dashboard/dividends
+                - generic: Dividenden
+              - link:
+                - /url: /nl/dashboard/meetings
+                - generic: Vergaderingen
+              - link:
+                - /url: /nl/dashboard/charge-cards
+                - generic: Laadpassen
+              - link:
+                - /url: /nl/dashboard/documents
+                - generic: Documenten
+              - link:
+                - /url: /nl/dashboard/inbox
+                - generic: Postvak
+              - link:
+                - /url: /nl/dashboard/personal-data
+                - generic: Persoonlijke gegevens
+        - generic:
+          - link:
+            - /url: https://docs.opencoop.be
+            - generic: Documentatie
+        - generic:
+          - button:
+            - generic:
+              - paragraph: Jan Peeters
+              - paragraph: jan.peeters@email.be
+    - main:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - heading [level=1]: Laadpassen
+              - paragraph: Vraag een laadpas voor je elektrische wagen aan. Je betaalt eenmalig per overschrijving.
+            - button: Pas aanvragen
+          - generic: Je hebt nog geen laadpassen.
+    - button
+  - button "Open Next.js Dev Tools" [ref=f8e111] [cursor=pointer]
+  - alert
+  - dialog [ref=f8e117]:
+    - generic [ref=f8e118]:
+      - heading "Laadpas aanvragen" [level=2] [ref=f8e119]
+      - paragraph [ref=f8e120]: Een pas kost € 6,00 (incl. btw), eenmalig te betalen per overschrijving.
+    - generic [ref=f8e122]:
+      - text: Label (optioneel)
+      - textbox "Label (optioneel)" [active] [ref=f8e123]:
+        - /placeholder: bv. Auto Anna
+    - button "Aanvraag versturen" [ref=f8e125] [cursor=pointer]
+    - button "Close" [ref=f8e126] [cursor=pointer]

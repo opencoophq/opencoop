@@ -1,0 +1,30 @@
+- generic [ref=f10e1]:
+  - generic [ref=f10e4]:
+    - generic [ref=f10e5]:
+      - heading "Welkom terug" [level=3] [ref=f10e11]
+      - paragraph [ref=f10e12]: OpenCoop
+    - generic [ref=f10e13]:
+      - generic [ref=f10e14]:
+        - generic [ref=f10e15]:
+          - text: E-mail
+          - textbox "E-mail" [active] [ref=f10e16]:
+            - /placeholder: uw@email.be
+        - button "Doorgaan" [ref=f10e17] [cursor=pointer]
+        - generic [ref=f10e18]: of
+        - button "Inloggen met een passkey" [ref=f10e23] [cursor=pointer]
+        - generic [ref=f10e24]: Of ga verder met
+        - generic [ref=f10e29]:
+          - button "Google" [ref=f10e30] [cursor=pointer]
+          - button "Apple" [ref=f10e31] [cursor=pointer]
+      - generic [ref=f10e32]:
+        - generic [ref=f10e33]: Account aanmaken
+        - link "Registreren" [ref=f10e34] [cursor=pointer]:
+          - /url: /nl/register
+  - alert [ref=f10e35]
+  - generic [ref=f10e36]:
+    - paragraph [ref=f10e39]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f10e40] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f10e41] [cursor=pointer]
+    - button "Close" [ref=f10e42] [cursor=pointer]

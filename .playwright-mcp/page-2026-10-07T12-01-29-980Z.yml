@@ -1,0 +1,24 @@
+- generic [active] [ref=f9e1]:
+  - generic [ref=f9e4]:
+    - generic [ref=f9e5]:
+      - heading "Welkom terug" [level=3] [ref=f9e11]
+      - paragraph [ref=f9e12]: OpenCoop
+    - generic [ref=f9e13]:
+      - generic [ref=f9e14]:
+        - generic [ref=f9e15]:
+          - text: E-mail
+          - textbox "E-mail" [ref=f9e16]:
+            - /placeholder: uw@email.be
+        - button "Doorgaan" [ref=f9e17] [cursor=pointer]
+        - generic [ref=f9e18]: of
+        - button "Inloggen met een passkey" [ref=f9e23] [cursor=pointer]
+        - generic [ref=f9e24]: Of ga verder met
+        - generic [ref=f9e29]:
+          - button "Google" [ref=f9e30] [cursor=pointer]
+          - button "Apple" [ref=f9e31] [cursor=pointer]
+      - generic [ref=f9e32]:
+        - generic [ref=f9e33]: Account aanmaken
+        - link "Registreren" [ref=f9e34] [cursor=pointer]:
+          - /url: /nl/register
+  - button "Open Next.js Dev Tools" [ref=f9e40] [cursor=pointer]
+  - alert [ref=f9e44]

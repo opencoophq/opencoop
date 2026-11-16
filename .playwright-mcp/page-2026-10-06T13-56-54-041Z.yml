@@ -1,0 +1,32 @@
+- generic [active] [ref=f10e1]:
+  - generic [ref=f10e4]:
+    - generic [ref=f10e5]:
+      - heading "Welkom terug" [level=3] [ref=f10e11]
+      - paragraph [ref=f10e12]: OpenCoop
+    - generic [ref=f10e13]:
+      - generic [ref=f10e46]:
+        - generic [ref=f10e47]:
+          - paragraph [ref=f10e48]: Hoe wil je inloggen?
+          - paragraph [ref=f10e49]:
+            - text: admin@zonnecooperatie.be
+            - button "[wijzigen]" [ref=f10e50] [cursor=pointer]
+        - button [ref=f10e51] [cursor=pointer]:
+          - generic [ref=f10e56]:
+            - paragraph [ref=f10e57]: Stuur mij een login link
+            - paragraph [ref=f10e58]: Snel en veilig - geen wachtwoord nodig
+        - button [ref=f10e59] [cursor=pointer]:
+          - generic [ref=f10e64]:
+            - paragraph [ref=f10e65]: Gebruik wachtwoord
+            - paragraph [ref=f10e66]: Log in met je accountwachtwoord
+      - generic [ref=f10e32]:
+        - generic [ref=f10e33]: Account aanmaken
+        - link "Registreren" [ref=f10e34] [cursor=pointer]:
+          - /url: /nl/register
+  - alert [ref=f10e35]
+  - generic [ref=f10e36]:
+    - paragraph [ref=f10e39]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f10e40] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f10e41] [cursor=pointer]
+    - button "Close" [ref=f10e42] [cursor=pointer]

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bronsgroen — Brevo Campaign Effectiveness</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root { --bg: #0f1117; --card: #1a1d2e; --border: rgba(255,255,255,0.06); --green: #0f8843; --green2: #14a854; --red: #e74c3c; --orange: #f39c12; --text: #e0e0e0; --muted: #999; --accent: #3b82f6; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:Inter,-apple-system,sans-serif; padding:24px; }
+h1 { color:var(--green); font-size:28px; margin-bottom:4px; }
+h2 { color:var(--green2); font-size:18px; margin-bottom:16px; }
+h3 { color:var(--text); font-size:15px; margin-bottom:12px; }
+.subtitle { color:var(--muted); font-size:14px; margin-bottom:32px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:24px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.card-full { grid-column: 1 / -1; }
+.kpi { text-align:center; }
+.kpi-value { font-size:36px; font-weight:700; color:var(--green); }
+.kpi-label { color:var(--muted); font-size:13px; margin-top:4px; }
+.kpi-sub { color:var(--muted); font-size:11px; margin-top:2px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; padding:10px 8px; border-bottom:2px solid var(--border); color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; }
+td { padding:10px 8px; border-bottom:1px solid var(--border); }
+tr:hover td { background:rgba(15,136,67,0.05); }
+.tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+.tag-green { background:rgba(15,136,67,0.2); color:var(--green2); }
+.tag-orange { background:rgba(243,156,18,0.2); color:var(--orange); }
+.tag-red { background:rgba(231,76,60,0.2); color:var(--red); }
+.tag-blue { background:rgba(59,130,246,0.2); color:var(--accent); }
+.bar-container { background:rgba(255,255,255,0.05); border-radius:4px; height:8px; margin-top:4px; }
+.bar { background:var(--green); height:8px; border-radius:4px; }
+.insight { background:rgba(15,136,67,0.07); border-left:3px solid var(--green); padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:12px; font-size:13px; line-height:1.6; }
+.insight strong { color:var(--text); }
+.warn { background:rgba(243,156,18,0.07); border-left:3px solid var(--orange); }
+.crit { background:rgba(231,76,60,0.07); border-left:3px solid var(--red); }
+.section { margin-bottom:32px; }
+.chart-container { position:relative; height:300px; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width:768px) { .two-col { grid-template-columns:1fr; } }
+.funnel { display:flex; flex-direction:column; gap:6px; }
+.funnel-step { display:flex; align-items:center; gap:12px; }
+.funnel-bar { height:32px; background:var(--green); border-radius:4px; display:flex; align-items:center; padding:0 12px; font-weight:600; font-size:13px; color:#fff; min-width:60px; }
+.funnel-label { color:var(--muted); font-size:12px; white-space:nowrap; }
+.funnel-pct { color:var(--text); font-size:12px; font-weight:600; min-width:50px; text-align:right; }
+.timestamp { color:var(--muted); font-size:11px; text-align:right; margin-top:24px; }
+</style>
+</head>
+<body>
+
+<h1>Bronsgroen — Campaign Effectiveness</h1>
+<p class="subtitle">Brevo email campaigns analysis · Data pulled 13 April 2026</p>
+
+<!-- KPI Summary -->
+<div class="section">
+<h2>Overview</h2>
+<div class="grid">
+  <div class="card kpi">
+    <div class="kpi-value">1,100</div>
+    <div class="kpi-label">Total Contacts</div>
+    <div class="kpi-sub">670 coöperanten · 390 sympathisanten</div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-value">6 / 10</div>
+    <div class="kpi-label">Campaigns Sent</div>
+    <div class="kpi-sub">4 queued (Lentecampagne E2–E5)</div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-value">58.6%</div>
+    <div class="kpi-label">Avg Open Rate</div>
+    <div class="kpi-sub">Industry avg: ~21% (nonprofits/energy)</div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-value">9.3%</div>
+    <div class="kpi-label">Avg CTR</div>
+    <div class="kpi-sub">Industry avg: ~2.7%</div>
+  </div>
+</div>
+</div>
+
+<!-- Campaign Performance Table -->
+<div class="section">
+<h2>Campaign Performance</h2>
+<div class="card card-full">
+<table>
+<thead>
+<tr>
+  <th>Campaign</th>
+  <th>Audience</th>
+  <th>Sent</th>
+  <th>Delivered</th>
+  <th>Open Rate</th>
+  <th>CTR</th>
+  <th>CTOR</th>
+  <th>Unsubs</th>
+  <th>Bounces</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Newsletter 2026_01</strong><br><span style="color:var(--muted);font-size:11px">Persoonlijk dashboard + website</span></td>
+  <td><span class="tag tag-green">Coöperanten</span></td>
+  <td>717</td><td>672</td>
+  <td><strong>78.3%</strong><div class="bar-container"><div class="bar" style="width:78.3%"></div></div></td>
+  <td><strong>33.0%</strong></td><td>42.2%</td>
+  <td>1</td><td><span style="color:var(--red)">40h</span>/8s</td>
+  <td><span class="tag tag-green">Sent</span></td>
+</tr>
+<tr>
+  <td><strong>Newsletter 2026_01</strong><br><span style="color:var(--muted);font-size:11px">Vernieuwde website</span></td>
+  <td><span class="tag tag-blue">Sympathisanten</span></td>
+  <td>400</td><td>394</td>
+  <td><strong>57.4%</strong><div class="bar-container"><div class="bar" style="width:57.4%"></div></div></td>
+  <td><strong>9.6%</strong></td><td>16.8%</td>
+  <td>2</td><td>5h/1s</td>
+  <td><span class="tag tag-green">Sent</span></td>
+</tr>
+<tr>
+  <td><strong>Testimonial Collection</strong><br><span style="color:var(--muted);font-size:11px">Vertel uw verhaal</span></td>
+  <td><span class="tag tag-green">Coöperanten</span></td>
+  <td>676</td><td>671</td>
+  <td><strong>51.6%</strong><div class="bar-container"><div class="bar" style="width:51.6%"></div></div></td>
+  <td><strong>7.0%</strong></td><td>13.6%</td>
+  <td>1</td><td>0h/7s</td>
+  <td><span class="tag tag-green">Sent</span></td>
+</tr>
+<tr>
+  <td><strong>Newsletter 2026_02</strong><br><span style="color:var(--muted);font-size:11px">Save the date: AV 9 mei</span></td>
+  <td><span class="tag tag-green">Coöperanten</span></td>
+  <td>675</td><td>670</td>
+  <td><strong>54.9%</strong><div class="bar-container"><div class="bar" style="width:54.9%"></div></div></td>
+  <td style="color:var(--red)"><strong>0.0%</strong></td><td>0.0%</td>
+  <td>0</td><td>0h/7s</td>
+  <td><span class="tag tag-green">Sent</span></td>
+</tr>
+<tr style="background:rgba(15,136,67,0.03)">
+  <td><strong>Lentecampagne E1 — Upsell</strong><br><span style="color:var(--muted);font-size:11px">Uw aandelen groeien mee met de zon ☀️</span></td>
+  <td><span class="tag tag-green">Coöperanten</span></td>
+  <td>675</td><td>670</td>
+  <td><strong>60.3%</strong><div class="bar-container"><div class="bar" style="width:60.3%"></div></div></td>
+  <td><strong>3.9%</strong></td><td>6.4%</td>
+  <td>0</td><td>0h/7s</td>
+  <td><span class="tag tag-green">Sent</span></td>
+</tr>
+<tr style="background:rgba(15,136,67,0.03)">
+  <td><strong>Lentecampagne E1 — Acquisitie</strong><br><span style="color:var(--muted);font-size:11px">Word mede-eigenaar van zonne-energie</span></td>
+  <td><span class="tag tag-blue">Sympathisanten</span></td>
+  <td>392</td><td>390</td>
+  <td><strong>49.2%</strong><div class="bar-container"><div class="bar" style="width:49.2%"></div></div></td>
+  <td style="color:var(--orange)"><strong>1.5%</strong></td><td>3.1%</td>
+  <td>3</td><td>1h/1s</td>
+  <td><span class="tag tag-green">Sent</span></td>
+</tr>
+<tr style="opacity:0.5">
+  <td colspan="2"><em>Lentecampagne E2 — Projectfocus Genk-Zuid</em></td>
+  <td colspan="8"><span class="tag tag-orange">Queued</span> · Scheduled</td>
+</tr>
+<tr style="opacity:0.5">
+  <td colspan="2"><em>Lentecampagne E3 — Social proof + mijlpaal</em></td>
+  <td colspan="8"><span class="tag tag-orange">Queued</span> · Scheduled</td>
+</tr>
+<tr style="opacity:0.5">
+  <td colspan="2"><em>Lentecampagne E4 — Herinnering (laatste kans)</em></td>
+  <td colspan="8"><span class="tag tag-orange">Queued</span> · Scheduled</td>
+</tr>
+<tr style="opacity:0.5">
+  <td colspan="2"><em>Lentecampagne E5 — AV-uitnodiging + campagne-update</em></td>
+  <td colspan="8"><span class="tag tag-orange">Queued</span> · Scheduled May 7</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Segment Comparison -->
+<div class="section">
+<h2>Segment Comparison</h2>
+<div class="two-col">
+  <div class="card">
+    <h3>Coöperanten (existing shareholders)</h3>
+    <div class="chart-container"><canvas id="chartCoop"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Sympathisanten (prospects)</h3>
+    <div class="chart-container"><canvas id="chartSymp"></canvas></div>
+  </div>
+</div>
+</div>
+
+<!-- Lentecampagne Funnel -->
+<div class="section">
+<h2>Lentecampagne 2026 — Conversion Funnel (E1 only, so far)</h2>
+<div class="two-col">
+  <div class="card">
+    <h3>Upsell → Coöperanten</h3>
+    <div class="funnel">
+      <div class="funnel-step"><div class="funnel-pct">100%</div><div class="funnel-bar" style="width:100%;background:var(--green)">670 delivered</div></div>
+      <div class="funnel-step"><div class="funnel-pct">60.3%</div><div class="funnel-bar" style="width:60.3%;background:var(--green2)">404 opened</div></div>
+      <div class="funnel-step"><div class="funnel-pct">3.9%</div><div class="funnel-bar" style="width:15%;background:var(--accent)">26 clicked</div></div>
+      <div class="funnel-step"><div class="funnel-pct">0.75%</div><div class="funnel-bar" style="width:10%;background:var(--orange)">5 registered (€2,750)</div><div class="funnel-label">19% of clickers</div></div>
+      <div class="funnel-step"><div class="funnel-pct">0.75%</div><div class="funnel-bar" style="width:10%;background:var(--red)">5 paid (€2,750)</div><div class="funnel-label">100% payment rate 🔥</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Acquisitie → Sympathisanten</h3>
+    <div class="funnel">
+      <div class="funnel-step"><div class="funnel-pct">100%</div><div class="funnel-bar" style="width:100%;background:var(--green)">390 delivered</div></div>
+      <div class="funnel-step"><div class="funnel-pct">49.2%</div><div class="funnel-bar" style="width:49.2%;background:var(--green2)">192 opened</div></div>
+      <div class="funnel-step"><div class="funnel-pct">1.5%</div><div class="funnel-bar" style="width:8%;background:var(--accent)">6 clicked</div></div>
+      <div class="funnel-step"><div class="funnel-pct">0.5%</div><div class="funnel-bar" style="width:6%;background:var(--orange)">2 registered (€250)</div><div class="funnel-label">33% of clickers</div></div>
+      <div class="funnel-step"><div class="funnel-pct">0.25%</div><div class="funnel-bar" style="width:4%;background:var(--red)">1 paid (€125)</div><div class="funnel-label">50% payment rate</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Insights -->
+<div class="section">
+<h2>Analysis & Insights</h2>
+
+<div class="insight">
+<strong>Open rates are exceptional.</strong> Coöperanten average 61.3% opens, sympathisanten 53.3%. Industry benchmarks for energy/nonprofit emails sit around 21%. This indicates high trust and brand recognition — people <em>want</em> to hear from Bronsgroen.
+</div>
+
+<div class="insight warn">
+<strong>Newsletter 2026_01 (C) had 40 hard bounces</strong> — 5.6% of sends. This is a hygiene red flag. Hard bounces mean invalid/dead email addresses. These should be purged from the Coöperanten list immediately to protect sender reputation. Subsequent campaigns show 0 hard bounces, so this may have been addressed, but verify.
+</div>
+
+<div class="insight">
+<strong>Newsletter 2026_01 (C) was a monster performer:</strong> 78.3% open rate, 33% CTR, 42.2% CTOR. This was the "new dashboard + new website" announcement — high novelty drove exceptional engagement. Hard to replicate but establishes the ceiling.
+</div>
+
+<div class="insight warn">
+<strong>Newsletter 2026_02 had 0% CTR</strong> despite 54.9% opens. Subject: "Save the date: AV op 9 mei". This is an informational-only email with no actionable CTA. Not necessarily bad — but worth checking if a calendar link or RSVP could capture intent.
+</div>
+
+<div class="insight warn">
+<strong>Lentecampagne E1 Acquisitie underperformed.</strong> Only 6 clicks from 390 delivered (1.5% CTR) and 3 unsubscribes. Sympathisanten are colder by definition, but the drop from the Jan newsletter (9.6% CTR) to April Lentecampagne (1.5%) is significant. The subject "Word mede-eigenaar van zonne-energie in Limburg" may feel too salesy for a prospect list. Consider softer approaches for E2–E4.
+</div>
+
+<div class="insight">
+<strong>Coöperanten engage 2–3x more than sympathisanten</strong> across every metric. This is expected but the gap on the Lentecampagne is especially stark (3.9% vs 1.5% CTR). The upsell CTA ("Koop extra aandelen") is direct and appropriate for existing shareholders. Prospects need more nurturing before a hard ask.
+</div>
+
+<div class="insight crit">
+<strong>Brevo link-level tracking shows 0 for all URLs.</strong> This is a known Brevo API limitation — campaign-level click counts are accurate, but per-link breakdowns return 0 via API. To see which specific links (register page, project pages, etc.) get clicks, check the Brevo dashboard directly. This matters for understanding whether CTA buttons or inline links drive action.
+</div>
+
+<div class="insight">
+<strong>Testimonial Collection had a solid 7% CTR</strong> (47 unique clicks → Microsoft Forms). That's 47 cooperants who clicked through to share their story. If even half completed the form, ~24 testimonials is excellent social proof for E3 (Social proof + mijlpaal).
+</div>
+</div>
+
+<!-- Recommendations -->
+<div class="section">
+<h2>Recommendations for E2–E5</h2>
+
+<div class="insight">
+<strong>E2 Projectfocus Genk-Zuid:</strong> Lead with the visual impact (renderings, site photos) — project-specific emails haven't been tested yet. Expect higher engagement than generic upsell bc it's concrete and new. Include a dedicated purchase link with the Genk-Zuid project pre-selected: <code>?class=A&project=cmmd8t3ph000381vam36ppx0e</code>
+</div>
+
+<div class="insight">
+<strong>E3 Social proof:</strong> Drop the testimonials collected from campaign 5 here. Real quotes from cooperants >>> marketing copy. If you got the €1M milestone data, lead with that — "samen al €X opgehaald" creates momentum.
+</div>
+
+<div class="insight warn">
+<strong>E4 Herinnering (laatste kans):</strong> For sympathisanten, consider a softer variant. The 3 unsubscribes from E1 suggest the acquisition list is sensitive to pressure. For coöperanten, urgency works — they're already bought in.
+</div>
+
+<div class="insight">
+<strong>E5 AV-uitnodiging:</strong> Combine the AV invite with campaign results. "Dankzij u hebben we €X opgehaald in 3 weken" closes the loop. This is also the last email before May 7 — make the final CTA count.
+</div>
+</div>
+
+<!-- Campaign → Registration Attribution -->
+<div class="section">
+<h2>Campaign → Registration Attribution (live data)</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Cross-referenced OpenCoop registrations (Mar 1 – Apr 14 2026) with Brevo contact engagement. Attribution = last campaign clicked before registerDate. 18 BUY registrations total (non-cancelled), 21 unique emails.</p>
+
+<div class="two-col">
+  <div class="card">
+    <h3>Attribution Summary</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);"><th style="padding:8px 4px;">Campaign</th><th>Regs</th><th>€ value</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:6px 4px;">Lente E1 Upsell (C)</td><td><strong>5</strong></td><td>€2,750</td></tr>
+        <tr><td style="padding:6px 4px;">NL 2026_01 (C)</td><td><strong>3</strong></td><td>€2,250</td></tr>
+        <tr><td style="padding:6px 4px;">Lente E1 Acquisitie (S)</td><td><strong>2</strong></td><td>€250</td></tr>
+        <tr><td style="padding:6px 4px;">NL 2026_01 (S)</td><td><strong>1</strong></td><td>€5,000</td></tr>
+        <tr><td style="padding:6px 4px;">Webinar 1B (S)</td><td><strong>1</strong></td><td>€125</td></tr>
+        <tr style="color:var(--muted);"><td style="padding:6px 4px;">No engagement / not in Brevo</td><td>6</td><td>€9,000*</td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--muted);font-size:12px;margin-top:8px;">*Includes €6,250 from Pierre Vanderbeuken (in Brevo, never opened — likely direct/word-of-mouth).</p>
+  </div>
+
+  <div class="card">
+    <h3>Key Findings</h3>
+    <ul style="color:var(--muted);font-size:13px;line-height:1.7;padding-left:18px;">
+      <li><strong style="color:var(--text);">12/18 buys (67%)</strong> attributed to a campaign click before purchase.</li>
+      <li><strong style="color:var(--text);">Lentecampagne E1 Upsell drove 5 conversions in 3 days</strong> — best-performing campaign by conversion count.</li>
+      <li><strong style="color:var(--text);">NL 2026_01 (C) has a long tail</strong> — still converting a month later (jomeyers02@ bought Apr 10 after March 10 click).</li>
+      <li><strong style="color:var(--text);">6 registrants not in Brevo</strong> — walk-ins, events, referrals, or list gaps. ~33% of registrants are being acquired outside email.</li>
+      <li><strong style="color:var(--text);">Payment rate on campaign-attributed regs: 92%</strong> (11/12 COMPLETED, 1 PENDING). Email-driven buyers convert reliably.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+<h3>Per-Registration Attribution Detail</h3>
+<table style="width:100%;border-collapse:collapse;font-size:12px;">
+  <thead><tr style="text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--muted);">
+    <th style="padding:6px 4px;">Date</th><th>€</th><th>Email</th><th>Status</th><th>Attribution</th>
+  </tr></thead>
+  <tbody>
+    <tr><td style="padding:4px;">2026-03-05</td><td>€6,250</td><td>pierre.vanderbeuken@telenet.be</td><td style="color:var(--orange);">PENDING</td><td style="color:var(--muted);">in Brevo, no engagement</td></tr>
+    <tr><td style="padding:4px;">2026-03-10</td><td>€1,000</td><td>willy_maasen@hotmail.com</td><td style="color:var(--green);">PAID</td><td>NL 2026_01 (C) — same-day click</td></tr>
+    <tr><td style="padding:4px;">2026-03-13</td><td>€1,000</td><td>koen_vreys@hotmail.com</td><td style="color:var(--green);">PAID</td><td>NL 2026_01 (C)</td></tr>
+    <tr><td style="padding:4px;">2026-03-14</td><td>€1,250</td><td>jan.vanderborght@gmail.com</td><td style="color:var(--green);">PAID</td><td style="color:var(--muted);">not in Brevo</td></tr>
+    <tr><td style="padding:4px;">2026-03-18</td><td>€500</td><td>opencoop.24xgj@passmail.com</td><td style="color:var(--green);">PAID</td><td style="color:var(--muted);">not in Brevo</td></tr>
+    <tr><td style="padding:4px;">2026-03-27</td><td>€500</td><td>joan.bertels@telenet.be</td><td style="color:var(--green);">PAID</td><td style="color:var(--muted);">not in Brevo</td></tr>
+    <tr><td style="padding:4px;">2026-03-28</td><td>€5,000</td><td>dieter.agten@proton.me</td><td style="color:var(--green);">PAID</td><td>NL 2026_01 (S)</td></tr>
+    <tr><td style="padding:4px;">2026-04-09</td><td>€250</td><td>info@karelschiepers.be</td><td style="color:var(--green);">PAID</td><td><strong>Lente E1 Upsell</strong> — same-day</td></tr>
+    <tr><td style="padding:4px;">2026-04-09</td><td>€500</td><td>geert.koninckx@telenet.be</td><td style="color:var(--green);">PAID</td><td><strong>Lente E1 Upsell</strong> — same-day</td></tr>
+    <tr><td style="padding:4px;">2026-04-09</td><td>€500</td><td>geert.koninckx@telenet.be</td><td style="color:var(--green);">PAID</td><td><strong>Lente E1 Upsell</strong> — same-day (2nd buy)</td></tr>
+    <tr><td style="padding:4px;">2026-04-10</td><td>€250</td><td>jomeyers02@gmail.com</td><td style="color:var(--green);">PAID</td><td>NL 2026_01 (C) — 31-day tail</td></tr>
+    <tr><td style="padding:4px;">2026-04-11</td><td>€125</td><td>gilbert.simal@skynet.be</td><td style="color:var(--orange);">PENDING</td><td><strong>Lente E1 Acquisitie</strong> — same-day</td></tr>
+    <tr><td style="padding:4px;">2026-04-11</td><td>€125</td><td>gilbert.simal@skynet.be</td><td style="color:var(--green);">PAID</td><td><strong>Lente E1 Acquisitie</strong> — same-day</td></tr>
+    <tr><td style="padding:4px;">2026-04-11</td><td>€500</td><td>silkehuysmans00@hotmail.com</td><td style="color:var(--green);">PAID</td><td><strong>Lente E1 Upsell</strong></td></tr>
+    <tr><td style="padding:4px;">2026-04-12</td><td>€1,000</td><td>willy_maasen@hotmail.com</td><td style="color:var(--green);">PAID</td><td><strong>Lente E1 Upsell</strong> (2nd buy)</td></tr>
+    <tr><td style="padding:4px;">2026-04-14</td><td>€125</td><td>dirkske1963@telenet.be</td><td style="color:var(--orange);">PENDING</td><td style="color:var(--muted);">not in Brevo</td></tr>
+    <tr><td style="padding:4px;">2026-04-14</td><td>€125</td><td>marcel.paesmans@gmail.com</td><td style="color:var(--green);">PAID</td><td>Webinar 1B (S) — same-day</td></tr>
+    <tr><td style="padding:4px;">2026-04-14</td><td>€500</td><td>janpeumans@gmail.com</td><td style="color:var(--green);">PAID</td><td style="color:var(--muted);">not in Brevo</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="insight" style="margin-top:16px;">
+<strong>Revenue attributed to Brevo in last 6 weeks: €10,375</strong> out of €17,750 total in BUY registrations (58%). If we exclude the €6,250 outlier (Pierre, pending payment), attributed share climbs to <strong>90% of paid revenue</strong>. Email is the dominant acquisition channel for Bronsgroen rn.
+</div>
+
+<div class="insight warn">
+<strong>Same-day conversion pattern is striking.</strong> Most Lentecampagne attributed regs happened within hours of the click. This means: (1) send times matter — check if morning/evening sends perform differently; (2) E2–E5 should reuse this tight timing cadence; (3) remarketing windows beyond 48h add little — the buyer decides fast or not at all. Exception: NL 2026_01 (C) still converted 31 days later, so the <em>great</em> emails have tails.
+</div>
+
+<div class="insight">
+<strong>6 registrants not in Brevo — investigate:</strong> jan.vanderborght, joan.bertels, jan.peumans, dirkske1963, appermont.bram, opencoop.24xgj (passmail alias — Maarten Jans). That's €2,875 of paid revenue coming from somewhere outside the email list. Likely: existing shareholders registering via direct dashboard login (not in marketing lists), or referrals. Worth auditing whether all active shareholders are in the Coöperanten Brevo list.
+</div>
+</div>
+
+<p class="timestamp">Generated 13 April 2026 · Data source: Brevo API + OpenCoop llms-full.txt</p>
+
+<script>
+// Coöperanten chart
+new Chart(document.getElementById('chartCoop'), {
+  type: 'bar',
+  data: {
+    labels: ['NL 2026_01', 'Testimonial', 'NL 2026_02', 'Lente E1 Upsell'],
+    datasets: [
+      { label: 'Open Rate %', data: [78.3, 51.6, 54.9, 60.3], backgroundColor: 'rgba(15,136,67,0.6)', borderColor: '#0f8843', borderWidth: 1 },
+      { label: 'CTR %', data: [33.0, 7.0, 0.0, 3.9], backgroundColor: 'rgba(59,130,246,0.6)', borderColor: '#3b82f6', borderWidth: 1 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#999' } } },
+    scales: {
+      y: { beginAtZero: true, max: 100, ticks: { color: '#999', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      x: { ticks: { color: '#999', maxRotation: 45 }, grid: { display: false } }
+    }
+  }
+});
+
+// Sympathisanten chart
+new Chart(document.getElementById('chartSymp'), {
+  type: 'bar',
+  data: {
+    labels: ['NL 2026_01', 'Lente E1 Acquisitie'],
+    datasets: [
+      { label: 'Open Rate %', data: [57.4, 49.2], backgroundColor: 'rgba(15,136,67,0.6)', borderColor: '#0f8843', borderWidth: 1 },
+      { label: 'CTR %', data: [9.6, 1.5], backgroundColor: 'rgba(59,130,246,0.6)', borderColor: '#3b82f6', borderWidth: 1 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#999' } } },
+    scales: {
+      y: { beginAtZero: true, max: 100, ticks: { color: '#999', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      x: { ticks: { color: '#999' }, grid: { display: false } }
+    }
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+- generic [active] [ref=f13e1]:
+  - alert [ref=f13e4]
+  - generic [ref=f13e5]:
+    - paragraph [ref=f13e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f13e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f13e10] [cursor=pointer]
+    - button "Close" [ref=f13e11] [cursor=pointer]

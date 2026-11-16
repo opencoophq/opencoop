@@ -1,0 +1,150 @@
+- generic [ref=f1e2]:
+  - navigation [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - link "OpenCoop" [ref=f1e5] [cursor=pointer]:
+        - /url: /nl
+      - button "Toggle menu" [ref=f1e12] [cursor=pointer]
+  - generic [ref=f1e15]:
+    - generic [ref=f1e16]: Eenvoudige, transparante prijzen
+    - heading "Eerlijke prijzen voor elke coöperatie" [level=1] [ref=f1e21]
+    - paragraph [ref=f1e23]: Geen installatiekosten, geen verborgen kosten. Alles wat u nodig heeft om uw aandeelhouders te beheren — voor een fractie van wat traditionele aanbieders vragen.
+  - generic [ref=f1e25]:
+    - button "Maandelijks" [ref=f1e26] [cursor=pointer]
+    - button "Jaarlijks" [ref=f1e27] [cursor=pointer]
+  - generic [ref=f1e29]:
+    - generic [ref=f1e31]:
+      - generic [ref=f1e32]: Gratis
+      - generic [ref=f1e33]:
+        - heading "Early Access" [level=3] [ref=f1e34]
+        - paragraph [ref=f1e35]: Begin vandaag met het beheren van uw coöperatie — geen creditcard nodig.
+      - generic [ref=f1e36]:
+        - generic [ref=f1e37]: €0
+        - paragraph [ref=f1e39]: Gratis tijdens de early access periode
+      - link [ref=f1e40] [cursor=pointer]:
+        - /url: /nl/onboarding?plan=free
+        - button "Gratis starten" [ref=f1e41]
+      - list [ref=f1e42]:
+        - listitem [ref=f1e43]:
+          - generic [ref=f1e46]: Onbeperkt aandeelhouders
+        - listitem [ref=f1e47]:
+          - generic [ref=f1e50]: Aandeelhoudersbeheer
+        - listitem [ref=f1e51]:
+          - generic [ref=f1e54]: 1 aandelenklasse
+        - listitem [ref=f1e55]:
+          - generic [ref=f1e58]: 1 dividenduitkering per jaar
+        - listitem [ref=f1e59]:
+          - generic [ref=f1e62]: PDF-documentgeneratie
+        - listitem [ref=f1e63]:
+          - generic [ref=f1e66]: E-mailnotificaties
+    - generic [ref=f1e68]:
+      - generic [ref=f1e69]:
+        - heading "Essentials" [level=3] [ref=f1e70]
+        - paragraph [ref=f1e71]: Voor coöperaties die af willen van spreadsheets
+      - generic [ref=f1e72]:
+        - generic [ref=f1e73]:
+          - generic [ref=f1e74]: €39
+          - generic [ref=f1e75]: /maand
+        - paragraph [ref=f1e76]: Maandelijks gefactureerd
+        - paragraph [ref=f1e77]: 30 dagen gratis proefperiode inbegrepen
+      - button "Aan de slag" [ref=f1e78] [cursor=pointer]
+      - list [ref=f1e79]:
+        - listitem [ref=f1e80]:
+          - generic [ref=f1e83]: Onbeperkt aandeelhouders
+        - listitem [ref=f1e84]:
+          - generic [ref=f1e87]: Aandeelhoudersbeheer
+        - listitem [ref=f1e88]:
+          - generic [ref=f1e91]: 1 aandelenklasse
+        - listitem [ref=f1e92]:
+          - generic [ref=f1e95]: 1 dividenduitkering per jaar
+        - listitem [ref=f1e96]:
+          - generic [ref=f1e99]: PDF-documentgeneratie
+        - listitem [ref=f1e100]:
+          - generic [ref=f1e103]: E-mailnotificaties
+    - generic [ref=f1e105]:
+      - generic [ref=f1e106]: Populairst
+      - generic [ref=f1e107]:
+        - heading "Professional" [level=3] [ref=f1e108]
+        - paragraph [ref=f1e109]: Voor coöperaties met actieve aandelenoperaties
+      - generic [ref=f1e110]:
+        - generic [ref=f1e111]:
+          - generic [ref=f1e112]: €89
+          - generic [ref=f1e113]: /maand
+        - paragraph [ref=f1e114]: Maandelijks gefactureerd
+        - paragraph [ref=f1e115]: 30 dagen gratis proefperiode inbegrepen
+      - button "Aan de slag" [ref=f1e116] [cursor=pointer]
+      - list [ref=f1e117]:
+        - listitem [ref=f1e118]:
+          - generic [ref=f1e121]: Onbeperkt aandeelhouders
+        - listitem [ref=f1e122]:
+          - generic [ref=f1e125]: Aandeelhoudersbeheer
+        - listitem [ref=f1e126]:
+          - generic [ref=f1e129]: Onbeperkt aandelenklassen
+        - listitem [ref=f1e130]:
+          - generic [ref=f1e133]: Onbeperkt dividenduitkeringen
+        - listitem [ref=f1e134]:
+          - generic [ref=f1e137]: Bank import & OGM-matching
+        - listitem [ref=f1e138]:
+          - generic [ref=f1e141]: PDF-documentgeneratie
+        - listitem [ref=f1e142]:
+          - generic [ref=f1e145]: Eigen huisstijl
+        - listitem [ref=f1e146]:
+          - generic [ref=f1e149]: E-mailnotificaties
+        - listitem [ref=f1e150]:
+          - generic [ref=f1e153]: Prioriteits e-mailsupport
+  - generic [ref=f1e156]:
+    - heading "Liever zelf hosten?" [level=2] [ref=f1e161]
+    - paragraph [ref=f1e162]: OpenCoop is open source onder de AGPL-3.0 licentie. Deploy het op uw eigen infrastructuur met Docker en behoud volledige controle over uw data.
+    - generic [ref=f1e163]:
+      - generic [ref=f1e164]: Altijd gratis
+      - generic [ref=f1e168]: Volledige data-eigendom
+      - generic [ref=f1e174]: Community support
+    - link [ref=f1e179] [cursor=pointer]:
+      - /url: https://github.com/opencoophq/opencoop
+      - button "Bekijk op GitHub" [ref=f1e180]
+    - paragraph [ref=f1e181]: Hulp nodig? Betaalde ondersteuning beschikbaar per uur.
+  - generic [ref=f1e183]:
+    - heading "Veelgestelde vragen" [level=2] [ref=f1e185]
+    - generic [ref=f1e186]:
+      - generic [ref=f1e188]:
+        - button "Wat als ik meer aandelenklassen of dividenduitkeringen nodig heb?" [ref=f1e189] [cursor=pointer]
+        - paragraph [ref=f1e193]: Upgrade op elk moment naar Professional. Uw gegevens en instellingen blijven behouden — geen migratie nodig.
+      - generic [ref=f1e195]:
+        - button "Kan ik wisselen tussen maandelijkse en jaarlijkse facturatie?" [ref=f1e196] [cursor=pointer]
+        - paragraph [ref=f1e200]: Ja, u kunt op elk moment wisselen. Bij overstap naar jaarlijkse facturatie ontvangt u een pro-rata tegoed voor uw huidige facturatieperiode.
+      - generic [ref=f1e202]:
+        - button "Wat is inbegrepen bij prioriteitssupport?" [ref=f1e203] [cursor=pointer]
+        - paragraph [ref=f1e207]: Prioriteitssupport omvat snellere reactietijden via e-mail en hulp bij configuratie, data-imports en algemene platformvragen.
+      - generic [ref=f1e209]:
+        - button "Kan ik migreren van self-hosted naar het SaaS-platform?" [ref=f1e210] [cursor=pointer]
+        - paragraph [ref=f1e214]: Ja. Neem contact met ons op en we helpen u met de migratie van uw self-hosted installatie naar het beheerde platform.
+  - generic [ref=f1e216]:
+    - heading "Klaar om te starten?" [level=2] [ref=f1e217]
+    - paragraph [ref=f1e218]: Maak uw coöperatie aan in enkele minuten — gratis tijdens early access.
+    - generic [ref=f1e219]:
+      - button "Gratis starten" [ref=f1e220] [cursor=pointer]
+      - link [ref=f1e221] [cursor=pointer]:
+        - /url: https://github.com/opencoophq/opencoop
+        - button "Bekijk op GitHub" [ref=f1e222]
+  - contentinfo [ref=f1e223]:
+    - generic [ref=f1e224]:
+      - generic [ref=f1e225]:
+        - generic [ref=f1e226]: OpenCoop
+        - generic [ref=f1e232]: Gelicentieerd onder AGPL-3.0
+        - link "Algemene Voorwaarden" [ref=f1e233] [cursor=pointer]:
+          - /url: /nl/terms
+        - link "Privacybeleid" [ref=f1e234] [cursor=pointer]:
+          - /url: /nl/privacy
+        - link "Verwerkersovereenkomst" [ref=f1e235] [cursor=pointer]:
+          - /url: /nl/dpa
+      - generic [ref=f1e236]:
+        - generic [ref=f1e240]: "Taal:"
+        - button "NL" [ref=f1e242] [cursor=pointer]
+        - generic [ref=f1e243]:
+          - generic [ref=f1e244]: /
+          - button "EN" [ref=f1e245] [cursor=pointer]
+        - generic [ref=f1e246]:
+          - generic [ref=f1e247]: /
+          - button "FR" [ref=f1e248] [cursor=pointer]
+        - generic [ref=f1e249]:
+          - generic [ref=f1e250]: /
+          - button "DE" [ref=f1e251] [cursor=pointer]

@@ -1,0 +1,233 @@
+- generic [active] [ref=f14e1]:
+  - generic [ref=f14e2]:
+    - generic [ref=f14e3]:
+      - generic [ref=f14e4]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f14e5]:
+        - button "🇳🇱" [ref=f14e6] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f14e7] [cursor=pointer]
+        - button [ref=f14e16] [cursor=pointer]
+    - complementary [ref=f14e17]:
+      - generic [ref=f14e18]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f14e20]
+        - button "Zonnecoöperatie Vlaanderen" [ref=f14e22] [cursor=pointer]
+        - generic [ref=f14e24]:
+          - heading "Coöperatiebeheer" [level=3] [ref=f14e25]
+          - navigation [ref=f14e26]:
+            - link "Overzicht" [ref=f14e27] [cursor=pointer]:
+              - /url: /nl/dashboard/admin
+            - link "Aandeelhouders 2" [ref=f14e158] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/shareholders
+              - generic [ref=f14e40]: Aandeelhouders
+              - generic [ref=f14e159]: "2"
+            - link "Aandelenklassen" [ref=f14e41] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/share-classes
+            - link "Transacties 1" [ref=f14e160] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/transactions
+              - generic [ref=f14e50]: Transacties
+              - generic [ref=f14e161]: "1"
+            - link "Projecten" [ref=f14e51] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/projects
+            - link "Dividenden" [ref=f14e57] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/dividends
+            - link "Vergaderingen" [ref=f14e64] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/meetings
+            - link "Postvak" [ref=f14e69] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/messages
+            - link "Bank import" [ref=f14e74] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/bank-import
+            - link "Rapporten" [ref=f14e79] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/reports
+            - link "Instellingen" [ref=f14e83] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings
+            - link "Kanalen" [ref=f14e88] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings/channels
+            - link "Facturatie" [ref=f14e94] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/billing
+            - link "Team" [ref=f14e98] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/team
+            - link "Wat is nieuw" [ref=f14e112] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/changelog
+        - link "Documentatie" [ref=f14e118] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f14e123] [cursor=pointer]:
+          - generic [ref=f14e124]:
+            - paragraph [ref=f14e125]: Demo Admin
+            - paragraph [ref=f14e126]: admin@zonnecooperatie.be
+    - main [ref=f14e129]:
+      - generic [ref=f14e131]:
+        - heading "Transacties" [level=1] [ref=f14e132]
+        - generic [ref=f14e133]:
+          - tablist [ref=f14e134]:
+            - tab "Alle transacties" [selected] [ref=f14e135] [cursor=pointer]
+            - tab "Niet-gekoppelde betalingen" [ref=f14e136] [cursor=pointer]
+          - tabpanel "Alle transacties" [ref=f14e137]:
+            - generic [ref=f14e139]:
+              - combobox [ref=f14e141] [cursor=pointer]:
+                - generic: Alle
+              - table [ref=f14e163]:
+                - rowgroup [ref=f14e164]:
+                  - row [ref=f14e165]:
+                    - columnheader [ref=f14e166]:
+                      - button "Aandeelhouder" [ref=f14e167] [cursor=pointer]
+                    - columnheader [ref=f14e168]:
+                      - button "Type" [ref=f14e169] [cursor=pointer]
+                    - columnheader [ref=f14e170]:
+                      - button "Aantal" [ref=f14e171] [cursor=pointer]
+                    - columnheader [ref=f14e172]:
+                      - button "Bedrag" [ref=f14e173] [cursor=pointer]
+                    - columnheader [ref=f14e174]:
+                      - button "Registratiedatum" [ref=f14e175] [cursor=pointer]
+                    - columnheader [ref=f14e176]:
+                      - button "Betaaldatum" [ref=f14e177] [cursor=pointer]
+                    - columnheader [ref=f14e178]:
+                      - button "Status" [ref=f14e179] [cursor=pointer]
+                    - columnheader "Acties" [ref=f14e180]
+                  - row [ref=f14e181]:
+                    - columnheader [ref=f14e182]:
+                      - textbox "Filteren" [ref=f14e183]
+                    - columnheader [ref=f14e184]:
+                      - textbox "Filteren" [ref=f14e185]
+                    - columnheader [ref=f14e186]:
+                      - textbox "Filteren" [ref=f14e187]
+                    - columnheader [ref=f14e188]:
+                      - textbox "Filteren" [ref=f14e189]
+                    - columnheader [ref=f14e190]:
+                      - textbox "Filteren" [ref=f14e191]
+                    - columnheader [ref=f14e192]:
+                      - textbox "Filteren" [ref=f14e193]
+                    - columnheader [ref=f14e194]:
+                      - textbox "Filteren" [ref=f14e195]
+                    - columnheader [ref=f14e196]
+                - rowgroup [ref=f14e197]:
+                  - row [ref=f14e198]:
+                    - cell [ref=f14e199]:
+                      - link:
+                        - /url: /nl/dashboard/admin/shareholders/cmtsfj5z2008bpo015wsvemao
+                    - cell "Aankoop" [ref=f14e200]
+                    - cell "1" [ref=f14e202]
+                    - cell "€ 250,00" [ref=f14e203]
+                    - cell "8/9/2026" [ref=f14e206]
+                    - cell "-" [ref=f14e207]
+                    - cell "Wacht op betaling" [ref=f14e208]
+                    - cell [ref=f14e210]:
+                      - generic [ref=f14e211]:
+                        - button "Transactie Annuleren" [ref=f14e212] [cursor=pointer]
+                        - button "Betalingsinformatie" [ref=f14e213] [cursor=pointer]
+                        - button "Betaling Toevoegen" [ref=f14e214] [cursor=pointer]
+                  - row [ref=f14e215]:
+                    - cell [ref=f14e216]:
+                      - link "Bakkerij Janssens BV" [ref=f14e217] [cursor=pointer]:
+                        - /url: /nl/dashboard/admin/shareholders/cmm143vx8000l81t0i6tanbjy
+                    - cell "Aankoop" [ref=f14e218]
+                    - cell "1" [ref=f14e220]
+                    - cell "€ 250,00" [ref=f14e221]
+                    - cell "4/3/2026" [ref=f14e224]
+                    - cell "4/3/2026" [ref=f14e225]
+                    - cell "Wacht op betaling" [ref=f14e226]
+                    - cell [ref=f14e228]:
+                      - generic [ref=f14e229]:
+                        - button "Transactie Annuleren" [ref=f14e230] [cursor=pointer]
+                        - button "Betalingsinformatie" [ref=f14e231] [cursor=pointer]
+                        - button "Betaling Toevoegen" [ref=f14e232] [cursor=pointer]
+                  - row [ref=f14e233]:
+                    - cell [ref=f14e234]:
+                      - link "Sophie Lambert" [ref=f14e235] [cursor=pointer]:
+                        - /url: /nl/dashboard/admin/shareholders/cmm143wll000r81t0fxutgfrm
+                    - cell "Aankoop" [ref=f14e236]
+                    - cell "1" [ref=f14e238]
+                    - cell "€ 250,00" [ref=f14e239]
+                    - cell "20/1/2025" [ref=f14e242]
+                    - cell "20/1/2025" [ref=f14e243]
+                    - cell "In behandeling" [ref=f14e244]
+                    - cell [ref=f14e246]:
+                      - generic [ref=f14e247]:
+                        - button [ref=f14e248] [cursor=pointer]
+                        - button [ref=f14e249] [cursor=pointer]
+                        - button "Transactie Annuleren" [ref=f14e250] [cursor=pointer]
+                        - button "Betalingsinformatie" [ref=f14e251] [cursor=pointer]
+                  - row [ref=f14e252]:
+                    - cell [ref=f14e253]:
+                      - link "Lucas Peeters" [ref=f14e254] [cursor=pointer]:
+                        - /url: /nl/dashboard/admin/shareholders/cmm143wy9000t81t0f1tz2tsx
+                    - cell "Aankoop" [ref=f14e255]
+                    - cell "1" [ref=f14e257]
+                    - cell "€ 250,00" [ref=f14e258]
+                    - cell "10/9/2024" [ref=f14e261]
+                    - cell "10/9/2024" [ref=f14e262]
+                    - cell "Voltooid" [ref=f14e263]
+                    - cell [ref=f14e265]
+                  - row [ref=f14e266]:
+                    - cell [ref=f14e267]:
+                      - link "Bakkerij Janssens BV" [ref=f14e268] [cursor=pointer]:
+                        - /url: /nl/dashboard/admin/shareholders/cmm143vx8000l81t0i6tanbjy
+                    - cell "Aankoop" [ref=f14e269]
+                    - cell "4" [ref=f14e271]
+                    - cell "€ 2.000,00" [ref=f14e272]
+                    - cell "1/8/2024" [ref=f14e275]
+                    - cell "1/8/2024" [ref=f14e276]
+                    - cell "Voltooid" [ref=f14e277]
+                    - cell [ref=f14e279]
+                  - row [ref=f14e280]:
+                    - cell [ref=f14e281]:
+                      - link "Jan Peeters" [ref=f14e282] [cursor=pointer]:
+                        - /url: /nl/dashboard/admin/shareholders/cmm143va8000h81t0qwivjnal
+                    - cell "Aankoop" [ref=f14e283]
+                    - cell "2" [ref=f14e285]
+                    - cell "€ 1.000,00" [ref=f14e286]
+                    - cell "15/7/2024" [ref=f14e289]
+                    - cell "15/7/2024" [ref=f14e290]
+                    - cell "Voltooid" [ref=f14e291]
+                    - cell [ref=f14e293]
+                  - row [ref=f14e294]:
+                    - cell [ref=f14e295]:
+                      - link "Marc Willems" [ref=f14e296] [cursor=pointer]:
+                        - /url: /nl/dashboard/admin/shareholders/cmm143wcc000p81t0r129z8si
+                    - cell "Aankoop" [ref=f14e297]
+                    - cell "2" [ref=f14e299]
+                    - cell "€ 500,00" [ref=f14e300]
+                    - cell "5/6/2024" [ref=f14e303]
+                    - cell "5/6/2024" [ref=f14e304]
+                    - cell "Voltooid" [ref=f14e305]
+                    - cell [ref=f14e307]
+                  - row [ref=f14e308]:
+                    - cell [ref=f14e309]:
+                      - link "Els De Vos" [ref=f14e310] [cursor=pointer]:
+                        - /url: /nl/dashboard/admin/shareholders/cmm143vo1000j81t0nep96ql5
+                    - cell "Aankoop" [ref=f14e311]
+                    - cell "2" [ref=f14e313]
+                    - cell "€ 500,00" [ref=f14e314]
+                    - cell "10/5/2024" [ref=f14e317]
+                    - cell "10/5/2024" [ref=f14e318]
+                    - cell "Voltooid" [ref=f14e319]
+                    - cell [ref=f14e321]
+                  - row [ref=f14e322]:
+                    - cell [ref=f14e323]:
+                      - link "Bakkerij Janssens BV" [ref=f14e324] [cursor=pointer]:
+                        - /url: /nl/dashboard/admin/shareholders/cmm143vx8000l81t0i6tanbjy
+                    - cell "Aankoop" [ref=f14e325]
+                    - cell "10" [ref=f14e327]
+                    - cell "€ 2.500,00" [ref=f14e328]
+                    - cell "20/4/2024" [ref=f14e331]
+                    - cell "20/4/2024" [ref=f14e332]
+                    - cell "Voltooid" [ref=f14e333]
+                    - cell [ref=f14e335]
+                  - row [ref=f14e336]:
+                    - cell [ref=f14e337]:
+                      - link "Jan Peeters" [ref=f14e338] [cursor=pointer]:
+                        - /url: /nl/dashboard/admin/shareholders/cmm143va8000h81t0qwivjnal
+                    - cell "Aankoop" [ref=f14e339]
+                    - cell "4" [ref=f14e341]
+                    - cell "€ 1.000,00" [ref=f14e342]
+                    - cell "1/4/2024" [ref=f14e345]
+                    - cell "1/4/2024" [ref=f14e346]
+                    - cell "Voltooid" [ref=f14e347]
+                    - cell [ref=f14e349]
+    - button "Feedback geven" [ref=f14e146] [cursor=pointer]
+  - alert [ref=f14e147]
+  - generic [ref=f14e148]:
+    - paragraph [ref=f14e151]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f14e152] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f14e153] [cursor=pointer]
+    - button "Close" [ref=f14e154] [cursor=pointer]

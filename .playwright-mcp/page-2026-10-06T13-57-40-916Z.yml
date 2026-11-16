@@ -1,0 +1,189 @@
+- generic [active] [ref=f13e1]:
+  - generic [ref=f13e2]:
+    - generic [ref=f13e3]:
+      - generic [ref=f13e15]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f13e16]:
+        - button "🇳🇱" [ref=f13e17] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f13e18] [cursor=pointer]
+        - button [ref=f13e27] [cursor=pointer]
+    - complementary [ref=f13e28]:
+      - generic [ref=f13e29]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f13e31]
+        - button "Zonnecoöperatie Vlaanderen" [ref=f13e33] [cursor=pointer]
+        - generic [ref=f13e35]:
+          - heading "Coöperatiebeheer" [level=3] [ref=f13e36]
+          - navigation [ref=f13e37]:
+            - link "Overzicht" [ref=f13e38] [cursor=pointer]:
+              - /url: /nl/dashboard/admin
+            - link "Aandeelhouders 2" [ref=f13e45] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/shareholders
+              - generic [ref=f13e51]: Aandeelhouders
+              - generic [ref=f13e52]: "2"
+            - link "Aandelenklassen" [ref=f13e53] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/share-classes
+            - link "Transacties 1" [ref=f13e58] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/transactions
+              - generic [ref=f13e62]: Transacties
+              - generic [ref=f13e63]: "1"
+            - link "Projecten" [ref=f13e64] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/projects
+            - link "Dividenden" [ref=f13e70] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/dividends
+            - link "Vergaderingen" [ref=f13e77] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/meetings
+            - link "Postvak" [ref=f13e82] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/messages
+            - link "Bank import" [ref=f13e87] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/bank-import
+            - link "Rapporten" [ref=f13e92] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/reports
+            - link "Instellingen" [ref=f13e96] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings
+            - link "Kanalen" [ref=f13e101] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings/channels
+            - link "Facturatie" [ref=f13e107] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/billing
+            - link "Team" [ref=f13e111] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/team
+            - link "Wat is nieuw" [ref=f13e125] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/changelog
+        - link "Documentatie" [ref=f13e131] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f13e136] [cursor=pointer]:
+          - generic [ref=f13e137]:
+            - paragraph [ref=f13e138]: Demo Admin
+            - paragraph [ref=f13e139]: admin@zonnecooperatie.be
+    - main [ref=f13e142]:
+      - generic [ref=f13e144]:
+        - generic [ref=f13e145]:
+          - link "Terug" [ref=f13e146] [cursor=pointer]:
+            - /url: /nl/dashboard/admin/shareholders
+          - generic [ref=f13e147]:
+            - heading "Aandeelhouder details" [level=1] [ref=f13e148]
+            - paragraph
+          - generic [ref=f13e149]:
+            - link "Bekijk aandeelhoudersinterface" [ref=f13e150] [cursor=pointer]:
+              - /url: /nl/dashboard/shares?previewShareholderId=cmtsfj5z2008bpo015wsvemao
+            - button "Nieuw bericht" [ref=f13e151] [cursor=pointer]
+            - button "Aandelen kopen" [ref=f13e152] [cursor=pointer]
+            - button "Aandelen verkopen" [disabled]
+        - generic [ref=f13e153]:
+          - generic [ref=f13e154]:
+            - generic [ref=f13e155]:
+              - generic [ref=f13e156]:
+                - heading "Persoonlijke informatie" [level=3] [ref=f13e157]
+                - paragraph
+              - generic [ref=f13e158]:
+                - generic [ref=f13e159]:
+                  - text: Type
+                  - combobox [ref=f13e160] [cursor=pointer]:
+                    - generic: Particulier
+                  - combobox [aria-hidden] [ref=f13e163]
+                - generic [ref=f13e164]:
+                  - generic [ref=f13e165]:
+                    - text: Voornaam
+                    - textbox [ref=f13e166]
+                  - generic [ref=f13e167]:
+                    - text: Achternaam
+                    - textbox [ref=f13e168]
+                - generic [ref=f13e169]:
+                  - text: Geboortedatum
+                  - button "Pick a date" [ref=f13e170] [cursor=pointer]
+                - generic [ref=f13e171]:
+                  - text: Status
+                  - generic [ref=f13e172]: In behandeling
+                  - paragraph [ref=f13e173]: Afgeleid van betaalde aandelen
+            - generic [ref=f13e174]:
+              - heading "Contactgegevens" [level=3] [ref=f13e176]
+              - generic [ref=f13e177]:
+                - generic [ref=f13e178]:
+                  - text: E-mail
+                  - textbox [ref=f13e179]: stendert.vansoens@gmail.com
+                - generic [ref=f13e180]:
+                  - text: Telefoon
+                  - textbox [ref=f13e181]
+                - generic [ref=f13e182]:
+                  - generic [ref=f13e183]:
+                    - text: Straat
+                    - textbox [ref=f13e184]
+                  - generic [ref=f13e185]:
+                    - text: Nr
+                    - textbox [ref=f13e186]
+                - generic [ref=f13e187]:
+                  - generic [ref=f13e188]:
+                    - text: Postcode
+                    - textbox [ref=f13e189]
+                  - generic [ref=f13e190]:
+                    - text: Gemeente
+                    - textbox [ref=f13e191]
+                - generic [ref=f13e192]:
+                  - text: Land
+                  - textbox [ref=f13e193]: Belgium
+                - generic [ref=f13e194]:
+                  - heading "Bankgegevens" [level=4] [ref=f13e195]
+                  - generic [ref=f13e196]:
+                    - generic [ref=f13e197]:
+                      - text: IBAN
+                      - textbox "e.g. BE68 5390 0754 7034" [ref=f13e198]
+                      - paragraph [ref=f13e199]: Alleen voorbeeldnotatie. Vul het eigen IBAN van de aandeelhouder in.
+                    - generic [ref=f13e200]:
+                      - text: BIC
+                      - textbox "e.g. BBRUBEBB" [ref=f13e201]
+                      - paragraph [ref=f13e202]: Alleen voorbeeldnotatie. Vul de eigen BIC van de aandeelhouder in.
+          - button "Wijzigingen opslaan" [ref=f13e204] [cursor=pointer]
+        - generic [ref=f13e205]:
+          - generic [ref=f13e207]:
+            - heading "Huishouden" [level=3] [ref=f13e208]
+            - button "Koppel aan huishouden" [ref=f13e214] [cursor=pointer]
+          - paragraph [ref=f13e216]: Deze aandeelhouder is niet gekoppeld aan een huishouden.
+        - generic [ref=f13e217]:
+          - heading "Aandelenbezit" [level=3] [ref=f13e219]
+          - paragraph [ref=f13e221]: Geen resultaten gevonden
+        - generic [ref=f13e222]:
+          - heading "Transactiegeschiedenis" [level=3] [ref=f13e224]
+          - table [ref=f13e227]:
+            - rowgroup [ref=f13e228]:
+              - row [ref=f13e229]:
+                - columnheader "Registratiedatum" [ref=f13e230]
+                - columnheader "Betaaldatum" [ref=f13e231]
+                - columnheader "Transacties" [ref=f13e232]
+                - columnheader "Aantal" [ref=f13e233]
+                - columnheader "Prijs per aandeel" [ref=f13e234]
+                - columnheader "Bedrag" [ref=f13e235]
+                - columnheader "Status" [ref=f13e236]
+                - columnheader "Acties" [ref=f13e237]
+            - rowgroup [ref=f13e238]:
+              - row [ref=f13e239]:
+                - cell "8/9/2026" [ref=f13e240]
+                - cell "-" [ref=f13e241]
+                - cell "Aankoop" [ref=f13e242]
+                - cell "1" [ref=f13e244]
+                - cell "€ 250,00" [ref=f13e245]
+                - cell "€ 250,00" [ref=f13e246]
+                - cell "Wacht op betaling" [ref=f13e247]
+                - cell [ref=f13e249]:
+                  - button "Betalingsinformatie" [ref=f13e251] [cursor=pointer]
+        - generic [ref=f13e252]:
+          - heading "Wijzigingsgeschiedenis" [level=3] [ref=f13e254]
+          - table [ref=f13e257]:
+            - rowgroup [ref=f13e258]:
+              - row [ref=f13e259]:
+                - columnheader "Datum" [ref=f13e260]
+                - columnheader "Actie" [ref=f13e261]
+                - columnheader "Veld" [ref=f13e262]
+                - columnheader "Gewijzigd door" [ref=f13e263]
+            - rowgroup [ref=f13e264]:
+              - row [ref=f13e265]:
+                - cell "8/9/2026" [ref=f13e266]
+                - cell "Aangemaakt" [ref=f13e267]
+                - 'cell "_created: - → INDIVIDUAL" [ref=f13e269]'
+                - cell "Systeem" [ref=f13e271]
+    - button "Feedback geven" [ref=f13e272] [cursor=pointer]
+  - alert [ref=f13e4]
+  - generic [ref=f13e5]:
+    - paragraph [ref=f13e8]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f13e9] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f13e10] [cursor=pointer]
+    - button "Close" [ref=f13e11] [cursor=pointer]

@@ -1,0 +1,110 @@
+- generic [active] [ref=f10e1]:
+  - alert [ref=f10e35]
+  - generic [ref=f10e78]:
+    - generic [ref=f10e79]:
+      - generic [ref=f10e80]: Zonnecoöperatie Vlaanderen
+      - generic [ref=f10e81]:
+        - button "🇳🇱" [ref=f10e82] [cursor=pointer]
+        - switch "Toggle dark mode" [ref=f10e83] [cursor=pointer]
+        - button [ref=f10e92] [cursor=pointer]
+    - complementary [ref=f10e93]:
+      - generic [ref=f10e94]:
+        - heading "Zonnecoöperatie Vlaanderen" [level=1] [ref=f10e96]
+        - button "Zonnecoöperatie Vlaanderen" [ref=f10e98] [cursor=pointer]
+        - generic [ref=f10e100]:
+          - heading "Coöperatiebeheer" [level=3] [ref=f10e101]
+          - navigation [ref=f10e102]:
+            - link "Overzicht" [ref=f10e103] [cursor=pointer]:
+              - /url: /nl/dashboard/admin
+            - link "Aandeelhouders 2" [ref=f10e110] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/shareholders
+              - generic [ref=f10e116]: Aandeelhouders
+              - generic [ref=f10e117]: "2"
+            - link "Aandelenklassen" [ref=f10e118] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/share-classes
+            - link "Transacties 1" [ref=f10e123] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/transactions
+              - generic [ref=f10e127]: Transacties
+              - generic [ref=f10e128]: "1"
+            - link "Projecten" [ref=f10e129] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/projects
+            - link "Dividenden" [ref=f10e135] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/dividends
+            - link "Vergaderingen" [ref=f10e142] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/meetings
+            - link "Postvak" [ref=f10e147] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/messages
+            - link "Bank import" [ref=f10e152] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/bank-import
+            - link "Rapporten" [ref=f10e157] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/reports
+            - link "Instellingen" [ref=f10e161] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings
+            - link "Kanalen" [ref=f10e166] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/settings/channels
+            - link "Facturatie" [ref=f10e172] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/billing
+            - link "Team" [ref=f10e176] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/team
+            - link "Wat is nieuw" [ref=f10e190] [cursor=pointer]:
+              - /url: /nl/dashboard/admin/changelog
+        - link "Documentatie" [ref=f10e196] [cursor=pointer]:
+          - /url: https://docs.opencoop.be
+        - button [ref=f10e201] [cursor=pointer]:
+          - generic [ref=f10e202]:
+            - paragraph [ref=f10e203]: Demo Admin
+            - paragraph [ref=f10e204]: admin@zonnecooperatie.be
+    - main [ref=f10e207]:
+      - generic [ref=f10e247]:
+        - heading "Zonnecoöperatie Vlaanderen - Overzicht" [level=1] [ref=f10e248]
+        - generic [ref=f10e249]:
+          - generic [ref=f10e250]:
+            - heading "Totaal aandeelhouders" [level=3] [ref=f10e252]
+            - generic [ref=f10e258]: "7"
+          - generic [ref=f10e260]:
+            - heading "Actieve aandeelhouders" [level=3] [ref=f10e262]
+            - generic [ref=f10e267]: "5"
+          - generic [ref=f10e269]:
+            - heading "Totaal kapitaal" [level=3] [ref=f10e271]
+            - generic [ref=f10e275]: € 7.750,00
+          - generic [ref=f10e277]:
+            - heading "In behandeling" [level=3] [ref=f10e279]
+            - generic [ref=f10e283]: "1"
+        - generic [ref=f10e285]:
+          - heading "Grafieken" [level=2] [ref=f10e286]
+          - tablist [ref=f10e288]:
+            - tab "Dagelijks" [ref=f10e289] [cursor=pointer]
+            - tab "Maandelijks" [selected] [ref=f10e290] [cursor=pointer]
+            - tab "Kwartaal" [ref=f10e291] [cursor=pointer]
+            - tab "Jaarlijks" [ref=f10e292] [cursor=pointer]
+            - tab "Alles" [ref=f10e293] [cursor=pointer]
+        - generic [ref=f10e294]:
+          - generic [ref=f10e295]:
+            - heading "Kapitaal over tijd" [level=3] [ref=f10e297]
+            - generic [ref=f10e298]: Nog geen gegevens beschikbaar
+          - generic [ref=f10e300]:
+            - heading "Kapitaal per project" [level=3] [ref=f10e302]
+            - generic [ref=f10e304]:
+              - generic [ref=f10e305]:
+                - application [ref=f10e308]
+                - generic:
+                  - generic:
+                    - paragraph: Totaal
+                    - paragraph: € 7.750,00
+              - generic [ref=f10e316]:
+                - generic [ref=f10e317]: Zonnepark Gent-Zuid
+                - generic [ref=f10e320]: Windturbine Oostende
+          - generic [ref=f10e323]:
+            - heading "Groei aandeelhouders" [level=3] [ref=f10e325]
+            - generic [ref=f10e326]: Nog geen gegevens beschikbaar
+          - generic [ref=f10e328]:
+            - heading "Transactieactiviteit" [level=3] [ref=f10e330]
+            - generic [ref=f10e331]: Nog geen gegevens beschikbaar
+    - button "Feedback geven" [ref=f10e246] [cursor=pointer]
+  - generic [ref=f10e36]:
+    - paragraph [ref=f10e39]:
+      - text: Deze website gebruikt enkel essentiële cookies voor de werking van het platform. Er worden geen tracking- of advertentiecookies gebruikt.
+      - link "Meer info" [ref=f10e40] [cursor=pointer]:
+        - /url: /nl/privacy
+    - button "OK" [ref=f10e41] [cursor=pointer]
+    - button "Close" [ref=f10e42] [cursor=pointer]
