@@ -40,47 +40,55 @@ describe('ChargeCardsAdminController permissions', () => {
     }
   });
 
-  it('requires canManageShareholders on every POST route', () => {
-    const posts = routeHandlers().filter(
-      (name) => Reflect.getMetadata(METHOD_METADATA, proto[name] as object) === RequestMethod.POST,
-    );
-    expect(posts.sort()).toEqual(
-      [
-        'block',
-        'cancel',
-        'issue',
-        'markLost',
-        'markPaid',
-        'markProviderSyncDone',
-        'unblock',
-      ].sort(),
-    );
-    for (const name of posts) {
-      expect({ name, all: Reflect.getMetadata(PERMISSIONS_KEY, proto[name] as object) }).toEqual({
-        name,
-        all: ['canManageShareholders'],
-      });
-      expect(Reflect.getMetadata(ANY_PERMISSIONS_KEY, proto[name] as object)).toBeUndefined();
-    }
+  // Every route, with the exact permission metadata it must carry.
+  // all: every listed permission is required. any: one of them is enough.
+  const HAND_OUT = { all: undefined, any: ['canManageChargeCards', 'canManageShareholders'] };
+  const MANAGE_ONLY = { all: ['canManageShareholders'], any: undefined };
+  const ROUTES: Record<string, { method: RequestMethod; all?: string[]; any?: string[] }> = {
+    list: {
+      method: RequestMethod.GET,
+      all: undefined,
+      any: ['canViewChargeCards', 'canManageChargeCards', 'canManageShareholders'],
+    },
+    issue: { method: RequestMethod.POST, ...HAND_OUT },
+    markPaid: { method: RequestMethod.POST, ...HAND_OUT },
+    block: { method: RequestMethod.POST, ...MANAGE_ONLY },
+    unblock: { method: RequestMethod.POST, ...MANAGE_ONLY },
+    markLost: { method: RequestMethod.POST, ...MANAGE_ONLY },
+    markProviderSyncDone: { method: RequestMethod.POST, ...MANAGE_ONLY },
+    cancel: { method: RequestMethod.POST, ...MANAGE_ONLY },
+  };
+
+  it('lists every route in the permission table', () => {
+    expect(routeHandlers().sort()).toEqual(Object.keys(ROUTES).sort());
   });
 
-  it('lets canViewChargeCards or canManageShareholders read the list', () => {
-    const list = ChargeCardsAdminController.prototype.list;
-    expect(Reflect.getMetadata(METHOD_METADATA, list)).toBe(RequestMethod.GET);
-    expect(Reflect.getMetadata(PERMISSIONS_KEY, list)).toBeUndefined();
-    expect(Reflect.getMetadata(ANY_PERMISSIONS_KEY, list)).toEqual([
-      'canViewChargeCards',
-      'canManageShareholders',
-    ]);
+  it.each(Object.entries(ROUTES))('gives %s exactly its permissions', (name, expected) => {
+    const handler = proto[name] as object;
+    expect({
+      method: Reflect.getMetadata(METHOD_METADATA, handler),
+      all: Reflect.getMetadata(PERMISSIONS_KEY, handler),
+      any: Reflect.getMetadata(ANY_PERMISSIONS_KEY, handler),
+    }).toEqual(expected);
   });
 });
 
-describe('ChargeCardsAdminController.markPaid through PermissionGuard', () => {
+describe('ChargeCardsAdminController through PermissionGuard', () => {
   const guard = new PermissionGuard(new Reflector());
+  const ALL_ROUTES = [
+    'list',
+    'issue',
+    'markPaid',
+    'block',
+    'unblock',
+    'markLost',
+    'markProviderSyncDone',
+    'cancel',
+  ];
 
-  function context(perms: Record<string, boolean>): ExecutionContext {
+  function context(handler: string, perms: Record<string, boolean>): ExecutionContext {
     return {
-      getHandler: () => ChargeCardsAdminController.prototype.markPaid,
+      getHandler: () => proto[handler],
       getClass: () => ChargeCardsAdminController,
       switchToHttp: () => ({
         getRequest: () => ({
@@ -91,14 +99,57 @@ describe('ChargeCardsAdminController.markPaid through PermissionGuard', () => {
     } as unknown as ExecutionContext;
   }
 
-  it('answers 403 to a view-only admin (canViewChargeCards only)', () => {
-    expect(() =>
-      guard.canActivate(context({ canViewChargeCards: true, canManageShareholders: false })),
-    ).toThrow(ForbiddenException);
+  function allowed(handler: string, perms: Record<string, boolean>): boolean {
+    try {
+      return guard.canActivate(context(handler, perms)) === true;
+    } catch (error) {
+      if (error instanceof ForbiddenException) return false;
+      throw error;
+    }
+  }
+
+  function outcomes(perms: Record<string, boolean>): Record<string, boolean> {
+    return Object.fromEntries(ALL_ROUTES.map((name) => [name, allowed(name, perms)]));
+  }
+
+  it('lets canManageChargeCards alone list, issue and mark paid, and nothing else', () => {
+    expect(outcomes({ canManageChargeCards: true, canManageShareholders: false })).toEqual({
+      list: true,
+      issue: true,
+      markPaid: true,
+      block: false,
+      unblock: false,
+      markLost: false,
+      markProviderSyncDone: false,
+      cancel: false,
+    });
   });
 
-  it('lets an admin with canManageShareholders through', () => {
-    expect(guard.canActivate(context({ canManageShareholders: true }))).toBe(true);
+  it('lets canViewChargeCards alone only list', () => {
+    expect(outcomes({ canViewChargeCards: true, canManageShareholders: false })).toEqual({
+      list: true,
+      issue: false,
+      markPaid: false,
+      block: false,
+      unblock: false,
+      markLost: false,
+      markProviderSyncDone: false,
+      cancel: false,
+    });
+  });
+
+  it('answers 403 everywhere to an admin without permissions', () => {
+    const none: Record<string, boolean>[] = [
+      {},
+      { canViewChargeCards: false, canManageChargeCards: false },
+    ];
+    for (const perms of none) {
+      expect(Object.values(outcomes(perms)).every((ok) => !ok)).toBe(true);
+    }
+  });
+
+  it('lets canManageShareholders alone do everything', () => {
+    expect(Object.values(outcomes({ canManageShareholders: true })).every(Boolean)).toBe(true);
   });
 });
 

@@ -90,6 +90,9 @@ describe('isPermitted', () => {
     expect(isPermitted({}, 'canViewChargeCards')).toBe(false);
     expect(isPermitted({ canViewChargeCards: false }, 'canViewChargeCards')).toBe(false);
     expect(isPermitted({ canViewChargeCards: true }, 'canViewChargeCards')).toBe(true);
+    expect(LEGACY_DEFAULT_TRUE.has('canManageChargeCards')).toBe(false);
+    expect(isPermitted({}, 'canManageChargeCards')).toBe(false);
+    expect(isPermitted({ canManageChargeCards: true }, 'canManageChargeCards')).toBe(true);
     expect(isPermitted({ canViewReports: true }, 'canViewReports')).toBe(true);
   });
 });

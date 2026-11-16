@@ -114,9 +114,15 @@ describe('McpChargeCardTools', () => {
     });
   });
 
-  it('refuses a key without canViewChargeCards or canManageShareholders', async () => {
+  it('lets canManageChargeCards alone list the cards', async () => {
+    permissions.permissions.mockResolvedValue({ canManageChargeCards: true, canViewPII: true });
+    await expect(tools.listChargeCards({})).resolves.toEqual([EXPECTED]);
+  });
+
+  it('refuses a key without canViewChargeCards, canManageChargeCards or canManageShareholders', async () => {
     permissions.permissions.mockResolvedValue({
       canViewChargeCards: false,
+      canManageChargeCards: false,
       canViewPII: true,
       canViewReports: true,
     });

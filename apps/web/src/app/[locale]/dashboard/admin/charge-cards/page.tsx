@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/table';
 import { formatCurrency } from '@opencoop/shared';
 import { Loader2 } from 'lucide-react';
+import { chargeCardActions } from '@/lib/charge-card-admin-actions';
 
 type CardStatus = 'REQUESTED' | 'PAID' | 'ACTIVE' | 'BLOCKED' | 'CANCELLED';
 type Filter = 'ALL' | CardStatus | 'TODO';
@@ -91,7 +92,10 @@ export default function AdminChargeCardsPage() {
   const { locale } = useLocale();
   const { selectedCoop } = useAdmin();
   const { hasPermission } = usePermissions();
-  const canManage = hasPermission('canManageShareholders');
+  // canManageShareholders allows every card action and the link to the shareholder.
+  // canManageChargeCards allows only handing cards out: mark paid and issue.
+  const canManageAll = hasPermission('canManageShareholders');
+  const canHandOut = canManageAll || hasPermission('canManageChargeCards');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [cards, setCards] = useState<AdminChargeCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,7 +130,7 @@ export default function AdminChargeCardsPage() {
   }, [load]);
 
   const act = async (card: AdminChargeCard, action: AdminAction) => {
-    if (!selectedCoop || !canManage) return;
+    if (!selectedCoop || !canManageAll) return;
     // A cancel on a card that already holds a payment doesn't refund it:
     // the coop must do that by hand outside OpenCoop. Warn before letting
     // the admin cancel that one; every other action keeps the plain confirm.
@@ -147,7 +151,7 @@ export default function AdminChargeCardsPage() {
   };
 
   const submitIssue = async () => {
-    if (!selectedCoop || !issuing || !canManage) return;
+    if (!selectedCoop || !issuing || !canHandOut) return;
     setBusy(true);
     try {
       await api(`/admin/coops/${selectedCoop.id}/charge-cards/${issuing.id}/issue`, {
@@ -172,7 +176,7 @@ export default function AdminChargeCardsPage() {
   };
 
   const submitMarkPaid = async () => {
-    if (!selectedCoop || !markingPaid || !canManage || !paidAt) return;
+    if (!selectedCoop || !markingPaid || !canHandOut || !paidAt) return;
     setBusy(true);
     try {
       const note = paymentNote.trim();
@@ -239,159 +243,165 @@ export default function AdminChargeCardsPage() {
                   <TableHead className="text-right">{t('admin.paid')}</TableHead>
                   <TableHead>{t('admin.cardNumber')}</TableHead>
                   <TableHead>{t('admin.waiting')}</TableHead>
-                  {canManage && <TableHead>{t('admin.actions')}</TableHead>}
+                  {canHandOut && <TableHead>{t('admin.actions')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cards.map((card) => (
-                  <TableRow
-                    key={card.id}
-                    className={card.overdue ? 'bg-red-50 dark:bg-red-950/30' : undefined}
-                  >
-                    <TableCell>
-                      {canManage && card.shareholderId ? (
-                        <Link
-                          href={`/dashboard/admin/shareholders/${card.shareholderId}`}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {card.shareholderName || '—'}
-                        </Link>
-                      ) : (
-                        <span className="font-medium">{card.shareholderName || '—'}</span>
-                      )}
-                      {(card.shareholderNumber != null || card.shareholderEmail) && (
-                        <div className="text-xs text-muted-foreground">
-                          {card.shareholderNumber != null && <span>#{card.shareholderNumber}</span>}
-                          {card.shareholderNumber != null && card.shareholderEmail && ' · '}
-                          {card.shareholderEmail && <span>{card.shareholderEmail}</span>}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {card.label || '—'}
-                      {card.isReplacement && (
-                        <Badge variant="outline" className="ml-2">
-                          {t('replacement')}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        <Badge
-                          variant={
-                            card.status === 'BLOCKED'
-                              ? 'destructive'
-                              : card.status === 'ACTIVE'
-                                ? 'default'
-                                : 'secondary'
-                          }
-                        >
-                          {t(`status.${card.status}`)}
-                          {card.blockReason ? ` · ${t(`blockReason.${card.blockReason}`)}` : ''}
-                        </Badge>
-                        {card.providerSyncNeeded && (
-                          <Badge variant="outline">{t('admin.todo')}</Badge>
+                {cards.map((card) => {
+                  const shown = new Set(chargeCardActions(card, { canManageAll, canHandOut }));
+                  return (
+                    <TableRow
+                      key={card.id}
+                      className={card.overdue ? 'bg-red-50 dark:bg-red-950/30' : undefined}
+                    >
+                      <TableCell>
+                        {canManageAll && card.shareholderId ? (
+                          <Link
+                            href={`/dashboard/admin/shareholders/${card.shareholderId}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {card.shareholderName || '—'}
+                          </Link>
+                        ) : (
+                          <span className="font-medium">{card.shareholderName || '—'}</span>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">{card.ogmCode}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(card.feeInclVat, locale)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(card.totalPaid, locale)}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">{card.cardNumber ?? '—'}</TableCell>
-                    <TableCell>
-                      {card.waitingWorkingDays === null ? (
-                        '—'
-                      ) : (
-                        <span
-                          className={
-                            card.overdue ? 'font-medium text-red-700 dark:text-red-400' : undefined
-                          }
-                        >
-                          {t('admin.workingDays', { days: card.waitingWorkingDays })}
-                          {card.overdue ? ` · ${t('admin.overdue')}` : ''}
-                        </span>
-                      )}
-                    </TableCell>
-                    {canManage && (
+                        {(card.shareholderNumber != null || card.shareholderEmail) && (
+                          <div className="text-xs text-muted-foreground">
+                            {card.shareholderNumber != null && (
+                              <span>#{card.shareholderNumber}</span>
+                            )}
+                            {card.shareholderNumber != null && card.shareholderEmail && ' · '}
+                            {card.shareholderEmail && <span>{card.shareholderEmail}</span>}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {card.label || '—'}
+                        {card.isReplacement && (
+                          <Badge variant="outline" className="ml-2">
+                            {t('replacement')}
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {card.status === 'REQUESTED' && (
-                            <Button size="sm" disabled={busy} onClick={() => openMarkPaid(card)}>
-                              {t('admin.markPaid')}
-                            </Button>
-                          )}
-                          {card.status === 'PAID' && (
-                            <Button
-                              size="sm"
-                              disabled={busy}
-                              onClick={() => {
-                                setIssuing(card);
-                                setCardNumber('');
-                              }}
-                            >
-                              {t('admin.issue')}
-                            </Button>
-                          )}
-                          {card.status === 'ACTIVE' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => act(card, 'block')}
-                            >
-                              {t('admin.block')}
-                            </Button>
-                          )}
-                          {card.status === 'BLOCKED' && card.blockReason === 'ADMIN' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => act(card, 'unblock')}
-                            >
-                              {t('admin.unblock')}
-                            </Button>
-                          )}
-                          {(card.status === 'ACTIVE' ||
-                            (card.status === 'BLOCKED' && card.blockReason !== 'LOST')) && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              disabled={busy}
-                              onClick={() => act(card, 'mark-lost')}
-                            >
-                              {t('admin.markLost')}
-                            </Button>
-                          )}
-                          {(card.status === 'REQUESTED' || card.status === 'PAID') && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              disabled={busy}
-                              onClick={() => act(card, 'cancel')}
-                            >
-                              {t('admin.cancel')}
-                            </Button>
-                          )}
+                          <Badge
+                            variant={
+                              card.status === 'BLOCKED'
+                                ? 'destructive'
+                                : card.status === 'ACTIVE'
+                                  ? 'default'
+                                  : 'secondary'
+                            }
+                          >
+                            {t(`status.${card.status}`)}
+                            {card.blockReason ? ` · ${t(`blockReason.${card.blockReason}`)}` : ''}
+                          </Badge>
                           {card.providerSyncNeeded && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              disabled={busy}
-                              onClick={() => act(card, 'provider-sync-done')}
-                            >
-                              {t('admin.syncDone')}
-                            </Button>
+                            <Badge variant="outline">{t('admin.todo')}</Badge>
                           )}
                         </div>
                       </TableCell>
-                    )}
-                  </TableRow>
-                ))}
+                      <TableCell className="font-mono text-xs">{card.ogmCode}</TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(card.feeInclVat, locale)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(card.totalPaid, locale)}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{card.cardNumber ?? '—'}</TableCell>
+                      <TableCell>
+                        {card.waitingWorkingDays === null ? (
+                          '—'
+                        ) : (
+                          <span
+                            className={
+                              card.overdue
+                                ? 'font-medium text-red-700 dark:text-red-400'
+                                : undefined
+                            }
+                          >
+                            {t('admin.workingDays', { days: card.waitingWorkingDays })}
+                            {card.overdue ? ` · ${t('admin.overdue')}` : ''}
+                          </span>
+                        )}
+                      </TableCell>
+                      {canHandOut && (
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {shown.has('mark-paid') && (
+                              <Button size="sm" disabled={busy} onClick={() => openMarkPaid(card)}>
+                                {t('admin.markPaid')}
+                              </Button>
+                            )}
+                            {shown.has('issue') && (
+                              <Button
+                                size="sm"
+                                disabled={busy}
+                                onClick={() => {
+                                  setIssuing(card);
+                                  setCardNumber('');
+                                }}
+                              >
+                                {t('admin.issue')}
+                              </Button>
+                            )}
+                            {shown.has('block') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() => act(card, 'block')}
+                              >
+                                {t('admin.block')}
+                              </Button>
+                            )}
+                            {shown.has('unblock') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() => act(card, 'unblock')}
+                              >
+                                {t('admin.unblock')}
+                              </Button>
+                            )}
+                            {shown.has('mark-lost') && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={busy}
+                                onClick={() => act(card, 'mark-lost')}
+                              >
+                                {t('admin.markLost')}
+                              </Button>
+                            )}
+                            {shown.has('cancel') && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={busy}
+                                onClick={() => act(card, 'cancel')}
+                              >
+                                {t('admin.cancel')}
+                              </Button>
+                            )}
+                            {shown.has('provider-sync-done') && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                disabled={busy}
+                                onClick={() => act(card, 'provider-sync-done')}
+                              >
+                                {t('admin.syncDone')}
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -399,7 +409,7 @@ export default function AdminChargeCardsPage() {
       </Card>
 
       <Dialog
-        open={canManage && issuing !== null}
+        open={canHandOut && issuing !== null}
         onOpenChange={(open) => !open && setIssuing(null)}
       >
         <DialogContent>
@@ -426,7 +436,7 @@ export default function AdminChargeCardsPage() {
       </Dialog>
 
       <Dialog
-        open={canManage && markingPaid !== null}
+        open={canHandOut && markingPaid !== null}
         onOpenChange={(open) => !open && setMarkingPaid(null)}
       >
         <DialogContent>

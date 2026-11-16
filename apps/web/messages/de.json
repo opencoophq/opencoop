@@ -1124,7 +1124,8 @@
       "canViewReports": "Berichte einsehen",
       "canViewShareholderRegister": "Anteilseignerregister einsehen",
       "canViewVolunteers": "Freiwillige ansehen und kontaktieren",
-      "canViewChargeCards": "Ladekarten ansehen (wer registriert hat)"
+      "canViewChargeCards": "Ladekarten ansehen (wer registriert hat)",
+      "canManageChargeCards": "Ladekarten verwalten (als bezahlt markieren und ausgeben)"
     },
     "billing": {
       "title": "Abrechnung",

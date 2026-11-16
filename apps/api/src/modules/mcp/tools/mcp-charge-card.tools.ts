@@ -32,12 +32,12 @@ export class McpChargeCardTools {
   @Tool({
     name: 'list_charge_cards',
     description:
-      'List the charge cards (laadpassen) of this coop, oldest request first, with the shareholder who registered each card: name, email and member number. Filter by status or by pending provider-portal change. Read-only. Requires canViewChargeCards or canManageShareholders. Without canViewPII, name and email are masked.',
+      'List the charge cards (laadpassen) of this coop, oldest request first, with the shareholder who registered each card: name, email and member number. Filter by status or by pending provider-portal change. Read-only. Requires canViewChargeCards, canManageChargeCards or canManageShareholders. Without canViewPII, name and email are masked.',
     parameters: listChargeCardsParameters,
   })
   async listChargeCards(params: ListChargeCardsParams) {
     return this.toolkit.run(
-      { anyPermission: ['canViewChargeCards', 'canManageShareholders'] },
+      { anyPermission: ['canViewChargeCards', 'canManageChargeCards', 'canManageShareholders'] },
       params,
       async (ctx) => {
         const rows = await this.chargeCards.list(ctx.coopId, {

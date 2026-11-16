@@ -278,7 +278,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           icon: <Users className="h-4 w-4" />,
           badge: adminStats?.pendingShareholders,
         },
-        (hasPermission('canManageShareholders') || hasPermission('canViewChargeCards')) &&
+        (hasPermission('canManageShareholders') ||
+          hasPermission('canViewChargeCards') ||
+          hasPermission('canManageChargeCards')) &&
           (selectedCoop.chargeCardsEnabled || selectedCoop.hasChargeCards) && {
             href: '/dashboard/admin/charge-cards',
             label: t('chargeCards.admin.title'),

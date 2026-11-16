@@ -17,6 +17,14 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+### Added
+
+- **Permission `canManageChargeCards` (Laadpassen beheren).** A coop admin role with this permission can mark a requested charge card as paid and issue a paid card (record the card number, activate it, email the shareholder). It also sees the charge card list. Block, unblock, mark lost, provider sync and cancel still need `canManageShareholders`. The permission is off on every default role; admins with `canManageShareholders` keep all actions. The MCP tool `list_charge_cards` accepts it too.
+
+### Fixed
+
+- **Migration for the EcoPower columns.** The `EcoPowerThresholdType` enum and the columns `coops.ecoPowerEnabled`, `ecoPowerMinThreshold`, `ecoPowerMinThresholdType`, `shareholders.isEcoPowerClient` and `ecoPowerId` were in the schema without a migration. Migration `20261116180000_ecopower_columns` adds them with `IF NOT EXISTS`. Prod and acc already have them, so it changes nothing there.
+
 ## [2026.47.1] - 2026-11-16
 
 ### Added

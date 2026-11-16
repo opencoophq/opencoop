@@ -23,12 +23,13 @@ import { ListChargeCardsQueryDto } from './dto/list-charge-cards.query';
 @UseGuards(JwtAuthGuard, RolesGuard, CoopGuard, SubscriptionGuard, PermissionGuard)
 @Roles('COOP_ADMIN', 'SYSTEM_ADMIN')
 // No class-level permission: each handler states its own, and a spec checks
-// that none is missing. Reads take either permission; writes need canManageShareholders.
+// that none is missing. Reads take any of three permissions. Issue and mark-paid
+// take canManageChargeCards or canManageShareholders. Other writes need canManageShareholders.
 export class ChargeCardsAdminController {
   constructor(private readonly admin: ChargeCardsAdminService) {}
 
   @Get()
-  @RequireAnyPermission('canViewChargeCards', 'canManageShareholders')
+  @RequireAnyPermission('canViewChargeCards', 'canManageChargeCards', 'canManageShareholders')
   @ApiOperation({
     summary: 'List charge cards with waiting time; filter by status or provider to-do',
   })
@@ -46,7 +47,7 @@ export class ChargeCardsAdminController {
     return canViewPII ? rows : rows.map(maskShareholderRowPII);
   }
 
-  @RequirePermission('canManageShareholders')
+  @RequireAnyPermission('canManageChargeCards', 'canManageShareholders')
   @Post(':id/issue')
   @ApiOperation({
     summary: 'Issue a paid card: record its number, activate it, email the shareholder',
@@ -55,7 +56,7 @@ export class ChargeCardsAdminController {
     return this.admin.issue(coopId, id, dto.cardNumber);
   }
 
-  @RequirePermission('canManageShareholders')
+  @RequireAnyPermission('canManageChargeCards', 'canManageShareholders')
   @Post(':id/mark-paid')
   @ApiOperation({
     summary: 'Record a payment made outside the bank import and mark a requested card paid',

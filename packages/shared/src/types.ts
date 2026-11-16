@@ -52,6 +52,7 @@ export interface CoopPermissions {
   canViewShareholderRegister: boolean;
   canViewVolunteers: boolean;
   canViewChargeCards: boolean;
+  canManageChargeCards: boolean;
 }
 
 export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
@@ -70,6 +71,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewShareholderRegister: true,
     canViewVolunteers: false,
     canViewChargeCards: false,
+    canManageChargeCards: false,
   },
   Viewer: {
     canManageShareholders: false,
@@ -86,6 +88,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewShareholderRegister: true,
     canViewVolunteers: false,
     canViewChargeCards: false,
+    canManageChargeCards: false,
   },
   'Meeting Admin': {
     // Run AGMs without seeing or changing financial / shareholder data.
@@ -103,6 +106,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewShareholderRegister: true, // needs the register to verify proxies
     canViewVolunteers: false,
     canViewChargeCards: false,
+    canManageChargeCards: false,
   },
   'GDPR Viewer': {
     canManageShareholders: false,
@@ -119,6 +123,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewShareholderRegister: false,
     canViewVolunteers: false,
     canViewChargeCards: false,
+    canManageChargeCards: false,
   },
   'GDPR Admin': {
     canManageShareholders: false,
@@ -135,6 +140,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewShareholderRegister: false,
     canViewVolunteers: false,
     canViewChargeCards: false,
+    canManageChargeCards: false,
   },
 };
 
