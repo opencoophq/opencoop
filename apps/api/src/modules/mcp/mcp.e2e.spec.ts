@@ -342,7 +342,10 @@ const toolProviders = [
     { provide: ShareholdersService, useValue: shareholdersService },
     { provide: HouseholdService, useValue: householdService },
     { provide: RegistrationsService, useValue: registrationsService },
-    { provide: ShareTransferService, useValue: { previewTransfer: jest.fn(), transferShares: jest.fn() } },
+    {
+      provide: ShareTransferService,
+      useValue: { previewTransfer: jest.fn(), transferShares: jest.fn() },
+    },
     { provide: PaymentsService, useValue: paymentsService },
     { provide: AnalyticsService, useValue: analyticsService },
     { provide: ReportsService, useValue: reportsService },

@@ -1,4 +1,10 @@
-import { Injectable, Inject, forwardRef, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  forwardRef,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { computeTotalPaid, computeVestedShares } from '@opencoop/shared';
@@ -275,14 +281,14 @@ export class RegistrationsService {
     if (coop.ecoPowerMinThresholdType === 'EURO' && projectedValue < threshold) {
       throw new BadRequestException(
         `Cannot sell: shareholder is an Ecopower client and must maintain at least €${threshold}. ` +
-        `Current: €${currentValue.toFixed(2)}, after sale: €${projectedValue.toFixed(2)}.`,
+          `Current: €${currentValue.toFixed(2)}, after sale: €${projectedValue.toFixed(2)}.`,
       );
     }
 
     if (coop.ecoPowerMinThresholdType === 'SHARES' && projectedShares < threshold) {
       throw new BadRequestException(
         `Cannot sell: shareholder is an Ecopower client and must maintain at least ${threshold} shares. ` +
-        `Current: ${currentShares}, after sale: ${projectedShares}.`,
+          `Current: ${currentShares}, after sale: ${projectedShares}.`,
       );
     }
   }
@@ -373,40 +379,52 @@ export class RegistrationsService {
       });
     });
 
-    const shareholderName = shareholder.companyName
-      || [shareholder.firstName, shareholder.lastName].filter(Boolean).join(' ');
+    const shareholderName =
+      shareholder.companyName ||
+      [shareholder.firstName, shareholder.lastName].filter(Boolean).join(' ');
 
     // Send payment info email (only if shareholder has resolvable email and coop has email enabled)
     const shareholderEmailForBuy = resolveShareholderEmail(shareholder);
     if (shareholderEmailForBuy && coop.emailEnabled) {
-      this.emailService.sendSharePurchaseConfirmation(data.coopId, shareholderEmailForBuy, {
-        shareholderName,
-        shareClassName: shareClass.name,
-        quantity: data.quantity,
-        totalAmount,
-        ogmCode: registration.ogmCode ?? undefined,
-        bankIban: coop.bankIban ?? undefined,
-        bankBic: coop.bankBic ?? undefined,
-      }).catch((err) => {
-        console.error('Failed to send share purchase confirmation email:', err);
-      });
+      this.emailService
+        .sendSharePurchaseConfirmation(data.coopId, shareholderEmailForBuy, {
+          shareholderName,
+          shareClassName: shareClass.name,
+          quantity: data.quantity,
+          totalAmount,
+          ogmCode: registration.ogmCode ?? undefined,
+          bankIban: coop.bankIban ?? undefined,
+          bankBic: coop.bankBic ?? undefined,
+        })
+        .catch((err) => {
+          console.error('Failed to send share purchase confirmation email:', err);
+        });
     }
 
     // Check if this is a first-time shareholder (new_shareholder event)
     const priorBuyCount = await this.prisma.registration.count({
-      where: { coopId: data.coopId, shareholderId: data.shareholderId, type: 'BUY', id: { not: registration.id } },
+      where: {
+        coopId: data.coopId,
+        shareholderId: data.shareholderId,
+        type: 'BUY',
+        id: { not: registration.id },
+      },
     });
     if (priorBuyCount === 0) {
-      this.adminNotificationsService.notifyAdminsOnEvent(data.coopId, 'new_shareholder', { shareholderName }).catch(() => {});
+      this.adminNotificationsService
+        .notifyAdminsOnEvent(data.coopId, 'new_shareholder', { shareholderName })
+        .catch(() => {});
     }
 
     // Notify admins of share purchase
-    this.adminNotificationsService.notifyAdminsOnEvent(data.coopId, 'share_purchase', {
-      shareholderName,
-      shareClassName: shareClass.name,
-      quantity: data.quantity,
-      totalAmount,
-    }).catch(() => {});
+    this.adminNotificationsService
+      .notifyAdminsOnEvent(data.coopId, 'share_purchase', {
+        shareholderName,
+        shareClassName: shareClass.name,
+        quantity: data.quantity,
+        totalAmount,
+      })
+      .catch(() => {});
 
     return registration;
   }
@@ -442,8 +460,11 @@ export class RegistrationsService {
       select: { bankIban: true, bankBic: true },
     });
 
-    const shareholderName = registration.shareholder.companyName
-      || [registration.shareholder.firstName, registration.shareholder.lastName].filter(Boolean).join(' ');
+    const shareholderName =
+      registration.shareholder.companyName ||
+      [registration.shareholder.firstName, registration.shareholder.lastName]
+        .filter(Boolean)
+        .join(' ');
 
     await this.emailService.sendSharePurchaseConfirmation(coopId, resolvedEmail, {
       shareholderName,
@@ -497,7 +518,12 @@ export class RegistrationsService {
     }
 
     // Ecopower exit guard
-    await this.checkEcoPowerThreshold(data.coopId, data.shareholderId, data.quantity, pricePerShare);
+    await this.checkEcoPowerThreshold(
+      data.coopId,
+      data.shareholderId,
+      data.quantity,
+      pricePerShare,
+    );
 
     const totalAmount = data.quantity * pricePerShare;
 
@@ -521,11 +547,13 @@ export class RegistrationsService {
     // Notify admins of share sale
     const sh = sellRegistration.shareholder;
     const shareholderName = sh.companyName || [sh.firstName, sh.lastName].filter(Boolean).join(' ');
-    this.adminNotificationsService.notifyAdminsOnEvent(data.coopId, 'share_sell', {
-      shareholderName,
-      shareClassName: buyRegistration.shareClass.name,
-      quantity: data.quantity,
-    }).catch(() => {});
+    this.adminNotificationsService
+      .notifyAdminsOnEvent(data.coopId, 'share_sell', {
+        shareholderName,
+        shareClassName: buyRegistration.shareClass.name,
+        quantity: data.quantity,
+      })
+      .catch(() => {});
 
     return sellRegistration;
   }
@@ -551,10 +579,7 @@ export class RegistrationsService {
   async complete(id: string, processedByUserId: string, paymentDate?: Date, coopId?: string) {
     const registration = await this.findById(id, coopId);
 
-    if (
-      registration.status !== 'PENDING_PAYMENT' &&
-      registration.status !== 'ACTIVE'
-    ) {
+    if (registration.status !== 'PENDING_PAYMENT' && registration.status !== 'ACTIVE') {
       throw new BadRequestException(
         'Only pending_payment or active registrations can be completed',
       );
@@ -619,7 +644,9 @@ export class RegistrationsService {
     const registration = await this.findById(id, coopId);
 
     if (registration.status !== 'COMPLETED') {
-      throw new BadRequestException('Only completed registrations can have their payment date updated');
+      throw new BadRequestException(
+        'Only completed registrations can have their payment date updated',
+      );
     }
 
     await this.prisma.payment.updateMany({
@@ -685,7 +712,9 @@ export class RegistrationsService {
     if (registration.type === 'BUY') {
       // S4: Throw if coop bank details not configured
       if (!coop?.bankIban) {
-        throw new BadRequestException('Cooperative bank account (IBAN) must be configured before generating payment details');
+        throw new BadRequestException(
+          'Cooperative bank account (IBAN) must be configured before generating payment details',
+        );
       }
 
       return {
@@ -760,7 +789,12 @@ export class RegistrationsService {
     }
 
     // Ecopower exit guard (applies to from-shareholder only)
-    await this.checkEcoPowerThreshold(data.coopId, data.fromShareholderId, data.quantity, pricePerShare);
+    await this.checkEcoPowerThreshold(
+      data.coopId,
+      data.fromShareholderId,
+      data.quantity,
+      pricePerShare,
+    );
 
     const totalAmount = data.quantity * pricePerShare;
     const now = new Date();
@@ -915,13 +949,17 @@ export class RegistrationsService {
       const dashboardUrl = `${appUrl}/${language}/dashboard`;
 
       try {
-        await this.emailService.sendPaymentConfirmation(registration.coopId, resolvedEmailForCompleted, {
-          shareholderName,
-          amount: Number(registration.totalAmount),
-          certificatePath,
-          dashboardUrl,
-          language,
-        });
+        await this.emailService.sendPaymentConfirmation(
+          registration.coopId,
+          resolvedEmailForCompleted,
+          {
+            shareholderName,
+            amount: Number(registration.totalAmount),
+            certificatePath,
+            dashboardUrl,
+            language,
+          },
+        );
       } catch (err) {
         console.error('Failed to send payment confirmation email:', err);
       }

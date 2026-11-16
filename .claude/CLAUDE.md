@@ -5,6 +5,7 @@
 OpenCoop is a **multi-tenant SaaS platform** for managing cooperative shareholding. It enables cooperatives to manage shareholders, share classes, transactions, dividends, and document generation.
 
 **Key domain concepts:**
+
 - **Coop**: A cooperative organization (tenant) with its own branding, settings, and shareholders
 - **Shareholder**: Member of a coop (INDIVIDUAL, COMPANY, or MINOR type)
 - **Share**: Equity unit owned by shareholders, organized by ShareClass
@@ -13,15 +14,15 @@ OpenCoop is a **multi-tenant SaaS platform** for managing cooperative shareholdi
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| **Monorepo** | pnpm workspaces + Turbo |
-| **Backend** | NestJS 10, Prisma 6, PostgreSQL 16 |
-| **Frontend** | Next.js 14 (App Router), React 18, Tailwind CSS |
-| **Auth** | JWT (Passport.js) on the API; access/refresh tokens in localStorage on the web (see `lib/api.ts`) |
-| **Queue** | Bull + Redis |
-| **i18n** | next-intl (EN/NL/FR/DE) |
-| **PDF** | @react-pdf/renderer |
+| Layer        | Technology                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| **Monorepo** | pnpm workspaces + Turbo                                                                           |
+| **Backend**  | NestJS 10, Prisma 6, PostgreSQL 16                                                                |
+| **Frontend** | Next.js 14 (App Router), React 18, Tailwind CSS                                                   |
+| **Auth**     | JWT (Passport.js) on the API; access/refresh tokens in localStorage on the web (see `lib/api.ts`) |
+| **Queue**    | Bull + Redis                                                                                      |
+| **i18n**     | next-intl (EN/NL/FR/DE)                                                                           |
+| **PDF**      | @react-pdf/renderer                                                                               |
 
 ## Project Structure
 
@@ -103,23 +104,24 @@ app/[locale]/
 
 ## Key Files Reference
 
-| Purpose | Location |
-|---------|----------|
+| Purpose       | Location                                 |
+| ------------- | ---------------------------------------- |
 | Prisma schema | `packages/database/prisma/schema.prisma` |
-| API entry | `apps/api/src/main.ts` |
-| API modules | `apps/api/src/modules/` |
-| Auth guards | `apps/api/src/common/guards/` |
-| Web routes | `apps/web/src/app/[locale]/` |
-| UI components | `apps/web/src/components/ui/` |
-| Translations | `apps/web/messages/{en,nl,fr,de}.json` |
-| PDF templates | `packages/pdf-templates/src/templates/` |
-| Shared types | `packages/shared/src/types.ts` |
-| Changelog | `CHANGELOG.md` |
-| API helper | `apps/web/src/lib/api.ts` |
+| API entry     | `apps/api/src/main.ts`                   |
+| API modules   | `apps/api/src/modules/`                  |
+| Auth guards   | `apps/api/src/common/guards/`            |
+| Web routes    | `apps/web/src/app/[locale]/`             |
+| UI components | `apps/web/src/components/ui/`            |
+| Translations  | `apps/web/messages/{en,nl,fr,de}.json`   |
+| PDF templates | `packages/pdf-templates/src/templates/`  |
+| Shared types  | `packages/shared/src/types.ts`           |
+| Changelog     | `CHANGELOG.md`                           |
+| API helper    | `apps/web/src/lib/api.ts`                |
 
 ## Environment Variables
 
 Required in `.env`:
+
 ```
 DATABASE_URL=postgresql://...
 REDIS_URL=redis://...
@@ -130,6 +132,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
 Optional:
+
 ```
 LAUNCH_MODE=waitlist    # Set on prod to show waitlist dialog instead of onboarding links
 SENTRY_DSN=https://...  # Sentry error tracking DSN (API only, no-op if unset)
@@ -139,6 +142,7 @@ MCP_PUBLIC_URL=https://mcp.opencoop.be/mcp  # Web, runtime: MCP URL shown in adm
 ## Feature Flags
 
 ### `LAUNCH_MODE` (server-side, runtime)
+
 Controls whether the pricing page CTAs link to `/onboarding` or open a waitlist email collection dialog.
 
 - **Not set / `live`**: CTAs link to `/onboarding` (full signup flow)
@@ -204,54 +208,67 @@ The app has two separate localization concepts:
 2. **Formatting Locale** (`locale`): Controls date/number formatting (nl-BE, en-US, etc.)
 
 ### Key Files
+
 - `apps/web/src/contexts/locale-context.tsx` - Locale provider with `useLocale()` hook
 - `apps/web/src/app/[locale]/dashboard/settings/page.tsx` - User settings page
 
 ### Date Formatting
+
 Use `toLocaleDateString()` with the user's locale from `useLocale()`:
+
 ```typescript
 const { locale } = useLocale();
 const formatted = new Date(dateString).toLocaleDateString(locale);
 ```
 
 ### Currency Formatting
+
 Use `formatCurrency` from the shared package with the user's locale:
+
 ```typescript
 import { formatCurrency } from '@opencoop/shared';
 const { locale } = useLocale();
 const formatted = formatCurrency(amount, locale); // e.g., "€ 25,00"
 ```
+
 Do **not** use hardcoded `€ ${amount.toFixed(2)}` or `new Intl.NumberFormat('nl-BE', ...)`.
 
 ### Shared Components
+
 Reusable components shared between marketing and dashboard:
+
 - `apps/web/src/components/language-switcher.tsx` - Flag-based language switcher
 - `apps/web/src/components/theme-toggle.tsx` - Animated day/night theme toggle
 
 Marketing-specific wrappers re-export from shared location for backward compatibility.
 
 ### Known Limitation
+
 HTML5 `<input type="date">` ignores JavaScript locale settings and displays dates according to the browser's OS locale. To properly respect user locale preferences for date inputs, use a custom date picker component instead of native `<input type="date">`.
 
 ## Common Tasks
 
 ### Adding a new API endpoint
+
 1. Add route in controller (`apps/api/src/modules/<feature>/<feature>.controller.ts`)
 2. Implement logic in service (`<feature>.service.ts`)
 3. Create DTOs for request/response validation
 4. Add guards/decorators as needed
 
 ### Adding a new frontend page
+
 1. Create route in `apps/web/src/app/[locale]/dashboard/<route>/page.tsx`
 2. Add translations in all 4 locale files: `apps/web/messages/{en,nl,fr,de}.json`
 3. Use existing UI components from `components/ui/`
 
 ### Database schema changes
+
 1. Edit `packages/database/prisma/schema.prisma`
 2. Run `pnpm db:generate` to update client
 3. Run `pnpm db:push` (dev) or create migration (prod)
 
 ### Releasing changes
+
 1. Push to `main` (auto-deploys to acc.opencoop.be)
 2. Tag with `v*` for prod (e.g., `git tag -a v0.1.22 -m "description" && git push origin v0.1.22`)
 3. **Update `CHANGELOG.md`** in the repo root with the new version entry before or alongside the commit
@@ -259,6 +276,7 @@ HTML5 `<input type="date">` ignores JavaScript locale settings and displays date
 ## Demo Coop (Production)
 
 A demo coop exists in production for showcasing the platform:
+
 - **Coop**: Zonnecoöperatie Vlaanderen (slug: `demo`, `emailEnabled: false`)
 - **Coop admin login**: `admin@zonnecooperatie.be` / `demo1234`
 - **Shareholder login**: `jan.peeters@email.be` / `demo1234`
@@ -268,6 +286,7 @@ A demo coop exists in production for showcasing the platform:
 
 CI/CD builds GHCR Docker images via GitHub Actions, then deploys them over SSH to fsn1
 (push to `main` → acc, tag `v*` → prod). The stack runs under Docker Compose:
+
 - PostgreSQL 16
 - Redis 7
 - NestJS API (multi-stage build)
@@ -277,15 +296,14 @@ CI/CD builds GHCR Docker images via GitHub Actions, then deploys them over SSH t
 
 Caddy routes these hostnames to the containers (DNS is in Cloudflare, proxied):
 
-| Host | Target |
-|------|--------|
-| `opencoop.be`, `acc.opencoop.be` | web; `/api/*` goes to the API with the `/api` prefix stripped |
-| `api.opencoop.be`, `api-acc.opencoop.be` | API, no path prefix (e.g. `/health`) |
-| `mcp.opencoop.be`, `mcp-acc.opencoop.be` | API `/mcp*` only; every other path returns `404` |
+| Host                                     | Target                                                        |
+| ---------------------------------------- | ------------------------------------------------------------- |
+| `opencoop.be`, `acc.opencoop.be`         | web; `/api/*` goes to the API with the `/api` prefix stripped |
+| `api.opencoop.be`, `api-acc.opencoop.be` | API, no path prefix (e.g. `/health`)                          |
+| `mcp.opencoop.be`, `mcp-acc.opencoop.be` | API `/mcp*` only; every other path returns `404`              |
 
 The web app keeps calling `/api` on its own origin, so it needs no CORS change.
 
 Deploys recreate containers without touching volumes (`--force-recreate`); the migrate
 container applies pending migrations, so there is no manual `docker compose exec api ...`
 migrate step.
-

@@ -25,8 +25,20 @@ describeDb('ShareTransferService (database)', () => {
     prisma = createTestPrisma();
     await cleanupTestCoops(prisma);
     const status = { recomputeMany } as any;
-    const registrations = new RegistrationsService(prisma as any, {} as any, {} as any, {} as any, status, {} as any);
-    service = new ShareTransferService(prisma as any, registrations, status, new AuditService(prisma as any));
+    const registrations = new RegistrationsService(
+      prisma as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      status,
+      {} as any,
+    );
+    service = new ShareTransferService(
+      prisma as any,
+      registrations,
+      status,
+      new AuditService(prisma as any),
+    );
   });
 
   afterAll(async () => {
@@ -43,13 +55,24 @@ describeDb('ShareTransferService (database)', () => {
     for (const buy of buys) {
       const reg = await prisma.registration.create({
         data: {
-          coopId: coop.id, shareholderId: from.id, shareClassId: shareClass.id, type: 'BUY', status: 'COMPLETED',
-          quantity: buy.quantity, pricePerShare: buy.price, totalAmount: buy.quantity * buy.price,
+          coopId: coop.id,
+          shareholderId: from.id,
+          shareClassId: shareClass.id,
+          type: 'BUY',
+          status: 'COMPLETED',
+          quantity: buy.quantity,
+          pricePerShare: buy.price,
+          totalAmount: buy.quantity * buy.price,
           registerDate: new Date(buy.date),
         },
       });
       await prisma.payment.create({
-        data: { coopId: coop.id, registrationId: reg.id, amount: buy.quantity * buy.price, bankDate: new Date(buy.date) },
+        data: {
+          coopId: coop.id,
+          registrationId: reg.id,
+          amount: buy.quantity * buy.price,
+          bankDate: new Date(buy.date),
+        },
       });
     }
     return { coop, from, to, shareClass };
@@ -74,13 +97,20 @@ describeDb('ShareTransferService (database)', () => {
     const before = await capital(coop.id);
 
     const result = await service.transferShares({
-      coopId: coop.id, fromShareholderId: from.id, toShareholderId: to.id, shareClassId: shareClass.id,
-      quantity: 5, transferDate: '2026-03-01', reason: 'INHERITANCE',
+      coopId: coop.id,
+      fromShareholderId: from.id,
+      toShareholderId: to.id,
+      shareClassId: shareClass.id,
+      quantity: 5,
+      transferDate: '2026-03-01',
+      reason: 'INHERITANCE',
     });
 
     expect(result.valueEur).toBe(54);
     expect(result.registrations).toHaveLength(4);
-    const rows = await prisma.registration.findMany({ where: { shareTransferId: result.transfer.id } });
+    const rows = await prisma.registration.findMany({
+      where: { shareTransferId: result.transfer.id },
+    });
     expect(rows).toHaveLength(4);
     expect(await capital(coop.id)).toBe(before);
     const source = await prisma.shareholder.findUniqueOrThrow({ where: { id: from.id } });
@@ -89,18 +119,31 @@ describeDb('ShareTransferService (database)', () => {
     expect(audit.map((a) => a.entity).sort()).toEqual(['ShareTransfer', 'Shareholder']);
 
     const replay = await service.transferShares({
-      coopId: coop.id, fromShareholderId: from.id, toShareholderId: to.id, shareClassId: shareClass.id,
-      quantity: 5, transferDate: '2026-03-01', reason: 'INHERITANCE',
+      coopId: coop.id,
+      fromShareholderId: from.id,
+      toShareholderId: to.id,
+      shareClassId: shareClass.id,
+      quantity: 5,
+      transferDate: '2026-03-01',
+      reason: 'INHERITANCE',
     });
     expect(replay.idempotentReplay).toBe(true);
     expect(await prisma.shareTransfer.count({ where: { coopId: coop.id } })).toBe(1);
   });
 
   it('lets only one of two concurrent transfers consume the same shares', async () => {
-    const { coop, from, to, shareClass } = await setup([{ quantity: 4, price: 10, date: '2019-01-01T10:00:00Z' }]);
+    const { coop, from, to, shareClass } = await setup([
+      { quantity: 4, price: 10, date: '2019-01-01T10:00:00Z' },
+    ]);
     const input = (key: string) => ({
-      coopId: coop.id, fromShareholderId: from.id, toShareholderId: to.id, shareClassId: shareClass.id,
-      quantity: 3, transferDate: '2026-03-01', reason: 'SALE' as const, idempotencyKey: key,
+      coopId: coop.id,
+      fromShareholderId: from.id,
+      toShareholderId: to.id,
+      shareClassId: shareClass.id,
+      quantity: 3,
+      transferDate: '2026-03-01',
+      reason: 'SALE' as const,
+      idempotencyKey: key,
     });
 
     const results = await Promise.allSettled([
@@ -119,13 +162,23 @@ describeDb('ShareTransferService (database)', () => {
   });
 
   it('collapses two concurrent identical submits into one transfer', async () => {
-    const { coop, from, to, shareClass } = await setup([{ quantity: 4, price: 10, date: '2019-01-01T10:00:00Z' }]);
+    const { coop, from, to, shareClass } = await setup([
+      { quantity: 4, price: 10, date: '2019-01-01T10:00:00Z' },
+    ]);
     const input = {
-      coopId: coop.id, fromShareholderId: from.id, toShareholderId: to.id, shareClassId: shareClass.id,
-      quantity: 2, transferDate: '2026-03-01', reason: 'GIFT' as const,
+      coopId: coop.id,
+      fromShareholderId: from.id,
+      toShareholderId: to.id,
+      shareClassId: shareClass.id,
+      quantity: 2,
+      transferDate: '2026-03-01',
+      reason: 'GIFT' as const,
     };
 
-    const [a, b] = await Promise.all([service.transferShares(input), service.transferShares(input)]);
+    const [a, b] = await Promise.all([
+      service.transferShares(input),
+      service.transferShares(input),
+    ]);
 
     expect(a.transfer.id).toBe(b.transfer.id);
     expect([a.idempotentReplay, b.idempotentReplay].sort()).toEqual([false, true]);
