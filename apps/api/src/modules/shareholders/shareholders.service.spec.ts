@@ -91,7 +91,7 @@ describe('ShareholdersService', () => {
   });
 
   describe('findAll — lean list payload', () => {
-    it('returns lean rows with server-precomputed sharesOwned (sum of quantity over ACTIVE/COMPLETED BUY regs) and memberSince (earliest registerDate), and drops nested data', async () => {
+    it('returns lean rows with server-precomputed sharesOwned (paid shares over ACTIVE/COMPLETED BUY regs) and memberSince (earliest registerDate), and drops nested data', async () => {
       const row = {
         id: 'sh-1',
         type: 'INDIVIDUAL',
@@ -107,20 +107,29 @@ describe('ShareholdersService', () => {
           {
             quantity: 5,
             status: 'ACTIVE',
+            pricePerShare: 10,
+            payments: [{ amount: 50 }],
+            soldBy: [],
             registerDate: new Date('2023-02-01T00:00:00Z'),
             isGift: true,
           },
           {
             quantity: 3,
             status: 'COMPLETED',
+            pricePerShare: 10,
+            payments: [{ amount: 30 }],
+            soldBy: [],
             registerDate: new Date('2022-01-15T00:00:00Z'),
             isGift: false,
           },
           // PENDING_PAYMENT contributes to memberSince but NOT to sharesOwned,
-          // matching the previous client-side derivation exactly.
+          // even when paid (the detail page does not show it as a holding).
           {
             quantity: 100,
             status: 'PENDING_PAYMENT',
+            pricePerShare: 10,
+            payments: [{ amount: 1000 }],
+            soldBy: [],
             registerDate: new Date('2024-03-01T00:00:00Z'),
             isGift: false,
           },
@@ -135,7 +144,7 @@ describe('ShareholdersService', () => {
       expect(result.total).toBe(1);
       const item = result.items[0] as Record<string, unknown>;
 
-      // Parity: sum of quantity over ACTIVE + COMPLETED only (5 + 3), PENDING_PAYMENT excluded.
+      // Paid shares over ACTIVE + COMPLETED only (5 + 3), PENDING_PAYMENT excluded.
       expect(item.sharesOwned).toBe(8);
       expect(item.giftBuyer).toBe(true);
       // memberSince = earliest registerDate across ALL fetched regs (incl PENDING_PAYMENT).
@@ -177,6 +186,99 @@ describe('ShareholdersService', () => {
     });
   });
 
+  describe('findAll — sharesOwned is net of sells and counts only paid shares', () => {
+    type Sell = { quantity: number; status: string };
+    function buy(
+      quantity: number,
+      price: number,
+      paid: number[],
+      soldBy: Sell[] = [],
+      status = 'COMPLETED',
+    ) {
+      return {
+        type: 'BUY',
+        status,
+        quantity,
+        pricePerShare: price,
+        payments: paid.map((amount) => ({ amount })),
+        soldBy,
+        registerDate: new Date('2024-01-01T00:00:00Z'),
+        isGift: false,
+      };
+    }
+    function listRow(registrations: ReturnType<typeof buy>[]) {
+      return {
+        id: 'sh-1',
+        type: 'INDIVIDUAL',
+        status: 'ACTIVE',
+        firstName: 'Mira',
+        lastName: 'Voskuil',
+        companyName: null,
+        email: null,
+        isEcoPowerClient: false,
+        channelId: null,
+        createdAt: new Date('2024-01-01T00:00:00Z'),
+        registrations,
+      };
+    }
+    async function listSharesOwned(registrations: ReturnType<typeof buy>[]) {
+      (prismaService.shareholder.findMany as jest.Mock).mockResolvedValueOnce([
+        listRow(registrations),
+      ]);
+      (prismaService.shareholder.count as jest.Mock).mockResolvedValueOnce(1);
+      const result = await service.findAll('coop-1', {});
+      return (result.items[0] as Record<string, unknown>).sharesOwned;
+    }
+
+    it('(a) BUY 1 fully transferred away by a completed SELL → 0', async () => {
+      expect(
+        await listSharesOwned([buy(1, 25, [25], [{ quantity: 1, status: 'COMPLETED' }])]),
+      ).toBe(0);
+    });
+
+    it('(b) BUY 10 with a normal SELL of 3 → 7; a cancelled sell is ignored', async () => {
+      expect(
+        await listSharesOwned([
+          buy(
+            10,
+            25,
+            [250],
+            [
+              { quantity: 3, status: 'PENDING' },
+              { quantity: 4, status: 'CANCELLED' },
+            ],
+          ),
+        ]),
+      ).toBe(7);
+    });
+
+    it('(c) a partially paid ACTIVE buy counts only the paid shares', async () => {
+      // 4 shares of EUR 25, EUR 60 paid in instalments → 2 vested shares.
+      expect(await listSharesOwned([buy(4, 25, [30, 30], [], 'ACTIVE')])).toBe(2);
+    });
+
+    it('(d) equals the sum of the per-registration sharesOwned findById returns', async () => {
+      const registrations = [
+        buy(10, 25, [250], [{ quantity: 3, status: 'COMPLETED' }]),
+        buy(4, 25, [30, 30], [{ quantity: 1, status: 'PENDING' }], 'ACTIVE'),
+        buy(2, 50, [100], [{ quantity: 2, status: 'COMPLETED' }]),
+        buy(5, 10, [], [], 'PENDING_PAYMENT'),
+      ];
+      (prismaService.shareholder.findFirst as jest.Mock).mockResolvedValueOnce(
+        makeShareholder({ registrations }),
+      );
+      const detail = await service.findById('sh-1', 'coop-1');
+      const detailTotal = (
+        detail.registrations as Array<{ type: string; status: string; sharesOwned?: number }>
+      )
+        .filter((r) => r.type === 'BUY' && (r.status === 'ACTIVE' || r.status === 'COMPLETED'))
+        .reduce((sum, r) => sum + (r.sharesOwned ?? 0), 0);
+
+      expect(detailTotal).toBe(8);
+      expect(await listSharesOwned(registrations)).toBe(detailTotal);
+    });
+  });
+
   describe('update — household email dedup', () => {
     it('update rejects setting email to a value already taken in the coop, even within the same household', async () => {
       // Fixture: user1 owns s1 (email='shared@x.com', userId='user-1') and
@@ -192,9 +294,9 @@ describe('ShareholdersService', () => {
         // Second call: email collision check — finds s1 (same userId)
         .mockResolvedValueOnce({ userId: sharedUserId });
 
-      await expect(
-        service.update('sh-2', 'coop-1', { email: 'shared@x.com' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.update('sh-2', 'coop-1', { email: 'shared@x.com' })).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('update still rejects email collision when shareholders belong to different Users', async () => {
@@ -208,9 +310,9 @@ describe('ShareholdersService', () => {
         // Second call: email collision check — finds s1 with different userId
         .mockResolvedValueOnce({ userId: 'user-1' });
 
-      await expect(
-        service.update('sh-2', 'coop-1', { email: 'taken@x.com' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.update('sh-2', 'coop-1', { email: 'taken@x.com' })).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -254,7 +356,9 @@ describe('ShareholdersService', () => {
 
       await service.update('sh-1', 'coop-1', { firstName: 'NewName' } as any);
 
-      expect((prismaService.shareholder.update as jest.Mock).mock.calls[0][0].data.email).toBeUndefined();
+      expect(
+        (prismaService.shareholder.update as jest.Mock).mock.calls[0][0].data.email,
+      ).toBeUndefined();
     });
   });
 
@@ -265,9 +369,9 @@ describe('ShareholdersService', () => {
     });
 
     it('rejects an individual shareholder without a last name', async () => {
-      await expect(
-        service.create('c1', { ...validCreateDto, lastName: '   ' }),
-      ).rejects.toThrow('firstName and lastName are required for individual shareholders');
+      await expect(service.create('c1', { ...validCreateDto, lastName: '   ' })).rejects.toThrow(
+        'firstName and lastName are required for individual shareholders',
+      );
       expect(prismaService.shareholder.findFirst).not.toHaveBeenCalled();
       expect(prismaService.shareholder.create).not.toHaveBeenCalled();
     });

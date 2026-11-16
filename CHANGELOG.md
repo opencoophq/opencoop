@@ -17,6 +17,10 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The shareholder list showed shares that were already sold or transferred.** `list_shareholders` and the admin shareholder list summed the quantity of every ACTIVE/COMPLETED buy and ignored sells, so a member who bought 1 share and transferred it showed 1 share with status INACTIVE. The list now uses the same rule as the shareholder detail page: per held buy, the paid shares minus the shares committed to sells (pending or completed). One shared helper computes this for the list, the detail page and the minors view. Behaviour change: a partly paid buy now counts only its paid shares in the list, as it already did on the detail page.
+
 ## [2026.47.0] - 2026-11-16
 
 ### Added

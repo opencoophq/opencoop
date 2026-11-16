@@ -14,6 +14,7 @@ import { AdminNotificationsService } from '../admin-notifications/admin-notifica
 import { resolveShareholderEmail } from '../shareholders/shareholder-email.resolver';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 import { OgmService } from '../ogm/ogm.service';
+import { COMMITTED_SELL_STATUSES } from '../shareholders/shares-owned';
 
 @Injectable()
 export class RegistrationsService {
@@ -200,7 +201,7 @@ export class RegistrationsService {
       where: {
         sellsRegistrationId: registrationId,
         type: 'SELL',
-        status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
+        status: { in: [...COMMITTED_SELL_STATUSES] },
       },
       _sum: { quantity: true },
     });

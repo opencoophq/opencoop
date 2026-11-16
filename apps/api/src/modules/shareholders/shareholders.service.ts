@@ -12,7 +12,8 @@ import { AuditService } from '../audit/audit.service';
 import { CreateShareholderDto } from './dto/create-shareholder.dto';
 import { UpdateShareholderDto } from './dto/update-shareholder.dto';
 import { encryptField, decryptField, isEncrypted } from '../../common/crypto';
-import { generateReferralCode, computeTotalPaid, computeVestedShares } from '@opencoop/shared';
+import { generateReferralCode } from '@opencoop/shared';
+import { committedSoldBySelect, computeBuySharesOwned, HELD_BUY_STATUSES } from './shares-owned';
 
 @Injectable()
 export class ShareholdersService {
@@ -97,7 +98,7 @@ export class ShareholdersService {
         take: pageSize,
         // LEAN list payload: select only the columns the admin list table renders,
         // plus a minimal registrations slice used solely to precompute the derived
-        // fields (sharesOwned / memberSince). Full nested registrations, payments,
+        // fields (sharesOwned / memberSince / giftBuyer). Full nested registrations, payments,
         // shareClass and beneficialOwners are intentionally NOT returned, and
         // nationalId is NOT decrypted here (it is never shown in the list — see the
         // edit dialog / detail page which fetch via findById). This keeps each row
@@ -115,7 +116,15 @@ export class ShareholdersService {
           createdAt: true,
           registrations: {
             where: { type: 'BUY', status: { in: ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] } },
-            select: { quantity: true, status: true, registerDate: true, isGift: true },
+            select: {
+              quantity: true,
+              status: true,
+              registerDate: true,
+              isGift: true,
+              pricePerShare: true,
+              payments: { select: { amount: true } },
+              soldBy: committedSoldBySelect,
+            },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -124,15 +133,14 @@ export class ShareholdersService {
     ]);
 
     // Precompute derived fields server-side, then drop the registrations slice so
-    // each returned row contains only scalars the table needs. Parity note:
-    // `sharesOwned` replicates the EXACT logic the list previously ran client-side
-    // (sum of `quantity` over ACTIVE/COMPLETED BUY registrations — the old list
-    // never received a per-registration `sharesOwned`, so it fell back to quantity).
+    // each returned row contains only scalars the table needs. `sharesOwned` is the
+    // sum of the per-registration sharesOwned that findById shows for held
+    // (ACTIVE/COMPLETED) BUYs: paid shares minus shares committed to SELLs.
     // `memberSince` mirrors the old min(registerDate) ?? createdAt derivation.
     const leanItems = items.map(({ registrations, ...rest }) => {
       const sharesOwned = registrations
-        .filter((r) => r.status === 'ACTIVE' || r.status === 'COMPLETED')
-        .reduce((sum, r) => sum + r.quantity, 0);
+        .filter((r) => HELD_BUY_STATUSES.includes(r.status))
+        .reduce((sum, r) => sum + computeBuySharesOwned(r).sharesOwned, 0);
 
       const registerDates = registrations.map((r) => r.registerDate).filter(Boolean);
       const firstRegistrationDate =
@@ -165,13 +173,7 @@ export class ShareholdersService {
             shareClass: true,
             project: true,
             payments: { orderBy: { bankDate: 'asc' } },
-            soldBy: {
-              where: {
-                type: 'SELL',
-                status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
-              },
-              select: { quantity: true, status: true },
-            },
+            soldBy: committedSoldBySelect,
           },
         },
         beneficialOwners: true,
@@ -194,17 +196,9 @@ export class ShareholdersService {
     // Compute sharesOwned for BUY registrations, subtracting sold quantities
     const shareholderWithComputed = {
       ...shareholder,
-      registrations: shareholder.registrations.map((reg) => {
-        if (reg.type === 'BUY') {
-          const totalPaid = computeTotalPaid(reg.payments);
-          const pricePerShare = Number(reg.pricePerShare);
-          const vestedShares = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
-          const soldQty = (reg.soldBy ?? []).reduce((sum, s) => sum + s.quantity, 0);
-          const sharesOwned = Math.max(0, vestedShares - soldQty);
-          return { ...reg, sharesOwned, sharesRemaining: reg.quantity - vestedShares };
-        }
-        return reg;
-      }),
+      registrations: shareholder.registrations.map((reg) =>
+        reg.type === 'BUY' ? { ...reg, ...computeBuySharesOwned(reg) } : reg,
+      ),
     };
 
     return this.decryptShareholder(shareholderWithComputed);
@@ -226,13 +220,7 @@ export class ShareholdersService {
             shareClass: true,
             project: true,
             payments: { orderBy: { bankDate: 'asc' } },
-            soldBy: {
-              where: {
-                type: 'SELL',
-                status: { in: ['PENDING', 'PENDING_PAYMENT', 'ACTIVE', 'COMPLETED'] },
-              },
-              select: { quantity: true, status: true },
-            },
+            soldBy: committedSoldBySelect,
           },
         },
       },
@@ -241,17 +229,9 @@ export class ShareholdersService {
 
     return minors.map((minor) => ({
       ...minor,
-      registrations: minor.registrations.map((reg) => {
-        if (reg.type === 'BUY') {
-          const totalPaid = computeTotalPaid(reg.payments);
-          const pricePerShare = Number(reg.pricePerShare);
-          const vestedShares = computeVestedShares(totalPaid, pricePerShare, reg.quantity);
-          const soldQty = (reg.soldBy ?? []).reduce((sum, s) => sum + s.quantity, 0);
-          const sharesOwned = Math.max(0, vestedShares - soldQty);
-          return { ...reg, sharesOwned, sharesRemaining: reg.quantity - vestedShares };
-        }
-        return reg;
-      }),
+      registrations: minor.registrations.map((reg) =>
+        reg.type === 'BUY' ? { ...reg, ...computeBuySharesOwned(reg) } : reg,
+      ),
     }));
   }
 
