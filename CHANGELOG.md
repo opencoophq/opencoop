@@ -17,6 +17,8 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+## [2026.47.2] - 2026-11-16
+
 ### Added
 
 - **Permission `canManageChargeCards` (Laadpassen beheren).** A coop admin role with this permission can mark a requested charge card as paid and issue a paid card (record the card number, activate it, email the shareholder). It also sees the charge card list. Block, unblock, mark lost, provider sync and cancel still need `canManageShareholders`. The permission is off on every default role; admins with `canManageShareholders` keep all actions. The MCP tool `list_charge_cards` accepts it too.
