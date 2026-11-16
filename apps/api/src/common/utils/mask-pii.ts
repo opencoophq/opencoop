@@ -32,3 +32,23 @@ export function maskShareholderListPII(result: any) {
   }
   return result;
 }
+
+/**
+ * Masks a row that references a shareholder (for example a charge card) for
+ * an admin without canViewPII. The name gets the same label scheme as
+ * maskShareholderPII; the ids and the member number stay.
+ */
+export function maskShareholderRowPII<
+  T extends {
+    shareholderId: string;
+    shareholderNumber: number | null;
+    shareholderName: string;
+    shareholderEmail: string | null;
+  },
+>(row: T): T {
+  return {
+    ...row,
+    shareholderName: `Aandeelhouder #${row.shareholderNumber || row.shareholderId.slice(-4)}`,
+    shareholderEmail: row.shareholderEmail ? '***' : null,
+  };
+}

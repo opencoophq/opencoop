@@ -1125,7 +1125,8 @@
       "canViewPII": "View personal information",
       "canViewReports": "View reports",
       "canViewShareholderRegister": "View shareholder register",
-      "canViewVolunteers": "View and contact volunteers"
+      "canViewVolunteers": "View and contact volunteers",
+      "canViewChargeCards": "View charge cards (who registered)"
     },
     "billing": {
       "title": "Billing",
@@ -2631,7 +2632,19 @@
       "syncDone": "Done in portal",
       "todo": "To do in provider portal",
       "confirm": "Are you sure?",
-      "cancelPaidConfirm": "Cancel this card? A payment is already registered; the cooperative must refund it by hand."
+      "cancelPaidConfirm": "Cancel this card? A payment is already registered; the cooperative must refund it by hand.",
+      "markPaid": "Mark as paid",
+      "markPaidTitle": "Mark charge card as paid",
+      "markPaidDescription": "For a payment that does not come in through the bank import, such as cash, another account or a transfer without the structured communication. The open amount is booked and the card becomes paid.",
+      "paidAt": "Payment date",
+      "paymentMethod": "Payment method",
+      "paymentMethods": {
+        "CASH": "Cash",
+        "BANK_TRANSFER": "Bank transfer",
+        "OTHER": "Other"
+      },
+      "paymentNote": "Note (optional)",
+      "markPaidSubmit": "Mark as paid"
     },
     "settings": {
       "title": "Charge cards",

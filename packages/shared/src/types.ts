@@ -51,6 +51,7 @@ export interface CoopPermissions {
   canViewReports: boolean;
   canViewShareholderRegister: boolean;
   canViewVolunteers: boolean;
+  canViewChargeCards: boolean;
 }
 
 export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
@@ -68,6 +69,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewReports: true,
     canViewShareholderRegister: true,
     canViewVolunteers: false,
+    canViewChargeCards: false,
   },
   Viewer: {
     canManageShareholders: false,
@@ -83,6 +85,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewReports: true,
     canViewShareholderRegister: true,
     canViewVolunteers: false,
+    canViewChargeCards: false,
   },
   'Meeting Admin': {
     // Run AGMs without seeing or changing financial / shareholder data.
@@ -99,6 +102,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewReports: false,
     canViewShareholderRegister: true, // needs the register to verify proxies
     canViewVolunteers: false,
+    canViewChargeCards: false,
   },
   'GDPR Viewer': {
     canManageShareholders: false,
@@ -114,6 +118,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewReports: true,
     canViewShareholderRegister: false,
     canViewVolunteers: false,
+    canViewChargeCards: false,
   },
   'GDPR Admin': {
     canManageShareholders: false,
@@ -129,6 +134,7 @@ export const DEFAULT_ROLES: Record<string, CoopPermissions> = {
     canViewReports: true,
     canViewShareholderRegister: false,
     canViewVolunteers: false,
+    canViewChargeCards: false,
   },
 };
 
@@ -189,7 +195,13 @@ export type UserRole = 'SYSTEM_ADMIN' | 'COOP_ADMIN' | 'SHAREHOLDER';
 
 export type CoopPlan = 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL';
 export type BillingPeriod = 'MONTHLY' | 'YEARLY';
-export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE';
+export type SubscriptionStatus =
+  | 'TRIALING'
+  | 'ACTIVE'
+  | 'PAST_DUE'
+  | 'CANCELED'
+  | 'UNPAID'
+  | 'INCOMPLETE';
 
 // ============================================================================
 // Coop Types
@@ -258,7 +270,12 @@ export interface ProjectDto {
 // ============================================================================
 
 export type RegistrationType = 'BUY' | 'SELL';
-export type RegistrationStatus = 'PENDING' | 'PENDING_PAYMENT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+export type RegistrationStatus =
+  | 'PENDING'
+  | 'PENDING_PAYMENT'
+  | 'ACTIVE'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 // ============================================================================
 // Dividend Types

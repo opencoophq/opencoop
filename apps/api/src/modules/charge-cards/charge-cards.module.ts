@@ -12,5 +12,6 @@ import { ChargeCardsPublicController } from './charge-cards-public.controller';
   imports: [EmailModule, OgmModule, BillingModule],
   controllers: [ChargeCardsController, ChargeCardsAdminController, ChargeCardsPublicController],
   providers: [ChargeCardsService, ChargeCardsAdminService],
+  exports: [ChargeCardsAdminService],
 })
 export class ChargeCardsModule {}

@@ -1125,7 +1125,8 @@
       "canViewPII": "Persoonlijke gegevens inzien",
       "canViewReports": "Rapporten inzien",
       "canViewShareholderRegister": "Aandeelhoudersregister inzien",
-      "canViewVolunteers": "Vrijwilligers bekijken en contacteren"
+      "canViewVolunteers": "Vrijwilligers bekijken en contacteren",
+      "canViewChargeCards": "Laadpassen bekijken (wie registreerde)"
     },
     "billing": {
       "title": "Facturatie",
@@ -2631,7 +2632,19 @@
       "syncDone": "Gedaan in portaal",
       "todo": "Te doen in leveranciersportaal",
       "confirm": "Ben je zeker?",
-      "cancelPaidConfirm": "Deze pas annuleren? Er is al een betaling geregistreerd; de coöperatie moet die zelf terugbetalen."
+      "cancelPaidConfirm": "Deze pas annuleren? Er is al een betaling geregistreerd; de coöperatie moet die zelf terugbetalen.",
+      "markPaid": "Als betaald markeren",
+      "markPaidTitle": "Laadpas als betaald markeren",
+      "markPaidDescription": "Voor een betaling die niet via de bankimport binnenkomt, zoals contant, van een andere rekening of zonder gestructureerde mededeling. Het openstaande bedrag wordt geboekt en de pas wordt betaald.",
+      "paidAt": "Betaaldatum",
+      "paymentMethod": "Betaalwijze",
+      "paymentMethods": {
+        "CASH": "Contant",
+        "BANK_TRANSFER": "Overschrijving",
+        "OTHER": "Andere"
+      },
+      "paymentNote": "Opmerking (optioneel)",
+      "markPaidSubmit": "Als betaald markeren"
     },
     "settings": {
       "title": "Laadpassen",

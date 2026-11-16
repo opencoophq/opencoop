@@ -17,6 +17,11 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+### Added
+
+- **Permission `canViewChargeCards` (Laadpassen bekijken).** A coop admin role with this permission sees the charge card list, including who registered each card: name, email, and member number. The role cannot issue, block, unblock, cancel, or mark cards lost; those actions still need `canManageShareholders`. Without `canViewPII` the name and email are masked, as on the shareholder list. The permission is off on every default role and no existing role gets it, the same as `canViewVolunteers`. Admins with `canManageShareholders` keep their current access, so no migration is needed. New read-only MCP tool `list_charge_cards` with the same gate and masking.
+- **Mark a charge card as paid by hand.** For a payment that did not come through the bank import (cash, another account, a transfer without the OGM), an admin with `canManageShareholders` clicks "Als betaald markeren" on a requested card and enters the date, the method (cash, transfer, other) and an optional note. The card becomes PAID and gets one payment for the open part of the fee, without a bank transaction. The method and note go to the audit log. A card that is not requested returns 409, and a date in the future returns 400. A later bank transfer with the card's OGM stays unmatched for an admin to refund, so no second payment is booked. No migration.
+
 ## [2026.47.0] - 2026-11-16
 
 ### Added

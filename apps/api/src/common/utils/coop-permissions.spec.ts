@@ -87,6 +87,9 @@ describe('isPermitted', () => {
     expect(isPermitted({}, 'canViewReports')).toBe(false);
     expect(isPermitted({}, 'canViewVolunteers')).toBe(false);
     expect(isPermitted({ canViewVolunteers: true }, 'canViewVolunteers')).toBe(true);
+    expect(isPermitted({}, 'canViewChargeCards')).toBe(false);
+    expect(isPermitted({ canViewChargeCards: false }, 'canViewChargeCards')).toBe(false);
+    expect(isPermitted({ canViewChargeCards: true }, 'canViewChargeCards')).toBe(true);
     expect(isPermitted({ canViewReports: true }, 'canViewReports')).toBe(true);
   });
 });

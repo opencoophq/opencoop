@@ -1123,7 +1123,8 @@
       "canViewPII": "Voir les informations personnelles",
       "canViewReports": "Voir les rapports",
       "canViewShareholderRegister": "Voir le registre des coopérateurs",
-      "canViewVolunteers": "Voir et contacter les bénévoles"
+      "canViewVolunteers": "Voir et contacter les bénévoles",
+      "canViewChargeCards": "Voir les cartes de recharge (qui s'est inscrit)"
     },
     "billing": {
       "title": "Facturation",
@@ -2628,7 +2629,19 @@
       "syncDone": "Fait dans le portail",
       "todo": "À faire dans le portail du fournisseur",
       "confirm": "Êtes-vous sûr ?",
-      "cancelPaidConfirm": "Annuler cette carte ? Un paiement est déjà enregistré ; la coopérative doit le rembourser elle-même."
+      "cancelPaidConfirm": "Annuler cette carte ? Un paiement est déjà enregistré ; la coopérative doit le rembourser elle-même.",
+      "markPaid": "Marquer comme payé",
+      "markPaidTitle": "Marquer la carte de recharge comme payée",
+      "markPaidDescription": "Pour un paiement qui n'arrive pas par l'import bancaire : en espèces, depuis un autre compte ou un virement sans communication structurée. Le montant restant est enregistré et la carte passe à payée.",
+      "paidAt": "Date de paiement",
+      "paymentMethod": "Mode de paiement",
+      "paymentMethods": {
+        "CASH": "Espèces",
+        "BANK_TRANSFER": "Virement",
+        "OTHER": "Autre"
+      },
+      "paymentNote": "Remarque (facultatif)",
+      "markPaidSubmit": "Marquer comme payé"
     },
     "settings": {
       "title": "Cartes de recharge",
