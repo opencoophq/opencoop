@@ -129,7 +129,12 @@ describe('BankMatchingService', () => {
     });
   });
   it('leaves the row unmatched when a concurrent linker claimed the payment first', async () => {
-    prisma.registration.findFirst.mockResolvedValue({ id: 'reg-1', coopId: 'coop-1', status: 'COMPLETED', ogmCode: OGM });
+    prisma.registration.findFirst.mockResolvedValue({
+      id: 'reg-1',
+      coopId: 'coop-1',
+      status: 'COMPLETED',
+      ogmCode: OGM,
+    });
     prisma.payment.findMany.mockResolvedValue([
       { id: 'pay-1', amount: 100, bankDate: new Date('2026-01-14'), bankTransactionId: null },
     ]);
@@ -171,7 +176,11 @@ describe('BankMatchingService', () => {
     it('AUTO_MATCHES a payment of at least the fee and marks the card PAID', async () => {
       const result = await service.matchTransaction('coop-1', cardTx, 'user-1');
 
-      expect(result).toEqual({ status: 'AUTO_MATCHED', linkedExisting: false, createdPayment: true });
+      expect(result).toEqual({
+        status: 'AUTO_MATCHED',
+        linkedExisting: false,
+        createdPayment: true,
+      });
       expect(prisma.bankTransaction.updateMany).toHaveBeenCalledWith({
         where: { id: 'bank-tx-1', matchStatus: 'UNMATCHED' },
         data: { matchStatus: 'AUTO_MATCHED', ogmCode: OGM },
@@ -222,12 +231,28 @@ describe('BankMatchingService', () => {
     it('leaves a payment for a CANCELLED card UNMATCHED', async () => {
       prisma.chargeCard.findFirst.mockResolvedValue({ ...cardRow, status: 'CANCELLED' });
 
-      await expect(service.matchTransaction('coop-1', cardTx)).resolves.toMatchObject({ status: 'UNMATCHED' });
+      await expect(service.matchTransaction('coop-1', cardTx)).resolves.toMatchObject({
+        status: 'UNMATCHED',
+      });
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('leaves a transfer for a card marked paid by hand UNMATCHED, with no second payment', async () => {
+      prisma.chargeCard.findFirst.mockResolvedValue({ ...cardRow, status: 'PAID' });
+
+      await expect(service.matchTransaction('coop-1', cardTx, 'user-1')).resolves.toEqual({
+        status: 'UNMATCHED',
+        linkedExisting: false,
+        createdPayment: false,
+      });
+      expect(prisma.bankTransaction.updateMany).not.toHaveBeenCalled();
       expect(prisma.payment.create).not.toHaveBeenCalled();
     });
 
     it('books nothing when auto-match is off (Ponto with autoMatchPayments = false)', async () => {
-      await expect(service.matchTransaction('coop-1', cardTx, undefined, false)).resolves.toMatchObject({
+      await expect(
+        service.matchTransaction('coop-1', cardTx, undefined, false),
+      ).resolves.toMatchObject({
         status: 'UNMATCHED',
       });
       expect(prisma.payment.create).not.toHaveBeenCalled();
@@ -246,7 +271,13 @@ describe('BankMatchingService', () => {
       };
 
       const first = await service.matchTransaction('coop-1', cardTx, 'user-1', true, cached);
-      const second = await service.matchTransaction('coop-1', { ...cardTx, id: 'bank-tx-2' }, 'user-1', true, cached);
+      const second = await service.matchTransaction(
+        'coop-1',
+        { ...cardTx, id: 'bank-tx-2' },
+        'user-1',
+        true,
+        cached,
+      );
 
       expect(first.status).toBe('AUTO_MATCHED');
       expect(second.status).toBe('UNMATCHED');

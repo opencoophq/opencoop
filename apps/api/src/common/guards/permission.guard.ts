@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
+import { ANY_PERMISSIONS_KEY, PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { CoopPermissionKey, CoopPermissions } from '@opencoop/shared';
 import { isPermitted } from '../utils/coop-permissions';
 
@@ -9,12 +9,13 @@ export class PermissionGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredPermissions = this.reflector.getAllAndOverride<CoopPermissionKey[]>(
-      PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const targets = [context.getHandler(), context.getClass()];
+    const requiredPermissions =
+      this.reflector.getAllAndOverride<CoopPermissionKey[]>(PERMISSIONS_KEY, targets) ?? [];
+    const anyPermissions =
+      this.reflector.getAllAndOverride<CoopPermissionKey[]>(ANY_PERMISSIONS_KEY, targets) ?? [];
 
-    if (!requiredPermissions || requiredPermissions.length === 0) {
+    if (requiredPermissions.length === 0 && anyPermissions.length === 0) {
       return true;
     }
 
@@ -38,7 +39,9 @@ export class PermissionGuard implements CanActivate {
     }
 
     const hasAll = requiredPermissions.every((p) => isPermitted(permissions, p));
-    if (!hasAll) {
+    const hasAny =
+      anyPermissions.length === 0 || anyPermissions.some((p) => isPermitted(permissions, p));
+    if (!hasAll || !hasAny) {
       throw new ForbiddenException('Insufficient permissions');
     }
 

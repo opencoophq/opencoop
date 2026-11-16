@@ -5,11 +5,15 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useAdmin } from '@/contexts/admin-context';
 import { useLocale } from '@/contexts/locale-context';
+import { usePermissions } from '@/contexts/permissions-context';
+import { Link } from '@/i18n/routing';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
@@ -19,14 +23,41 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { formatCurrency } from '@opencoop/shared';
 import { Loader2 } from 'lucide-react';
 
 type CardStatus = 'REQUESTED' | 'PAID' | 'ACTIVE' | 'BLOCKED' | 'CANCELLED';
 type Filter = 'ALL' | CardStatus | 'TODO';
 type AdminAction = 'block' | 'unblock' | 'mark-lost' | 'provider-sync-done' | 'cancel';
+
+type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'OTHER';
+
+const PAYMENT_METHODS: PaymentMethod[] = ['CASH', 'BANK_TRANSFER', 'OTHER'];
+
+/** Today in Europe/Brussels (YYYY-MM-DD), the day the API checks paidAt against. */
+function brusselsToday(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Brussels',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
 
 const FILTERS: Filter[] = ['ALL', 'REQUESTED', 'PAID', 'ACTIVE', 'BLOCKED', 'CANCELLED', 'TODO'];
 
@@ -40,7 +71,10 @@ interface AdminChargeCard {
   feeInclVat: number;
   isReplacement: boolean;
   providerSyncNeeded: boolean;
+  shareholderId: string;
   shareholderName: string;
+  shareholderEmail: string | null;
+  shareholderNumber: number | null;
   totalPaid: number;
   waitingWorkingDays: number | null;
   overdue: boolean;
@@ -56,6 +90,8 @@ export default function AdminChargeCardsPage() {
   const t = useTranslations('chargeCards');
   const { locale } = useLocale();
   const { selectedCoop } = useAdmin();
+  const { hasPermission } = usePermissions();
+  const canManage = hasPermission('canManageShareholders');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [cards, setCards] = useState<AdminChargeCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,12 +99,20 @@ export default function AdminChargeCardsPage() {
   const [issuing, setIssuing] = useState<AdminChargeCard | null>(null);
   const [cardNumber, setCardNumber] = useState('');
   const [busy, setBusy] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState<AdminChargeCard | null>(null);
+  const [paidAt, setPaidAt] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [paymentNote, setPaymentNote] = useState('');
 
   const load = useCallback(async () => {
     if (!selectedCoop) return;
     setLoading(true);
     try {
-      setCards(await api<AdminChargeCard[]>(`/admin/coops/${selectedCoop.id}/charge-cards${queryFor(filter)}`));
+      setCards(
+        await api<AdminChargeCard[]>(
+          `/admin/coops/${selectedCoop.id}/charge-cards${queryFor(filter)}`,
+        ),
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('actionError'));
@@ -82,15 +126,18 @@ export default function AdminChargeCardsPage() {
   }, [load]);
 
   const act = async (card: AdminChargeCard, action: AdminAction) => {
-    if (!selectedCoop) return;
+    if (!selectedCoop || !canManage) return;
     // A cancel on a card that already holds a payment doesn't refund it:
     // the coop must do that by hand outside OpenCoop. Warn before letting
     // the admin cancel that one; every other action keeps the plain confirm.
-    const confirmMessage = action === 'cancel' && card.totalPaid > 0 ? t('admin.cancelPaidConfirm') : t('admin.confirm');
+    const confirmMessage =
+      action === 'cancel' && card.totalPaid > 0 ? t('admin.cancelPaidConfirm') : t('admin.confirm');
     if (!window.confirm(confirmMessage)) return;
     setBusy(true);
     try {
-      await api(`/admin/coops/${selectedCoop.id}/charge-cards/${card.id}/${action}`, { method: 'POST' });
+      await api(`/admin/coops/${selectedCoop.id}/charge-cards/${card.id}/${action}`, {
+        method: 'POST',
+      });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('actionError'));
@@ -100,7 +147,7 @@ export default function AdminChargeCardsPage() {
   };
 
   const submitIssue = async () => {
-    if (!selectedCoop || !issuing) return;
+    if (!selectedCoop || !issuing || !canManage) return;
     setBusy(true);
     try {
       await api(`/admin/coops/${selectedCoop.id}/charge-cards/${issuing.id}/issue`, {
@@ -109,6 +156,31 @@ export default function AdminChargeCardsPage() {
       });
       setIssuing(null);
       setCardNumber('');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('actionError'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openMarkPaid = (card: AdminChargeCard) => {
+    setMarkingPaid(card);
+    setPaidAt(brusselsToday());
+    setPaymentMethod('CASH');
+    setPaymentNote('');
+  };
+
+  const submitMarkPaid = async () => {
+    if (!selectedCoop || !markingPaid || !canManage || !paidAt) return;
+    setBusy(true);
+    try {
+      const note = paymentNote.trim();
+      await api(`/admin/coops/${selectedCoop.id}/charge-cards/${markingPaid.id}/mark-paid`, {
+        method: 'POST',
+        body: { paidAt, method: paymentMethod, ...(note ? { note } : {}) },
+      });
+      setMarkingPaid(null);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('actionError'));
@@ -167,13 +239,34 @@ export default function AdminChargeCardsPage() {
                   <TableHead className="text-right">{t('admin.paid')}</TableHead>
                   <TableHead>{t('admin.cardNumber')}</TableHead>
                   <TableHead>{t('admin.waiting')}</TableHead>
-                  <TableHead>{t('admin.actions')}</TableHead>
+                  {canManage && <TableHead>{t('admin.actions')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {cards.map((card) => (
-                  <TableRow key={card.id} className={card.overdue ? 'bg-red-50 dark:bg-red-950/30' : undefined}>
-                    <TableCell className="font-medium">{card.shareholderName}</TableCell>
+                  <TableRow
+                    key={card.id}
+                    className={card.overdue ? 'bg-red-50 dark:bg-red-950/30' : undefined}
+                  >
+                    <TableCell>
+                      {canManage && card.shareholderId ? (
+                        <Link
+                          href={`/dashboard/admin/shareholders/${card.shareholderId}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {card.shareholderName || '—'}
+                        </Link>
+                      ) : (
+                        <span className="font-medium">{card.shareholderName || '—'}</span>
+                      )}
+                      {(card.shareholderNumber != null || card.shareholderEmail) && (
+                        <div className="text-xs text-muted-foreground">
+                          {card.shareholderNumber != null && <span>#{card.shareholderNumber}</span>}
+                          {card.shareholderNumber != null && card.shareholderEmail && ' · '}
+                          {card.shareholderEmail && <span>{card.shareholderEmail}</span>}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {card.label || '—'}
                       {card.isReplacement && (
@@ -185,69 +278,118 @@ export default function AdminChargeCardsPage() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         <Badge
-                          variant={card.status === 'BLOCKED' ? 'destructive' : card.status === 'ACTIVE' ? 'default' : 'secondary'}
+                          variant={
+                            card.status === 'BLOCKED'
+                              ? 'destructive'
+                              : card.status === 'ACTIVE'
+                                ? 'default'
+                                : 'secondary'
+                          }
                         >
                           {t(`status.${card.status}`)}
                           {card.blockReason ? ` · ${t(`blockReason.${card.blockReason}`)}` : ''}
                         </Badge>
-                        {card.providerSyncNeeded && <Badge variant="outline">{t('admin.todo')}</Badge>}
+                        {card.providerSyncNeeded && (
+                          <Badge variant="outline">{t('admin.todo')}</Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{card.ogmCode}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(card.feeInclVat, locale)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(card.totalPaid, locale)}</TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(card.feeInclVat, locale)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(card.totalPaid, locale)}
+                    </TableCell>
                     <TableCell className="font-mono text-xs">{card.cardNumber ?? '—'}</TableCell>
                     <TableCell>
                       {card.waitingWorkingDays === null ? (
                         '—'
                       ) : (
-                        <span className={card.overdue ? 'font-medium text-red-700 dark:text-red-400' : undefined}>
+                        <span
+                          className={
+                            card.overdue ? 'font-medium text-red-700 dark:text-red-400' : undefined
+                          }
+                        >
                           {t('admin.workingDays', { days: card.waitingWorkingDays })}
                           {card.overdue ? ` · ${t('admin.overdue')}` : ''}
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {card.status === 'PAID' && (
-                          <Button
-                            size="sm"
-                            disabled={busy}
-                            onClick={() => {
-                              setIssuing(card);
-                              setCardNumber('');
-                            }}
-                          >
-                            {t('admin.issue')}
-                          </Button>
-                        )}
-                        {card.status === 'ACTIVE' && (
-                          <Button size="sm" variant="outline" disabled={busy} onClick={() => act(card, 'block')}>
-                            {t('admin.block')}
-                          </Button>
-                        )}
-                        {card.status === 'BLOCKED' && card.blockReason === 'ADMIN' && (
-                          <Button size="sm" variant="outline" disabled={busy} onClick={() => act(card, 'unblock')}>
-                            {t('admin.unblock')}
-                          </Button>
-                        )}
-                        {(card.status === 'ACTIVE' || (card.status === 'BLOCKED' && card.blockReason !== 'LOST')) && (
-                          <Button size="sm" variant="ghost" disabled={busy} onClick={() => act(card, 'mark-lost')}>
-                            {t('admin.markLost')}
-                          </Button>
-                        )}
-                        {(card.status === 'REQUESTED' || card.status === 'PAID') && (
-                          <Button size="sm" variant="ghost" disabled={busy} onClick={() => act(card, 'cancel')}>
-                            {t('admin.cancel')}
-                          </Button>
-                        )}
-                        {card.providerSyncNeeded && (
-                          <Button size="sm" variant="secondary" disabled={busy} onClick={() => act(card, 'provider-sync-done')}>
-                            {t('admin.syncDone')}
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
+                    {canManage && (
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {card.status === 'REQUESTED' && (
+                            <Button size="sm" disabled={busy} onClick={() => openMarkPaid(card)}>
+                              {t('admin.markPaid')}
+                            </Button>
+                          )}
+                          {card.status === 'PAID' && (
+                            <Button
+                              size="sm"
+                              disabled={busy}
+                              onClick={() => {
+                                setIssuing(card);
+                                setCardNumber('');
+                              }}
+                            >
+                              {t('admin.issue')}
+                            </Button>
+                          )}
+                          {card.status === 'ACTIVE' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => act(card, 'block')}
+                            >
+                              {t('admin.block')}
+                            </Button>
+                          )}
+                          {card.status === 'BLOCKED' && card.blockReason === 'ADMIN' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => act(card, 'unblock')}
+                            >
+                              {t('admin.unblock')}
+                            </Button>
+                          )}
+                          {(card.status === 'ACTIVE' ||
+                            (card.status === 'BLOCKED' && card.blockReason !== 'LOST')) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy}
+                              onClick={() => act(card, 'mark-lost')}
+                            >
+                              {t('admin.markLost')}
+                            </Button>
+                          )}
+                          {(card.status === 'REQUESTED' || card.status === 'PAID') && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy}
+                              onClick={() => act(card, 'cancel')}
+                            >
+                              {t('admin.cancel')}
+                            </Button>
+                          )}
+                          {card.providerSyncNeeded && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={busy}
+                              onClick={() => act(card, 'provider-sync-done')}
+                            >
+                              {t('admin.syncDone')}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -256,7 +398,10 @@ export default function AdminChargeCardsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={issuing !== null} onOpenChange={(open) => !open && setIssuing(null)}>
+      <Dialog
+        open={canManage && issuing !== null}
+        onOpenChange={(open) => !open && setIssuing(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('admin.issueTitle')}</DialogTitle>
@@ -275,6 +420,61 @@ export default function AdminChargeCardsPage() {
             <Button onClick={submitIssue} disabled={busy || cardNumber.trim() === ''}>
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t('admin.issueSubmit')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={canManage && markingPaid !== null}
+        onOpenChange={(open) => !open && setMarkingPaid(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.markPaidTitle')}</DialogTitle>
+            <DialogDescription>{t('admin.markPaidDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('admin.paidAt')}</Label>
+              <DatePicker
+                value={paidAt}
+                onChange={(value) => setPaidAt(value ?? '')}
+                maxDate={new Date(`${brusselsToday()}T00:00:00`)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('admin.paymentMethod')}</Label>
+              <Select
+                value={paymentMethod}
+                onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_METHODS.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {t(`admin.paymentMethods.${m}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="charge-card-payment-note">{t('admin.paymentNote')}</Label>
+              <Textarea
+                id="charge-card-payment-note"
+                maxLength={500}
+                value={paymentNote}
+                onChange={(e) => setPaymentNote(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={submitMarkPaid} disabled={busy || !paidAt || paidAt > brusselsToday()}>
+              {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t('admin.markPaidSubmit')}
             </Button>
           </DialogFooter>
         </DialogContent>

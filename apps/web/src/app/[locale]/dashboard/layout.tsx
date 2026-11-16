@@ -49,7 +49,14 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FeedbackButton } from '@/components/feedback-button';
 import { api, resolveLogoUrl } from '@/lib/api';
-import { getAllSessions, switchSession, removeSession, getActiveSessionId, clearAllSessions, type Session } from '@/lib/sessions';
+import {
+  getAllSessions,
+  switchSession,
+  removeSession,
+  getActiveSessionId,
+  clearAllSessions,
+  type Session,
+} from '@/lib/sessions';
 import { consumePostLoginRedirect, rememberPostLoginRedirect } from '@/lib/post-login-redirect';
 
 interface NavItem {
@@ -65,7 +72,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const t = useTranslations();
   const { selectedCoop, adminCoops, setSelectedCoop, setAdminCoops } = useAdmin();
   const { hasPermission } = usePermissions();
-  const [user, setUser] = useState<{ email: string; name?: string; role: string; emailVerified?: boolean } | null>(null);
+  const [user, setUser] = useState<{
+    email: string;
+    name?: string;
+    role: string;
+    emailVerified?: boolean;
+  } | null>(null);
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
   const [resendingVerification, setResendingVerification] = useState(false);
   const [verificationResent, setVerificationResent] = useState(false);
@@ -77,7 +89,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     pendingShareholders: number;
     unmatchedBankTransactions: number;
   } | null>(null);
-  const [shareholderCoop, setShareholderCoop] = useState<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean; volunteersEnabled?: boolean } | null>(null);
+  const [shareholderCoop, setShareholderCoop] = useState<{
+    name: string;
+    logoUrl?: string;
+    chargeCardsEnabled?: boolean;
+    hasChargeCards?: boolean;
+    volunteersEnabled?: boolean;
+  } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -100,7 +118,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       api<{
         emailVerified?: boolean;
         adminCoops?: typeof adminCoops;
-        shareholderCoops?: Array<{ name: string; logoUrl?: string; chargeCardsEnabled?: boolean; hasChargeCards?: boolean; volunteersEnabled?: boolean }>;
+        shareholderCoops?: Array<{
+          name: string;
+          logoUrl?: string;
+          chargeCardsEnabled?: boolean;
+          hasChargeCards?: boolean;
+          volunteersEnabled?: boolean;
+        }>;
         shareholders?: Array<{ id: string }>;
       }>('/auth/me')
         .then((data) => {
@@ -193,47 +217,171 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const coopName = activeCoop?.name;
 
   const shareholderNav: NavItem[] = [
-    { href: '/dashboard', label: t('common.overview'), icon: <LayoutDashboard className="h-4 w-4" /> },
+    {
+      href: '/dashboard',
+      label: t('common.overview'),
+      icon: <LayoutDashboard className="h-4 w-4" />,
+    },
     { href: '/dashboard/shares', label: t('shares.title'), icon: <FileText className="h-4 w-4" /> },
-    { href: '/dashboard/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" /> },
-    { href: '/dashboard/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
-    { href: '/dashboard/meetings', label: t('meetings.title'), icon: <CalendarCheck className="h-4 w-4" /> },
+    {
+      href: '/dashboard/transactions',
+      label: t('transactions.title'),
+      icon: <ArrowLeftRight className="h-4 w-4" />,
+    },
+    {
+      href: '/dashboard/dividends',
+      label: t('dividends.title'),
+      icon: <Coins className="h-4 w-4" />,
+    },
+    {
+      href: '/dashboard/meetings',
+      label: t('meetings.title'),
+      icon: <CalendarCheck className="h-4 w-4" />,
+    },
     ...(shareholderCoop?.chargeCardsEnabled || shareholderCoop?.hasChargeCards
-      ? [{ href: '/dashboard/charge-cards', label: t('chargeCards.nav'), icon: <Zap className="h-4 w-4" /> }]
+      ? [
+          {
+            href: '/dashboard/charge-cards',
+            label: t('chargeCards.nav'),
+            icon: <Zap className="h-4 w-4" />,
+          },
+        ]
       : []),
-    { href: '/dashboard/documents', label: t('common.documents'), icon: <FileDown className="h-4 w-4" /> },
-    { href: '/dashboard/inbox', label: t('messages.title'), icon: <MailIcon className="h-4 w-4" />, badge: unreadCount },
-    { href: '/dashboard/personal-data', label: t('personalData.title'), icon: <UserCog className="h-4 w-4" /> },
+    {
+      href: '/dashboard/documents',
+      label: t('common.documents'),
+      icon: <FileDown className="h-4 w-4" />,
+    },
+    {
+      href: '/dashboard/inbox',
+      label: t('messages.title'),
+      icon: <MailIcon className="h-4 w-4" />,
+      badge: unreadCount,
+    },
+    {
+      href: '/dashboard/personal-data',
+      label: t('personalData.title'),
+      icon: <UserCog className="h-4 w-4" />,
+    },
   ];
 
   const adminNav: NavItem[] = selectedCoop
     ? ([
-        { href: '/dashboard/admin', label: t('common.overview'), icon: <LayoutDashboard className="h-4 w-4" /> },
-        hasPermission('canManageShareholders') && { href: '/dashboard/admin/shareholders', label: t('admin.shareholders.title'), icon: <Users className="h-4 w-4" />, badge: adminStats?.pendingShareholders },
-        hasPermission('canManageShareholders') && (selectedCoop.chargeCardsEnabled || selectedCoop.hasChargeCards) && { href: '/dashboard/admin/charge-cards', label: t('chargeCards.admin.title'), icon: <Zap className="h-4 w-4" /> },
-        hasPermission('canViewVolunteers') && selectedCoop.volunteersEnabled && { href: '/dashboard/admin/volunteers', label: t('volunteers.nav'), icon: <HeartHandshake className="h-4 w-4" /> },
-        hasPermission('canManageShareClasses') && { href: '/dashboard/admin/share-classes', label: t('admin.shareClasses.title'), icon: <FileText className="h-4 w-4" /> },
-        hasPermission('canManageTransactions') && { href: '/dashboard/admin/transactions', label: t('transactions.title'), icon: <ArrowLeftRight className="h-4 w-4" />, badge: adminStats?.pendingRegistrations },
-        hasPermission('canManageProjects') && { href: '/dashboard/admin/projects', label: t('admin.projects.title'), icon: <Building2 className="h-4 w-4" /> },
-        hasPermission('canManageDividends') && { href: '/dashboard/admin/dividends', label: t('dividends.title'), icon: <Coins className="h-4 w-4" /> },
-        hasPermission('canManageMeetings') && { href: '/dashboard/admin/meetings', label: t('meetings.title'), icon: <CalendarCheck className="h-4 w-4" /> },
-        hasPermission('canManageMessages') && { href: '/dashboard/admin/messages', label: t('messages.title'), icon: <MailIcon className="h-4 w-4" /> },
-        hasPermission('canManageTransactions') && { href: '/dashboard/admin/bank-import', label: t('admin.bankImport.title'), icon: <Upload className="h-4 w-4" />, badge: adminStats?.unmatchedBankTransactions },
-        hasPermission('canViewReports') && { href: '/dashboard/admin/reports', label: t('reports.title'), icon: <BarChart3 className="h-4 w-4" /> },
-        hasPermission('canManageSettings') && { href: '/dashboard/admin/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
-        hasPermission('canManageSettings') && { href: '/dashboard/admin/settings/channels', label: t('admin.channels.title'), icon: <Layers className="h-4 w-4" /> },
-        hasPermission('canManageSettings') && { href: '/dashboard/admin/billing', label: t('admin.billing.title'), icon: <CreditCard className="h-4 w-4" /> },
-        hasPermission('canManageAdmins') && { href: '/dashboard/admin/team', label: t('admin.team.title'), icon: <UserCog className="h-4 w-4" /> },
-        { href: '/dashboard/admin/changelog', label: t('changelog.title'), icon: <Megaphone className="h-4 w-4" /> },
+        {
+          href: '/dashboard/admin',
+          label: t('common.overview'),
+          icon: <LayoutDashboard className="h-4 w-4" />,
+        },
+        hasPermission('canManageShareholders') && {
+          href: '/dashboard/admin/shareholders',
+          label: t('admin.shareholders.title'),
+          icon: <Users className="h-4 w-4" />,
+          badge: adminStats?.pendingShareholders,
+        },
+        (hasPermission('canManageShareholders') || hasPermission('canViewChargeCards')) &&
+          (selectedCoop.chargeCardsEnabled || selectedCoop.hasChargeCards) && {
+            href: '/dashboard/admin/charge-cards',
+            label: t('chargeCards.admin.title'),
+            icon: <Zap className="h-4 w-4" />,
+          },
+        hasPermission('canViewVolunteers') &&
+          selectedCoop.volunteersEnabled && {
+            href: '/dashboard/admin/volunteers',
+            label: t('volunteers.nav'),
+            icon: <HeartHandshake className="h-4 w-4" />,
+          },
+        hasPermission('canManageShareClasses') && {
+          href: '/dashboard/admin/share-classes',
+          label: t('admin.shareClasses.title'),
+          icon: <FileText className="h-4 w-4" />,
+        },
+        hasPermission('canManageTransactions') && {
+          href: '/dashboard/admin/transactions',
+          label: t('transactions.title'),
+          icon: <ArrowLeftRight className="h-4 w-4" />,
+          badge: adminStats?.pendingRegistrations,
+        },
+        hasPermission('canManageProjects') && {
+          href: '/dashboard/admin/projects',
+          label: t('admin.projects.title'),
+          icon: <Building2 className="h-4 w-4" />,
+        },
+        hasPermission('canManageDividends') && {
+          href: '/dashboard/admin/dividends',
+          label: t('dividends.title'),
+          icon: <Coins className="h-4 w-4" />,
+        },
+        hasPermission('canManageMeetings') && {
+          href: '/dashboard/admin/meetings',
+          label: t('meetings.title'),
+          icon: <CalendarCheck className="h-4 w-4" />,
+        },
+        hasPermission('canManageMessages') && {
+          href: '/dashboard/admin/messages',
+          label: t('messages.title'),
+          icon: <MailIcon className="h-4 w-4" />,
+        },
+        hasPermission('canManageTransactions') && {
+          href: '/dashboard/admin/bank-import',
+          label: t('admin.bankImport.title'),
+          icon: <Upload className="h-4 w-4" />,
+          badge: adminStats?.unmatchedBankTransactions,
+        },
+        hasPermission('canViewReports') && {
+          href: '/dashboard/admin/reports',
+          label: t('reports.title'),
+          icon: <BarChart3 className="h-4 w-4" />,
+        },
+        hasPermission('canManageSettings') && {
+          href: '/dashboard/admin/settings',
+          label: t('common.settings'),
+          icon: <Settings className="h-4 w-4" />,
+        },
+        hasPermission('canManageSettings') && {
+          href: '/dashboard/admin/settings/channels',
+          label: t('admin.channels.title'),
+          icon: <Layers className="h-4 w-4" />,
+        },
+        hasPermission('canManageSettings') && {
+          href: '/dashboard/admin/billing',
+          label: t('admin.billing.title'),
+          icon: <CreditCard className="h-4 w-4" />,
+        },
+        hasPermission('canManageAdmins') && {
+          href: '/dashboard/admin/team',
+          label: t('admin.team.title'),
+          icon: <UserCog className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/admin/changelog',
+          label: t('changelog.title'),
+          icon: <Megaphone className="h-4 w-4" />,
+        },
       ].filter(Boolean) as NavItem[])
     : [];
 
   const systemNav: NavItem[] = isSystemAdmin
     ? [
-        { href: '/dashboard/system', label: t('common.overview'), icon: <Shield className="h-4 w-4" /> },
-        { href: '/dashboard/system/coops', label: t('system.coops.title'), icon: <Building2 className="h-4 w-4" /> },
-        { href: '/dashboard/system/users', label: t('system.users.title'), icon: <Users className="h-4 w-4" /> },
-        { href: '/dashboard/system/audit', label: t('system.nav.audit'), icon: <History className="h-4 w-4" /> },
+        {
+          href: '/dashboard/system',
+          label: t('common.overview'),
+          icon: <Shield className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/system/coops',
+          label: t('system.coops.title'),
+          icon: <Building2 className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/system/users',
+          label: t('system.users.title'),
+          icon: <Users className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/system/audit',
+          label: t('system.nav.audit'),
+          icon: <History className="h-4 w-4" />,
+        },
       ]
     : [];
 
@@ -328,7 +476,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       {/* Fixed height so <main>'s pt-14 always clears it, even for a long coop name. */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-card border-b px-4 flex items-center justify-between gap-2">
         {coopLogoUrl ? (
-          <img src={coopLogoUrl} alt={coopName || ''} className="h-8 min-w-0 max-w-[140px] object-contain" />
+          <img
+            src={coopLogoUrl}
+            alt={coopName || ''}
+            className="h-8 min-w-0 max-w-[140px] object-contain"
+          />
         ) : (
           <span className="min-w-0 truncate font-semibold text-lg">{coopName || 'OpenCoop'}</span>
         )}
@@ -350,7 +502,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col h-full">
           <div className="p-4 border-b">
             {coopLogoUrl ? (
-              <img src={coopLogoUrl} alt={coopName || ''} className="h-8 max-w-[180px] object-contain" />
+              <img
+                src={coopLogoUrl}
+                alt={coopName || ''}
+                className="h-8 max-w-[180px] object-contain"
+              />
             ) : (
               <h1 className="text-xl font-bold text-primary">{coopName || 'OpenCoop'}</h1>
             )}
@@ -416,7 +572,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     ) : (
                       <>
                         <p className="font-medium truncate">{user.email}</p>
-                        <p className="text-muted-foreground text-xs">{t(`system.users.roles.${user.role}`)}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {t(`system.users.roles.${user.role}`)}
+                        </p>
                       </>
                     )}
                   </div>
@@ -424,18 +582,22 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {savedSessions.filter((s) => s.id !== activeSessionId).map((session) => (
-                  <DropdownMenuItem
-                    key={session.id}
-                    onClick={() => handleSwitchSession(session.id)}
-                    className="flex items-center gap-2"
-                  >
-                    <div className="flex-1 min-w-0">
-                      {session.name && <p className="text-sm font-medium truncate">{session.name}</p>}
-                      <p className="text-xs text-muted-foreground truncate">{session.email}</p>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
+                {savedSessions
+                  .filter((s) => s.id !== activeSessionId)
+                  .map((session) => (
+                    <DropdownMenuItem
+                      key={session.id}
+                      onClick={() => handleSwitchSession(session.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <div className="flex-1 min-w-0">
+                        {session.name && (
+                          <p className="text-sm font-medium truncate">{session.name}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground truncate">{session.email}</p>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
                 {savedSessions.filter((s) => s.id !== activeSessionId).length > 0 && (
                   <DropdownMenuSeparator />
                 )}
@@ -453,7 +615,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive focus:text-destructive">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-destructive focus:text-destructive"
+                >
                   <LogOut className="h-4 w-4" />
                   {t('auth.logout')}
                 </DropdownMenuItem>
@@ -488,7 +653,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               <AlertDescription className="flex items-center justify-between">
                 <span>{t('admin.billing.readOnlyBanner')}</span>
                 <Link href="/dashboard/admin/billing">
-                  <Button size="sm" variant="outline" className="ml-4 text-red-800 border-red-300 hover:bg-red-100 dark:text-red-200 dark:border-red-700">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-4 text-red-800 border-red-300 hover:bg-red-100 dark:text-red-200 dark:border-red-700"
+                  >
                     {t('admin.billing.subscribe')}
                   </Button>
                 </Link>
@@ -496,24 +665,42 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </Alert>
           </div>
         )}
-        {selectedCoop && selectedCoop.active !== false && !selectedCoop.isReadOnly && selectedCoop.plan !== 'FREE' && selectedCoop.trialEndsAt && (() => {
-          const daysLeft = Math.ceil((new Date(selectedCoop.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-          return daysLeft > 0 && daysLeft <= 30;
-        })() && (
-          <div className="px-4 pt-4 sm:px-6 sm:pt-6">
-            <Alert className="border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-200">
-              <AlertTriangle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>{t('admin.billing.trialBanner', { days: Math.ceil((new Date(selectedCoop.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) })}</span>
-                <Link href="/dashboard/admin/billing">
-                  <Button size="sm" variant="outline" className="ml-4 text-blue-800 border-blue-300 hover:bg-blue-100 dark:text-blue-200 dark:border-blue-700">
-                    {t('admin.billing.subscribe')}
-                  </Button>
-                </Link>
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
+        {selectedCoop &&
+          selectedCoop.active !== false &&
+          !selectedCoop.isReadOnly &&
+          selectedCoop.plan !== 'FREE' &&
+          selectedCoop.trialEndsAt &&
+          (() => {
+            const daysLeft = Math.ceil(
+              (new Date(selectedCoop.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+            );
+            return daysLeft > 0 && daysLeft <= 30;
+          })() && (
+            <div className="px-4 pt-4 sm:px-6 sm:pt-6">
+              <Alert className="border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-200">
+                <AlertTriangle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span>
+                    {t('admin.billing.trialBanner', {
+                      days: Math.ceil(
+                        (new Date(selectedCoop.trialEndsAt!).getTime() - Date.now()) /
+                          (1000 * 60 * 60 * 24),
+                      ),
+                    })}
+                  </span>
+                  <Link href="/dashboard/admin/billing">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="ml-4 text-blue-800 border-blue-300 hover:bg-blue-100 dark:text-blue-200 dark:border-blue-700"
+                    >
+                      {t('admin.billing.subscribe')}
+                    </Button>
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
         {/* Bottom padding keeps the last content clear of the feedback button on phones. */}
         <div className="p-4 pb-24 sm:p-6 sm:pb-24 lg:pb-6">{children}</div>
       </main>

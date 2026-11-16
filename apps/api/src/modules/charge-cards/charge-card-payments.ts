@@ -7,6 +7,8 @@ export interface ChargeCardPaymentInput {
   bankDate: Date;
   bankTransactionId?: string | null;
   matchedByUserId?: string | null;
+  /** The card's paidAt once the fee is reached. Defaults to now (bank import). */
+  paidAt?: Date;
 }
 
 /** The card was no longer REQUESTED once its row was locked. Nothing was written. */
@@ -49,7 +51,10 @@ export async function recordChargeCardPayment(
     },
   });
 
-  const payments = await tx.payment.findMany({ where: { chargeCardId: card.id }, select: { amount: true } });
+  const payments = await tx.payment.findMany({
+    where: { chargeCardId: card.id },
+    select: { amount: true },
+  });
   const paidCents = payments.reduce((sum, row) => sum + toCents(Number(row.amount)), 0);
   if (paidCents < toCents(card.feeInclVat)) {
     return { payment, paid: false };
@@ -59,7 +64,7 @@ export async function recordChargeCardPayment(
     tx,
     { id: card.id, coopId: card.coopId },
     { status: 'REQUESTED' },
-    { status: 'PAID', paidAt: new Date() },
+    { status: 'PAID', paidAt: input.paidAt ?? new Date() },
     'Only a requested charge card can be marked paid',
   );
   return { payment, paid: true };
