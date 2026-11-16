@@ -139,6 +139,11 @@ describeDb('ChargeCardsAdminService (database)', () => {
 
     it('books one payment for the fee, marks the card PAID on the given day and audits it', async () => {
       const { coop, card, admin } = await setup();
+      // paidAt may not precede the request day, so request the card before 2 November.
+      await prisma.chargeCard.update({
+        where: { id: card.id },
+        data: { requestedAt: new Date('2026-11-01T09:00:00.000Z') },
+      });
 
       const result = await service.markPaid(
         coop.id,
