@@ -1126,7 +1126,8 @@
       "canViewReports": "View reports",
       "canViewShareholderRegister": "View shareholder register",
       "canViewVolunteers": "View and contact volunteers",
-      "canViewChargeCards": "View charge cards (who registered)"
+      "canViewChargeCards": "View charge cards (who registered)",
+      "canManageChargeCards": "Manage charge cards (mark paid and issue)"
     },
     "billing": {
       "title": "Billing",

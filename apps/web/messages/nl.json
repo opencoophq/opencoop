@@ -1126,7 +1126,8 @@
       "canViewReports": "Rapporten inzien",
       "canViewShareholderRegister": "Aandeelhoudersregister inzien",
       "canViewVolunteers": "Vrijwilligers bekijken en contacteren",
-      "canViewChargeCards": "Laadpassen bekijken (wie registreerde)"
+      "canViewChargeCards": "Laadpassen bekijken (wie registreerde)",
+      "canManageChargeCards": "Laadpassen beheren (betaling markeren en uitreiken)"
     },
     "billing": {
       "title": "Facturatie",

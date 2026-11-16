@@ -77,6 +77,7 @@ const PERMISSION_KEYS = [
   'canViewShareholderRegister',
   'canViewVolunteers',
   'canViewChargeCards',
+  'canManageChargeCards',
 ] as const;
 
 type PermissionKey = (typeof PERMISSION_KEYS)[number];

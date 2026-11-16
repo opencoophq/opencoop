@@ -132,6 +132,7 @@ async function main() {
         canViewShareholderRegister: true,
         canViewVolunteers: false,
         canViewChargeCards: false,
+        canManageChargeCards: false,
       },
     },
     {
@@ -150,6 +151,7 @@ async function main() {
         canViewShareholderRegister: true,
         canViewVolunteers: false,
         canViewChargeCards: false,
+        canManageChargeCards: false,
       },
     },
     {
@@ -168,6 +170,7 @@ async function main() {
         canViewShareholderRegister: false,
         canViewVolunteers: false,
         canViewChargeCards: false,
+        canManageChargeCards: false,
       },
     },
     {
@@ -186,6 +189,7 @@ async function main() {
         canViewShareholderRegister: false,
         canViewVolunteers: false,
         canViewChargeCards: false,
+        canManageChargeCards: false,
       },
     },
   ];
