@@ -190,24 +190,27 @@ export class ShareTransferService {
           deceasedAt: Date | null;
         };
     try {
-      outcome = await this.prisma.$transaction(async (tx) => {
-        // Lock both parties in a fixed order: concurrent transfers cannot oversell the
-        // source, and two opposite transfers cannot deadlock on each other's rows.
-        const lockIds = [...new Set([input.fromShareholderId, input.toShareholderId])].sort();
-        await tx.$queryRaw(
-          Prisma.sql`SELECT id FROM shareholders WHERE id IN (${Prisma.join(lockIds)}) AND "coopId" = ${input.coopId} ORDER BY id FOR UPDATE`,
-        );
+      outcome = await this.prisma.$transaction(
+        async (tx) => {
+          // Lock both parties in a fixed order: concurrent transfers cannot oversell the
+          // source, and two opposite transfers cannot deadlock on each other's rows.
+          const lockIds = [...new Set([input.fromShareholderId, input.toShareholderId])].sort();
+          await tx.$queryRaw(
+            Prisma.sql`SELECT id FROM shareholders WHERE id IN (${Prisma.join(lockIds)}) AND "coopId" = ${input.coopId} ORDER BY id FOR UPDATE`,
+          );
 
-        const raced = await tx.shareTransfer.findUnique({
-          where: { coopId_idempotencyKey: { coopId: input.coopId, idempotencyKey: key } },
-        });
-        if (raced) return { kind: 'replay' as const, transfer: raced };
+          const raced = await tx.shareTransfer.findUnique({
+            where: { coopId_idempotencyKey: { coopId: input.coopId, idempotencyKey: key } },
+          });
+          if (raced) return { kind: 'replay' as const, transfer: raced };
 
-        const plan = await this.plan(input, tx);
-        if (plan.errors.length > 0) throw this.validationException(plan.errors);
+          const plan = await this.plan(input, tx);
+          if (plan.errors.length > 0) throw this.validationException(plan.errors);
 
-        return this.write(tx, input, key, plan);
-      });
+          return this.write(tx, input, key, plan);
+        },
+        { timeout: 30_000 },
+      );
     } catch (err) {
       if (this.isIdempotencyCollision(err)) {
         const winner = await this.prisma.shareTransfer.findUnique({
@@ -280,7 +283,11 @@ export class ShareTransferService {
           sellsRegistrationId: allocation.registrationId,
           toShareholderId: input.toShareholderId,
           processedByUserId: input.processedByUserId,
-          processedAt: now,
+          // Effective date, not wall-clock time: dividends subtract a SELL by
+          // processedAt and count the BUY by payment bankDate. Both must use the
+          // transfer date, or a backdated transfer pays the dividend twice.
+          // ShareTransfer.createdAt keeps the real processing time.
+          processedAt: transferDate,
           shareTransferId: transfer.id,
         },
       });
@@ -312,7 +319,11 @@ export class ShareTransferService {
           registerDate: transferDate,
           fromShareholderId: input.fromShareholderId,
           processedByUserId: input.processedByUserId,
-          processedAt: now,
+          // Effective date, not wall-clock time: dividends subtract a SELL by
+          // processedAt and count the BUY by payment bankDate. Both must use the
+          // transfer date, or a backdated transfer pays the dividend twice.
+          // ShareTransfer.createdAt keeps the real processing time.
+          processedAt: transferDate,
           shareTransferId: transfer.id,
         },
       });
@@ -673,6 +684,12 @@ export class ShareTransferService {
     if (!same) {
       throw new ConflictException('Idempotency key already used for a different transfer');
     }
+
+    // The first call may have committed and then failed before its status recompute.
+    await this.shareholderStatus.recomputeMany([
+      transfer.fromShareholderId,
+      transfer.toShareholderId,
+    ]);
 
     const [registrations, statuses] = await Promise.all([
       this.prisma.registration.findMany({

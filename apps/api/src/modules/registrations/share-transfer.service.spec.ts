@@ -33,6 +33,7 @@ type Reg = {
   pricePerShare: number;
   totalAmount: number;
   registerDate: Date;
+  processedAt?: Date | null;
   createdAt: Date;
   sellsRegistrationId?: string | null;
   fromShareholderId?: string | null;
@@ -335,6 +336,10 @@ describe('ShareTransferService', () => {
       });
       expect(sell.registerDate.toISOString()).toBe('2026-03-01T00:00:00.000Z');
       expect(buy.registerDate.toISOString()).toBe('2026-03-01T00:00:00.000Z');
+      // Dividends subtract a SELL by processedAt and count a BUY by bankDate.
+      // Both must be the transfer date, or a backdated transfer pays twice.
+      expect(sell.processedAt?.toISOString()).toBe('2026-03-01T00:00:00.000Z');
+      expect(buy.processedAt?.toISOString()).toBe('2026-03-01T00:00:00.000Z');
       expect(result.registrations).toEqual([sell.id, buy.id]);
       expect(result.transfer).toMatchObject({
         reason: 'INHERITANCE',
@@ -599,7 +604,8 @@ describe('ShareTransferService', () => {
       expect(second.registrations).toEqual(first.registrations);
       expect(second.valueEur).toBe(1000);
       expectNoWrites();
-      expect(shareholderStatus.recomputeMany).not.toHaveBeenCalled();
+      // A replay re-derives status in case the first call failed after commit.
+      expect(shareholderStatus.recomputeMany).toHaveBeenCalledWith(['alice', 'bob']);
     });
 
     it('rejects a reused idempotency key with different parameters', async () => {
