@@ -13,6 +13,7 @@ import { AuditService } from '../audit/audit.service';
 import { deriveShareholderStatus } from '../shareholder-status/shareholder-status';
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 import { RegistrationsService } from './registrations.service';
+import { lockShareholders, SHAREHOLDER_LOCK_TX_OPTIONS } from './shareholder-lock';
 
 export interface TransferSharesInput {
   coopId: string;
@@ -199,27 +200,21 @@ export class ShareTransferService {
           deceasedAt: Date | null;
         };
     try {
-      outcome = await this.prisma.$transaction(
-        async (tx) => {
-          // Lock both parties in a fixed order: concurrent transfers cannot oversell the
-          // source, and two opposite transfers cannot deadlock on each other's rows.
-          const lockIds = [...new Set([input.fromShareholderId, input.toShareholderId])].sort();
-          await tx.$queryRaw(
-            Prisma.sql`SELECT id FROM shareholders WHERE id IN (${Prisma.join(lockIds)}) AND "coopId" = ${input.coopId} ORDER BY id FOR UPDATE`,
-          );
+      outcome = await this.prisma.$transaction(async (tx) => {
+        // Lock both parties in a fixed order: concurrent transfers cannot oversell the
+        // source, and two opposite transfers cannot deadlock on each other's rows.
+        await lockShareholders(tx, input.coopId, [input.fromShareholderId, input.toShareholderId]);
 
-          const raced = await tx.shareTransfer.findUnique({
-            where: { coopId_idempotencyKey: { coopId: input.coopId, idempotencyKey: key } },
-          });
-          if (raced) return { kind: 'replay' as const, transfer: raced };
+        const raced = await tx.shareTransfer.findUnique({
+          where: { coopId_idempotencyKey: { coopId: input.coopId, idempotencyKey: key } },
+        });
+        if (raced) return { kind: 'replay' as const, transfer: raced };
 
-          const plan = await this.plan(input, tx);
-          if (plan.errors.length > 0) throw this.validationException(plan.errors);
+        const plan = await this.plan(input, tx);
+        if (plan.errors.length > 0) throw this.validationException(plan.errors);
 
-          return this.write(tx, input, key, plan);
-        },
-        { timeout: 30_000 },
-      );
+        return this.write(tx, input, key, plan);
+      }, SHAREHOLDER_LOCK_TX_OPTIONS);
     } catch (err) {
       if (this.isIdempotencyCollision(err)) {
         const winner = await this.prisma.shareTransfer.findUnique({

@@ -20,6 +20,7 @@ original SemVer-style tags.
 ### Fixed
 
 - **The shareholder list showed shares that were already sold or transferred.** `list_shareholders` and the admin shareholder list summed the quantity of every ACTIVE/COMPLETED buy and ignored sells, so a member who bought 1 share and transferred it showed 1 share with status INACTIVE. The list now uses the same rule as the shareholder detail page: per held buy, the paid shares minus the shares committed to sells (pending or completed). One shared helper computes this for the list, the detail page and the minors view. Behaviour change: a partly paid buy now counts only its paid shares in the list, as it already did on the detail page.
+- **Two sales of the same shares at the same moment could both succeed.** `createSell` (admin, MCP `sell_shares_for_shareholder`, member self-service) and `createTransfer` (admin, MCP `create_transfer`, channels) checked available shares outside a transaction, so two requests, or one of them and `transfer_shares`, could sell more shares than the buy held. Both now lock the shareholder rows in one transaction, in the same order as `transfer_shares`, re-check available shares and the EcoPower minimum inside it, and only then write. Error messages and the side effects after commit (status recompute, admin notification) are unchanged.
 
 ## [2026.47.0] - 2026-11-16
 

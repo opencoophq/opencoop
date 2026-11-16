@@ -15,6 +15,7 @@ import { resolveShareholderEmail } from '../shareholders/shareholder-email.resol
 import { ShareholderStatusService } from '../shareholder-status/shareholder-status.service';
 import { OgmService } from '../ogm/ogm.service';
 import { COMMITTED_SELL_STATUSES } from '../shareholders/shares-owned';
+import { lockShareholders, SHAREHOLDER_LOCK_TX_OPTIONS } from './shareholder-lock';
 
 @Injectable()
 export class RegistrationsService {
@@ -486,64 +487,72 @@ export class RegistrationsService {
     registrationId: string;
     quantity: number;
   }) {
-    const buyRegistration = await this.prisma.registration.findFirst({
-      where: {
-        id: data.registrationId,
-        coopId: data.coopId,
-        shareholderId: data.shareholderId,
-        type: 'BUY',
-        // I8: Only allow selling against active/completed buys
-        status: { in: ['ACTIVE', 'COMPLETED'] },
-      },
-      include: { shareClass: true, payments: true },
-    });
+    const { buyRegistration, sellRegistration } = await this.prisma.$transaction(async (tx) => {
+      // Same lock as createTransfer and ShareTransferService.transferShares: concurrent
+      // sales and transfers of this shareholder's shares wait here, then re-check below.
+      await lockShareholders(tx, data.coopId, [data.shareholderId]);
 
-    if (!buyRegistration) {
-      throw new NotFoundException('Active buy registration not found');
-    }
+      const buyRegistration = await tx.registration.findFirst({
+        where: {
+          id: data.registrationId,
+          coopId: data.coopId,
+          shareholderId: data.shareholderId,
+          type: 'BUY',
+          // I8: Only allow selling against active/completed buys
+          status: { in: ['ACTIVE', 'COMPLETED'] },
+        },
+        include: { shareClass: true, payments: true },
+      });
 
-    const pricePerShare = Number(buyRegistration.pricePerShare);
+      if (!buyRegistration) {
+        throw new NotFoundException('Active buy registration not found');
+      }
 
-    // C3: Check available shares (vested minus all existing sells)
-    const available = await this.getAvailableShares(
-      data.registrationId,
-      buyRegistration.payments,
-      pricePerShare,
-      buyRegistration.quantity,
-    );
+      const pricePerShare = Number(buyRegistration.pricePerShare);
 
-    if (data.quantity > available) {
-      throw new BadRequestException(
-        'Sale quantity exceeds available shares (accounting for pending and completed sells)',
-      );
-    }
-
-    // Ecopower exit guard
-    await this.checkEcoPowerThreshold(
-      data.coopId,
-      data.shareholderId,
-      data.quantity,
-      pricePerShare,
-    );
-
-    const totalAmount = data.quantity * pricePerShare;
-
-    const sellRegistration = await this.prisma.registration.create({
-      data: {
-        coopId: data.coopId,
-        shareholderId: data.shareholderId,
-        shareClassId: buyRegistration.shareClassId,
-        projectId: buyRegistration.projectId,
-        type: 'SELL',
-        status: 'PENDING',
-        quantity: data.quantity,
+      // C3: Check available shares (vested minus all existing sells)
+      const available = await this.getAvailableShares(
+        data.registrationId,
+        buyRegistration.payments,
         pricePerShare,
-        totalAmount,
-        registerDate: new Date(),
-        sellsRegistrationId: data.registrationId,
-      },
-      include: this.defaultInclude,
-    });
+        buyRegistration.quantity,
+        tx,
+      );
+
+      if (data.quantity > available) {
+        throw new BadRequestException(
+          'Sale quantity exceeds available shares (accounting for pending and completed sells)',
+        );
+      }
+
+      // Ecopower exit guard
+      await this.checkEcoPowerThreshold(
+        data.coopId,
+        data.shareholderId,
+        data.quantity,
+        pricePerShare,
+        tx,
+      );
+
+      const sellRegistration = await tx.registration.create({
+        data: {
+          coopId: data.coopId,
+          shareholderId: data.shareholderId,
+          shareClassId: buyRegistration.shareClassId,
+          projectId: buyRegistration.projectId,
+          type: 'SELL',
+          status: 'PENDING',
+          quantity: data.quantity,
+          pricePerShare,
+          totalAmount: data.quantity * pricePerShare,
+          registerDate: new Date(),
+          sellsRegistrationId: data.registrationId,
+        },
+        include: this.defaultInclude,
+      });
+
+      return { buyRegistration, sellRegistration };
+    }, SHAREHOLDER_LOCK_TX_OPTIONS);
 
     // Notify admins of share sale
     const sh = sellRegistration.shareholder;
@@ -750,57 +759,63 @@ export class RegistrationsService {
     quantity: number;
     processedByUserId?: string;
   }) {
-    const buyRegistration = await this.prisma.registration.findFirst({
-      where: {
-        id: data.registrationId,
-        coopId: data.coopId,
-        shareholderId: data.fromShareholderId,
-        type: 'BUY',
-        // I8: Only allow transfers from active/completed buys
-        status: { in: ['ACTIVE', 'COMPLETED'] },
-      },
-      include: { shareClass: true, payments: true },
-    });
-
-    if (!buyRegistration) {
-      throw new NotFoundException('Active buy registration not found');
-    }
-
-    // The recipient must belong to the same coop as the source registration.
-    const recipient = await this.prisma.shareholder.findFirst({
-      where: { id: data.toShareholderId, coopId: data.coopId },
-      select: { id: true },
-    });
-    if (!recipient) {
-      throw new NotFoundException('Recipient shareholder not found');
-    }
-
-    const pricePerShare = Number(buyRegistration.pricePerShare);
-
-    // I7: Check available shares (vested minus pending/completed sells)
-    const available = await this.getAvailableShares(
-      data.registrationId,
-      buyRegistration.payments,
-      pricePerShare,
-      buyRegistration.quantity,
-    );
-
-    if (data.quantity > available) {
-      throw new BadRequestException('Transfer quantity exceeds available shares');
-    }
-
-    // Ecopower exit guard (applies to from-shareholder only)
-    await this.checkEcoPowerThreshold(
-      data.coopId,
-      data.fromShareholderId,
-      data.quantity,
-      pricePerShare,
-    );
-
-    const totalAmount = data.quantity * pricePerShare;
-    const now = new Date();
-
     const transferIn = await this.prisma.$transaction(async (tx) => {
+      // Same lock, same order as ShareTransferService.transferShares: concurrent sales and
+      // transfers of these shares wait here, then re-check below.
+      await lockShareholders(tx, data.coopId, [data.fromShareholderId, data.toShareholderId]);
+
+      const buyRegistration = await tx.registration.findFirst({
+        where: {
+          id: data.registrationId,
+          coopId: data.coopId,
+          shareholderId: data.fromShareholderId,
+          type: 'BUY',
+          // I8: Only allow transfers from active/completed buys
+          status: { in: ['ACTIVE', 'COMPLETED'] },
+        },
+        include: { shareClass: true, payments: true },
+      });
+
+      if (!buyRegistration) {
+        throw new NotFoundException('Active buy registration not found');
+      }
+
+      // The recipient must belong to the same coop as the source registration.
+      const recipient = await tx.shareholder.findFirst({
+        where: { id: data.toShareholderId, coopId: data.coopId },
+        select: { id: true },
+      });
+      if (!recipient) {
+        throw new NotFoundException('Recipient shareholder not found');
+      }
+
+      const pricePerShare = Number(buyRegistration.pricePerShare);
+
+      // I7: Check available shares (vested minus pending/completed sells)
+      const available = await this.getAvailableShares(
+        data.registrationId,
+        buyRegistration.payments,
+        pricePerShare,
+        buyRegistration.quantity,
+        tx,
+      );
+
+      if (data.quantity > available) {
+        throw new BadRequestException('Transfer quantity exceeds available shares');
+      }
+
+      // Ecopower exit guard (applies to from-shareholder only)
+      await this.checkEcoPowerThreshold(
+        data.coopId,
+        data.fromShareholderId,
+        data.quantity,
+        pricePerShare,
+        tx,
+      );
+
+      const totalAmount = data.quantity * pricePerShare;
+      const now = new Date();
+
       // SELL registration for the from-shareholder
       const sellReg = await tx.registration.create({
         data: {
@@ -865,7 +880,7 @@ export class RegistrationsService {
       });
 
       return transferIn;
-    });
+    }, SHAREHOLDER_LOCK_TX_OPTIONS);
 
     await this.shareholderStatus.recomputeMany([data.fromShareholderId, data.toShareholderId]);
 
