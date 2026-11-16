@@ -76,7 +76,7 @@ function makeDb() {
     ...r,
     payments: state.payments
       .filter((p) => p.registrationId === r.id)
-      .map((p) => ({ amount: p.amount })),
+      .map((p) => ({ amount: p.amount, bankDate: p.bankDate })),
   });
   const statusIn = (where: any, r: Reg) => !where.status?.in || where.status.in.includes(r.status);
 
@@ -214,6 +214,7 @@ function makeDb() {
     registerDate: string,
     price = 250,
     regId?: string,
+    paidOn: string = registerDate,
   ) => {
     const row: Reg = {
       id: regId ?? id('buy'),
@@ -235,7 +236,7 @@ function makeDb() {
       registrationId: row.id,
       coopId: 'coop-1',
       amount: quantity * price,
-      bankDate: new Date(registerDate),
+      bankDate: new Date(paidOn),
     });
     return row;
   };
@@ -387,6 +388,72 @@ describe('ShareTransferService', () => {
 
       await expect(service.transferShares(base({ quantity: 3 }))).rejects.toThrow(
         /Not enough shares: the source holds 2 available/,
+      );
+    });
+
+    it('does not allocate shares paid after the transfer date', async () => {
+      // Registered before the transfer, paid after it: the shares were not owned yet.
+      fake.addPaidBuy('alice', 4, '2026-01-10T10:00:00Z', 250, 'late-paid', '2026-03-05');
+
+      await expect(service.transferShares(base({ quantity: 1 }))).rejects.toThrow(
+        /Not enough shares: the source holds 0 available/,
+      );
+      expectNoWrites();
+
+      const preview = await service.previewTransfer(base({ quantity: 1 }));
+      expect(preview.valid).toBe(false);
+      expect(preview.allocations).toEqual([]);
+    });
+
+    it('allocates only the part of a buy paid by the transfer date', async () => {
+      const buy = fake.addPaidBuy('alice', 4, '2026-01-10T10:00:00Z', 250, 'partly-paid');
+      // Replace the full payment with 2 shares paid before and 2 after the transfer.
+      fake.state.payments = fake.state.payments.filter((p) => p.registrationId !== buy.id);
+      fake.state.payments.push(
+        {
+          id: 'p-early',
+          registrationId: buy.id,
+          coopId: 'coop-1',
+          amount: 500,
+          bankDate: new Date('2026-03-01T00:00:00Z'),
+        },
+        {
+          id: 'p-late',
+          registrationId: buy.id,
+          coopId: 'coop-1',
+          amount: 500,
+          bankDate: new Date('2026-03-02T00:00:00Z'),
+        },
+      );
+
+      await expect(service.transferShares(base({ quantity: 3, reason: 'SALE' }))).rejects.toThrow(
+        /holds 2 available/,
+      );
+      const result = await service.transferShares(base({ quantity: 2, reason: 'SALE' }));
+      expect(result.valueEur).toBe(500);
+    });
+
+    it('stores a date-time transfer date as UTC midnight of its Brussels day', async () => {
+      fake.addPaidBuy('alice', 4, '2020-01-10T10:00:00Z');
+
+      // 23:30 UTC on 9 March is 00:30 on 10 March in Brussels.
+      const result = await service.transferShares(
+        base({ transferDate: '2026-03-09T23:30:00Z', dateOfDeath: '2026-03-09T23:15:00Z' }),
+      );
+
+      const rows = fake.state.registrations.filter((r) => r.shareTransferId === result.transfer.id);
+      for (const row of rows) {
+        expect(row.registerDate.toISOString()).toBe('2026-03-10T00:00:00.000Z');
+        expect((row as any).processedAt.toISOString()).toBe('2026-03-10T00:00:00.000Z');
+      }
+      expect(
+        fake.state.payments
+          .filter((p) => rows.some((r) => r.id === p.registrationId))
+          .map((p) => p.bankDate.toISOString()),
+      ).toEqual(['2026-03-10T00:00:00.000Z', '2026-03-10T00:00:00.000Z']);
+      expect(result.transfer.transferDate.toISOString()).toBe('2026-03-10T00:00:00.000Z');
+      expect(fake.state.shareholders.find((s) => s.id === 'alice')!.deceasedAt?.toISOString()).toBe(
+        '2026-03-10T00:00:00.000Z',
       );
     });
 

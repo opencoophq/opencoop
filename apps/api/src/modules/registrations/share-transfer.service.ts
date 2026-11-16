@@ -95,21 +95,30 @@ function brusselsDay(date: Date): string {
   return BRUSSELS_DAY.format(date);
 }
 
-/** Parse an ISO date or date-time. Returns the instant and its Brussels calendar day, or null. */
+/**
+ * Parse an ISO date or date-time to its Brussels calendar day. The returned date is
+ * always UTC midnight of that day, so it sorts the same way as a date-only
+ * ex-dividend date: 2026-03-09T23:30Z (10 March in Brussels) becomes 2026-03-10T00:00Z.
+ */
 function parseDay(value: Date | string | undefined | null): { date: Date; day: string } | null {
   if (value === undefined || value === null || value === '') return null;
+  let day: string;
   if (value instanceof Date) {
-    return isNaN(value.getTime()) ? null : { date: value, day: brusselsDay(value) };
+    if (isNaN(value.getTime())) return null;
+    day = brusselsDay(value);
+  } else if (typeof value !== 'string') {
+    return null;
+  } else if (DATE_ONLY.test(value)) {
+    day = value;
+  } else {
+    const instant = new Date(value);
+    if (isNaN(instant.getTime())) return null;
+    day = brusselsDay(instant);
   }
-  if (typeof value !== 'string') return null;
-  if (DATE_ONLY.test(value)) {
-    const date = new Date(`${value}T00:00:00.000Z`);
-    // Reject roll-overs such as 2026-02-31.
-    if (isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) return null;
-    return { date, day: value };
-  }
-  const date = new Date(value);
-  return isNaN(date.getTime()) ? null : { date, day: brusselsDay(date) };
+  const date = new Date(`${day}T00:00:00.000Z`);
+  // Reject roll-overs such as 2026-02-31.
+  if (isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== day) return null;
+  return { date, day };
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -484,7 +493,7 @@ export class ShareTransferService {
           pricePerShare: true,
           projectId: true,
           registerDate: true,
-          payments: { select: { amount: true } },
+          payments: { select: { amount: true, bankDate: true } },
         },
         orderBy: [{ registerDate: 'asc' }, { id: 'asc' }],
       });
@@ -493,9 +502,14 @@ export class ShareTransferService {
       for (const buy of buys) {
         if (brusselsDay(buy.registerDate) > transferDate.day) continue;
         const price = Number(buy.pricePerShare);
+        // Only shares paid on or before the transfer day can move. The recipient's BUY is
+        // paid on the transfer date, so a later payment would make unpaid shares earn dividend.
+        const paidByTransferDay = buy.payments.filter(
+          (p) => brusselsDay(p.bankDate) <= transferDate.day,
+        );
         const free = await this.registrations.getAvailableShares(
           buy.id,
-          buy.payments,
+          paidByTransferDay,
           price,
           buy.quantity,
           db,

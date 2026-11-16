@@ -13,6 +13,7 @@ import {
   describeDb,
 } from '../../test-utils/test-db';
 import { AuditService } from '../audit/audit.service';
+import { DividendsService } from '../dividends/dividends.service';
 import { RegistrationsService } from './registrations.service';
 import { ShareTransferService } from './share-transfer.service';
 
@@ -47,7 +48,9 @@ describeDb('ShareTransferService (database)', () => {
     await prisma.$disconnect();
   });
 
-  async function setup(buys: Array<{ quantity: number; price: number; date: string }>) {
+  async function setup(
+    buys: Array<{ quantity: number; price: number; date: string; paidOn?: string }>,
+  ) {
     const coop = await createTestCoop(prisma);
     const from = await createTestShareholder(prisma, coop.id);
     const to = await createTestShareholder(prisma, coop.id);
@@ -71,7 +74,7 @@ describeDb('ShareTransferService (database)', () => {
           coopId: coop.id,
           registrationId: reg.id,
           amount: buy.quantity * buy.price,
-          bankDate: new Date(buy.date),
+          bankDate: new Date(buy.paidOn ?? buy.date),
         },
       });
     }
@@ -184,4 +187,64 @@ describeDb('ShareTransferService (database)', () => {
     expect([a.idempotentReplay, b.idempotentReplay].sort()).toEqual([false, true]);
     expect(await prisma.shareTransfer.count({ where: { coopId: coop.id } })).toBe(1);
   });
+
+  it('refuses shares registered before but paid after the transfer date', async () => {
+    const { coop, from, to, shareClass } = await setup([
+      { quantity: 4, price: 10, date: '2026-01-10T10:00:00Z', paidOn: '2026-03-05T00:00:00Z' },
+    ]);
+
+    await expect(
+      service.transferShares({
+        coopId: coop.id,
+        fromShareholderId: from.id,
+        toShareholderId: to.id,
+        shareClassId: shareClass.id,
+        quantity: 1,
+        transferDate: '2026-03-02',
+        reason: 'INHERITANCE',
+      }),
+    ).rejects.toThrow(/holds 0 available/);
+    expect(await prisma.shareTransfer.count({ where: { coopId: coop.id } })).toBe(0);
+  });
+
+  it.each([
+    ['before', '2026-02-28', 'from'],
+    ['equal to', '2026-03-01', 'from'],
+    ['after', '2026-03-02', 'to'],
+  ] as const)(
+    'pays the dividend to exactly one party when the ex-dividend date is %s the transfer date',
+    async (_label, exDividendDate, payee) => {
+      const { coop, from, to, shareClass } = await setup([
+        { quantity: 4, price: 10, date: '2019-01-01T10:00:00Z' },
+      ]);
+      // A backdated inheritance, recorded with a date-time late on 28 Feb UTC (1 March in Brussels).
+      await service.transferShares({
+        coopId: coop.id,
+        fromShareholderId: from.id,
+        toShareholderId: to.id,
+        shareClassId: shareClass.id,
+        quantity: 4,
+        transferDate: '2026-02-28T23:30:00Z',
+        reason: 'INHERITANCE',
+      });
+      const period = await prisma.dividendPeriod.create({
+        data: {
+          coopId: coop.id,
+          year: 2026,
+          dividendRate: 0.05,
+          exDividendDate: new Date(exDividendDate),
+        },
+      });
+      const dividends = new DividendsService(prisma as any, new AuditService(prisma as any));
+
+      await dividends.calculate(period.id, coop.id);
+
+      const payouts = await prisma.dividendPayout.findMany({
+        where: { dividendPeriodId: period.id },
+      });
+      expect(payouts.map((p) => p.shareholderId)).toEqual([payee === 'from' ? from.id : to.id]);
+      // 4 shares x EUR 10 x 5% = EUR 2 gross, paid once.
+      expect(Number(payouts[0].grossAmount)).toBe(2);
+    },
+  );
 });
