@@ -158,6 +158,7 @@ Swagger UI available at: `http://localhost:3001/docs` (mounted via `SwaggerModul
 
 - **MCP endpoint:** `POST /mcp` is the only MCP endpoint. It uses stateless Streamable HTTP transport with JSON responses, not SSE streaming. `GET` and `DELETE` on `/mcp` return `405`.
 - **Public URLs:** Give external clients `https://mcp.opencoop.be/mcp` (acc: `https://mcp-acc.opencoop.be/mcp`). The old path `https://opencoop.be/api/mcp` still works.
+- **Server card:** `GET /.well-known/mcp/server-card.json` (Cloudflare Agent Readiness format) is public, sends `Access-Control-Allow-Origin: *`, and lists tools from the live `@rekog/mcp-nest` registry (`mcp-server-card.controller.ts`). The web app proxies it at the site root (`apps/web/src/app/.well-known/mcp/server-card.json/route.ts`), because Caddy only sends `/api/*` to the API. `transport.endpoint` is `MCP_PUBLIC_URL` when the API has it, otherwise `${FRONTEND_URL}/api/mcp`.
 - **Authentication:** Send `Authorization: Bearer oc_<key>`. Each API key belongs to exactly one user and one coop. It is not a session token.
 - **Key scope:** Keys use `READ_ONLY` by default or `READ_WRITE` when selected during creation in the dashboard.
 - Every tool call re-checks the key owner's live coop permissions at call time. It uses the same permission checks as the REST API's `@RequirePermission` decorator and applies the same `canViewPII` masking logic to returned data.

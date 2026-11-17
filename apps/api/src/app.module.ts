@@ -41,6 +41,7 @@ import { McpToolsModule } from './modules/mcp/mcp.module';
 import { ChargeCardsModule } from './modules/charge-cards/charge-cards.module';
 import { VolunteersModule } from './modules/volunteers/volunteers.module';
 import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
+import { MCP_SERVER_INFO, McpServerCardController } from './modules/mcp/mcp-server-card.controller';
 
 @Module({
   imports: [
@@ -99,10 +100,9 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
     BillingModule,
     HealthModule,
     McpModule.forRoot({
-      name: 'opencoop',
-      version: '1.0.0',
-      instructions:
-        "OpenCoop admin API — query your cooperative's shareholders, transactions, analytics, and more. Authenticated via API key.",
+      name: MCP_SERVER_INFO.name,
+      version: MCP_SERVER_INFO.version,
+      instructions: MCP_SERVER_INFO.instructions,
       transport: McpTransportType.STREAMABLE_HTTP,
       capabilities: {
         tools: {},
@@ -117,6 +117,8 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
     ApiKeysModule,
     McpToolsModule,
   ],
+  // Lives here, not in McpToolsModule: it needs the registry that McpModule.forRoot exports.
+  controllers: [McpServerCardController],
   providers: [
     {
       provide: APP_FILTER,
