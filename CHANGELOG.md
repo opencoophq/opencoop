@@ -19,7 +19,7 @@ original SemVer-style tags.
 
 ### Added
 
-- **MCP tool `submit_feedback`.** An agent can report a failing tool, wrong data, a missing capability, or wrong docs. The tool files a GitHub issue in `opencoophq/opencoop` (labels `mcp-feedback`, `source:agent`, `kind:<kind>`), or adds a comment when an open issue has the same kind, tool, and title. It removes secrets and personal data (names in payloads, emails, phones, IBANs, national register numbers) before posting and identifies the reporter only by a hashed id. It works with read-only keys and changes no coop data. Limits: 5 reports per user per hour and 30 per day, counted in Redis. It stays disabled until `MCP_FEEDBACK_GITHUB_TOKEN` is set; see `docs/OPERATIONS.md`.
+- **MCP tool `submit_feedback`.** An agent can report a failing tool, wrong data, a missing capability, or wrong docs. The tool files a GitHub issue in `opencoophq/opencoop` (labels `mcp-feedback`, `source:agent`, `kind:<kind>`), or adds a comment when an open issue has the same kind, tool, and title. It removes secrets and personal data (names and addresses in payloads, display names before emails, emails, phones, IBANs, national register numbers) before posting and identifies the reporter only by a hashed id. It works with read-only keys. It reads the key owner's permissions, writes nothing to the database; its only write is the GitHub issue/comment. Limits: 5 reports per user per hour and 30 per day, counted in Redis. It stays disabled until `MCP_FEEDBACK_GITHUB_TOKEN` is set; see `docs/OPERATIONS.md`.
 
 ## [2026.47.2] - 2026-11-16
 

@@ -235,6 +235,159 @@ describe('scrubFeedbackText', () => {
   });
 });
 
+describe('scrubFeedbackText names, review round 2', () => {
+  const ADDRESS = '[REDACTED:address]';
+
+  describe('new name keys', () => {
+    it.each([
+      ['{"shareholder": "Jan Peeters"}', `{"shareholder": "${NAME}"}`],
+      ['{"payee": "Jan"}', `{"payee": "${NAME}"}`],
+      ['payee: Jan', `payee: ${NAME}`],
+      ['{"from": "Jan Peeters"}', `{"from": "${NAME}"}`],
+      ["{ to: 'Els' }", `{ to: '${NAME}' }`],
+      ['sender=Jan', `sender=${NAME}`],
+      ['"recipient": "Els"', `"recipient": "${NAME}"`],
+      ['"author": "Els"', `"author": "${NAME}"`],
+      ['"contact": "Els Peeters"', `"contact": "${NAME}"`],
+      ['"partner": "Els"', `"partner": "${NAME}"`],
+      ['organizer: Els', `organizer: ${NAME}`],
+      ['"attendee": "Els"', `"attendee": "${NAME}"`],
+      ['assignee=Els', `assignee=${NAME}`],
+      ['"created_by": "Els"', `"created_by": "${NAME}"`],
+      ['createdBy: Els', `createdBy: ${NAME}`],
+      ['"beneficiary": "Els"', `"beneficiary": "${NAME}"`],
+      ['"owner": "Els"', `"owner": "${NAME}"`],
+      ['"user": "Els Peeters"', `"user": "${NAME}"`],
+      ['legalRepresentative: Els', `legalRepresentative: ${NAME}`],
+      ['"legal_representative": "Els"', `"legal_representative": "${NAME}"`],
+      ['companyName: Peeters BV', `companyName: ${NAME}`],
+      ['"company_name": "Peeters BV"', `"company_name": "${NAME}"`],
+    ])('redacts %s', (input, expected) => {
+      expect(scrubFeedbackText(input)).toBe(expected);
+    });
+
+    it.each([
+      '{"from": "2026-10-01", "to": "2026-10-01T10:00:00Z"}',
+      '{"from": "01/10/2026 10:00"}',
+      '{"user": "clx1abc2def", "owner": "usr_42"}',
+      '{"owner": 42, "user": null, "partner": true, "contact": {"id": 1}, "to": ["a"]}',
+      'Tool name: get_x',
+      'from 2026 to 2027',
+      'send to admin',
+      'user: admin',
+      'owner: the coop',
+      'from: 2026',
+    ])('keeps %s', (input) => {
+      expect(scrubFeedbackText(input)).toBe(input);
+    });
+  });
+
+  describe('unquoted generic key with a capitalised name', () => {
+    it.each([
+      ['name: Jan Peeters', `name: ${NAME}`],
+      ['Name: Jan Peeters', `Name: ${NAME}`],
+      ['member: Jan Peeters, joined 2020', `member: ${NAME}, joined 2020`],
+      ['holder: Marie Van den Berg', `holder: ${NAME}`],
+      ['owner: Émile Dupré', `owner: ${NAME}`],
+      ['to: Jan de Smet', `to: ${NAME}`],
+    ])('redacts %s', (input, expected) => {
+      expect(scrubFeedbackText(input)).toBe(expected);
+    });
+
+    it.each(['Tool name: List shareholders', 'name: Jan', 'member: since 2020'])(
+      'keeps %s',
+      (input) => {
+        expect(scrubFeedbackText(input)).toBe(input);
+      },
+    );
+  });
+
+  describe('display name before an email', () => {
+    it.each([
+      ['sent by Jan Peeters <jan@x.be> today', `sent by ${NAME} <${EMAIL}> today`],
+      ['"Jan Peeters" <jan@x.be>', `${NAME} <${EMAIL}>`],
+      ['Émile Dupré <emile@x.be>', `${NAME} <${EMAIL}>`],
+      ['Marie van den Berg <m@x.be>', `${NAME} <${EMAIL}>`],
+    ])('redacts %s', (input, expected) => {
+      expect(scrubFeedbackText(input)).toBe(expected);
+    });
+
+    it('keeps a bare email in angle brackets', () => {
+      expect(scrubFeedbackText('mail <jan@x.be>')).toBe(`mail <${EMAIL}>`);
+    });
+  });
+
+  describe('two-element tuples', () => {
+    it.each([
+      ['[42, "Jan Peeters"]', `[42, "${NAME}"]`],
+      ['["cuid123", "Jan Peeters"]', `["cuid123", "${NAME}"]`],
+      ["[7,'Marie van den Berg']", `[7,'${NAME}']`],
+      ['rows: [[1, "Jan"], [2, "Els Peeters"]]', `rows: [[1, "${NAME}"], [2, "${NAME}"]]`],
+    ])('redacts %s', (input, expected) => {
+      expect(scrubFeedbackText(input)).toBe(expected);
+    });
+
+    it.each([
+      '[1,2]',
+      '[1, "Jan Peeters", 3]',
+      '["a",1]',
+      '["list_shareholders", "error"]',
+      '["two words", "Jan Peeters"]',
+      '[1, "Jan Peeters Is Here Now Today"]',
+    ])('keeps %s', (input) => {
+      expect(scrubFeedbackText(input)).toBe(input);
+    });
+  });
+
+  describe('Belgian phones with the area code in brackets', () => {
+    it.each(['(02) 123 45 67', '(0475) 12 34 56', '(09)/123.45.67'])('redacts %s', (phone) => {
+      expect(scrubFeedbackText(`call ${phone} today`)).toBe(`call ${PHONE} today`);
+    });
+
+    it.each(['f(0) returns 12', 'list (02) items', '(2026) 12 34'])('keeps %s', (input) => {
+      expect(scrubFeedbackText(input)).toBe(input);
+    });
+  });
+
+  describe('addresses', () => {
+    it.each([
+      ['address: Kerkstraat 1, 2000 Antwerpen\nnext', `address: ${ADDRESS}\nnext`],
+      ['{"street": "Kerkstraat 1, bus 2"}', `{"street": "${ADDRESS}"}`],
+      ['adres: Kerkstraat 1', `adres: ${ADDRESS}`],
+      ["straat='Kerkstraat 1'", `straat='${ADDRESS}'`],
+      ['"streetAddress": "Kerkstraat 1"', `"streetAddress": "${ADDRESS}"`],
+      ['street_address: Kerkstraat 1', `street_address: ${ADDRESS}`],
+      ['"addressLine1": "Kerkstraat 1"', `"addressLine1": "${ADDRESS}"`],
+      ['address_line_1=Kerkstraat 1', `address_line_1=${ADDRESS}`],
+    ])('redacts %s', (input, expected) => {
+      expect(scrubFeedbackText(input)).toBe(expected);
+    });
+
+    it.each(['{"address": null}', '{"emailAddress": "[REDACTED:email]"}', 'ipAddress: 10'])(
+      'keeps %s',
+      (input) => {
+        expect(scrubFeedbackText(input)).toBe(input);
+      },
+    );
+  });
+
+  it('is idempotent for every new case', () => {
+    const inputs = [
+      '{"shareholder": "Jan Peeters", "from": "2026-10-01", "user": "usr_42", "to": "Els"}',
+      'name: Jan Peeters\nholder: Marie Van den Berg\nTool name: List shareholders',
+      '"Jan Peeters" <jan@x.be> and Émile Dupré <emile@x.be>',
+      '[42, "Jan Peeters"] ["cuid123", "Jan Peeters"] [1,2]',
+      '(02) 123 45 67 and (0475) 12 34 56',
+      'address: Kerkstraat 1, 2000 Antwerpen\n{"street": "Kerkstraat 1"}',
+    ];
+    for (const input of inputs) {
+      const once = scrubFeedbackText(input);
+      expect(once).not.toBe(input);
+      expect(scrubFeedbackText(once)).toBe(once);
+    }
+  });
+});
+
 describe('scrubFeedbackText long email local part', () => {
   it('still redacts the address when the local part is longer than 64 characters', () => {
     const result = scrubFeedbackText(`contact ${'a'.repeat(80)}@example.be please`);
@@ -255,6 +408,12 @@ describe('scrubFeedbackText performance', () => {
     'base64-like run': 'aA1'.repeat(1333) + '!',
     'unterminated name value': '"name": "' + 'a'.repeat(3990),
     'national id run': '12.34.56-'.repeat(444),
+    'capitalised word run': 'Jan '.repeat(1000),
+    'capitalised word run after a key': 'name: ' + 'Jan '.repeat(998),
+    'capitalised run before an angle bracket': 'Jan van '.repeat(499) + '<',
+    'tuple-like run': '[' + '"x", '.repeat(799),
+    'bracket zero run': '(0'.repeat(2000),
+    'address value run': 'address: ' + 'a, '.repeat(1330),
   };
 
   it.each(Object.entries(inputs))('%s finishes in under 50 ms', (_label, input) => {

@@ -336,6 +336,13 @@ describe('feedbackFingerprint', () => {
     expect(feedbackFingerprint('bug', undefined, 'x')).not.toBe(fp);
   });
 
+  it('matches an independently computed sha256 prefix', () => {
+    // printf '%s' 'bug|list_shareholders|returns 500 on empty coop' | shasum -a 256
+    expect(feedbackFingerprint('bug', 'List_Shareholders', '  Returns   500 on EMPTY coop ')).toBe(
+      '946fac1aba85',
+    );
+  });
+
   it('builds the marker', () => {
     expect(feedbackFingerprintMarker('abc')).toBe('<!-- mcp-feedback-fingerprint: abc -->');
   });

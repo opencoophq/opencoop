@@ -205,10 +205,14 @@ The MCP tool `submit_feedback` files agent bug reports as issues in `opencoophq/
 uses its own token, not `GITHUB_TOKEN`. Without `MCP_FEEDBACK_GITHUB_TOKEN` the tool returns
 `status: "disabled"` and calls neither Redis nor GitHub.
 
+**`opencoophq/opencoop` is a PUBLIC repository.** Before anyone provisions a token, set
+`MCP_FEEDBACK_GITHUB_REPO` to a private repository. Wouter decides which one. Until a token
+exists, the tool stays disabled and returns `status: "disabled"`.
+
 1. Create a fine-grained personal access token at
    https://github.com/settings/personal-access-tokens/new:
    - Resource owner: `opencoophq`.
-   - Repository access: "Only select repositories" → `opencoophq/opencoop`.
+   - Repository access: "Only select repositories" → the private target repository.
    - Permissions: Issues → Read and write. (Metadata → Read-only is added automatically.)
    - Expiration: 1 year or less. Put a calendar reminder a week before it expires.
 2. Store it in secret-broker / 1Password as `opencoop/mcp-feedback-github-token`.
@@ -216,8 +220,8 @@ uses its own token, not `GITHUB_TOKEN`. Without `MCP_FEEDBACK_GITHUB_TOKEN` the 
 
    ```bash
    MCP_FEEDBACK_GITHUB_TOKEN=github_pat_...
-   # optional, this is the default:
-   MCP_FEEDBACK_GITHUB_REPO=opencoophq/opencoop
+   # the private target repository (the default, opencoophq/opencoop, is public):
+   MCP_FEEDBACK_GITHUB_REPO=opencoophq/<private-repo>
    ```
 
 4. In that directory, recreate the API only. Never run `docker compose down`:
