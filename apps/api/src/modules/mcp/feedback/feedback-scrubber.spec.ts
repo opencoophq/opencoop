@@ -531,9 +531,17 @@ describe('scrubFeedbackText long email local part', () => {
   });
 });
 
+describe('scrubFeedbackText long unquoted name value', () => {
+  it('redacts the whole value when it is longer than 1000 characters', () => {
+    const result = scrubFeedbackText(`name: ${'x '.repeat(600)}Jan Peeters\nnext`);
+    expect(result).toBe('name: [REDACTED:name]\nnext');
+  });
+});
+
 describe('scrubFeedbackText performance', () => {
   // Inputs are capped at 4000 chars; no pattern may backtrack quadratically or worse.
   const inputs: Record<string, string> = {
+    'long unquoted name values': ('name: ' + 'Jan '.repeat(50) + '\n').repeat(19),
     'digit run': '0'.repeat(4000),
     '00 run': '00' + '1'.repeat(3998),
     '+ run': '+3' + '2'.repeat(3998) + 'x',

@@ -122,7 +122,7 @@ const NAME_LITERAL =
   '(?=[ \\t]*(?:[,}\\]&;|\\n]|$))';
 const NAME_KV = keyValuePattern(
   keyAlternation(NAME_KEYS),
-  `${NAME_LITERAL}|[^\\s}\\]&;|{\\["'][^}\\]&;|\\n]{0,1000}`,
+  `${NAME_LITERAL}|[^\\s}\\]&;|{\\["'][^}\\]&;|\\n]*`,
 );
 // An unquoted address runs to the end of the line: "Kerkstraat 1, 2000 Antwerpen".
 const ADDRESS_KV = keyValuePattern(keyAlternation(ADDRESS_KEYS), `[^\\s{\\["'][^\\n]*`);
