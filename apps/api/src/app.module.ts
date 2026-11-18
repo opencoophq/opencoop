@@ -41,6 +41,7 @@ import { McpToolsModule } from './modules/mcp/mcp.module';
 import { ChargeCardsModule } from './modules/charge-cards/charge-cards.module';
 import { VolunteersModule } from './modules/volunteers/volunteers.module';
 import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
+import { MCP_SERVER_NAME, MCP_SERVER_VERSION } from './modules/mcp/feedback/feedback.service';
 
 @Module({
   imports: [
@@ -99,8 +100,8 @@ import { McpAuthMiddleware } from './modules/mcp/mcp-auth.middleware';
     BillingModule,
     HealthModule,
     McpModule.forRoot({
-      name: 'opencoop',
-      version: '1.0.0',
+      name: MCP_SERVER_NAME,
+      version: MCP_SERVER_VERSION,
       instructions:
         "OpenCoop admin API — query your cooperative's shareholders, transactions, analytics, and more. Authenticated via API key.",
       transport: McpTransportType.STREAMABLE_HTTP,

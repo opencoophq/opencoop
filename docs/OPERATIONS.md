@@ -197,6 +197,60 @@ back to the prior image **and** assess whether the partial migration left the DB
 
 ---
 
+## MCP feedback (`submit_feedback`) GitHub token
+
+The MCP tool `submit_feedback` files agent bug reports as issues in `opencoophq/opencoop`. It
+uses its own token, not `GITHUB_TOKEN`. Without `MCP_FEEDBACK_GITHUB_TOKEN` the tool returns
+`status: "disabled"` and calls neither Redis nor GitHub.
+
+1. Create a fine-grained personal access token at
+   https://github.com/settings/personal-access-tokens/new:
+   - Resource owner: `opencoophq`.
+   - Repository access: "Only select repositories" → `opencoophq/opencoop`.
+   - Permissions: Issues → Read and write. (Metadata → Read-only is added automatically.)
+   - Expiration: 1 year or less. Put a calendar reminder a week before it expires.
+2. Store it in secret-broker / 1Password as `opencoop/mcp-feedback-github-token`.
+3. On fsn1, add it to `~/opencoop/acc/.env` and `~/opencoop/prod/.env`:
+
+   ```bash
+   MCP_FEEDBACK_GITHUB_TOKEN=github_pat_...
+   # optional, this is the default:
+   MCP_FEEDBACK_GITHUB_REPO=opencoophq/opencoop
+   ```
+
+4. In that directory, recreate the API only. Never run `docker compose down`:
+
+   ```bash
+   docker compose up -d --force-recreate api
+   ```
+
+5. Verify on acc: call `submit_feedback` with an `oc_` key, then check that the issue exists with
+   the labels `mcp-feedback`, `source:agent` and `kind:<kind>`.
+
+Notes:
+
+- The tool creates its labels on first use.
+- Rate limits live in Redis: 5 reports per user per hour, 30 per day for the whole server. When
+  Redis is down, the tool refuses reports (`status: "rate_limited"`).
+- A report with the same kind, tool and title as an open issue becomes a comment on that issue
+  (fingerprint marker in the issue body).
+- `APP_VERSION` comes from `TAG` in the compose file and shows as the commit in each issue.
+- The rate limiter uses `EXPIRE ... NX`, which needs Redis 7 or later. The compose file pins
+  `redis:7.4`.
+
+Risk:
+
+- `opencoophq/opencoop` is a **public** repository. The scrubber removes secrets, emails, phones,
+  IBANs, national register numbers and names in structured payloads. It cannot catch a name in
+  free prose ("Jan Peeters' shares are wrong"), so an issue can still hold personal data. To keep
+  reports private, set `MCP_FEEDBACK_GITHUB_REPO` to a private repository.
+- The token owner needs at least triage rights on the repository. Without them, GitHub drops the
+  labels without an error, and deduplication stops working because it searches by the
+  `mcp-feedback` label. A fine-grained PAT with Issues: Read and write meets this when its owner
+  is an `opencoophq` member with write access to the repository.
+
+---
+
 ## Quick reference
 
 ```bash

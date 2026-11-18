@@ -137,6 +137,8 @@ Optional:
 LAUNCH_MODE=waitlist    # Set on prod to show waitlist dialog instead of onboarding links
 SENTRY_DSN=https://...  # Sentry error tracking DSN (API only, no-op if unset)
 MCP_PUBLIC_URL=https://mcp.opencoop.be/mcp  # Web, runtime: MCP URL shown in admin settings snippet
+MCP_FEEDBACK_GITHUB_TOKEN=github_pat_...    # API: enables the MCP submit_feedback tool (Issues: write on opencoophq/opencoop)
+MCP_FEEDBACK_GITHUB_REPO=opencoophq/opencoop  # API: target repo for submit_feedback (default shown)
 ```
 
 ## Feature Flags
@@ -174,6 +176,7 @@ Swagger UI available at: `http://localhost:3001/docs` (mounted via `SwaggerModul
   - `preview_share_transfer` — writes nothing and works with a `READ_ONLY` key. Returns every validation error, the FIFO allocation, the value, and both holdings and statuses before and after. Names are masked without `canViewPII`.
   - `transfer_shares` — irreversible; needs a `READ_WRITE` key. Writes a COMPLETED SELL and BUY with synthetic payments per consumed buy, linked to one `ShareTransfer` row, so capital does not change. An inheritance sets `Shareholder.deceasedAt` when asked or when the source keeps no shares. A repeat with the same parameters or `idempotencyKey` returns the first transfer.
 - **Charge card tool** (`mcp-charge-card.tools.ts`): `list_charge_cards` is read-only and works with a `READ_ONLY` key. It needs `canViewChargeCards`, `canManageChargeCards`, or `canManageShareholders`, the same rule as `GET /admin/coops/:coopId/charge-cards`. Each card shows who registered it: name, email, and member number. Without `canViewPII`, the name becomes `Aandeelhouder #<member number>` and the email becomes `***`. Filter by `status` or `todo` (pending provider-portal change). Card changes stay on the REST API. Issue and mark-paid need `canManageChargeCards` or `canManageShareholders`. Block, unblock, mark-lost, cancel, and provider-sync-done need `canManageShareholders`.
+- **Feedback tool** (`mcp-feedback.tools.ts`, logic in `mcp/feedback/`): `submit_feedback` files a bug, missing capability, or docs problem as a GitHub issue in `MCP_FEEDBACK_GITHUB_REPO` (default `opencoophq/opencoop`). It works with a `READ_ONLY` key, needs no permission, and writes only to GitHub, never to coop data. Text is scrubbed of secrets and personal data before posting; the reporter is a hashed `anon-` id. A report with the same kind, tool, and title as an open issue becomes a comment (fingerprint marker in the issue body). Limits: 5 per user per hour, 30 per day globally, counted in Redis; Redis down refuses reports. Without `MCP_FEEDBACK_GITHUB_TOKEN` the tool returns `status: "disabled"`. Token setup: `docs/OPERATIONS.md`.
 - `update_coop_settings` also accepts `volunteerInterests` (same ordered list; empty restores the defaults). That tool still requires `canManageSettings`, matching the settings screen. Tags cannot contain an apostrophe; the French label `Conseil d'administration` is a translation of the tag `board`, not a tag.
 - Bronsgroen's current tags (`technisch`, `administratie`) are coop-specific strings, so the form shows them untranslated until they are remapped. The idempotent script `packages/database/scripts/bronsgroen-volunteer-board.sql` does that after deploy. It is not a migration and must not be run from CI.
 
