@@ -281,6 +281,17 @@ function scrubArrayStrings(text: string): string {
   return out + text.slice(copied);
 }
 
+// Stateless second pass for list items: a quoted string right after `[` or `,` and right
+// before `,` or `]`. The scanner tracks quote state, so a stray quote earlier on the line can
+// make it misread a list; this pass does not depend on that state.
+const LIST_ITEM = /(?<=[[,]\s{0,3})(["'])([^"'\n]{1,200})\1(?=\s{0,3}[,\]])/g;
+
+function scrubListItems(text: string): string {
+  return text.replace(LIST_ITEM, (match: string, quote: string, content: string) =>
+    isMachineToken(content) ? match : `${quote}${redacted('name')}${quote}`,
+  );
+}
+
 function scrubSecrets(text: string): string {
   return text
     .replace(BEARER, (_m, word: string, space: string) => `${word}${space}${redacted('secret')}`)
@@ -341,6 +352,7 @@ export function scrubFeedbackText(text: string): string {
   let result = scrubSecrets(text);
   result = result.replace(NAME_KV, redactValue('name', true));
   result = scrubArrayStrings(result);
+  result = scrubListItems(result);
   result = result.replace(ADDRESS_KV, redactValue('address', true));
   result = scrubIbans(result);
   result = scrubNationalIds(result);

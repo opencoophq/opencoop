@@ -624,9 +624,29 @@ describe('scrubFeedbackText long unquoted name value', () => {
   });
 });
 
+describe('scrubFeedbackText list items after a stray quote', () => {
+  it.each([
+    'say "hi ["Jan Peeters", "Marie Dupont"]',
+    "note 'x ['Jan Peeters', 'Marie Dupont']",
+    'a "b" c "d ["Jan Peeters","Marie Dupont","Els Janssens"]',
+  ])('redacts every name in %s', (input) => {
+    const result = scrubFeedbackText(input);
+    for (const part of ['Jan', 'Peeters', 'Marie', 'Dupont', 'Els', 'Janssens']) {
+      expect(result).not.toContain(part);
+    }
+  });
+
+  it('keeps quoted prose that is not a list item', () => {
+    expect(scrubFeedbackText('see "Internal error", "Not found"')).toBe(
+      'see "Internal error", "Not found"',
+    );
+  });
+});
+
 describe('scrubFeedbackText performance', () => {
   // Inputs are capped at 4000 chars; no pattern may backtrack quadratically or worse.
   const inputs: Record<string, string> = {
+    'comma separated quoted run': '"a b", '.repeat(570),
     'long unquoted name values': ('name: ' + 'Jan '.repeat(50) + '\n').repeat(19),
     'digit run': '0'.repeat(4000),
     '00 run': '00' + '1'.repeat(3998),
