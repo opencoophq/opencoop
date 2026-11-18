@@ -5,16 +5,16 @@ enough for a second operator to deploy, roll back, and recover.
 
 > **Sensitive details** (server hostnames, Tailscale names, SSH keys, backup server IPs,
 > Telegram tokens) are **not** in this repo — they live in the private infra notes and
-> 1Password. This file documents the *process*; connection specifics are referenced, not duplicated.
+> 1Password. This file documents the _process_; connection specifics are referenced, not duplicated.
 
 ---
 
 ## Environments
 
-| Env | Trigger | Domain | Server dir |
-|-----|---------|--------|-----------|
-| **acc** | push to `main` | acc.opencoop.be | `~/opencoop/acc` |
-| **prod** | push a `v*` tag | opencoop.be | `~/opencoop/prod` |
+| Env      | Trigger         | Domain          | Server dir        |
+| -------- | --------------- | --------------- | ----------------- |
+| **acc**  | push to `main`  | acc.opencoop.be | `~/opencoop/acc`  |
+| **prod** | push a `v*` tag | opencoop.be     | `~/opencoop/prod` |
 
 Both run on **fsn1** (Hetzner), reached over **Tailscale SSH** as user `wouter` (host + key in the
 private infra notes). **Caddy** is the reverse proxy (in the `proxy` Docker network); it terminates
@@ -152,12 +152,13 @@ curl -fsS https://opencoop.be/api/health   # confirm healthy (acc.opencoop.be fo
 ```
 
 > ⚠️ **NEVER run `docker compose down` on prod.** The prod project name is `opencoop-prod`
-> (volumes `opencoop-prod_postgres_data`); a `down && up` can create a *new empty* volume and you
+> (volumes `opencoop-prod_postgres_data`); a `down && up` can create a _new empty_ volume and you
 > lose the database. Recreate app containers with `docker compose up -d --no-deps --force-recreate`.
 > To replace a single stuck container, `docker rm -f <name>` it, never `down`. Infra upgrades are
 > the separate image-line edit above, and on prod only after the encrypted `age` dump.
 
 ### If a migration failed mid-deploy
+
 The new API won't have started. Either fix-forward (push a corrected migration) or roll the `TAG`
 back to the prior image **and** assess whether the partial migration left the DB in a bad state
 (check `_prisma_migrations`). If unsure, restore from backup (below) before retrying.
@@ -174,6 +175,7 @@ back to the prior image **and** assess whether the partial migration left the DB
   nothing is auto-discovered.
 
 ### Restore (outline — rehearse before relying on it)
+
 1. On fra1, list archives: `borg list <repo>` and pick the target date.
 2. Extract the Postgres dump for the env from that archive (`borg extract` the dump path).
 3. Copy the dump to fsn1, then restore into the running Postgres container:
@@ -191,8 +193,8 @@ back to the prior image **and** assess whether the partial migration left the DB
 - `/api/health` does real **Postgres `SELECT 1` + Redis ping** (Terminus). Used by the Docker
   healthcheck and the post-deploy gate.
 - **External uptime monitor** (e.g. UptimeRobot / Better Stack) should watch
-  `https://opencoop.be/api/health` and alert (Telegram/email). *(Set this up — it is the one piece
-  not enforceable from the repo; without it, the first signal of a dead box is a user email.)*
+  `https://opencoop.be/api/health` and alert (Telegram/email). _(Set this up — it is the one piece
+  not enforceable from the repo; without it, the first signal of a dead box is a user email.)_
 - **Sentry**: The API reports through `apps/api/src/instrument.ts` (global filter). The web app reports through `apps/web/sentry.client.config.ts`, `sentry.server.config.ts` and `sentry.edge.config.ts`.
 
 ---
