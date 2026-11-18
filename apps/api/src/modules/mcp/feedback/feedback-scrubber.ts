@@ -88,12 +88,13 @@ const IBAN_COMPACT = /\b[A-Za-z]{2}\d{2}[A-Za-z0-9]{11,30}\b/g;
 // YY.MM.DD-XXX.CC and its variants: dots, dashes, spaces or nothing between the parts.
 const NATIONAL_ID = /(?<![\w.+-])\d{2}(\.?)\d{2}\1\d{2}[-. ]?\d{3}[-. ]?\d{2}(?![\w.-]?\d)/g;
 
-const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
+const EMAIL =
+  /(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
 
 // +<country> then groups of digits, optionally "(0)", separated by one space, dot, slash or dash.
-const PHONE_INTERNATIONAL = /(?<![\w+])\+\d{1,3}(?:[ ./-]?(?:\(\d{1,4}\)|\d{1,4}))+/g;
+const PHONE_INTERNATIONAL = /(?<![\w+])\+\d{1,3}(?:[ ./-]?(?:\(\d{1,4}\)|\d{1,4})){1,8}/g;
 // 00 + country code, then groups of digits: 0032 475 12 34 56, 0032475123456.
-const PHONE_DOUBLE_ZERO = /(?<![\w+.,/:-])00\d(?:[ ./-]?\d{1,4})+(?![\w.,/:-]?\d)/g;
+const PHONE_DOUBLE_ZERO = /(?<![\w+.,/:-])00\d(?:[ ./-]?\d{1,4}){1,8}(?![\w.,/:-]?\d)/g;
 // Belgian national format: 0 + zone/mobile prefix, then groups of 2–3 digits.
 const PHONE_BELGIAN = /(?<![\w+.,/:-])0\d{1,3}(?:[ ./-]?\d{2,3}){2,4}(?![\w.,/:-]?\d)/g;
 

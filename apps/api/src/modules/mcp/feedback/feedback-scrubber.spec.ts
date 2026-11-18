@@ -234,3 +234,24 @@ describe('scrubFeedbackText', () => {
     }
   });
 });
+
+describe('scrubFeedbackText performance', () => {
+  // Inputs are capped at 4000 chars; no pattern may backtrack quadratically or worse.
+  const inputs: Record<string, string> = {
+    'digit run': '0'.repeat(4000),
+    '00 run': '00' + '1'.repeat(3998),
+    '+ run': '+3' + '2'.repeat(3998) + 'x',
+    'separated + run': '+32' + ' 1'.repeat(1990) + 'a',
+    'dotted 0 run': '0' + '1.'.repeat(1999),
+    'email local part without domain': 'a.'.repeat(1990) + '@',
+    'base64-like run': 'aA1'.repeat(1333) + '!',
+    'unterminated name value': '"name": "' + 'a'.repeat(3990),
+    'national id run': '12.34.56-'.repeat(444),
+  };
+
+  it.each(Object.entries(inputs))('%s finishes in under 50 ms', (_label, input) => {
+    const start = Date.now();
+    scrubFeedbackText(input);
+    expect(Date.now() - start).toBeLessThan(50);
+  });
+});
