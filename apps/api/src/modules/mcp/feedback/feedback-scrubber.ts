@@ -18,10 +18,10 @@ const SECRET_KEY =
   '[A-Za-z0-9_-]*?(?:password|passwd|pwd|secret(?:[_-]?key)?|token|api[_-]?key|' +
   'private[_-]?key|authorization)';
 
-// Common words in prose ("Tool name: x", "member: since 2020", "send to: admin"). Redacted
-// only when the key or the value is quoted, as in JSON or a JS object, or when the unquoted
-// value starts with two capitalised words ("name: Jan Peeters").
-const GENERIC_NAME_KEYS = new Set([
+// Values under these keys are redacted unless they are clearly not a name (a MACHINE TOKEN,
+// see isMachineToken). Over-redaction of prose such as "Tool name: List shareholders" is
+// accepted: a missed name in a public issue costs more than a lost word.
+const NAME_KEYS = [
   'name',
   'member',
   'customer',
@@ -34,10 +34,6 @@ const GENERIC_NAME_KEYS = new Set([
   'partner',
   'shareholder',
   'author',
-]);
-
-const NAME_KEYS = [
-  ...GENERIC_NAME_KEYS,
   'firstName',
   'first_name',
   'lastName',
@@ -80,16 +76,27 @@ const ADDRESS_KEYS = [
   'address_line_1',
 ];
 
-// A personal name: capitalised words, with lowercase particles allowed between them.
-const PARTICLE = '(?:van|de|der|den|le|la|du|von|vande)';
-const NAME_WORD = "\\p{Lu}[\\p{L}'’-]*";
-// Two capitalised words at the start of a value: "Jan Peeters", "Marie Van den Berg".
-const STARTS_WITH_FULL_NAME = new RegExp(
-  `^${NAME_WORD}[ \\t]+(?:${PARTICLE}[ \\t]+){0,3}\\p{Lu}`,
-  'u',
-);
-// Value that is a date or time ("2026-10-01", "01/10/2026 10:00", "10:30").
-const DATE_OR_TIME = /^(?:\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}|\d{1,2}:\d{2})/;
+// A date or time: "2026-10-01", "01/10/2026 10:00", "2026-10-01T10:00:00Z", "10:30".
+const DATE_OR_TIME =
+  /^(?:\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}(?:[T ]\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:?\d{2})?)?|\d{1,2}:\d{2}(?::\d{2})?)$/;
+const SCALAR = /^(?:-?\d{1,20}(?:\.\d{1,20})?|true|false|null|undefined)$/i;
+// A hyphenated capitalised word ("Marie-Claire", "Van-Damme") is a name, not an id.
+const HYPHENATED_NAME = /^\p{Lu}\p{Ll}+(?:-\p{L}+){1,4}$/u;
+
+/**
+ * True when a value is clearly not a personal name: a date or time, a number or literal, or a
+ * single word that holds a digit or one of _ . - : / ("usr_42", "clx1abc", "get_x"), is plain
+ * lowercase ASCII ("error", "admin"), or is a 2–3 letter uppercase code ("BE", "EUR").
+ */
+export function isMachineToken(value: string): boolean {
+  if (ALREADY_REDACTED.test(value) || DATE_OR_TIME.test(value) || SCALAR.test(value)) return true;
+  if (value.length === 0 || value.length > 200 || /\s/.test(value)) return false;
+  if (HYPHENATED_NAME.test(value)) return false;
+  return /[\d_.\-:/]/.test(value) || /^[a-z]+$/.test(value) || /^[A-Z]{2,3}$/.test(value);
+}
+
+/** Every key whose value is treated as a personal name. */
+export const FEEDBACK_NAME_KEYS: readonly string[] = NAME_KEYS;
 
 function keyAlternation(keys: string[]): string {
   return [...keys].sort((a, b) => b.length - a.length).join('|');
@@ -106,23 +113,33 @@ function keyValuePattern(keyPattern: string, unquotedValue: string): RegExp {
 }
 
 const SECRET_KV = keyValuePattern(SECRET_KEY, `[^\\s,;&}\\]"'{\\[][^\\s,;&}\\]"']*`);
-const NAME_KV = keyValuePattern(keyAlternation(NAME_KEYS), `[^\\s,}\\]&{\\["'][^,}\\]&\\n]*`);
+// An unquoted name runs to the end of the line or to } ] & ; |. A comma does not end it, so
+// "Peeters, Jan" is redacted whole.
+// A literal (number, true/false/null/undefined, ISO date) ends at a comma, so the next
+// `"key": value` pair is still checked: `"name": null, "contact": Jan Peeters`.
+const NAME_LITERAL =
+  '(?:-?\\d{1,20}(?:\\.\\d{1,20})?|true|false|null|undefined|\\d{4}-\\d{2}-\\d{2})' +
+  '(?=[ \\t]*(?:[,}\\]&;|\\n]|$))';
+const NAME_KV = keyValuePattern(
+  keyAlternation(NAME_KEYS),
+  `${NAME_LITERAL}|[^\\s}\\]&;|{\\["'][^}\\]&;|\\n]{0,1000}`,
+);
 // An unquoted address runs to the end of the line: "Kerkstraat 1, 2000 Antwerpen".
 const ADDRESS_KV = keyValuePattern(keyAlternation(ADDRESS_KEYS), `[^\\s{\\["'][^\\n]*`);
 
-// "Jan Peeters <jan@x.be>" or "\"Jan Peeters\" <jan@x.be>": the name before an email address.
+// 1–6 words (any case, commas allowed) or a quoted string, right before <email> on one line:
+// "jan peeters <x@y.be>", "Peeters, Jan <x@y.be>", "\"Jan Peeters\" <x@y.be>".
+const DISPLAY_WORD = "[\\p{L}\\p{M}'’-]{1,40}";
 const DISPLAY_NAME = new RegExp(
-  `(?:"[^"\\n<>]{1,100}"|(?<!\\p{L})${NAME_WORD}(?:[ \\t]+(?:${PARTICLE}[ \\t]+){0,3}${NAME_WORD}){0,5})` +
+  `(?:"[^"\\n<>]{1,100}"|(?<![\\p{L}\\p{M}'’-])${DISPLAY_WORD}(?:(?:[ \\t]*,[ \\t]*|[ \\t]+)${DISPLAY_WORD}){0,5})` +
     `[ \\t]*<(?=[^<>\\s@]{1,64}@[^<>\\s@]{1,190}>)`,
   'gu',
 );
 
-// [id, "Jan Peeters"]: a number or a quoted token, then a quoted name of 1–5 words.
-const NAME_TUPLE = new RegExp(
-  `(\\[\\s*(?:-?\\d{1,20}(?:\\.\\d{1,10})?|"[^"\\s]{1,100}"|'[^'\\s]{1,100}')\\s*,\\s*)` +
-    `(["'])(${NAME_WORD}(?: (?:${NAME_WORD}|${PARTICLE})){0,4})\\2(\\s*\\])`,
-  'gu',
-);
+// A flat array of 2–5 numbers or quoted strings: [42, "Jan Peeters", "BE"].
+const ARRAY_ITEM = `(?:-?\\d{1,20}(?:\\.\\d{1,20})?|"(?:[^"\\\\\\n]|\\\\.){0,200}"|'(?:[^'\\\\\\n]|\\\\.){0,200}')`;
+const SCALAR_ARRAY = new RegExp(`\\[\\s*${ARRAY_ITEM}(?:\\s*,\\s*${ARRAY_ITEM}){1,4}\\s*\\]`, 'g');
+const QUOTED_ITEM = /"((?:[^"\\\n]|\\.){0,200})"|'((?:[^'\\\n]|\\.){0,200})'/g;
 
 const BEARER = /\b(Bearer)(\s+)[A-Za-z0-9._~+/-]+=*/gi;
 const JWT = /\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g;
@@ -188,18 +205,7 @@ function redactValue(type: RedactionType, keepScalarTypes: boolean) {
     if (type === 'address' && !quoted && /^(?:null|true|false|undefined)\s*[,}\]]/i.test(inner)) {
       return match;
     }
-    if (type === 'name') {
-      // Dates, times, and single-token ids such as "clx1abc2def" or "usr_42" are not names.
-      if (DATE_OR_TIME.test(inner) || (!/\s/.test(inner) && /[\d_]/.test(inner))) return match;
-      if (
-        !quote &&
-        !quoted &&
-        GENERIC_NAME_KEYS.has(key.toLowerCase()) &&
-        !STARTS_WITH_FULL_NAME.test(inner)
-      ) {
-        return match;
-      }
-    }
+    if (type === 'name' && isMachineToken(inner)) return match;
     const trailing = quoted ? '' : value.slice(inner.length);
     const replacement = quoted ? `${first}${redacted(type)}${first}` : redacted(type);
     return `${quote}${key}${quote}${separator}${replacement}${trailing}`;
@@ -265,10 +271,11 @@ function neutraliseMarkup(text: string): string {
 export function scrubFeedbackText(text: string): string {
   let result = scrubSecrets(text);
   result = result.replace(NAME_KV, redactValue('name', true));
-  result = result.replace(
-    NAME_TUPLE,
-    (_m, head: string, quote: string, _name: string, tail: string) =>
-      `${head}${quote}${redacted('name')}${quote}${tail}`,
+  result = result.replace(SCALAR_ARRAY, (array) =>
+    array.replace(QUOTED_ITEM, (item: string, double?: string, single?: string) => {
+      const quote = item[0];
+      return isMachineToken(double ?? single ?? '') ? item : `${quote}${redacted('name')}${quote}`;
+    }),
   );
   result = result.replace(ADDRESS_KV, redactValue('address', true));
   result = scrubIbans(result);

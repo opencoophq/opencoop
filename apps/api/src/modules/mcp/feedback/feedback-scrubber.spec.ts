@@ -1,4 +1,4 @@
-import { scrubFeedbackText } from './feedback-scrubber';
+import { FEEDBACK_NAME_KEYS, scrubFeedbackText } from './feedback-scrubber';
 
 const SECRET = '[REDACTED:secret]';
 const NAME = '[REDACTED:name]';
@@ -71,7 +71,7 @@ describe('scrubFeedbackText', () => {
       ['first_name=Jan&last_name=Peeters', `first_name=${NAME}&last_name=${NAME}`],
       ['{"FullName":"Jan P"}', `{"FullName":"${NAME}"}`],
       ['displayName: Jan Peeters\nnext', `displayName: ${NAME}\nnext`],
-      ['{ accountHolder: Jan Peeters, id: 4 }', `{ accountHolder: ${NAME}, id: 4 }`],
+      ['{ accountHolder: Jan Peeters, id: 4 }', `{ accountHolder: ${NAME} }`],
       ['"counterpartyName": "Jan"', `"counterpartyName": "${NAME}"`],
       ['beneficiaryName=Jan]', `beneficiaryName=${NAME}]`],
       ['"signedByName": "Jan"', `"signedByName": "${NAME}"`],
@@ -98,9 +98,6 @@ describe('scrubFeedbackText', () => {
       '{"name": null, "member": 42, "holder": true}',
       '{"name": {"first": 1}}',
       '"customer": [1, 2]',
-      'Tool name: list_shareholders returns 500',
-      'member: since 2020',
-      'customer: unknown in the export',
       'holder=bank',
     ])('keeps %s', (input) => {
       expect(scrubFeedbackText(input)).toBe(input);
@@ -275,7 +272,6 @@ describe('scrubFeedbackText names, review round 2', () => {
       'from 2026 to 2027',
       'send to admin',
       'user: admin',
-      'owner: the coop',
       'from: 2026',
     ])('keeps %s', (input) => {
       expect(scrubFeedbackText(input)).toBe(input);
@@ -286,7 +282,7 @@ describe('scrubFeedbackText names, review round 2', () => {
     it.each([
       ['name: Jan Peeters', `name: ${NAME}`],
       ['Name: Jan Peeters', `Name: ${NAME}`],
-      ['member: Jan Peeters, joined 2020', `member: ${NAME}, joined 2020`],
+      ['member: Jan Peeters, joined 2020', `member: ${NAME}`],
       ['holder: Marie Van den Berg', `holder: ${NAME}`],
       ['owner: Émile Dupré', `owner: ${NAME}`],
       ['to: Jan de Smet', `to: ${NAME}`],
@@ -294,17 +290,22 @@ describe('scrubFeedbackText names, review round 2', () => {
       expect(scrubFeedbackText(input)).toBe(expected);
     });
 
-    it.each(['Tool name: List shareholders', 'name: Jan', 'member: since 2020'])(
-      'keeps %s',
-      (input) => {
-        expect(scrubFeedbackText(input)).toBe(input);
-      },
-    );
+    // Redact by default: prose after a name key is redacted too (accepted over-redaction).
+    it.each([
+      ['Tool name: List shareholders', `Tool name: ${NAME}`],
+      ['name: Jan', `name: ${NAME}`],
+      ['member: since 2020', `member: ${NAME}`],
+      ['Tool name: list_shareholders returns 500', `Tool name: ${NAME}`],
+      ['customer: unknown in the export', `customer: ${NAME}`],
+      ['owner: the coop', `owner: ${NAME}`],
+    ])('redacts prose after a name key: %s', (input, expected) => {
+      expect(scrubFeedbackText(input)).toBe(expected);
+    });
   });
 
   describe('display name before an email', () => {
     it.each([
-      ['sent by Jan Peeters <jan@x.be> today', `sent by ${NAME} <${EMAIL}> today`],
+      ['sent by Jan Peeters <jan@x.be> today', `${NAME} <${EMAIL}> today`],
       ['"Jan Peeters" <jan@x.be>', `${NAME} <${EMAIL}>`],
       ['Émile Dupré <emile@x.be>', `${NAME} <${EMAIL}>`],
       ['Marie van den Berg <m@x.be>', `${NAME} <${EMAIL}>`],
@@ -312,8 +313,9 @@ describe('scrubFeedbackText names, review round 2', () => {
       expect(scrubFeedbackText(input)).toBe(expected);
     });
 
-    it('keeps a bare email in angle brackets', () => {
-      expect(scrubFeedbackText('mail <jan@x.be>')).toBe(`mail <${EMAIL}>`);
+    it('treats any word before <email> as a name, but stops at a colon', () => {
+      expect(scrubFeedbackText('mail <jan@x.be>')).toBe(`${NAME} <${EMAIL}>`);
+      expect(scrubFeedbackText('mail: <jan@x.be>')).toBe(`mail: <${EMAIL}>`);
     });
   });
 
@@ -323,18 +325,14 @@ describe('scrubFeedbackText names, review round 2', () => {
       ['["cuid123", "Jan Peeters"]', `["cuid123", "${NAME}"]`],
       ["[7,'Marie van den Berg']", `[7,'${NAME}']`],
       ['rows: [[1, "Jan"], [2, "Els Peeters"]]', `rows: [[1, "${NAME}"], [2, "${NAME}"]]`],
+      ['[1, "Jan Peeters", 3]', `[1, "${NAME}", 3]`],
+      ['["two words", "Jan Peeters"]', `["${NAME}", "${NAME}"]`],
+      ['[1, "Jan Peeters Is Here Now Today"]', `[1, "${NAME}"]`],
     ])('redacts %s', (input, expected) => {
       expect(scrubFeedbackText(input)).toBe(expected);
     });
 
-    it.each([
-      '[1,2]',
-      '[1, "Jan Peeters", 3]',
-      '["a",1]',
-      '["list_shareholders", "error"]',
-      '["two words", "Jan Peeters"]',
-      '[1, "Jan Peeters Is Here Now Today"]',
-    ])('keeps %s', (input) => {
+    it.each(['[1,2]', '["a",1]', '["list_shareholders", "error"]'])('keeps %s', (input) => {
       expect(scrubFeedbackText(input)).toBe(input);
     });
   });
@@ -388,6 +386,143 @@ describe('scrubFeedbackText names, review round 2', () => {
   });
 });
 
+describe('scrubFeedbackText redacts names by default', () => {
+  describe('name-keyed values: redact unless a machine token', () => {
+    it.each([
+      ['name: Jan', `name: ${NAME}`],
+      ['shareholder: jan peeters', `shareholder: ${NAME}`],
+      ['contact: Peeters, Jan', `contact: ${NAME}`],
+      ['from: de Smet Anna', `from: ${NAME}`],
+      ['firstName: Peeters, Jan', `firstName: ${NAME}`],
+      ['owner: Marie', `owner: ${NAME}`],
+      ['name: Jan, id: 4 | next', `name: ${NAME} | next`],
+      ['name: Marie-Claire', `name: ${NAME}`],
+      ['{"name": null, "contact": Jan Peeters}', `{"name": null, "contact": ${NAME}}`],
+      ['{"member": 42, "owner": "Jan"}', `{"member": 42, "owner": "${NAME}"}`],
+    ])('redacts %s', (input, expected) => {
+      expect(scrubFeedbackText(input)).toBe(expected);
+    });
+
+    it.each([
+      'Tool name: get_x',
+      'name: list_shareholders',
+      'from: 2026-10-01',
+      'to: 2026-10-31',
+      'user: clx1abc2def',
+      'member: 42',
+      '"from": "2026-10-01"',
+      '"name": "BE"',
+      '"to": "2026-10-01 10:00:00"',
+      'owner: api.v2/x',
+    ])('keeps %s', (input) => {
+      expect(scrubFeedbackText(input)).toBe(input);
+    });
+  });
+
+  describe('short scalar arrays', () => {
+    it.each([
+      ['["Jan Peeters", 42]', `["${NAME}", 42]`],
+      ['[42, "Jan Peeters", "BE"]', `[42, "${NAME}", "BE"]`],
+      ['[42, "jan peeters"]', `[42, "${NAME}"]`],
+      ['[42, "Jan"]', `[42, "${NAME}"]`],
+      ["['Jan', 'x', 1, 2, 3]", `['${NAME}', 'x', 1, 2, 3]`],
+    ])('redacts %s', (input, expected) => {
+      expect(scrubFeedbackText(input)).toBe(expected);
+    });
+
+    it.each([
+      '[1,2]',
+      '["a",1]',
+      '["list_shareholders", "error"]',
+      '["BE", "NL"]',
+      '[1, 2, 3, 4, 5, 6]',
+    ])('keeps %s', (input) => {
+      expect(scrubFeedbackText(input)).toBe(input);
+    });
+  });
+
+  describe('display names before an email, any case', () => {
+    it.each([
+      ['jan peeters <x@y.be>', `${NAME} <${EMAIL}>`],
+      ['Peeters, Jan <x@y.be>', `${NAME} <${EMAIL}>`],
+      ['"Jan Peeters" <x@y.be>', `${NAME} <${EMAIL}>`],
+      ['see: Marie-Claire Van den Berg <x@y.be>', `see: ${NAME} <${EMAIL}>`],
+      ['line one\njan <x@y.be>', `line one\n${NAME} <${EMAIL}>`],
+    ])('redacts %s', (input, expected) => {
+      expect(scrubFeedbackText(input)).toBe(expected);
+    });
+  });
+
+  describe('reviewer probe', () => {
+    const values = [
+      'Jan',
+      'jan peeters',
+      'Peeters, Jan',
+      'de Smet Anna',
+      'Émile Dupré',
+      'Marie-Claire Van den Berg',
+    ];
+    const forms: string[] = [];
+    const probes: Array<[string, string]> = [];
+    for (const value of values) {
+      for (const key of FEEDBACK_NAME_KEYS) {
+        forms.push(`${key}: ${value}`, `"${key}": "${value}"`, `${key}=${value}`);
+        probes.push(
+          [value, `${key}: ${value}`],
+          [value, `"${key}": "${value}"`],
+          [value, `${key}=${value}`],
+        );
+      }
+      probes.push(
+        [value, `[42, "${value}"]`],
+        [value, `["${value}", 42]`],
+        [value, `[42, "${value}", "BE"]`],
+        [value, `${value} <a@b.be>`],
+      );
+    }
+
+    function leakedTokens(value: string, output: string): string[] {
+      const lower = output.toLowerCase();
+      return value
+        .split(/[^\p{L}]+/u)
+        .filter((token) => token.length >= 3 && !['de', 'van'].includes(token.toLowerCase()))
+        .filter((token) => lower.includes(token.toLowerCase()));
+    }
+
+    it('covers every name key in every form', () => {
+      expect(forms.length).toBe(values.length * FEEDBACK_NAME_KEYS.length * 3);
+    });
+
+    it('leaks no part of any name value', () => {
+      const leaks = probes
+        .map(([value, input]) => ({ input, output: scrubFeedbackText(input), value }))
+        .filter(({ value, output }) => leakedTokens(value, output).length > 0)
+        .map(({ input, output }) => `${input} => ${output}`);
+      expect(leaks).toEqual([]);
+    });
+
+    it('is idempotent for every probe', () => {
+      for (const [, input] of probes) {
+        const once = scrubFeedbackText(input);
+        expect(scrubFeedbackText(once)).toBe(once);
+      }
+    });
+  });
+
+  it('is idempotent for every new example', () => {
+    const inputs = [
+      'name: Jan\nshareholder: jan peeters\ncontact: Peeters, Jan\nfrom: 2026-10-01',
+      '["Jan Peeters", 42] [42, "Jan Peeters", "BE"] ["BE", "NL"]',
+      'jan peeters <x@y.be> and Peeters, Jan <x@y.be>',
+      'name: Jan, id: 4 | next',
+    ];
+    for (const input of inputs) {
+      const once = scrubFeedbackText(input);
+      expect(scrubFeedbackText(once)).toBe(once);
+    }
+  });
+});
+
 describe('scrubFeedbackText long email local part', () => {
   it('still redacts the address when the local part is longer than 64 characters', () => {
     const result = scrubFeedbackText(`contact ${'a'.repeat(80)}@example.be please`);
@@ -414,6 +549,9 @@ describe('scrubFeedbackText performance', () => {
     'tuple-like run': '[' + '"x", '.repeat(799),
     'bracket zero run': '(0'.repeat(2000),
     'address value run': 'address: ' + 'a, '.repeat(1330),
+    'lowercase word run before an angle bracket': 'jan, '.repeat(799) + '<',
+    'unterminated unquoted name value': 'name: ' + 'Jan, '.repeat(798),
+    'short array-like run': '[1, '.repeat(1000),
   };
 
   it.each(Object.entries(inputs))('%s finishes in under 50 ms', (_label, input) => {
