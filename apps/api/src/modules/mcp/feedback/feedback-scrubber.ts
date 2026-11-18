@@ -88,8 +88,7 @@ const IBAN_COMPACT = /\b[A-Za-z]{2}\d{2}[A-Za-z0-9]{11,30}\b/g;
 // YY.MM.DD-XXX.CC and its variants: dots, dashes, spaces or nothing between the parts.
 const NATIONAL_ID = /(?<![\w.+-])\d{2}(\.?)\d{2}\1\d{2}[-. ]?\d{3}[-. ]?\d{2}(?![\w.-]?\d)/g;
 
-const EMAIL =
-  /(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
+const EMAIL = /[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
 
 // +<country> then groups of digits, optionally "(0)", separated by one space, dot, slash or dash.
 const PHONE_INTERNATIONAL = /(?<![\w+])\+\d{1,3}(?:[ ./-]?(?:\(\d{1,4}\)|\d{1,4})){1,8}/g;

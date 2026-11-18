@@ -235,6 +235,14 @@ describe('scrubFeedbackText', () => {
   });
 });
 
+describe('scrubFeedbackText long email local part', () => {
+  it('still redacts the address when the local part is longer than 64 characters', () => {
+    const result = scrubFeedbackText(`contact ${'a'.repeat(80)}@example.be please`);
+    expect(result).toContain('[REDACTED:email]');
+    expect(result).not.toContain('example.be');
+  });
+});
+
 describe('scrubFeedbackText performance', () => {
   // Inputs are capped at 4000 chars; no pattern may backtrack quadratically or worse.
   const inputs: Record<string, string> = {
