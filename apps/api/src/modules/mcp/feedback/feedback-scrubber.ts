@@ -86,17 +86,36 @@ const HYPHENATED_NAME = /^\p{Lu}\p{Ll}+(?:-\p{L}+){1,4}$/u;
 /**
  * True when a value is clearly not a personal name: a date or time, a number or literal, or a
  * single word that holds a digit or one of _ . - : / ("usr_42", "clx1abc", "get_x"), is plain
- * lowercase ASCII ("error", "admin"), or is a 2–3 letter uppercase code ("BE", "EUR").
+ * lowercase ASCII ("error", "admin"), or is a 2-letter country code ("BE") or a currency
+ * ("EUR"). "JAN" is not a code.
  */
 export function isMachineToken(value: string): boolean {
   if (ALREADY_REDACTED.test(value) || DATE_OR_TIME.test(value) || SCALAR.test(value)) return true;
   if (value.length === 0 || value.length > 200 || /\s/.test(value)) return false;
   if (HYPHENATED_NAME.test(value)) return false;
-  return /[\d_.\-:/]/.test(value) || /^[a-z]+$/.test(value) || /^[A-Z]{2,3}$/.test(value);
+  return (
+    /[\d_.\-:/]/.test(value) ||
+    /^[a-z]+$/.test(value) ||
+    /^(?:[A-Z]{2}|EUR|USD|GBP|CHF)$/.test(value)
+  );
 }
 
 /** Every key whose value is treated as a personal name. */
 export const FEEDBACK_NAME_KEYS: readonly string[] = NAME_KEYS;
+
+// Keys that only ever hold a name: no MACHINE TOKEN exception, only literals are kept.
+const SPECIFIC_NAME_KEYS = new Set(
+  NAME_KEYS.filter(
+    (key) =>
+      /name$|^accountholder$|^account_holder$|^legal_?representative$|^created_?by$/i.test(key) &&
+      key !== 'name',
+  ).map((key) => key.toLowerCase()),
+);
+
+/** Name keys whose value is redacted unless it is a literal (number, boolean, null, date). */
+export const FEEDBACK_SPECIFIC_NAME_KEYS: readonly string[] = NAME_KEYS.filter((key) =>
+  SPECIFIC_NAME_KEYS.has(key.toLowerCase()),
+);
 
 function keyAlternation(keys: string[]): string {
   return [...keys].sort((a, b) => b.length - a.length).join('|');
@@ -135,11 +154,6 @@ const DISPLAY_NAME = new RegExp(
     `[ \\t]*<(?=[^<>\\s@]{1,64}@[^<>\\s@]{1,190}>)`,
   'gu',
 );
-
-// A flat array of 2–5 numbers or quoted strings: [42, "Jan Peeters", "BE"].
-const ARRAY_ITEM = `(?:-?\\d{1,20}(?:\\.\\d{1,20})?|"(?:[^"\\\\\\n]|\\\\.){0,200}"|'(?:[^'\\\\\\n]|\\\\.){0,200}')`;
-const SCALAR_ARRAY = new RegExp(`\\[\\s*${ARRAY_ITEM}(?:\\s*,\\s*${ARRAY_ITEM}){1,4}\\s*\\]`, 'g');
-const QUOTED_ITEM = /"((?:[^"\\\n]|\\.){0,200})"|'((?:[^'\\\n]|\\.){0,200})'/g;
 
 const BEARER = /\b(Bearer)(\s+)[A-Za-z0-9._~+/-]+=*/gi;
 const JWT = /\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g;
@@ -205,11 +219,66 @@ function redactValue(type: RedactionType, keepScalarTypes: boolean) {
     if (type === 'address' && !quoted && /^(?:null|true|false|undefined)\s*[,}\]]/i.test(inner)) {
       return match;
     }
-    if (type === 'name' && isMachineToken(inner)) return match;
+    if (type === 'name') {
+      const literal =
+        ALREADY_REDACTED.test(inner) || SCALAR.test(inner) || DATE_OR_TIME.test(inner);
+      if (SPECIFIC_NAME_KEYS.has(key.toLowerCase()) ? literal : isMachineToken(inner)) return match;
+    }
     const trailing = quoted ? '' : value.slice(inner.length);
     const replacement = quoted ? `${first}${redacted(type)}${first}` : redacted(type);
     return `${quote}${key}${quote}${separator}${replacement}${trailing}`;
   };
+}
+
+/**
+ * Redacts quoted strings that are array elements, in arrays of any length or depth:
+ * `["Jan Peeters", ...]`, `[{"id":1},"Jan Peeters"]`. One linear pass with a stack of open
+ * `[` / `{`. A string directly inside `[` is an element unless a `:` follows it (then it is a
+ * key). Machine tokens stay. A stray `]` or `}` changes nothing. A quote without a closing quote
+ * on the same line, or an apostrophe inside a word ("don't"), is plain text, so a missing quote
+ * cannot hide an array later on the line.
+ */
+function scrubArrayStrings(text: string): string {
+  const stack: string[] = [];
+  // Per quote character: the end of the line on which it was already found unclosed. A later
+  // quote of that kind before this point is plain text, which keeps the scan linear.
+  const unclosedUntil: Record<string, number> = { '"': -1, "'": -1 };
+  let out = '';
+  let copied = 0;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    if (char === '[' || char === '{') {
+      stack.push(char);
+    } else if (char === ']' || char === '}') {
+      if (stack[stack.length - 1] === (char === ']' ? '[' : '{')) stack.pop();
+    } else if (
+      (char === '"' || char === "'") &&
+      i >= unclosedUntil[char] &&
+      !(char === "'" && /\p{L}/u.test(text[i - 1] ?? '') && /\p{L}/u.test(text[i + 1] ?? ''))
+    ) {
+      let end = i + 1;
+      while (end < text.length && text[end] !== char && text[end] !== '\n') {
+        end += text[end] === '\\' ? 2 : 1;
+      }
+      if (end < text.length && text[end] === char) {
+        if (stack[stack.length - 1] === '[') {
+          let next = end + 1;
+          while (text[next] === ' ' || text[next] === '\t') next++;
+          const content = text.slice(i + 1, end);
+          if (text[next] !== ':' && !isMachineToken(content)) {
+            out += text.slice(copied, i + 1) + redacted('name');
+            copied = end;
+          }
+        }
+        i = end + 1;
+        continue;
+      }
+      unclosedUntil[char] = end;
+    }
+    i++;
+  }
+  return out + text.slice(copied);
 }
 
 function scrubSecrets(text: string): string {
@@ -271,12 +340,7 @@ function neutraliseMarkup(text: string): string {
 export function scrubFeedbackText(text: string): string {
   let result = scrubSecrets(text);
   result = result.replace(NAME_KV, redactValue('name', true));
-  result = result.replace(SCALAR_ARRAY, (array) =>
-    array.replace(QUOTED_ITEM, (item: string, double?: string, single?: string) => {
-      const quote = item[0];
-      return isMachineToken(double ?? single ?? '') ? item : `${quote}${redacted('name')}${quote}`;
-    }),
-  );
+  result = scrubArrayStrings(result);
   result = result.replace(ADDRESS_KV, redactValue('address', true));
   result = scrubIbans(result);
   result = scrubNationalIds(result);

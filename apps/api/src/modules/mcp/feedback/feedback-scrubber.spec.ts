@@ -1,4 +1,8 @@
-import { FEEDBACK_NAME_KEYS, scrubFeedbackText } from './feedback-scrubber';
+import {
+  FEEDBACK_NAME_KEYS,
+  FEEDBACK_SPECIFIC_NAME_KEYS,
+  scrubFeedbackText,
+} from './feedback-scrubber';
 
 const SECRET = '[REDACTED:secret]';
 const NAME = '[REDACTED:name]';
@@ -478,7 +482,21 @@ describe('scrubFeedbackText redacts names by default', () => {
         [value, `["${value}", 42]`],
         [value, `[42, "${value}", "BE"]`],
         [value, `${value} <a@b.be>`],
+        [value, `["${value}", "a", "b", "c", "d", "e"]`],
+        [value, `["x1", "x2", "x3", "x4", "x5", "${value}"]`],
+        [value, `[{"id": 1}, "${value}"]`],
+        [value, `[[1, "${value}"]]`],
+        [value, `{"rows": [{"id": 1, "tags": ["a"]}, "${value}"]}`],
       );
+    }
+    for (const value of ['jan', 'JAN']) {
+      for (const key of FEEDBACK_SPECIFIC_NAME_KEYS) {
+        probes.push(
+          [value, `${key}: ${value}`],
+          [value, `"${key}": "${value}"`],
+          [value, `${key}=${value}`],
+        );
+      }
     }
 
     function leakedTokens(value: string, output: string): string[] {
@@ -523,6 +541,74 @@ describe('scrubFeedbackText redacts names by default', () => {
   });
 });
 
+describe('scrubFeedbackText array scanner', () => {
+  const SIX = '"Jan Peeters","Marie Dupont","Els Janssens","Tom Claes","An Maes","Piet Wouters"';
+  const SIX_REDACTED = Array(6).fill(`"${NAME}"`).join(',');
+
+  it.each([
+    [`"attendees": [${SIX}]`, `"attendees": [${SIX_REDACTED}]`],
+    [`[${SIX}]`, `[${SIX_REDACTED}]`],
+    [`shareholders: [${SIX}]`, `shareholders: [${SIX_REDACTED}]`],
+    ['[{"id":1},"Jan Peeters"]', `[{"id":1},"${NAME}"]`],
+    ['[[1,"Jan Peeters"]]', `[[1,"${NAME}"]]`],
+    ["['Jan Peeters', 'error']", `['${NAME}', 'error']`],
+    ['["Jan \\"JP\\" Peeters", 1]', `["${NAME}", 1]`],
+    ['stray ] } then ["Jan Peeters"]', `stray ] } then ["${NAME}"]`],
+    ['don\'t forget ["Jan Peeters"]', `don't forget ["${NAME}"]`],
+    ['"unclosed [\n["Jan Peeters"]', `"unclosed [\n["${NAME}"]`],
+  ])('redacts %s', (input, expected) => {
+    expect(scrubFeedbackText(input)).toBe(expected);
+  });
+
+  it('redacts a 50-name array', () => {
+    const names = Array.from(
+      { length: 50 },
+      (_, i) => `"Person ${String.fromCharCode(65 + (i % 26))}x"`,
+    );
+    const output = scrubFeedbackText(`[${names.join(', ')}]`);
+    expect(output).toBe(`[${Array(50).fill(`"${NAME}"`).join(', ')}]`);
+  });
+
+  it.each([
+    '["list_shareholders","error","BE"]',
+    '[1,2,3,4,5,6,7]',
+    '{"a":"Jan Peeters"}',
+    'see "Internal error", "Not found"',
+    '[{"id": 1, "status": "ACTIVE"}]',
+  ])('keeps %s', (input) => {
+    expect(scrubFeedbackText(input)).toBe(input);
+  });
+
+  it('keeps an object key inside an array context', () => {
+    expect(scrubFeedbackText('["Jan Peeters": 1]')).toBe('["Jan Peeters": 1]');
+  });
+});
+
+describe('scrubFeedbackText name-specific keys', () => {
+  it.each([
+    ['"firstName":"jan"', `"firstName":"${NAME}"`],
+    ['lastName: peeters', `lastName: ${NAME}`],
+    ['"shareholderName": "usr_42"', `"shareholderName": "${NAME}"`],
+    ['company_name=acme', `company_name=${NAME}`],
+    ['createdBy: jp', `createdBy: ${NAME}`],
+    ['name: JAN', `name: ${NAME}`],
+    ['"to": "ABC"', `"to": "${NAME}"`],
+  ])('redacts %s', (input, expected) => {
+    expect(scrubFeedbackText(input)).toBe(expected);
+  });
+
+  it.each([
+    '"firstName": null',
+    '"lastName": 42',
+    '"fullName": "2026-10-01"',
+    'name: BE',
+    '"customer": "EUR"',
+    'user: clx1abc2def',
+  ])('keeps %s', (input) => {
+    expect(scrubFeedbackText(input)).toBe(input);
+  });
+});
+
 describe('scrubFeedbackText long email local part', () => {
   it('still redacts the address when the local part is longer than 64 characters', () => {
     const result = scrubFeedbackText(`contact ${'a'.repeat(80)}@example.be please`);
@@ -560,6 +646,12 @@ describe('scrubFeedbackText performance', () => {
     'lowercase word run before an angle bracket': 'jan, '.repeat(799) + '<',
     'unterminated unquoted name value': 'name: ' + 'Jan, '.repeat(798),
     'short array-like run': '[1, '.repeat(1000),
+    'array of names run': '["Jan Peeters",'.repeat(266),
+    'open bracket run': '['.repeat(4000),
+    'unbalanced quote run': '["\'a'.repeat(1000),
+    'unclosed quotes on many lines': '["a\n'.repeat(1000),
+    'escaped single quotes, never closed': '[' + "'\\".repeat(1999),
+    'escaped double quotes, never closed': '[' + '"\\'.repeat(1999),
   };
 
   it.each(Object.entries(inputs))('%s finishes in under 50 ms', (_label, input) => {
