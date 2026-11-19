@@ -703,6 +703,20 @@ describe('scrubFeedbackText review round 223a62d', () => {
   });
 });
 
+describe('scrubFeedbackText review round cbe7fa4', () => {
+  it.each([
+    "['O'Brien', 'Jan Peeters']",
+    "['D'Hondt','Jan Peeters','Marie Dupont']",
+    "['Jan Peeters','O'Brien']",
+    "names: ['O'Brien','Jan Peeters']",
+  ])('redacts every single-quoted item in %s', (input) => {
+    const result = scrubFeedbackText(input);
+    for (const part of ['Brien', 'Hondt', 'Jan', 'Peeters', 'Marie', 'Dupont']) {
+      expect(result).not.toContain(part);
+    }
+  });
+});
+
 describe('scrubFeedbackText performance', () => {
   // Inputs are capped at 4000 chars; no pattern may backtrack quadratically or worse.
   const inputs: Record<string, string> = {

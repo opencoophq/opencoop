@@ -258,8 +258,15 @@ function scrubArrayStrings(text: string): string {
       i >= unclosedUntil[char] &&
       !(char === "'" && /\p{L}/u.test(text[i - 1] ?? '') && /\p{L}/u.test(text[i + 1] ?? ''))
     ) {
+      // An apostrophe between two letters (O'Brien) is part of the item, not its closing quote.
+      const isInWordApostrophe = (at: number): boolean =>
+        char === "'" && /\p{L}/u.test(text[at - 1] ?? '') && /\p{L}/u.test(text[at + 1] ?? '');
       let end = i + 1;
-      while (end < text.length && text[end] !== char && text[end] !== '\n') {
+      while (
+        end < text.length &&
+        text[end] !== '\n' &&
+        (text[end] !== char || isInWordApostrophe(end))
+      ) {
         end += text[end] === '\\' ? 2 : 1;
       }
       if (end < text.length && text[end] === char) {
