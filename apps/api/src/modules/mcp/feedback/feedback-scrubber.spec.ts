@@ -643,9 +643,46 @@ describe('scrubFeedbackText list items after a stray quote', () => {
   });
 });
 
+describe('scrubFeedbackText review round 96517b8', () => {
+  it.each(['85-07-30-033-28', '85-07-30-033.28', '85/07/30-033-28', '85 07 30 033 28'])(
+    'redacts national register number %s',
+    (input) => {
+      expect(scrubFeedbackText(`rrn ${input} here`)).toBe('rrn [REDACTED:national_id] here');
+    },
+  );
+
+  it.each([
+    'say "hi ["D\'Hondt", "Jan Peeters"]',
+    'say "hi ["Jan Peeters", "O\'Brien"]',
+    'say "hi ["Jan Peeters",    "O\'Brien"]',
+    'say "hi ["Jan Peeters",\n  "O\'Brien"]',
+    'say "hi ["Jan Peeters"; "O\'Brien"]',
+    'tuple (42, "Jan Peeters", "O\'Brien")',
+    'set {"Jan Peeters", "O\'Brien"}',
+  ])('redacts every list item in %s', (input) => {
+    const result = scrubFeedbackText(input);
+    for (const part of ['Hondt', 'Jan', 'Peeters', 'Brien']) {
+      expect(result).not.toContain(part);
+    }
+  });
+
+  it('redacts a label value that is a name', () => {
+    expect(scrubFeedbackText('"label": "Laadpas Jan Peeters"')).toBe('"label": "[REDACTED:name]"');
+  });
+
+  it('keeps a machine-token label and quoted prose', () => {
+    expect(scrubFeedbackText('label: charge_card_1')).toBe('label: charge_card_1');
+    expect(scrubFeedbackText('see "Internal error", "Not found"')).toBe(
+      'see "Internal error", "Not found"',
+    );
+  });
+});
+
 describe('scrubFeedbackText performance', () => {
   // Inputs are capped at 4000 chars; no pattern may backtrack quadratically or worse.
   const inputs: Record<string, string> = {
+    'whitespace-padded list run': '[' + '"a b",          '.repeat(200),
+    'apostrophe list run': "['" + "a'b".repeat(1300),
     'comma separated quoted run': '"a b", '.repeat(570),
     'long unquoted name values': ('name: ' + 'Jan '.repeat(50) + '\n').repeat(19),
     'digit run': '0'.repeat(4000),

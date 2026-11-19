@@ -206,7 +206,7 @@ uses its own token, not `GITHUB_TOKEN`. Without `MCP_FEEDBACK_GITHUB_TOKEN` the 
 `status: "disabled"` and calls neither Redis nor GitHub.
 
 **`opencoophq/opencoop` is a PUBLIC repository.** Before anyone provisions a token, set
-`MCP_FEEDBACK_GITHUB_REPO` to a private repository. Wouter decides which one. Until a token
+`MCP_FEEDBACK_GITHUB_REPO` to a private repository. The maintainer decides which one. Until a token
 exists, the tool stays disabled and returns `status: "disabled"`.
 
 1. Create a fine-grained personal access token at

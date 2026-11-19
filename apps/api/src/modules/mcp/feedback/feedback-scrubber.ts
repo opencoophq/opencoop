@@ -23,6 +23,7 @@ const SECRET_KEY =
 // accepted: a missed name in a public issue costs more than a lost word.
 const NAME_KEYS = [
   'name',
+  'label',
   'member',
   'customer',
   'holder',
@@ -179,7 +180,8 @@ const IBAN_GROUPED =
 const IBAN_COMPACT = /\b[A-Za-z]{2}\d{2}[A-Za-z0-9]{11,30}\b/g;
 
 // YY.MM.DD-XXX.CC and its variants: dots, dashes, spaces or nothing between the parts.
-const NATIONAL_ID = /(?<![\w.+-])\d{2}(\.?)\d{2}\1\d{2}[-. ]?\d{3}[-. ]?\d{2}(?![\w.-]?\d)/g;
+const NATIONAL_ID =
+  /(?<![\w.+/-])\d{2}([-./ ]?)\d{2}\1\d{2}[-./ ]?\d{3}[-./ ]?\d{2}(?![\w./-]?\d)/g;
 
 const EMAIL = /[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
 
@@ -284,7 +286,10 @@ function scrubArrayStrings(text: string): string {
 // Stateless second pass for list items: a quoted string right after `[` or `,` and right
 // before `,` or `]`. The scanner tracks quote state, so a stray quote earlier on the line can
 // make it misread a list; this pass does not depend on that state.
-const LIST_ITEM = /(?<=[[,]\s{0,3})(["'])([^"'\n]{1,200})\1(?=\s{0,3}[,\]])/g;
+// Items may sit in [], (), {} and be separated by , or ; with any whitespace. An apostrophe
+// between two letters (D'Hondt, O'Brien) is part of the item, not a quote.
+const LIST_ITEM =
+  /(?<=[[({,;]\s*)(["'])((?:[^"'\n]|(?<=\p{L})['’](?=\p{L})){1,200})\1(?=\s*[,;\])}])/gu;
 
 function scrubListItems(text: string): string {
   return text.replace(LIST_ITEM, (match: string, quote: string, content: string) =>
