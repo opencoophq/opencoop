@@ -44,6 +44,7 @@ describe('RegistrationsService — lifecycle', () => {
       coop: { findUnique: jest.fn() },
       // Run the transaction callback synchronously against the same mock prisma
       $transaction: jest.fn((cb: any) => cb(prisma)),
+      $queryRaw: jest.fn().mockResolvedValue([]),
     };
     shareholderStatus = {
       recompute: jest.fn().mockResolvedValue(null),
@@ -332,7 +333,93 @@ describe('RegistrationsService — lifecycle', () => {
           quantity: 3,
         }),
       ).rejects.toThrow(NotFoundException);
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.registration.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('row locks on sell and transfer', () => {
+    const buy = {
+      id: 'buy-1',
+      shareClassId: 'class-1',
+      projectId: null,
+      quantity: 10,
+      pricePerShare: 10,
+      payments: [],
+      shareClass: { id: 'class-1', name: 'A' },
+    };
+    const lockedIds = () => {
+      const sql = prisma.$queryRaw.mock.calls[0][0];
+      expect(sql.sql).toMatch(/FROM shareholders WHERE id IN .* ORDER BY id FOR UPDATE$/);
+      return sql.values;
+    };
+
+    beforeEach(() => {
+      prisma.registration.findFirst.mockResolvedValue(buy);
+      prisma.registration.create.mockResolvedValue({
+        id: 'sell-1',
+        shareholder: { firstName: 'Ilse', lastName: 'Verbaarschot', companyName: null },
+      });
+      (service as any).adminNotificationsService = {
+        notifyAdminsOnEvent: jest.fn().mockResolvedValue(undefined),
+      };
+    });
+
+    it('createSell locks the seller, then checks availability and EcoPower with the tx client', async () => {
+      const available = jest.spyOn(service, 'getAvailableShares').mockResolvedValue(10);
+      const ecoPower = jest.spyOn(service, 'checkEcoPowerThreshold').mockResolvedValue(undefined);
+
+      await service.createSell({
+        coopId: 'coop-1',
+        shareholderId: 'seller',
+        registrationId: 'buy-1',
+        quantity: 3,
+      });
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(lockedIds()).toEqual(['seller', 'coop-1']);
+      const lockOrder = prisma.$queryRaw.mock.invocationCallOrder[0];
+      expect(lockOrder).toBeLessThan(prisma.registration.findFirst.mock.invocationCallOrder[0]);
+      expect(lockOrder).toBeLessThan(available.mock.invocationCallOrder[0]);
+      expect(available.mock.calls[0][4]).toBe(prisma);
+      expect(ecoPower.mock.calls[0][4]).toBe(prisma);
+      expect(prisma.registration.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('createSell keeps the error message and writes nothing when the shares are gone', async () => {
+      jest.spyOn(service, 'getAvailableShares').mockResolvedValue(2);
+
+      await expect(
+        service.createSell({
+          coopId: 'coop-1',
+          shareholderId: 'seller',
+          registrationId: 'buy-1',
+          quantity: 3,
+        }),
+      ).rejects.toThrow(
+        'Sale quantity exceeds available shares (accounting for pending and completed sells)',
+      );
+      expect(prisma.registration.create).not.toHaveBeenCalled();
+    });
+
+    it('createTransfer locks both parties in id order inside the transaction', async () => {
+      const available = jest.spyOn(service, 'getAvailableShares').mockResolvedValue(10);
+      const ecoPower = jest.spyOn(service, 'checkEcoPowerThreshold').mockResolvedValue(undefined);
+
+      await service.createTransfer({
+        coopId: 'coop-1',
+        fromShareholderId: 'zz-from',
+        toShareholderId: 'aa-to',
+        registrationId: 'buy-1',
+        quantity: 3,
+      });
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(lockedIds()).toEqual(['aa-to', 'zz-from', 'coop-1']);
+      expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+        available.mock.invocationCallOrder[0],
+      );
+      expect(available.mock.calls[0][4]).toBe(prisma);
+      expect(ecoPower.mock.calls[0][4]).toBe(prisma);
     });
   });
 });
