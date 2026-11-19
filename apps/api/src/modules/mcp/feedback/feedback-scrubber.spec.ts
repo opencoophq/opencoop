@@ -694,9 +694,21 @@ describe('scrubFeedbackText review round d4538cf', () => {
   });
 });
 
+describe('scrubFeedbackText review round 223a62d', () => {
+  it('redacts list items padded with more than 40 spaces after a stray quote', () => {
+    const pad = ' '.repeat(60);
+    const result = scrubFeedbackText(`say "hi ["Jan Peeters",${pad}"Marie Dupont"${pad}]`);
+    expect(result).not.toContain('Peeters');
+    expect(result).not.toContain('Dupont');
+  });
+});
+
 describe('scrubFeedbackText performance', () => {
   // Inputs are capped at 4000 chars; no pattern may backtrack quadratically or worse.
   const inputs: Record<string, string> = {
+    'curly apostrophe only run': '["' + '’'.repeat(1300),
+    'spaced curly apostrophe run': '["' + ' ’'.repeat(1300),
+    'long whitespace between quotes': '[' + ('"a"' + ' '.repeat(200)).repeat(19),
     'curly apostrophe list run': '["' + 'a’'.repeat(1300),
     'straight apostrophe list run': "['" + "a'".repeat(1300),
     'whitespace-padded list run': '[' + '"a b",          '.repeat(200),

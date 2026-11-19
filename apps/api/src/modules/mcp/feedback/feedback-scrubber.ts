@@ -286,10 +286,12 @@ function scrubArrayStrings(text: string): string {
 // before `,` or `]`. The scanner tracks quote state, so a stray quote earlier on the line can
 // make it misread a list; this pass does not depend on that state.
 // Items may sit in [], (), {} and be separated by , or ; with any whitespace. An apostrophe
-// between two letters (D'Hondt, O'Brien) is part of the item, not a quote. The branches never
-// overlap (each ’ fits exactly one), so a failed match cannot backtrack exponentially.
+// between two letters (D'Hondt, O'Brien) is part of the item, not a quote. ’ is never a
+// delimiter, so it is plain content. The two branches never match the same character, so a
+// failed match cannot backtrack exponentially. Each \s* run is scanned by at most two
+// candidate quotes, so the lookarounds stay linear without a length cap.
 const LIST_ITEM =
-  /(?<=[[({,;]\s{0,40})(["'])((?:[^"'’\n]|(?<=\p{L})['’](?=\p{L})|(?<!\p{L})’|’(?!\p{L})){1,200})\1(?=\s{0,40}[,;\])}])/gu;
+  /(?<=[[({,;]\s*)(["'])((?:[^"'\n]|(?<=\p{L})'(?=\p{L})){1,200})\1(?=\s*[,;\])}])/gu;
 
 function scrubListItems(text: string): string {
   return text.replace(LIST_ITEM, (match: string, quote: string, content: string) =>
