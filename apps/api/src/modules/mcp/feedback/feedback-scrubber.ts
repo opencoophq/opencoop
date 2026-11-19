@@ -82,7 +82,8 @@ const DATE_OR_TIME =
   /^(?:\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}(?:[T ]\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:?\d{2})?)?|\d{1,2}:\d{2}(?::\d{2})?)$/;
 const SCALAR = /^(?:-?\d{1,20}(?:\.\d{1,20})?|true|false|null|undefined)$/i;
 // A hyphenated capitalised word ("Marie-Claire", "Van-Damme") is a name, not an id.
-const HYPHENATED_NAME = /^\p{Lu}\p{Ll}+(?:-\p{L}+){1,4}$/u;
+// Parts may hold apostrophes: O'Neil-D'Arcy, O’Neil-D’Arcy.
+const HYPHENATED_NAME = /^\p{Lu}[\p{L}'’]*(?:-\p{L}[\p{L}'’]*){1,4}$/u;
 
 /**
  * True when a value is clearly not a personal name: a date or time, a number or literal, or a
@@ -127,8 +128,9 @@ function keyAlternation(keys: string[]): string {
 function keyValuePattern(keyPattern: string, unquotedValue: string): RegExp {
   return new RegExp(
     `(?<![A-Za-z0-9_-])(["']?)(${keyPattern})\\1(\\s*[:=]\\s*)` +
-      `("(?:[^"\\\\\\n]|\\\\.)*"|'(?:[^'\\\\\\n]|\\\\.)*'|${unquotedValue})`,
-    'gi',
+      // An apostrophe between two letters (D'Hondt) does not close a single-quoted value.
+      `("(?:[^"\\\\\\n]|\\\\.)*"|'(?:[^'\\\\\\n]|\\\\.|(?<=\\p{L})'(?=\\p{L}))*'|${unquotedValue})`,
+    'giu',
   );
 }
 

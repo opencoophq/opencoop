@@ -717,9 +717,35 @@ describe('scrubFeedbackText review round cbe7fa4', () => {
   });
 });
 
+describe('scrubFeedbackText review round 3866665', () => {
+  it.each([
+    "'lastName': 'D'Hondt'",
+    "{'name': 'O'Brien Sean','id':1}",
+    "member: 'Jan D'Hondt'",
+    "lastName='D'Hondt'",
+    "{'lastName': 'D'Hondt'}",
+    "['O'Neil-D'Arcy','Jan Peeters']",
+    "name: O'Neil-D'Arcy",
+    '"name": "O’Neil-D’Arcy"',
+  ])('redacts the whole name in %s', (input) => {
+    const result = scrubFeedbackText(input);
+    for (const part of ['Hondt', 'Brien', 'Sean', 'Neil', 'Arcy', 'Jan', 'Peeters']) {
+      expect(result).not.toContain(part);
+    }
+  });
+
+  it('keeps the id after a redacted single-quoted name', () => {
+    expect(scrubFeedbackText("{'name': 'O'Brien Sean','id':1}")).toBe(
+      "{'name': '[REDACTED:name]','id':1}",
+    );
+  });
+});
+
 describe('scrubFeedbackText performance', () => {
   // Inputs are capped at 4000 chars; no pattern may backtrack quadratically or worse.
   const inputs: Record<string, string> = {
+    'single-quoted name value with apostrophes': "name: '" + "a'b".repeat(1300),
+    'hyphenated apostrophe token': "['" + "O'a-".repeat(990),
     'curly apostrophe only run': '["' + '’'.repeat(1300),
     'spaced curly apostrophe run': '["' + ' ’'.repeat(1300),
     'long whitespace between quotes': '[' + ('"a"' + ' '.repeat(200)).repeat(19),
