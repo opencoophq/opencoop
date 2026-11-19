@@ -65,6 +65,8 @@ import { McpShareholderTools } from './tools/mcp-shareholder.tools';
 import { McpTransactionTools } from './tools/mcp-transaction.tools';
 import { McpShareTransferTools } from './tools/mcp-share-transfer.tools';
 import { McpChargeCardTools } from './tools/mcp-charge-card.tools';
+import { McpFeedbackTools } from './tools/mcp-feedback.tools';
+import { FeedbackService } from './feedback/feedback.service';
 import { ChargeCardsAdminService } from '../charge-cards/charge-cards-admin.service';
 import { AgendaService } from '../meetings/agenda.service';
 import { AttendanceService } from '../meetings/attendance.service';
@@ -208,6 +210,7 @@ const EXISTING_TOOL_NAMES = [
   'update_volunteer',
   'update_volunteer_interests',
   'list_charge_cards',
+  'submit_feedback',
 ];
 
 const apiKeysService = {
@@ -305,6 +308,7 @@ const convocationService = {};
 const attendanceService = {};
 const minutesService = {};
 const meetingDocumentsService = {};
+const feedbackService = { submit: jest.fn() };
 
 @Injectable()
 class TestWriteTools {
@@ -334,6 +338,7 @@ const toolProviders = [
   McpReportTools,
   McpVolunteerTools,
   McpChargeCardTools,
+  McpFeedbackTools,
   TestWriteTools,
 ];
 
@@ -371,6 +376,7 @@ const toolProviders = [
     { provide: MeetingDocumentsService, useValue: meetingDocumentsService },
     { provide: VolunteersService, useValue: {} },
     { provide: ChargeCardsAdminService, useValue: { list: jest.fn() } },
+    { provide: FeedbackService, useValue: feedbackService },
   ],
   exports: [McpAuthStore],
 })
@@ -509,6 +515,37 @@ describe('MCP HTTP transport', () => {
     expect(response.body.result?.content?.[0].text).toContain('Test Cooperative');
     expect(prismaService.coop.findUniqueOrThrow).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'coop1' } }),
+    );
+  });
+
+  it('lets a read-only key call submit_feedback', async () => {
+    feedbackService.submit.mockResolvedValue({
+      status: 'disabled',
+      message: 'Feedback reporting is not configured on this server.',
+    });
+
+    const response = await postMcp(
+      {
+        jsonrpc: '2.0',
+        id: 7,
+        method: 'tools/call',
+        params: {
+          name: 'submit_feedback',
+          arguments: { kind: 'bug', title: 'Broken', description: 'It fails.' },
+        },
+      },
+      'oc_read_only',
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.error).toBeUndefined();
+    expect(JSON.parse(response.body.result?.content?.[0].text ?? '{}')).toEqual({
+      status: 'disabled',
+      message: 'Feedback reporting is not configured on this server.',
+    });
+    expect(feedbackService.submit).toHaveBeenCalledWith(
+      { kind: 'bug', title: 'Broken', description: 'It fails.' },
+      expect.objectContaining({ userId: expect.any(String), scope: 'READ_ONLY' }),
     );
   });
 

@@ -14,6 +14,14 @@ import { McpReportTools } from './tools/mcp-report.tools';
 import { McpVolunteerTools } from './tools/mcp-volunteer.tools';
 import { McpShareTransferTools } from './tools/mcp-share-transfer.tools';
 import { McpChargeCardTools } from './tools/mcp-charge-card.tools';
+import { McpFeedbackTools } from './tools/mcp-feedback.tools';
+import { FeedbackService } from './feedback/feedback.service';
+import {
+  FEEDBACK_COUNTER_STORE,
+  FeedbackRateLimiter,
+  RedisFeedbackCounterStore,
+} from './feedback/feedback-rate-limiter';
+import { GitHubFeedbackClient } from './feedback/github-feedback.client';
 import { ShareholdersModule } from '../shareholders/shareholders.module';
 import { RegistrationsModule } from '../registrations/registrations.module';
 import { AdminModule } from '../admin/admin.module';
@@ -51,6 +59,7 @@ import { McpToolkit } from './mcp-toolkit';
         McpVolunteerTools,
         McpShareTransferTools,
         McpChargeCardTools,
+        McpFeedbackTools,
       ],
       'opencoop',
     ),
@@ -87,6 +96,11 @@ import { McpToolkit } from './mcp-toolkit';
     McpVolunteerTools,
     McpShareTransferTools,
     McpChargeCardTools,
+    McpFeedbackTools,
+    FeedbackService,
+    FeedbackRateLimiter,
+    GitHubFeedbackClient,
+    { provide: FEEDBACK_COUNTER_STORE, useClass: RedisFeedbackCounterStore },
     CoopPermissionsService,
     McpToolkit,
   ],

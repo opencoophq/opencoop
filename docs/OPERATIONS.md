@@ -5,16 +5,16 @@ enough for a second operator to deploy, roll back, and recover.
 
 > **Sensitive details** (server hostnames, Tailscale names, SSH keys, backup server IPs,
 > Telegram tokens) are **not** in this repo — they live in the private infra notes and
-> 1Password. This file documents the *process*; connection specifics are referenced, not duplicated.
+> 1Password. This file documents the _process_; connection specifics are referenced, not duplicated.
 
 ---
 
 ## Environments
 
-| Env | Trigger | Domain | Server dir |
-|-----|---------|--------|-----------|
-| **acc** | push to `main` | acc.opencoop.be | `~/opencoop/acc` |
-| **prod** | push a `v*` tag | opencoop.be | `~/opencoop/prod` |
+| Env      | Trigger         | Domain          | Server dir        |
+| -------- | --------------- | --------------- | ----------------- |
+| **acc**  | push to `main`  | acc.opencoop.be | `~/opencoop/acc`  |
+| **prod** | push a `v*` tag | opencoop.be     | `~/opencoop/prod` |
 
 Both run on **fsn1** (Hetzner), reached over **Tailscale SSH** as user `wouter` (host + key in the
 private infra notes). **Caddy** is the reverse proxy (in the `proxy` Docker network); it terminates
@@ -152,12 +152,13 @@ curl -fsS https://opencoop.be/api/health   # confirm healthy (acc.opencoop.be fo
 ```
 
 > ⚠️ **NEVER run `docker compose down` on prod.** The prod project name is `opencoop-prod`
-> (volumes `opencoop-prod_postgres_data`); a `down && up` can create a *new empty* volume and you
+> (volumes `opencoop-prod_postgres_data`); a `down && up` can create a _new empty_ volume and you
 > lose the database. Recreate app containers with `docker compose up -d --no-deps --force-recreate`.
 > To replace a single stuck container, `docker rm -f <name>` it, never `down`. Infra upgrades are
 > the separate image-line edit above, and on prod only after the encrypted `age` dump.
 
 ### If a migration failed mid-deploy
+
 The new API won't have started. Either fix-forward (push a corrected migration) or roll the `TAG`
 back to the prior image **and** assess whether the partial migration left the DB in a bad state
 (check `_prisma_migrations`). If unsure, restore from backup (below) before retrying.
@@ -174,6 +175,7 @@ back to the prior image **and** assess whether the partial migration left the DB
   nothing is auto-discovered.
 
 ### Restore (outline — rehearse before relying on it)
+
 1. On fra1, list archives: `borg list <repo>` and pick the target date.
 2. Extract the Postgres dump for the env from that archive (`borg extract` the dump path).
 3. Copy the dump to fsn1, then restore into the running Postgres container:
@@ -191,9 +193,67 @@ back to the prior image **and** assess whether the partial migration left the DB
 - `/api/health` does real **Postgres `SELECT 1` + Redis ping** (Terminus). Used by the Docker
   healthcheck and the post-deploy gate.
 - **External uptime monitor** (e.g. UptimeRobot / Better Stack) should watch
-  `https://opencoop.be/api/health` and alert (Telegram/email). *(Set this up — it is the one piece
-  not enforceable from the repo; without it, the first signal of a dead box is a user email.)*
+  `https://opencoop.be/api/health` and alert (Telegram/email). _(Set this up — it is the one piece
+  not enforceable from the repo; without it, the first signal of a dead box is a user email.)_
 - **Sentry**: The API reports through `apps/api/src/instrument.ts` (global filter). The web app reports through `apps/web/sentry.client.config.ts`, `sentry.server.config.ts` and `sentry.edge.config.ts`.
+
+---
+
+## MCP feedback (`submit_feedback`) GitHub token
+
+The MCP tool `submit_feedback` files agent bug reports as issues in `opencoophq/opencoop`. It
+uses its own token, not `GITHUB_TOKEN`. Without `MCP_FEEDBACK_GITHUB_TOKEN` the tool returns
+`status: "disabled"` and calls neither Redis nor GitHub.
+
+**`opencoophq/opencoop` is a PUBLIC repository.** Before anyone provisions a token, set
+`MCP_FEEDBACK_GITHUB_REPO` to a private repository. The maintainer decides which one. Until a token
+exists, the tool stays disabled and returns `status: "disabled"`.
+
+1. Create a fine-grained personal access token at
+   https://github.com/settings/personal-access-tokens/new:
+   - Resource owner: `opencoophq`.
+   - Repository access: "Only select repositories" → the private target repository.
+   - Permissions: Issues → Read and write. (Metadata → Read-only is added automatically.)
+   - Expiration: 1 year or less. Put a calendar reminder a week before it expires.
+2. Store it in secret-broker / 1Password as `opencoop/mcp-feedback-github-token`.
+3. On fsn1, add it to `~/opencoop/acc/.env` and `~/opencoop/prod/.env`:
+
+   ```bash
+   MCP_FEEDBACK_GITHUB_TOKEN=github_pat_...
+   # the private target repository (the default, opencoophq/opencoop, is public):
+   MCP_FEEDBACK_GITHUB_REPO=opencoophq/<private-repo>
+   ```
+
+4. In that directory, recreate the API only. Never run `docker compose down`:
+
+   ```bash
+   docker compose up -d --force-recreate api
+   ```
+
+5. Verify on acc: call `submit_feedback` with an `oc_` key, then check that the issue exists with
+   the labels `mcp-feedback`, `source:agent` and `kind:<kind>`.
+
+Notes:
+
+- The tool creates its labels on first use.
+- Rate limits live in Redis: 5 reports per user per hour, 30 per day for the whole server. When
+  Redis is down, the tool refuses reports (`status: "rate_limited"`).
+- A report with the same kind, tool and title as an open issue becomes a comment on that issue
+  (fingerprint marker in the issue body).
+- `APP_VERSION` comes from `TAG` in the compose file and shows as the commit in each issue.
+- The rate limiter uses `EXPIRE ... NX`, which needs Redis 7 or later. The compose file pins
+  `redis:7.4`.
+
+Risk:
+
+- `opencoophq/opencoop` is a **public** repository. The scrubber removes secrets, emails, phones,
+  IBANs, national register numbers and names in structured payloads. It cannot catch a name in
+  free prose ("Jan Peeters' shares are wrong"), so an issue can still hold personal data. To keep
+  reports private, set `MCP_FEEDBACK_GITHUB_REPO` to a private repository.
+- The token owner needs at least triage rights on the repository. Without them, GitHub drops the
+  labels without an error, and deduplication stops working because it searches by the
+  `mcp-feedback` label. A fine-grained PAT with Issues: Read and write meets this when its owner
+  is an `opencoophq` member with write access to the repository.
 
 ---
 
