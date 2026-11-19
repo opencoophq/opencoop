@@ -678,9 +678,27 @@ describe('scrubFeedbackText review round 96517b8', () => {
   });
 });
 
+describe('scrubFeedbackText review round d4538cf', () => {
+  it.each(['/api/members/85073003328', '/api/members/85.07.30-033.28/shares'])(
+    'redacts a national register number inside a path: %s',
+    (input) => {
+      expect(scrubFeedbackText(input)).toContain('[REDACTED:national_id]');
+      expect(scrubFeedbackText(input)).not.toContain('033');
+    },
+  );
+
+  it('redacts a list item that contains a curly apostrophe outside a word', () => {
+    const result = scrubFeedbackText('say "hi ["Jan Peeters’", "Marie Dupont"]');
+    expect(result).not.toContain('Peeters');
+    expect(result).not.toContain('Dupont');
+  });
+});
+
 describe('scrubFeedbackText performance', () => {
   // Inputs are capped at 4000 chars; no pattern may backtrack quadratically or worse.
   const inputs: Record<string, string> = {
+    'curly apostrophe list run': '["' + 'a’'.repeat(1300),
+    'straight apostrophe list run': "['" + "a'".repeat(1300),
     'whitespace-padded list run': '[' + '"a b",          '.repeat(200),
     'apostrophe list run': "['" + "a'b".repeat(1300),
     'comma separated quoted run': '"a b", '.repeat(570),
