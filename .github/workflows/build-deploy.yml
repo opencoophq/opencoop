@@ -85,6 +85,9 @@ jobs:
           bash .github/scripts/e2e-select.test.sh
       - id: setup
         uses: ./.github/actions/setup-workspace
+      # Static checks for mistakes this repo has repeated. See scripts/guardrails/README.md.
+      - name: Repo guardrails
+        run: node --test scripts/guardrails/*.test.mjs
       - name: Build workspace dependencies (shared, pdf-templates)
         run: pnpm --filter "@opencoop/api^..." build
       # Independent checks on a 4-vCPU runner: run them side by side.
@@ -155,6 +158,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: ./.github/actions/setup-workspace
+
+      # Fails when schema.prisma changes without a matching migration. The drift
+      # that already exists is frozen in prisma/migration-drift.baseline.sql.
+      # Uses its own shadow database, so opencoop_test stays untouched.
+      - name: Check schema.prisma matches migrations (drift ratchet)
+        run: bash packages/database/scripts/check-migration-drift.sh
+        env:
+          SHADOW_DATABASE_URL: postgresql://opencoop:opencoop@localhost:5433/opencoop_shadow
 
       # Next.js reuses its build cache across runs. Keyed on web sources,
       # with fallbacks so a partial match still speeds up the build.
