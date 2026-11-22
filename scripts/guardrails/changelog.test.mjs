@@ -1,6 +1,7 @@
 // CHANGELOG.md `## [x]` headings: [Unreleased] first, each version once, newest first.
-// Two PRs once both added `## [2026.39.3]` (#197); another put an entry under an old,
-// already-tagged heading (#135). Plain `##` headings without brackets are ignored.
+// Two PRs once both added `## [2026.39.3]` (#197); another added a pre-CalVer `0.8.39`
+// heading above CalVer ones (#135). Not covered: an entry added under a version that is
+// already tagged (needs git tags). Plain `##` headings without brackets are ignored.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { assertRatchet, read } from './lib.mjs';
@@ -40,7 +41,7 @@ test('CHANGELOG headings: Unreleased first, unique, strictly descending', () => 
     found,
     allowlist: ALLOWLIST,
     mistake: 'CHANGELOG.md `## [x]` headings are not [Unreleased] first, unique, and newest first.',
-    fix: 'put new entries under `## [Unreleased]` at the top; at release, rename it to a version that is higher than every version below it and not already present.',
+    fix: 'put new entries under `## [Unreleased]` at the top; at release, keep an empty `## [Unreleased]` and move its entries under a new version heading below it, higher than every version further down and not already present.',
     file: 'scripts/guardrails/changelog.test.mjs',
   });
 });

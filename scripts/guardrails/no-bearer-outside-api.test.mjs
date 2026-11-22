@@ -23,7 +23,7 @@ const ALLOWLIST = {
 };
 
 // `Authorization:` / 'Authorization' as a header key, or a `Bearer ${...}` / 'Bearer ' + value.
-const HEADER = /['"]?\bAuthorization['"]?\s*[:,]|`Bearer \$\{|['"]Bearer ['"]\s*\+/;
+const HEADER = /['"]?\bAuthorization['"]?\s*[:,]|`Bearer \$\{|['"]Bearer ['"]\s*\+/i;
 
 test('no hand-built Authorization header outside lib/api.ts', () => {
   const found = new Map();

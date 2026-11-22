@@ -26,3 +26,12 @@ Each test has an `ALLOWLIST` of violations that already existed when it was adde
 a reason. It is a ratchet: a new violation fails, and so does an entry that no longer occurs
 (or a count that dropped). When you fix one, delete its entry or lower its `count`. Do not
 add entries for new code; fix the code instead.
+
+## Limits
+
+- `env-wiring` checks the `api` service only. Runtime vars of `web` (`LAUNCH_MODE`,
+  `MCP_PUBLIC_URL`) are not checked.
+- `changelog` reads headings only. It does not catch an entry added under a version that is
+  already tagged.
+- The migration baseline only shrinks if review enforces it: `--update` accepts any output.
+  A Prisma upgrade can reformat the SQL; regenerate the baseline with `--update` in that PR.
