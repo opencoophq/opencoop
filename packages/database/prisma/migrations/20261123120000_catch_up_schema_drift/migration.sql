@@ -10,7 +10,14 @@
 --     and columns) gets only what it still lacks, and nothing else changes.
 -- Nothing in this file deletes a table, a column, or a row.
 --
--- Prisma runs the whole file in one transaction. If one statement fails, none apply.
+-- Prisma sends the file as one multi-statement query, which PostgreSQL runs as
+-- one implicit transaction. If one statement fails, none apply.
+--
+-- Locks are held until that transaction commits. Statements that would lock a
+-- table without changing it are guarded by catalog checks, so acc and prod
+-- only lock the tables in sections 5-7. lock_timeout makes the migration fail
+-- (and roll back) instead of queueing every query on a table behind a long one.
+SET LOCAL lock_timeout = '5s';
 
 -- ---------------------------------------------------------------------------
 -- 1. Enum value
@@ -90,24 +97,58 @@ CREATE TABLE IF NOT EXISTS "webauthn_credentials" (
     CONSTRAINT "webauthn_credentials_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS "webauthn_credentials_credentialId_key" ON "webauthn_credentials"("credentialId");
-CREATE INDEX IF NOT EXISTS "webauthn_credentials_userId_idx" ON "webauthn_credentials"("userId");
+-- CREATE INDEX IF NOT EXISTS would still lock the table; check the name first.
+DO $$
+BEGIN
+  IF to_regclass('"webauthn_credentials_credentialId_key"') IS NULL THEN
+    CREATE UNIQUE INDEX "webauthn_credentials_credentialId_key" ON "webauthn_credentials"("credentialId");
+  END IF;
+  IF to_regclass('"webauthn_credentials_userId_idx"') IS NULL THEN
+    CREATE INDEX "webauthn_credentials_userId_idx" ON "webauthn_credentials"("userId");
+  END IF;
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- 3. Missing columns
 -- ---------------------------------------------------------------------------
 
-ALTER TABLE "coops" ADD COLUMN IF NOT EXISTS "apiKeyHash" TEXT;
-ALTER TABLE "coops" ADD COLUMN IF NOT EXISTS "apiKeyPrefix" TEXT;
+-- ADD COLUMN IF NOT EXISTS takes an ACCESS EXCLUSIVE lock on coops and
+-- registrations even when the column exists, so check the catalog first.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = '"coops"'::regclass
+                 AND attname = 'apiKeyHash' AND NOT attisdropped) THEN
+    ALTER TABLE "coops" ADD COLUMN "apiKeyHash" TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = '"coops"'::regclass
+                 AND attname = 'apiKeyPrefix' AND NOT attisdropped) THEN
+    ALTER TABLE "coops" ADD COLUMN "apiKeyPrefix" TEXT;
+  END IF;
+  -- A constant default is stored in the catalog (PG 11+): no table rewrite.
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = '"registrations"'::regclass
+                 AND attname = 'isGift' AND NOT attisdropped) THEN
+    ALTER TABLE "registrations" ADD COLUMN "isGift" BOOLEAN NOT NULL DEFAULT false;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = '"registrations"'::regclass
+                 AND attname = 'giftCode' AND NOT attisdropped) THEN
+    ALTER TABLE "registrations" ADD COLUMN "giftCode" TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = '"registrations"'::regclass
+                 AND attname = 'giftClaimedAt' AND NOT attisdropped) THEN
+    ALTER TABLE "registrations" ADD COLUMN "giftClaimedAt" TIMESTAMP(3);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = '"registrations"'::regclass
+                 AND attname = 'giftClaimedByShareholderId' AND NOT attisdropped) THEN
+    ALTER TABLE "registrations" ADD COLUMN "giftClaimedByShareholderId" TEXT;
+  END IF;
 
--- A constant default is stored in the catalog (PG 11+): no table rewrite.
-ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "isGift" BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "giftCode" TEXT;
-ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "giftClaimedAt" TIMESTAMP(3);
-ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "giftClaimedByShareholderId" TEXT;
-
-CREATE UNIQUE INDEX IF NOT EXISTS "coops_apiKeyHash_key" ON "coops"("apiKeyHash");
-CREATE UNIQUE INDEX IF NOT EXISTS "registrations_giftCode_key" ON "registrations"("giftCode");
+  IF to_regclass('"coops_apiKeyHash_key"') IS NULL THEN
+    CREATE UNIQUE INDEX "coops_apiKeyHash_key" ON "coops"("apiKeyHash");
+  END IF;
+  IF to_regclass('"registrations_giftCode_key"') IS NULL THEN
+    CREATE UNIQUE INDEX "registrations_giftCode_key" ON "registrations"("giftCode");
+  END IF;
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- 4. Missing tables
@@ -124,8 +165,15 @@ CREATE TABLE IF NOT EXISTS "refresh_tokens" (
     CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS "refresh_tokens_tokenHash_key" ON "refresh_tokens"("tokenHash");
-CREATE INDEX IF NOT EXISTS "refresh_tokens_userId_idx" ON "refresh_tokens"("userId");
+DO $$
+BEGIN
+  IF to_regclass('"refresh_tokens_tokenHash_key"') IS NULL THEN
+    CREATE UNIQUE INDEX "refresh_tokens_tokenHash_key" ON "refresh_tokens"("tokenHash");
+  END IF;
+  IF to_regclass('"refresh_tokens_userId_idx"') IS NULL THEN
+    CREATE INDEX "refresh_tokens_userId_idx" ON "refresh_tokens"("userId");
+  END IF;
+END $$;
 
 -- acc and prod recorded this table as migration 20260306170000_add_audit_logs,
 -- which is not in the repository.
@@ -144,10 +192,21 @@ CREATE TABLE IF NOT EXISTS "audit_logs" (
     CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX IF NOT EXISTS "audit_logs_entity_entityId_idx" ON "audit_logs"("entity", "entityId");
-CREATE INDEX IF NOT EXISTS "audit_logs_coopId_idx" ON "audit_logs"("coopId");
-CREATE INDEX IF NOT EXISTS "audit_logs_actorId_idx" ON "audit_logs"("actorId");
-CREATE INDEX IF NOT EXISTS "audit_logs_createdAt_idx" ON "audit_logs"("createdAt");
+DO $$
+BEGIN
+  IF to_regclass('"audit_logs_entity_entityId_idx"') IS NULL THEN
+    CREATE INDEX "audit_logs_entity_entityId_idx" ON "audit_logs"("entity", "entityId");
+  END IF;
+  IF to_regclass('"audit_logs_coopId_idx"') IS NULL THEN
+    CREATE INDEX "audit_logs_coopId_idx" ON "audit_logs"("coopId");
+  END IF;
+  IF to_regclass('"audit_logs_actorId_idx"') IS NULL THEN
+    CREATE INDEX "audit_logs_actorId_idx" ON "audit_logs"("actorId");
+  END IF;
+  IF to_regclass('"audit_logs_createdAt_idx"') IS NULL THEN
+    CREATE INDEX "audit_logs_createdAt_idx" ON "audit_logs"("createdAt");
+  END IF;
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- 5. Old foreign key name
