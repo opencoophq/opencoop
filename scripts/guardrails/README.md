@@ -9,7 +9,8 @@ node --test scripts/guardrails/*.test.mjs
 ```
 
 The migration check lives in `packages/database/scripts/check-migration-drift.sh` (needs a
-throwaway Postgres; CI runs it in the `e2e` job).
+throwaway Postgres; CI runs it in the `e2e` job). It allows no drift: applying
+`prisma/migrations` to an empty database must produce exactly `schema.prisma`.
 
 | Check                            | Prevents                                                                                  |
 | -------------------------------- | ----------------------------------------------------------------------------------------- |
@@ -33,5 +34,5 @@ add entries for new code; fix the code instead.
   `MCP_PUBLIC_URL`) are not checked.
 - `changelog` reads headings only. It does not catch an entry added under a version that is
   already tagged.
-- The migration baseline only shrinks if review enforces it: `--update` accepts any output.
-  A Prisma upgrade can reformat the SQL; regenerate the baseline with `--update` in that PR.
+- The migration check compares `prisma/migrations` with `schema.prisma` only. It does not
+  read acc or prod; a change made there by hand or by `db push` stays invisible to it.

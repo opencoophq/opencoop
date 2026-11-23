@@ -159,10 +159,10 @@ jobs:
 
       - uses: ./.github/actions/setup-workspace
 
-      # Fails when schema.prisma changes without a matching migration. The drift
-      # that already exists is frozen in prisma/migration-drift.baseline.sql.
+      # Fails when prisma/migrations do not produce exactly schema.prisma
+      # (for example a schema change without a migration). No drift is allowed.
       # Uses its own shadow database, so opencoop_test stays untouched.
-      - name: Check schema.prisma matches migrations (drift ratchet)
+      - name: Check schema.prisma matches migrations (no drift)
         run: bash packages/database/scripts/check-migration-drift.sh
         env:
           SHADOW_DATABASE_URL: postgresql://opencoop:opencoop@localhost:5433/opencoop_shadow

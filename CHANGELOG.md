@@ -17,6 +17,10 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Migrations now produce the full schema.** Migration `20261123120000_catch_up_schema_drift` adds what `schema.prisma` had without a migration: the tables `audit_logs` and `refresh_tokens`, the columns `coops.apiKeyHash`/`apiKeyPrefix` and the four gift columns on `registrations`, and the `DocumentType` value `CORRESPONDENCE`. It renames the table `"WebAuthnCredential"` to `webauthn_credentials` in place (passkeys are kept), renames an old foreign key on `shareholder_emancipation_tokens`, drops four join-table indexes that the schema does not declare, and gives six role foreign keys the schema's actions. Every statement is idempotent. On acc and prod it changes only those foreign keys, indexes, and the name: deleting a role that only the legacy `coop_admins.roleId` or `admin_invitations.roleId` column still points to now clears that column instead of failing. The CI drift check now allows no drift at all; `prisma/migration-drift.baseline.sql` is gone.
+
 ## [2026.47.3] - 2026-11-19
 
 ### Added
