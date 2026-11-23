@@ -825,6 +825,7 @@ model Registration {
   @@index([shareholderId])
   @@index([registerDate])
   @@index([shareTransferId])
+  @@index([sellsRegistrationId])
   @@map("registrations")
 }
 
