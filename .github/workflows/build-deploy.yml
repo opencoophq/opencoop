@@ -377,3 +377,15 @@ jobs:
           up_services: migrate api web
           verify: api:running web:running migrate:exited0
           health_url: https://opencoop.be/api/health
+
+      # Runs only if "Deploy to prod" succeeded, and that step fails when the
+      # container checks or the health check fail. `acc down` is
+      # `docker compose stop`: volumes stay, and the next acc deploy's
+      # `docker compose up -d` starts the stack again.
+      - name: Sleep the acc stack
+        uses: appleboy/ssh-action@v1
+        with:
+          host: fsn1
+          username: wouter
+          key: ${{ secrets.FSN1_SSH_KEY }}
+          script: acc down opencoop
