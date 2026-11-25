@@ -91,13 +91,13 @@ export function CapitalStatementPreview() {
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">{t('capitalStatement.openingBalance')}</p>
-                <p className="text-xl font-bold">{formatCurrency(data.openingBalance, locale)}</p>
+                <p className="text-xl font-bold tabular-nums">{formatCurrency(data.openingBalance, locale)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">{t('capitalStatement.closingBalance')}</p>
-                <p className="text-xl font-bold">{formatCurrency(data.closingBalance, locale)}</p>
+                <p className="text-xl font-bold tabular-nums">{formatCurrency(data.closingBalance, locale)}</p>
               </CardContent>
             </Card>
           </div>
@@ -163,7 +163,7 @@ export function CapitalStatementPreview() {
 
           {data.movements.length > 0 ? (
             <div className="border rounded-md overflow-auto">
-              <table ref={tableRef} className="w-full text-sm">
+              <table ref={tableRef} className="w-full text-sm tabular-nums">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">{t('capitalStatement.date')}</th>

@@ -1338,7 +1338,7 @@ export default function ShareholderDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('common.amount')}</span>
-                  <span className="font-medium">{fmtCurrency(buyResult.amount)}</span>
+                  <span className="font-medium tabular-nums">{fmtCurrency(buyResult.amount)}</span>
                 </div>
                 {buyResult.ogmCode && (
                   <div className="flex justify-between">
@@ -1396,7 +1396,7 @@ export default function ShareholderDetailPage() {
               <div className="border-t pt-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('common.total')}</span>
-                  <span className="font-bold">{fmtCurrency(buyTotal)}</span>
+                  <span className="font-bold tabular-nums">{fmtCurrency(buyTotal)}</span>
                 </div>
               </div>
               <DialogFooter>
@@ -1447,7 +1447,7 @@ export default function ShareholderDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('common.amount')}</span>
-                  <span className="font-medium">{fmtCurrency(sellResult.amount)}</span>
+                  <span className="font-medium tabular-nums">{fmtCurrency(sellResult.amount)}</span>
                 </div>
                 {sellResult.ogmCode && (
                   <div className="flex justify-between">
@@ -1496,7 +1496,7 @@ export default function ShareholderDetailPage() {
                 <div className="border-t pt-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t('shares.totalRefund')}</span>
-                    <span className="font-bold">
+                    <span className="font-bold tabular-nums">
                       {fmtCurrency(sellQuantity * selectedSellReg.shareClass.pricePerShare)}
                     </span>
                   </div>
@@ -1562,7 +1562,7 @@ export default function ShareholderDetailPage() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('common.amount')}</span>
-                  <span className="font-medium">{fmtCurrency(paymentDetails.amount)}</span>
+                  <span className="font-medium tabular-nums">{fmtCurrency(paymentDetails.amount)}</span>
                 </div>
                 {paymentDetails.ogmCode && (
                   <div className="flex justify-between">

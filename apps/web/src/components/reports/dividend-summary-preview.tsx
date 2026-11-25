@@ -83,19 +83,19 @@ export function DividendSummaryPreview() {
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">{t('dividendSummary.totalGross')}</p>
-                <p className="text-xl font-bold">{formatCurrency(data.totals.gross, locale)}</p>
+                <p className="text-xl font-bold tabular-nums">{formatCurrency(data.totals.gross, locale)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">{t('dividendSummary.totalTax')}</p>
-                <p className="text-xl font-bold">{formatCurrency(data.totals.tax, locale)}</p>
+                <p className="text-xl font-bold tabular-nums">{formatCurrency(data.totals.tax, locale)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">{t('dividendSummary.totalNet')}</p>
-                <p className="text-xl font-bold">{formatCurrency(data.totals.net, locale)}</p>
+                <p className="text-xl font-bold tabular-nums">{formatCurrency(data.totals.net, locale)}</p>
               </CardContent>
             </Card>
           </div>
@@ -103,7 +103,7 @@ export function DividendSummaryPreview() {
           {/* Payout table */}
           {data.payouts.length > 0 && (
             <div className="border rounded-md overflow-auto">
-              <table ref={tableRef} className="w-full text-sm">
+              <table ref={tableRef} className="w-full text-sm tabular-nums">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">{t('dividendSummary.shareholder')}</th>

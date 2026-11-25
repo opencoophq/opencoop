@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { HeroTitle } from '@/components/marketing/hero-title';
 import {
   ArrowRight,
   ArrowRightLeft,
@@ -96,13 +97,13 @@ export default function MigrationPage() {
           </FadeIn>
 
           <FadeIn delay={80}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-balance break-words">
+            <HeroTitle>
               {t('hero.title')}
-            </h1>
+            </HeroTitle>
           </FadeIn>
 
           <FadeIn delay={160}>
-            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed text-balance">
+            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-[62ch] mx-auto leading-normal text-balance">
               {t('hero.subtitle')}
             </p>
           </FadeIn>
@@ -146,7 +147,7 @@ export default function MigrationPage() {
                   <h3 className="text-lg font-semibold mb-2">
                     {t(`process.${step}.title`)}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-normal">
                     {t(`process.${step}.description`)}
                   </p>
                 </FadeIn>
@@ -163,7 +164,7 @@ export default function MigrationPage() {
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
               {t('dataTypes.title')}
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="mt-4 text-lg text-muted-foreground max-w-[62ch] mx-auto">
               {t('dataTypes.subtitle')}
             </p>
           </FadeIn>
@@ -171,14 +172,14 @@ export default function MigrationPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {DATA_TYPES.map(({ key, icon: Icon }, i) => (
               <FadeIn key={key} delay={i * 80}>
-                <div className="group relative rounded-xl border bg-card p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300">
-                  <div className="mb-4 inline-flex items-center justify-center w-11 h-11 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                <div className="group relative rounded-xl border bg-card p-6 hover:shadow-lg hover:border-primary/20 transition-[box-shadow,border-color] duration-200 ease-out">
+                  <div className="mb-4 inline-flex items-center justify-center w-11 h-11 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 ease-out">
                     <Icon className="w-5 h-5" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">
                     {t(`dataTypes.${key}.title`)}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-normal">
                     {t(`dataTypes.${key}.description`)}
                   </p>
                 </div>

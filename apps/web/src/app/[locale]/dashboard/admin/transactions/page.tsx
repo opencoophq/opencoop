@@ -635,7 +635,7 @@ export default function AdminTransactionsPage() {
                           <TableCell className="text-right">{tx.quantity}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex flex-col items-end gap-0.5">
-                              <span>{formatCurrency(Number(tx.totalAmount), locale)}</span>
+                              <span className="tabular-nums">{formatCurrency(Number(tx.totalAmount), locale)}</span>
                               {tx.isSavings && tx.type === 'BUY' && tx.status !== 'COMPLETED' && (
                                 <span className="text-xs text-muted-foreground">
                                   {t('admin.transactions.savingsProgress', {
@@ -898,7 +898,7 @@ export default function AdminTransactionsPage() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('common.amount')}</span>
-                  <span className="font-medium">
+                  <span className="font-medium tabular-nums">
                     {formatCurrency(paymentDetails.amount, locale)}
                   </span>
                 </div>
@@ -1046,7 +1046,7 @@ export default function AdminTransactionsPage() {
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-sm">
+                        <p className="font-medium text-sm tabular-nums">
                           {formatCurrency(Number(reg.totalAmount), locale)}
                         </p>
                         <Badge variant="outline" className="text-xs">

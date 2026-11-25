@@ -822,7 +822,7 @@ export default function ShareholdersPage() {
               <div className="grid grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="pt-4 pb-4 text-center">
-                    <p className="text-2xl font-bold">{importPreview.totalRows}</p>
+                    <p className="text-2xl font-bold tabular-nums">{importPreview.totalRows}</p>
                     <p className="text-xs text-muted-foreground">
                       {t('admin.shareholders.import.totalRows')}
                     </p>
@@ -830,7 +830,7 @@ export default function ShareholdersPage() {
                 </Card>
                 <Card>
                   <CardContent className="pt-4 pb-4 text-center">
-                    <p className="text-2xl font-bold text-green-600">{importPreview.validRows}</p>
+                    <p className="text-2xl font-bold tabular-nums text-green-600">{importPreview.validRows}</p>
                     <p className="text-xs text-muted-foreground">
                       {t('admin.shareholders.import.validRows')}
                     </p>
@@ -838,7 +838,7 @@ export default function ShareholdersPage() {
                 </Card>
                 <Card>
                   <CardContent className="pt-4 pb-4 text-center">
-                    <p className="text-2xl font-bold text-red-600">{importPreview.invalidRows}</p>
+                    <p className="text-2xl font-bold tabular-nums text-red-600">{importPreview.invalidRows}</p>
                     <p className="text-xs text-muted-foreground">
                       {t('admin.shareholders.import.invalidRows')}
                     </p>

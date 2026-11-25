@@ -5,7 +5,15 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  [
+    'relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background',
+    // Press feedback: transition exact properties, never `all`.
+    'transition-[color,background-color,border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] disabled:active:scale-100 motion-reduce:active:scale-100',
+    // On touch screens: a hit area of at least 44x44px, centred on the button, even when the
+    // visible button is smaller. Not on mouse pointers, where it would overlap dense neighbours.
+    "touch:after:absolute touch:after:left-1/2 touch:after:top-1/2 touch:after:h-full touch:after:min-h-11 touch:after:w-full touch:after:min-w-11 touch:after:-translate-x-1/2 touch:after:-translate-y-1/2 touch:after:content-['']",
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  ].join(' '),
   {
     variants: {
       variant: {

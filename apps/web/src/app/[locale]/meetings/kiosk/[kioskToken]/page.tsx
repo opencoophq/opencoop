@@ -253,7 +253,7 @@ export default function KioskPage() {
                       setError(null);
                       setState('CONFIRM');
                     }}
-                    className="w-full text-left p-5 bg-card border-2 rounded-xl hover:border-primary hover:bg-accent transition-all"
+                    className="w-full text-left p-5 bg-card border-2 rounded-xl hover:border-primary hover:bg-accent active:border-primary active:bg-accent transition-colors duration-150 ease-out"
                   >
                     <p className="text-xl font-medium">{name}</p>
                     {r.memberNumber !== null && r.memberNumber !== undefined && (

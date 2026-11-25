@@ -232,19 +232,19 @@ export default function DividendDetailPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <div>
               <p className="text-sm text-muted-foreground">{t('admin.dividends.dividendRate')}</p>
-              <p className="text-2xl font-bold">{(period.dividendRate * 100).toFixed(2)}%</p>
+              <p className="text-2xl font-bold tabular-nums">{(period.dividendRate * 100).toFixed(2)}%</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('admin.dividends.totalGross')}</p>
-              <p className="text-2xl font-bold">{fmtCurrency(period.totalGross)}</p>
+              <p className="text-2xl font-bold tabular-nums">{fmtCurrency(period.totalGross)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('admin.dividends.totalTax')}</p>
-              <p className="text-2xl font-bold">{fmtCurrency(period.totalTax)}</p>
+              <p className="text-2xl font-bold tabular-nums">{fmtCurrency(period.totalTax)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('admin.dividends.totalNet')}</p>
-              <p className="text-2xl font-bold">{fmtCurrency(period.totalNet)}</p>
+              <p className="text-2xl font-bold tabular-nums">{fmtCurrency(period.totalNet)}</p>
             </div>
           </div>
 

@@ -371,31 +371,31 @@ export default function RsvpTrackerPage() {
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground">{t('meetings.rsvp.total')}</p>
-            <p className="text-2xl font-bold">{counts.TOTAL}</p>
+            <p className="text-2xl font-bold tabular-nums">{counts.TOTAL}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground">{t('meetings.rsvp.status.attending')}</p>
-            <p className="text-2xl font-bold">{counts.ATTENDING}</p>
+            <p className="text-2xl font-bold tabular-nums">{counts.ATTENDING}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground">{t('meetings.rsvp.status.proxy')}</p>
-            <p className="text-2xl font-bold">{counts.PROXY}</p>
+            <p className="text-2xl font-bold tabular-nums">{counts.PROXY}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground">{t('meetings.rsvp.status.absent')}</p>
-            <p className="text-2xl font-bold">{counts.ABSENT}</p>
+            <p className="text-2xl font-bold tabular-nums">{counts.ABSENT}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground">{t('meetings.rsvp.status.unknown')}</p>
-            <p className="text-2xl font-bold">{counts.UNKNOWN}</p>
+            <p className="text-2xl font-bold tabular-nums">{counts.UNKNOWN}</p>
           </CardContent>
         </Card>
       </div>

@@ -17,6 +17,10 @@ original SemVer-style tags.
 
 ## [Unreleased]
 
+### Changed
+
+- **UI polish pass.** Marketing hero titles get 1.15x line-height and hyphenate long Dutch and German words on phones; `<html lang>` now follows the page locale. Money and share figures use tabular numbers. Buttons, the theme toggle, and the mobile menu button have a 44px touch area and a short press effect. Motion is shorter (under 250ms, ease-out), never uses `transition: all`, scopes hover effects to devices with a mouse, and respects reduced motion. In dark mode, cards and popovers are lighter than the page. Menus, popovers, and selects grow from their trigger.
+
 ### Fixed
 
 - **Migrations now produce the full schema.** Migration `20261123120000_catch_up_schema_drift` adds what `schema.prisma` had without a migration: the tables `audit_logs` and `refresh_tokens`, the columns `coops.apiKeyHash`/`apiKeyPrefix` and the four gift columns on `registrations`, and the `DocumentType` value `CORRESPONDENCE`. It renames the table `"WebAuthnCredential"` to `webauthn_credentials` in place (passkeys are kept), renames an old foreign key on `shareholder_emancipation_tokens`, drops four join-table indexes that the schema does not declare, and gives six role foreign keys the schema's actions. Every statement is idempotent. On acc and prod it changes only those foreign keys, indexes, and the name: deleting a role that only the legacy `coop_admins.roleId` or `admin_invitations.roleId` column still points to now clears that column instead of failing. The CI drift check now allows no drift at all; `prisma/migration-drift.baseline.sql` is gone.

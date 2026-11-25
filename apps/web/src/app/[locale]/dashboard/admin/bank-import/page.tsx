@@ -611,7 +611,7 @@ export default function BankImportPage() {
                           )}
                         </div>
                         <div className="text-right">
-                          <p>{formatCurrency(Number(payment.amount), locale)}</p>
+                          <p className="tabular-nums">{formatCurrency(Number(payment.amount), locale)}</p>
                           <p className="text-muted-foreground text-xs">
                             {new Date(payment.bankDate).toLocaleDateString(locale)}
                           </p>
@@ -655,7 +655,7 @@ export default function BankImportPage() {
                             )}
                           </div>
                           <div className="text-right">
-                            <p>{formatCurrency(Number(reg.totalAmount), locale)}</p>
+                            <p className="tabular-nums">{formatCurrency(Number(reg.totalAmount), locale)}</p>
                             <p className="text-muted-foreground text-xs">{reg.type}</p>
                           </div>
                         </button>
@@ -691,9 +691,9 @@ export default function BankImportPage() {
                           <p className="text-muted-foreground font-mono text-xs">{card.ogmCode}</p>
                         </div>
                         <div className="text-right">
-                          <p>{formatCurrency(card.feeInclVat, locale)}</p>
+                          <p className="tabular-nums">{formatCurrency(card.feeInclVat, locale)}</p>
                           {card.totalPaid > 0 && (
-                            <p className="text-muted-foreground text-xs">
+                            <p className="text-muted-foreground text-xs tabular-nums">
                               {t('chargeCards.admin.paid')}: {formatCurrency(card.totalPaid, locale)}
                             </p>
                           )}
