@@ -24,7 +24,13 @@ export function FadeIn({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (typeof IntersectionObserver === 'undefined' || el.getBoundingClientRect().top < window.innerHeight) {
+    // The CSS failsafe already showed the content (slow hydration): never hide it again.
+    const failsafeShown = getComputedStyle(el).opacity === '1';
+    if (
+      failsafeShown ||
+      typeof IntersectionObserver === 'undefined' ||
+      el.getBoundingClientRect().top < window.innerHeight
+    ) {
       setState('in');
       return;
     }
