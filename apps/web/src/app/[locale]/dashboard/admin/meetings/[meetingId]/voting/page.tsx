@@ -349,7 +349,7 @@ export default function VotingPage() {
               </p>
             ) : (
               <table className="w-full text-sm tabular-nums">
-                <thead className="sticky top-0 bg-card">
+                <thead className="sticky top-0 bg-popover">
                   <tr className="border-b">
                     <th className="text-left py-2">
                       {t('meetings.voting.columns.shareholder')}
