@@ -1292,6 +1292,8 @@
   "errors": {
     "generic": "Etwas ist schiefgelaufen",
     "notFound": "Seite nicht gefunden",
+    "notFoundDescription": "Diese Seite existiert nicht oder wurde verschoben.",
+    "backToHome": "Zur Startseite",
     "unauthorized": "Nicht autorisiert",
     "forbidden": "Zugriff verweigert",
     "validation": "Validierungsfehler",
