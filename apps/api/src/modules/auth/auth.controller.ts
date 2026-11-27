@@ -106,10 +106,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Logout and revoke all refresh tokens' })
+  @ApiOperation({ summary: 'Logout and revoke all sessions (refresh and access tokens)' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
   async logout(@CurrentUser() user: CurrentUserData) {
-    await this.tokenService.revokeRefreshTokens(user.id);
+    await this.tokenService.revokeAllSessions(user.id);
     return { message: 'Logged out successfully' };
   }
 

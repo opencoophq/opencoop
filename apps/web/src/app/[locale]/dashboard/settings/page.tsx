@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { api } from '@/lib/api';
+import { updateActiveSessionToken } from '@/lib/sessions';
 import { useRouter } from '@/i18n/routing';
 import { useAdmin } from '@/contexts/admin-context';
 import { MfaSetup } from '@/components/settings/mfa-setup';
@@ -162,10 +163,18 @@ export default function SettingsPage() {
     }
 
     try {
-      await api('/auth/change-password', {
-        method: 'POST',
-        body: { currentPassword, newPassword },
-      });
+      // The API ends every session on a password change and returns a new one
+      // for this browser.
+      const result = await api<{ accessToken?: string; refreshToken?: string }>(
+        '/auth/change-password',
+        {
+          method: 'POST',
+          body: { currentPassword, newPassword },
+        },
+      );
+      if (result?.accessToken) {
+        updateActiveSessionToken(result.accessToken, result.refreshToken);
+      }
       setMessage(t('settings.passwordChanged'));
       setCurrentPassword('');
       setNewPassword('');

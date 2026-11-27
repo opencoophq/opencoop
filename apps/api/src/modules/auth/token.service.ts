@@ -28,7 +28,7 @@ type StoredSession = {
   expiresAt: Date;
   createdAt: Date;
   revokedAt: Date | null;
-  user?: SessionUser;
+  user?: SessionUser & { sessionVersion: number };
 };
 
 /**
@@ -84,7 +84,7 @@ export class TokenService {
     }
 
     return {
-      accessToken: this.signAccessToken(storedToken.user, session),
+      accessToken: this.signAccessToken(storedToken.user, session, storedToken.user.sessionVersion),
       ...(rotatedRefreshToken ? { refreshToken: rotatedRefreshToken } : {}),
     };
   }
@@ -102,10 +102,20 @@ export class TokenService {
     return reissued?.raw ?? null;
   }
 
-  async revokeRefreshTokens(userId: string) {
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
+  /**
+   * End every session of the user: refresh tokens stop working, and the
+   * version bump makes every access token already issued fail in JwtStrategy.
+   */
+  async revokeAllSessions(userId: string, now = new Date()) {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { sessionVersion: { increment: 1 } },
+      });
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: now },
+      });
     });
   }
 
@@ -126,6 +136,17 @@ export class TokenService {
       };
     }
 
+    // Read the version from the row, not from the caller's object: callers
+    // load the user with different selects, and a missing value would sign
+    // a token that is dead on arrival after the first revocation.
+    const current = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { sessionVersion: true },
+    });
+    if (!current) {
+      throw new UnauthorizedException('User not found');
+    }
+
     const rawRefreshToken = randomBytes(32).toString('hex');
     const created = await this.prisma.refreshToken.create({
       data: {
@@ -137,7 +158,11 @@ export class TokenService {
     });
 
     return {
-      accessToken: this.signAccessToken(user, { id: created.id, createdAt: now }),
+      accessToken: this.signAccessToken(
+        user,
+        { id: created.id, createdAt: now },
+        current.sessionVersion,
+      ),
       refreshToken: rawRefreshToken,
       user: {
         id: user.id,
@@ -150,7 +175,11 @@ export class TokenService {
     };
   }
 
-  private signAccessToken(user: SessionUser, session: { id: string; createdAt: Date }) {
+  private signAccessToken(
+    user: SessionUser,
+    session: { id: string; createdAt: Date },
+    sessionVersion: number,
+  ) {
     const coopIds = (user.coopAdminOf ?? []).map((ca) => ca.coopId);
     const coopPermissions: Record<string, any> = {};
     for (const ca of user.coopAdminOf ?? []) {
@@ -168,6 +197,7 @@ export class TokenService {
       ...(Object.keys(coopPermissions).length > 0 && { coopPermissions }),
       sid: session.id,
       sst: Math.floor(session.createdAt.getTime() / 1000),
+      sv: sessionVersion,
     };
 
     return this.jwtService.sign(payload, { expiresIn: '15m' });

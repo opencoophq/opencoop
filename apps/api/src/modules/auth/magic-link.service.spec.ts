@@ -254,7 +254,10 @@ describe('MagicLinkService one-time code', () => {
 
     const signed: any[] = [];
     const real = new RealTokenService(
-      { refreshToken: { create: jest.fn().mockResolvedValue({ id: 'sess-1' }) } } as any,
+      {
+        user: { findUnique: jest.fn().mockResolvedValue({ sessionVersion: 0 }) },
+        refreshToken: { create: jest.fn().mockResolvedValue({ id: 'sess-1' }) },
+      } as any,
       { sign: (payload: any) => (signed.push(payload), 'jwt') } as any,
     );
     tokenService.issueJwtForUser.mockImplementation((user: any) => real.issueJwtForUser(user));

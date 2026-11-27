@@ -124,7 +124,7 @@ describe('MagicLinkService — requestMagicLink with household shareholders', ()
           useValue: {
             issueJwtForUser: jest.fn(),
             refreshAccessToken: jest.fn(),
-            revokeRefreshTokens: jest.fn(),
+            revokeAllSessions: jest.fn(),
           },
         },
       ],

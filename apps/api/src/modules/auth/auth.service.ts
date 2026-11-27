@@ -435,7 +435,7 @@ export class AuthService {
       },
     });
 
-    await this.tokenService.revokeRefreshTokens(user.id);
+    await this.tokenService.revokeAllSessions(user.id);
 
     await this.auditService.log({
       entity: 'Auth',
@@ -482,8 +482,8 @@ export class AuthService {
   /**
    * The verify link reached the new address, so it becomes the login email.
    * Everything issued for the old address dies with it: unused magic links,
-   * reset links and refresh tokens. Access tokens already issued live until
-   * they expire.
+   * reset links, refresh tokens, and access tokens (via the sessionVersion
+   * bump).
    *
    * The switch claims exactly the change this token was issued for, inside
    * one transaction with the revocations and the audit entry. A cancel, a
@@ -522,6 +522,7 @@ export class AuthService {
             emailVerifyExpires: null,
             passwordResetToken: null,
             passwordResetExpires: null,
+            sessionVersion: { increment: 1 },
           },
         });
         if (claimed.count !== 1) {
@@ -834,7 +835,18 @@ export class AuthService {
     ip?: string,
     userAgent?: string,
   ) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        coopAdminOf: {
+          select: {
+            coopId: true,
+            permissionOverrides: true,
+            roles: { select: { role: { select: { permissions: true } } } },
+          },
+        },
+      },
+    });
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -856,7 +868,10 @@ export class AuthService {
       },
     });
 
-    await this.tokenService.revokeRefreshTokens(userId);
+    // Ends every session, the caller's included, then opens a new one for the
+    // caller so the browser that changed the password stays signed in.
+    await this.tokenService.revokeAllSessions(userId);
+    const session = await this.tokenService.issueJwtForUser(user, true);
 
     await this.auditService.log({
       entity: 'User',
@@ -868,7 +883,11 @@ export class AuthService {
       userAgent,
     });
 
-    return { message: 'Password changed successfully' };
+    return {
+      message: 'Password changed successfully',
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+    };
   }
 
   // ============================================================================

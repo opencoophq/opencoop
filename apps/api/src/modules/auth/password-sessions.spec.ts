@@ -21,7 +21,10 @@ function authService() {
     },
   };
   const auditService = { log: jest.fn().mockResolvedValue(undefined) };
-  const tokenService = { revokeRefreshTokens: jest.fn().mockResolvedValue(undefined) };
+  const tokenService = {
+    revokeAllSessions: jest.fn().mockResolvedValue(undefined),
+    issueJwtForUser: jest.fn().mockResolvedValue({ accessToken: 'new-access', refreshToken: 'new-refresh' }),
+  };
   const service = new AuthService(
     prisma as never,
     {} as never,
@@ -40,14 +43,23 @@ describe('password changes revoke every session', () => {
     jest.clearAllMocks();
   });
 
-  it('revokes refresh tokens after a successful password change', async () => {
+  it('revokes every session after a password change and opens a new one for the caller', async () => {
     const { service, prisma, tokenService } = authService();
-    prisma.user.findUnique.mockResolvedValue({ id: 'user-1', passwordHash: 'stored' });
+    const user = { id: 'user-1', passwordHash: 'stored', coopAdminOf: [] };
+    prisma.user.findUnique.mockResolvedValue(user);
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-    await service.changePassword('user-1', 'old-password', 'new-password-1');
+    const result = await service.changePassword('user-1', 'old-password', 'new-password-1');
 
-    expect(tokenService.revokeRefreshTokens).toHaveBeenCalledWith('user-1');
+    expect(tokenService.revokeAllSessions).toHaveBeenCalledWith('user-1');
+    expect(tokenService.issueJwtForUser).toHaveBeenCalledWith(user, true);
+    // The new session is issued after the revocation, so it survives it.
+    expect(tokenService.revokeAllSessions.mock.invocationCallOrder[0]).toBeLessThan(
+      tokenService.issueJwtForUser.mock.invocationCallOrder[0],
+    );
+    expect(result).toEqual(
+      expect.objectContaining({ accessToken: 'new-access', refreshToken: 'new-refresh' }),
+    );
   });
 
   it('does not revoke sessions when the current password is wrong', async () => {
@@ -58,7 +70,7 @@ describe('password changes revoke every session', () => {
     await expect(service.changePassword('user-1', 'wrong', 'new-password-1')).rejects.toBeInstanceOf(
       BadRequestException,
     );
-    expect(tokenService.revokeRefreshTokens).not.toHaveBeenCalled();
+    expect(tokenService.revokeAllSessions).not.toHaveBeenCalled();
   });
 
   it('revokes refresh tokens after a password reset', async () => {
@@ -67,7 +79,7 @@ describe('password changes revoke every session', () => {
 
     await service.resetPassword({ token: 'reset-token', password: 'new-password-1' });
 
-    expect(tokenService.revokeRefreshTokens).toHaveBeenCalledWith('user-2');
+    expect(tokenService.revokeAllSessions).toHaveBeenCalledWith('user-2');
   });
 
   it('does not revoke sessions when the reset token is invalid', async () => {
@@ -77,11 +89,11 @@ describe('password changes revoke every session', () => {
     await expect(service.resetPassword({ token: 'nope', password: 'new-password-1' })).rejects.toBeInstanceOf(
       BadRequestException,
     );
-    expect(tokenService.revokeRefreshTokens).not.toHaveBeenCalled();
+    expect(tokenService.revokeAllSessions).not.toHaveBeenCalled();
   });
 
   it('logout revokes every refresh token for the user', async () => {
-    const tokenService = { revokeRefreshTokens: jest.fn().mockResolvedValue(undefined) };
+    const tokenService = { revokeAllSessions: jest.fn().mockResolvedValue(undefined) };
     const controller = new AuthController(
       {} as never,
       tokenService as never,
@@ -97,6 +109,6 @@ describe('password changes revoke every session', () => {
     await expect(controller.logout({ id: 'user-3' } as never)).resolves.toEqual({
       message: 'Logged out successfully',
     });
-    expect(tokenService.revokeRefreshTokens).toHaveBeenCalledWith('user-3');
+    expect(tokenService.revokeAllSessions).toHaveBeenCalledWith('user-3');
   });
 });
