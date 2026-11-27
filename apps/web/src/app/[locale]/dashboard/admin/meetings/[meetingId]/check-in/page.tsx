@@ -435,7 +435,7 @@ export default function CheckInPage() {
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground">{t('meetings.checkIn.rsvpd')}</p>
-            <p className="text-2xl font-bold">{live?.rsvpCount ?? 0}</p>
+            <p className="text-2xl font-bold tabular-nums">{live?.rsvpCount ?? 0}</p>
           </CardContent>
         </Card>
         <Card>
@@ -443,13 +443,13 @@ export default function CheckInPage() {
             <p className="text-xs text-muted-foreground">
               {t('meetings.checkIn.checkedIn')}
             </p>
-            <p className="text-2xl font-bold">{live?.checkedInCount ?? 0}</p>
+            <p className="text-2xl font-bold tabular-nums">{live?.checkedInCount ?? 0}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground">{t('meetings.checkIn.viaProxy')}</p>
-            <p className="text-2xl font-bold">{live?.proxyCount ?? 0}</p>
+            <p className="text-2xl font-bold tabular-nums">{live?.proxyCount ?? 0}</p>
           </CardContent>
         </Card>
         <Card>
@@ -665,7 +665,7 @@ export default function CheckInPage() {
               </div>
             )}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('meetings.checkIn.kioskUrl')}
               </p>
               <div className="flex items-center gap-2">

@@ -1295,6 +1295,8 @@
   "errors": {
     "generic": "Er is iets misgegaan",
     "notFound": "Pagina niet gevonden",
+    "notFoundDescription": "Deze pagina bestaat niet of is verplaatst.",
+    "backToHome": "Naar de startpagina",
     "unauthorized": "Niet geautoriseerd",
     "forbidden": "Toegang geweigerd",
     "validation": "Validatiefout",

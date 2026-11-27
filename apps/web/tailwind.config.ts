@@ -1,8 +1,14 @@
 import type { Config } from 'tailwindcss';
+import plugin from 'tailwindcss/plugin';
 import tailwindcssAnimate from 'tailwindcss-animate';
 
 const config: Config = {
   darkMode: ['class'],
+  future: {
+    // Wrap every `hover:` utility in `@media (hover: hover) and (pointer: fine)`,
+    // so touch devices never get sticky hover states.
+    hoverOnlyWhenSupported: true,
+  },
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -45,6 +51,10 @@ const config: Config = {
           foreground: 'hsl(var(--card-foreground))',
         },
       },
+      transitionTimingFunction: {
+        // `ease-out` uses a strong ease-out curve for UI enter/exit motion.
+        out: 'cubic-bezier(0.23, 1, 0.32, 1)',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
@@ -52,7 +62,11 @@ const config: Config = {
       },
     },
   },
-  plugins: [tailwindcssAnimate],
+  plugins: [
+    tailwindcssAnimate,
+    // `touch:` applies on coarse pointers (phones, tablets), e.g. for 44px hit areas.
+    plugin(({ addVariant }) => addVariant('touch', '@media (pointer: coarse)')),
+  ],
 };
 
 export default config;

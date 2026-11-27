@@ -398,7 +398,7 @@ export default function ChargeCardsPage() {
                 )}
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{t('amount')}</dt>
-                  <dd className="font-medium">{formatCurrency(money(payment.amount), locale)}</dd>
+                  <dd className="font-medium tabular-nums">{formatCurrency(money(payment.amount), locale)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{t('ogm')}</dt>

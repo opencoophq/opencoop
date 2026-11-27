@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { ThemeProvider } from 'next-themes';
+import Script from 'next/script';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -8,6 +11,8 @@ import { CookieNotice } from '@/components/cookie-notice';
 import { ZodErrorMessages } from '@/components/zod-error-messages';
 
 const BASE_URL = 'https://opencoop.be';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export async function generateMetadata({
   params,
@@ -54,12 +59,23 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <NextIntlClientProvider messages={messages}>
-      <ZodErrorMessages />
-      <LocaleProvider>
-        {children}
-        <CookieNotice />
-      </LocaleProvider>
-    </NextIntlClientProvider>
+    <html lang={locale} suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <NextIntlClientProvider messages={messages}>
+            <ZodErrorMessages />
+            <LocaleProvider>
+              {children}
+              <CookieNotice />
+            </LocaleProvider>
+          </NextIntlClientProvider>
+        </ThemeProvider>
+        <Script
+          defer
+          src="https://analytics.armlab.com/script.js"
+          data-website-id="67514e30-e65b-47ca-94d8-028362de7cb8"
+        />
+      </body>
+    </html>
   );
 }

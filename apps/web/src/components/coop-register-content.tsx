@@ -1247,7 +1247,7 @@ export function CoopRegisterContent({
           <div className="bg-muted p-4 rounded-lg">
             <div className="flex justify-between text-lg font-semibold">
               <span>{t('common.total')}</span>
-              <span style={{ color: coop.primaryColor }}>
+              <span className="tabular-nums" style={{ color: coop.primaryColor }}>
                 {formatCurrency(totalAmount)}
               </span>
             </div>
@@ -1274,11 +1274,11 @@ export function CoopRegisterContent({
             </div>
             <div className="flex justify-between">
               <span>{t('shares.pricePerShare')}</span>
-              <span>{formatCurrency(selectedShareClass?.pricePerShare || 0)}</span>
+              <span className="tabular-nums">{formatCurrency(selectedShareClass?.pricePerShare || 0)}</span>
             </div>
             <div className="flex justify-between font-semibold pt-2 border-t">
               <span>{t('common.total')}</span>
-              <span>{formatCurrency(totalAmount)}</span>
+              <span className="tabular-nums">{formatCurrency(totalAmount)}</span>
             </div>
           </div>
         </div>

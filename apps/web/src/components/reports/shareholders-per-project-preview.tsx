@@ -150,7 +150,7 @@ export function ShareholdersPerProjectPreview() {
                 <CopyTableButton tableRef={tableRef} />
               </div>
               <div className="border rounded-md overflow-auto">
-                <table ref={tableRef} className="w-full text-sm">
+                <table ref={tableRef} className="w-full text-sm tabular-nums">
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="text-left px-3 py-2 font-medium">

@@ -110,7 +110,7 @@ export default function ChannelPage() {
                       <p className="font-medium">{sc.name}</p>
                       <p className="text-sm text-muted-foreground">{sc.code}</p>
                     </div>
-                    <p className="font-medium">
+                    <p className="font-medium tabular-nums">
                       {formatCurrency(Number(sc.pricePerShare))}
                     </p>
                   </div>

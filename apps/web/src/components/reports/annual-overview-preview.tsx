@@ -84,26 +84,26 @@ export function AnnualOverviewPreview() {
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">{t('annualOverview.capitalStart')}</p>
-                <p className="text-xl font-bold">{formatCurrency(data.capitalStart, locale)}</p>
+                <p className="text-xl font-bold tabular-nums">{formatCurrency(data.capitalStart, locale)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">{t('annualOverview.capitalEnd')}</p>
-                <p className="text-xl font-bold">{formatCurrency(data.capitalEnd, locale)}</p>
+                <p className="text-xl font-bold tabular-nums">{formatCurrency(data.capitalEnd, locale)}</p>
                 <p className="text-xs text-muted-foreground">{pctChange(data.capitalStart, data.capitalEnd)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">{t('annualOverview.shareholdersStart')}</p>
-                <p className="text-xl font-bold">{data.shareholdersStart}</p>
+                <p className="text-xl font-bold tabular-nums">{data.shareholdersStart}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">{t('annualOverview.shareholdersEnd')}</p>
-                <p className="text-xl font-bold">{data.shareholdersEnd}</p>
+                <p className="text-xl font-bold tabular-nums">{data.shareholdersEnd}</p>
                 <p className="text-xs text-muted-foreground">{pctChange(data.shareholdersStart, data.shareholdersEnd)}</p>
               </CardContent>
             </Card>
@@ -241,7 +241,7 @@ export function AnnualOverviewPreview() {
               )}
 
               <div className="border rounded-md overflow-hidden">
-                <table ref={tableRef} className="w-full text-sm">
+                <table ref={tableRef} className="w-full text-sm tabular-nums">
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="text-left px-3 py-2 font-medium">{t('annualOverview.className')}</th>

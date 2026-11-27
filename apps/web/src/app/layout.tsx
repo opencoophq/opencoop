@@ -1,10 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import { ThemeProvider } from 'next-themes';
-import Script from 'next/script';
 import './globals.css';
-
-const inter = Inter({ subsets: ['latin'] });
 
 const BASE_URL = 'https://opencoop.be';
 
@@ -30,23 +25,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-        </ThemeProvider>
-        <Script
-          defer
-          src="https://analytics.armlab.com/script.js"
-          data-website-id="67514e30-e65b-47ca-94d8-028362de7cb8"
-        />
-      </body>
-    </html>
-  );
+// <html> and <body> live in app/[locale]/layout.tsx, so <html lang> matches the locale
+// (needed for correct `hyphens: auto` and screen readers). This layout only passes through.
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return children;
 }

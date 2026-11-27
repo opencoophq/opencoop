@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { HeroTitle } from '@/components/marketing/hero-title';
 import {
   Dialog,
   DialogContent,
@@ -123,12 +124,12 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
             </Badge>
           </FadeIn>
           <FadeIn delay={80}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-balance break-words">
+            <HeroTitle>
               {t('hero.title')}
-            </h1>
+            </HeroTitle>
           </FadeIn>
           <FadeIn delay={160}>
-            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed text-balance">
+            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-[62ch] mx-auto leading-normal text-balance">
               {t('hero.subtitle')}
             </p>
           </FadeIn>
@@ -140,7 +141,7 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
         <div className="inline-flex items-center gap-3 rounded-full bg-muted p-1">
           <button
             onClick={() => setYearly(false)}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-[color,background-color,box-shadow] duration-150 ease-out ${
               !yearly
                 ? 'bg-background shadow-sm text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
@@ -150,7 +151,7 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
           </button>
           <button
             onClick={() => setYearly(true)}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-[color,background-color,box-shadow] duration-150 ease-out ${
               yearly
                 ? 'bg-background shadow-sm text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
@@ -183,7 +184,7 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
 
               <div className="mb-8">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-extrabold tracking-tight">&euro;0</span>
+                  <span className="text-5xl font-extrabold tracking-tight tabular-nums">&euro;0</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">{t('free.earlyAccessNote')}</p>
               </div>
@@ -216,14 +217,14 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
 
               <div className="mb-8">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-extrabold tracking-tight">
+                  <span className="text-5xl font-extrabold tracking-tight tabular-nums">
                     &euro;{yearly ? t('essentials.priceYearlyPerMonth') : t('essentials.priceMonthly')}
                   </span>
                   <span className="text-muted-foreground text-lg">
                     {t('billing.perMonth')}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1 tabular-nums">
                   {yearly
                     ? t('billing.billedYearlyAt', { total: t('essentials.priceYearly') })
                     : t('billing.billedMonthly')}
@@ -275,14 +276,14 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
 
               <div className="mb-8">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-extrabold tracking-tight">
+                  <span className="text-5xl font-extrabold tracking-tight tabular-nums">
                     &euro;{yearly ? t('professional.priceYearlyPerMonth') : t('professional.priceMonthly')}
                   </span>
                   <span className="text-muted-foreground text-lg">
                     {t('billing.perMonth')}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1 tabular-nums">
                   {yearly
                     ? t('billing.billedYearlyAt', { total: t('professional.priceYearly') })
                     : t('billing.billedMonthly')}
@@ -331,7 +332,7 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-3">
               {t('selfHosted.title')}
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto mb-8 leading-relaxed">
+            <p className="text-muted-foreground max-w-xl mx-auto mb-8 leading-normal">
               {t('selfHosted.description')}
             </p>
             <div className="flex flex-wrap justify-center gap-6 mb-8 text-sm">
@@ -382,19 +383,21 @@ export function PricingPage({ isWaitlistMode }: { isWaitlistMode: boolean }) {
                     />
                   </button>
                   <div
-                    className={`overflow-hidden transition-all duration-200 ${
-                      openFaq === key ? 'max-h-40' : 'max-h-0'
+                    className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+                      openFaq === key ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                     }`}
                   >
-                    <p className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">
-                      {t(
-                        `faq.${key.replace('q', 'a')}` as
-                          | 'faq.a1'
-                          | 'faq.a2'
-                          | 'faq.a3'
-                          | 'faq.a4',
-                      )}
-                    </p>
+                    <div className="overflow-hidden">
+                      <p className="px-5 pb-5 text-sm text-muted-foreground leading-normal">
+                        {t(
+                          `faq.${key.replace('q', 'a')}` as
+                            | 'faq.a1'
+                            | 'faq.a2'
+                            | 'faq.a3'
+                            | 'faq.a4',
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </FadeIn>

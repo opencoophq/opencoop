@@ -835,7 +835,7 @@ export default function SharesPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('common.amount')}</span>
-                  <span className="font-medium">{formatCurrency(buyPaymentDetails.amount, locale)}</span>
+                  <span className="font-medium tabular-nums">{formatCurrency(buyPaymentDetails.amount, locale)}</span>
                 </div>
                 {buyPaymentDetails.ogmCode && (
                   <div className="flex justify-between items-center">
@@ -897,7 +897,7 @@ export default function SharesPage() {
                 <div className="border-t pt-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t('shares.totalCost')}</span>
-                    <span className="font-bold">
+                    <span className="font-bold tabular-nums">
                       {formatCurrency(
                         buyQuantity * Number(shareClasses.find((sc) => sc.id === buyShareClassId)?.pricePerShare || 0),
                         locale,
@@ -952,7 +952,7 @@ export default function SharesPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('common.amount')}</span>
-                  <span className="font-medium">{formatCurrency(paymentQrDetails.amount, locale)}</span>
+                  <span className="font-medium tabular-nums">{formatCurrency(paymentQrDetails.amount, locale)}</span>
                 </div>
                 {paymentQrDetails.ogmCode && (
                   <div className="flex justify-between items-center">
@@ -1037,7 +1037,7 @@ export default function SharesPage() {
                   <div className="border-t pt-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">{t('shares.totalRefund')}</span>
-                      <span className="font-bold">
+                      <span className="font-bold tabular-nums">
                         {formatCurrency(sellQuantity * Number(selectedSellReg.pricePerShare), locale)}
                       </span>
                     </div>

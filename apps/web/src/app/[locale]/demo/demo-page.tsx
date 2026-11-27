@@ -7,6 +7,7 @@ import { MarketingNav } from '@/components/marketing/marketing-nav';
 import { MarketingFooter } from '@/components/marketing/marketing-footer';
 import { FadeIn } from '@/components/marketing/fade-in';
 import { AnimatedGridBg } from '@/components/marketing/animated-grid-bg';
+import { HeroTitle } from '@/components/marketing/hero-title';
 import {
   ArrowRight,
   Play,
@@ -81,13 +82,13 @@ export default function DemoPage() {
           </FadeIn>
 
           <FadeIn delay={80}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-balance break-words">
+            <HeroTitle>
               {t('hero.title')}
-            </h1>
+            </HeroTitle>
           </FadeIn>
 
           <FadeIn delay={160}>
-            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed text-balance">
+            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-[62ch] mx-auto leading-normal text-balance">
               {t('hero.subtitle')}
             </p>
           </FadeIn>
@@ -128,7 +129,7 @@ export default function DemoPage() {
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">{t('credentials.admin.title')}</h3>
-                <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-6 leading-normal">
                   {t('credentials.admin.description')}
                 </p>
                 <div className="space-y-3 mb-6 flex-1">
@@ -151,7 +152,7 @@ export default function DemoPage() {
                   <Users className="w-5 h-5" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">{t('credentials.shareholder.title')}</h3>
-                <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-6 leading-normal">
                   {t('credentials.shareholder.description')}
                 </p>
                 <div className="space-y-3 mb-6 flex-1">
@@ -187,14 +188,14 @@ export default function DemoPage() {
               const Icon = HIGHLIGHT_ICONS[key];
               return (
                 <FadeIn key={key} delay={i * 80}>
-                  <div className="group relative rounded-xl border bg-card p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300 text-center">
-                    <div className="mb-4 inline-flex items-center justify-center w-11 h-11 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                  <div className="group relative rounded-xl border bg-card p-6 hover:shadow-lg hover:border-primary/20 transition-[box-shadow,border-color] duration-200 ease-out text-center">
+                    <div className="mb-4 inline-flex items-center justify-center w-11 h-11 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 ease-out">
                       <Icon className="w-5 h-5" />
                     </div>
                     <h3 className="text-lg font-semibold mb-2">
                       {t(`included.${key}.title`)}
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-sm text-muted-foreground leading-normal">
                       {t(`included.${key}.description`)}
                     </p>
                   </div>

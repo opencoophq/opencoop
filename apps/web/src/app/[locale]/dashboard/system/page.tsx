@@ -68,7 +68,7 @@ export default function SystemPage() {
               {card.icon}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
+              <div className="text-2xl font-bold tabular-nums">{card.value}</div>
             </CardContent>
           </Card>
         ))}

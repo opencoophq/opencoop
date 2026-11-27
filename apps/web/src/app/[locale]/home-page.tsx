@@ -8,6 +8,7 @@ import { MarketingNav } from '@/components/marketing/marketing-nav';
 import { MarketingFooter } from '@/components/marketing/marketing-footer';
 import { FadeIn } from '@/components/marketing/fade-in';
 import { AnimatedGridBg } from '@/components/marketing/animated-grid-bg';
+import { HeroTitle } from '@/components/marketing/hero-title';
 import {
   Users,
   Layers,
@@ -63,13 +64,13 @@ export default function HomePage() {
           </FadeIn>
 
           <FadeIn delay={80}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-balance break-words">
+            <HeroTitle>
               {t('hero.title')}
-            </h1>
+            </HeroTitle>
           </FadeIn>
 
           <FadeIn delay={160}>
-            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed text-balance">
+            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-[62ch] mx-auto leading-normal text-balance">
               {t('hero.subtitle')}
             </p>
           </FadeIn>
@@ -107,7 +108,7 @@ export default function HomePage() {
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce text-muted-foreground/40">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 motion-safe:animate-bounce text-muted-foreground/40">
           <ChevronDown className="w-5 h-5" />
         </div>
       </section>
@@ -119,7 +120,7 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
               {t('features.title')}
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="mt-4 text-lg text-muted-foreground max-w-[62ch] mx-auto">
               {t('features.subtitle')}
             </p>
           </FadeIn>
@@ -127,14 +128,14 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map(({ key, icon: Icon }, i) => (
               <FadeIn key={key} delay={i * 80}>
-                <div className="group relative rounded-xl border bg-card p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300">
-                  <div className="mb-4 inline-flex items-center justify-center w-11 h-11 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                <div className="group relative rounded-xl border bg-card p-6 hover:shadow-lg hover:border-primary/20 transition-[box-shadow,border-color] duration-200 ease-out">
+                  <div className="mb-4 inline-flex items-center justify-center w-11 h-11 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 ease-out">
                     <Icon className="w-5 h-5" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">
                     {t(`features.${key}.title`)}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-normal">
                     {t(`features.${key}.description`)}
                   </p>
                 </div>
@@ -166,7 +167,7 @@ export default function HomePage() {
                   <h3 className="text-xl font-semibold mb-3">
                     {t(`howItWorks.${step}.title`)}
                   </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
+                  <p className="text-muted-foreground text-sm leading-normal">
                     {t(`howItWorks.${step}.description`)}
                   </p>
                 </div>
@@ -222,7 +223,7 @@ export default function HomePage() {
                   <Cloud className="w-5 h-5" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">{t('openSource.saas.title')}</h3>
-                <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-6 leading-normal">
                   {t('openSource.saas.description')}
                 </p>
                 <ul className="space-y-3 mb-8 flex-1">
@@ -255,7 +256,7 @@ export default function HomePage() {
                   <Server className="w-5 h-5" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">{t('openSource.selfHostedCard.title')}</h3>
-                <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                <p className="text-sm text-muted-foreground mb-6 leading-normal">
                   {t('openSource.selfHostedCard.description')}
                 </p>
                 <ul className="space-y-3 mb-8 flex-1">

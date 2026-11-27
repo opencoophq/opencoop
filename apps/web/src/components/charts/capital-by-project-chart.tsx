@@ -102,7 +102,7 @@ export function CapitalByProjectChart() {
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ height: 220 }}>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">{t('total')}</p>
-                  <p className="text-sm font-bold">{formatCurrency(totalCapital, locale)}</p>
+                  <p className="text-sm font-bold tabular-nums">{formatCurrency(totalCapital, locale)}</p>
                 </div>
               </div>
             </div>

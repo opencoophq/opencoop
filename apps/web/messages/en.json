@@ -1295,6 +1295,8 @@
   "errors": {
     "generic": "Something went wrong",
     "notFound": "Page not found",
+    "notFoundDescription": "This page does not exist or has moved.",
+    "backToHome": "Go to the home page",
     "unauthorized": "Unauthorized",
     "forbidden": "Access denied",
     "validation": "Validation error",

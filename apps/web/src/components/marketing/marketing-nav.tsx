@@ -29,7 +29,7 @@ export function MarketingNav() {
 
   return (
     <nav
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 inset-x-0 z-50 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-200 ease-out ${
         scrolled || mobileOpen
           ? 'bg-background/80 backdrop-blur-xl border-b shadow-sm'
           : 'bg-transparent'
@@ -92,7 +92,7 @@ export function MarketingNav() {
         {/* Mobile hamburger */}
         <button
           type="button"
-          className="md:hidden p-2 -mr-2"
+          className="md:hidden inline-flex h-11 w-11 items-center justify-center -mr-2.5 active:scale-[0.97] motion-reduce:active:scale-100 transition-transform duration-150 ease-out"
           aria-label="Toggle menu"
           onClick={() => setMobileOpen((v) => !v)}
         >

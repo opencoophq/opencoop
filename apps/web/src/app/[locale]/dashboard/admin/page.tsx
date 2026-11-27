@@ -133,7 +133,7 @@ export default function AdminPage() {
               {card.icon}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
+              <div className="text-2xl font-bold tabular-nums">{card.value}</div>
             </CardContent>
           </Card>
         ))}
@@ -174,7 +174,7 @@ export default function AdminPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{referralStats.totalReferrals}</div>
+                <div className="text-2xl font-bold tabular-nums">{referralStats.totalReferrals}</div>
               </CardContent>
             </Card>
             <Card>
@@ -184,7 +184,7 @@ export default function AdminPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{referralStats.convertedReferrals}</div>
+                <div className="text-2xl font-bold tabular-nums">{referralStats.convertedReferrals}</div>
               </CardContent>
             </Card>
             <Card>
@@ -194,7 +194,7 @@ export default function AdminPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-bold tabular-nums">
                   {(referralStats.conversionRate * 100).toFixed(1)}%
                 </div>
               </CardContent>
@@ -206,7 +206,7 @@ export default function AdminPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-bold tabular-nums">
                   {formatCurrency(referralStats.capitalFromReferrals, locale)}
                 </div>
               </CardContent>

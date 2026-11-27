@@ -749,7 +749,7 @@ function StatCard({
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
     <div className="rounded border p-3">
-      <div className={`text-2xl font-semibold ${valueClass}`}>
+      <div className={`text-2xl font-semibold tabular-nums ${valueClass}`}>
         {value}
         <span className="text-sm font-normal text-muted-foreground"> / {total}</span>
       </div>

@@ -1292,6 +1292,8 @@
   "errors": {
     "generic": "Une erreur est survenue",
     "notFound": "Page introuvable",
+    "notFoundDescription": "Cette page n'existe pas ou a été déplacée.",
+    "backToHome": "Aller à la page d'accueil",
     "unauthorized": "Non autorisé",
     "forbidden": "Accès refusé",
     "validation": "Erreur de validation",
