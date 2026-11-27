@@ -39,6 +39,31 @@ import * as Sentry from '@sentry/nestjs';
 
 const VERIFY_TOKEN_INVALID = 'Invalid or expired verification token';
 
+/**
+ * True when `err` is a Prisma unique-constraint violation (P2002) on `field`.
+ * Prisma reports the target as a field list or as a constraint name
+ * such as `users_email_key`, depending on the driver.
+ */
+function isUniqueViolationOn(err: unknown, field: string): boolean {
+  if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== 'P2002') {
+    return false;
+  }
+  const target = err.meta?.target;
+  if (Array.isArray(target)) return target.length === 1 && target[0] === field;
+  if (typeof target === 'string') return target === field || target.endsWith(`_${field}_key`);
+  return false;
+}
+
+/**
+ * Maps a unique violation from a concurrent signup to the same 409 the
+ * pre-checks in `onboard` throw, so a race reveals nothing extra.
+ */
+function rethrowSignupConflict(err: unknown): never {
+  if (isUniqueViolationOn(err, 'email')) throw new ConflictException('Email already registered');
+  if (isUniqueViolationOn(err, 'slug')) throw new ConflictException('Slug already in use');
+  throw err;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -143,16 +168,26 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(registerDto.password, 12);
     const emailVerifyToken = randomBytes(32).toString('hex');
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: registerDto.email.toLowerCase(),
-        name: registerDto.name,
-        passwordHash,
-        preferredLanguage: registerDto.preferredLanguage || 'nl',
-        emailVerifyToken: hashToken(emailVerifyToken),
-        emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-      },
-    });
+    let user;
+    try {
+      user = await this.prisma.user.create({
+        data: {
+          email: registerDto.email.toLowerCase(),
+          name: registerDto.name,
+          passwordHash,
+          preferredLanguage: registerDto.preferredLanguage || 'nl',
+          emailVerifyToken: hashToken(emailVerifyToken),
+          emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        },
+      });
+    } catch (err) {
+      // A concurrent request created the same email after our check. Answer
+      // exactly as the check above does, so the race reveals nothing extra.
+      if (isUniqueViolationOn(err, 'email')) {
+        throw new ConflictException('Email already registered');
+      }
+      throw err;
+    }
 
     await this.auditService.log({
       entity: 'Auth',
@@ -218,72 +253,74 @@ export class AuthService {
     const coopPlan = planMap[onboardingDto.plan] || 'FREE';
     const trialEndsAt = isFree ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email,
-          name: onboardingDto.name,
-          passwordHash,
-          role: 'COOP_ADMIN',
-          preferredLanguage: onboardingDto.preferredLanguage || 'nl',
-          termsAcceptedAt: new Date(),
-          termsVersion: TERMS_VERSION,
-          emailVerifyToken: hashToken(emailVerifyToken),
-          emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+    const result = await this.prisma
+      .$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email,
+            name: onboardingDto.name,
+            passwordHash,
+            role: 'COOP_ADMIN',
+            preferredLanguage: onboardingDto.preferredLanguage || 'nl',
+            termsAcceptedAt: new Date(),
+            termsVersion: TERMS_VERSION,
+            emailVerifyToken: hashToken(emailVerifyToken),
+            emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        });
 
-      const coop = await tx.coop.create({
-        data: {
-          name: onboardingDto.coopName,
-          slug: onboardingDto.coopSlug,
-          active: true,
-          plan: coopPlan,
-          trialEndsAt,
-          ogmPrefix,
-        },
-      });
+        const coop = await tx.coop.create({
+          data: {
+            name: onboardingDto.coopName,
+            slug: onboardingDto.coopSlug,
+            active: true,
+            plan: coopPlan,
+            trialEndsAt,
+            ogmPrefix,
+          },
+        });
 
-      // Create default roles for the new coop, sourced from the single
-      // shared list so adding/removing a permission keeps preset roles
-      // consistent across the codebase.
-      const roles = await Promise.all(
-        Object.entries(DEFAULT_ROLES).map(([name, permissions]) =>
-          tx.coopRole.create({
-            data: {
-              coopId: coop.id,
-              name,
-              permissions: permissions as unknown as Prisma.InputJsonValue,
-              isDefault: true,
-            },
-          }),
-        ),
-      );
+        // Create default roles for the new coop, sourced from the single
+        // shared list so adding/removing a permission keeps preset roles
+        // consistent across the codebase.
+        const roles = await Promise.all(
+          Object.entries(DEFAULT_ROLES).map(([name, permissions]) =>
+            tx.coopRole.create({
+              data: {
+                coopId: coop.id,
+                name,
+                permissions: permissions as unknown as Prisma.InputJsonValue,
+                isDefault: true,
+              },
+            }),
+          ),
+        );
 
-      const adminRole = roles.find((r) => r.name === 'Admin')!;
+        const adminRole = roles.find((r) => r.name === 'Admin')!;
 
-      const coopAdmin = await tx.coopAdmin.create({
-        data: {
-          userId: user.id,
-          coopId: coop.id,
-        },
-      });
-      await tx.coopAdminRole.create({
-        data: { coopAdminId: coopAdmin.id, roleId: adminRole.id },
-      });
+        const coopAdmin = await tx.coopAdmin.create({
+          data: {
+            userId: user.id,
+            coopId: coop.id,
+          },
+        });
+        await tx.coopAdminRole.create({
+          data: { coopAdminId: coopAdmin.id, roleId: adminRole.id },
+        });
 
-      // Create default channel for the new coop
-      await tx.channel.create({
-        data: {
-          coopId: coop.id,
-          slug: 'default',
-          name: onboardingDto.coopName,
-          isDefault: true,
-        },
-      });
+        // Create default channel for the new coop
+        await tx.channel.create({
+          data: {
+            coopId: coop.id,
+            slug: 'default',
+            name: onboardingDto.coopName,
+            isDefault: true,
+          },
+        });
 
-      return { user, coop };
-    });
+        return { user, coop };
+      })
+      .catch(rethrowSignupConflict);
 
     await this.auditService.log({
       coopId: result.coop.id,
