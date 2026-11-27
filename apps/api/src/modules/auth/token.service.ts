@@ -80,7 +80,12 @@ export class TokenService {
       if (!reissued) {
         throw new UnauthorizedException('Invalid or expired refresh token');
       }
-      session = { ...storedToken, id: reissued.id, createdAt: now, tokenHash: hashToken(reissued.raw) };
+      session = {
+        ...storedToken,
+        id: reissued.id,
+        createdAt: now,
+        tokenHash: hashToken(reissued.raw),
+      };
       rotatedRefreshToken = reissued.raw;
     }
 
@@ -120,11 +125,7 @@ export class TokenService {
     });
   }
 
-  async issueJwtForUser(
-    user: SessionUser,
-    mfaAlreadyVerified = false,
-    now = new Date(),
-  ) {
+  async issueJwtForUser(user: SessionUser, mfaAlreadyVerified = false, now = new Date()) {
     // If MFA is enabled and not yet verified, issue a short-lived mfa-pending token
     if (user.mfaEnabled && !mfaAlreadyVerified) {
       const mfaPayload = {

@@ -69,11 +69,15 @@ function fakePrisma() {
         const user = users.get(args.where.id);
         if (!user) return null;
         if (args.select) {
-          return Object.fromEntries(Object.keys(args.select).map((k) => [k, user[k as keyof UserRow]]));
+          return Object.fromEntries(
+            Object.keys(args.select).map((k) => [k, user[k as keyof UserRow]]),
+          );
         }
         return withRelations(user);
       },
-      async findFirst(args: { where: { passwordResetToken: string; passwordResetExpires: { gt: Date } } }) {
+      async findFirst(args: {
+        where: { passwordResetToken: string; passwordResetExpires: { gt: Date } };
+      }) {
         for (const user of users.values()) {
           if (
             user.passwordResetToken === args.where.passwordResetToken &&
@@ -185,7 +189,9 @@ describe('access tokens are revocable', () => {
               tokenService,
             );
             // /auth/me's heavy profile query is not under test; the guard is.
-            jest.spyOn(service, 'getProfile').mockImplementation(async (id: string) => ({ id }) as never);
+            jest
+              .spyOn(service, 'getProfile')
+              .mockImplementation(async (id: string) => ({ id }) as never);
             return service;
           },
         },
@@ -293,7 +299,10 @@ describe('access tokens are revocable', () => {
     user.passwordResetToken = hashToken('reset-token');
     user.passwordResetExpires = new Date(Date.now() + 60_000);
 
-    const reset = await post('/auth/reset-password', { token: 'reset-token', password: 'new-password-1' });
+    const reset = await post('/auth/reset-password', {
+      token: 'reset-token',
+      password: 'new-password-1',
+    });
     expect(reset.status).toBe(201);
 
     expect((await get('/auth/me', accessToken)).status).toBe(401);
@@ -322,7 +331,10 @@ describe('access tokens are revocable', () => {
 
   it('accepts a legacy token without sv or sid until the first revocation', async () => {
     const { id } = await login();
-    const legacy = jwt.sign({ sub: id, email: `${id}@example.com`, role: 'SHAREHOLDER' }, { expiresIn: '15m' });
+    const legacy = jwt.sign(
+      { sub: id, email: `${id}@example.com`, role: 'SHAREHOLDER' },
+      { expiresIn: '15m' },
+    );
     expect((await get('/auth/me', legacy)).status).toBe(200);
 
     await tokens.revokeAllSessions(id);

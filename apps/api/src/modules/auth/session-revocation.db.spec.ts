@@ -50,7 +50,9 @@ describeDb('session revocation (database)', () => {
     const session = await tokens.issueJwtForUser(user);
     await tokens.revokeAllSessions(user.id);
 
-    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).sessionVersion).toBe(1);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).sessionVersion).toBe(
+      1,
+    );
     await expect(validate(session.accessToken!)).rejects.toBeInstanceOf(UnauthorizedException);
     await expect(tokens.refreshAccessToken(session.refreshToken!)).rejects.toBeInstanceOf(
       UnauthorizedException,

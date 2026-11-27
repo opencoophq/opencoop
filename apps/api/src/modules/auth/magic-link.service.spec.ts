@@ -393,13 +393,29 @@ describe('MagicLinkService one-time code', () => {
       fr: 'Votre code de connexion : 123456',
       de: 'Ihr Anmeldecode: 123456',
     };
-    expect(authEmail.getMagicLinkContent('en', 'OpenCoop').subject).toBe('Your OpenCoop sign-in code');
-    expect(authEmail.getMagicLinkContent('nl', 'OpenCoop').subject).toBe('Je inlogcode voor OpenCoop');
-    expect(authEmail.getMagicLinkContent('fr', 'OpenCoop').subject).toBe('Votre code de connexion pour OpenCoop');
-    expect(authEmail.getMagicLinkContent('de', 'OpenCoop').subject).toBe('Ihr Anmeldecode für OpenCoop');
-    expect(authEmail.getMagicLinkContent('en', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.en);
-    expect(authEmail.getMagicLinkContent('nl', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.nl);
-    expect(authEmail.getMagicLinkContent('fr', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.fr);
-    expect(authEmail.getMagicLinkContent('de', 'OpenCoop').codeLine.replace('{code}', '123456')).toBe(lines.de);
+    expect(authEmail.getMagicLinkContent('en', 'OpenCoop').subject).toBe(
+      'Your OpenCoop sign-in code',
+    );
+    expect(authEmail.getMagicLinkContent('nl', 'OpenCoop').subject).toBe(
+      'Je inlogcode voor OpenCoop',
+    );
+    expect(authEmail.getMagicLinkContent('fr', 'OpenCoop').subject).toBe(
+      'Votre code de connexion pour OpenCoop',
+    );
+    expect(authEmail.getMagicLinkContent('de', 'OpenCoop').subject).toBe(
+      'Ihr Anmeldecode für OpenCoop',
+    );
+    expect(
+      authEmail.getMagicLinkContent('en', 'OpenCoop').codeLine.replace('{code}', '123456'),
+    ).toBe(lines.en);
+    expect(
+      authEmail.getMagicLinkContent('nl', 'OpenCoop').codeLine.replace('{code}', '123456'),
+    ).toBe(lines.nl);
+    expect(
+      authEmail.getMagicLinkContent('fr', 'OpenCoop').codeLine.replace('{code}', '123456'),
+    ).toBe(lines.fr);
+    expect(
+      authEmail.getMagicLinkContent('de', 'OpenCoop').codeLine.replace('{code}', '123456'),
+    ).toBe(lines.de);
   });
 });

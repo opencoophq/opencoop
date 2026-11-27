@@ -23,7 +23,9 @@ function authService() {
   const auditService = { log: jest.fn().mockResolvedValue(undefined) };
   const tokenService = {
     revokeAllSessions: jest.fn().mockResolvedValue(undefined),
-    issueJwtForUser: jest.fn().mockResolvedValue({ accessToken: 'new-access', refreshToken: 'new-refresh' }),
+    issueJwtForUser: jest
+      .fn()
+      .mockResolvedValue({ accessToken: 'new-access', refreshToken: 'new-refresh' }),
   };
   const service = new AuthService(
     prisma as never,
@@ -67,9 +69,9 @@ describe('password changes revoke every session', () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'user-1', passwordHash: 'stored' });
     (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-    await expect(service.changePassword('user-1', 'wrong', 'new-password-1')).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.changePassword('user-1', 'wrong', 'new-password-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(tokenService.revokeAllSessions).not.toHaveBeenCalled();
   });
 
@@ -86,9 +88,9 @@ describe('password changes revoke every session', () => {
     const { service, prisma, tokenService } = authService();
     prisma.user.findFirst.mockResolvedValue(null);
 
-    await expect(service.resetPassword({ token: 'nope', password: 'new-password-1' })).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.resetPassword({ token: 'nope', password: 'new-password-1' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(tokenService.revokeAllSessions).not.toHaveBeenCalled();
   });
 

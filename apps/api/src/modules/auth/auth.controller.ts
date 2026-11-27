@@ -1,4 +1,17 @@
-import { Controller, Post, Put, Body, Get, Query, UseGuards, UseFilters, Delete, Param, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Put,
+  Body,
+  Get,
+  Query,
+  UseGuards,
+  UseFilters,
+  Delete,
+  Param,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
@@ -165,10 +178,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update current user preferences' })
   @ApiResponse({ status: 200, description: 'User preferences updated' })
-  async updateProfile(
-    @CurrentUser() user: CurrentUserData,
-    @Body() body: UpdateProfileDto,
-  ) {
+  async updateProfile(@CurrentUser() user: CurrentUserData, @Body() body: UpdateProfileDto) {
     return this.authService.updateProfile(user.id, body);
   }
 
@@ -216,7 +226,10 @@ export class AuthController {
   @Public()
   @Post('emancipate')
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  @ApiOperation({ summary: 'Claim shareholder account via emancipation token (household split or minor turning 18)' })
+  @ApiOperation({
+    summary:
+      'Claim shareholder account via emancipation token (household split or minor turning 18)',
+  })
   @ApiResponse({ status: 201, description: 'Account claimed, user logged in' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   @ApiResponse({ status: 409, description: 'Email already in use' })
@@ -278,10 +291,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Verify TOTP code and enable MFA' })
   @ApiResponse({ status: 200, description: 'MFA enabled, recovery codes returned' })
-  async mfaEnable(
-    @CurrentUser() user: CurrentUserData,
-    @Body() dto: MfaEnableDto,
-  ) {
+  async mfaEnable(@CurrentUser() user: CurrentUserData, @Body() dto: MfaEnableDto) {
     return this.mfaService.mfaEnable(user.id, dto.code);
   }
 
@@ -291,7 +301,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify TOTP or recovery code during login' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   async mfaVerify(@Body() dto: MfaVerifyDto, @Req() req: Request) {
-    return this.authService.mfaVerify(dto.mfaToken, dto.code, dto.recoveryCode, req.ip, req.headers['user-agent']);
+    return this.authService.mfaVerify(
+      dto.mfaToken,
+      dto.code,
+      dto.recoveryCode,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -299,10 +315,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Disable MFA (requires password confirmation)' })
   @ApiResponse({ status: 200, description: 'MFA disabled' })
-  async mfaDisable(
-    @CurrentUser() user: CurrentUserData,
-    @Body() dto: MfaDisableDto,
-  ) {
+  async mfaDisable(@CurrentUser() user: CurrentUserData, @Body() dto: MfaDisableDto) {
     return this.mfaService.mfaDisable(user.id, dto.password);
   }
 
@@ -344,7 +357,11 @@ export class AuthController {
     @CurrentUser() user: CurrentUserData,
     @Body() body: WebAuthnRegisterVerifyDto,
   ) {
-    return this.webAuthnService.verifyRegistration(user.id, body.response as any, body.friendlyName);
+    return this.webAuthnService.verifyRegistration(
+      user.id,
+      body.response as any,
+      body.friendlyName,
+    );
   }
 
   @Public()
@@ -358,7 +375,10 @@ export class AuthController {
   @Post('webauthn/authenticate-verify')
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: 'Verify WebAuthn authentication response' })
-  async webauthnAuthenticateVerify(@Body() body: WebAuthnAuthenticateVerifyDto, @Req() req: Request) {
+  async webauthnAuthenticateVerify(
+    @Body() body: WebAuthnAuthenticateVerifyDto,
+    @Req() req: Request,
+  ) {
     const user = await this.webAuthnService.verifyAuthentication(body.response as any);
     await this.auditService.log({
       entity: 'Auth',
@@ -445,11 +465,16 @@ export class AuthController {
     }
 
     const { googleId, email, name } = req.user;
-    const result = await this.oauthService.handleOAuthLogin('google', {
-      providerId: googleId,
-      email,
-      name,
-    }, req.ip, req.headers['user-agent']);
+    const result = await this.oauthService.handleOAuthLogin(
+      'google',
+      {
+        providerId: googleId,
+        email,
+        name,
+      },
+      req.ip,
+      req.headers['user-agent'],
+    );
 
     if ('requiresMfa' in result && result.requiresMfa) {
       return res.redirect(`${frontendUrl}/oauth-callback?mfaToken=${result.mfaToken}`);
@@ -501,11 +526,16 @@ export class AuthController {
     }
 
     const { appleId, email, name } = req.user;
-    const result = await this.oauthService.handleOAuthLogin('apple', {
-      providerId: appleId,
-      email,
-      name,
-    }, req.ip, req.headers['user-agent']);
+    const result = await this.oauthService.handleOAuthLogin(
+      'apple',
+      {
+        providerId: appleId,
+        email,
+        name,
+      },
+      req.ip,
+      req.headers['user-agent'],
+    );
 
     if ('requiresMfa' in result && result.requiresMfa) {
       return res.redirect(`${frontendUrl}/oauth-callback?mfaToken=${result.mfaToken}`);
@@ -536,10 +566,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('accept-invitation')
   @ApiOperation({ summary: 'Accept an admin invitation (requires auth)' })
-  async acceptInvitation(
-    @Body('token') token: string,
-    @CurrentUser() user: CurrentUserData,
-  ) {
+  async acceptInvitation(@Body('token') token: string, @CurrentUser() user: CurrentUserData) {
     return this.coopAdminsService.acceptInvitation(token, user.id);
   }
 }

@@ -30,7 +30,10 @@ function harness() {
       async findUnique(args: { where: { id: string } }) {
         return args.where.id === user.id ? { sessionVersion: user.sessionVersion } : null;
       },
-      async update(args: { where: { id: string }; data: { sessionVersion: { increment: number } } }) {
+      async update(args: {
+        where: { id: string };
+        data: { sessionVersion: { increment: number } };
+      }) {
         user.sessionVersion += args.data.sessionVersion.increment;
         return user;
       },
@@ -38,7 +41,9 @@ function harness() {
     refreshToken: {
       async findUnique(args: { where: { tokenHash?: string; id?: string }; include?: unknown }) {
         const row = rows.find((candidate) =>
-          args.where.tokenHash ? candidate.tokenHash === args.where.tokenHash : candidate.id === args.where.id,
+          args.where.tokenHash
+            ? candidate.tokenHash === args.where.tokenHash
+            : candidate.id === args.where.id,
         );
         if (!row) return null;
         return args.include ? { ...row, user } : { ...row };
@@ -87,7 +92,9 @@ describe('TokenService session rotation', () => {
     const issued = await service.issueJwtForUser(user, false, issuedAt);
     if (!('refreshToken' in issued)) throw new Error('expected a session');
     expect(rows).toHaveLength(1);
-    expect(rows[0].expiresAt.toISOString()).toBe(new Date(issuedAt.getTime() + SESSION_MAX_LIFETIME_MS).toISOString());
+    expect(rows[0].expiresAt.toISOString()).toBe(
+      new Date(issuedAt.getTime() + SESSION_MAX_LIFETIME_MS).toISOString(),
+    );
     expect(rows[0].revokedAt).toBeNull();
 
     const refreshed = await service.refreshAccessToken(issued.refreshToken!, {
@@ -115,7 +122,9 @@ describe('TokenService session rotation', () => {
     expect(rows[1].expiresAt.getTime() - now.getTime()).toBeLessThan(SESSION_MAX_LIFETIME_MS);
     expect(JSON.parse(refreshed.accessToken).sid).toBe(rows[1].id);
 
-    await expect(service.refreshAccessToken(oldRaw, { rotate: true, now })).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.refreshAccessToken(oldRaw, { rotate: true, now })).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
     const again = await service.refreshAccessToken(refreshed.refreshToken!, {
       rotate: true,
       now: new Date(now.getTime() + 60_000),
@@ -174,8 +183,12 @@ describe('TokenService session rotation', () => {
 
     expect(rows.every((row) => row.revokedAt instanceof Date)).toBe(true);
     expect(user.sessionVersion).toBe(1);
-    await expect(service.refreshAccessToken(first.refreshToken!)).rejects.toBeInstanceOf(UnauthorizedException);
-    await expect(service.refreshAccessToken(second.refreshToken!)).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.refreshAccessToken(first.refreshToken!)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    await expect(service.refreshAccessToken(second.refreshToken!)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 });
 
@@ -186,7 +199,11 @@ describe('TokenService session version', () => {
     expect(JSON.parse(before.accessToken!).sv).toBe(0);
 
     await service.revokeAllSessions(user.id);
-    const after = await service.issueJwtForUser({ ...user, sessionVersion: undefined } as never, false, issuedAt);
+    const after = await service.issueJwtForUser(
+      { ...user, sessionVersion: undefined } as never,
+      false,
+      issuedAt,
+    );
     // Read from the row, not the caller's object.
     expect(JSON.parse(after.accessToken!).sv).toBe(1);
 

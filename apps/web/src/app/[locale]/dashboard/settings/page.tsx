@@ -7,7 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { api } from '@/lib/api';
@@ -78,18 +84,22 @@ export default function SettingsPage() {
       setName(user.name || '');
       setPreferredLanguage(user.preferredLanguage || 'nl');
     }
-    api<{ mfaEnabled: boolean }>('/auth/mfa/status').then((res) => {
-      setMfaEnabled(res.mfaEnabled);
-    }).catch(() => {
-      /* fire-and-forget: MFA status hydrates an optional toggle; defaults to disabled */
-    });
-    api<{ hasPassword: boolean; googleLinked: boolean; appleLinked: boolean }>('/auth/me').then((res) => {
-      setHasPassword(res.hasPassword);
-      setGoogleLinked(res.googleLinked);
-      setAppleLinked(res.appleLinked);
-    }).catch(() => {
-      /* fire-and-forget: linked-account status hydrates optional UI; falls back to defaults */
-    });
+    api<{ mfaEnabled: boolean }>('/auth/mfa/status')
+      .then((res) => {
+        setMfaEnabled(res.mfaEnabled);
+      })
+      .catch(() => {
+        /* fire-and-forget: MFA status hydrates an optional toggle; defaults to disabled */
+      });
+    api<{ hasPassword: boolean; googleLinked: boolean; appleLinked: boolean }>('/auth/me')
+      .then((res) => {
+        setHasPassword(res.hasPassword);
+        setGoogleLinked(res.googleLinked);
+        setAppleLinked(res.appleLinked);
+      })
+      .catch(() => {
+        /* fire-and-forget: linked-account status hydrates optional UI; falls back to defaults */
+      });
   }, []);
 
   useEffect(() => {
@@ -233,7 +243,9 @@ export default function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {LANGUAGE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -241,13 +253,18 @@ export default function SettingsPage() {
 
             <div>
               <Label>{t('admin.settings.formattingLocale')}</Label>
-              <Select value={formattingLocale} onValueChange={(v) => setFormattingLocale(v as LocaleCode)}>
+              <Select
+                value={formattingLocale}
+                onValueChange={(v) => setFormattingLocale(v as LocaleCode)}
+              >
                 <SelectTrigger className="w-full mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {LOCALE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -257,8 +274,14 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{hasPassword ? t('settings.changePassword') : t('settings.setPassword')}</CardTitle>
-            <CardDescription>{hasPassword ? t('settings.changePasswordDescription') : t('settings.setPasswordDescription')}</CardDescription>
+            <CardTitle>
+              {hasPassword ? t('settings.changePassword') : t('settings.setPassword')}
+            </CardTitle>
+            <CardDescription>
+              {hasPassword
+                ? t('settings.changePasswordDescription')
+                : t('settings.setPasswordDescription')}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {message && (
@@ -308,7 +331,9 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>{t('settings.notifications.title')}</CardTitle>
-              <CardDescription>{t('settings.notifications.description', { coopName: selectedCoop.name })}</CardDescription>
+              <CardDescription>
+                {t('settings.notifications.description', { coopName: selectedCoop.name })}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {notifMessage && (
@@ -325,15 +350,26 @@ export default function SettingsPage() {
                 <Label>{t('settings.notifications.frequency')}</Label>
                 <Select
                   value={notifSettings.frequency}
-                  onValueChange={(v) => setNotifSettings((s) => ({ ...s, frequency: v as NotificationSettings['frequency'] }))}
+                  onValueChange={(v) =>
+                    setNotifSettings((s) => ({
+                      ...s,
+                      frequency: v as NotificationSettings['frequency'],
+                    }))
+                  }
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="IMMEDIATE">{t('settings.notifications.frequencyImmediate')}</SelectItem>
-                    <SelectItem value="DAILY">{t('settings.notifications.frequencyDaily')}</SelectItem>
-                    <SelectItem value="WEEKLY">{t('settings.notifications.frequencyWeekly')}</SelectItem>
+                    <SelectItem value="IMMEDIATE">
+                      {t('settings.notifications.frequencyImmediate')}
+                    </SelectItem>
+                    <SelectItem value="DAILY">
+                      {t('settings.notifications.frequencyDaily')}
+                    </SelectItem>
+                    <SelectItem value="WEEKLY">
+                      {t('settings.notifications.frequencyWeekly')}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -342,7 +378,9 @@ export default function SettingsPage() {
                   <Label>{t('settings.notifications.digestTime')}</Label>
                   <Select
                     value={String(notifSettings.digestHour)}
-                    onValueChange={(v) => setNotifSettings((s) => ({ ...s, digestHour: Number(v) }))}
+                    onValueChange={(v) =>
+                      setNotifSettings((s) => ({ ...s, digestHour: Number(v) }))
+                    }
                   >
                     <SelectTrigger className="w-full mt-1">
                       <SelectValue />
@@ -350,7 +388,8 @@ export default function SettingsPage() {
                     <SelectContent>
                       {Array.from({ length: 24 }, (_, i) => (
                         <SelectItem key={i} value={String(i)}>
-                          {String(i).padStart(2, '0')}:00 {t('settings.notifications.digestTimeUTC')}
+                          {String(i).padStart(2, '0')}:00{' '}
+                          {t('settings.notifications.digestTimeUTC')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -361,10 +400,19 @@ export default function SettingsPage() {
                 <Label>{t('settings.notifications.events')}</Label>
                 {(
                   [
-                    ['notifyOnNewShareholder', t('settings.notifications.eventNewShareholder')] as const,
-                    ['notifyOnSharePurchase', t('settings.notifications.eventSharePurchase')] as const,
+                    [
+                      'notifyOnNewShareholder',
+                      t('settings.notifications.eventNewShareholder'),
+                    ] as const,
+                    [
+                      'notifyOnSharePurchase',
+                      t('settings.notifications.eventSharePurchase'),
+                    ] as const,
                     ['notifyOnShareSell', t('settings.notifications.eventShareSell')] as const,
-                    ['notifyOnPaymentReceived', t('settings.notifications.eventPaymentReceived')] as const,
+                    [
+                      'notifyOnPaymentReceived',
+                      t('settings.notifications.eventPaymentReceived'),
+                    ] as const,
                   ] as const
                 ).map(([key, label]) => (
                   <div key={key} className="flex items-center gap-2">
@@ -375,7 +423,9 @@ export default function SettingsPage() {
                         setNotifSettings((s) => ({ ...s, [key]: checked === true }))
                       }
                     />
-                    <label htmlFor={key} className="text-sm cursor-pointer">{label}</label>
+                    <label htmlFor={key} className="text-sm cursor-pointer">
+                      {label}
+                    </label>
                   </div>
                 ))}
               </div>
@@ -384,7 +434,11 @@ export default function SettingsPage() {
           </Card>
         )}
 
-        <MfaSetup mfaEnabled={mfaEnabled} hasPassword={hasPassword} onStatusChange={setMfaEnabled} />
+        <MfaSetup
+          mfaEnabled={mfaEnabled}
+          hasPassword={hasPassword}
+          onStatusChange={setMfaEnabled}
+        />
 
         <PasskeysManager />
 
@@ -397,14 +451,28 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center gap-3">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                  <path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    fill="#EA4335"
+                  />
                 </svg>
                 <span className="font-medium">{t('oauth.google')}</span>
               </div>
-              <span className={`text-sm ${googleLinked ? 'text-green-600' : 'text-muted-foreground'}`}>
+              <span
+                className={`text-sm ${googleLinked ? 'text-green-600' : 'text-muted-foreground'}`}
+              >
                 {googleLinked ? t('oauth.linked') : t('oauth.notLinked')}
               </span>
             </div>
@@ -415,7 +483,9 @@ export default function SettingsPage() {
                 </svg>
                 <span className="font-medium">{t('oauth.apple')}</span>
               </div>
-              <span className={`text-sm ${appleLinked ? 'text-green-600' : 'text-muted-foreground'}`}>
+              <span
+                className={`text-sm ${appleLinked ? 'text-green-600' : 'text-muted-foreground'}`}
+              >
                 {appleLinked ? t('oauth.linked') : t('oauth.notLinked')}
               </span>
             </div>
