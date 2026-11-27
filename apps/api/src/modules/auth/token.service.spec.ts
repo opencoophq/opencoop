@@ -22,13 +22,28 @@ function harness() {
     role: 'USER',
     preferredLanguage: 'nl',
     emailVerified: new Date('2026-01-01T00:00:00.000Z'),
+    sessionVersion: 0,
     coopAdminOf: [],
   };
   const prisma = {
+    user: {
+      async findUnique(args: { where: { id: string } }) {
+        return args.where.id === user.id ? { sessionVersion: user.sessionVersion } : null;
+      },
+      async update(args: {
+        where: { id: string };
+        data: { sessionVersion: { increment: number } };
+      }) {
+        user.sessionVersion += args.data.sessionVersion.increment;
+        return user;
+      },
+    },
     refreshToken: {
       async findUnique(args: { where: { tokenHash?: string; id?: string }; include?: unknown }) {
         const row = rows.find((candidate) =>
-          args.where.tokenHash ? candidate.tokenHash === args.where.tokenHash : candidate.id === args.where.id,
+          args.where.tokenHash
+            ? candidate.tokenHash === args.where.tokenHash
+            : candidate.id === args.where.id,
         );
         if (!row) return null;
         return args.include ? { ...row, user } : { ...row };
@@ -52,12 +67,18 @@ function harness() {
         return { count: matches.length };
       },
     },
+    /** lockSessionVersion's SELECT ... FOR SHARE; the only value is the user id. */
+    async $queryRaw(_sql: TemplateStringsArray, userId: string) {
+      return userId === user.id ? [{ sessionVersion: user.sessionVersion }] : [];
+    },
     $transaction(fn: (tx: typeof prisma) => Promise<unknown>) {
       return fn(prisma);
     },
   };
   const jwt = {
-    sign: jest.fn((payload: { sid?: string; sst?: number; type?: string }) => JSON.stringify(payload)),
+    sign: jest.fn((payload: { sid?: string; sst?: number; sv?: number; type?: string }) =>
+      JSON.stringify(payload),
+    ),
   };
   return { service: new TokenService(prisma as never, jwt as never), rows, user, jwt };
 }
@@ -71,7 +92,9 @@ describe('TokenService session rotation', () => {
     const issued = await service.issueJwtForUser(user, false, issuedAt);
     if (!('refreshToken' in issued)) throw new Error('expected a session');
     expect(rows).toHaveLength(1);
-    expect(rows[0].expiresAt.toISOString()).toBe(new Date(issuedAt.getTime() + SESSION_MAX_LIFETIME_MS).toISOString());
+    expect(rows[0].expiresAt.toISOString()).toBe(
+      new Date(issuedAt.getTime() + SESSION_MAX_LIFETIME_MS).toISOString(),
+    );
     expect(rows[0].revokedAt).toBeNull();
 
     const refreshed = await service.refreshAccessToken(issued.refreshToken!, {
@@ -99,7 +122,9 @@ describe('TokenService session rotation', () => {
     expect(rows[1].expiresAt.getTime() - now.getTime()).toBeLessThan(SESSION_MAX_LIFETIME_MS);
     expect(JSON.parse(refreshed.accessToken).sid).toBe(rows[1].id);
 
-    await expect(service.refreshAccessToken(oldRaw, { rotate: true, now })).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.refreshAccessToken(oldRaw, { rotate: true, now })).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
     const again = await service.refreshAccessToken(refreshed.refreshToken!, {
       rotate: true,
       now: new Date(now.getTime() + 60_000),
@@ -154,10 +179,42 @@ describe('TokenService session rotation', () => {
     const { service, rows, user } = harness();
     const first = await service.issueJwtForUser(user, false, issuedAt);
     const second = await service.issueJwtForUser(user, false, issuedAt);
-    await service.revokeRefreshTokens(user.id);
+    await service.revokeAllSessions(user.id);
 
     expect(rows.every((row) => row.revokedAt instanceof Date)).toBe(true);
-    await expect(service.refreshAccessToken(first.refreshToken!)).rejects.toBeInstanceOf(UnauthorizedException);
-    await expect(service.refreshAccessToken(second.refreshToken!)).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(user.sessionVersion).toBe(1);
+    await expect(service.refreshAccessToken(first.refreshToken!)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    await expect(service.refreshAccessToken(second.refreshToken!)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+  });
+});
+
+describe('TokenService session version', () => {
+  it('signs the stored session version as the sv claim', async () => {
+    const { service, user } = harness();
+    const before = await service.issueJwtForUser(user, false, issuedAt);
+    expect(JSON.parse(before.accessToken!).sv).toBe(0);
+
+    await service.revokeAllSessions(user.id);
+    const after = await service.issueJwtForUser(
+      { ...user, sessionVersion: undefined } as never,
+      false,
+      issuedAt,
+    );
+    // Read from the row, not the caller's object.
+    expect(JSON.parse(after.accessToken!).sv).toBe(1);
+
+    const refreshed = await service.refreshAccessToken(after.refreshToken!, { now: issuedAt });
+    expect(JSON.parse(refreshed.accessToken).sv).toBe(1);
+  });
+
+  it('refuses to issue a session for a user that no longer exists', async () => {
+    const { service, user } = harness();
+    await expect(
+      service.issueJwtForUser({ ...user, id: 'gone' }, false, issuedAt),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

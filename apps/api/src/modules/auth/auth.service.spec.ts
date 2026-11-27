@@ -103,10 +103,21 @@ describe('MagicLinkService — requestMagicLink with household shareholders', ()
     const auditService = { log: jest.fn().mockResolvedValue(undefined) };
     const authEmailService = {
       getMagicLinkContent: jest.fn().mockReturnValue({
-        subject: 's', heading: 'h', codeLine: 'Je inlogcode: {code}', body: 'b', button: 'btn', expiry: 'e', footer: 'f',
+        subject: 's',
+        heading: 'h',
+        codeLine: 'Je inlogcode: {code}',
+        body: 'b',
+        button: 'btn',
+        expiry: 'e',
+        footer: 'f',
       }),
       getPasswordResetContent: jest.fn().mockReturnValue({
-        subject: 's', heading: 'h', body: 'b', ignore: 'i', expiry: 'e', footer: 'f',
+        subject: 's',
+        heading: 'h',
+        body: 'b',
+        ignore: 'i',
+        expiry: 'e',
+        footer: 'f',
       }),
       sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
       sendWaitlistConfirmationEmail: jest.fn().mockResolvedValue(undefined),
@@ -124,7 +135,7 @@ describe('MagicLinkService — requestMagicLink with household shareholders', ()
           useValue: {
             issueJwtForUser: jest.fn(),
             refreshAccessToken: jest.fn(),
-            revokeRefreshTokens: jest.fn(),
+            revokeAllSessions: jest.fn(),
           },
         },
       ],

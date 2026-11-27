@@ -74,6 +74,7 @@ type UserRow = {
   passwordResetToken: string | null;
   passwordResetExpires: Date | null;
   mfaEnabled: boolean;
+  sessionVersion: number;
 };
 type AdminRow = { id: string; coopId: string; userId: string; manager: boolean };
 type ShareholderRow = {
@@ -157,6 +158,7 @@ function person(id: string, email: string, role: Role, name: string): UserRow {
     passwordResetToken: null,
     passwordResetExpires: null,
     mfaEnabled: false,
+    sessionVersion: 0,
   };
 }
 
@@ -689,6 +691,8 @@ describe('Team member login email over HTTP', () => {
       await call('POST', '/auth/magic-link/request', {}, { email: 'plain@example.test' });
       state.users.get('plain')!.passwordResetToken = 'hashed-reset-token';
       state.refreshTokens.push({ id: 'rt-1', userId: 'plain', revokedAt: null });
+      const oldAccess = bearer('plain', 'COOP_ADMIN');
+      expect((await call('GET', '/auth/me', oldAccess)).status).toBe(200);
       await editUser('adm-plain', systemAdmin(), { email: NEW_ADDRESS });
       audit.log.mockClear();
 
@@ -706,6 +710,9 @@ describe('Team member login email over HTTP', () => {
         emailVerified: expect.any(Date),
       });
       expect(state.refreshTokens[0].revokedAt).toBeInstanceOf(Date);
+      // Access tokens signed for the old address die with it.
+      expect(state.users.get('plain')!.sessionVersion).toBe(1);
+      expect((await call('GET', '/auth/me', oldAccess)).status).toBe(401);
       expect(
         (
           await call(

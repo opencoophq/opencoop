@@ -329,6 +329,9 @@ model User {
   pendingEmail         String?
   passwordResetToken   String?
   passwordResetExpires DateTime?
+  // Access tokens carry this value as the `sv` claim. Incrementing it
+  // invalidates every access token already issued for the user.
+  sessionVersion       Int       @default(0)
   role                 UserRole  @default(SHAREHOLDER)
   preferredLanguage    String    @default("nl")
   createdAt            DateTime  @default(now())

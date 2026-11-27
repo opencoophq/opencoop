@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
+import { Prisma } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { hashToken } from '../../common/crypto/hash-token';
 import { mergeAdminPermissions } from '../../common/utils/coop-permissions';
@@ -28,7 +29,7 @@ type StoredSession = {
   expiresAt: Date;
   createdAt: Date;
   revokedAt: Date | null;
-  user?: SessionUser;
+  user?: SessionUser & { sessionVersion: number };
 };
 
 /**
@@ -79,12 +80,17 @@ export class TokenService {
       if (!reissued) {
         throw new UnauthorizedException('Invalid or expired refresh token');
       }
-      session = { ...storedToken, id: reissued.id, createdAt: now, tokenHash: hashToken(reissued.raw) };
+      session = {
+        ...storedToken,
+        id: reissued.id,
+        createdAt: now,
+        tokenHash: hashToken(reissued.raw),
+      };
       rotatedRefreshToken = reissued.raw;
     }
 
     return {
-      accessToken: this.signAccessToken(storedToken.user, session),
+      accessToken: this.signAccessToken(storedToken.user, session, storedToken.user.sessionVersion),
       ...(rotatedRefreshToken ? { refreshToken: rotatedRefreshToken } : {}),
     };
   }
@@ -102,18 +108,24 @@ export class TokenService {
     return reissued?.raw ?? null;
   }
 
-  async revokeRefreshTokens(userId: string) {
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
+  /**
+   * End every session of the user: refresh tokens stop working, and the
+   * version bump makes every access token already issued fail in JwtStrategy.
+   */
+  async revokeAllSessions(userId: string, now = new Date()) {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { sessionVersion: { increment: 1 } },
+      });
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: now },
+      });
     });
   }
 
-  async issueJwtForUser(
-    user: SessionUser,
-    mfaAlreadyVerified = false,
-    now = new Date(),
-  ) {
+  async issueJwtForUser(user: SessionUser, mfaAlreadyVerified = false, now = new Date()) {
     // If MFA is enabled and not yet verified, issue a short-lived mfa-pending token
     if (user.mfaEnabled && !mfaAlreadyVerified) {
       const mfaPayload = {
@@ -126,18 +138,28 @@ export class TokenService {
       };
     }
 
+    // Read the version from the row, not from the caller's object: callers
+    // load the user with different selects, and a missing value would sign
+    // a token that is dead on arrival after the first revocation.
     const rawRefreshToken = randomBytes(32).toString('hex');
-    const created = await this.prisma.refreshToken.create({
-      data: {
-        tokenHash: hashToken(rawRefreshToken),
-        userId: user.id,
-        expiresAt: sessionExpiresAt(now),
-        createdAt: now,
-      },
+    const { created, sessionVersion } = await this.prisma.$transaction(async (tx) => {
+      const sessionVersion = await this.lockSessionVersion(tx, user.id);
+      if (sessionVersion === null) {
+        throw new UnauthorizedException('User not found');
+      }
+      const created = await tx.refreshToken.create({
+        data: {
+          tokenHash: hashToken(rawRefreshToken),
+          userId: user.id,
+          expiresAt: sessionExpiresAt(now),
+          createdAt: now,
+        },
+      });
+      return { created, sessionVersion };
     });
 
     return {
-      accessToken: this.signAccessToken(user, { id: created.id, createdAt: now }),
+      accessToken: this.signAccessToken(user, { id: created.id, createdAt: now }, sessionVersion),
       refreshToken: rawRefreshToken,
       user: {
         id: user.id,
@@ -150,7 +172,11 @@ export class TokenService {
     };
   }
 
-  private signAccessToken(user: SessionUser, session: { id: string; createdAt: Date }) {
+  private signAccessToken(
+    user: SessionUser,
+    session: { id: string; createdAt: Date },
+    sessionVersion: number,
+  ) {
     const coopIds = (user.coopAdminOf ?? []).map((ca) => ca.coopId);
     const coopPermissions: Record<string, any> = {};
     for (const ca of user.coopAdminOf ?? []) {
@@ -168,6 +194,7 @@ export class TokenService {
       ...(Object.keys(coopPermissions).length > 0 && { coopPermissions }),
       sid: session.id,
       sst: Math.floor(session.createdAt.getTime() / 1000),
+      sv: sessionVersion,
     };
 
     return this.jwtService.sign(payload, { expiresIn: '15m' });
@@ -184,6 +211,7 @@ export class TokenService {
   ): Promise<{ id: string; raw: string } | null> {
     const raw = randomBytes(32).toString('hex');
     return this.prisma.$transaction(async (tx) => {
+      if ((await this.lockSessionVersion(tx, stored.userId)) === null) return null;
       const claimed = await tx.refreshToken.updateMany({
         where: { id: stored.id, revokedAt: null },
         data: { revokedAt: now },
@@ -199,5 +227,22 @@ export class TokenService {
       });
       return { id: created.id, raw };
     });
+  }
+
+  /**
+   * Read the user's sessionVersion under a FOR SHARE row lock. revokeAllSessions
+   * updates that row first, so a refresh row created under this lock is either
+   * committed before the revocation (and revoked by it) or created after it
+   * (and paired with the new version). Without the lock, a row inserted while
+   * a revocation runs could escape its updateMany. Returns null when the user
+   * no longer exists.
+   */
+  private async lockSessionVersion(
+    tx: Prisma.TransactionClient,
+    userId: string,
+  ): Promise<number | null> {
+    const rows = await tx.$queryRaw<{ sessionVersion: number }[]>`
+      SELECT "sessionVersion" FROM "users" WHERE "id" = ${userId} FOR SHARE`;
+    return rows[0]?.sessionVersion ?? null;
   }
 }
