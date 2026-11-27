@@ -426,6 +426,10 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(resetPasswordDto.password, 12);
 
+    // Revoke first: if the password write then fails, sessions are gone and
+    // the old password still holds, which fails closed.
+    await this.tokenService.revokeAllSessions(user.id);
+
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -434,8 +438,6 @@ export class AuthService {
         passwordResetExpires: null,
       },
     });
-
-    await this.tokenService.revokeAllSessions(user.id);
 
     await this.auditService.log({
       entity: 'Auth',
@@ -859,6 +861,11 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    // Ends every session, the caller's included, before the password write so
+    // a failed write fails closed. Then opens a new session for the caller so
+    // the browser that changed the password stays signed in.
+    await this.tokenService.revokeAllSessions(userId);
     await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -867,10 +874,6 @@ export class AuthService {
         passwordResetExpires: null,
       },
     });
-
-    // Ends every session, the caller's included, then opens a new one for the
-    // caller so the browser that changed the password stays signed in.
-    await this.tokenService.revokeAllSessions(userId);
     const session = await this.tokenService.issueJwtForUser(user, true);
 
     await this.auditService.log({

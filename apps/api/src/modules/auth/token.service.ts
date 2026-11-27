@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
+import { Prisma } from '@opencoop/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { hashToken } from '../../common/crypto/hash-token';
 import { mergeAdminPermissions } from '../../common/utils/coop-permissions';
@@ -139,30 +140,25 @@ export class TokenService {
     // Read the version from the row, not from the caller's object: callers
     // load the user with different selects, and a missing value would sign
     // a token that is dead on arrival after the first revocation.
-    const current = await this.prisma.user.findUnique({
-      where: { id: user.id },
-      select: { sessionVersion: true },
-    });
-    if (!current) {
-      throw new UnauthorizedException('User not found');
-    }
-
     const rawRefreshToken = randomBytes(32).toString('hex');
-    const created = await this.prisma.refreshToken.create({
-      data: {
-        tokenHash: hashToken(rawRefreshToken),
-        userId: user.id,
-        expiresAt: sessionExpiresAt(now),
-        createdAt: now,
-      },
+    const { created, sessionVersion } = await this.prisma.$transaction(async (tx) => {
+      const sessionVersion = await this.lockSessionVersion(tx, user.id);
+      if (sessionVersion === null) {
+        throw new UnauthorizedException('User not found');
+      }
+      const created = await tx.refreshToken.create({
+        data: {
+          tokenHash: hashToken(rawRefreshToken),
+          userId: user.id,
+          expiresAt: sessionExpiresAt(now),
+          createdAt: now,
+        },
+      });
+      return { created, sessionVersion };
     });
 
     return {
-      accessToken: this.signAccessToken(
-        user,
-        { id: created.id, createdAt: now },
-        current.sessionVersion,
-      ),
+      accessToken: this.signAccessToken(user, { id: created.id, createdAt: now }, sessionVersion),
       refreshToken: rawRefreshToken,
       user: {
         id: user.id,
@@ -214,6 +210,7 @@ export class TokenService {
   ): Promise<{ id: string; raw: string } | null> {
     const raw = randomBytes(32).toString('hex');
     return this.prisma.$transaction(async (tx) => {
+      if ((await this.lockSessionVersion(tx, stored.userId)) === null) return null;
       const claimed = await tx.refreshToken.updateMany({
         where: { id: stored.id, revokedAt: null },
         data: { revokedAt: now },
@@ -229,5 +226,22 @@ export class TokenService {
       });
       return { id: created.id, raw };
     });
+  }
+
+  /**
+   * Read the user's sessionVersion under a FOR SHARE row lock. revokeAllSessions
+   * updates that row first, so a refresh row created under this lock is either
+   * committed before the revocation (and revoked by it) or created after it
+   * (and paired with the new version). Without the lock, a row inserted while
+   * a revocation runs could escape its updateMany. Returns null when the user
+   * no longer exists.
+   */
+  private async lockSessionVersion(
+    tx: Prisma.TransactionClient,
+    userId: string,
+  ): Promise<number | null> {
+    const rows = await tx.$queryRaw<{ sessionVersion: number }[]>`
+      SELECT "sessionVersion" FROM "users" WHERE "id" = ${userId} FOR SHARE`;
+    return rows[0]?.sessionVersion ?? null;
   }
 }

@@ -136,6 +136,11 @@ function fakePrisma() {
     },
     shareholder: { findMany: async () => [] },
     meeting: { findMany: async () => [] },
+    /** lockSessionVersion's SELECT ... FOR SHARE; the only value is the user id. */
+    async $queryRaw(_sql: TemplateStringsArray, userId: string) {
+      const user = users.get(userId);
+      return user ? [{ sessionVersion: user.sessionVersion }] : [];
+    },
     async $transaction<T>(fn: (tx: unknown) => Promise<T>): Promise<T> {
       return fn(prisma);
     },

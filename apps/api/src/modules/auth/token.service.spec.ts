@@ -62,6 +62,10 @@ function harness() {
         return { count: matches.length };
       },
     },
+    /** lockSessionVersion's SELECT ... FOR SHARE; the only value is the user id. */
+    async $queryRaw(_sql: TemplateStringsArray, userId: string) {
+      return userId === user.id ? [{ sessionVersion: user.sessionVersion }] : [];
+    },
     $transaction(fn: (tx: typeof prisma) => Promise<unknown>) {
       return fn(prisma);
     },
