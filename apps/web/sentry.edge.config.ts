@@ -9,7 +9,11 @@ const dsn = sentryDsn(process.env.SENTRY_DSN) || sentryDsn(process.env.NEXT_PUBL
 if (dsn) {
   Sentry.init({
     dsn,
-    environment: sentryEnvironment(process.env.NEXTAUTH_URL, process.env.SENTRY_ENVIRONMENT, process.env.NODE_ENV),
+    environment: sentryEnvironment(
+      process.env.NEXTAUTH_URL,
+      process.env.SENTRY_ENVIRONMENT,
+      process.env.NODE_ENV,
+    ),
     tracesSampleRate: 0.1,
     // Never send personal data: no IP or cookies from the SDK, and every
     // event and breadcrumb passes through the shared scrubber.
